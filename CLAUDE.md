@@ -13,10 +13,9 @@ Excubia App is the optional, open-source (MIT), self-hosted Laravel dashboard of
 
 ## Stack (aligned with `qiick-io/externa-core`)
 
-- PHP 8.4, Laravel 13, official Laravel React starter kit: Inertia 2, React 19, TypeScript, Tailwind CSS v4, Fortify auth, Wayfinder.
-- Node 24 (`.nvmrc`), Vite. SQLite by default for self-hosting; database driver via `.env`.
-- Dev: Pest 4 (+ pest-plugin-laravel), Pint (laravel preset), Larastan, ESLint + Prettier.
-- Until the scaffold issue is merged the repo has no code: follow that issue for the exact setup.
+- PHP 8.4, Laravel 13, official Laravel React starter kit as generated: Inertia 3, React 19, TypeScript, Tailwind CSS v4, Fortify auth, Wayfinder.
+- Node 24 (`.nvmrc`), Vite+ (`vp`). SQLite by default for self-hosting; database driver via `.env`.
+- Dev: Pest 5 (+ pest-plugin-laravel), Pint (laravel preset), Larastan, `vp check` (lint and format).
 
 ## Commands (after the scaffold)
 
