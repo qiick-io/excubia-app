@@ -1,0 +1,21 @@
+---
+description: Do not ship Excubia App to main, tag it, or publish it unless the user explicitly asks.
+alwaysApply: true
+---
+
+# No automatic release
+
+Agents must not ship Excubia App to `main` without an explicit user request. `develop` is the integration branch. `main` is for releases.
+
+## Allowed
+
+- Open a `develop` → `main` release pull request when the user asks for a release
+- Stop after that pull request is open
+
+## Forbidden unless the user explicitly asks
+
+- Merge a release pull request (`develop` → `main`)
+- Bump versions or create git tags (`vX.Y.Z` or otherwise)
+- Run `gh release create` or publish a GitHub Release
+- Push to `main` to cut a release
+- Publish Docker or GHCR images

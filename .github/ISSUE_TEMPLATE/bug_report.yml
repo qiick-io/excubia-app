@@ -1,0 +1,66 @@
+name: Report a bug
+description: Create a report to help us improve Excubia
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug.
+
+        Before filing, please check:
+        - You're on a recent version of Excubia App
+        - There's [no existing issue](https://github.com/qiick-io/excubia-app/issues?q=is%3Aissue) that already describes the problem
+
+  - type: textarea
+    id: describe
+    attributes:
+      label: Describe the bug
+      description: A clear and concise description of what the bug is.
+      placeholder: What went wrong?
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: To Reproduce
+      description: Steps to reproduce the behavior. Include the page or `php artisan` command involved.
+      placeholder: |
+        1. Go to …
+        2. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What you expected to happen instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: output
+    attributes:
+      label: Logs or output
+      description: Paste relevant log or command output (redact secrets). Leave blank if not applicable.
+      render: shell
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Fill in what you know. Leave blank if not applicable.
+      placeholder: |
+        Excubia App version or commit:
+        PHP version:
+        Database:
+        OS:
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Anything else that might help (related PRs, stack traces).

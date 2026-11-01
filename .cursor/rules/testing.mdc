@@ -1,0 +1,13 @@
+---
+description: Pest, Pint, PHPStan and frontend gates for the Excubia App.
+globs: "**/*Test.php"
+alwaysApply: false
+---
+
+# Testing
+
+- Prefer behavior-focused Pest feature tests over assertions on private structure.
+- Do not delete or weaken an existing test. Add coverage for a behavior change.
+- `tests/Arch/NamingArchitectureTest.php` stays green.
+- No real network and no real CLI run: fake HTTP and `Process`.
+- Quality gate before a pull request: `composer test`, then `npm run lint`, `npm run types` and `npm run build`.

@@ -1,0 +1,42 @@
+---
+description: Codice Perfetto for the Excubia App. CLAUDE.md wins if this rule disagrees.
+alwaysApply: true
+---
+
+# Codice Perfetto for Excubia App
+
+`CLAUDE.md` and the issues of the current milestone are the source of truth. This rule does not add product scope.
+
+## Ponytail
+
+Pick the simplest solution that works. Stop at the first rung that holds: YAGNI, standard library, platform, installed dependency, one line, then the minimum code.
+
+- No unrequested abstractions, dependencies, or boilerplate.
+- Deletion over addition. Boring over clever. Fewest files possible.
+- Mark an intentional shortcut with a `ponytail:` comment that names the ceiling and the upgrade path.
+- Not lazy about trust-boundary validation, data-loss prevention, security, or anything explicitly requested.
+- Non-trivial logic leaves one runnable check behind.
+
+## Layers
+
+- Never reimplement a check, parser, data-source client or renderer: they live in `qiick/excubia-core`.
+- Thin controllers: validate with a `*Request`, call an `*Action` or `*Service`, return Inertia. No `DB` facade in controllers.
+- `*Action` has one public `execute()` and handles writes. `*Service` handles reads, orchestration and integrations.
+- Models hold relations, casts and scopes only. Authorization lives in Policies.
+
+## Names
+
+- Full words. No `cfg`, `res`, `req`, `val`, `ctx`, or `idx`.
+- Loop indices `i`, `j`, and `k` only in tight numeric loops.
+- Booleans and boolean methods use `is`, `has`, `can`, or `should`, except framework contracts and native React or DOM props.
+- Only Eloquent models use bare nouns. Role suffixes match the architecture test: `Controller`, `Request`, `Action`, `Service`, `Data` (readonly), `Enum`, `Policy`, `Job`, `Command`, `Resource`, `Exception`.
+- Starter-kit and `shadcn/ui` files keep upstream names.
+- Frontend files are `kebab-case`; components and types `PascalCase`; hooks and functions `camelCase`.
+
+## Documentation
+
+- `declare(strict_types=1)` in every PHP file you write.
+- English PHPDoc and JSDoc on classes, components, hooks and non-trivial methods: why, array shapes, side effects, and `@throws`. Not line-by-line noise.
+- Explicit curly braces and a blank line around control-flow blocks.
+- Do not leave `dd`, `dump`, `var_dump` or `console.log`. No `env()` outside `config/`.
+- Migrations are forward-only: never edit or delete a merged migration.
