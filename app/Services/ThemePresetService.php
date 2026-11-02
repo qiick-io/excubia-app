@@ -37,6 +37,14 @@ class ThemePresetService
     private const UI_CONTRAST_MIN = 3.0;
 
     /**
+     * Contrast-safe focus rings used when the brand colour is below 3:1
+     * on the page background (externa-core#453). Mirrors the `--ring` defaults in app.css.
+     */
+    private const FALLBACK_RING_LIGHT = 'var(--color-teal-600)';
+
+    private const FALLBACK_RING_DARK = 'var(--color-teal-400)';
+
+    /**
      * Brand-linked keys omitted from preset injection when a custom hex is set.
      *
      * @var list<string>
@@ -117,12 +125,18 @@ class ThemePresetService
 
         if ($hasCustomLight) {
             [$brandPrimaryForeground, $brandAaChecks[]] = $this->deriveBrand($projectColor, $light['background'] ?? self::FOREGROUND_LIGHT);
-            $light = $this->stripBrandLinkedKeys($light);
+            $light = [
+                ...$this->stripBrandLinkedKeys($light),
+                ...$this->ringTokens($projectColor, $light['background'] ?? self::FOREGROUND_LIGHT, self::FALLBACK_RING_LIGHT),
+            ];
         }
 
         if ($effectiveDark !== null) {
             [$brandPrimaryDarkForeground, $brandAaChecks[]] = $this->deriveBrand($effectiveDark, $dark['background'] ?? self::FOREGROUND_DARK);
-            $dark = $this->stripBrandLinkedKeys($dark);
+            $dark = [
+                ...$this->stripBrandLinkedKeys($dark),
+                ...$this->ringTokens($effectiveDark, $dark['background'] ?? self::FOREGROUND_DARK, self::FALLBACK_RING_DARK),
+            ];
         }
 
         return [
@@ -173,6 +187,22 @@ class ThemePresetService
         }
 
         return $contrastWhite >= $contrastInk ? self::FOREGROUND_LIGHT : self::FOREGROUND_DARK;
+    }
+
+    /**
+     * Focus ring tokens for a custom brand: the brand itself when it keeps 3:1
+     * on the page background (WCAG 2.4.7 / 1.4.11), otherwise the teal fallback.
+     *
+     * Always emitted (never omitted) so a passing light ring cannot leak into
+     * `.dark` through the inline `:root` block.
+     *
+     * @return array{ring: string, sidebar-ring: string}
+     */
+    private function ringTokens(string $brandHex, string $background, string $fallbackRing): array
+    {
+        $ring = $this->contrastRatio($brandHex, $background) >= self::UI_CONTRAST_MIN ? $brandHex : $fallbackRing;
+
+        return ['ring' => $ring, 'sidebar-ring' => $ring];
     }
 
     /**

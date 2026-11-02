@@ -130,41 +130,45 @@ export function AppSidebar() {
     );
 
     return (
-        <Sidebar
-            collapsible="icon"
-            variant="inset"
-            role="navigation"
-            aria-label={t('a11y.mainNav')}
-        >
-            <SidebarHeader>
-                <SidebarMenu>
-                    <SidebarMenuItem>
-                        <SidebarMenuButton size="lg" asChild>
-                            <Link href={dashboard()} prefetch>
-                                <AppLogo />
-                            </Link>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                </SidebarMenu>
-            </SidebarHeader>
+        <Sidebar collapsible="icon" variant="inset">
+            {/*
+              Real <nav> (not role=navigation on a div) so desktop chrome and the
+              mobile Sheet both expose a labelled navigation landmark.
+            */}
+            <nav
+                aria-label={t('a11y.mainNav')}
+                className="flex h-full w-full flex-col"
+            >
+                <SidebarHeader>
+                    <SidebarMenu>
+                        <SidebarMenuItem>
+                            <SidebarMenuButton size="lg" asChild>
+                                <Link href={dashboard()} prefetch>
+                                    <AppLogo />
+                                </Link>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
+                    </SidebarMenu>
+                </SidebarHeader>
 
-            <SidebarContent>
-                {visibleModules.length > 0 ? (
-                    <SidebarGroup className="px-2 py-0">
-                        <SidebarGroupLabel>
-                            {t('nav.platform')}
-                        </SidebarGroupLabel>
-                        <SidebarMenu>
-                            {visibleModules.map(renderModuleItem)}
-                        </SidebarMenu>
-                    </SidebarGroup>
-                ) : null}
-            </SidebarContent>
+                <SidebarContent>
+                    {visibleModules.length > 0 ? (
+                        <SidebarGroup className="px-2 py-0">
+                            <SidebarGroupLabel>
+                                {t('nav.platform')}
+                            </SidebarGroupLabel>
+                            <SidebarMenu>
+                                {visibleModules.map(renderModuleItem)}
+                            </SidebarMenu>
+                        </SidebarGroup>
+                    ) : null}
+                </SidebarContent>
 
-            <SidebarFooter>
-                <NavFooter items={footerNavItems} className="mt-auto" />
-                <NavUser />
-            </SidebarFooter>
+                <SidebarFooter>
+                    <NavFooter items={footerNavItems} className="mt-auto" />
+                    <NavUser />
+                </SidebarFooter>
+            </nav>
         </Sidebar>
     );
 }

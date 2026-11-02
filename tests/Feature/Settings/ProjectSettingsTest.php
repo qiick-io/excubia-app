@@ -6,6 +6,7 @@ use App\Enums\RoleEnum;
 use App\Enums\ThemePresetEnum;
 use App\Models\User;
 use App\Services\SettingsRepositoryService;
+use App\Services\ThemePresetService;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\RateLimiter;
@@ -430,4 +431,19 @@ it('renders the custom brand colour with an accessible foreground', function () 
     $this->get(route('login'))
         ->assertSee('--brand-primary: #FFEE00;', false)
         ->assertSee('--brand-primary-foreground: #0E171E;', false);
+});
+
+it('keeps a contrast-safe focus ring for a low-contrast brand colour', function () {
+    // #0F172A is about 17:1 on white but about 1.1:1 on the dark background (externa-core#453).
+    $themeCss = app(ThemePresetService::class)->resolve('teal', '#0F172A', null);
+
+    expect($themeCss['light']['ring'])->toBe('#0F172A')
+        ->and($themeCss['light']['sidebar-ring'])->toBe('#0F172A')
+        ->and($themeCss['dark']['ring'])->toBe('var(--color-teal-400)')
+        ->and($themeCss['dark']['sidebar-ring'])->toBe('var(--color-teal-400)');
+
+    $faint = app(ThemePresetService::class)->resolve('teal', '#F5F5F5', '#38BDF8');
+
+    expect($faint['light']['ring'])->toBe('var(--color-teal-600)')
+        ->and($faint['dark']['ring'])->toBe('#38BDF8');
 });
