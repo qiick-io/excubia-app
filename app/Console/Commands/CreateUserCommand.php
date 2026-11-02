@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use App\Actions\CreateUserAction;
 use App\Enums\RoleEnum;
 use App\Models\User;
 use Database\Seeders\PermissionSeeder;
@@ -34,7 +35,7 @@ class CreateUserCommand extends Command
 
     protected $description = 'Create a dashboard user (the password is prompted)';
 
-    public function handle(): int
+    public function handle(CreateUserAction $createUser): int
     {
         // Built-in roles must exist even when `db:seed` was never run.
         $this->callSilently('db:seed', ['--class' => PermissionSeeder::class, '--force' => true]);
@@ -66,14 +67,7 @@ class CreateUserCommand extends Command
 
         $validated = $validator->validated();
 
-        $user = (new User)->forceFill([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'password' => $validated['password'],
-            'email_verified_at' => now(),
-        ]);
-        $user->save();
-        $user->assignRole($validated['role']);
+        $user = $createUser->execute($validated['name'], $validated['email'], $validated['password'], [$validated['role']]);
 
         $this->info("Created user {$user->email} with role {$validated['role']}.");
 
