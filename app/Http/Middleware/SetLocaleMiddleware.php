@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
+use App\Services\SettingsRepositoryService;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Resolve the active UI locale from the user, cookie, or app default.
+ * Resolve the active UI locale from the user, cookie, project default, or app default.
  */
 class SetLocaleMiddleware
 {
@@ -27,7 +28,7 @@ class SetLocaleMiddleware
     }
 
     /**
-     * Preference order: authenticated user → cookie → config default.
+     * Preference order: authenticated user → cookie → project default → config default.
      */
     private function resolve(Request $request): string
     {
@@ -45,8 +46,7 @@ class SetLocaleMiddleware
             return $cookieLocale;
         }
 
-        $fallback = (string) config('app.locale', 'en');
-
-        return in_array($fallback, $available, true) ? $fallback : 'en';
+        // Always one of the available locales: the saved default, else the config default, else `en`.
+        return app(SettingsRepositoryService::class)->defaultLanguage();
     }
 }

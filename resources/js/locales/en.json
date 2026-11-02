@@ -432,7 +432,7 @@
             "oidcDescription": "Optional enterprise login via a standards-compliant OpenID Connect identity provider",
             "oidcEnabled": "Enable OIDC login",
             "oidcIssuer": "Issuer URL",
-            "oidcIssuerHint": "Base issuer (discovery at /.well-known/openid-configuration). Example: https://idp.example.com/realms/externa",
+            "oidcIssuerHint": "Base issuer (discovery at /.well-known/openid-configuration). Example: https://idp.example.com/realms/excubia",
             "oidcClientId": "Client ID",
             "oidcClientSecret": "Client secret",
             "oidcSecretConfiguredHint": "A client secret is already configured. Leave blank to keep it.",
@@ -611,7 +611,13 @@
             "integrationsNav": {
                 "breadcrumb": "Integrations",
                 "head": "Integrations"
-            }
+            },
+            "checksTitle": "Checks",
+            "checksDescription": "Report history and stale projects",
+            "reportsKeptPerProject": "Reports kept per project",
+            "reportsKeptPerProjectHint": "How many reports to keep for each project; older ones are removed.",
+            "staleAfterHours": "Stale after (hours)",
+            "staleAfterHoursHint": "Hours without a report before a project counts as stale."
         },
         "appearance": {
             "breadcrumb": "Appearance settings",
@@ -619,7 +625,7 @@
             "title": "Appearance settings",
             "description": "Update project branding and the default theme",
             "brandingTitle": "Branding",
-            "brandingDescription": "Project color, logo, and favicon used in the app chrome and on login",
+            "brandingDescription": "Project color used in the app chrome and on login",
             "projectColor": "Project color",
             "projectColorDark": "Project color (dark)",
             "projectLogo": "Project logo",
@@ -681,7 +687,7 @@
             "linkPulse": "Pulse",
             "linkHorizon": "Horizon",
             "flushTitle": "Flush caches",
-            "flushDescription": "Clear targeted caches. Public API flush bumps a global epoch so the next read is never stale.",
+            "flushDescription": "Clear targeted caches.",
             "flushPublicApiTitle": "Public API responses",
             "flushPublicApiDescription": "Invalidate versioned REST and GraphQL response caches for all collections.",
             "flushPublicApiButton": "Flush public API cache",

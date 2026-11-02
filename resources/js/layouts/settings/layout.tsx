@@ -15,9 +15,13 @@ import { PermissionEnum } from '@/enums/permission-enum';
 import { useCan } from '@/hooks/use-can';
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import { cn, toUrl } from '@/lib/utils';
-import { edit as editApplication } from '@/routes/application-settings';
 import { edit as editAppearance } from '@/routes/appearance';
+import { edit as editSidebar } from '@/routes/appearance/sidebar';
+import { edit as editPerformance } from '@/routes/performance';
 import { edit } from '@/routes/profile';
+import { edit as editProject } from '@/routes/project';
+import { edit as editLocalization } from '@/routes/project/localization';
+import { edit as editProjectSecurity } from '@/routes/project/security';
 import roles from '@/routes/roles';
 import { edit as editSecurity } from '@/routes/security';
 import type { NavItem } from '@/types';
@@ -53,18 +57,38 @@ export default function SettingsLayout({
             href: editSecurity(),
             icon: null,
         },
-        {
-            title: t('settings.layout.appearance'),
-            href: editAppearance(),
-            icon: null,
-        },
     ];
 
     const projectNavItems: NavItem[] = can(PermissionEnum.SettingsManage)
         ? [
               {
                   title: t('settings.layout.general'),
-                  href: editApplication(),
+                  href: editProject(),
+                  icon: null,
+              },
+              {
+                  title: t('settings.layout.localization'),
+                  href: editLocalization(),
+                  icon: null,
+              },
+              {
+                  title: t('settings.layout.authSecurity'),
+                  href: editProjectSecurity(),
+                  icon: null,
+              },
+              {
+                  title: t('settings.layout.appearance'),
+                  href: editAppearance(),
+                  icon: null,
+              },
+              {
+                  title: t('settings.layout.sidebar'),
+                  href: editSidebar(),
+                  icon: null,
+              },
+              {
+                  title: t('settings.layout.performance'),
+                  href: editPerformance(),
                   icon: null,
               },
           ]
@@ -81,7 +105,7 @@ export default function SettingsLayout({
         : [];
 
     const reportBugUrl =
-        projectSettings?.reportBugUrl?.trim() || DEFAULT_REPORT_BUG_URL;
+        projectSettings.reportBugUrl?.trim() || DEFAULT_REPORT_BUG_URL;
 
     if (typeof window === 'undefined') {
         return null;

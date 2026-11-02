@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Models\User;
 use App\Services\EffectivePermissionResolverService;
 use App\Services\SettingsRepositoryService;
+use App\Services\ThemePresetService;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -39,10 +40,11 @@ class HandleInertiaRequests extends Middleware
     public function share(Request $request): array
     {
         $user = $request->user();
+        $settings = app(SettingsRepositoryService::class);
 
         return [
             ...parent::share($request),
-            'name' => app(SettingsRepositoryService::class)->appName(),
+            'name' => $settings->appName(),
             'auth' => [
                 'user' => $user,
                 // Only hides UI: the server still checks every request.
@@ -52,6 +54,16 @@ class HandleInertiaRequests extends Middleware
             ],
             'locale' => app()->getLocale(),
             'availableLocales' => config('i18n.available_locales', ['en' => 'English']),
+            'projectSettings' => $settings->shared(),
+            // The saved theme, so the Appearance live preview can restore it when leaving the page.
+            'projectAppearance' => function (): array {
+                $theme = app(ThemePresetService::class)->current();
+
+                return [
+                    'themePreset' => $theme['themePreset'],
+                    'themeCss' => array_intersect_key($theme, array_flip(['light', 'dark', 'brandPrimary', 'brandPrimaryDark', 'brandPrimaryForeground', 'brandPrimaryDarkForeground'])),
+                ];
+            },
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
     }

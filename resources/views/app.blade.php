@@ -49,6 +49,40 @@
         <x-inertia::head>
             <title>{{ config('app.name', 'Laravel') }}</title>
         </x-inertia::head>
+
+        {{-- Theme preset CSS variables (+ optional custom brand hex via --brand-primary).
+             The id lets the Appearance live preview rewrite this block (resources/js/lib/theme-css.ts). --}}
+        @php
+            $themeCss = $projectThemeCss ?? null;
+            $themeLight = is_array($themeCss['light'] ?? null) ? $themeCss['light'] : [];
+            $themeDark = is_array($themeCss['dark'] ?? null) ? $themeCss['dark'] : [];
+            $brandPrimary = $themeCss['brandPrimary'] ?? null;
+            $brandPrimaryDark = $themeCss['brandPrimaryDark'] ?? $brandPrimary;
+            $brandPrimaryForeground = $themeCss['brandPrimaryForeground'] ?? null;
+            $brandPrimaryDarkForeground = $themeCss['brandPrimaryDarkForeground'] ?? $brandPrimaryForeground;
+        @endphp
+        @if ($themeLight !== [] || $themeDark !== [] || ! empty($brandPrimary))
+            <style id="excubia-theme-css">
+                :root {
+                    @foreach ($themeLight as $cssVar => $cssValue)
+                        --{{ $cssVar }}: {{ $cssValue }};
+                    @endforeach
+                    @if (! empty($brandPrimary))
+                        --brand-primary: {{ $brandPrimary }};
+                        --brand-primary-foreground: {{ $brandPrimaryForeground ?? '#ffffff' }};
+                        --brand-primary-dark: {{ $brandPrimaryDark ?? $brandPrimary }};
+                        --brand-primary-dark-foreground: {{ $brandPrimaryDarkForeground ?? $brandPrimaryForeground ?? '#ffffff' }};
+                    @endif
+                }
+                @if ($themeDark !== [])
+                .dark {
+                    @foreach ($themeDark as $cssVar => $cssValue)
+                        --{{ $cssVar }}: {{ $cssValue }};
+                    @endforeach
+                }
+                @endif
+            </style>
+        @endif
     </head>
     <body class="font-sans antialiased">
         <x-inertia::app />

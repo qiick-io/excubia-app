@@ -31,7 +31,7 @@ import { dashboard } from '@/routes';
 import groups from '@/routes/groups';
 import { edit as editProfile } from '@/routes/profile';
 import users from '@/routes/users';
-import type { NavItem, SidebarModuleSetting } from '@/types';
+import type { NavItem } from '@/types';
 
 type ModuleDef = {
     id: string;
@@ -82,15 +82,7 @@ export function AppSidebar() {
         [],
     );
 
-    const modules: SidebarModuleSetting[] =
-        projectSettings?.sidebarModules ??
-        Object.keys(moduleDefs).map((id) => ({
-            id,
-            enabled: true,
-            locked: id === 'dashboard' || id === 'settings',
-        }));
-
-    const visibleModules = modules
+    const visibleModules = projectSettings.sidebarModules
         .filter((module) => module.enabled)
         .map((module) => moduleDefs[module.id])
         .filter((def): def is ModuleDef => !!def)

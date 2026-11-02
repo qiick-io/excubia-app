@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enums\ThemePresetEnum;
 use App\Models\Setting;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Support\Facades\Crypt;
@@ -12,7 +13,8 @@ use Illuminate\Validation\Rules\Password;
 
 /**
  * Application settings stored in the `settings` table, merged over defaults, with typed getters
- * for the code that uses them (login, password rule, 2FA requirement, report history, SSO).
+ * for the code that uses them (login, password rule, 2FA requirement, report history, SSO,
+ * UI locale, default appearance, sidebar modules).
  *
  * Secrets (`oidc_client_secret`) are stored encrypted and left out of forEdit().
  *
@@ -22,7 +24,23 @@ class SettingsRepositoryService
 {
     public const PASSWORD_POLICIES = ['weak', 'medium', 'strong'];
 
+    public const APPEARANCES = ['system', 'light', 'dark'];
+
     public const SECRET_KEYS = ['oidc_client_secret'];
+
+    /**
+     * Main sidebar modules in their default order: the single source for the sidebar settings
+     * page, its validation and the shared `projectSettings.sidebarModules`. Locked modules are
+     * always enabled. A module added here shows up for existing installs next to its neighbour.
+     *
+     * @var list<array{id: string, locked: bool}>
+     */
+    public const SIDEBAR_MODULES = [
+        ['id' => 'dashboard', 'locked' => true],
+        ['id' => 'users', 'locked' => false],
+        ['id' => 'groups', 'locked' => false],
+        ['id' => 'settings', 'locked' => true],
+    ];
 
     /** @var array<string, mixed>|null */
     private ?array $values = null;
@@ -36,6 +54,13 @@ class SettingsRepositoryService
     {
         return [
             'app_name' => null,
+            'report_bug_url' => null,
+            'default_language' => $this->configLanguage(),
+            'default_appearance' => 'system',
+            'theme_preset' => ThemePresetEnum::default()->value,
+            'project_color' => null,
+            'project_color_dark' => null,
+            'sidebar_modules' => null,
             'password_policy' => app()->isProduction() ? 'strong' : 'weak',
             'login_max_attempts' => 5,
             'two_factor_required' => false,
@@ -78,6 +103,30 @@ class SettingsRepositoryService
         }
 
         return $values;
+    }
+
+    /**
+     * Only the given keys of forEdit(), for one settings page.
+     *
+     * @param  list<string>  $keys
+     * @return array<string, mixed>
+     */
+    public function forEditOnly(array $keys): array
+    {
+        return array_intersect_key($this->forEdit(), array_flip($keys));
+    }
+
+    /**
+     * Settings shared with every Inertia page (`projectSettings`).
+     *
+     * @return array{sidebarModules: list<array{id: string, enabled: bool, locked: bool}>, reportBugUrl: string|null}
+     */
+    public function shared(): array
+    {
+        return [
+            'sidebarModules' => $this->sidebarModules(),
+            'reportBugUrl' => $this->reportBugUrl(),
+        ];
     }
 
     /**
@@ -124,6 +173,102 @@ class SettingsRepositoryService
         $name = $this->all()['app_name'];
 
         return is_string($name) && trim($name) !== '' ? trim($name) : (string) config('app.name');
+    }
+
+    public function reportBugUrl(): ?string
+    {
+        return $this->string('report_bug_url');
+    }
+
+    /**
+     * Default UI locale for users without a personal or cookie choice.
+     */
+    public function defaultLanguage(): string
+    {
+        $language = $this->all()['default_language'];
+
+        return is_string($language) && in_array($language, $this->availableLanguages(), true)
+            ? $language
+            : $this->configLanguage();
+    }
+
+    /**
+     * Light/dark/system default for visitors without an `appearance` cookie.
+     */
+    public function defaultAppearance(): string
+    {
+        $appearance = $this->all()['default_appearance'];
+
+        return is_string($appearance) && in_array($appearance, self::APPEARANCES, true) ? $appearance : 'system';
+    }
+
+    public function themePreset(): string
+    {
+        $preset = $this->all()['theme_preset'];
+
+        return ThemePresetEnum::tryFromNullable(is_string($preset) ? $preset : null)->value;
+    }
+
+    /**
+     * Custom brand colour (`#RRGGBB`) that overrides the preset primary, or null.
+     */
+    public function projectColor(): ?string
+    {
+        return $this->hexColor('project_color');
+    }
+
+    /**
+     * Custom dark-mode brand colour, or null (the light one is used then).
+     */
+    public function projectColorDark(): ?string
+    {
+        return $this->hexColor('project_color_dark');
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function sidebarModuleIds(): array
+    {
+        return array_column(self::SIDEBAR_MODULES, 'id');
+    }
+
+    /**
+     * Sidebar modules in the saved order with their visibility. Unknown stored ids are dropped,
+     * locked modules are forced on, and modules missing from the stored list (new ones) are
+     * inserted after their default predecessor.
+     *
+     * @return list<array{id: string, enabled: bool, locked: bool}>
+     */
+    public function sidebarModules(): array
+    {
+        $locked = array_column(self::SIDEBAR_MODULES, 'locked', 'id');
+        $stored = $this->all()['sidebar_modules'];
+        $modules = [];
+
+        foreach (is_array($stored) ? $stored : [] as $entry) {
+            $id = is_array($entry) ? ($entry['id'] ?? null) : null;
+
+            if (! is_string($id) || ! array_key_exists($id, $locked) || array_key_exists($id, $modules)) {
+                continue;
+            }
+
+            $modules[$id] = ['id' => $id, 'enabled' => $locked[$id] || (bool) ($entry['enabled'] ?? true), 'locked' => $locked[$id]];
+        }
+
+        $previousId = null;
+
+        foreach (self::SIDEBAR_MODULES as $default) {
+            if (! array_key_exists($default['id'], $modules)) {
+                $module = ['id' => $default['id'], 'enabled' => true, 'locked' => $default['locked']];
+                $position = $previousId === null ? 0 : (int) array_search($previousId, array_keys($modules), true) + 1;
+                $modules = array_slice($modules, 0, $position, true) + [$default['id'] => $module] + array_slice($modules, $position, null, true);
+            }
+
+            $previousId = $default['id'];
+        }
+
+        return array_values($modules);
     }
 
     public function passwordPolicy(): string
@@ -219,6 +364,28 @@ class SettingsRepositoryService
             && $this->oidcIssuer() !== null
             && $this->oidcClientId() !== null
             && $this->oidcClientSecret() !== null;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function availableLanguages(): array
+    {
+        return array_keys((array) config('i18n.available_locales', ['en' => 'English']));
+    }
+
+    private function configLanguage(): string
+    {
+        $locale = (string) config('app.locale', 'en');
+
+        return in_array($locale, $this->availableLanguages(), true) ? $locale : 'en';
+    }
+
+    private function hexColor(string $key): ?string
+    {
+        $value = $this->string($key);
+
+        return $value !== null && preg_match('/^#[0-9A-Fa-f]{6}$/', $value) === 1 ? $value : null;
     }
 
     private function string(string $key): ?string
