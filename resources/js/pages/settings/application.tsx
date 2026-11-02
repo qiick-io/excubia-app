@@ -1,10 +1,9 @@
 import { Form, Head } from '@inertiajs/react';
-import { useState } from 'react';
 import ApplicationSettingsController from '@/actions/App/Http/Controllers/ApplicationSettingsController';
+import BooleanField from '@/components/boolean-field';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -23,6 +22,12 @@ type ApplicationSettings = {
     two_factor_required: boolean;
     reports_kept_per_project: number;
     stale_after_hours: number;
+    oidc_enabled: boolean;
+    oidc_issuer: string | null;
+    oidc_client_id: string | null;
+    has_oidc_client_secret: boolean;
+    oidc_button_label: string | null;
+    oidc_jit_provisioning: boolean;
 };
 
 /**
@@ -31,14 +36,12 @@ type ApplicationSettings = {
 export default function ApplicationSettingsPage({
     settings,
     passwordPolicies,
+    oidcCallbackUrl,
 }: {
     settings: ApplicationSettings;
     passwordPolicies: string[];
+    oidcCallbackUrl: string;
 }) {
-    const [isTwoFactorRequired, setIsTwoFactorRequired] = useState(
-        settings.two_factor_required,
-    );
-
     return (
         <>
             <Head title="Application settings" />
@@ -124,24 +127,11 @@ export default function ApplicationSettingsPage({
                                     message={errors.login_max_attempts}
                                 />
                             </div>
-                            <div className="flex items-center gap-3">
-                                <input
-                                    type="hidden"
-                                    name="two_factor_required"
-                                    value={isTwoFactorRequired ? '1' : '0'}
-                                />
-                                <Checkbox
-                                    id="two_factor_required"
-                                    checked={isTwoFactorRequired}
-                                    onCheckedChange={(checked) =>
-                                        setIsTwoFactorRequired(checked === true)
-                                    }
-                                />
-                                <Label htmlFor="two_factor_required">
-                                    Require two-factor authentication or a
-                                    passkey
-                                </Label>
-                            </div>
+                            <BooleanField
+                                name="two_factor_required"
+                                label="Require two-factor authentication or a passkey"
+                                defaultChecked={settings.two_factor_required}
+                            />
                             <InputError message={errors.two_factor_required} />
                         </div>
 
@@ -187,6 +177,85 @@ export default function ApplicationSettingsPage({
                                     message={errors.stale_after_hours}
                                 />
                             </div>
+                        </div>
+
+                        <div className="space-y-6">
+                            <Heading
+                                variant="small"
+                                title="SSO"
+                                description={`Optional OIDC login with any standard provider. Redirect URI: ${oidcCallbackUrl}`}
+                            />
+                            <BooleanField
+                                name="oidc_enabled"
+                                label="Enable SSO login"
+                                defaultChecked={settings.oidc_enabled}
+                            />
+                            <InputError message={errors.oidc_enabled} />
+                            <div className="grid gap-2">
+                                <Label htmlFor="oidc_issuer">Issuer URL</Label>
+                                <Input
+                                    id="oidc_issuer"
+                                    name="oidc_issuer"
+                                    type="url"
+                                    defaultValue={settings.oidc_issuer ?? ''}
+                                    placeholder="https://idp.example.com/realms/acme"
+                                />
+                                <InputError message={errors.oidc_issuer} />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="oidc_client_id">
+                                    Client ID
+                                </Label>
+                                <Input
+                                    id="oidc_client_id"
+                                    name="oidc_client_id"
+                                    defaultValue={settings.oidc_client_id ?? ''}
+                                />
+                                <InputError message={errors.oidc_client_id} />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="oidc_client_secret">
+                                    Client secret
+                                </Label>
+                                <Input
+                                    id="oidc_client_secret"
+                                    name="oidc_client_secret"
+                                    type="password"
+                                    autoComplete="off"
+                                    placeholder={
+                                        settings.has_oidc_client_secret
+                                            ? 'Saved. Leave empty to keep it.'
+                                            : ''
+                                    }
+                                />
+                                <InputError
+                                    message={errors.oidc_client_secret}
+                                />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="oidc_button_label">
+                                    Button label
+                                </Label>
+                                <Input
+                                    id="oidc_button_label"
+                                    name="oidc_button_label"
+                                    defaultValue={
+                                        settings.oidc_button_label ?? ''
+                                    }
+                                    placeholder="Sign in with SSO"
+                                />
+                                <InputError
+                                    message={errors.oidc_button_label}
+                                />
+                            </div>
+                            <BooleanField
+                                name="oidc_jit_provisioning"
+                                label="Create unknown users on first SSO login (role reader)"
+                                defaultChecked={settings.oidc_jit_provisioning}
+                            />
+                            <InputError
+                                message={errors.oidc_jit_provisioning}
+                            />
                         </div>
 
                         <Button disabled={processing}>Save</Button>

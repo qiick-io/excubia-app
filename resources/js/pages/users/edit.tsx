@@ -1,6 +1,6 @@
 import { Form, Head } from '@inertiajs/react';
-import { useState } from 'react';
 import UserController from '@/actions/App/Http/Controllers/UserController';
+import BooleanField from '@/components/boolean-field';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
@@ -21,7 +21,6 @@ export default function UserEdit({
     user: ManagedUser | null;
     roles: string[];
 }) {
-    const [isActive, setIsActive] = useState(user?.is_active ?? true);
     const form = user
         ? UserController.update.form(user.id)
         : UserController.store.form();
@@ -102,23 +101,11 @@ export default function UserEdit({
                                 <InputError message={errors.roles} />
                             </fieldset>
 
-                            <div className="flex items-center gap-3">
-                                <input
-                                    type="hidden"
-                                    name="is_active"
-                                    value={isActive ? '1' : '0'}
-                                />
-                                <Checkbox
-                                    id="is_active"
-                                    checked={isActive}
-                                    onCheckedChange={(checked) =>
-                                        setIsActive(checked === true)
-                                    }
-                                />
-                                <Label htmlFor="is_active">
-                                    Active (can sign in)
-                                </Label>
-                            </div>
+                            <BooleanField
+                                name="is_active"
+                                label="Active (can sign in)"
+                                defaultChecked={user?.is_active ?? true}
+                            />
                             <InputError message={errors.is_active} />
 
                             <Button disabled={processing}>Save</Button>

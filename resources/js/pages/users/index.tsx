@@ -11,6 +11,7 @@ export type ManagedUser = {
     name: string;
     email: string;
     is_active: boolean;
+    is_sso_linked: boolean;
     roles: string[];
     can_update: boolean;
     can_delete: boolean;
@@ -48,6 +49,9 @@ export default function UsersIndex({ users }: { users: ManagedUser[] }) {
                                         <Badge variant="destructive">
                                             Inactive
                                         </Badge>
+                                    )}
+                                    {user.is_sso_linked && (
+                                        <Badge variant="outline">SSO</Badge>
                                     )}
                                     {user.roles.map((role) => (
                                         <Badge key={role} variant="secondary">
