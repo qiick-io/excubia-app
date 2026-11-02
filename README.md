@@ -12,17 +12,18 @@
 
 **Excubia App** is the optional, open-source (MIT), self-hosted Laravel dashboard of [Excubia](https://github.com/qiick-io/excubia-core), part of the [qiick](https://qiick.io) suite. It keeps the health of all your Laravel projects in one place: PHP / Laravel / Node end of life, known vulnerabilities, abandoned and stale packages, next-major blockers and the suggested upgrade order.
 
-It is built on [`qiick/excubia-core`](https://github.com/qiick-io/excubia-core), the Composer package that ships the `excubia` CLI and the checks engine. The app does not reimplement any check: it registers projects, runs the core checks against them, stores the reports and shows them on a dashboard.
+It is built on [`qiick/excubia-core`](https://github.com/qiick-io/excubia-core), the Composer package that ships the `excubia` CLI and the checks engine. The app does not reimplement any check. Each monitored project installs `qiick/excubia-core` and pushes its reports to the app with a per-project token, so projects can live anywhere. The app stores the reports and shows them on a dashboard.
 
-> **Status:** early development. Nothing is released yet. See the [v0.1.0 milestone](https://github.com/qiick-io/excubia-app/milestone/1) for the plan.
+> **Status:** early development. Nothing is released yet and it is not ready for production. See the [v0.1.0 milestone](https://github.com/qiick-io/excubia-app/milestone/1) for the plan.
 
 ## Planned for v0.1.0
 
-- Register projects and run the Excubia checks against them, on demand and on a schedule
-- Dashboard: worst severity per project, findings, upgrade plan, report history
-- Single-admin login, self-hosted, no telemetry
+- Register projects with a push token and receive the reports they send (`excubia push`)
+- Dashboard: worst severity per project, findings, upgrade plan, report history, stale projects
+- Private login with users, groups, roles and permissions, and optional OIDC single sign-on (same model as Externa)
+- Self-hosted, no telemetry
 
-Later: uptime, connectors and opt-in runtime monitoring (fed by `qiick/excubia-core`), and a hosted version on qiick Cloud.
+Later: opt-in runtime monitoring and exception tracking (sent by `qiick/excubia-core`), alerts, and a hosted version on qiick Cloud.
 
 ## Stack
 
