@@ -18,6 +18,7 @@ it('creates a user from the CLI who can log in', function () {
         ->expectsQuestion('Name', 'Ada Lovelace')
         ->expectsQuestion('Email', 'Ada@Example.com')
         ->expectsQuestion('Password', 'correct-horse-battery')
+        ->expectsChoice('Role', 'super-admin', ['admin', 'reader', 'super-admin'])
         ->assertSuccessful();
 
     $user = User::query()->where('email', 'ada@example.com')->firstOrFail();
@@ -38,6 +39,7 @@ it('refuses a duplicate email from the CLI', function () {
 
     $this->artisan('excubia:create-user', ['--name' => 'Ada', '--email' => 'ada@example.com'])
         ->expectsQuestion('Password', 'correct-horse-battery')
+        ->expectsChoice('Role', 'reader', ['admin', 'reader', 'super-admin'])
         ->assertFailed();
 
     expect(User::query()->count())->toBe(1);

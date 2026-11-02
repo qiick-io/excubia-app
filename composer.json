@@ -18,7 +18,8 @@
         "laravel/framework": "^13.17",
         "laravel/tinker": "^3.0",
         "laravel/wayfinder": "^0.1.14",
-        "qiick/excubia-core": "^0.1.1"
+        "qiick/excubia-core": "^0.1.1",
+        "spatie/laravel-permission": "^7.2"
     },
     "require-dev": {
         "fakerphp/faker": "^1.24",

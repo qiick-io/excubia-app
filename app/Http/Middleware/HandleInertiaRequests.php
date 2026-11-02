@@ -2,8 +2,12 @@
 
 namespace App\Http\Middleware;
 
+use App\Enums\PermissionEnum;
+use App\Enums\RoleEnum;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
+use Spatie\Permission\Models\Permission;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -35,13 +39,30 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $user = $request->user();
+
         return [
             ...parent::share($request),
             'name' => config('app.name'),
             'auth' => [
-                'user' => $request->user(),
+                'user' => $user,
+                'permissions' => $user instanceof User ? $this->permissionsFor($user) : [],
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
+    }
+
+    /**
+     * Permission names the UI uses to hide what the user cannot do. The server still checks every request.
+     *
+     * @return list<string>
+     */
+    private function permissionsFor(User $user): array
+    {
+        if ($user->hasRole(RoleEnum::SuperAdmin->value)) {
+            return PermissionEnum::values();
+        }
+
+        return array_values($user->getAllPermissions()->map(fn (Permission $permission): string => $permission->name)->all());
     }
 }
