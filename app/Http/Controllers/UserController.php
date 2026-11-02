@@ -117,7 +117,7 @@ class UserController extends Controller
     }
 
     /**
-     * @return array{id: int, name: string, email: string, is_active: bool, roles: list<string>, can_update: bool, can_delete: bool}
+     * @return array{id: int, name: string, email: string, is_active: bool, is_sso_linked: bool, roles: list<string>, can_update: bool, can_delete: bool}
      */
     private function present(User $user): array
     {
@@ -126,6 +126,7 @@ class UserController extends Controller
             'name' => $user->name,
             'email' => $user->email,
             'is_active' => $user->is_active,
+            'is_sso_linked' => $user->oidc_sub !== null,
             'roles' => array_values($user->getRoleNames()->all()),
             'can_update' => Gate::allows('update', $user),
             'can_delete' => Gate::allows('delete', $user),

@@ -5,18 +5,24 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\Setting;
+use Illuminate\Contracts\Encryption\DecryptException;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rules\Password;
 
 /**
  * Application settings stored in the `settings` table, merged over defaults, with typed getters
- * for the code that uses them (login, password rule, 2FA requirement, report history).
+ * for the code that uses them (login, password rule, 2FA requirement, report history, SSO).
+ *
+ * Secrets (`oidc_client_secret`) are stored encrypted and left out of forEdit().
  *
  * Registered as a singleton; values are read once per instance and reloaded after a write.
  */
 class SettingsRepositoryService
 {
     public const PASSWORD_POLICIES = ['weak', 'medium', 'strong'];
+
+    public const SECRET_KEYS = ['oidc_client_secret'];
 
     /** @var array<string, mixed>|null */
     private ?array $values = null;
@@ -35,6 +41,12 @@ class SettingsRepositoryService
             'two_factor_required' => false,
             'reports_kept_per_project' => config('excubia.reports_kept_per_project'),
             'stale_after_hours' => config('excubia.stale_after_hours'),
+            'oidc_enabled' => false,
+            'oidc_issuer' => null,
+            'oidc_client_id' => null,
+            'oidc_client_secret' => null,
+            'oidc_button_label' => null,
+            'oidc_jit_provisioning' => false,
         ];
     }
 
@@ -49,6 +61,46 @@ class SettingsRepositoryService
             $this->defaults(),
             Setting::query()->pluck('value', 'key')->all(),
         );
+    }
+
+    /**
+     * Settings for the edit page: secrets replaced by `has_<key>` flags, never sent in plain text.
+     *
+     * @return array<string, mixed>
+     */
+    public function forEdit(): array
+    {
+        $values = $this->all();
+
+        foreach (self::SECRET_KEYS as $key) {
+            $values['has_'.$key] = is_string($values[$key]) && $values[$key] !== '';
+            unset($values[$key]);
+        }
+
+        return $values;
+    }
+
+    /**
+     * Saves the given keys in one transaction. Secret keys are encrypted; a null secret keeps
+     * the stored one.
+     *
+     * @param  array<string, mixed>  $values
+     */
+    public function save(array $values): void
+    {
+        foreach (self::SECRET_KEYS as $key) {
+            if (! array_key_exists($key, $values)) {
+                continue;
+            }
+
+            if (is_string($values[$key]) && $values[$key] !== '') {
+                $values[$key] = Crypt::encryptString($values[$key]);
+            } else {
+                unset($values[$key]);
+            }
+        }
+
+        $this->setMany($values);
     }
 
     /**
@@ -111,6 +163,69 @@ class SettingsRepositoryService
     public function staleAfterHours(): int
     {
         return $this->integer('stale_after_hours', 1, 8760);
+    }
+
+    public function isOidcEnabled(): bool
+    {
+        return (bool) $this->all()['oidc_enabled'];
+    }
+
+    public function oidcIssuer(): ?string
+    {
+        return $this->string('oidc_issuer');
+    }
+
+    public function oidcClientId(): ?string
+    {
+        return $this->string('oidc_client_id');
+    }
+
+    public function oidcButtonLabel(): ?string
+    {
+        return $this->string('oidc_button_label');
+    }
+
+    public function isOidcJitProvisioningEnabled(): bool
+    {
+        return (bool) $this->all()['oidc_jit_provisioning'];
+    }
+
+    /**
+     * Decrypted client secret, or null when unset or unreadable (for example after an APP_KEY change).
+     */
+    public function oidcClientSecret(): ?string
+    {
+        $stored = $this->string('oidc_client_secret');
+
+        if ($stored === null) {
+            return null;
+        }
+
+        try {
+            $plain = Crypt::decryptString($stored);
+        } catch (DecryptException) {
+            return null;
+        }
+
+        return $plain !== '' ? $plain : null;
+    }
+
+    /**
+     * SSO is enabled and fully configured, so the login page shows the button.
+     */
+    public function isOidcLoginAvailable(): bool
+    {
+        return $this->isOidcEnabled()
+            && $this->oidcIssuer() !== null
+            && $this->oidcClientId() !== null
+            && $this->oidcClientSecret() !== null;
+    }
+
+    private function string(string $key): ?string
+    {
+        $value = $this->all()[$key];
+
+        return is_string($value) && trim($value) !== '' ? trim($value) : null;
     }
 
     private function integer(string $key, int $min, int $max): int

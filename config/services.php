@@ -28,6 +28,13 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    // Docker testing only: browser and container reach the IdP on different hosts.
+    'oidc' => [
+        'discovery_base' => env('OIDC_DISCOVERY_BASE'),
+        'server_origin' => env('OIDC_SERVER_ORIGIN'),
+        'allow_private_hosts' => (bool) env('OIDC_ALLOW_PRIVATE_HOSTS', false),
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),

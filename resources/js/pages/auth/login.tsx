@@ -7,6 +7,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
+import { redirect as oidcRedirect } from '@/routes/auth/oidc';
 import { store } from '@/routes/login';
 import { request } from '@/routes/password';
 import PasskeyVerify from '@/components/passkey-verify';
@@ -14,14 +15,30 @@ import PasskeyVerify from '@/components/passkey-verify';
 type Props = {
     status?: string;
     canResetPassword: boolean;
+    canUseOidc: boolean;
+    oidcButtonLabel: string | null;
 };
 
-export default function Login({ status, canResetPassword }: Props) {
+export default function Login({
+    status,
+    canResetPassword,
+    canUseOidc,
+    oidcButtonLabel,
+}: Props) {
     return (
         <>
             <Head title="Log in" />
 
             <PasskeyVerify />
+
+            {canUseOidc && (
+                <Button variant="outline" className="w-full" asChild>
+                    {/* Full page load: the IdP redirect must leave the Inertia app. */}
+                    <a href={oidcRedirect.url()}>
+                        {oidcButtonLabel ?? 'Sign in with SSO'}
+                    </a>
+                </Button>
+            )}
 
             <Form
                 {...store.form()}

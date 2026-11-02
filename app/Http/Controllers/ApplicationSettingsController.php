@@ -22,14 +22,15 @@ class ApplicationSettingsController extends Controller
         Gate::authorize('update', Setting::class);
 
         return Inertia::render('settings/application', [
-            'settings' => $settings->all(),
+            'settings' => $settings->forEdit(),
+            'oidcCallbackUrl' => route('auth.oidc.callback'),
             'passwordPolicies' => SettingsRepositoryService::PASSWORD_POLICIES,
         ]);
     }
 
     public function update(UpdateApplicationSettingsRequest $request, SettingsRepositoryService $settings): RedirectResponse
     {
-        $settings->setMany($request->settings());
+        $settings->save($request->settings());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Settings saved.')]);
 
