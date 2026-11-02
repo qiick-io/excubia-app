@@ -2,11 +2,17 @@
 
 namespace App\Providers;
 
+use App\Enums\PermissionEnum;
+use App\Enums\RoleEnum;
+use App\Models\User;
+use App\Policies\RolePolicy;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use Spatie\Permission\Models\Role;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -24,6 +30,19 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+        $this->configureAuthorization();
+    }
+
+    /**
+     * Super-admin passes every permission check; policies still apply their own rules
+     * (for example, built-in roles stay read-only for everyone).
+     */
+    protected function configureAuthorization(): void
+    {
+        Gate::policy(Role::class, RolePolicy::class);
+
+        Gate::before(fn (User $user, string $ability): ?bool => PermissionEnum::tryFrom($ability) !== null
+            && $user->hasRole(RoleEnum::SuperAdmin->value) ? true : null);
     }
 
     /**

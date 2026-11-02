@@ -12,6 +12,8 @@ export type User = {
 
 export type Auth = {
     user: User;
+    /** Permission names (`resource.action`) the user holds; the server still checks every request. */
+    permissions: string[];
 };
 
 export type Passkey = {
