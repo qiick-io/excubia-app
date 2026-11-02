@@ -1,3 +1,4 @@
+import type { ProjectAppearance } from '@/types/appearance';
 import type { Auth } from '@/types/auth';
 import type { SharedProjectSettings } from '@/types/project-settings';
 
@@ -15,7 +16,8 @@ declare module '@inertiajs/core' {
             locale: string;
             availableLocales: Record<string, string>;
             sidebarOpen: boolean;
-            projectSettings?: SharedProjectSettings;
+            projectSettings: SharedProjectSettings;
+            projectAppearance: ProjectAppearance;
             [key: string]: unknown;
         };
     }

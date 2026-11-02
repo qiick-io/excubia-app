@@ -1,9 +1,15 @@
 <?php
 
-use App\Http\Controllers\ApplicationSettingsController;
+use App\Http\Controllers\Settings\AppearanceSettingsController;
+use App\Http\Controllers\Settings\AppearanceSidebarSettingsController;
 use App\Http\Controllers\Settings\LocaleController;
+use App\Http\Controllers\Settings\PerformanceSettingsController;
 use App\Http\Controllers\Settings\ProfileController;
+use App\Http\Controllers\Settings\ProjectLocalizationSettingsController;
+use App\Http\Controllers\Settings\ProjectSecuritySettingsController;
+use App\Http\Controllers\Settings\ProjectSettingsController;
 use App\Http\Controllers\Settings\SecurityController;
+use App\Models\Setting;
 use Illuminate\Auth\Middleware\RequirePassword;
 use Illuminate\Support\Facades\Route;
 
@@ -26,10 +32,27 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->middleware('throttle:6,1')
         ->name('user-password.update');
 
-    Route::inertia('settings/appearance', 'settings/appearance')->name('appearance.edit');
+    // Project settings, as in externa-core, behind `settings.manage` (SettingPolicy).
+    Route::middleware('can:update,'.Setting::class)->group(function () {
+        Route::get('settings/project', [ProjectSettingsController::class, 'edit'])->name('project.edit');
+        Route::put('settings/project', [ProjectSettingsController::class, 'update'])->name('project.update');
 
-    Route::get('settings/application', [ApplicationSettingsController::class, 'edit'])->name('application-settings.edit');
-    Route::put('settings/application', [ApplicationSettingsController::class, 'update'])->name('application-settings.update');
+        Route::get('settings/project/localization', [ProjectLocalizationSettingsController::class, 'edit'])->name('project.localization.edit');
+        Route::put('settings/project/localization', [ProjectLocalizationSettingsController::class, 'update'])->name('project.localization.update');
+
+        Route::get('settings/project/security', [ProjectSecuritySettingsController::class, 'edit'])->name('project.security.edit');
+        Route::put('settings/project/security', [ProjectSecuritySettingsController::class, 'update'])->name('project.security.update');
+
+        Route::get('settings/appearance', [AppearanceSettingsController::class, 'edit'])->name('appearance.edit');
+        Route::put('settings/appearance', [AppearanceSettingsController::class, 'update'])->name('appearance.update');
+
+        Route::get('settings/appearance/sidebar', [AppearanceSidebarSettingsController::class, 'edit'])->name('appearance.sidebar.edit');
+        Route::put('settings/appearance/sidebar', [AppearanceSidebarSettingsController::class, 'update'])->name('appearance.sidebar.update');
+
+        Route::get('settings/performance', [PerformanceSettingsController::class, 'edit'])->name('performance.edit');
+        Route::post('settings/performance/flush-spatie-permissions', [PerformanceSettingsController::class, 'flushSpatiePermissions'])
+            ->name('performance.flush-spatie-permissions');
+    });
 });
 
 Route::get('.well-known/passkey-endpoints', function () {

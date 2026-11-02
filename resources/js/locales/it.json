@@ -432,7 +432,7 @@
             "oidcDescription": "Accesso enterprise opzionale tramite un identity provider OpenID Connect conforme",
             "oidcEnabled": "Abilita login OIDC",
             "oidcIssuer": "URL issuer",
-            "oidcIssuerHint": "Issuer di base (discovery su /.well-known/openid-configuration). Esempio: https://idp.example.com/realms/externa",
+            "oidcIssuerHint": "Issuer di base (discovery su /.well-known/openid-configuration). Esempio: https://idp.example.com/realms/excubia",
             "oidcClientId": "Client ID",
             "oidcClientSecret": "Client secret",
             "oidcSecretConfiguredHint": "Un client secret è già configurato. Lascia vuoto per mantenerlo.",
@@ -611,7 +611,13 @@
             "integrationsNav": {
                 "breadcrumb": "Integrazioni",
                 "head": "Integrazioni"
-            }
+            },
+            "checksTitle": "Controlli",
+            "checksDescription": "Cronologia dei report e progetti obsoleti",
+            "reportsKeptPerProject": "Report conservati per progetto",
+            "reportsKeptPerProjectHint": "Quanti report conservare per ogni progetto; i più vecchi vengono rimossi.",
+            "staleAfterHours": "Obsoleto dopo (ore)",
+            "staleAfterHoursHint": "Ore senza report prima che un progetto sia considerato obsoleto."
         },
         "appearance": {
             "breadcrumb": "Impostazioni aspetto",
@@ -619,7 +625,7 @@
             "title": "Impostazioni aspetto",
             "description": "Aggiorna il branding del progetto e il tema predefinito",
             "brandingTitle": "Branding",
-            "brandingDescription": "Colore, logo e favicon usati nell'interfaccia e al login",
+            "brandingDescription": "Colore usato nell'interfaccia e al login",
             "projectColor": "Colore progetto",
             "projectColorDark": "Colore progetto (scuro)",
             "projectLogo": "Logo progetto",
@@ -681,7 +687,7 @@
             "linkPulse": "Pulse",
             "linkHorizon": "Horizon",
             "flushTitle": "Svuota cache",
-            "flushDescription": "Cancella cache mirate. Lo svuotamento della public API incrementa un'epoca globale così la prossima lettura non è mai stale.",
+            "flushDescription": "Cancella cache mirate.",
             "flushPublicApiTitle": "Risposte public API",
             "flushPublicApiDescription": "Invalida le cache versionate delle risposte REST e GraphQL per tutte le collection.",
             "flushPublicApiButton": "Svuota cache public API",

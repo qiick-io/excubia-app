@@ -82,11 +82,12 @@ it('stores the client secret encrypted and never shares it', function () {
         ->and(app(SettingsRepositoryService::class)->oidcClientSecret())->toBe('super-secret');
 
     $this->actingAs(User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value))
-        ->get(route('application-settings.edit'))
+        ->get(route('project.security.edit'))
         ->assertDontSee('super-secret')
         ->assertInertia(fn (Assert $page) => $page
-            ->missing('settings.oidc_client_secret')
-            ->where('settings.has_oidc_client_secret', true));
+            ->component('settings/project/security')
+            ->missing('project.oidc_client_secret')
+            ->where('project.has_oidc_client_secret', true));
 });
 
 it('redirects to the authorize endpoint from discovery, without real network', function () {
@@ -168,12 +169,10 @@ it('creates a reader for an unknown user when JIT is on', function () {
 
 it('validates the SSO settings', function () {
     $this->actingAs(User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value))
-        ->put(route('application-settings.update'), [
+        ->put(route('project.security.update'), [
             'password_policy' => 'weak',
             'login_max_attempts' => 5,
             'two_factor_required' => false,
-            'reports_kept_per_project' => 30,
-            'stale_after_hours' => 36,
             'oidc_enabled' => true,
             'oidc_issuer' => 'not a url',
             'oidc_client_id' => '',

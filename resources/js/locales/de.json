@@ -432,7 +432,7 @@
             "oidcDescription": "Optionale Enterprise-Anmeldung über einen OpenID-Connect-konformen Identity Provider",
             "oidcEnabled": "OIDC-Login aktivieren",
             "oidcIssuer": "Issuer-URL",
-            "oidcIssuerHint": "Basis-Issuer (Discovery unter /.well-known/openid-configuration). Beispiel: https://idp.example.com/realms/externa",
+            "oidcIssuerHint": "Basis-Issuer (Discovery unter /.well-known/openid-configuration). Beispiel: https://idp.example.com/realms/excubia",
             "oidcClientId": "Client-ID",
             "oidcClientSecret": "Client-Secret",
             "oidcSecretConfiguredHint": "Ein Client-Secret ist bereits konfiguriert. Leer lassen, um es zu behalten.",
@@ -611,7 +611,13 @@
             "integrationsNav": {
                 "breadcrumb": "Integrationen",
                 "head": "Integrationen"
-            }
+            },
+            "checksTitle": "Prüfungen",
+            "checksDescription": "Berichtsverlauf und veraltete Projekte",
+            "reportsKeptPerProject": "Aufbewahrte Berichte pro Projekt",
+            "reportsKeptPerProjectHint": "Wie viele Berichte pro Projekt aufbewahrt werden; ältere werden entfernt.",
+            "staleAfterHours": "Veraltet nach (Stunden)",
+            "staleAfterHoursHint": "Stunden ohne Bericht, bevor ein Projekt als veraltet gilt."
         },
         "appearance": {
             "breadcrumb": "Darstellungseinstellungen",
@@ -619,7 +625,7 @@
             "title": "Darstellungseinstellungen",
             "description": "Projekt-Branding und Standard-Theme aktualisieren",
             "brandingTitle": "Branding",
-            "brandingDescription": "Projektfarbe, Logo und Favicon für App-Oberfläche und Login",
+            "brandingDescription": "Projektfarbe für App-Oberfläche und Login",
             "projectColor": "Projektfarbe",
             "projectColorDark": "Projektfarbe (dunkel)",
             "projectLogo": "Projektlogo",
