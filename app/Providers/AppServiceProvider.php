@@ -6,6 +6,7 @@ use App\Enums\PermissionEnum;
 use App\Models\User;
 use App\Policies\RolePolicy;
 use App\Services\EffectivePermissionResolverService;
+use App\Services\SettingsRepositoryService;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -21,7 +22,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(SettingsRepositoryService::class);
     }
 
     /**
@@ -56,14 +57,6 @@ class AppServiceProvider extends ServiceProvider
             app()->isProduction(),
         );
 
-        Password::defaults(fn (): ?Password => app()->isProduction()
-            ? Password::min(12)
-                ->mixedCase()
-                ->letters()
-                ->numbers()
-                ->symbols()
-                ->uncompromised()
-            : null,
-        );
+        Password::defaults(fn (): Password => app(SettingsRepositoryService::class)->passwordRule());
     }
 }
