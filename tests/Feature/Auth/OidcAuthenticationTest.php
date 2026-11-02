@@ -187,8 +187,8 @@ it('shows SSO-linked users in the user list', function () {
     User::factory()->create(['name' => 'A linked', 'oidc_sub' => 'sub-abc']);
 
     $this->actingAs(User::factory()->create(['name' => 'B local'])->assignRole(RoleEnum::Admin->value))
-        ->get(route('users.index'))
+        ->get(route('users.index', ['sort' => 'name', 'direction' => 'asc']))
         ->assertInertia(fn (Assert $page) => $page
-            ->where('users.0.is_sso_linked', true)
-            ->where('users.1.is_sso_linked', false));
+            ->where('users.data.0.is_sso_linked', true)
+            ->where('users.data.1.is_sso_linked', false));
 });

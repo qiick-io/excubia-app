@@ -6,31 +6,32 @@ namespace App\Http\Controllers;
 
 use App\Actions\SaveRoleAction;
 use App\Enums\PermissionEnum;
-use App\Enums\RoleEnum;
+use App\Http\Requests\ListQueryRequest;
 use App\Http\Requests\RoleRequest;
+use App\Http\Resources\RoleResource;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
-use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
 /**
- * Admin pages for roles. Built-in roles are shown read-only; custom roles can be edited and deleted.
+ * Settings pages for roles (`/settings/roles`). Built-in roles are shown read-only; custom
+ * roles can be edited and deleted.
  */
 class RoleController extends Controller
 {
-    public function index(): Response
+    public function index(ListQueryRequest $request): Response
     {
         Gate::authorize('viewAny', Role::class);
 
-        return Inertia::render('roles/index', [
-            'roles' => Role::query()
-                ->with('permissions:id,name')
-                ->withCount('users')
+        return Inertia::render('admin/roles/index', [
+            'roles' => RoleResource::collection(Role::query()
+                ->withCount('permissions')
                 ->orderBy('name')
-                ->get()
-                ->map(fn (Role $role): array => $this->present($role)),
+                ->paginate($request->perPage())
+                ->withQueryString()),
         ]);
     }
 
@@ -77,26 +78,23 @@ class RoleController extends Controller
         return to_route('roles.index');
     }
 
+    /**
+     * The role form with permissions grouped by resource (`users.manage` → `users`).
+     */
     private function form(?Role $role): Response
     {
-        return Inertia::render('roles/edit', [
-            'role' => $role === null ? null : $this->present($role),
-            'permissions' => PermissionEnum::values(),
+        return Inertia::render('admin/roles/form', [
+            // Resolved so Inertia gets a flat object (not { data: ... }).
+            'role' => $role === null ? null : (new RoleResource($role))->resolve(),
+            'permissionGroups' => collect(PermissionEnum::values())
+                ->groupBy(fn (string $permission): string => Str::before($permission, '.'))
+                ->map(fn ($permissions, string $section): array => [
+                    'section' => $section,
+                    'label' => Str::headline($section),
+                    'permissions' => $permissions->values()->all(),
+                ])
+                ->values()
+                ->all(),
         ]);
-    }
-
-    /**
-     * @return array{id: int|string, name: string, permissions: list<string>, users_count: int|null, is_built_in: bool, can_edit: bool}
-     */
-    private function present(Role $role): array
-    {
-        return [
-            'id' => $role->id,
-            'name' => $role->name,
-            'permissions' => array_values($role->permissions->map(fn (Permission $permission): string => $permission->name)->all()),
-            'users_count' => $role->users_count ?? null,
-            'is_built_in' => RoleEnum::tryFrom($role->name) !== null,
-            'can_edit' => Gate::allows('update', $role),
-        ];
     }
 }

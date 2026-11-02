@@ -1986,7 +1986,9 @@
             "bulkDeleteTitle": "{{count}} ausgewählte Benutzer löschen?",
             "bulkDeleteDescription": "Ausgewählte Benutzer werden soft-gelöscht.",
             "bulkForceDeleteTitle": "{{count}} ausgewählte Benutzer endgültig löschen?",
-            "bulkForceDeleteDescription": "Ausgewählte Benutzer werden dauerhaft entfernt. Das kann nicht rückgängig gemacht werden."
+            "bulkForceDeleteDescription": "Ausgewählte Benutzer werden dauerhaft entfernt. Das kann nicht rückgängig gemacht werden.",
+            "deleteTitle": "Benutzer „{{name}}“ löschen?",
+            "deleteDescription": "Das Konto wird entfernt. Deaktiviere es stattdessen, um es zu behalten."
         },
         "title": "Benutzer",
         "newUser": "Neuer Benutzer",
@@ -2000,6 +2002,10 @@
             "email": "E-Mail",
             "created": "Erstellt",
             "updated": "Aktualisiert"
+        },
+        "ssoBadge": "SSO",
+        "actions": {
+            "sendResetEmail": "Reset-E-Mail senden"
         }
     },
     "groups": {
@@ -2009,7 +2015,9 @@
             "bulkForceDeleteTitle": "{{count}} ausgewählte Gruppen endgültig löschen?",
             "bulkForceDeleteDescription": "Ausgewählte Gruppen werden dauerhaft entfernt. Das kann nicht rückgängig gemacht werden.",
             "forceDeleteTitle": "Gruppe „{{name}}“ endgültig löschen?",
-            "forceDeleteDescription": "Diese Gruppe wird dauerhaft entfernt. Das kann nicht rückgängig gemacht werden."
+            "forceDeleteDescription": "Diese Gruppe wird dauerhaft entfernt. Das kann nicht rückgängig gemacht werden.",
+            "deleteTitle": "Gruppe „{{name}}“ löschen?",
+            "deleteDescription": "Mitglieder verlieren die Rollen dieser Gruppe. Dies kann nicht rückgängig gemacht werden."
         },
         "title": "Gruppen",
         "newGroup": "Neue Gruppe",

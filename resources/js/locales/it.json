@@ -1986,7 +1986,9 @@
             "bulkDeleteTitle": "Eliminare {{count}} utenti selezionati?",
             "bulkDeleteDescription": "Gli utenti selezionati verranno eliminati in modo soft.",
             "bulkForceDeleteTitle": "Eliminare definitivamente {{count}} utenti selezionati?",
-            "bulkForceDeleteDescription": "Gli utenti selezionati verranno rimossi definitivamente. L’operazione non può essere annullata."
+            "bulkForceDeleteDescription": "Gli utenti selezionati verranno rimossi definitivamente. L’operazione non può essere annullata.",
+            "deleteTitle": "Eliminare l’utente “{{name}}”?",
+            "deleteDescription": "L’account viene rimosso. Disattivalo invece per conservarlo."
         },
         "title": "Utenti",
         "newUser": "Nuovo utente",
@@ -2000,6 +2002,10 @@
             "email": "Email",
             "created": "Creato",
             "updated": "Aggiornato"
+        },
+        "ssoBadge": "SSO",
+        "actions": {
+            "sendResetEmail": "Invia email di reset"
         }
     },
     "groups": {
@@ -2009,7 +2015,9 @@
             "bulkForceDeleteTitle": "Eliminare definitivamente {{count}} gruppi selezionati?",
             "bulkForceDeleteDescription": "I gruppi selezionati verranno rimossi definitivamente. L’operazione non può essere annullata.",
             "forceDeleteTitle": "Eliminare definitivamente il gruppo “{{name}}”?",
-            "forceDeleteDescription": "Il gruppo verrà rimosso definitivamente. L’operazione non può essere annullata."
+            "forceDeleteDescription": "Il gruppo verrà rimosso definitivamente. L’operazione non può essere annullata.",
+            "deleteTitle": "Eliminare il gruppo “{{name}}”?",
+            "deleteDescription": "I membri perdono i ruoli di questo gruppo. L’operazione è irreversibile."
         },
         "title": "Gruppi",
         "newGroup": "Nuovo gruppo",

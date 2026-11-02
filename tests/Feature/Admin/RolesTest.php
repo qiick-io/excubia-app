@@ -65,6 +65,11 @@ it('shares the user permissions with Inertia', function () {
         ->assertInertia(fn (Assert $page) => $page->where('auth.permissions', [PermissionEnum::ProjectsView->value]));
 });
 
+it('serves the role pages under settings', function () {
+    expect(route('roles.index', absolute: false))->toBe('/settings/roles')
+        ->and(route('roles.create', absolute: false))->toBe('/settings/roles/create');
+});
+
 it('keeps role pages behind roles.manage', function (RoleEnum $role) {
     $user = userWithRole($role);
     $custom = Role::create(['name' => 'auditor']);
@@ -80,7 +85,7 @@ it('creates, updates and deletes a custom role', function () {
     $this->actingAs(userWithRole(RoleEnum::SuperAdmin));
 
     $this->get(route('roles.index'))
-        ->assertInertia(fn (Assert $page) => $page->component('roles/index')->has('roles', 3));
+        ->assertInertia(fn (Assert $page) => $page->component('admin/roles/index')->has('roles.data', 3));
 
     $this->post(route('roles.store'), [
         'name' => 'operator',
@@ -121,7 +126,7 @@ it('keeps built-in roles read-only, even for the super-admin', function (RoleEnu
     $role = Role::findByName($builtIn->value);
 
     $this->get(route('roles.edit', $role))
-        ->assertInertia(fn (Assert $page) => $page->where('role.can_edit', false)->where('role.is_built_in', true));
+        ->assertInertia(fn (Assert $page) => $page->component('admin/roles/form')->where('role.can_edit', false)->where('role.is_built_in', true));
     $this->put(route('roles.update', $role), ['name' => 'renamed', 'permissions' => []])->assertForbidden();
     $this->delete(route('roles.destroy', $role))->assertForbidden();
 

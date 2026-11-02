@@ -17,12 +17,17 @@ Route::middleware('guest')->group(function () {
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::inertia('dashboard', 'dashboard')->name('dashboard');
 
-    Route::resource('roles', RoleController::class)->except('show');
-    Route::resource('users', UserController::class)->except('show');
-    Route::resource('groups', UserGroupController::class)->except('show');
+    // Users and groups are created and edited in drawers on their list pages.
+    Route::resource('users', UserController::class)->only(['index', 'store', 'update', 'destroy']);
+    Route::resource('groups', UserGroupController::class)->only(['index', 'store', 'update', 'destroy']);
     Route::post('users/{user}/password-reset', [UserController::class, 'sendPasswordReset'])
         ->middleware('throttle:6,1')
         ->name('users.password-reset');
+
+    // Access settings, as in externa-core: roles live under /settings.
+    Route::prefix('settings')->group(function () {
+        Route::resource('roles', RoleController::class)->except('show');
+    });
 });
 
 require __DIR__.'/settings.php';
