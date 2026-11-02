@@ -126,6 +126,14 @@ it('saves the general settings and the app uses them', function () {
         ->where('projectSettings.reportBugUrl', 'https://example.com/bugs/new'));
 });
 
+it('shares no report bug URL until one is saved, so the settings nav uses the issue form', function () {
+    $this->actingAs(projectSettingsManager())
+        ->get(route('dashboard'))
+        ->assertInertia(fn (Assert $page) => $page->where('projectSettings.reportBugUrl', null));
+
+    expect(base_path('.github/ISSUE_TEMPLATE/bug_report.yml'))->toBeFile();
+});
+
 it('validates the general settings', function () {
     $this->actingAs(projectSettingsManager())
         ->put(route('project.update'), generalSettingsPayload([

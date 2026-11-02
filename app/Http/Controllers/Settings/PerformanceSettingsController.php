@@ -4,19 +4,21 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Settings;
 
+use App\Enums\PermissionEnum;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 use Spatie\Permission\PermissionRegistrar;
 
 /**
- * Runtime and bootstrap cache status, plus the permission cache flush.
+ * Runtime and bootstrap cache status, the queue monitor link, and the permission cache flush.
  * The routes require `settings.manage`.
  */
 class PerformanceSettingsController extends Controller
 {
-    public function edit(): Response
+    public function edit(Request $request): Response
     {
         return Inertia::render('settings/performance', [
             'status' => [
@@ -26,6 +28,9 @@ class PerformanceSettingsController extends Controller
                 'appDebug' => (bool) config('app.debug'),
             ],
             'bootstrap' => $this->bootstrapCacheStatus(),
+            'links' => [
+                'jobs' => $request->user()?->can(PermissionEnum::JobsManage->value) ? route('jobs.index') : null,
+            ],
         ]);
     }
 

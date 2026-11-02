@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\Auth\OidcController;
+use App\Http\Controllers\JobMonitorController;
+use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserGroupController;
@@ -27,9 +29,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->middleware('throttle:6,1')
         ->name('users.password-reset');
 
-    // Access settings, as in externa-core: roles live under /settings.
+    // Access settings, as in externa-core: roles, permissions and jobs live under /settings.
     Route::prefix('settings')->group(function () {
         Route::resource('roles', RoleController::class)->except('show');
+
+        Route::get('permissions', [PermissionController::class, 'index'])->name('permissions.index');
+        Route::post('permissions/sync', [PermissionController::class, 'sync'])->name('permissions.sync');
+
+        Route::get('jobs', [JobMonitorController::class, 'index'])->name('jobs.index');
+        Route::post('jobs/{uuid}/retry', [JobMonitorController::class, 'retry'])->whereUuid('uuid')->name('jobs.retry');
+        Route::delete('jobs/{uuid}', [JobMonitorController::class, 'destroy'])->whereUuid('uuid')->name('jobs.destroy');
     });
 });
 

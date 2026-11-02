@@ -5,8 +5,11 @@ namespace App\Providers;
 use App\Enums\PermissionEnum;
 use App\Models\User;
 use App\Policies\ActivityPolicy;
+use App\Policies\JobPolicy;
+use App\Policies\PermissionPolicy;
 use App\Policies\RolePolicy;
 use App\Services\EffectivePermissionResolverService;
+use App\Services\JobMonitorQueryService;
 use App\Services\SettingsRepositoryService;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Events\Failed;
@@ -20,6 +23,7 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 use Spatie\Activitylog\Facades\Activity;
 use Spatie\Activitylog\Models\Activity as ActivityModel;
+use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
 class AppServiceProvider extends ServiceProvider
@@ -51,6 +55,9 @@ class AppServiceProvider extends ServiceProvider
     {
         Gate::policy(Role::class, RolePolicy::class);
         Gate::policy(ActivityModel::class, ActivityPolicy::class);
+        Gate::policy(Permission::class, PermissionPolicy::class);
+        // Queue rows have no model: the queue monitor's policy is keyed on its read service.
+        Gate::policy(JobMonitorQueryService::class, JobPolicy::class);
 
         Gate::before(fn (User $user, string $ability): ?bool => PermissionEnum::tryFrom($ability) !== null
             && app(EffectivePermissionResolverService::class)->hasPermission($user, $ability) ? true : null);

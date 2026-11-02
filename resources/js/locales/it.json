@@ -306,6 +306,7 @@
             "performance": "Performance",
             "roles": "Ruoli",
             "permissions": "Permessi",
+            "jobs": "Job",
             "apiKeys": "Chiavi API",
             "reportBug": "Segnala un Bug",
             "general": "Generale",
@@ -2068,5 +2069,34 @@
         "table": "Tabella",
         "linkUrl": "URL del link",
         "headingLevel": "Titolo {{level}}"
+    },
+    "permissions": {
+        "description": "I permessi sono definiti in PermissionEnum e sincronizzati nel database. Assegnali ai ruoli dalla pagina di modifica del ruolo.",
+        "sync": "Sincronizza dall’enum",
+        "empty": "Nessun permesso nel database. Esegui la sincronizzazione.",
+        "columns": {
+            "name": "Nome",
+            "roles": "Ruoli",
+            "guard": "Guard"
+        }
+    },
+    "jobs": {
+        "pendingCount": "In coda: {{count}}",
+        "pendingTitle": "In attesa (campione)",
+        "pendingEmpty": "Nessun job in attesa.",
+        "failedTitle": "Job falliti",
+        "failedEmpty": "Nessun job fallito.",
+        "retry": "Riprova",
+        "delete": "Elimina",
+        "footnote": "Questa pagina monitora solo le tabelle della coda Laravel (jobs e failed_jobs).",
+        "columns": {
+            "id": "ID",
+            "job": "Job",
+            "queue": "Coda",
+            "attempts": "Tentativi",
+            "failedAt": "Fallito il",
+            "exception": "Eccezione",
+            "actions": "Azioni"
+        }
     }
 }
