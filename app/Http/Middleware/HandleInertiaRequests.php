@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Models\User;
 use App\Services\EffectivePermissionResolverService;
+use App\Services\SettingsRepositoryService;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -41,7 +42,7 @@ class HandleInertiaRequests extends Middleware
 
         return [
             ...parent::share($request),
-            'name' => config('app.name'),
+            'name' => app(SettingsRepositoryService::class)->appName(),
             'auth' => [
                 'user' => $user,
                 // Only hides UI: the server still checks every request.
