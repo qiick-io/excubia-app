@@ -1,3 +1,6 @@
+import type { ReactNode } from 'react';
+import AppLayout from '@/layouts/app-layout';
+import SettingsLayout from '@/layouts/settings/layout';
 import { Head } from '@inertiajs/react';
 import AppearanceTabs from '@/components/appearance-tabs';
 import Heading from '@/components/heading';
@@ -22,11 +25,15 @@ export default function Appearance() {
     );
 }
 
-Appearance.layout = {
-    breadcrumbs: [
-        {
-            title: 'Appearance settings',
-            href: editAppearance(),
-        },
-    ],
-};
+Appearance.layout = (page: ReactNode) => (
+    <AppLayout
+        breadcrumbs={[
+            {
+                title: 'Appearance settings',
+                href: editAppearance(),
+            },
+        ]}
+    >
+        <SettingsLayout>{page}</SettingsLayout>
+    </AppLayout>
+);

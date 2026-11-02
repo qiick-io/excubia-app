@@ -1,4 +1,5 @@
 import type { Auth } from '@/types/auth';
+import type { SharedProjectSettings } from '@/types/project-settings';
 
 declare module 'react' {
     interface InputHTMLAttributes<T> {
@@ -11,7 +12,10 @@ declare module '@inertiajs/core' {
         sharedPageProps: {
             name: string;
             auth: Auth;
+            locale: string;
+            availableLocales: Record<string, string>;
             sidebarOpen: boolean;
+            projectSettings?: SharedProjectSettings;
             [key: string]: unknown;
         };
     }

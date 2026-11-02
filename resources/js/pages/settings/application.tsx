@@ -1,3 +1,6 @@
+import type { ReactNode } from 'react';
+import AppLayout from '@/layouts/app-layout';
+import SettingsLayout from '@/layouts/settings/layout';
 import { Form, Head } from '@inertiajs/react';
 import ApplicationSettingsController from '@/actions/App/Http/Controllers/ApplicationSettingsController';
 import BooleanField from '@/components/boolean-field';
@@ -266,6 +269,8 @@ export default function ApplicationSettingsPage({
     );
 }
 
-ApplicationSettingsPage.layout = {
-    breadcrumbs: [{ title: 'Application settings', href: edit() }],
-};
+ApplicationSettingsPage.layout = (page: ReactNode) => (
+    <AppLayout breadcrumbs={[{ title: 'Application settings', href: edit() }]}>
+        <SettingsLayout>{page}</SettingsLayout>
+    </AppLayout>
+);

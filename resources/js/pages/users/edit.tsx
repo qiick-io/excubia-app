@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+import AppLayout from '@/layouts/app-layout';
 import { Form, Head } from '@inertiajs/react';
 import UserController from '@/actions/App/Http/Controllers/UserController';
 import BooleanField from '@/components/boolean-field';
@@ -117,6 +119,8 @@ export default function UserEdit({
     );
 }
 
-UserEdit.layout = {
-    breadcrumbs: [{ title: 'Users', href: index() }],
-};
+UserEdit.layout = (page: ReactNode) => (
+    <AppLayout breadcrumbs={[{ title: 'Users', href: index() }]}>
+        {page}
+    </AppLayout>
+);

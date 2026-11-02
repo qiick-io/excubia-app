@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+import AppLayout from '@/layouts/app-layout';
 import { Form, Head } from '@inertiajs/react';
 import RoleController from '@/actions/App/Http/Controllers/RoleController';
 import Heading from '@/components/heading';
@@ -21,7 +23,7 @@ export default function RoleEdit({
 }) {
     const isReadOnly = role !== null && !role.can_edit;
     const form = role
-        ? RoleController.update.form(String(role.id))
+        ? RoleController.update.form(role.id)
         : RoleController.store.form();
 
     return (
@@ -90,6 +92,8 @@ export default function RoleEdit({
     );
 }
 
-RoleEdit.layout = {
-    breadcrumbs: [{ title: 'Roles', href: index() }],
-};
+RoleEdit.layout = (page: ReactNode) => (
+    <AppLayout breadcrumbs={[{ title: 'Roles', href: index() }]}>
+        {page}
+    </AppLayout>
+);

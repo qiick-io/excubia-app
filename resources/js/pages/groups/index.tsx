@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+import AppLayout from '@/layouts/app-layout';
 import { Head, Link } from '@inertiajs/react';
 import UserGroupController from '@/actions/App/Http/Controllers/UserGroupController';
 import ConfirmDeleteButton from '@/components/confirm-delete-button';
@@ -90,6 +92,8 @@ export default function GroupsIndex({ groups }: { groups: UserGroup[] }) {
     );
 }
 
-GroupsIndex.layout = {
-    breadcrumbs: [{ title: 'Groups', href: index() }],
-};
+GroupsIndex.layout = (page: ReactNode) => (
+    <AppLayout breadcrumbs={[{ title: 'Groups', href: index() }]}>
+        {page}
+    </AppLayout>
+);

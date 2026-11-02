@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+import AppLayout from '@/layouts/app-layout';
 import { Head, Link } from '@inertiajs/react';
 import RoleController from '@/actions/App/Http/Controllers/RoleController';
 import ConfirmDeleteButton from '@/components/confirm-delete-button';
@@ -56,19 +58,13 @@ export default function RolesIndex({ roles }: { roles: Role[] }) {
                             </div>
                             <div className="flex gap-2">
                                 <Button variant="outline" size="sm" asChild>
-                                    <Link
-                                        href={RoleController.edit(
-                                            String(role.id),
-                                        )}
-                                    >
+                                    <Link href={RoleController.edit(role.id)}>
                                         {role.can_edit ? 'Edit' : 'View'}
                                     </Link>
                                 </Button>
                                 {role.can_edit && (
                                     <ConfirmDeleteButton
-                                        href={RoleController.destroy(
-                                            String(role.id),
-                                        )}
+                                        href={RoleController.destroy(role.id)}
                                         title={`Delete the role ${role.name}?`}
                                         description="Users and groups that hold this role lose its permissions."
                                     />
@@ -82,6 +78,8 @@ export default function RolesIndex({ roles }: { roles: Role[] }) {
     );
 }
 
-RolesIndex.layout = {
-    breadcrumbs: [{ title: 'Roles', href: index() }],
-};
+RolesIndex.layout = (page: ReactNode) => (
+    <AppLayout breadcrumbs={[{ title: 'Roles', href: index() }]}>
+        {page}
+    </AppLayout>
+);

@@ -47,7 +47,11 @@ class HandleInertiaRequests extends Middleware
                 'user' => $user,
                 // Only hides UI: the server still checks every request.
                 'permissions' => $user instanceof User ? app(EffectivePermissionResolverService::class)->permissionsFor($user) : [],
+                'roleNames' => $user instanceof User ? app(EffectivePermissionResolverService::class)->roleNamesFor($user) : [],
+                'isSuperAdmin' => $user instanceof User && app(EffectivePermissionResolverService::class)->isSuperAdmin($user),
             ],
+            'locale' => app()->getLocale(),
+            'availableLocales' => config('i18n.available_locales', ['en' => 'English']),
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
     }
