@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Policies;
 
 use App\Enums\PermissionEnum;
-use App\Enums\RoleEnum;
 use App\Models\User;
+use App\Services\EffectivePermissionResolverService;
 use App\Services\SuperAdminGuardService;
 
 /**
@@ -15,7 +15,10 @@ use App\Services\SuperAdminGuardService;
  */
 class UserPolicy
 {
-    public function __construct(private SuperAdminGuardService $superAdminGuard) {}
+    public function __construct(
+        private EffectivePermissionResolverService $permissionResolver,
+        private SuperAdminGuardService $superAdminGuard,
+    ) {}
 
     public function viewAny(User $actor): bool
     {
@@ -30,7 +33,7 @@ class UserPolicy
     public function update(User $actor, User $target): bool
     {
         return $this->viewAny($actor)
-            && ($actor->hasRole(RoleEnum::SuperAdmin->value) || ! $target->hasRole(RoleEnum::SuperAdmin->value));
+            && ($this->permissionResolver->isSuperAdmin($actor) || ! $this->permissionResolver->isSuperAdmin($target));
     }
 
     public function delete(User $actor, User $target): bool
