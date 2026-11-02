@@ -81,6 +81,17 @@ export type AdminRoleRow = {
     updated_at: string;
 };
 
+/** One row of `App\Http\Resources\PermissionResource`. */
+export type AdminPermissionRow = {
+    id: number;
+    name: string;
+    guard_name: string;
+    /** Names of the roles that hold the permission. */
+    roles: string[];
+    created_at: string;
+    updated_at: string;
+};
+
 export type AdminActivityLogCauser = {
     id: number;
     name: string;

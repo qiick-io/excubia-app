@@ -306,6 +306,7 @@
             "performance": "Performance",
             "roles": "Roles",
             "permissions": "Permissions",
+            "jobs": "Jobs",
             "apiKeys": "API Keys",
             "reportBug": "Report a Bug",
             "general": "General",
@@ -2068,5 +2069,34 @@
         "table": "Table",
         "linkUrl": "Link URL",
         "headingLevel": "Heading {{level}}"
+    },
+    "permissions": {
+        "description": "Permissions are defined in PermissionEnum and synced to the database. Assign them to roles on the role edit page.",
+        "sync": "Sync from enum",
+        "empty": "No permissions in database. Run sync.",
+        "columns": {
+            "name": "Name",
+            "roles": "Roles",
+            "guard": "Guard"
+        }
+    },
+    "jobs": {
+        "pendingCount": "Pending in queue: {{count}}",
+        "pendingTitle": "Pending (sample)",
+        "pendingEmpty": "No pending jobs.",
+        "failedTitle": "Failed jobs",
+        "failedEmpty": "No failed jobs.",
+        "retry": "Retry",
+        "delete": "Delete",
+        "footnote": "This page monitors the Laravel queue tables (jobs and failed_jobs) only.",
+        "columns": {
+            "id": "ID",
+            "job": "Job",
+            "queue": "Queue",
+            "attempts": "Attempts",
+            "failedAt": "Failed at",
+            "exception": "Exception",
+            "actions": "Actions"
+        }
     }
 }

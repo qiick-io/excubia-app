@@ -305,6 +305,7 @@
             "appearance": "Darstellung",
             "roles": "Rollen",
             "permissions": "Berechtigungen",
+            "jobs": "Jobs",
             "apiKeys": "API-Schlüssel",
             "reportBug": "Bug melden",
             "performance": "Leistung",
@@ -716,7 +717,7 @@
             "linkJobs": "Jobs öffnen",
             "linkPulse": "Pulse öffnen",
             "no": "Nein",
-            "observabilityDescription": "Links zu Horizon, Pulse und Job-Monitor.",
+            "observabilityDescription": "Links zum Job-Monitoring und zu Dashboards für den Anwendungszustand",
             "observabilityTitle": "Observability",
             "packagesCached": "Packages gecacht",
             "publicApiDescription": "TTL und Epoch für Public-CMS-API-Caches.",
@@ -2068,5 +2069,34 @@
         "table": "Tabelle",
         "linkUrl": "Link-URL",
         "headingLevel": "Überschrift {{level}}"
+    },
+    "permissions": {
+        "description": "Berechtigungen sind in PermissionEnum definiert und werden mit der Datenbank synchronisiert. Weise sie auf der Bearbeitungsseite einer Rolle zu.",
+        "sync": "Aus Enum synchronisieren",
+        "empty": "Keine Berechtigungen in der Datenbank. Synchronisierung ausführen.",
+        "columns": {
+            "name": "Name",
+            "roles": "Rollen",
+            "guard": "Guard"
+        }
+    },
+    "jobs": {
+        "pendingCount": "Wartend in der Queue: {{count}}",
+        "pendingTitle": "Wartend (Auszug)",
+        "pendingEmpty": "Keine wartenden Jobs.",
+        "failedTitle": "Fehlgeschlagene Jobs",
+        "failedEmpty": "Keine fehlgeschlagenen Jobs.",
+        "retry": "Erneut versuchen",
+        "delete": "Löschen",
+        "footnote": "Diese Seite überwacht nur die Laravel-Queue-Tabellen (jobs und failed_jobs).",
+        "columns": {
+            "id": "ID",
+            "job": "Job",
+            "queue": "Queue",
+            "attempts": "Versuche",
+            "failedAt": "Fehlgeschlagen am",
+            "exception": "Exception",
+            "actions": "Aktionen"
+        }
     }
 }

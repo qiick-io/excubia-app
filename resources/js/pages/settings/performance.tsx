@@ -1,4 +1,4 @@
-import { Head, router } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import PerformanceSettingsController from '@/actions/App/Http/Controllers/Settings/PerformanceSettingsController';
@@ -25,6 +25,10 @@ type Status = {
     appDebug: boolean;
 };
 
+type Links = {
+    jobs: string | null;
+};
+
 type Bootstrap = {
     configCached: boolean;
     routesCached: boolean;
@@ -38,9 +42,11 @@ type Bootstrap = {
 export default function PerformanceSettingsPage({
     status,
     bootstrap,
+    links,
 }: {
     status: Status;
     bootstrap: Bootstrap;
+    links: Links;
 }) {
     const { t } = useTranslation();
     const [flushing, setFlushing] = useState<string | null>(null);
@@ -196,6 +202,37 @@ export default function PerformanceSettingsPage({
                     </div>
 
                     <Separator />
+
+                    {links.jobs && (
+                        <>
+                            <div className="space-y-6">
+                                <Heading
+                                    variant="small"
+                                    title={t(
+                                        'settings.performance.observabilityTitle',
+                                    )}
+                                    description={t(
+                                        'settings.performance.observabilityDescription',
+                                    )}
+                                />
+
+                                <div className="flex flex-wrap gap-3">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        asChild
+                                        data-test="performance-link-jobs"
+                                    >
+                                        <Link href={links.jobs}>
+                                            {t('settings.performance.linkJobs')}
+                                        </Link>
+                                    </Button>
+                                </div>
+                            </div>
+
+                            <Separator />
+                        </>
+                    )}
 
                     <div className="space-y-6">
                         <Heading

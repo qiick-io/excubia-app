@@ -17,7 +17,9 @@ import { useCurrentUrl } from '@/hooks/use-current-url';
 import { cn, toUrl } from '@/lib/utils';
 import { edit as editAppearance } from '@/routes/appearance';
 import { edit as editSidebar } from '@/routes/appearance/sidebar';
+import jobs from '@/routes/jobs';
 import { edit as editPerformance } from '@/routes/performance';
+import permissions from '@/routes/permissions';
 import { edit } from '@/routes/profile';
 import { edit as editProject } from '@/routes/project';
 import { edit as editLocalization } from '@/routes/project/localization';
@@ -94,15 +96,31 @@ export default function SettingsLayout({
           ]
         : [];
 
-    const accessNavItems: NavItem[] = can(PermissionEnum.RolesManage)
-        ? [
-              {
-                  title: t('settings.layout.roles'),
-                  href: roles.index.url(),
-                  icon: null,
-              },
-          ]
-        : [];
+    const accessNavItems: NavItem[] = [
+        ...(can(PermissionEnum.RolesManage)
+            ? [
+                  {
+                      title: t('settings.layout.roles'),
+                      href: roles.index.url(),
+                      icon: null,
+                  },
+                  {
+                      title: t('settings.layout.permissions'),
+                      href: permissions.index.url(),
+                      icon: null,
+                  },
+              ]
+            : []),
+        ...(can(PermissionEnum.JobsManage)
+            ? [
+                  {
+                      title: t('settings.layout.jobs'),
+                      href: jobs.index.url(),
+                      icon: null,
+                  },
+              ]
+            : []),
+    ];
 
     const reportBugUrl =
         projectSettings.reportBugUrl?.trim() || DEFAULT_REPORT_BUG_URL;
