@@ -3,6 +3,7 @@ import {
     BookOpen,
     FolderGit2,
     LayoutGrid,
+    ScrollText,
     Settings,
     Users,
     UsersRound,
@@ -28,6 +29,7 @@ import { PermissionEnum } from '@/enums/permission-enum';
 import { useCan } from '@/hooks/use-can';
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import { dashboard } from '@/routes';
+import activityLogs from '@/routes/activity-logs';
 import groups from '@/routes/groups';
 import { edit as editProfile } from '@/routes/profile';
 import users from '@/routes/users';
@@ -57,6 +59,13 @@ export function AppSidebar() {
                 titleKey: 'nav.dashboard',
                 href: dashboard(),
                 icon: LayoutGrid,
+            },
+            activity: {
+                id: 'activity',
+                titleKey: 'nav.activityLog',
+                href: activityLogs.index.url(),
+                icon: ScrollText,
+                permission: PermissionEnum.ActivityView,
             },
             users: {
                 id: 'users',

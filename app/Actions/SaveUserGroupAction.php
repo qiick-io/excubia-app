@@ -10,7 +10,8 @@ use Illuminate\Validation\ValidationException;
 use Spatie\Permission\Models\Role;
 
 /**
- * Creates or updates a group and replaces its roles and members.
+ * Creates or updates a group and replaces its roles and members. The group change is logged by
+ * the model, roles and members as `roles_synced` and `members_synced` activities.
  */
 class SaveUserGroupAction
 {
@@ -26,8 +27,24 @@ class SaveUserGroupAction
     {
         return $this->superAdminGuard->preventLosingLastSuperAdmin(function () use ($group, $name, $description, $roles, $userIds): UserGroup {
             $group->fill(['name' => $name, 'description' => $description])->save();
-            $group->roles()->sync(Role::query()->whereIn('name', $roles)->pluck('id'));
+            $roleModels = Role::query()->whereIn('name', $roles)->orderBy('name')->get(['id', 'name']);
+            $group->roles()->sync($roleModels->pluck('id'));
             $group->users()->sync($userIds);
+
+            activity()
+                ->performedOn($group)
+                ->event('members_synced')
+                ->withProperties(['user_ids' => $userIds])
+                ->log('Group members synced');
+
+            activity()
+                ->performedOn($group)
+                ->event('roles_synced')
+                ->withProperties([
+                    'role_ids' => $roleModels->pluck('id')->values()->all(),
+                    'role_names' => $roleModels->pluck('name')->values()->all(),
+                ])
+                ->log('Group roles synced');
 
             return $group;
         });

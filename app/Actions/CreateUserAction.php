@@ -9,9 +9,12 @@ use App\Models\User;
 /**
  * Creates a dashboard user with the given roles. The email counts as verified because an
  * administrator (UI or CLI) created the account.
+ * The creation and the roles are logged with the acting user as causer.
  */
 class CreateUserAction
 {
+    public function __construct(private SyncUserRolesAction $syncRoles) {}
+
     /**
      * @param  list<string>  $roles
      */
@@ -25,7 +28,7 @@ class CreateUserAction
             'email_verified_at' => now(),
         ]);
         $user->save();
-        $user->syncRoles($roles);
+        $this->syncRoles->execute($user, $roles);
 
         return $user;
     }

@@ -16,6 +16,7 @@ enum PermissionEnum: string
     case RolesManage = 'roles.manage';
     case GroupsManage = 'groups.manage';
     case SettingsManage = 'settings.manage';
+    case ActivityView = 'activity.view';
 
     /**
      * @return list<string>

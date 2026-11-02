@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\Auth\OidcController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
@@ -16,6 +17,8 @@ Route::middleware('guest')->group(function () {
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::inertia('dashboard', 'dashboard')->name('dashboard');
+
+    Route::get('activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index');
 
     // Users and groups are created and edited in drawers on their list pages.
     Route::resource('users', UserController::class)->only(['index', 'store', 'update', 'destroy']);

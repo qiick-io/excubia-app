@@ -9,12 +9,12 @@ use App\Enums\PermissionEnum;
 use App\Http\Requests\ListQueryRequest;
 use App\Http\Requests\RoleRequest;
 use App\Http\Resources\RoleResource;
+use App\Models\Role;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
-use Spatie\Permission\Models\Role;
 
 /**
  * Settings pages for roles (`/settings/roles`). Built-in roles are shown read-only; custom

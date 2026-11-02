@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Traits\LogsApplicationActivityTrait;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -22,6 +23,8 @@ use Spatie\Permission\Models\Role;
 #[Fillable(['name', 'description'])]
 class UserGroup extends Model
 {
+    use LogsApplicationActivityTrait;
+
     /**
      * @return BelongsToMany<User, $this>
      */
