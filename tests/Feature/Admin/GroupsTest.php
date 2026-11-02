@@ -82,7 +82,10 @@ it('lists and deletes groups', function () {
     $group = groupWithRoles('viewers', [RoleEnum::Reader->value], [$member]);
 
     $this->actingAs($admin)->get(route('groups.index'))
-        ->assertInertia(fn (Assert $page) => $page->component('groups/index')->has('groups', 1));
+        ->assertInertia(fn (Assert $page) => $page->component('admin/groups/index')
+            ->has('groups.data', 1)
+            ->where('groups.data.0.users_count', 1)
+            ->where('groups.data.0.users.0.id', $member->id));
 
     $this->actingAs($admin)->delete(route('groups.destroy', $group))->assertRedirect(route('groups.index'));
 
@@ -122,7 +125,10 @@ it('keeps super-admin groups away from admins', function () {
     $admin = groupMember(RoleEnum::Admin);
     $owners = groupWithRoles('owners', [RoleEnum::SuperAdmin->value], [groupMember()]);
 
-    $this->actingAs($admin)->get(route('groups.edit', $owners))->assertForbidden();
+    $this->actingAs($admin)->get(route('groups.index'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('groups.data.0.can_update', false)
+            ->where('roles', fn ($roles) => ! in_array(RoleEnum::SuperAdmin->value, collect($roles)->pluck('name')->all(), true)));
     $this->actingAs($admin)->put(route('groups.update', $owners), ['name' => 'owners', 'roles' => [], 'users' => [$admin->id]])->assertForbidden();
     $this->actingAs($admin)->delete(route('groups.destroy', $owners))->assertForbidden();
     $this->actingAs($admin)->post(route('groups.store'), [
@@ -132,4 +138,18 @@ it('keeps super-admin groups away from admins', function () {
     ])->assertSessionHasErrors('roles.0');
 
     expect($admin->fresh()->can(PermissionEnum::SettingsManage->value))->toBeFalse();
+});
+
+it('searches and sorts groups', function () {
+    $admin = groupMember(RoleEnum::Admin);
+    groupWithRoles('viewers', []);
+    groupWithRoles('operators', []);
+    UserGroup::query()->create(['name' => 'auditors', 'description' => 'Read-only operators']);
+
+    $this->actingAs($admin)->get(route('groups.index', ['search' => 'operators', 'sort' => 'name', 'direction' => 'desc']))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('groups.data', 2)
+            ->where('groups.data.0.name', 'operators')
+            ->where('groups.data.1.name', 'auditors')
+            ->where('filters', ['search' => 'operators', 'sort' => 'name', 'direction' => 'desc']));
 });

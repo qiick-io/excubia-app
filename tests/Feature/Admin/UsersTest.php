@@ -2,12 +2,14 @@
 
 declare(strict_types=1);
 
+use App\Enums\PermissionEnum;
 use App\Enums\RoleEnum;
 use App\Models\User;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Support\Facades\Notification;
 use Inertia\Testing\AssertableInertia as Assert;
+use Spatie\Permission\Models\Role;
 
 beforeEach(function () {
     $this->seed(PermissionSeeder::class);
@@ -38,9 +40,8 @@ it('keeps user pages away from a reader', function () {
     $other = managedUser();
 
     $this->actingAs($reader)->get(route('users.index'))->assertForbidden();
-    $this->actingAs($reader)->get(route('users.create'))->assertForbidden();
+    $this->actingAs($reader)->getJson(route('users.index'))->assertForbidden();
     $this->actingAs($reader)->post(route('users.store'), userPayload())->assertForbidden();
-    $this->actingAs($reader)->get(route('users.edit', $other))->assertForbidden();
     $this->actingAs($reader)->put(route('users.update', $other), userPayload())->assertForbidden();
     $this->actingAs($reader)->delete(route('users.destroy', $other))->assertForbidden();
     $this->actingAs($reader)->post(route('users.password-reset', $other))->assertForbidden();
@@ -51,7 +52,38 @@ it('lists users for an admin', function () {
     managedUser();
 
     $this->actingAs($admin)->get(route('users.index'))
-        ->assertInertia(fn (Assert $page) => $page->component('users/index')->has('users', 2));
+        ->assertInertia(fn (Assert $page) => $page->component('admin/users/index')
+            ->has('users.data', 2)
+            ->where('roles', fn ($roles) => collect($roles)->pluck('name')->all() === [RoleEnum::Admin->value, RoleEnum::Reader->value]));
+});
+
+it('searches, sorts and paginates users', function () {
+    $admin = managedUser(RoleEnum::Admin, ['name' => 'Zed Admin']);
+    managedUser(attributes: ['name' => 'Ada Lovelace', 'email' => 'ada@example.com']);
+    managedUser(attributes: ['name' => 'Alan Turing']);
+
+    $this->actingAs($admin)->get(route('users.index', ['search' => 'ada@', 'sort' => 'name', 'direction' => 'asc']))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('users.data', 1)
+            ->where('users.data.0.name', 'Ada Lovelace')
+            ->where('filters', ['search' => 'ada@', 'sort' => 'name', 'direction' => 'asc']));
+
+    $this->actingAs($admin)->get(route('users.index', ['sort' => 'name', 'direction' => 'asc', 'per_page' => 2]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('users.data', 2)
+            ->where('users.data.0.name', 'Ada Lovelace')
+            ->where('users.meta.last_page', 2));
+});
+
+it('lets group managers search users for the group picker', function () {
+    Role::create(['name' => 'group-keeper'])->givePermissionTo(PermissionEnum::GroupsManage->value);
+    $keeper = User::factory()->create()->assignRole('group-keeper');
+
+    $this->actingAs($keeper)->get(route('users.index'))->assertForbidden();
+    $this->actingAs($keeper)->getJson(route('users.index', ['search' => $keeper->email]))
+        ->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.email', $keeper->email);
 });
 
 it('creates a verified user with roles', function () {
@@ -163,7 +195,9 @@ it('lets only a super-admin manage super-admins', function () {
     $superAdmin = managedUser(RoleEnum::SuperAdmin);
     $reader = managedUser();
 
-    $this->actingAs($admin)->get(route('users.edit', $superAdmin))->assertForbidden();
+    $this->actingAs($admin)
+        ->put(route('users.update', $superAdmin), userPayload(['email' => $superAdmin->email, 'roles' => [RoleEnum::Admin->value]]))
+        ->assertForbidden();
     $this->actingAs($admin)->delete(route('users.destroy', $superAdmin))->assertForbidden();
     $this->actingAs($admin)
         ->put(route('users.update', $reader), userPayload(['email' => $reader->email, 'roles' => [RoleEnum::SuperAdmin->value]]))

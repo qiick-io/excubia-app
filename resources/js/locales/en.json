@@ -1986,7 +1986,9 @@
             "bulkDeleteTitle": "Delete {{count}} selected users?",
             "bulkDeleteDescription": "Selected users will be soft-deleted.",
             "bulkForceDeleteTitle": "Delete {{count}} selected users permanently?",
-            "bulkForceDeleteDescription": "Selected users will be permanently removed. This cannot be undone."
+            "bulkForceDeleteDescription": "Selected users will be permanently removed. This cannot be undone.",
+            "deleteTitle": "Delete user “{{name}}”?",
+            "deleteDescription": "The account is removed. Deactivate it instead to keep it."
         },
         "title": "Users",
         "newUser": "New user",
@@ -2000,6 +2002,10 @@
             "email": "Email",
             "created": "Created",
             "updated": "Updated"
+        },
+        "ssoBadge": "SSO",
+        "actions": {
+            "sendResetEmail": "Send reset email"
         }
     },
     "groups": {
@@ -2009,7 +2015,9 @@
             "bulkForceDeleteTitle": "Delete {{count}} selected groups permanently?",
             "bulkForceDeleteDescription": "Selected groups will be permanently removed. This cannot be undone.",
             "forceDeleteTitle": "Delete group “{{name}}” permanently?",
-            "forceDeleteDescription": "This group will be permanently removed. This cannot be undone."
+            "forceDeleteDescription": "This group will be permanently removed. This cannot be undone.",
+            "deleteTitle": "Delete group “{{name}}”?",
+            "deleteDescription": "Members lose the roles of this group. This cannot be undone."
         },
         "title": "Groups",
         "newGroup": "New group",

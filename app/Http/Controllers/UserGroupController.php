@@ -6,39 +6,52 @@ namespace App\Http\Controllers;
 
 use App\Actions\DeleteUserGroupAction;
 use App\Actions\SaveUserGroupAction;
+use App\Http\Requests\ListQueryRequest;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UserGroupRequest;
+use App\Http\Resources\UserGroupResource;
 use App\Models\User;
 use App\Models\UserGroup;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
-use Spatie\Permission\Models\Role;
 
 /**
  * Admin pages for user groups and their members, behind `groups.manage` (UserGroupPolicy).
+ * Create and edit happen in a drawer on the list page.
  */
 class UserGroupController extends Controller
 {
-    public function index(): Response
+    /**
+     * @var list<string>
+     */
+    private const SORTABLE_COLUMNS = ['name', 'created_at', 'updated_at'];
+
+    /**
+     * Lists groups with search, sort and pagination, plus the roles the actor may assign.
+     */
+    public function index(ListQueryRequest $request): Response
     {
         Gate::authorize('viewAny', UserGroup::class);
 
-        return Inertia::render('groups/index', [
-            'groups' => UserGroup::query()
-                ->with(['roles:id,name', 'users:id'])
-                ->orderBy('name')
-                ->get()
-                ->map(fn (UserGroup $group): array => $this->present($group)),
+        $actor = $request->user();
+        $sort = $request->sortColumn(self::SORTABLE_COLUMNS, 'name');
+        $direction = $request->sortDirection('asc');
+
+        $groups = $request->applySearch(UserGroup::query(), ['name', 'description'])
+            ->with(['roles:id,name', 'users:id,name,email'])
+            ->withCount('users')
+            ->orderBy($sort, $direction)
+            ->orderBy('id')
+            ->paginate($request->perPage())
+            ->withQueryString();
+
+        return Inertia::render('admin/groups/index', [
+            'groups' => UserGroupResource::collection($groups),
+            'filters' => $request->filters($sort, $direction),
+            'roles' => StoreUserRequest::assignableRoleOptionsFor($actor instanceof User ? $actor : null),
         ]);
-    }
-
-    public function create(): Response
-    {
-        Gate::authorize('create', UserGroup::class);
-
-        return $this->form(null);
     }
 
     public function store(UserGroupRequest $request, SaveUserGroupAction $saveGroup): RedirectResponse
@@ -48,13 +61,6 @@ class UserGroupController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Group created.')]);
 
         return to_route('groups.index');
-    }
-
-    public function edit(UserGroup $group): Response
-    {
-        Gate::authorize('update', $group);
-
-        return $this->form($group->load(['roles:id,name', 'users:id']));
     }
 
     public function update(UserGroupRequest $request, UserGroup $group, SaveUserGroupAction $saveGroup): RedirectResponse
@@ -88,31 +94,5 @@ class UserGroupController extends Controller
             $request->roles(),
             $request->userIds(),
         );
-    }
-
-    private function form(?UserGroup $group): Response
-    {
-        $actor = request()->user();
-
-        return Inertia::render('groups/edit', [
-            'group' => $group === null ? null : $this->present($group),
-            'roles' => StoreUserRequest::assignableRolesFor($actor instanceof User ? $actor : null),
-            'users' => User::query()->orderBy('name')->get(['id', 'name', 'email']),
-        ]);
-    }
-
-    /**
-     * @return array{id: int, name: string, description: string|null, roles: list<string>, users: list<int>, can_update: bool}
-     */
-    private function present(UserGroup $group): array
-    {
-        return [
-            'id' => $group->id,
-            'name' => $group->name,
-            'description' => $group->description,
-            'roles' => array_values($group->roles->map(fn (Role $role): string => $role->name)->all()),
-            'users' => array_values($group->users->map(fn (User $user): int => $user->id)->all()),
-            'can_update' => Gate::allows('update', $group),
-        ];
     }
 }

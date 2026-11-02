@@ -54,6 +54,21 @@ class StoreUserRequest extends FormRequest
     }
 
     /**
+     * The assignable roles with their ids, for the role pickers of the user and group drawers.
+     *
+     * @return list<array{id: int, name: string}>
+     */
+    public static function assignableRoleOptionsFor(?User $actor): array
+    {
+        return array_values(Role::query()
+            ->whereIn('name', self::assignableRolesFor($actor))
+            ->orderBy('name')
+            ->get(['id', 'name'])
+            ->map(fn (Role $role): array => ['id' => (int) $role->id, 'name' => $role->name])
+            ->all());
+    }
+
+    /**
      * The validated role names.
      *
      * @return list<string>

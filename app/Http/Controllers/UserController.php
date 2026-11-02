@@ -7,9 +7,12 @@ namespace App\Http\Controllers;
 use App\Actions\CreateUserAction;
 use App\Actions\DeleteUserAction;
 use App\Actions\UpdateUserAction;
+use App\Http\Requests\ListQueryRequest;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
+use App\Http\Resources\UserResource;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Password;
@@ -17,28 +20,51 @@ use Inertia\Inertia;
 use Inertia\Response;
 
 /**
- * Admin pages for dashboard users, behind `users.manage` (UserPolicy).
+ * Admin pages for dashboard users, behind `users.manage` (UserPolicy). Create and edit happen
+ * in a drawer on the list page.
  */
 class UserController extends Controller
 {
-    public function index(): Response
-    {
-        Gate::authorize('viewAny', User::class);
+    /**
+     * @var list<string>
+     */
+    private const SORTABLE_COLUMNS = ['name', 'email', 'is_active', 'created_at', 'updated_at'];
 
-        return Inertia::render('users/index', [
-            'users' => User::query()
-                ->with('roles:id,name')
-                ->orderBy('name')
-                ->get()
-                ->map(fn (User $user): array => $this->present($user)),
+    /**
+     * Lists users with search, sort and pagination. A JSON request feeds the user picker of the
+     * group drawer (UserPolicy::pick).
+     */
+    public function index(ListQueryRequest $request): Response|JsonResponse
+    {
+        $actor = $request->user();
+        $wantsJson = $request->expectsJson();
+
+        Gate::authorize($wantsJson ? 'pick' : 'viewAny', User::class);
+
+        $sort = $request->sortColumn(self::SORTABLE_COLUMNS, 'created_at');
+        $direction = $request->sortDirection('desc');
+
+        $query = $request->applySearch(User::query(), ['name', 'email']);
+
+        if (! $wantsJson) {
+            $query->with(['roles:id,name', 'groups:id,name']);
+        }
+
+        $users = $query
+            ->orderBy($sort, $direction)
+            ->orderByDesc('id')
+            ->paginate($request->perPage())
+            ->withQueryString();
+
+        if ($wantsJson) {
+            return UserResource::collection($users)->response($request);
+        }
+
+        return Inertia::render('admin/users/index', [
+            'users' => UserResource::collection($users),
+            'filters' => $request->filters($sort, $direction),
+            'roles' => StoreUserRequest::assignableRoleOptionsFor($actor instanceof User ? $actor : null),
         ]);
-    }
-
-    public function create(): Response
-    {
-        Gate::authorize('create', User::class);
-
-        return $this->form(null);
     }
 
     public function store(StoreUserRequest $request, CreateUserAction $createUser): RedirectResponse
@@ -54,13 +80,6 @@ class UserController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => __('User created.')]);
 
         return to_route('users.index');
-    }
-
-    public function edit(User $user): Response
-    {
-        Gate::authorize('update', $user);
-
-        return $this->form($user->load('roles:id,name'));
     }
 
     public function update(UpdateUserRequest $request, User $user, UpdateUserAction $updateUser): RedirectResponse
@@ -104,32 +123,5 @@ class UserController extends Controller
             : ['type' => 'error', 'message' => __($status)]);
 
         return back();
-    }
-
-    private function form(?User $user): Response
-    {
-        $actor = request()->user();
-
-        return Inertia::render('users/edit', [
-            'user' => $user === null ? null : $this->present($user),
-            'roles' => StoreUserRequest::assignableRolesFor($actor instanceof User ? $actor : null),
-        ]);
-    }
-
-    /**
-     * @return array{id: int, name: string, email: string, is_active: bool, is_sso_linked: bool, roles: list<string>, can_update: bool, can_delete: bool}
-     */
-    private function present(User $user): array
-    {
-        return [
-            'id' => $user->id,
-            'name' => $user->name,
-            'email' => $user->email,
-            'is_active' => $user->is_active,
-            'is_sso_linked' => $user->oidc_sub !== null,
-            'roles' => array_values($user->getRoleNames()->all()),
-            'can_update' => Gate::allows('update', $user),
-            'can_delete' => Gate::allows('delete', $user),
-        ];
     }
 }
