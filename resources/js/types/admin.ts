@@ -80,3 +80,32 @@ export type AdminRoleRow = {
     created_at: string;
     updated_at: string;
 };
+
+export type AdminActivityLogCauser = {
+    id: number;
+    name: string;
+    email: string;
+};
+
+export type AdminActivityLogSubject = {
+    type: string;
+    id: number;
+    label: string;
+};
+
+/** One activity log entry (`ActivityLogResource`). */
+export type AdminActivityLogRow = {
+    id: number;
+    event: string | null;
+    description: string;
+    log_name: string | null;
+    created_at: string;
+    causer: AdminActivityLogCauser | null;
+    subject: AdminActivityLogSubject | null;
+    changes: Record<string, unknown>;
+    properties: {
+        ip: string | null;
+        user_agent: string | null;
+        meta?: Record<string, unknown>;
+    };
+};

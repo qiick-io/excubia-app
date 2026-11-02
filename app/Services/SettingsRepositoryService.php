@@ -37,6 +37,7 @@ class SettingsRepositoryService
      */
     public const SIDEBAR_MODULES = [
         ['id' => 'dashboard', 'locked' => true],
+        ['id' => 'activity', 'locked' => false],
         ['id' => 'users', 'locked' => false],
         ['id' => 'groups', 'locked' => false],
         ['id' => 'settings', 'locked' => true],

@@ -13,7 +13,10 @@ use Illuminate\Validation\ValidationException;
  */
 class UpdateUserAction
 {
-    public function __construct(private SuperAdminGuardService $superAdminGuard) {}
+    public function __construct(
+        private SuperAdminGuardService $superAdminGuard,
+        private SyncUserRolesAction $syncRoles,
+    ) {}
 
     /**
      * @param  list<string>  $roles
@@ -34,7 +37,7 @@ class UpdateUserAction
             }
 
             $user->save();
-            $user->syncRoles($roles);
+            $this->syncRoles->execute($user, $roles);
 
             return $user;
         });

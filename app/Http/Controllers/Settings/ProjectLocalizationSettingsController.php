@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Settings;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Settings\Concerns\LogsProjectSettingsUpdateTrait;
 use App\Http\Requests\Settings\UpdateProjectLocalizationSettingsRequest;
 use App\Services\SettingsRepositoryService;
 use Illuminate\Http\RedirectResponse;
@@ -16,6 +17,8 @@ use Inertia\Response;
  */
 class ProjectLocalizationSettingsController extends Controller
 {
+    use LogsProjectSettingsUpdateTrait;
+
     public function __construct(private readonly SettingsRepositoryService $settings) {}
 
     public function edit(): Response
@@ -28,7 +31,9 @@ class ProjectLocalizationSettingsController extends Controller
 
     public function update(UpdateProjectLocalizationSettingsRequest $request): RedirectResponse
     {
-        $this->settings->save($request->settings());
+        $values = $request->settings();
+        $this->settings->save($values);
+        $this->logProjectSettingsUpdate($request, 'localization', $values);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Settings saved.')]);
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Settings;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Settings\Concerns\LogsProjectSettingsUpdateTrait;
 use App\Http\Requests\Settings\UpdateAppearanceSettingsRequest;
 use App\Services\SettingsRepositoryService;
 use App\Services\ThemePresetService;
@@ -19,6 +20,8 @@ use Inertia\Response;
  */
 class AppearanceSettingsController extends Controller
 {
+    use LogsProjectSettingsUpdateTrait;
+
     public function __construct(
         private readonly SettingsRepositoryService $settings,
         private readonly ThemePresetService $themePresets,
@@ -40,7 +43,9 @@ class AppearanceSettingsController extends Controller
 
     public function update(UpdateAppearanceSettingsRequest $request): RedirectResponse
     {
-        $this->settings->save($request->settings());
+        $values = $request->settings();
+        $this->settings->save($values);
+        $this->logProjectSettingsUpdate($request, 'appearance', $values);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Settings saved.')]);
 

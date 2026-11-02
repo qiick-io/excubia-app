@@ -9,4 +9,5 @@ export enum PermissionEnum {
     RolesManage = 'roles.manage',
     GroupsManage = 'groups.manage',
     SettingsManage = 'settings.manage',
+    ActivityView = 'activity.view',
 }
