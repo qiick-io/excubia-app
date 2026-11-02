@@ -1,15 +1,25 @@
+import { FlashToasts } from '@/components/flash-toasts';
 import AppLayoutTemplate from '@/layouts/app/app-sidebar-layout';
-import type { BreadcrumbItem } from '@/types';
+import type { AppLayoutProps } from '@/types';
 
+/**
+ * App shell layout used by Inertia pages via `@/layouts/app-layout`.
+ * @param {AppLayoutProps} props - Layout props passed through to the sidebar template.
+ * @returns {JSX.Element}
+ */
 export default function AppLayout({
-    breadcrumbs = [],
     children,
-}: {
-    breadcrumbs?: BreadcrumbItem[];
-    children: React.ReactNode;
-}) {
+    breadcrumbs,
+    headerActions,
+    ...props
+}: AppLayoutProps) {
     return (
-        <AppLayoutTemplate breadcrumbs={breadcrumbs}>
+        <AppLayoutTemplate
+            breadcrumbs={breadcrumbs}
+            headerActions={headerActions}
+            {...props}
+        >
+            <FlashToasts />
             {children}
         </AppLayoutTemplate>
     );

@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+import AppLayout from '@/layouts/app-layout';
 import { Form, Head } from '@inertiajs/react';
 import UserGroupController from '@/actions/App/Http/Controllers/UserGroupController';
 import Heading from '@/components/heading';
@@ -123,6 +125,8 @@ export default function GroupEdit({
     );
 }
 
-GroupEdit.layout = {
-    breadcrumbs: [{ title: 'Groups', href: index() }],
-};
+GroupEdit.layout = (page: ReactNode) => (
+    <AppLayout breadcrumbs={[{ title: 'Groups', href: index() }]}>
+        {page}
+    </AppLayout>
+);

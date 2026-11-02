@@ -2,6 +2,10 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useInitials } from '@/hooks/use-initials';
 import type { User } from '@/types';
 
+/**
+ * Avatar plus display name (and optional email) for the authenticated user.
+ * @param {{ user: User, showEmail?: boolean }} props
+ */
 export function UserInfo({
     user,
     showEmail = false,
@@ -10,17 +14,23 @@ export function UserInfo({
     showEmail?: boolean;
 }) {
     const getInitials = useInitials();
+    const displayName = user.name;
 
     return (
         <>
-            <Avatar className="h-8 w-8 overflow-hidden rounded-full">
-                <AvatarImage src={user.avatar} alt={user.name} />
-                <AvatarFallback className="rounded-lg bg-neutral-200 text-black dark:bg-neutral-700 dark:text-white">
-                    {getInitials(user.name)}
-                </AvatarFallback>
-            </Avatar>
+            <span className="relative shrink-0">
+                <Avatar
+                    userId={user.id}
+                    className="h-8 w-8 overflow-hidden rounded-full"
+                >
+                    <AvatarImage src={user.avatar} alt={displayName} />
+                    <AvatarFallback className="rounded-lg text-xs font-medium">
+                        {getInitials(user.name)}
+                    </AvatarFallback>
+                </Avatar>
+            </span>
             <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{user.name}</span>
+                <span className="truncate font-medium">{displayName}</span>
                 {showEmail && (
                     <span className="truncate text-xs text-muted-foreground">
                         {user.email}

@@ -4,6 +4,11 @@ import { cn } from '@/lib/utils';
 
 type Props = ComponentProps<typeof Link>;
 
+/**
+ * Styled Inertia link with underline hover treatment.
+ * @param {Props} props - Inertia Link props plus optional className.
+ * @returns {JSX.Element}
+ */
 export default function TextLink({
     className = '',
     children,
@@ -12,7 +17,7 @@ export default function TextLink({
     return (
         <Link
             className={cn(
-                'text-foreground underline decoration-neutral-300 underline-offset-4 transition-colors duration-300 ease-out hover:decoration-current! dark:decoration-neutral-500',
+                'text-foreground underline decoration-muted-foreground underline-offset-4 transition-colors duration-300 ease-out hover:decoration-current!',
                 className,
             )}
             {...props}

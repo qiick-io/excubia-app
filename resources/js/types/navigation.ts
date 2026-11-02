@@ -6,11 +6,10 @@ export type BreadcrumbItem = {
     href: NonNullable<InertiaLinkProps['href']>;
 };
 
+/** Sidebar or header navigation entry. */
 export type NavItem = {
     title: string;
     href: NonNullable<InertiaLinkProps['href']>;
     icon?: LucideIcon | null;
     isActive?: boolean;
-    /** Hide the item unless the user holds this permission. */
-    permission?: string;
 };

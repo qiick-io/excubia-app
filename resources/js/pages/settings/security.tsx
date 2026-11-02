@@ -1,3 +1,6 @@
+import type { ReactNode } from 'react';
+import AppLayout from '@/layouts/app-layout';
+import SettingsLayout from '@/layouts/settings/layout';
 import { Form, Head } from '@inertiajs/react';
 import { useRef } from 'react';
 import SecurityController from '@/actions/App/Http/Controllers/Settings/SecurityController';
@@ -138,11 +141,15 @@ export default function Security(props: Props) {
     );
 }
 
-Security.layout = {
-    breadcrumbs: [
-        {
-            title: 'Security settings',
-            href: edit(),
-        },
-    ],
-};
+Security.layout = (page: ReactNode) => (
+    <AppLayout
+        breadcrumbs={[
+            {
+                title: 'Security settings',
+                href: edit(),
+            },
+        ]}
+    >
+        <SettingsLayout>{page}</SettingsLayout>
+    </AppLayout>
+);

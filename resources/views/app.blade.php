@@ -1,5 +1,12 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" @class(['dark' => ($appearance ?? 'system') == 'dark'])>
+<html
+        lang="{{ str_replace('_', '-', app()->getLocale()) }}"
+        @class([
+            'dark' => ($appearance ?? 'system') == 'dark',
+            'high-contrast' => $accessibilityHighContrast ?? false,
+            'reduce-motion' => $accessibilityReduceMotion ?? false,
+        ])
+    >
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -16,25 +23,26 @@
                         document.documentElement.classList.add('dark');
                     }
                 }
+
+                document.documentElement.style.colorScheme =
+                    document.documentElement.classList.contains('dark') ? 'dark' : 'light';
             })();
         </script>
 
-        {{-- Inline style to set the HTML background color based on our theme in app.css --}}
+        {{-- FOUC: match ink surfaces from app.css (not default shadcn oklch) --}}
         <style>
             html {
-                background-color: oklch(1 0 0);
+                background-color: #ffffff;
             }
 
             html.dark {
-                background-color: oklch(0.145 0 0);
+                background-color: #0e171e;
             }
         </style>
 
         <link rel="icon" href="/favicon.ico" sizes="any">
         <link rel="icon" href="/favicon.svg" type="image/svg+xml">
         <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-
-        @fonts
 
         @viteReactRefresh
         @vite(['resources/css/app.css', 'resources/js/app.tsx', "resources/js/pages/{$page['component']}.tsx"])

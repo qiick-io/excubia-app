@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+import AppLayout from '@/layouts/app-layout';
 import { Head, Link } from '@inertiajs/react';
 import UserController from '@/actions/App/Http/Controllers/UserController';
 import ConfirmDeleteButton from '@/components/confirm-delete-button';
@@ -112,6 +114,8 @@ export default function UsersIndex({ users }: { users: ManagedUser[] }) {
     );
 }
 
-UsersIndex.layout = {
-    breadcrumbs: [{ title: 'Users', href: index() }],
-};
+UsersIndex.layout = (page: ReactNode) => (
+    <AppLayout breadcrumbs={[{ title: 'Users', href: index() }]}>
+        {page}
+    </AppLayout>
+);

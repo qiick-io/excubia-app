@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+import AppLayout from '@/layouts/app-layout';
 import { Head } from '@inertiajs/react';
 import { PlaceholderPattern } from '@/components/ui/placeholder-pattern';
 import { dashboard } from '@/routes';
@@ -26,11 +28,15 @@ export default function Dashboard() {
     );
 }
 
-Dashboard.layout = {
-    breadcrumbs: [
-        {
-            title: 'Dashboard',
-            href: dashboard(),
-        },
-    ],
-};
+Dashboard.layout = (page: ReactNode) => (
+    <AppLayout
+        breadcrumbs={[
+            {
+                title: 'Dashboard',
+                href: dashboard(),
+            },
+        ]}
+    >
+        {page}
+    </AppLayout>
+);
