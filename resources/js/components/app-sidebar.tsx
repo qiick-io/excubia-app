@@ -4,6 +4,7 @@ import {
     FolderGit2,
     LayoutGrid,
     ShieldCheck,
+    UsersRound,
     Users,
 } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
@@ -20,6 +21,7 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
+import { index as groups } from '@/routes/groups';
 import { index as roles } from '@/routes/roles';
 import { index as users } from '@/routes/users';
 import type { NavItem } from '@/types';
@@ -35,6 +37,12 @@ const mainNavItems: NavItem[] = [
         href: users(),
         icon: Users,
         permission: 'users.manage',
+    },
+    {
+        title: 'Groups',
+        href: groups(),
+        icon: UsersRound,
+        permission: 'groups.manage',
     },
     {
         title: 'Roles',

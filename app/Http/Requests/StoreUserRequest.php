@@ -6,6 +6,7 @@ namespace App\Http\Requests;
 
 use App\Enums\RoleEnum;
 use App\Models\User;
+use App\Services\EffectivePermissionResolverService;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -45,7 +46,7 @@ class StoreUserRequest extends FormRequest
     {
         $roles = Role::query()->orderBy('name')->pluck('name')->all();
 
-        if ($actor?->hasRole(RoleEnum::SuperAdmin->value)) {
+        if ($actor !== null && app(EffectivePermissionResolverService::class)->isSuperAdmin($actor)) {
             return array_values($roles);
         }
 
