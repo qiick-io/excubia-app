@@ -4,6 +4,7 @@ use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\Auth\OidcController;
 use App\Http\Controllers\JobMonitorController;
 use App\Http\Controllers\PermissionController;
+use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserGroupController;
@@ -19,6 +20,11 @@ Route::middleware('guest')->group(function () {
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::inertia('dashboard', 'dashboard')->name('dashboard');
+
+    // Projects are created and edited in a drawer on the list page.
+    Route::resource('projects', ProjectController::class)->only(['index', 'store', 'update', 'destroy']);
+    Route::post('projects/{project}/token', [ProjectController::class, 'rotateToken'])->name('projects.token.rotate');
+    Route::delete('projects/{project}/token', [ProjectController::class, 'revokeToken'])->name('projects.token.revoke');
 
     Route::get('activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index');
 

@@ -43,6 +43,7 @@
     "nav": {
         "platform": "Piattaforma",
         "dashboard": "Dashboard",
+        "projects": "Progetti",
         "activityLog": "Activity Log",
         "users": "Utenti",
         "groups": "Gruppi",
@@ -219,6 +220,7 @@
             "reportBugUrl": "URL segnalazione bug",
             "modules": {
                 "dashboard": "Dashboard",
+                "projects": "Progetti",
                 "ai": "Assistente",
                 "files": "File",
                 "collections": "Collezioni",
@@ -400,6 +402,46 @@
         "newGroup": "Nuovo gruppo",
         "searchPlaceholder": "Cerca gruppi…",
         "sortBy": "Ordina per"
+    },
+    "projects": {
+        "title": "Progetti",
+        "newProject": "Nuovo progetto",
+        "editProject": "Modifica progetto",
+        "create": "Crea",
+        "formDescription": "Un progetto invia i suoi report a questa app con excubia push, autenticato dal suo token di push.",
+        "searchPlaceholder": "Cerca progetti…",
+        "status": "Stato",
+        "lastReport": "Ultimo report",
+        "actions": "Azioni",
+        "empty": "Nessun progetto.",
+        "enabled": "Attivo",
+        "disabled": "Disattivato",
+        "noToken": "Nessun token",
+        "never": "Mai",
+        "enabledHint": "I push da un progetto disattivato vengono rifiutati.",
+        "slugHint": "Slug: {{slug}} (non cambia).",
+        "token": {
+            "title": "Token di push per “{{name}}”",
+            "description": "Copia il token ora: viene mostrato una sola volta. Aggiungi queste righe al .env del progetto e pianifica il push.",
+            "environment": ".env",
+            "schedule": "routes/console.php",
+            "copy": "Copia",
+            "copied": "Copiato",
+            "done": "Fatto",
+            "rotate": "Nuovo token di push",
+            "revoke": "Revoca token di push"
+        },
+        "confirm": {
+            "deleteTitle": "Eliminare il progetto “{{name}}”?",
+            "deleteDescription": "Il suo token di push smette di funzionare. Non si può annullare.",
+            "deleteConfirm": "Elimina",
+            "rotateTitle": "Nuovo token di push per “{{name}}”?",
+            "rotateDescription": "Il token attuale smette subito di funzionare. Aggiorna il .env del progetto con quello nuovo.",
+            "rotateConfirm": "Crea nuovo token",
+            "revokeTitle": "Revocare il token di push di “{{name}}”?",
+            "revokeDescription": "I push da questo progetto vengono rifiutati finché non crei un nuovo token.",
+            "revokeConfirm": "Revoca"
+        }
     },
     "permissions": {
         "description": "I permessi sono definiti in PermissionEnum e sincronizzati nel database. Assegnali ai ruoli dalla pagina di modifica del ruolo.",
