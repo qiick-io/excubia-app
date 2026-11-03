@@ -25,6 +25,16 @@ It is built on [`qiick/excubia-core`](https://github.com/qiick-io/excubia-core),
 
 Later: opt-in runtime monitoring and exception tracking (sent by `qiick/excubia-core`), alerts, and a hosted version on qiick Cloud.
 
+## Scheduler
+
+The app runs scheduled tasks: `excubia:prune-reports` keeps the newest reports of each project (30 by default, in Settings → Project) and `activitylog:clean` trims the activity log. Run the Laravel scheduler on the server, with a cron entry:
+
+```cron
+* * * * * cd /path/to/excubia-app && php artisan schedule:run >> /dev/null 2>&1
+```
+
+or a long-running `php artisan schedule:work` process. A project that has not reported for 36 hours (also in Settings → Project) shows as stale.
+
 ## Stack
 
 PHP 8.4, Laravel 13, Inertia, React 19, TypeScript, Tailwind CSS v4, Pest, Pint, Larastan — the same stack as [Externa](https://github.com/qiick-io/externa-core).

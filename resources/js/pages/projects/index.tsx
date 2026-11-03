@@ -238,7 +238,13 @@ export default function ProjectsIndex({
                                                     )}
                                                 </div>
                                             </TableCell>
-                                            <TableCell className="text-muted-foreground tabular-nums">
+                                            <TableCell
+                                                className={
+                                                    project.is_stale
+                                                        ? 'text-muted-foreground tabular-nums'
+                                                        : 'tabular-nums'
+                                                }
+                                            >
                                                 {project.last_report_at
                                                     ? new Date(
                                                           project.last_report_at,
