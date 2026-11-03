@@ -361,6 +361,8 @@
             "roles_synced": "Ruoli sincronizzati",
             "groups_synced": "Gruppi sincronizzati",
             "members_synced": "Membri sincronizzati",
+            "token_rotated": "Token di push rinnovato",
+            "token_revoked": "Token di push revocato",
             "collection_permissions_synced": "Permessi collection sincronizzati",
             "file_permissions_synced": "Permessi file sincronizzati"
         },

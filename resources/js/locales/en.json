@@ -361,6 +361,8 @@
             "roles_synced": "Roles synced",
             "groups_synced": "Groups synced",
             "members_synced": "Members synced",
+            "token_rotated": "Push token rotated",
+            "token_revoked": "Push token revoked",
             "collection_permissions_synced": "Collection permissions synced",
             "file_permissions_synced": "File permissions synced"
         },

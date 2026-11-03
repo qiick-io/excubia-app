@@ -361,6 +361,8 @@
             "roles_synced": "Rollen synchronisiert",
             "groups_synced": "Gruppen synchronisiert",
             "members_synced": "Mitglieder synchronisiert",
+            "token_rotated": "Push-Token erneuert",
+            "token_revoked": "Push-Token widerrufen",
             "collection_permissions_synced": "Collection-Berechtigungen synchronisiert",
             "file_permissions_synced": "Datei-Berechtigungen synchronisiert"
         },
