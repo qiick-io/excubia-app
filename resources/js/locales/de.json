@@ -445,6 +445,43 @@
             "revokeConfirm": "Widerrufen"
         }
     },
+    "dashboard": {
+        "noAccess": "Du hast keinen Zugriff auf Projekte. Bitte einen Administrator um die Berechtigung projects.view.",
+        "emptyTitle": "Noch keine Projekte",
+        "emptyDescription": "Registriere ein Projekt und hinterlege sein Push-Token im Projekt, um den ersten Bericht zu senden.",
+        "lastReport": "Letzter Bericht {{date}}",
+        "noReports": "Noch keine Berichte",
+        "stale": "Veraltet"
+    },
+    "report": {
+        "noIssues": "Keine Probleme",
+        "empty": "Noch kein Bericht empfangen. Führe php artisan excubia:push im Projekt aus.",
+        "checks": "Prüfungen",
+        "upgradePlan": "Upgrade-Plan",
+        "noUpgradeSteps": "Nichts zu aktualisieren.",
+        "history": "Frühere Berichte",
+        "receivedAt": "Empfangen",
+        "worstSeverity": "Höchster Schweregrad",
+        "findings": "Befunde",
+        "severityLabel": "Schweregrad",
+        "subject": "Betreff",
+        "message": "Meldung",
+        "fixHint": "Behebung",
+        "evidence": "Details",
+        "severity": {
+            "critical": "Kritisch",
+            "high": "Hoch",
+            "medium": "Mittel",
+            "low": "Niedrig",
+            "info": "Info"
+        },
+        "status": {
+            "pass": "Bestanden",
+            "warn": "Warnung",
+            "fail": "Fehler",
+            "skipped": "Übersprungen"
+        }
+    },
     "permissions": {
         "description": "Berechtigungen sind in PermissionEnum definiert und werden mit der Datenbank synchronisiert. Weise sie auf der Bearbeitungsseite einer Rolle zu.",
         "sync": "Aus Enum synchronisieren",
