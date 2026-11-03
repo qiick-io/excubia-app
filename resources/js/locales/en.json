@@ -445,6 +445,43 @@
             "revokeConfirm": "Revoke"
         }
     },
+    "dashboard": {
+        "noAccess": "You do not have access to projects. Ask an administrator for the projects.view permission.",
+        "emptyTitle": "No projects yet",
+        "emptyDescription": "Register a project, then set its push token in the project to send the first report.",
+        "lastReport": "Last report {{date}}",
+        "noReports": "No reports yet",
+        "stale": "Stale"
+    },
+    "report": {
+        "noIssues": "No issues",
+        "empty": "No report received yet. Run php artisan excubia:push in the project.",
+        "checks": "Checks",
+        "upgradePlan": "Upgrade plan",
+        "noUpgradeSteps": "Nothing to upgrade.",
+        "history": "Previous reports",
+        "receivedAt": "Received",
+        "worstSeverity": "Worst severity",
+        "findings": "Findings",
+        "severityLabel": "Severity",
+        "subject": "Subject",
+        "message": "Message",
+        "fixHint": "Fix",
+        "evidence": "Details",
+        "severity": {
+            "critical": "Critical",
+            "high": "High",
+            "medium": "Medium",
+            "low": "Low",
+            "info": "Info"
+        },
+        "status": {
+            "pass": "Pass",
+            "warn": "Warn",
+            "fail": "Fail",
+            "skipped": "Skipped"
+        }
+    },
     "permissions": {
         "description": "Permissions are defined in PermissionEnum and synced to the database. Assign them to roles on the role edit page.",
         "sync": "Sync from enum",

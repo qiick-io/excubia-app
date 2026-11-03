@@ -445,6 +445,43 @@
             "revokeConfirm": "Revoca"
         }
     },
+    "dashboard": {
+        "noAccess": "Non hai accesso ai progetti. Chiedi a un amministratore il permesso projects.view.",
+        "emptyTitle": "Nessun progetto",
+        "emptyDescription": "Registra un progetto, poi imposta il suo token di push nel progetto per inviare il primo report.",
+        "lastReport": "Ultimo report {{date}}",
+        "noReports": "Nessun report",
+        "stale": "Fermo"
+    },
+    "report": {
+        "noIssues": "Nessun problema",
+        "empty": "Nessun report ricevuto. Esegui php artisan excubia:push nel progetto.",
+        "checks": "Controlli",
+        "upgradePlan": "Piano di aggiornamento",
+        "noUpgradeSteps": "Niente da aggiornare.",
+        "history": "Report precedenti",
+        "receivedAt": "Ricevuto",
+        "worstSeverity": "Gravità peggiore",
+        "findings": "Risultati",
+        "severityLabel": "Gravità",
+        "subject": "Oggetto",
+        "message": "Messaggio",
+        "fixHint": "Soluzione",
+        "evidence": "Dettagli",
+        "severity": {
+            "critical": "Critica",
+            "high": "Alta",
+            "medium": "Media",
+            "low": "Bassa",
+            "info": "Info"
+        },
+        "status": {
+            "pass": "Ok",
+            "warn": "Avviso",
+            "fail": "Errore",
+            "skipped": "Saltato"
+        }
+    },
     "permissions": {
         "description": "I permessi sono definiti in PermissionEnum e sincronizzati nel database. Assegnali ai ruoli dalla pagina di modifica del ruolo.",
         "sync": "Sincronizza dall’enum",
