@@ -10,3 +10,6 @@ Artisan::command('inspire', function () {
 
 // Drops activity log entries older than `activitylog.clean_after_days`, as in qiick-io/externa-core.
 Schedule::command('activitylog:clean')->daily();
+
+// Keeps the newest reports of each project (setting "Reports kept per project").
+Schedule::command('excubia:prune-reports')->daily();

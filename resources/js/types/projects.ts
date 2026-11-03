@@ -6,6 +6,8 @@ export type ProjectRow = {
     is_enabled: boolean;
     has_push_token: boolean;
     last_report_at: string | null;
+    /** Never reported, or last report older than the stale setting. */
+    is_stale: boolean;
     created_at: string;
     updated_at: string;
 };
