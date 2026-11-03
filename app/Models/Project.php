@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
 use Spatie\Activitylog\Support\LogOptions;
 
@@ -35,10 +37,27 @@ class Project extends Model
 
     /**
      * Token changes are logged as `token_rotated` / `token_revoked` events, never the hash.
+     * `last_report_at` changes on every push and is not an admin change.
      */
     public function getActivitylogOptions(): LogOptions
     {
-        return $this->applicationActivityLogOptions()->logExcept(['push_token_hash']);
+        return $this->applicationActivityLogOptions()->logExcept(['push_token_hash', 'last_report_at']);
+    }
+
+    /**
+     * @return HasMany<HealthReport, $this>
+     */
+    public function healthReports(): HasMany
+    {
+        return $this->hasMany(HealthReport::class);
+    }
+
+    /**
+     * @return HasOne<HealthReport, $this>
+     */
+    public function latestReport(): HasOne
+    {
+        return $this->hasOne(HealthReport::class)->latestOfMany('received_at');
     }
 
     /**
