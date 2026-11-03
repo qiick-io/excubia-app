@@ -15,10 +15,13 @@ use Carbon\CarbonImmutable;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 use Spatie\Activitylog\Facades\Activity;
@@ -45,6 +48,20 @@ class AppServiceProvider extends ServiceProvider
         $this->configureAuthorization();
         $this->configureActivityLogging();
         $this->registerAuthActivityListeners();
+        $this->configureRateLimiting();
+    }
+
+    /**
+     * `excubia-push`: pushes per minute for one project token (by its hash), or per IP without one.
+     */
+    protected function configureRateLimiting(): void
+    {
+        RateLimiter::for('excubia-push', function (Request $request): Limit {
+            $token = $request->bearerToken();
+
+            return Limit::perMinute(config('excubia.push_requests_per_minute'))
+                ->by($token === null ? 'ip:'.$request->ip() : 'token:'.hash('sha256', $token));
+        });
     }
 
     /**
