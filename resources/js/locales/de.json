@@ -43,6 +43,7 @@
     "nav": {
         "platform": "Plattform",
         "dashboard": "Dashboard",
+        "projects": "Projekte",
         "activityLog": "Aktivitätsprotokoll",
         "users": "Benutzer",
         "groups": "Gruppen",
@@ -219,6 +220,7 @@
             "reportBugUrl": "URL für Bug melden",
             "modules": {
                 "dashboard": "Dashboard",
+                "projects": "Projekte",
                 "ai": "Assistent",
                 "files": "Dateien",
                 "collections": "Sammlungen",
@@ -359,6 +361,8 @@
             "roles_synced": "Rollen synchronisiert",
             "groups_synced": "Gruppen synchronisiert",
             "members_synced": "Mitglieder synchronisiert",
+            "token_rotated": "Push-Token erneuert",
+            "token_revoked": "Push-Token widerrufen",
             "collection_permissions_synced": "Collection-Berechtigungen synchronisiert",
             "file_permissions_synced": "Datei-Berechtigungen synchronisiert"
         },
@@ -400,6 +404,46 @@
         "newGroup": "Neue Gruppe",
         "searchPlaceholder": "Gruppen suchen…",
         "sortBy": "Sortieren nach"
+    },
+    "projects": {
+        "title": "Projekte",
+        "newProject": "Neues Projekt",
+        "editProject": "Projekt bearbeiten",
+        "create": "Erstellen",
+        "formDescription": "Ein Projekt sendet seine Berichte mit excubia push an diese App, authentifiziert durch sein Push-Token.",
+        "searchPlaceholder": "Projekte suchen…",
+        "status": "Status",
+        "lastReport": "Letzter Bericht",
+        "actions": "Aktionen",
+        "empty": "Noch keine Projekte.",
+        "enabled": "Aktiv",
+        "disabled": "Deaktiviert",
+        "noToken": "Kein Token",
+        "never": "Nie",
+        "enabledHint": "Pushes von einem deaktivierten Projekt werden abgelehnt.",
+        "slugHint": "Slug: {{slug}} (ändert sich nicht).",
+        "token": {
+            "title": "Push-Token für „{{name}}“",
+            "description": "Kopiere das Token jetzt: Es wird nur einmal angezeigt. Füge diese Zeilen in die .env des Projekts ein und plane den Push.",
+            "environment": ".env",
+            "schedule": "routes/console.php",
+            "copy": "Kopieren",
+            "copied": "Kopiert",
+            "done": "Fertig",
+            "rotate": "Neues Push-Token",
+            "revoke": "Push-Token widerrufen"
+        },
+        "confirm": {
+            "deleteTitle": "Projekt „{{name}}“ löschen?",
+            "deleteDescription": "Sein Push-Token funktioniert nicht mehr. Das kann nicht rückgängig gemacht werden.",
+            "deleteConfirm": "Löschen",
+            "rotateTitle": "Neues Push-Token für „{{name}}“?",
+            "rotateDescription": "Das aktuelle Token funktioniert sofort nicht mehr. Trage das neue in die .env des Projekts ein.",
+            "rotateConfirm": "Neues Token erstellen",
+            "revokeTitle": "Push-Token von „{{name}}“ widerrufen?",
+            "revokeDescription": "Pushes von diesem Projekt werden abgelehnt, bis du ein neues Token erstellst.",
+            "revokeConfirm": "Widerrufen"
+        }
     },
     "permissions": {
         "description": "Berechtigungen sind in PermissionEnum definiert und werden mit der Datenbank synchronisiert. Weise sie auf der Bearbeitungsseite einer Rolle zu.",

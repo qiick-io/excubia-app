@@ -6,7 +6,7 @@ namespace App\Enums;
 
 /**
  * Activity-log event names offered by the activity log filter: Spatie's model events plus the
- * manual events written for auth, settings and role, member and permission syncs.
+ * manual events written for auth, settings, role, member and permission syncs and push tokens.
  */
 enum ActivityEventEnum: string
 {
@@ -20,6 +20,8 @@ enum ActivityEventEnum: string
     case PermissionsSynced = 'permissions_synced';
     case RolesSynced = 'roles_synced';
     case MembersSynced = 'members_synced';
+    case TokenRotated = 'token_rotated';
+    case TokenRevoked = 'token_revoked';
 
     /**
      * @return list<string>

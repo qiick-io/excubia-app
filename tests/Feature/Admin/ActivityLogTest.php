@@ -60,7 +60,7 @@ it('shows the activity log to a custom role with activity.view', function () {
 it('shares the activity sidebar module and its permission with allowed users only', function () {
     $this->actingAs(activityActor(RoleEnum::Admin))->get(route('dashboard'))
         ->assertInertia(fn (Assert $page) => $page
-            ->where('projectSettings.sidebarModules.1', ['id' => 'activity', 'enabled' => true, 'locked' => false])
+            ->where('projectSettings.sidebarModules.2', ['id' => 'activity', 'enabled' => true, 'locked' => false])
             ->where('auth.permissions', fn ($permissions) => collect($permissions)->contains(PermissionEnum::ActivityView->value)));
 
     $this->actingAs(activityActor(RoleEnum::Reader))->get(route('dashboard'))

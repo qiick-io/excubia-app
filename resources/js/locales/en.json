@@ -43,6 +43,7 @@
     "nav": {
         "platform": "Platform",
         "dashboard": "Dashboard",
+        "projects": "Projects",
         "activityLog": "Activity Log",
         "users": "Users",
         "groups": "Groups",
@@ -219,6 +220,7 @@
             "reportBugUrl": "Report bug URL",
             "modules": {
                 "dashboard": "Dashboard",
+                "projects": "Projects",
                 "ai": "Assistant",
                 "files": "Files",
                 "collections": "Collections",
@@ -359,6 +361,8 @@
             "roles_synced": "Roles synced",
             "groups_synced": "Groups synced",
             "members_synced": "Members synced",
+            "token_rotated": "Push token rotated",
+            "token_revoked": "Push token revoked",
             "collection_permissions_synced": "Collection permissions synced",
             "file_permissions_synced": "File permissions synced"
         },
@@ -400,6 +404,46 @@
         "newGroup": "New group",
         "searchPlaceholder": "Search groups…",
         "sortBy": "Sort by"
+    },
+    "projects": {
+        "title": "Projects",
+        "newProject": "New project",
+        "editProject": "Edit project",
+        "create": "Create",
+        "formDescription": "A project pushes its reports to this app with excubia push, authenticated by its push token.",
+        "searchPlaceholder": "Search projects…",
+        "status": "Status",
+        "lastReport": "Last report",
+        "actions": "Actions",
+        "empty": "No projects yet.",
+        "enabled": "Enabled",
+        "disabled": "Disabled",
+        "noToken": "No token",
+        "never": "Never",
+        "enabledHint": "Pushes from a disabled project are rejected.",
+        "slugHint": "Slug: {{slug}} (does not change).",
+        "token": {
+            "title": "Push token for “{{name}}”",
+            "description": "Copy the token now: it is shown only once. Add these lines to the project’s .env and schedule the push.",
+            "environment": ".env",
+            "schedule": "routes/console.php",
+            "copy": "Copy",
+            "copied": "Copied",
+            "done": "Done",
+            "rotate": "New push token",
+            "revoke": "Revoke push token"
+        },
+        "confirm": {
+            "deleteTitle": "Delete project “{{name}}”?",
+            "deleteDescription": "Its push token stops working. This cannot be undone.",
+            "deleteConfirm": "Delete",
+            "rotateTitle": "New push token for “{{name}}”?",
+            "rotateDescription": "The current token stops working at once. Update the project’s .env with the new one.",
+            "rotateConfirm": "Issue new token",
+            "revokeTitle": "Revoke the push token of “{{name}}”?",
+            "revokeDescription": "Pushes from this project are rejected until you issue a new token.",
+            "revokeConfirm": "Revoke"
+        }
     },
     "permissions": {
         "description": "Permissions are defined in PermissionEnum and synced to the database. Assign them to roles on the role edit page.",

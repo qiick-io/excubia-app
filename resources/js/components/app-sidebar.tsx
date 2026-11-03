@@ -2,6 +2,7 @@ import { Link, usePage } from '@inertiajs/react';
 import {
     BookOpen,
     FolderGit2,
+    FolderKanban,
     LayoutGrid,
     ScrollText,
     Settings,
@@ -31,6 +32,7 @@ import { useCurrentUrl } from '@/hooks/use-current-url';
 import { dashboard } from '@/routes';
 import activityLogs from '@/routes/activity-logs';
 import groups from '@/routes/groups';
+import projects from '@/routes/projects';
 import { edit as editProfile } from '@/routes/profile';
 import users from '@/routes/users';
 import type { NavItem } from '@/types';
@@ -59,6 +61,13 @@ export function AppSidebar() {
                 titleKey: 'nav.dashboard',
                 href: dashboard(),
                 icon: LayoutGrid,
+            },
+            projects: {
+                id: 'projects',
+                titleKey: 'nav.projects',
+                href: projects.index.url(),
+                icon: FolderKanban,
+                permission: PermissionEnum.ProjectsView,
             },
             activity: {
                 id: 'activity',
