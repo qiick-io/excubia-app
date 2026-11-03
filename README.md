@@ -77,24 +77,24 @@ or keep `php artisan schedule:work` running. The app queues no work of its own y
 1. In the app, open **Projects → New project** and give it a name. The app shows the push token **once**: copy it.
 2. In the Laravel project to watch, install the core package. You need a version with `excubia push`, which comes in 0.2.0:
 
-   ```bash
-   composer require qiick/excubia-core
-   ```
+    ```bash
+    composer require qiick/excubia-core
+    ```
 
 3. Add the two lines from the token dialog to the project's `.env`:
 
-   ```dotenv
-   EXCUBIA_APP_URL=https://excubia.example.com
-   EXCUBIA_APP_TOKEN=excubia_…
-   ```
+    ```dotenv
+    EXCUBIA_APP_URL=https://excubia.example.com
+    EXCUBIA_APP_TOKEN=excubia_…
+    ```
 
 4. Schedule the push in the project's `routes/console.php`, and keep that project's scheduler running too:
 
-   ```php
-   use Illuminate\Support\Facades\Schedule;
+    ```php
+    use Illuminate\Support\Facades\Schedule;
 
-   Schedule::command('excubia:push')->daily();
-   ```
+    Schedule::command('excubia:push')->daily();
+    ```
 
 Run `php artisan excubia:push` once to send the first report. A project that has not reported for 36 hours (setting in **Settings → Project**) shows as stale. Lost the token? Use **New push token** on the project row. **Revoke** stops pushes until you issue a new one. For the project side (CI pushes, `--strict`, exit codes), see [`qiick/excubia-core`](https://github.com/qiick-io/excubia-core#readme).
 
