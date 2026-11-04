@@ -44,6 +44,7 @@
         "platform": "Platform",
         "dashboard": "Dashboard",
         "projects": "Projects",
+        "assistant": "Assistant",
         "activityLog": "Activity Log",
         "users": "Users",
         "groups": "Groups",
@@ -221,7 +222,7 @@
             "modules": {
                 "dashboard": "Dashboard",
                 "projects": "Projects",
-                "ai": "Assistant",
+                "assistant": "Assistant",
                 "files": "Files",
                 "collections": "Collections",
                 "chat": "Chat",
@@ -480,6 +481,25 @@
             "warn": "Warn",
             "fail": "Fail",
             "skipped": "Skipped"
+        }
+    },
+    "assistant": {
+        "title": "Assistant",
+        "newConversation": "New conversation",
+        "conversations": "Conversations",
+        "emptyTitle": "Ask about your projects",
+        "emptyDescription": "The assistant reads the stored reports only. It cannot change anything.",
+        "placeholder": "Ask a question… (Enter to send, Shift+Enter for a new line)",
+        "send": "Send",
+        "you": "You",
+        "thinking": "Thinking…",
+        "failed": "No answer: the assistant failed.",
+        "disclaimer": "Answers come from the stored reports and may be incomplete. Check important ones on the project page.",
+        "examples": {
+            "critical": "Which projects have high or critical findings?",
+            "package": "Which projects use guzzlehttp/guzzle?",
+            "upgradeFirst": "Which project should I upgrade first, and why?",
+            "lastWeek": "What got worse since last week?"
         }
     },
     "permissions": {

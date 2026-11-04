@@ -55,6 +55,7 @@ class HandleInertiaRequests extends Middleware
             'locale' => app()->getLocale(),
             'availableLocales' => config('i18n.available_locales', ['en' => 'English']),
             'projectSettings' => $settings->shared(),
+            'isAssistantEnabled' => (bool) config('excubia.ai_enabled'),
             // The saved theme, so the Appearance live preview can restore it when leaving the page.
             'projectAppearance' => function (): array {
                 $theme = app(ThemePresetService::class)->current();

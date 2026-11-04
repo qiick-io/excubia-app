@@ -98,6 +98,18 @@ or keep `php artisan schedule:work` running. The app queues no work of its own y
 
 Run `php artisan excubia:push` once to send the first report. A project that has not reported for 36 hours (setting in **Settings → Project**) shows as stale. Lost the token? Use **New push token** on the project row. **Revoke** stops pushes until you issue a new one. For the project side (CI pushes, `--strict`, exit codes), see [`qiick/excubia-core`](https://github.com/qiick-io/excubia-core#readme).
 
+### AI assistant (optional)
+
+Off by default. To turn it on, run a model with [Ollama](https://ollama.com) and add to `.env`:
+
+```dotenv
+EXCUBIA_AI_ENABLED=true
+OLLAMA_URL=http://localhost:11434
+OLLAMA_MODEL=qwen3.5:4b
+```
+
+Pick a model that supports tool calling. For an OpenAI-compatible local server such as LM Studio, set `AI_DEFAULT_PROVIDER=local`, `LOCAL_AI_URL` and `LOCAL_AI_MODEL` instead. Users with the `ai.use` permission (admin and super-admin by default) see **Assistant** in the sidebar and can ask questions about the stored reports, such as "which projects have critical advisories?" or "what got worse since last week?". The assistant is read-only. To use a cloud provider instead, set `AI_DEFAULT_PROVIDER` and that provider's key (see `config/ai.php`). The data in the Privacy section below then leaves your server.
+
 ### Update
 
 ```bash
@@ -114,8 +126,13 @@ php artisan up
 
 - Projects send their reports only to this app, authenticated by their own token.
 - The checks run inside each project, through `qiick/excubia-core`. They send only package names and versions to public data sources.
-- The app itself calls nothing outside your server except the mail server and the OIDC provider you configure.
+- The app itself calls nothing outside your server except the mail server, the OIDC provider and the AI provider you configure.
 - No telemetry and no third-party trackers.
+- The AI assistant is off by default. When you turn it on, it sends to the AI provider you configure:
+    - the questions users ask;
+    - the report data its tools read: project names, findings, package names and versions, upgrade steps.
+
+    It never sends push tokens, user data or file paths. With the default local model (Ollama), nothing leaves your network.
 
 ## Stack
 

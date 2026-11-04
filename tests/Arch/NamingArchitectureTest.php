@@ -85,3 +85,13 @@ arch('policies end with Policy')
     ->expect('App\Policies')
     ->classes()
     ->toHaveSuffix('Policy');
+
+arch('AI agents end with Agent')
+    ->expect('App\Ai\Agents')
+    ->classes()
+    ->toHaveSuffix('Agent');
+
+arch('AI tools end with Tool')
+    ->expect('App\Ai\Tools')
+    ->classes()
+    ->toHaveSuffix('Tool');

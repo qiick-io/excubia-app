@@ -44,6 +44,7 @@
         "platform": "Plattform",
         "dashboard": "Dashboard",
         "projects": "Projekte",
+        "assistant": "Assistent",
         "activityLog": "Aktivitätsprotokoll",
         "users": "Benutzer",
         "groups": "Gruppen",
@@ -221,7 +222,7 @@
             "modules": {
                 "dashboard": "Dashboard",
                 "projects": "Projekte",
-                "ai": "Assistent",
+                "assistant": "Assistent",
                 "files": "Dateien",
                 "collections": "Sammlungen",
                 "chat": "Chat",
@@ -480,6 +481,25 @@
             "warn": "Warnung",
             "fail": "Fehler",
             "skipped": "Übersprungen"
+        }
+    },
+    "assistant": {
+        "title": "Assistent",
+        "newConversation": "Neue Unterhaltung",
+        "conversations": "Unterhaltungen",
+        "emptyTitle": "Frag nach deinen Projekten",
+        "emptyDescription": "Der Assistent liest nur die gespeicherten Berichte. Er kann nichts ändern.",
+        "placeholder": "Stelle eine Frage… (Enter zum Senden, Umschalt+Enter für eine neue Zeile)",
+        "send": "Senden",
+        "you": "Du",
+        "thinking": "Denke nach…",
+        "failed": "Keine Antwort: Der Assistent ist fehlgeschlagen.",
+        "disclaimer": "Die Antworten stammen aus den gespeicherten Berichten und können unvollständig sein. Prüfe wichtige auf der Projektseite.",
+        "examples": {
+            "critical": "Welche Projekte haben Befunde mit hohem oder kritischem Schweregrad?",
+            "package": "Welche Projekte verwenden guzzlehttp/guzzle?",
+            "upgradeFirst": "Welches Projekt sollte ich zuerst aktualisieren, und warum?",
+            "lastWeek": "Was hat sich seit letzter Woche verschlechtert?"
         }
     },
     "permissions": {

@@ -42,7 +42,7 @@ Run them before every push.
 - No `dd`, `dump`, `var_dump`, `console.log` left behind, no `env()` outside `config/`.
 - Migrations are forward-only: never edit or delete a merged migration; add a new one.
 - Tests: Pest feature tests for every behavior; no real network (fake HTTP). Never delete or weaken a test.
-- Privacy: no telemetry. Only package names and versions leave the server, through `qiick/excubia-core`.
+- Privacy: no telemetry. Only package names and versions leave the server, through `qiick/excubia-core`. The AI assistant (#17) is off by default, and its tools are read-only. A tool never returns push tokens, user data or file paths (covered by a test). Tests fake the provider: no real AI call.
 
 ## Git and PR workflow
 
