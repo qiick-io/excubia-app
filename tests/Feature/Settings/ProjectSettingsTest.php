@@ -267,6 +267,7 @@ it('shares the default sidebar modules with every page', function () {
         ->assertInertia(fn (Assert $page) => $page->where('projectSettings.sidebarModules', [
             ['id' => 'dashboard', 'enabled' => true, 'locked' => true],
             ['id' => 'projects', 'enabled' => true, 'locked' => false],
+            ['id' => 'assistant', 'enabled' => true, 'locked' => false],
             ['id' => 'activity', 'enabled' => true, 'locked' => false],
             ['id' => 'users', 'enabled' => true, 'locked' => false],
             ['id' => 'groups', 'enabled' => true, 'locked' => false],
@@ -293,6 +294,7 @@ it('saves the sidebar order and visibility, keeping locked modules on', function
         ['id' => 'users', 'enabled' => false, 'locked' => false],
         ['id' => 'dashboard', 'enabled' => true, 'locked' => true],
         ['id' => 'projects', 'enabled' => true, 'locked' => false],
+        ['id' => 'assistant', 'enabled' => true, 'locked' => false],
         ['id' => 'activity', 'enabled' => true, 'locked' => false],
     ];
 
@@ -324,6 +326,7 @@ it('inserts modules missing from the stored order next to their default neighbou
     expect(app(SettingsRepositoryService::class)->sidebarModules())->toBe([
         ['id' => 'dashboard', 'enabled' => true, 'locked' => true],
         ['id' => 'projects', 'enabled' => true, 'locked' => false],
+        ['id' => 'assistant', 'enabled' => true, 'locked' => false],
         ['id' => 'activity', 'enabled' => true, 'locked' => false],
         ['id' => 'settings', 'enabled' => true, 'locked' => true],
         ['id' => 'users', 'enabled' => false, 'locked' => false],

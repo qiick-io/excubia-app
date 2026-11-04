@@ -11,4 +11,5 @@ export enum PermissionEnum {
     SettingsManage = 'settings.manage',
     ActivityView = 'activity.view',
     JobsManage = 'jobs.manage',
+    AiUse = 'ai.use',
 }

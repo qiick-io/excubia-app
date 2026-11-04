@@ -63,3 +63,19 @@ export type HealthReportBody = {
     checks: ReportCheck[];
     upgradePlan: { stepNumber: number; message: string }[];
 };
+
+/** One of the user's assistant conversations (`AssistantConversationService`). */
+export type AssistantConversation = {
+    id: string;
+    title: string;
+    updated_at: string | null;
+};
+
+/** A user or assistant message of a conversation. */
+export type AssistantMessage = {
+    id: string;
+    role: 'user' | 'assistant';
+    content: string;
+    is_failed: boolean;
+    created_at: string | null;
+};

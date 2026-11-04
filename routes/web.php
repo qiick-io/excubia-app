@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\AssistantController;
 use App\Http\Controllers\Auth\OidcController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\JobMonitorController;
@@ -28,6 +29,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('projects/{project:slug}', [ProjectReportController::class, 'show'])->name('projects.show');
     Route::post('projects/{project}/token', [ProjectController::class, 'rotateToken'])->name('projects.token.rotate');
     Route::delete('projects/{project}/token', [ProjectController::class, 'revokeToken'])->name('projects.token.revoke');
+
+    // Assistant (#17): 404 while `excubia.ai_enabled` is off.
+    Route::get('assistant', [AssistantController::class, 'index'])->name('assistant.index');
+    Route::post('assistant', [AssistantController::class, 'store'])->middleware('throttle:20,1')->name('assistant.store');
+    Route::get('assistant/{conversation}', [AssistantController::class, 'show'])->name('assistant.show');
 
     Route::get('activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index');
 

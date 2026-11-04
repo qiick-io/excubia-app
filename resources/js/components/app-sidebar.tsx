@@ -1,6 +1,7 @@
 import { Link, usePage } from '@inertiajs/react';
 import {
     BookOpen,
+    Bot,
     FolderGit2,
     FolderKanban,
     LayoutGrid,
@@ -31,6 +32,7 @@ import { useCan } from '@/hooks/use-can';
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import { dashboard } from '@/routes';
 import activityLogs from '@/routes/activity-logs';
+import assistant from '@/routes/assistant';
 import groups from '@/routes/groups';
 import projects from '@/routes/projects';
 import { edit as editProfile } from '@/routes/profile';
@@ -52,7 +54,7 @@ export function AppSidebar() {
     const { t } = useTranslation();
     const { can } = useCan();
     const { isCurrentUrl } = useCurrentUrl();
-    const { projectSettings } = usePage().props;
+    const { projectSettings, isAssistantEnabled } = usePage().props;
 
     const moduleDefs = useMemo<Record<string, ModuleDef>>(
         () => ({
@@ -68,6 +70,13 @@ export function AppSidebar() {
                 href: projects.index.url(),
                 icon: FolderKanban,
                 permission: PermissionEnum.ProjectsView,
+            },
+            assistant: {
+                id: 'assistant',
+                titleKey: 'nav.assistant',
+                href: assistant.index.url(),
+                icon: Bot,
+                permission: PermissionEnum.AiUse,
             },
             activity: {
                 id: 'activity',
@@ -104,6 +113,7 @@ export function AppSidebar() {
         .filter((module) => module.enabled)
         .map((module) => moduleDefs[module.id])
         .filter((def): def is ModuleDef => !!def)
+        .filter((def) => def.id !== 'assistant' || isAssistantEnabled)
         .filter((def) => !def.permission || can(def.permission));
 
     const footerNavItems: NavItem[] = [

@@ -32,4 +32,16 @@ return [
 
     'push_requests_per_minute' => (int) env('EXCUBIA_PUSH_REQUESTS_PER_MINUTE', 30),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Assistant
+    |--------------------------------------------------------------------------
+    |
+    | The AI assistant is off by default: no page, no sidebar module and no
+    | outbound call. Set the provider in config/ai.php (Ollama by default).
+    |
+    */
+
+    'ai_enabled' => (bool) env('EXCUBIA_AI_ENABLED', false),
+
 ];
