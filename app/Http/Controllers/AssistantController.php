@@ -9,6 +9,7 @@ use App\Enums\PermissionEnum;
 use App\Http\Requests\StoreAssistantMessageRequest;
 use App\Models\User;
 use App\Services\AssistantConversationService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -18,7 +19,8 @@ use Inertia\Response;
 use Throwable;
 
 /**
- * Assistant chat (#17), behind `excubia.ai_enabled` (404 while off) and `ai.use`.
+ * Assistant chat (#17), behind `excubia.ai_enabled` (404 while off) and `ai.use`. The page posts
+ * with Inertia and is redirected; the ⌘J side panel posts JSON and gets the thread back.
  * ponytail: the answer is awaited in the request (no streaming); stream it when answers get long.
  */
 class AssistantController extends Controller
@@ -39,7 +41,7 @@ class AssistantController extends Controller
         return $this->render($user, $conversation);
     }
 
-    public function store(StoreAssistantMessageRequest $request): RedirectResponse
+    public function store(StoreAssistantMessageRequest $request): RedirectResponse|JsonResponse
     {
         /** @var User $user authorized by the request */
         $user = $request->user();
@@ -52,12 +54,26 @@ class AssistantController extends Controller
         } catch (Throwable $exception) {
             // The question itself is not logged: only that the provider failed.
             Log::warning('Assistant provider call failed.', ['exception' => $exception::class]);
+
+            if ($request->wantsJson()) {
+                return response()->json(['message' => __('The assistant is not reachable. Check the AI provider settings.')], 503);
+            }
+
             Inertia::flash('toast', ['type' => 'error', 'message' => __('The assistant is not reachable. Check the AI provider settings.')]);
 
             return $conversationId === '' ? to_route('assistant.index') : to_route('assistant.show', $conversationId);
         }
 
-        return to_route('assistant.show', $response->conversationId ?? $conversationId);
+        $conversationId = $response->conversationId ?? $conversationId;
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'conversationId' => $conversationId,
+                'messages' => $this->conversations->messages($conversationId),
+            ]);
+        }
+
+        return to_route('assistant.show', $conversationId);
     }
 
     private function authorizedUser(Request $request): User

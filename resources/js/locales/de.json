@@ -531,7 +531,11 @@
         "thisWeek": "Diese Woche",
         "aWeekAgo": "Vor einer Woche",
         "thisMonth": "Diesen Monat",
-        "older": "Älter"
+        "older": "Älter",
+        "panelDescription": "Schnelle Assistenten-Schublade. Öffnen Sie die Vollseite für den Verlauf.",
+        "openFullPage": "Ganze Seite öffnen",
+        "openPanel": "Im Seitenbereich öffnen",
+        "unreachable": "Der Assistent ist nicht erreichbar. Prüfe die Einstellungen des KI-Anbieters."
     },
     "permissions": {
         "description": "Berechtigungen sind in PermissionEnum definiert und werden mit der Datenbank synchronisiert. Weise sie auf der Bearbeitungsseite einer Rolle zu.",

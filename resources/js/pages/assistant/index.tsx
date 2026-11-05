@@ -2,6 +2,7 @@ import { Head, Link, router, useForm } from '@inertiajs/react';
 import { Plus, Sparkles } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { AssistantChatMessage } from '@/components/ai/assistant-chat-message';
 import { ThinkingDots } from '@/components/ai/thinking-dots';
 import InputError from '@/components/input-error';
 import {
@@ -13,7 +14,6 @@ import {
 } from '@/components/layout/chat-layout';
 import { FilterSearch } from '@/components/layout/page-header';
 import { PageLayout } from '@/components/layout/page-layout';
-import { Bubble, BubbleContent } from '@/components/ui/bubble';
 import { Button } from '@/components/ui/button';
 import {
     Empty,
@@ -22,7 +22,6 @@ import {
     EmptyMedia,
     EmptyTitle,
 } from '@/components/ui/empty';
-import { Message, MessageContent } from '@/components/ui/message';
 import AppLayout from '@/layouts/app-layout';
 import assistantRoutes from '@/routes/assistant';
 import type {
@@ -256,48 +255,6 @@ export default function AssistantIndex({
                 </ChatLayout>
             </PageLayout>
         </AppLayout>
-    );
-}
-
-/**
- * One message: user bubbles muted and aligned to the end, assistant answers ghost and full
- * width, failed answers destructive (app-ui `docs/chat-and-assistant.md`).
- */
-function AssistantChatMessage({ message }: { message: AssistantMessage }) {
-    const { t } = useTranslation();
-    const isUser = message.role === 'user';
-
-    return (
-        <Message align={isUser ? 'end' : 'start'}>
-            <MessageContent>
-                <Bubble
-                    variant={
-                        message.is_failed
-                            ? 'destructive'
-                            : isUser
-                              ? 'muted'
-                              : 'ghost'
-                    }
-                    align={isUser ? 'end' : 'start'}
-                >
-                    <BubbleContent
-                        className={
-                            isUser
-                                ? 'whitespace-pre-wrap text-foreground'
-                                : 'w-full max-w-full whitespace-pre-wrap'
-                        }
-                    >
-                        <span className="sr-only">
-                            {isUser ? t('assistant.you') : t('assistant.title')}
-                            :{' '}
-                        </span>
-                        {message.is_failed && message.content === ''
-                            ? t('assistant.failed')
-                            : message.content}
-                    </BubbleContent>
-                </Bubble>
-            </MessageContent>
-        </Message>
     );
 }
 

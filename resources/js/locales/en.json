@@ -531,7 +531,11 @@
         "thisWeek": "This week",
         "aWeekAgo": "A week ago",
         "thisMonth": "This month",
-        "older": "Older"
+        "older": "Older",
+        "panelDescription": "Quick assistant drawer. Open the full page for history.",
+        "openFullPage": "Open full page",
+        "openPanel": "Open in side panel",
+        "unreachable": "The assistant is not reachable. Check the AI provider settings."
     },
     "permissions": {
         "description": "Permissions are defined in PermissionEnum and synced to the database. Assign them to roles on the role edit page.",

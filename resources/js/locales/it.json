@@ -531,7 +531,11 @@
         "thisWeek": "Questa settimana",
         "aWeekAgo": "Una settimana fa",
         "thisMonth": "Questo mese",
-        "older": "Più vecchie"
+        "older": "Più vecchie",
+        "panelDescription": "Drawer rapido dell'assistente. Apri la pagina completa per la cronologia.",
+        "openFullPage": "Apri a schermo intero",
+        "openPanel": "Apri nel pannello laterale",
+        "unreachable": "L'assistente non è raggiungibile. Controlla le impostazioni del provider AI."
     },
     "permissions": {
         "description": "I permessi sono definiti in PermissionEnum e sincronizzati nel database. Assegnali ai ruoli dalla pagina di modifica del ruolo.",
