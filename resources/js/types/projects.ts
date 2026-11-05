@@ -41,6 +41,27 @@ export type HealthReportSummary = {
     /** Worst severity of the findings that warn or fail; null when there are none. */
     worst_severity: Severity | null;
     counts: Record<Severity, number>;
+    /** excubia-core version that built the report (1.0 and later). */
+    excubia_version: string | null;
+    /** PHP / Laravel / Node versions and support windows (excubia-core 1.0 and later). */
+    runtime: Record<RuntimeName, RuntimeVersion | null> | null;
+    checks: Record<'pass' | 'warn' | 'fail' | 'skipped', number>;
+    top_finding: {
+        severity: Severity;
+        subject: string;
+        message: string;
+        check_name: string | null;
+    } | null;
+};
+
+export type RuntimeName = 'php' | 'laravel' | 'node';
+
+/** One runtime of the report's `project` block. Dates are `YYYY-MM-DD`. */
+export type RuntimeVersion = {
+    version: string | null;
+    cycle: string | null;
+    security_support_ends_on: string | null;
+    active_support_ends_on: string | null;
 };
 
 /** A finding of the excubia-core JSON report (`docs/report-schema.json`). */
@@ -54,6 +75,10 @@ export type ReportFinding = {
     evidenceUrl: string | null;
     advisoryId?: string | null;
     skipReason?: string;
+    /** sha256 of check id, subject and advisory id (excubia-core 1.0). */
+    fingerprint?: string;
+    /** Check-specific keys (excubia-core 1.0), e.g. package, lockedVersion, fixedVersions. */
+    details?: Record<string, unknown>;
 };
 
 export type ReportCheck = {
@@ -66,6 +91,8 @@ export type ReportCheck = {
 /** The excubia-core JSON report, schema version 1. */
 export type HealthReportBody = {
     schemaVersion: number;
+    generatedAt?: string;
+    excubiaVersion?: string;
     checks: ReportCheck[];
     upgradePlan: { stepNumber: number; message: string }[];
 };
