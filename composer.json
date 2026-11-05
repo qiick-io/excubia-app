@@ -20,7 +20,7 @@
         "laravel/socialite": "^5.31",
         "laravel/tinker": "^3.0",
         "laravel/wayfinder": "^0.1.14",
-        "qiick/excubia-core": "^0.1.1",
+        "qiick/excubia-core": "^1.0@beta",
         "spatie/laravel-activitylog": "^5.0",
         "spatie/laravel-permission": "^7.2"
     },
