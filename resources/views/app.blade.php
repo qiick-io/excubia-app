@@ -40,8 +40,12 @@
             }
         </style>
 
-        <link rel="icon" href="/favicon.ico?v=2" sizes="any">
-        <link rel="icon" href="/favicon.svg?v=2" type="image/svg+xml">
+        @if (! empty($projectFaviconUrl))
+            <link rel="icon" href="{{ $projectFaviconUrl }}">
+        @else
+            <link rel="icon" href="/favicon.ico?v=2" sizes="any">
+            <link rel="icon" href="/favicon.svg?v=2" type="image/svg+xml">
+        @endif
         <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2">
 
         @viteReactRefresh

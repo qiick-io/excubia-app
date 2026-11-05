@@ -29,6 +29,7 @@ class HandleAppearance
         View::share('accessibilityHighContrast', $request->cookie('accessibility_high_contrast') === '1');
         View::share('accessibilityReduceMotion', $request->cookie('accessibility_reduce_motion') === '1');
         View::share('projectThemeCss', app(ThemePresetService::class)->current());
+        View::share('projectFaviconUrl', app(SettingsRepositoryService::class)->brandingUrls()['faviconUrl']);
 
         return $next($request);
     }

@@ -68,6 +68,7 @@ class HandleInertiaRequests extends Middleware
 
                 return [
                     'themePreset' => $theme['themePreset'],
+                    ...app(SettingsRepositoryService::class)->brandingUrls(),
                     'themeCss' => array_intersect_key($theme, array_flip(['light', 'dark', 'brandPrimary', 'brandPrimaryDark', 'brandPrimaryForeground', 'brandPrimaryDarkForeground'])),
                 ];
             },

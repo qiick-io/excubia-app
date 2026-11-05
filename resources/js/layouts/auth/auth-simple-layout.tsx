@@ -1,5 +1,6 @@
 import { Link } from '@inertiajs/react';
 import AppLogoIcon from '@/components/app-logo-icon';
+import { useBrandLogoUrl } from '@/hooks/use-brand-logo-url';
 import { SkipToContent } from '@/components/skip-to-content';
 import { home } from '@/routes';
 import type { AuthLayoutProps } from '@/types';
@@ -17,6 +18,8 @@ export default function AuthSimpleLayout({
     title,
     description,
 }: AuthLayoutProps) {
+    const logoUrl = useBrandLogoUrl();
+
     return (
         <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-background p-6 md:p-12">
             <SkipToContent />
@@ -28,7 +31,15 @@ export default function AuthSimpleLayout({
                             className="flex flex-col items-center gap-2 font-medium"
                         >
                             <div className="mb-1 flex h-9 w-9 items-center justify-center rounded-md">
-                                <AppLogoIcon className="size-9" />
+                                {logoUrl ? (
+                                    <img
+                                        src={logoUrl}
+                                        alt={title}
+                                        className="size-9 object-contain"
+                                    />
+                                ) : (
+                                    <AppLogoIcon className="size-9" />
+                                )}
                             </div>
                             <span className="sr-only">{title}</span>
                         </Link>

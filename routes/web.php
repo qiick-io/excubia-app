@@ -3,6 +3,7 @@
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\AssistantController;
 use App\Http\Controllers\Auth\OidcController;
+use App\Http\Controllers\BrandingController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\JobMonitorController;
 use App\Http\Controllers\PermissionController;
@@ -11,10 +12,16 @@ use App\Http\Controllers\ProjectReportController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserGroupController;
+use App\Services\SettingsRepositoryService;
 use Illuminate\Support\Facades\Route;
 
 // No public welcome page: guests land on the login page through the `auth` middleware.
 Route::redirect('/', '/dashboard')->name('home');
+
+// Uploaded logo and favicon (Settings → Appearance), public for the login page.
+Route::get('branding/{asset}', [BrandingController::class, 'show'])
+    ->whereIn('asset', array_keys(SettingsRepositoryService::BRANDING_ASSETS))
+    ->name('branding.show');
 
 Route::middleware('guest')->group(function () {
     Route::get('auth/oidc/redirect', [OidcController::class, 'redirect'])->name('auth.oidc.redirect');

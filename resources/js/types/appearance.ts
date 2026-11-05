@@ -34,6 +34,13 @@ export type ThemeCssPayload = {
 export type ProjectAppearance = {
     themePreset: ThemePresetSlug;
     themeCss: ThemeCssPayload;
+} & BrandingUrls;
+
+/** Uploaded logo, dark logo and favicon (SettingsRepositoryService::brandingUrls()). */
+export type BrandingUrls = {
+    logoUrl: string | null;
+    logoDarkUrl: string | null;
+    faviconUrl: string | null;
 };
 
 /** Appearance settings form payload (AppearanceSettingsController::edit()). */
@@ -43,5 +50,6 @@ export type AppearanceSettings = {
     project_color_dark: string | null;
     default_appearance: DefaultAppearance;
     theme_presets: ThemePresetCatalogItem[];
+    branding: BrandingUrls;
     brand_passes_aa: boolean;
 };
