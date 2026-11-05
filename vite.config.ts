@@ -42,6 +42,8 @@ export default defineConfig({
             'tailwind.config.js',
             'resources/js/actions/**',
             'resources/js/components/ui/*',
+            // Registry item (app-ui), formatted upstream; the drift check keeps it in sync.
+            'resources/js/components/realtime/*',
             'resources/js/routes/**',
             'resources/js/wayfinder/**',
         ],
@@ -61,6 +63,8 @@ export default defineConfig({
             '.github/**',
             'composer.json',
             'resources/js/components/ui/*',
+            // Registry item (app-ui), formatted upstream; the drift check keeps it in sync.
+            'resources/js/components/realtime/*',
             'resources/views/mail/*',
         ],
         sortTailwindcss: {
