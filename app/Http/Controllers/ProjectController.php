@@ -9,11 +9,13 @@ use App\Actions\DeleteProjectAction;
 use App\Actions\RevokeProjectTokenAction;
 use App\Actions\RotateProjectTokenAction;
 use App\Actions\UpdateProjectAction;
+use App\Enums\ProjectVisibilityEnum;
 use App\Http\Requests\ListQueryRequest;
 use App\Http\Requests\StoreProjectRequest;
 use App\Http\Requests\UpdateProjectRequest;
 use App\Http\Resources\ProjectResource;
 use App\Models\Project;
+use App\Services\EffectivePermissionResolverService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -30,14 +32,14 @@ class ProjectController extends Controller
      */
     private const SORTABLE_COLUMNS = ['name', 'last_report_at', 'created_at'];
 
-    public function index(ListQueryRequest $request): Response
+    public function index(ListQueryRequest $request, EffectivePermissionResolverService $permissions): Response
     {
         Gate::authorize('viewAny', Project::class);
 
         $sort = $request->sortColumn(self::SORTABLE_COLUMNS, 'name');
         $direction = $request->sortDirection('asc');
 
-        $projects = $request->applySearch(Project::query(), ['name', 'slug'])
+        $projects = $request->applySearch(Project::query()->visibleTo($request->user()), ['name', 'slug'])
             ->orderBy($sort, $direction)
             ->orderBy('id')
             ->paginate($request->perPage())
@@ -46,6 +48,9 @@ class ProjectController extends Controller
         return Inertia::render('projects/index', [
             'projects' => ProjectResource::collection($projects),
             'filters' => $request->filters($sort, $direction),
+            // Only admins restrict a project to admins (ProjectPolicy::changeVisibility).
+            'canChangeVisibility' => $request->user()?->can('create', Project::class) === true
+                && $permissions->isAdmin($request->user()),
         ]);
     }
 
@@ -65,7 +70,12 @@ class ProjectController extends Controller
 
     public function update(UpdateProjectRequest $request, Project $project, UpdateProjectAction $updateProject): RedirectResponse
     {
-        $updateProject->execute($project, $request->string('name')->trim()->toString(), $request->boolean('is_enabled'));
+        $updateProject->execute(
+            $project,
+            $request->string('name')->trim()->toString(),
+            $request->boolean('is_enabled'),
+            $request->enum('visibility', ProjectVisibilityEnum::class),
+        );
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Project updated.')]);
 
@@ -85,7 +95,7 @@ class ProjectController extends Controller
 
     public function rotateToken(Project $project, RotateProjectTokenAction $rotateToken): RedirectResponse
     {
-        Gate::authorize('update', $project);
+        Gate::authorize('manageToken', $project);
 
         $this->flashToken($project, $rotateToken->execute($project));
 
@@ -94,7 +104,7 @@ class ProjectController extends Controller
 
     public function revokeToken(Project $project, RevokeProjectTokenAction $revokeToken): RedirectResponse
     {
-        Gate::authorize('update', $project);
+        Gate::authorize('manageToken', $project);
 
         $revokeToken->execute($project);
 

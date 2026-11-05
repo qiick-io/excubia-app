@@ -37,6 +37,14 @@ class EffectivePermissionResolverService
             ->all());
     }
 
+    /**
+     * Admin or super-admin, directly or through a group (who may see and restrict any project).
+     */
+    public function isAdmin(User $user): bool
+    {
+        return array_intersect([RoleEnum::SuperAdmin->value, RoleEnum::Admin->value], $this->roleNamesFor($user)) !== [];
+    }
+
     public function isSuperAdmin(User $user): bool
     {
         return in_array(RoleEnum::SuperAdmin->value, $this->roleNamesFor($user), true);

@@ -8,17 +8,22 @@ use App\Enums\SeverityEnum;
 use App\Http\Resources\HealthReportResource;
 use App\Models\HealthReport;
 use App\Models\Project;
+use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Date;
 
 /**
  * The read-only data behind the assistant tools (#17). Every method returns plain arrays built
  * from stored reports: project names and slugs, report summaries and findings. Push tokens,
- * user data and file paths are never part of them.
+ * user data and file paths are never part of them. Projects restricted to admins (#70) are
+ * left out unless the asking user is an admin.
  */
 class AssistantQueryService
 {
     /** Most findings one search returns, so a tool result stays small. */
     public const SEARCH_LIMIT = 100;
+
+    private ?User $user = null;
 
     public function __construct(
         private ProjectStalenessService $staleness,
@@ -26,11 +31,22 @@ class AssistantQueryService
     ) {}
 
     /**
+     * The same queries, limited to the projects this user may see.
+     */
+    public function forUser(User $user): static
+    {
+        $scoped = clone $this;
+        $scoped->user = $user;
+
+        return $scoped;
+    }
+
+    /**
      * @return list<array<string, mixed>>
      */
     public function projects(): array
     {
-        return array_values(Project::query()->with('latestReport')->orderBy('name')->get()
+        return array_values($this->visibleProjects()->with('latestReport')->orderBy('name')->get()
             ->map(fn (Project $project): array => [
                 ...$this->projectSummary($project),
                 'latestReport' => $project->latestReport === null ? null : $this->reportSummary($project->latestReport),
@@ -146,7 +162,7 @@ class AssistantQueryService
         $isRange = ($filters['from'] ?? null) !== null || ($filters['to'] ?? null) !== null;
 
         $projectSlug = $filters['project'] ?? null;
-        $projects = Project::query()
+        $projects = $this->visibleProjects()
             ->when($projectSlug !== null, fn ($query) => $query->where('slug', $projectSlug))
             ->with('latestReport')
             ->orderBy('name')
@@ -188,9 +204,17 @@ class AssistantQueryService
         return ['findings' => $matches, 'isTruncated' => false];
     }
 
+    /**
+     * @return Builder<Project>
+     */
+    private function visibleProjects(): Builder
+    {
+        return Project::query()->visibleTo($this->user);
+    }
+
     private function project(string $slug): ?Project
     {
-        return Project::query()->with('latestReport')->where('slug', $slug)->first();
+        return $this->visibleProjects()->with('latestReport')->where('slug', $slug)->first();
     }
 
     /**

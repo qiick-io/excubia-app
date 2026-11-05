@@ -20,15 +20,25 @@ import {
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+    NativeSelect,
+    NativeSelectOption,
+} from '@/components/ui/native-select';
 import { STRING_LIMITS } from '@/lib/string-limits';
 import projects from '@/routes/projects';
-import type { ProjectRow } from '@/types';
+import type { ProjectRow, ProjectVisibility } from '@/types';
 
-const EMPTY_PROJECT_FORM = { name: '', is_enabled: true };
+const EMPTY_PROJECT_FORM: {
+    name: string;
+    is_enabled: boolean;
+    visibility: ProjectVisibility;
+} = { name: '', is_enabled: true, visibility: 'everyone' };
 
 export type ProjectFormDrawerProps = {
     editing: ProjectRow | null;
     readOnly?: boolean;
+    /** Admins may restrict a project to admins (#70). */
+    canChangeVisibility?: boolean;
     open?: boolean;
     onCancel?: () => void;
     onSuccess?: () => void;
@@ -36,11 +46,12 @@ export type ProjectFormDrawerProps = {
 
 /**
  * Drawer form for registering and editing a project. A new project gets its push token from
- * the server, shown by PushTokenDialog.
+ * the server, shown by PushTokenDialog. The system project (#70) keeps its name.
  */
 export function ProjectFormDrawer({
     editing,
     readOnly = false,
+    canChangeVisibility = false,
     open = true,
     onCancel,
     onSuccess,
@@ -57,6 +68,7 @@ export function ProjectFormDrawer({
             const payload = {
                 name: editing.name,
                 is_enabled: editing.is_enabled,
+                visibility: editing.visibility,
             };
             form.setData(payload);
             form.setDefaults({ ...payload });
@@ -77,6 +89,11 @@ export function ProjectFormDrawer({
                 onSuccess?.();
             },
         };
+
+        // The server refuses `visibility` from users who may not change it.
+        form.transform(({ visibility, ...data }) =>
+            canChangeVisibility ? { ...data, visibility } : data,
+        );
 
         if (editing) {
             form.put(projects.update.url(editing.id), options);
@@ -126,7 +143,7 @@ export function ProjectFormDrawer({
                                 }
                                 required
                                 maxLength={STRING_LIMITS.PROJECT_NAME}
-                                disabled={readOnly}
+                                disabled={readOnly || editing?.is_system}
                                 aria-invalid={nameError ? true : undefined}
                                 aria-describedby={
                                     nameError ? 'project-name-error' : undefined
@@ -165,6 +182,36 @@ export function ProjectFormDrawer({
                                 {t('projects.enabledHint')}
                             </FieldDescription>
                         </Field>
+
+                        {canChangeVisibility ? (
+                            <Field>
+                                <FieldLabel htmlFor="project_visibility">
+                                    {t('projects.visibility.label')}
+                                </FieldLabel>
+                                <NativeSelect
+                                    id="project_visibility"
+                                    value={form.data.visibility}
+                                    onChange={(event) =>
+                                        form.setData(
+                                            'visibility',
+                                            event.target
+                                                .value as ProjectVisibility,
+                                        )
+                                    }
+                                    disabled={readOnly}
+                                >
+                                    <NativeSelectOption value="everyone">
+                                        {t('projects.visibility.everyone')}
+                                    </NativeSelectOption>
+                                    <NativeSelectOption value="admins">
+                                        {t('projects.visibility.admins')}
+                                    </NativeSelectOption>
+                                </NativeSelect>
+                                <FieldDescription>
+                                    {t('projects.visibility.hint')}
+                                </FieldDescription>
+                            </Field>
+                        ) : null}
                     </FieldGroup>
                 </DrawerBody>
 

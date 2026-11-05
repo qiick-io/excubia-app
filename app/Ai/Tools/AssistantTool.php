@@ -26,7 +26,7 @@ abstract class AssistantTool implements Tool
             return $this->json(['error' => 'The user lacks the projects.view permission.']);
         }
 
-        $data = $this->read(app(AssistantQueryService::class), $request);
+        $data = $this->read(app(AssistantQueryService::class)->forUser($this->user), $request);
 
         return $this->json($data ?? ['error' => 'No project or report matches these arguments. Call ListProjects for the slugs.']);
     }

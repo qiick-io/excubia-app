@@ -466,6 +466,13 @@
             "revokeTitle": "Revocare il token di push di “{{name}}”?",
             "revokeDescription": "I push da questo progetto vengono rifiutati finché non crei un nuovo token.",
             "revokeConfirm": "Revoca"
+        },
+        "system": "Sistema",
+        "visibility": {
+            "label": "Visibilità",
+            "everyone": "Tutti con accesso ai progetti",
+            "admins": "Solo admin",
+            "hint": "Admin e super-admin vedono sempre tutti i progetti."
         }
     },
     "dashboard": {
@@ -503,7 +510,9 @@
             "warn": "Avviso",
             "fail": "Errore",
             "skipped": "Saltato"
-        }
+        },
+        "refresh": "Aggiorna ora",
+        "systemEmpty": "Excubia controlla se stessa ogni giorno. Usa \"Aggiorna ora\" per il primo report."
     },
     "assistant": {
         "title": "Assistente",

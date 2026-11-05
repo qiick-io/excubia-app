@@ -1,5 +1,5 @@
-import { Head } from '@inertiajs/react';
-import { Activity, ExternalLink } from 'lucide-react';
+import { Head, router } from '@inertiajs/react';
+import { Activity, ExternalLink, RefreshCw } from 'lucide-react';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PageEmptyState } from '@/components/admin/page-empty-state';
@@ -10,6 +10,7 @@ import {
     SeverityCounts,
 } from '@/components/reports/severity-badge';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
     Table,
@@ -37,7 +38,9 @@ export default function ProjectShow({
     project,
     report,
     reports,
+    canRefreshReport = false,
 }: {
+    canRefreshReport?: boolean;
     project: ProjectRow;
     report: HealthReportBody | null;
     reports: HealthReportSummary[];
@@ -58,7 +61,26 @@ export default function ProjectShow({
     const latest = project.latest_report ?? null;
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <AppLayout
+            breadcrumbs={breadcrumbs}
+            headerActions={
+                canRefreshReport ? (
+                    <Button
+                        type="button"
+                        onClick={() =>
+                            router.post(
+                                projectsRoutes.systemReport.url(project.id),
+                                {},
+                                { preserveScroll: true },
+                            )
+                        }
+                    >
+                        <RefreshCw className="size-4" />
+                        {t('report.refresh')}
+                    </Button>
+                ) : undefined
+            }
+        >
             <Head title={project.name} />
             <PageLayout
                 scrollContent
@@ -66,6 +88,9 @@ export default function ProjectShow({
                     <div className="flex flex-wrap items-center gap-2">
                         {latest ? (
                             <SeverityBadge severity={latest.worst_severity} />
+                        ) : null}
+                        {project.is_system ? (
+                            <Badge variant="info">{t('projects.system')}</Badge>
                         ) : null}
                         {project.is_stale ? (
                             <Badge variant="muted">
@@ -89,7 +114,11 @@ export default function ProjectShow({
                         <PageEmptyState
                             icon={Activity}
                             title={t('dashboard.noReports')}
-                            description={t('report.empty')}
+                            description={
+                                project.is_system
+                                    ? t('report.systemEmpty')
+                                    : t('report.empty')
+                            }
                         />
                     ) : (
                         <>
