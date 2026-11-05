@@ -119,3 +119,35 @@ it('tells the user when the provider fails', function () {
         ->assertRedirect(route('assistant.index'))
         ->assertInertiaFlash('toast.type', 'error');
 });
+
+it('answers the side panel with JSON and keeps it on the same conversation', function () {
+    config(['excubia.ai_enabled' => true]);
+    ExcubiaAssistantAgent::fake(['First answer.', 'Second answer.']);
+    $admin = assistantUser();
+
+    $first = $this->actingAs($admin)->postJson(route('assistant.store'), ['message' => 'First question'])
+        ->assertOk()
+        ->assertJsonPath('messages.0.content', 'First question')
+        ->assertJsonPath('messages.1.content', 'First answer.');
+
+    $conversationId = Conversation::query()->sole()->getKey();
+    expect($first->json('conversationId'))->toBe($conversationId);
+
+    $this->actingAs($admin)->postJson(route('assistant.store'), ['message' => 'Second question', 'conversation_id' => $conversationId])
+        ->assertOk()
+        ->assertJsonCount(4, 'messages')
+        ->assertJsonPath('messages.3.content', 'Second answer.');
+
+    $this->actingAs($admin)->postJson(route('assistant.store'), ['message' => ''])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('message');
+});
+
+it('tells the side panel when the provider fails', function () {
+    config(['excubia.ai_enabled' => true]);
+    ExcubiaAssistantAgent::fake(fn () => throw new RuntimeException('connection refused'));
+
+    $this->actingAs(assistantUser())->postJson(route('assistant.store'), ['message' => 'Hello'])
+        ->assertStatus(503)
+        ->assertJsonStructure(['message']);
+});
