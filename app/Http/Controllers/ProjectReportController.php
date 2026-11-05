@@ -30,9 +30,21 @@ use Inertia\Response;
  */
 class ProjectReportController extends Controller
 {
-    public function show(Request $request, Project $project, ReportFindingsService $findings, FixSuggestionService $fixes, ProjectRuntimeService $runtime): Response
+    /**
+     * The project's tabs after the overview (`/projects/{slug}/{view}`).
+     *
+     * @var list<string>
+     */
+    public const VIEWS = ['findings', 'runtime', 'exceptions', 'plan', 'history'];
+
+    public function show(Request $request, Project $project, ReportFindingsService $findings, FixSuggestionService $fixes, ProjectRuntimeService $runtime, ?string $view = null): Response|RedirectResponse
     {
         Gate::authorize('view', $project);
+
+        // Links from before the tabs had their own URLs used `?view=`.
+        if ($view === null && in_array($request->query('view'), self::VIEWS, true)) {
+            return to_route('projects.view', ['project' => $project->slug, 'view' => $request->query('view')]);
+        }
 
         $project->load('latestReport');
 
@@ -48,6 +60,7 @@ class ProjectReportController extends Controller
 
         return Inertia::render('projects/show', [
             'project' => (new ProjectResource($project))->resolve(),
+            'view' => $view ?? 'overview',
             'canRefreshReport' => (bool) $request->user()?->can('refreshReport', $project),
             'report' => $project->latestReport?->report,
             'findingFixes' => (object) $findingFixes,

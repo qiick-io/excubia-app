@@ -1,7 +1,8 @@
-import { Head, router } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import {
     FolderKanban,
     KeyRound,
+    Pencil,
     Plus,
     SearchX,
     ShieldOff,
@@ -262,18 +263,31 @@ export default function ProjectsIndex({
                                     {projects.data.map((project) => (
                                         <TableRow
                                             key={project.id}
-                                            className={
-                                                canManage
-                                                    ? 'cursor-pointer'
-                                                    : undefined
+                                            className="cursor-pointer"
+                                            onClick={() =>
+                                                router.visit(
+                                                    projectsRoutes.show.url(
+                                                        project.slug,
+                                                    ),
+                                                )
                                             }
-                                            onClick={() => openDrawer(project)}
                                         >
                                             <TableCell className="max-w-[16rem]">
-                                                <NameSlugCell
-                                                    name={project.name}
-                                                    slug={project.slug}
-                                                />
+                                                {/* A real link too, for the keyboard and "open in new tab". */}
+                                                <Link
+                                                    href={projectsRoutes.show.url(
+                                                        project.slug,
+                                                    )}
+                                                    className="block rounded-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                                                    onClick={(event) =>
+                                                        event.stopPropagation()
+                                                    }
+                                                >
+                                                    <NameSlugCell
+                                                        name={project.name}
+                                                        slug={project.slug}
+                                                    />
+                                                </Link>
                                             </TableCell>
                                             <TableCell>
                                                 <div className="flex flex-wrap gap-1">
@@ -349,6 +363,18 @@ export default function ProjectsIndex({
                                                         event.stopPropagation()
                                                     }
                                                 >
+                                                    <HeaderIconButton
+                                                        type="button"
+                                                        size="icon-sm"
+                                                        label={t(
+                                                            'projects.editProject',
+                                                        )}
+                                                        onClick={() =>
+                                                            openDrawer(project)
+                                                        }
+                                                    >
+                                                        <Pencil className="size-3.5" />
+                                                    </HeaderIconButton>
                                                     {project.is_system ? null : (
                                                         <>
                                                             <HeaderIconButton

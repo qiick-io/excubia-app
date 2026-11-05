@@ -27,6 +27,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Projects are created and edited in a drawer on the list page.
     Route::resource('projects', ProjectController::class)->only(['index', 'store', 'update', 'destroy']);
     Route::get('projects/{project:slug}', [ProjectReportController::class, 'show'])->name('projects.show');
+    // The project's tabs as their own URLs, so links, back and bookmarks work.
+    Route::get('projects/{project:slug}/{view}', [ProjectReportController::class, 'show'])
+        ->whereIn('view', ProjectReportController::VIEWS)
+        ->name('projects.view');
     Route::post('projects/{project}/token', [ProjectController::class, 'rotateToken'])->name('projects.token.rotate');
     Route::delete('projects/{project}/token', [ProjectController::class, 'revokeToken'])->name('projects.token.revoke');
     Route::post('projects/{project}/system-report', [ProjectReportController::class, 'refresh'])->name('projects.system-report');

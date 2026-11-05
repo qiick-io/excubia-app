@@ -1,4 +1,4 @@
-import { Head, router } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import {
     Activity,
     Bug,
@@ -61,7 +61,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
 import projectsRoutes from '@/routes/projects';
@@ -92,11 +92,12 @@ type FindingRow = ReportFinding & { checkName: string };
 /**
  * Project page: an overview of the latest report (runtimes and their support, findings per
  * severity, the report itself), the findings table with filters, the upgrade plan and the
- * report history. The view is a segmented control in the header, kept in `?view=` like the
- * externa-core dashboard tabs.
+ * report history. The views are shadcn line tabs under the header, each its own URL
+ * (`/projects/{slug}/{view}`), so links, back and bookmarks work; the header keeps the actions.
  */
 export default function ProjectShow({
     project,
+    view,
     report,
     reports,
     findingFixes = {},
@@ -112,11 +113,12 @@ export default function ProjectShow({
     /** Ready command and prompt per finding, keyed by `checkId|subject|advisoryId` (#78). */
     findingFixes?: Record<string, FindingFix>;
     project: ProjectRow;
+    /** The tab, from the URL (`/projects/{slug}` or `/projects/{slug}/{view}`). */
+    view: ProjectView;
     report: HealthReportBody | null;
     reports: HealthReportSummary[];
 }) {
     const { t } = useTranslation();
-    const [view, setView] = useState<ProjectView>(() => initialView());
 
     const breadcrumbs: BreadcrumbItem[] = useMemo(
         () => [
@@ -131,61 +133,11 @@ export default function ProjectShow({
 
     const latest = project.latest_report ?? null;
 
-    const selectView = (next: ProjectView): void => {
-        setView(next);
-
-        const url = new URL(window.location.href);
-
-        if (next === 'overview') {
-            url.searchParams.delete('view');
-        } else {
-            url.searchParams.set('view', next);
-        }
-
-        window.history.replaceState({}, '', url.pathname + url.search);
-    };
-
     return (
         <AppLayout
             breadcrumbs={breadcrumbs}
             headerActions={
                 <>
-                    <ToggleGroup
-                        type="single"
-                        variant="outline"
-                        value={view}
-                        onValueChange={(value) => {
-                            if (VIEWS.includes(value as ProjectView)) {
-                                selectView(value as ProjectView);
-                            }
-                        }}
-                        aria-label={t('report.views.label')}
-                    >
-                        <ToggleGroupItem value="overview">
-                            <LayoutGrid className="size-4" />
-                            <span>{t('report.views.overview')}</span>
-                        </ToggleGroupItem>
-                        <ToggleGroupItem value="findings">
-                            <ListChecks className="size-4" />
-                            <span>{t('report.views.findings')}</span>
-                        </ToggleGroupItem>
-                        <ToggleGroupItem value="runtime">
-                            <Gauge className="size-4" />
-                            <span>{t('report.views.runtime')}</span>
-                        </ToggleGroupItem>
-                        <ToggleGroupItem value="exceptions">
-                            <Bug className="size-4" />
-                            <span>{t('report.views.exceptions')}</span>
-                        </ToggleGroupItem>
-                        <ToggleGroupItem value="plan">
-                            <ListOrdered className="size-4" />
-                            <span>{t('report.views.plan')}</span>
-                        </ToggleGroupItem>
-                        <ToggleGroupItem value="history">
-                            <History className="size-4" />
-                            <span>{t('report.views.history')}</span>
-                        </ToggleGroupItem>
-                    </ToggleGroup>
                     {canRefreshReport ? (
                         <Button
                             type="button"
@@ -205,6 +157,7 @@ export default function ProjectShow({
             }
         >
             <Head title={project.name} />
+            <ProjectTabs slug={project.slug} view={view} />
             {view === 'findings' && report !== null ? (
                 <FindingsView report={report} fixes={findingFixes} />
             ) : view === 'exceptions' ? (
@@ -270,16 +223,50 @@ export default function ProjectShow({
     );
 }
 
-function initialView(): ProjectView {
-    if (typeof window === 'undefined') {
-        return 'overview';
-    }
+const VIEW_ICONS = {
+    overview: LayoutGrid,
+    findings: ListChecks,
+    runtime: Gauge,
+    exceptions: Bug,
+    plan: ListOrdered,
+    history: History,
+} as const;
 
-    const value = new URLSearchParams(window.location.search).get('view');
+/**
+ * The project's tabs (shadcn `Tabs`, `line` variant) as links to their own URLs, under the
+ * header and above the view.
+ */
+function ProjectTabs({ slug, view }: { slug: string; view: ProjectView }) {
+    const { t } = useTranslation();
 
-    return VIEWS.includes(value as ProjectView)
-        ? (value as ProjectView)
-        : 'overview';
+    return (
+        <Tabs value={view} activationMode="manual" className="border-b px-4">
+            <TabsList variant="line" aria-label={t('report.views.label')}>
+                {VIEWS.map((item) => {
+                    const Icon = VIEW_ICONS[item];
+
+                    return (
+                        <TabsTrigger key={item} value={item} asChild>
+                            <Link
+                                href={
+                                    item === 'overview'
+                                        ? projectsRoutes.show.url(slug)
+                                        : projectsRoutes.view.url({
+                                              project: slug,
+                                              view: item,
+                                          })
+                                }
+                                preserveScroll
+                            >
+                                <Icon />
+                                {t(`report.views.${item}`)}
+                            </Link>
+                        </TabsTrigger>
+                    );
+                })}
+            </TabsList>
+        </Tabs>
+    );
 }
 
 /**

@@ -264,3 +264,19 @@ it('sends a ready fix per finding to the project page and the dashboard', functi
     $this->actingAs(reportReader())->get(route('dashboard'))
         ->assertInertia(fn (Assert $page) => $page->has('overview.topIssues.0.fix.prompt'));
 });
+
+it('gives every project tab its own URL and redirects the old ?view= links', function () {
+    Project::factory()->create(['slug' => 'shop']);
+    $reader = reportReader();
+
+    $this->actingAs($reader)->get(route('projects.show', 'shop'))
+        ->assertInertia(fn (Assert $page) => $page->component('projects/show')->where('view', 'overview'));
+
+    foreach (['findings', 'runtime', 'exceptions', 'plan', 'history'] as $view) {
+        $this->actingAs($reader)->get(route('projects.view', ['project' => 'shop', 'view' => $view]))
+            ->assertInertia(fn (Assert $page) => $page->where('view', $view));
+    }
+
+    $this->actingAs($reader)->get('/projects/shop/nope')->assertNotFound();
+    $this->actingAs($reader)->get('/projects/shop?view=findings')->assertRedirect(route('projects.view', ['project' => 'shop', 'view' => 'findings']));
+});
