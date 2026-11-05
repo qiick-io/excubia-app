@@ -28,6 +28,17 @@ npm run lint && npm run types && npm run build
 
 Run them before every push.
 
+## UI (qiick app UI)
+
+This app follows the shared qiick app UI: https://github.com/qiick-io/app-ui. **Read the app-ui [`AGENTS.md`](https://github.com/qiick-io/app-ui/blob/develop/AGENTS.md) and [`docs/`](https://github.com/qiick-io/app-ui/tree/develop/docs) before any UI change.**
+
+- Never invent a layout, component, colour or component position. Install it from the `@qiick` registry (`npx shadcn add @qiick/<name>`); if it is not there yet, copy it from externa-core `develop`; if externa-core has no equivalent, stop and ask Luca.
+- Intentional differences go in `app-ui.overrides.json` with a reason; anything else fails the drift check in CI.
+- shadcn components and `lucide-react` icons only. Theme tokens only: no hex, no raw palette classes, no arbitrary font sizes. AI surfaces use the violet `ai` tokens; status colours carry status only.
+- Control scale `sm` 24 / default 32 / `lg` 40 px; default everywhere.
+- WCAG 2.2 AA in light, dark and high contrast.
+- Brand preset: **Blue**. Do not edit surface tokens.
+
 ## Code conventions ("Codice Perfetto")
 
 - Simplest thing that works (YAGNI). Fewest files possible. Mark deliberate shortcuts with a `ponytail:` comment naming the ceiling and the upgrade path.

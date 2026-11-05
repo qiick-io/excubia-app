@@ -9,8 +9,10 @@
         "check": "vp check",
         "check:fix": "vp check --fix",
         "types:check": "tsc --noEmit",
-        "lint": "vp check",
-        "types": "tsc --noEmit"
+        "lint": "vp check && node scripts/check-ui-tokens.mjs",
+        "types": "tsc --noEmit",
+        "lint:ui-tokens": "node scripts/check-ui-tokens.mjs",
+        "a11y:contrast": "node scripts/a11y-contrast.mjs"
     },
     "dependencies": {
         "@fontsource-variable/geist": "^5.3.0",
