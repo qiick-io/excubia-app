@@ -6,17 +6,19 @@ namespace App\Http\Controllers;
 
 use App\Http\Resources\ProjectResource;
 use App\Models\Project;
+use App\Services\FindingsTrendService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 /**
- * Home page: one entry per project with the summary of its latest report. Users without
- * `projects.view` see the page without projects.
+ * Home page: one entry per project with the summary of its latest report, and the daily
+ * findings of the last 30 days across those projects. Users without `projects.view` see the
+ * page without projects.
  */
 class DashboardController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request, FindingsTrendService $trend): Response
     {
         $canViewProjects = (bool) $request->user()?->can('viewAny', Project::class);
 
@@ -27,6 +29,7 @@ class DashboardController extends Controller
         return Inertia::render('dashboard', [
             'projects' => ProjectResource::collection($projects)->resolve(),
             'canViewProjects' => $canViewProjects,
+            'trend' => $canViewProjects ? $trend->daily($projects) : [],
         ]);
     }
 }

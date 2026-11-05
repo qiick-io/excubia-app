@@ -24,6 +24,8 @@ import {
     SeverityBadge,
     SeverityCounts,
 } from '@/components/reports/severity-badge';
+import type { SeverityChartPoint } from '@/components/reports/severity-chart';
+import { SeverityStackedBarChart } from '@/components/reports/severity-chart';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -55,7 +57,9 @@ import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
 import projectsRoutes from '@/routes/projects';
-import type { ProjectRow, RuntimeName } from '@/types';
+import type { ProjectRow, RuntimeName, Severity } from '@/types';
+
+type TrendPoint = { date: string } & Record<Severity, number>;
 
 type SortField = 'severity' | 'name' | 'last_report';
 type SortDirection = 'asc' | 'desc';
@@ -73,9 +77,11 @@ const OVERVIEW_RUNTIMES: RuntimeName[] = ['php', 'laravel'];
 export default function Dashboard({
     projects,
     canViewProjects,
+    trend = [],
 }: {
     projects: ProjectRow[];
     canViewProjects: boolean;
+    trend?: TrendPoint[];
 }) {
     const { t } = useTranslation();
     const { can } = useCan();
@@ -238,19 +244,118 @@ export default function Dashboard({
                             </Button>
                         }
                     />
-                ) : view === 'table' ? (
-                    <ProjectsTable projects={visible} />
                 ) : (
-                    <ul className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-                        {visible.map((project) => (
-                            <li key={project.id} className="xl:col-span-4">
-                                <ProjectCard project={project} />
-                            </li>
-                        ))}
-                    </ul>
+                    <div className="flex flex-col gap-4">
+                        <FleetOverview projects={projects} trend={trend} />
+                        {view === 'table' ? (
+                            <ProjectsTable projects={visible} />
+                        ) : (
+                            <ul className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+                                {visible.map((project) => (
+                                    <li
+                                        key={project.id}
+                                        className="xl:col-span-4"
+                                    >
+                                        <ProjectCard project={project} />
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </div>
                 )}
             </PageLayout>
         </>
+    );
+}
+
+/**
+ * Findings across every project: the daily trend of the last 30 days as stacked bars, and
+ * today's totals per severity as stat tiles (externa-core dashboard cards).
+ */
+function FleetOverview({
+    projects,
+    trend,
+}: {
+    projects: ProjectRow[];
+    trend: TrendPoint[];
+}) {
+    const { t } = useTranslation();
+    const totals = Object.fromEntries(
+        SEVERITIES.map((severity) => [
+            severity,
+            projects.reduce(
+                (total, project) =>
+                    total + (project.latest_report?.counts[severity] ?? 0),
+                0,
+            ),
+        ]),
+    ) as Record<Severity, number>;
+    const total = SEVERITIES.reduce(
+        (sum, severity) => sum + totals[severity],
+        0,
+    );
+    const chartData: SeverityChartPoint[] = trend.map((point) => ({
+        ...point,
+        label: new Date(`${point.date}T00:00:00`).toLocaleDateString(
+            undefined,
+            { day: 'numeric', month: 'short' },
+        ),
+    }));
+
+    return (
+        <section className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+            <Card className="xl:col-span-8">
+                <CardHeader className="pb-3">
+                    <CardTitle>{t('dashboard.trend.title')}</CardTitle>
+                    <CardDescription>
+                        {t('dashboard.trend.description')}
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="h-64">
+                    <SeverityStackedBarChart
+                        data={chartData}
+                        label={t('dashboard.trend.label', { total })}
+                    />
+                </CardContent>
+            </Card>
+            <Card className="xl:col-span-4">
+                <CardHeader className="pb-3">
+                    <CardTitle>{t('dashboard.totals.title')}</CardTitle>
+                    <CardDescription>
+                        {t('dashboard.totals.description', {
+                            count: projects.length,
+                        })}
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="grid grid-cols-3 gap-3">
+                    {SEVERITIES.map((severity) => (
+                        <div key={severity}>
+                            <div className="text-xs text-muted-foreground">
+                                {t(`report.severity.${severity}`)}
+                            </div>
+                            <div
+                                className={cn(
+                                    'text-2xl font-semibold tabular-nums',
+                                    severity === 'critical' &&
+                                        totals.critical > 0 &&
+                                        'text-destructive',
+                                )}
+                            >
+                                {totals[severity].toLocaleString()}
+                            </div>
+                        </div>
+                    ))}
+                    <div>
+                        <div className="text-xs text-muted-foreground">
+                            {t('dashboard.totals.total')}
+                        </div>
+                        <div className="text-2xl font-semibold tabular-nums">
+                            {total.toLocaleString()}
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+        </section>
     );
 }
 

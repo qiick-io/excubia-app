@@ -490,6 +490,16 @@
         "view": {
             "cards": "Karten",
             "table": "Tabelle"
+        },
+        "trend": {
+            "title": "Befunde, letzte 30 Tage",
+            "description": "Der letzte Bericht jedes Projekts pro Tag, nach Schweregrad summiert.",
+            "label": "Gestapeltes Balkendiagramm der täglichen Befunde nach Schweregrad der letzten 30 Tage; heute {{total}} Befunde."
+        },
+        "totals": {
+            "title": "Offene Befunde",
+            "description": "Letzte Berichte von {{count}} Projekten.",
+            "total": "Gesamt"
         }
     },
     "report": {
@@ -563,7 +573,12 @@
         "noIssuesDescription": "Der letzte Bericht hat keine Befunde mit Warnung oder Fehler.",
         "installed": "Installiert",
         "fixedIn": "Behoben in",
-        "planDescription": "Die empfohlene Reihenfolge der Upgrades, das Dringendste zuerst."
+        "planDescription": "Die empfohlene Reihenfolge der Upgrades, das Dringendste zuerst.",
+        "trend": {
+            "title": "Befunde im Zeitverlauf",
+            "description": "Befunde mit Warnung oder Fehler je Bericht, nach Schweregrad.",
+            "label": "Gestapeltes Balkendiagramm der Befunde nach Schweregrad über {{count}} Berichte; der letzte hat {{total}} Befunde."
+        }
     },
     "assistant": {
         "title": "Assistent",

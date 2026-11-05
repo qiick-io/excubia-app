@@ -167,3 +167,32 @@ it('keeps the summary working for reports from cores before 1.0', function () {
             ->where('project.latest_report.checks.fail', 1)
             ->where('project.latest_report.top_finding.severity', 'high'));
 });
+
+it('sums the latest report of each project per day for the dashboard trend', function () {
+    $shop = Project::factory()->create(['slug' => 'shop']);
+    $blog = Project::factory()->create(['slug' => 'blog']);
+    pushedReport($shop, '2026-10-01 08:00:00', SeverityEnum::High, ['high_count' => 4]);
+    pushedReport($shop, '2026-11-04 09:00:00', SeverityEnum::High, ['high_count' => 1, 'low_count' => 2]);
+    pushedReport($blog, '2026-11-05 07:00:00', SeverityEnum::Critical, ['critical_count' => 1]);
+
+    $this->actingAs(reportReader())->get(route('dashboard'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('trend', 30)
+            ->where('trend.0.date', '2026-10-07')
+            ->where('trend.0.high', 4)
+            ->where('trend.28.date', '2026-11-04')
+            ->where('trend.28.high', 1)
+            ->where('trend.28.low', 2)
+            ->where('trend.28.critical', 0)
+            ->where('trend.29.date', '2026-11-05')
+            ->where('trend.29.critical', 1)
+            ->where('trend.29.high', 1));
+});
+
+it('leaves projects restricted to admins out of the trend', function () {
+    $hidden = Project::factory()->create(['slug' => 'hidden', 'visibility' => 'admins']);
+    pushedReport($hidden, '2026-11-05 07:00:00', SeverityEnum::Critical, ['critical_count' => 3]);
+
+    $this->actingAs(reportReader())->get(route('dashboard'))
+        ->assertInertia(fn (Assert $page) => $page->where('trend.29.critical', 0));
+});

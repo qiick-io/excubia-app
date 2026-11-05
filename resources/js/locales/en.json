@@ -490,6 +490,16 @@
         "view": {
             "cards": "Cards",
             "table": "Table"
+        },
+        "trend": {
+            "title": "Findings, last 30 days",
+            "description": "Every project's latest report on each day, summed per severity.",
+            "label": "Stacked bar chart of daily findings per severity over the last 30 days; {{total}} findings today."
+        },
+        "totals": {
+            "title": "Open findings",
+            "description": "Latest reports of {{count}} projects.",
+            "total": "Total"
         }
     },
     "report": {
@@ -563,7 +573,12 @@
         "noIssuesDescription": "The latest report has no finding that warns or fails.",
         "installed": "Installed",
         "fixedIn": "Fixed in",
-        "planDescription": "The suggested order of the upgrades, most urgent first."
+        "planDescription": "The suggested order of the upgrades, most urgent first.",
+        "trend": {
+            "title": "Findings over time",
+            "description": "Findings that warn or fail in each report, per severity.",
+            "label": "Stacked bar chart of findings per severity across {{count}} reports; the latest has {{total}} findings."
+        }
     },
     "assistant": {
         "title": "Assistant",
