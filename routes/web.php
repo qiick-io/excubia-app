@@ -29,6 +29,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('projects/{project:slug}', [ProjectReportController::class, 'show'])->name('projects.show');
     Route::post('projects/{project}/token', [ProjectController::class, 'rotateToken'])->name('projects.token.rotate');
     Route::delete('projects/{project}/token', [ProjectController::class, 'revokeToken'])->name('projects.token.revoke');
+    Route::post('projects/{project}/system-report', [ProjectReportController::class, 'refresh'])->name('projects.system-report');
 
     // Assistant (#17): 404 while `excubia.ai_enabled` is off.
     Route::get('assistant', [AssistantController::class, 'index'])->name('assistant.index');

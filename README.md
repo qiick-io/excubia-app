@@ -51,16 +51,18 @@ Edit `.env`: set `APP_ENV=production`, `APP_DEBUG=false` and `APP_URL` to the pu
 ```bash
 touch database/database.sqlite   # SQLite only
 php artisan migrate --force
+php artisan db:seed --class=SystemProjectSeeder --force
 npm ci && npm run build
 php artisan excubia:create-user
 ```
 
-`excubia:create-user` asks for a name, an email and a password. The first user becomes super-admin. There is no public sign-up, so add more users here or under **Users** in the app.
+`SystemProjectSeeder` adds the **Excubia** system project, so the app watches itself from the start (see below). `excubia:create-user` asks for a name, an email and a password. The first user becomes super-admin. There is no public sign-up, so add more users here or under **Users** in the app.
 
 ### Scheduler and queue
 
 The app runs scheduled tasks:
 
+- `excubia:system-report` checks this Excubia install and stores the report on the system project (daily);
 - `excubia:prune-reports` keeps the newest reports of each project (30 by default, in **Settings → Project**);
 - `activitylog:clean` trims the activity log.
 
@@ -70,7 +72,11 @@ Run the Laravel scheduler with a cron entry:
 * * * * * cd /path/to/excubia-app && php artisan schedule:run >> /dev/null 2>&1
 ```
 
-or keep `php artisan schedule:work` running. The app queues no work of its own yet, so a queue worker (`php artisan queue:work`) is optional. Failed jobs, if any, show under **Settings → Jobs**.
+or keep `php artisan schedule:work` running. **Refresh now** on the system project queues its report, so run a queue worker (`php artisan queue:work`) or set `QUEUE_CONNECTION=sync`. Failed jobs, if any, show under **Settings → Jobs**.
+
+### Excubia watches itself
+
+The **Excubia** system project runs the `qiick/excubia-core` checks on this install every day, with no push token: the report is built and stored locally. Only package names and versions leave the server, as for any project. It cannot be deleted or renamed. Disable it in its drawer to stop the checks. Everyone with access to projects sees it; an admin can set its **Visibility** to _Admins only_, since the instance's own findings can be sensitive. The same setting works on any project.
 
 ### Add a project
 
@@ -117,6 +123,7 @@ php artisan down
 git pull
 composer install --no-dev --optimize-autoloader
 php artisan migrate --force
+php artisan db:seed --class=SystemProjectSeeder --force   # once; does nothing if it exists
 npm ci && npm run build
 php artisan optimize
 php artisan up
@@ -126,7 +133,7 @@ php artisan up
 
 - Projects send their reports only to this app, authenticated by their own token.
 - The checks run inside each project, through `qiick/excubia-core`. They send only package names and versions to public data sources.
-- The app itself calls nothing outside your server except the mail server, the OIDC provider and the AI provider you configure.
+- The app itself calls nothing outside your server except the mail server, the OIDC provider and the AI provider you configure, and the public data sources of `qiick/excubia-core` (Packagist, OSV, endoflife.date, GitHub) for the system project's daily check. Those receive package names and versions only. Disable the system project to stop them.
 - No telemetry and no third-party trackers.
 - The AI assistant is off by default. When you turn it on, it sends to the AI provider you configure:
     - the questions users ask;

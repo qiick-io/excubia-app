@@ -21,7 +21,7 @@ class DashboardController extends Controller
         $canViewProjects = (bool) $request->user()?->can('viewAny', Project::class);
 
         $projects = $canViewProjects
-            ? Project::query()->with('latestReport')->orderBy('name')->get()
+            ? Project::query()->visibleTo($request->user())->with('latestReport')->orderBy('name')->get()
             : collect();
 
         return Inertia::render('dashboard', [

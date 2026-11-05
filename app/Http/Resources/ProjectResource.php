@@ -31,6 +31,8 @@ class ProjectResource extends JsonResource
             'name' => $project->name,
             'slug' => $project->slug,
             'is_enabled' => $project->is_enabled,
+            'is_system' => $project->is_system,
+            'visibility' => $project->visibility->value,
             'has_push_token' => $project->push_token_hash !== null,
             'last_report_at' => $project->last_report_at?->toIso8601String(),
             'is_stale' => app(ProjectStalenessService::class)->isStale($project),

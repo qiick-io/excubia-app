@@ -24,6 +24,8 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use Qiick\Excubia\Contracts\HttpClientContract;
+use Qiick\Excubia\Services\SymfonyHttpClientService;
 use Spatie\Activitylog\Facades\Activity;
 use Spatie\Activitylog\Models\Activity as ActivityModel;
 use Spatie\Permission\Models\Permission;
@@ -37,6 +39,8 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(SettingsRepositoryService::class);
+        // The HTTP client excubia-core uses for the system report (#70); tests bind a fake.
+        $this->app->bind(HttpClientContract::class, fn (): HttpClientContract => new SymfonyHttpClientService);
     }
 
     /**

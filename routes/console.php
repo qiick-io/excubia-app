@@ -13,3 +13,6 @@ Schedule::command('activitylog:clean')->daily();
 
 // Keeps the newest reports of each project (setting "Reports kept per project").
 Schedule::command('excubia:prune-reports')->daily();
+
+// Excubia checks itself and stores the report on the system project (#70).
+Schedule::command('excubia:system-report')->daily();

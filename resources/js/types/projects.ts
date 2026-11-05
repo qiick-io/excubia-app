@@ -1,9 +1,15 @@
+/** Who sees a project: everyone with projects.view, or admins only (#70). */
+export type ProjectVisibility = 'everyone' | 'admins';
+
 /** One row of `App\Http\Resources\ProjectResource`. */
 export type ProjectRow = {
     id: number;
     name: string;
     slug: string;
     is_enabled: boolean;
+    /** Excubia itself (#70): seeded, reported locally, never deleted. */
+    is_system: boolean;
+    visibility: ProjectVisibility;
     has_push_token: boolean;
     last_report_at: string | null;
     /** Never reported, or last report older than the stale setting. */

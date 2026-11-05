@@ -466,6 +466,13 @@
             "revokeTitle": "Push-Token von „{{name}}“ widerrufen?",
             "revokeDescription": "Pushes von diesem Projekt werden abgelehnt, bis du ein neues Token erstellst.",
             "revokeConfirm": "Widerrufen"
+        },
+        "system": "System",
+        "visibility": {
+            "label": "Sichtbarkeit",
+            "everyone": "Alle mit Projektzugriff",
+            "admins": "Nur Admins",
+            "hint": "Admins und Super-Admins sehen immer alle Projekte."
         }
     },
     "dashboard": {
@@ -503,7 +510,9 @@
             "warn": "Warnung",
             "fail": "Fehler",
             "skipped": "Übersprungen"
-        }
+        },
+        "refresh": "Jetzt aktualisieren",
+        "systemEmpty": "Excubia prüft sich jeden Tag selbst. Nutze „Jetzt aktualisieren“ für den ersten Bericht."
     },
     "assistant": {
         "title": "Assistent",
