@@ -43,10 +43,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('projects/{project}/system-report', [ProjectReportController::class, 'refresh'])->name('projects.system-report');
     Route::patch('projects/{project}/exceptions/{exceptionGroup}', [ProjectReportController::class, 'updateException'])->name('projects.exceptions.update');
 
-    // Assistant (#17): 404 while `excubia.ai_enabled` is off.
-    Route::get('assistant', [AssistantController::class, 'index'])->name('assistant.index');
-    Route::post('assistant', [AssistantController::class, 'store'])->middleware('throttle:20,1')->name('assistant.store');
-    Route::get('assistant/{conversation}', [AssistantController::class, 'show'])->name('assistant.show');
+    // AI assistant (#17) at /ai, as in externa-core: 404 while `excubia.ai_enabled` is off.
+    Route::get('ai', [AssistantController::class, 'index'])->name('ai.index');
+    Route::post('ai', [AssistantController::class, 'store'])->middleware('throttle:20,1')->name('ai.store');
+    Route::delete('ai/conversations', [AssistantController::class, 'destroy'])->name('ai.conversations.destroy');
+    Route::get('ai/{conversation}', [AssistantController::class, 'show'])->name('ai.show');
+    // Links from before the move to /ai.
+    Route::redirect('assistant', '/ai');
+    Route::get('assistant/{conversation}', fn (string $conversation) => redirect()->route('ai.show', $conversation));
 
     Route::get('activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index');
 

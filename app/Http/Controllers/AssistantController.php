@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Actions\DeleteAssistantConversationsAction;
 use App\Ai\Agents\ExcubiaAssistantAgent;
 use App\Enums\PermissionEnum;
+use App\Http\Requests\DeleteAssistantConversationsRequest;
 use App\Http\Requests\StoreAssistantMessageRequest;
 use App\Models\User;
 use App\Services\AssistantConversationService;
@@ -61,7 +63,7 @@ class AssistantController extends Controller
 
             Inertia::flash('toast', ['type' => 'error', 'message' => __('The assistant is not reachable. Check the AI provider settings.')]);
 
-            return $conversationId === '' ? to_route('assistant.index') : to_route('assistant.show', $conversationId);
+            return $conversationId === '' ? to_route('ai.index') : to_route('ai.show', $conversationId);
         }
 
         $conversationId = $response->conversationId ?? $conversationId;
@@ -73,7 +75,20 @@ class AssistantController extends Controller
             ]);
         }
 
-        return to_route('assistant.show', $conversationId);
+        return to_route('ai.show', $conversationId);
+    }
+
+    /**
+     * Deletes the selected conversations of the user, as externa-core's bulk delete.
+     */
+    public function destroy(DeleteAssistantConversationsRequest $request, DeleteAssistantConversationsAction $deleteConversations): RedirectResponse
+    {
+        $user = $this->authorizedUser($request);
+        $count = $deleteConversations->execute($user, $request->conversationIds());
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => trans_choice('{1} Chat deleted.|[2,*] :count chats deleted.', $count, ['count' => $count])]);
+
+        return in_array($request->string('current')->toString(), $request->conversationIds(), true) ? to_route('ai.index') : back();
     }
 
     private function authorizedUser(Request $request): User

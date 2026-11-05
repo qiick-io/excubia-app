@@ -40,7 +40,7 @@ import { useCurrentUrl } from '@/hooks/use-current-url';
 import { toggleAiAssistant } from '@/lib/ai-open';
 import { dashboard } from '@/routes';
 import activityLogs from '@/routes/activity-logs';
-import assistant from '@/routes/assistant';
+import ai from '@/routes/ai';
 import groups from '@/routes/groups';
 import projects from '@/routes/projects';
 import { edit as editProfile } from '@/routes/profile';
@@ -93,7 +93,7 @@ export function AppSidebar() {
             assistant: {
                 id: 'assistant',
                 titleKey: 'nav.assistant',
-                href: assistant.index.url(),
+                href: ai.index.url(),
                 icon: Sparkles,
                 permission: PermissionEnum.CanUseAi,
                 accent: true,
@@ -159,11 +159,7 @@ export function AppSidebar() {
         },
     ];
 
-    const isOnAssistantPage = isCurrentUrl(
-        assistant.index.url(),
-        undefined,
-        true,
-    );
+    const isOnAssistantPage = isCurrentUrl(ai.index.url(), undefined, true);
 
     const renderModuleItem = (item: ModuleDef) => (
         <SidebarMenuItem key={item.id}>

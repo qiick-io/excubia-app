@@ -27,7 +27,7 @@ import { useCan } from '@/hooks/use-can';
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import { AI_TOGGLE_EVENT } from '@/lib/ai-open';
 import { toast } from '@/lib/toast';
-import assistantRoutes from '@/routes/assistant';
+import aiRoutes from '@/routes/ai';
 import type { AssistantMessage } from '@/types';
 
 type PanelResponse = {
@@ -56,7 +56,7 @@ export function AiAssistantPanel() {
 
     const isAvailable = isAssistantEnabled && can(PermissionEnum.CanUseAi);
     const isAssistantRoute = isCurrentUrl(
-        assistantRoutes.index.url(),
+        aiRoutes.index.url(),
         undefined,
         true,
     );
@@ -98,7 +98,7 @@ export function AiAssistantPanel() {
 
     const send = async (): Promise<void> => {
         try {
-            const response = await http.post(assistantRoutes.store.url());
+            const response = await http.post(aiRoutes.store.url());
             setMessages(response.messages);
             http.setData({
                 message: '',
@@ -148,10 +148,10 @@ export function AiAssistantPanel() {
                             setOpen(false);
                             router.visit(
                                 http.data.conversation_id
-                                    ? assistantRoutes.show.url(
+                                    ? aiRoutes.show.url(
                                           http.data.conversation_id,
                                       )
-                                    : assistantRoutes.index.url(),
+                                    : aiRoutes.index.url(),
                             );
                         }}
                     >

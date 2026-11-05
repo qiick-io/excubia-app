@@ -132,7 +132,7 @@ it('gives nothing to a user without can-show-projects', function (string $tool) 
     toolReport($shop, '2026-11-02 08:00:00', [toolFinding('guzzlehttp/guzzle', 'high')]);
 
     expect(runTool($tool, User::factory()->create(), ['project' => 'shop']))
-        ->toBe(['error' => 'The user lacks the projects.view permission.']);
+        ->toBe(['error' => 'The user lacks the can-show-projects permission.']);
 })->with([ListProjectsTool::class, SearchFindingsTool::class, GetLatestReportTool::class, CompareReportsTool::class, GetReportHistoryTool::class, GetUpgradePlanTool::class]);
 
 it('never puts tokens, user data or file paths in what the tools return', function () {

@@ -181,7 +181,9 @@
             "general": "Allgemein",
             "localization": "Lokalisierung",
             "authSecurity": "Authentifizierung & Sicherheit",
-            "sidebar": "Seitenleiste"
+            "sidebar": "Seitenleiste",
+            "sectionAi": "KI",
+            "aiTools": "Werkzeuge"
         },
         "profile": {
             "breadcrumb": "Profileinstellungen",
@@ -368,6 +370,19 @@
             "statusDescription": "Laufzeitumgebung und Cache-Backend.",
             "statusTitle": "Status",
             "yes": "Ja"
+        },
+        "ai": {
+            "breadcrumb": "KI-Einstellungen",
+            "head": "KI-Einstellungen",
+            "title": "Werkzeuge des Assistenten",
+            "description": "Die schreibgeschützten Werkzeuge, die der Assistent für Antworten nutzen darf. Er ändert nie etwas.",
+            "statusLabel": "Assistent",
+            "statusOn": "An",
+            "statusOff": "Aus (EXCUBIA_AI_ENABLED=false)",
+            "providerLabel": "Anbieter",
+            "modelLabel": "Modell",
+            "envHint": "Anbieter, Modell und Schlüssel werden in der .env gesetzt (AI_DEFAULT_PROVIDER und die Schlüssel des Anbieters). Daten an einen Cloud-Anbieter verlassen deinen Server.",
+            "readOnly": "schreibgeschützt"
         }
     },
     "activityLog": {
@@ -690,7 +705,7 @@
         "newConversation": "Neuer Chat",
         "conversations": "Unterhaltungen",
         "emptyTitle": "Frag nach deinen Projekten",
-        "emptyDescription": "Der Assistent liest nur die gespeicherten Berichte. Er kann nichts ändern.",
+        "emptyDescription": "Er liest die gespeicherten Berichte: listet Projekte, sucht Befunde, zeigt den letzten Bericht und den Verlauf eines Projekts, vergleicht zwei Berichte und schlägt einen Upgrade-Plan vor. Er kann nichts ändern.",
         "placeholder": "Stelle eine Frage… (Enter zum Senden, Umschalt+Enter für eine neue Zeile)",
         "send": "Senden",
         "you": "Du",
@@ -715,7 +730,12 @@
         "panelDescription": "Schnelle Assistenten-Schublade. Öffnen Sie die Vollseite für den Verlauf.",
         "openFullPage": "Ganze Seite öffnen",
         "openPanel": "Im Seitenbereich öffnen",
-        "unreachable": "Der Assistent ist nicht erreichbar. Prüfe die Einstellungen des KI-Anbieters."
+        "unreachable": "Der Assistent ist nicht erreichbar. Prüfe die Einstellungen des KI-Anbieters.",
+        "deleteSelected": "Ausgewählte Chats löschen",
+        "selectConversation": "{{title}} auswählen",
+        "deleteTitle": "Ausgewählte Chats löschen?",
+        "deleteDescription_one": "Du löschst {{count}} Chat. Das kann nicht rückgängig gemacht werden.",
+        "deleteDescription_other": "Du löschst {{count}} Chats. Das kann nicht rückgängig gemacht werden."
     },
     "permissions": {
         "description": "Berechtigungen sind in PermissionEnum definiert und werden mit der Datenbank synchronisiert. Weise sie auf der Bearbeitungsseite einer Rolle zu.",

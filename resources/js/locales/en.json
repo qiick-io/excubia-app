@@ -181,7 +181,9 @@
             "general": "General",
             "localization": "Localization",
             "authSecurity": "Authentication & Security",
-            "sidebar": "Sidebar"
+            "sidebar": "Sidebar",
+            "sectionAi": "AI",
+            "aiTools": "Tools"
         },
         "profile": {
             "breadcrumb": "Profile settings",
@@ -368,6 +370,19 @@
             "flushSpatiePermissionsDescription": "Clear Spatie's role and permission cache.",
             "flushSpatiePermissionsButton": "Flush Spatie permission cache",
             "flushing": "Flushing…"
+        },
+        "ai": {
+            "breadcrumb": "AI settings",
+            "head": "AI settings",
+            "title": "Assistant tools",
+            "description": "The read-only tools the assistant may use to answer. It never changes anything.",
+            "statusLabel": "Assistant",
+            "statusOn": "On",
+            "statusOff": "Off (EXCUBIA_AI_ENABLED=false)",
+            "providerLabel": "Provider",
+            "modelLabel": "Model",
+            "envHint": "The provider, model and keys are set in .env (AI_DEFAULT_PROVIDER and the provider's keys). The data sent to a cloud provider leaves your server.",
+            "readOnly": "read-only"
         }
     },
     "activityLog": {
@@ -690,7 +705,7 @@
         "newConversation": "New chat",
         "conversations": "Conversations",
         "emptyTitle": "Ask about your projects",
-        "emptyDescription": "The assistant reads the stored reports only. It cannot change anything.",
+        "emptyDescription": "It reads the stored reports: it lists projects, searches findings, shows a project's latest report and history, compares two reports and suggests an upgrade plan. It cannot change anything.",
         "placeholder": "Ask a question… (Enter to send, Shift+Enter for a new line)",
         "send": "Send",
         "you": "You",
@@ -715,7 +730,12 @@
         "panelDescription": "Quick assistant drawer. Open the full page for history.",
         "openFullPage": "Open full page",
         "openPanel": "Open in side panel",
-        "unreachable": "The assistant is not reachable. Check the AI provider settings."
+        "unreachable": "The assistant is not reachable. Check the AI provider settings.",
+        "deleteSelected": "Delete selected chats",
+        "selectConversation": "Select {{title}}",
+        "deleteTitle": "Delete selected chats?",
+        "deleteDescription_one": "You are about to delete {{count}} chat. This action cannot be undone.",
+        "deleteDescription_other": "You are about to delete {{count}} chats. This action cannot be undone."
     },
     "permissions": {
         "description": "Permissions are defined in PermissionEnum and synced to the database. Assign them to roles on the role edit page.",

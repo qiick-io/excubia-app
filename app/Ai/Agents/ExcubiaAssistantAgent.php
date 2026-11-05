@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Ai\Agents;
 
+use App\Ai\Tools\AssistantTool;
 use App\Ai\Tools\CompareReportsTool;
 use App\Ai\Tools\GetLatestReportTool;
 use App\Ai\Tools\GetReportHistoryTool;
@@ -11,6 +12,7 @@ use App\Ai\Tools\GetUpgradePlanTool;
 use App\Ai\Tools\ListProjectsTool;
 use App\Ai\Tools\SearchFindingsTool;
 use App\Models\User;
+use App\Services\SettingsRepositoryService;
 use Laravel\Ai\Concerns\RemembersConversations;
 use Laravel\Ai\Contracts\Agent;
 use Laravel\Ai\Contracts\Conversational;
@@ -61,17 +63,31 @@ class ExcubiaAssistantAgent implements Agent, Conversational, HasTools
     }
 
     /**
+     * Every read-only tool, keyed by the name stored in the "AI tools" setting.
+     *
+     * @var array<string, class-string<AssistantTool>>
+     */
+    public const TOOLS = [
+        'list-projects' => ListProjectsTool::class,
+        'search-findings' => SearchFindingsTool::class,
+        'get-latest-report' => GetLatestReportTool::class,
+        'compare-reports' => CompareReportsTool::class,
+        'get-report-history' => GetReportHistoryTool::class,
+        'get-upgrade-plan' => GetUpgradePlanTool::class,
+    ];
+
+    /**
+     * The tools enabled in Settings → AI (all by default).
+     *
      * @return list<Tool>
      */
     public function tools(): iterable
     {
-        return [
-            new ListProjectsTool($this->user),
-            new SearchFindingsTool($this->user),
-            new GetLatestReportTool($this->user),
-            new CompareReportsTool($this->user),
-            new GetReportHistoryTool($this->user),
-            new GetUpgradePlanTool($this->user),
-        ];
+        $enabled = app(SettingsRepositoryService::class)->aiEnabledTools();
+
+        return array_values(array_map(
+            fn (string $class): Tool => new $class($this->user),
+            array_intersect_key(self::TOOLS, array_flip($enabled)),
+        ));
     }
 }
