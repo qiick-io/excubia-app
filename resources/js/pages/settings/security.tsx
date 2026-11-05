@@ -237,8 +237,6 @@ export default function Security({ passwordRules, ...props }: Props) {
                         twoFactorEnabled={props.twoFactorEnabled}
                     />
 
-                    {props.canManagePasskeys && <Separator />}
-
                     <ManagePasskeys
                         canManagePasskeys={props.canManagePasskeys}
                         passkeys={props.passkeys}
