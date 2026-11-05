@@ -14,7 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { PageEmptyState } from '@/components/admin/page-empty-state';
 import { PageLayout } from '@/components/layout/page-layout';
 import type { FindingFix } from '@/components/reports/fix-actions';
-import { StatCard, trendOf } from '@/components/reports/stat-card';
+import { StatCard, trendOf } from '@/components/stat-card';
 import { FixActions } from '@/components/reports/fix-actions';
 import {
     RuntimeSupportBadge,
