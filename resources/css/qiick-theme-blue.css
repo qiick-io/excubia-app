@@ -1,0 +1,35 @@
+/*
+ * Blue brand preset (Excubia): Refactoring UI "Light Blue Vivid" scale,
+ * primary = the logo #1375A7. Copied from externa-core
+ * `config/theme-presets.php` (`presets.blue`).
+ *
+ * A preset only sets brand colours (primary, ring, sidebar accents, the first
+ * chart colours) over the shared base in qiick-theme.css (`@qiick/theme`).
+ * Installed with `npx shadcn add @qiick/theme-blue`; import it after the theme:
+ * it lands in the same `base` layer, so it wins by source order and unlayered
+ * app rules still override it.
+ */
+
+@layer base {
+    :root {
+        --primary: #1375a7;
+        --ring: #1375a7;
+        --chart-1: #1375a7;
+        --chart-2: #0e7c86;
+        --sidebar-primary: #1375a7;
+        --sidebar-accent: #e3f8ff;
+        --sidebar-accent-foreground: #035388;
+        --sidebar-ring: #1375a7;
+    }
+
+    .dark {
+        --primary: #2bb0ed;
+        --ring: #2bb0ed;
+        --chart-1: #2bb0ed;
+        --chart-2: #2cb1bc;
+        --sidebar-primary: #2bb0ed;
+        --sidebar-accent: #04364f;
+        --sidebar-accent-foreground: #81defd;
+        --sidebar-ring: #2bb0ed;
+    }
+}

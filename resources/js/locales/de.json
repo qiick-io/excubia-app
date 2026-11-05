@@ -15,7 +15,11 @@
         "updated": "Aktualisiert",
         "sortAscending": "Aufsteigend sortieren",
         "sortDescending": "Absteigend sortieren",
-        "name": "Name"
+        "name": "Name",
+        "pageRange": "{{from}}–{{to}} von {{total}}",
+        "perPageOption": "{{count}} / Seite",
+        "rowsPerPage": "Zeilen pro Seite",
+        "selectedCount": "{{count}} ausgewählt"
     },
     "roles": {
         "names": {

@@ -1,18 +1,17 @@
 import { usePage } from '@inertiajs/react';
 import type { ReactNode } from 'react';
 import { SidebarProvider } from '@/components/ui/sidebar';
-import type { AppVariant } from '@/types';
 
 type Props = {
     children: ReactNode;
-    variant?: AppVariant;
+    variant?: 'header' | 'sidebar';
 };
 
 /**
  * Root layout shell: sidebar provider or full-width column for header layout.
  * @param {Props} props - Component props.
  * @param {ReactNode} props.children - App chrome and page tree.
- * @param {AppVariant} [props.variant='sidebar'] - Layout mode from shared page props.
+ * @param {'header' | 'sidebar'} [props.variant='sidebar'] - Layout mode from shared page props.
  * @returns {JSX.Element}
  */
 export function AppShell({ children, variant = 'sidebar' }: Props) {

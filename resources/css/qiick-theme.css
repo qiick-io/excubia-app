@@ -1,0 +1,607 @@
+/*
+ * qiick app theme (`@qiick/theme`) — design tokens shared by the qiick apps.
+ *
+ * Extracted from externa-core `resources/css/app.css` (1.4.0). Installed with
+ * `npx shadcn add @qiick/theme`; import it once, right after Tailwind, in the
+ * app's CSS entry:
+ *
+ *     @import 'tailwindcss';
+ *     @import './qiick-theme.css';
+ *     @import './qiick-theme-blue.css'; // optional brand preset (@qiick/theme-blue)
+ *
+ * The colour tokens (`:root`, `.dark`, high contrast) and the base rules live
+ * in Tailwind's `base` cascade layer, so any unlayered app rule overrides them
+ * without `!important`. `@theme` stays top level (Tailwind requires it). The
+ * product accent is `--brand-primary` (teal when unset). Every token:
+ * https://github.com/qiick-io/app-ui/blob/develop/docs/theme-tokens.md
+ */
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+    --font-sans:
+        'Geist Variable', ui-sans-serif, system-ui, sans-serif,
+        'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
+        'Noto Color Emoji';
+    --font-mono:
+        'Geist Mono Variable', ui-monospace, SFMono-Regular, Menlo, Monaco,
+        Consolas, 'Liberation Mono', 'Courier New', monospace;
+
+    /* qiick scales (shared with externa-website / externa-docs) */
+    --color-teal-50: #ecfdfd;
+    --color-teal-100: #d1f8fa;
+    --color-teal-200: #a3ebf0;
+    --color-teal-300: #66d3db;
+    --color-teal-400: #2cb1bc;
+    --color-teal-500: #1a95a2;
+    --color-teal-600: #0e7c86;
+    --color-teal-700: #0a6571;
+    --color-teal-800: #074f5a;
+    --color-teal-900: #043a43;
+    --color-teal-950: #02252c;
+
+    --color-ink-50: #f8fdfe;
+    --color-ink-100: #ebf3f6;
+    --color-ink-200: #d2dde5;
+    --color-ink-300: #b3c2cc;
+    --color-ink-400: #8195a2;
+    --color-ink-500: #637683;
+    --color-ink-600: #516370;
+    --color-ink-700: #3b4c59;
+    --color-ink-800: #263540;
+    --color-ink-900: #17232c;
+    --color-ink-950: #0e171e;
+
+    --color-red-50: #fff0f1;
+    --color-red-100: #fdd8db;
+    --color-red-200: #f9b4b8;
+    --color-red-300: #f0848c;
+    --color-red-400: #e45862;
+    --color-red-500: #d8313c;
+    --color-red-600: #bd1f2c;
+    --color-red-700: #9d1523;
+    --color-red-800: #7c0e1b;
+    --color-red-900: #590813;
+    --color-red-950: #3a050c;
+
+    --color-amber-50: #fff8eb;
+    --color-amber-100: #feecc7;
+    --color-amber-200: #fcd48a;
+    --color-amber-300: #f7b84a;
+    --color-amber-400: #f09a1a;
+    --color-amber-500: #d97706;
+    --color-amber-600: #b45309;
+    --color-amber-700: #92400e;
+    --color-amber-800: #78350f;
+    --color-amber-900: #5c2a0a;
+    --color-amber-950: #3b1a05;
+
+    --color-green-50: #eefbf3;
+    --color-green-100: #d4f5e1;
+    --color-green-200: #a9e9c3;
+    --color-green-300: #6fd49a;
+    --color-green-400: #3bb872;
+    --color-green-500: #229954;
+    --color-green-600: #15803d;
+    --color-green-700: #166534;
+    --color-green-800: #14532d;
+    --color-green-900: #0f3d22;
+    --color-green-950: #082816;
+
+    --color-blue-50: #eef6ff;
+    --color-blue-100: #d9eaff;
+    --color-blue-200: #bcd9ff;
+    --color-blue-300: #8ec0ff;
+    --color-blue-400: #599cf7;
+    --color-blue-500: #3b82f6;
+    --color-blue-600: #2563eb;
+    --color-blue-700: #1d4ed8;
+    --color-blue-800: #1e40af;
+    --color-blue-900: #1e3a8a;
+    --color-blue-950: #172554;
+
+    /* Violet scale for AI elements only (shared with website/docs) */
+    --color-violet-50: #f7f0ff;
+    --color-violet-100: #e9d8fd;
+    --color-violet-200: #d8b8fa;
+    --color-violet-300: #c497f2;
+    --color-violet-400: #ad70e6;
+    --color-violet-500: #9650d3;
+    --color-violet-600: #7f35bb;
+    --color-violet-700: #69279b;
+    --color-violet-800: #521b79;
+    --color-violet-900: #3a0f57;
+
+    --color-ai: var(--ai);
+    --color-ai-hover: var(--ai-hover);
+    --color-ai-foreground: var(--ai-foreground);
+    --color-ai-bg: var(--ai-bg);
+    --color-ai-text: var(--ai-text);
+    --color-ai-border: var(--ai-border);
+
+    --radius-xl: calc(var(--radius) * 1.5);
+    --radius-lg: var(--radius);
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-sm: calc(var(--radius) - 4px);
+
+    /*
+     * Control-size scale (antd: #462, #472): one height per size for every
+     * control (Button, icon Button, Input, InputGroup, NativeSelect, Select
+     * trigger and items, Toggle/ToggleGroup, date-time picker trigger) so
+     * mixed rows line up. Exposed as spacing keys: h-control, size-control-sm,
+     * min-w-control-lg, … `sm` is only for compact inline actions (table row
+     * icons, chips) and sits exactly on the WCAG 2.2 SC 2.5.8 minimum (24px).
+     */
+    --spacing-control-sm: 1.5rem; /* 24px — compact inline actions only */
+    --spacing-control: 2rem; /* 32px — default everywhere */
+    --spacing-control-lg: 2.5rem; /* 40px — rare large CTAs */
+
+    --shadow-xs: 0 1px 2px rgb(14 23 30 / 0.05);
+    --shadow-sm: 0 1px 3px rgb(14 23 30 / 0.08), 0 1px 2px rgb(14 23 30 / 0.04);
+    --shadow-md:
+        0 4px 8px -2px rgb(14 23 30 / 0.1), 0 2px 4px -2px rgb(14 23 30 / 0.06);
+    --shadow-lg:
+        0 12px 20px -4px rgb(14 23 30 / 0.12),
+        0 4px 8px -4px rgb(14 23 30 / 0.06);
+    --shadow-xl:
+        0 20px 28px -6px rgb(14 23 30 / 0.14),
+        0 8px 12px -6px rgb(14 23 30 / 0.08);
+
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-primary-hover: var(--primary-hover);
+
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+
+    --color-destructive: var(--destructive);
+    --color-destructive-foreground: var(--destructive-foreground);
+
+    --color-success: var(--success);
+    --color-success-foreground: var(--success-foreground);
+    --color-warning: var(--warning);
+    --color-warning-foreground: var(--warning-foreground);
+    --color-info: var(--info);
+    --color-info-foreground: var(--info-foreground);
+    --color-overlay: var(--overlay);
+
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+
+    --color-chart-1: var(--chart-1);
+    --color-chart-2: var(--chart-2);
+    --color-chart-3: var(--chart-3);
+    --color-chart-4: var(--chart-4);
+    --color-chart-5: var(--chart-5);
+
+    --color-sidebar: var(--sidebar);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+    :root {
+        /* Keep UA form controls / scrollbars in sync with theme tokens (axe + Chrome). */
+        color-scheme: light;
+        /* Surface stays white; sidebar frame uses ink-50 Paper */
+        --background: #ffffff;
+        --foreground: var(--color-ink-950);
+        --card: #ffffff;
+        --card-foreground: var(--color-ink-950);
+        --popover: #ffffff;
+        --popover-foreground: var(--color-ink-950);
+        /*
+         * Keep #258 brand chain: teal-600 body + white fg; rim teal-400.
+         * Table teal-400 dark primary deferred — see PR note.
+         */
+        --primary: var(--brand-primary, var(--color-teal-600));
+        --primary-foreground: var(--brand-primary-foreground, #ffffff);
+        /*
+         * Hover moves away from the white foreground so contrast only grows
+         * (bg-primary/90 dropped white on teal-600 to ~4.1:1, below AA).
+         * ponytail: assumes a light-on-dark brand; a brand with a dark light-mode
+         * foreground would want white here (derive from ContrastingForeground, #243).
+         */
+        --primary-hover: color-mix(in oklab, var(--primary), black 12%);
+        --secondary: var(--color-ink-100);
+        --secondary-foreground: var(--color-ink-800);
+        --muted: var(--color-ink-100);
+        --muted-foreground: var(--color-ink-600);
+        --accent: var(--color-ink-100);
+        --accent-foreground: var(--color-ink-900);
+        --destructive: var(--color-red-600);
+        --destructive-foreground: #ffffff;
+        --success: var(--color-green-600);
+        --success-foreground: #ffffff;
+        --warning: var(--color-amber-600);
+        --warning-foreground: #ffffff;
+        --info: var(--color-blue-600);
+        --info-foreground: #ffffff;
+        --overlay: color-mix(in srgb, var(--color-ink-950) 60%, transparent);
+        --border: var(--color-ink-200);
+        --input: var(--color-ink-400);
+        /*
+         * teal-600 ≥3:1 on white (#227). Not tied to the brand variable; a custom
+         * brand reaches the ring only via the theme block when it is ≥3:1 (#453).
+         */
+        --ring: var(--color-teal-600);
+        --chart-1: var(--color-teal-600);
+        --chart-2: #2571d4;
+        --chart-3: #a85c0b;
+        --chart-4: #1f7a4e;
+        --chart-5: var(--color-ink-400);
+        --radius: 0.5rem;
+        --sidebar: var(--color-ink-50);
+        --sidebar-foreground: var(--color-ink-600);
+        --sidebar-primary: var(--primary);
+        --sidebar-primary-foreground: var(--primary-foreground);
+        --sidebar-accent: var(--color-teal-50);
+        --sidebar-accent-foreground: var(--color-teal-800);
+        --sidebar-border: var(--color-ink-200);
+        --sidebar-ring: var(--color-teal-600);
+        /* AI accent (violet only — never brand/primary) */
+        --ai: var(--color-violet-600);
+        --ai-hover: var(--color-violet-700);
+        --ai-foreground: #ffffff;
+        --ai-bg: var(--color-violet-50);
+        --ai-text: var(--color-violet-800);
+        --ai-border: var(--color-violet-500);
+    }
+
+    .dark {
+        color-scheme: dark;
+        --background: var(--color-ink-950);
+        --foreground: var(--color-ink-100);
+        --card: var(--color-ink-900);
+        --card-foreground: var(--color-ink-100);
+        --popover: var(--color-ink-800);
+        --popover-foreground: var(--color-ink-100);
+        /* Keep #258 dark body teal-500 (#1A95A2); rim teal-300 */
+        --primary: var(
+            --brand-primary-dark,
+            var(--brand-primary, var(--color-teal-400))
+        );
+        /*
+         * Do not fall back to light --brand-primary-foreground (often #fff).
+         * White on teal-500 is ~3.58:1; ink-950 is ~5.06:1 (AA).
+         */
+        --primary-foreground: var(
+            --brand-primary-dark-foreground,
+            var(--color-ink-950)
+        );
+        /* Dark fg (ink-950): lighten on hover so contrast only grows. */
+        --primary-hover: color-mix(in oklab, var(--primary), white 12%);
+        --secondary: var(--color-ink-800);
+        --secondary-foreground: var(--color-ink-100);
+        --muted: var(--color-ink-800);
+        /* ink-200 on ink-950 ≈ 12:1 — margin vs placeholder opacity / AA edge cases */
+        --muted-foreground: var(--color-ink-300);
+        --accent: var(--color-ink-800);
+        --accent-foreground: var(--color-ink-100);
+        /* red-300 on ink-900 = 6.38:1 (red-400 fails AA) */
+        --destructive: var(--color-red-300);
+        --destructive-foreground: var(--color-ink-950);
+        --success: var(--color-green-400);
+        --success-foreground: var(--color-ink-950);
+        --warning: var(--color-amber-400);
+        --warning-foreground: var(--color-ink-950);
+        /* blue-300 on ink-800 for AA (issue comment) */
+        --info: var(--color-blue-300);
+        --info-foreground: var(--color-ink-950);
+        --overlay: color-mix(in srgb, var(--color-ink-950) 70%, transparent);
+        --border: var(--color-ink-800);
+        --input: var(--color-ink-500);
+        /* teal-400 ≥3:1 on ink-950 (#227); contrast-checked brand ring via theme block (#453) */
+        --ring: var(--color-teal-400);
+        --chart-1: var(--color-teal-400);
+        --chart-2: #498fe4;
+        --chart-3: #f1ab27;
+        --chart-4: #4ab57e;
+        --chart-5: var(--color-ink-300);
+        /* Shell (sidebar + inset frame) one step lighter than the content, as before 1.4. */
+        --sidebar: var(--color-ink-900);
+        --sidebar-foreground: var(--color-ink-300);
+        --sidebar-primary: var(--primary);
+        --sidebar-primary-foreground: var(--primary-foreground);
+        --sidebar-accent: var(--color-teal-950);
+        --sidebar-accent-foreground: var(--color-teal-200);
+        --sidebar-border: var(--color-ink-800);
+        --sidebar-ring: var(--color-teal-400);
+        /* AI accent dark: light violet fill + ink foreground for AA */
+        --ai: var(--color-violet-300);
+        --ai-hover: var(--color-violet-200);
+        --ai-foreground: var(--color-ink-950);
+        --ai-bg: var(--color-violet-900);
+        --ai-text: var(--color-violet-200);
+        --ai-border: var(--color-violet-400);
+    }
+
+    /* Stronger semantic tokens (shared by user toggle and prefers-contrast: more) */
+    html.high-contrast {
+        --foreground: var(--color-ink-950);
+        --muted-foreground: var(--color-ink-700);
+        --border: var(--color-ink-500);
+        --input: var(--color-ink-600);
+        --ring: var(--color-teal-700);
+        --sidebar-foreground: var(--color-ink-950);
+        --sidebar-border: var(--color-ink-500);
+        --sidebar-ring: var(--color-teal-700);
+        --card-foreground: var(--color-ink-950);
+        --popover-foreground: var(--color-ink-950);
+        --secondary-foreground: var(--color-ink-950);
+        --accent-foreground: var(--color-ink-950);
+    }
+
+    html.high-contrast.dark {
+        --foreground: #ffffff;
+        --muted-foreground: var(--color-ink-200);
+        --border: var(--color-ink-400);
+        --input: var(--color-ink-300);
+        --ring: var(--color-teal-300);
+        --sidebar-foreground: #ffffff;
+        --sidebar-border: var(--color-ink-400);
+        --sidebar-ring: var(--color-teal-300);
+        --card-foreground: #ffffff;
+        --popover-foreground: #ffffff;
+        --secondary-foreground: #ffffff;
+        --accent-foreground: #ffffff;
+    }
+
+    @media (prefers-contrast: more) {
+        :root {
+            --foreground: var(--color-ink-950);
+            --muted-foreground: var(--color-ink-700);
+            --border: var(--color-ink-500);
+            --input: var(--color-ink-600);
+            --ring: var(--color-teal-700);
+            --sidebar-foreground: var(--color-ink-950);
+            --sidebar-border: var(--color-ink-500);
+            --sidebar-ring: var(--color-teal-700);
+            --card-foreground: var(--color-ink-950);
+            --popover-foreground: var(--color-ink-950);
+            --secondary-foreground: var(--color-ink-950);
+            --accent-foreground: var(--color-ink-950);
+        }
+
+        .dark {
+            --foreground: #ffffff;
+            --muted-foreground: var(--color-ink-200);
+            --border: var(--color-ink-400);
+            --input: var(--color-ink-300);
+            --ring: var(--color-teal-300);
+            --sidebar-foreground: #ffffff;
+            --sidebar-border: var(--color-ink-400);
+            --sidebar-ring: var(--color-teal-300);
+            --card-foreground: #ffffff;
+            --popover-foreground: #ffffff;
+            --secondary-foreground: #ffffff;
+            --accent-foreground: #ffffff;
+        }
+    }
+
+    * {
+        @apply border-border;
+    }
+
+    /*
+     * Browsers default ::placeholder to ~0.54 opacity, which drops ink-300
+     * on ink-950 below 4.5:1 in axe. Keep full opacity; color carries mute.
+     */
+    ::placeholder {
+        color: var(--muted-foreground);
+        opacity: 1;
+    }
+
+    body {
+        @apply bg-background text-foreground;
+    }
+
+    /*
+     * #main-content takes focus programmatically (skip link, focusPageMain after
+     * navigation) so screen readers land on the page; it is not a control, so it
+     * shows no outline around the whole page.
+     */
+    #main-content:focus {
+        outline: none;
+    }
+
+    /* Tailwind v4 preflight sets cursor: default on buttons — restore click affordance */
+    button:not(:disabled),
+    [role='button']:not([aria-disabled='true']),
+    [role='checkbox']:not([aria-disabled='true']),
+    [role='radio']:not([aria-disabled='true']),
+    [role='switch']:not([aria-disabled='true']),
+    [role='combobox']:not([aria-disabled='true']),
+    [role='option']:not([aria-disabled='true']),
+    [role='menuitem']:not([aria-disabled='true']),
+    [role='menuitemcheckbox']:not([aria-disabled='true']),
+    [role='menuitemradio']:not([aria-disabled='true']),
+    [role='tab']:not([aria-disabled='true']),
+    label[for],
+    summary {
+        cursor: pointer;
+    }
+
+    button:disabled,
+    [aria-disabled='true'],
+    [role='button'][aria-disabled='true'],
+    [role='checkbox'][aria-disabled='true'],
+    [role='radio'][aria-disabled='true'],
+    [role='switch'][aria-disabled='true'],
+    [role='combobox'][aria-disabled='true'] {
+        cursor: not-allowed;
+    }
+}
+
+/*
+ * Assistant nav (#463): same text token, background and full-height active bar
+ * as its siblings, plus a 1px border in the current theme primary
+ * (`--sidebar-primary`, follows the theme preset / brand, ≥3:1 on the sidebar).
+ * Drawn as an inset outline so it keeps the item size, follows the square-left
+ * active corners, survives forced-colors and leaves the focus ring alone.
+ * Hover / keyboard focus add the theme accent wash and a primary-tinted shimmer.
+ */
+.sidebar-ai-nav {
+    outline: 1px solid var(--sidebar-primary);
+    outline-offset: -1px;
+}
+
+.sidebar-ai-nav:hover,
+.sidebar-ai-nav:focus-visible {
+    background: var(--sidebar-accent);
+    color: var(--sidebar-accent-foreground);
+}
+
+.sidebar-ai-nav::after {
+    content: '';
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(
+        105deg,
+        transparent 35%,
+        color-mix(in oklab, var(--sidebar-primary) 30%, transparent) 50%,
+        transparent 65%
+    );
+    transform: translateX(-120%);
+}
+
+.sidebar-ai-nav:hover::after,
+.sidebar-ai-nav:focus-visible::after {
+    animation: sidebar-ai-shimmer 0.85s ease;
+}
+
+@keyframes sidebar-ai-shimmer {
+    to {
+        transform: translateX(120%);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sidebar-ai-nav::after {
+        animation: none !important;
+    }
+}
+
+html.reduce-motion .sidebar-ai-nav::after {
+    animation: none !important;
+}
+
+/* --- Accessibility: OS-first contrast + motion --- */
+
+/*
+ * Reduced motion (SC 2.3.3): OS `prefers-reduced-motion: reduce` always wins;
+ * `html.reduce-motion` forces the same rules when the in-app toggle is on.
+ *
+ * Do NOT set global `*` `animation-duration` / `transition-duration` — Radix
+ * Presence and vaul wait for animationend/transitionend and can leave overlays
+ * stuck invisible/unmounted. Target overlays with `animation: none` so Presence
+ * completes immediately, and only kill decorative motion elsewhere.
+ */
+:root {
+    /* SC 2.4.11: keep focused controls clear of sticky toolbar / toasts / AI FAB */
+    scroll-padding-top: 4rem;
+    scroll-padding-bottom: max(6.5rem, env(safe-area-inset-bottom, 0px));
+}
+
+/* SC 1.4.12: text-spacing override must not clip labels/buttons */
+label,
+button,
+[role='button'],
+[data-slot='field-label'],
+[data-slot='field-error'] {
+    overflow-wrap: anywhere;
+    line-height: max(1.25, 1em);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html {
+        scroll-behavior: auto;
+    }
+
+    [data-slot='dialog-overlay'],
+    [data-slot='dialog-content'],
+    [data-slot='alert-dialog-overlay'],
+    [data-slot='alert-dialog-content'],
+    [data-slot='sheet-overlay'],
+    [data-slot='sheet-content'],
+    [data-slot='drawer-overlay'],
+    [data-slot='drawer-content'],
+    [data-slot='popover-content'],
+    [data-slot='dropdown-menu-content'],
+    [data-slot='dropdown-menu-sub-content'],
+    [data-slot='context-menu-content'],
+    [data-slot='context-menu-sub-content'],
+    [data-slot='select-content'],
+    [data-slot='tooltip-content'],
+    [data-slot='navigation-menu-content'],
+    [data-slot='navigation-menu-viewport'],
+    [data-slot='collapsible-content'],
+    [data-sonner-toast],
+    [data-sonner-toaster] {
+        animation: none !important;
+        transition: none !important;
+    }
+
+    .animate-pulse,
+    .animate-bounce,
+    .animate-spin {
+        animation: none !important;
+    }
+}
+
+html.reduce-motion {
+    scroll-behavior: auto;
+}
+
+html.reduce-motion [data-slot='dialog-overlay'],
+html.reduce-motion [data-slot='dialog-content'],
+html.reduce-motion [data-slot='alert-dialog-overlay'],
+html.reduce-motion [data-slot='alert-dialog-content'],
+html.reduce-motion [data-slot='sheet-overlay'],
+html.reduce-motion [data-slot='sheet-content'],
+html.reduce-motion [data-slot='drawer-overlay'],
+html.reduce-motion [data-slot='drawer-content'],
+html.reduce-motion [data-slot='popover-content'],
+html.reduce-motion [data-slot='dropdown-menu-content'],
+html.reduce-motion [data-slot='dropdown-menu-sub-content'],
+html.reduce-motion [data-slot='context-menu-content'],
+html.reduce-motion [data-slot='context-menu-sub-content'],
+html.reduce-motion [data-slot='select-content'],
+html.reduce-motion [data-slot='tooltip-content'],
+html.reduce-motion [data-slot='navigation-menu-content'],
+html.reduce-motion [data-slot='navigation-menu-viewport'],
+html.reduce-motion [data-slot='collapsible-content'],
+html.reduce-motion [data-sonner-toast],
+html.reduce-motion [data-sonner-toaster] {
+    animation: none !important;
+    transition: none !important;
+}
+
+html.reduce-motion .animate-pulse,
+html.reduce-motion .animate-bounce,
+html.reduce-motion .animate-spin {
+    animation: none !important;
+}
