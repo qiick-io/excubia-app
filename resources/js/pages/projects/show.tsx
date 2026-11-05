@@ -8,13 +8,20 @@ import {
     ListOrdered,
     RefreshCw,
     SearchX,
+    Sparkles,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PageEmptyState } from '@/components/admin/page-empty-state';
 import { EmptyStatus } from '@/components/empty-status';
-import { FilterSearch } from '@/components/layout/page-header';
+import { DataTableToolbar } from '@/components/admin/data-table-toolbar';
 import { PageLayout, TablePanel } from '@/components/layout/page-layout';
+import type { FindingFix } from '@/components/reports/fix-actions';
+import {
+    combinedPrompt,
+    FixActions,
+    useCopyWithToast,
+} from '@/components/reports/fix-actions';
 import {
     RUNTIMES,
     RuntimeSupportBadge,
@@ -27,6 +34,7 @@ import {
 import { SeverityStackedBarChart } from '@/components/reports/severity-chart';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
     Card,
     CardContent,
@@ -78,9 +86,12 @@ export default function ProjectShow({
     project,
     report,
     reports,
+    findingFixes = {},
     canRefreshReport = false,
 }: {
     canRefreshReport?: boolean;
+    /** Ready command and prompt per finding, keyed by `checkId|subject|advisoryId` (#78). */
+    findingFixes?: Record<string, FindingFix>;
     project: ProjectRow;
     report: HealthReportBody | null;
     reports: HealthReportSummary[];
@@ -168,7 +179,7 @@ export default function ProjectShow({
         >
             <Head title={project.name} />
             {view === 'findings' && report !== null ? (
-                <FindingsView report={report} />
+                <FindingsView report={report} fixes={findingFixes} />
             ) : (
                 <PageLayout
                     scrollContent
@@ -461,8 +472,16 @@ function OverviewView({
  * table in a TablePanel (app-ui `docs/list-page.md`). Filtering happens in the browser: one
  * report is small.
  */
-function FindingsView({ report }: { report: HealthReportBody }) {
+function FindingsView({
+    report,
+    fixes,
+}: {
+    report: HealthReportBody;
+    fixes: Record<string, FindingFix>;
+}) {
     const { t } = useTranslation();
+    const copyWithToast = useCopyWithToast();
+    const [selected, setSelected] = useState<string[]>([]);
     const [search, setSearch] = useState('');
     const [severity, setSeverity] = useState<Severity | 'all'>('all');
     const [checkId, setCheckId] = useState('all');
@@ -510,60 +529,85 @@ function FindingsView({ report }: { report: HealthReportBody }) {
     );
     const hasActiveFilters =
         needle !== '' || severity !== 'all' || checkId !== 'all';
+    const filteredKeys = filtered.map(findingKey);
+    const selectedFixes = selected
+        .map((key) => fixes[key])
+        .filter((fix): fix is FindingFix => fix !== undefined);
 
     return (
         <PageLayout
             filters={
-                <FilterSearch
-                    value={search}
-                    onChange={setSearch}
-                    placeholder={t('report.searchFindings')}
+                <DataTableToolbar
+                    search={search}
+                    onSearchChange={setSearch}
+                    searchPlaceholder={t('report.searchFindings')}
+                    selectedCount={selected.length}
+                    onClearSelection={() => setSelected([])}
+                    bulkActions={
+                        <Button
+                            type="button"
+                            variant="outline"
+                            className="text-ai-text"
+                            onClick={() =>
+                                void copyWithToast(
+                                    combinedPrompt(selectedFixes),
+                                )
+                            }
+                        >
+                            <Sparkles className="size-4" />
+                            {t('fix.copyPromptForSelected', {
+                                count: selectedFixes.length,
+                            })}
+                        </Button>
+                    }
                 />
             }
             filtersRight={
-                <div className="flex items-center gap-1.5">
-                    <Select
-                        value={severity}
-                        onValueChange={(value) =>
-                            setSeverity(value as Severity | 'all')
-                        }
-                    >
-                        <SelectTrigger
-                            aria-label={t('report.severityLabel')}
-                            className="w-[8.5rem]"
+                selected.length > 0 ? null : (
+                    <div className="flex items-center gap-1.5">
+                        <Select
+                            value={severity}
+                            onValueChange={(value) =>
+                                setSeverity(value as Severity | 'all')
+                            }
                         >
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent align="end">
-                            <SelectItem value="all">
-                                {t('report.allSeverities')}
-                            </SelectItem>
-                            {SEVERITIES.map((item) => (
-                                <SelectItem key={item} value={item}>
-                                    {t(`report.severity.${item}`)}
+                            <SelectTrigger
+                                aria-label={t('report.severityLabel')}
+                                className="w-[8.5rem]"
+                            >
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent align="end">
+                                <SelectItem value="all">
+                                    {t('report.allSeverities')}
                                 </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                    <Select value={checkId} onValueChange={setCheckId}>
-                        <SelectTrigger
-                            aria-label={t('report.check')}
-                            className="w-[12rem]"
-                        >
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent align="end">
-                            <SelectItem value="all">
-                                {t('report.allChecks')}
-                            </SelectItem>
-                            {checks.map((check) => (
-                                <SelectItem key={check.id} value={check.id}>
-                                    {check.name}
+                                {SEVERITIES.map((item) => (
+                                    <SelectItem key={item} value={item}>
+                                        {t(`report.severity.${item}`)}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <Select value={checkId} onValueChange={setCheckId}>
+                            <SelectTrigger
+                                aria-label={t('report.check')}
+                                className="w-[12rem]"
+                            >
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent align="end">
+                                <SelectItem value="all">
+                                    {t('report.allChecks')}
                                 </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
+                                {checks.map((check) => (
+                                    <SelectItem key={check.id} value={check.id}>
+                                        {check.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                )
             }
         >
             {filtered.length === 0 ? (
@@ -601,6 +645,24 @@ function FindingsView({ report }: { report: HealthReportBody }) {
                     <Table>
                         <TableHeader>
                             <TableRow>
+                                <TableHead className="w-10">
+                                    <Checkbox
+                                        checked={
+                                            filteredKeys.length > 0 &&
+                                            filteredKeys.every((key) =>
+                                                selected.includes(key),
+                                            )
+                                        }
+                                        onCheckedChange={(checked) =>
+                                            setSelected(
+                                                checked === true
+                                                    ? filteredKeys
+                                                    : [],
+                                            )
+                                        }
+                                        aria-label={t('a11y.selectAll')}
+                                    />
+                                </TableHead>
                                 <TableHead>
                                     {t('report.severityLabel')}
                                 </TableHead>
@@ -609,6 +671,9 @@ function FindingsView({ report }: { report: HealthReportBody }) {
                                 <TableHead>{t('report.fixedIn')}</TableHead>
                                 <TableHead>{t('report.message')}</TableHead>
                                 <TableHead>{t('report.fixHint')}</TableHead>
+                                <TableHead className="w-[1%] text-right">
+                                    {t('fix.actions')}
+                                </TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -619,6 +684,32 @@ function FindingsView({ report }: { report: HealthReportBody }) {
                                         `${row.checkId}-${row.subject}-${row.advisoryId ?? index}`
                                     }
                                 >
+                                    <TableCell>
+                                        <Checkbox
+                                            checked={selected.includes(
+                                                findingKey(row),
+                                            )}
+                                            onCheckedChange={(checked) =>
+                                                setSelected((current) =>
+                                                    checked === true
+                                                        ? [
+                                                              ...current,
+                                                              findingKey(row),
+                                                          ]
+                                                        : current.filter(
+                                                              (key) =>
+                                                                  key !==
+                                                                  findingKey(
+                                                                      row,
+                                                                  ),
+                                                          ),
+                                                )
+                                            }
+                                            aria-label={t('fix.select', {
+                                                subject: row.subject,
+                                            })}
+                                        />
+                                    </TableCell>
                                     <TableCell>
                                         <SeverityBadge
                                             severity={row.severity}
@@ -661,6 +752,11 @@ function FindingsView({ report }: { report: HealthReportBody }) {
                                     <TableCell className="min-w-[14rem] font-mono text-xs whitespace-normal">
                                         {row.fixHint}
                                     </TableCell>
+                                    <TableCell className="text-right">
+                                        <FixActions
+                                            fix={fixes[findingKey(row)]}
+                                        />
+                                    </TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
@@ -669,6 +765,11 @@ function FindingsView({ report }: { report: HealthReportBody }) {
             )}
         </PageLayout>
     );
+}
+
+/** Same key as ReportFindingsService::identity() on the server. */
+function findingKey(row: ReportFinding): string {
+    return `${row.checkId}|${row.subject}|${row.advisoryId ?? ''}`;
 }
 
 function detailText(row: FindingRow, key: string): string | null {

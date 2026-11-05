@@ -43,6 +43,7 @@ class DashboardOverviewService
     public function __construct(
         private ReportFindingsService $findings,
         private ProjectStalenessService $staleness,
+        private FixSuggestionService $fixes,
     ) {}
 
     /**
@@ -190,6 +191,7 @@ class DashboardOverviewService
                     'installed' => [],
                     'fixedVersions' => [],
                     'projects' => [],
+                    'fix' => $this->fixes->forFinding($finding),
                 ];
 
                 if ($severity->rank() < $group['severity']->rank()) {
@@ -281,6 +283,7 @@ class DashboardOverviewService
                     'subject' => (string) ($finding['subject'] ?? ''),
                     'message' => (string) ($finding['message'] ?? ''),
                     'fixHint' => (string) ($finding['fixHint'] ?? ''),
+                    'fix' => $this->fixes->forFinding($finding),
                 ];
             }
         }

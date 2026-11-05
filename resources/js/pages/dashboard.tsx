@@ -13,6 +13,8 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PageEmptyState } from '@/components/admin/page-empty-state';
 import { PageLayout } from '@/components/layout/page-layout';
+import type { FindingFix } from '@/components/reports/fix-actions';
+import { FixActions } from '@/components/reports/fix-actions';
 import {
     RuntimeSupportBadge,
     supportStatus,
@@ -77,6 +79,7 @@ type TopIssue = {
     installed: string[];
     fixedVersions: string[];
     projects: (ProjectRef & { installed: string | null })[];
+    fix: FindingFix;
 };
 
 type EndOfSupportRow = {
@@ -96,6 +99,7 @@ type ConfigurationRow = {
     subject: string;
     message: string;
     fixHint: string;
+    fix: FindingFix;
 };
 
 type Overview = {
@@ -496,6 +500,9 @@ function TopIssuesCard({
                                     <TableHead>
                                         {t('dashboard.topIssues.projects')}
                                     </TableHead>
+                                    <TableHead className="w-[1%] text-right">
+                                        {t('fix.actions')}
+                                    </TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -549,6 +556,9 @@ function TopIssuesCard({
                                                     ),
                                                 )}
                                             </div>
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <FixActions fix={issue.fix} />
                                         </TableCell>
                                     </TableRow>
                                 ))}
@@ -689,6 +699,9 @@ function ConfigurationCard({
                                             >
                                                 {row.project.name}
                                             </Link>
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <FixActions fix={row.fix} />
                                         </TableCell>
                                     </TableRow>
                                 ))}

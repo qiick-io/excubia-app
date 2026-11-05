@@ -250,3 +250,17 @@ it('builds the issue-first overview for all projects or one, with the previous p
     $this->actingAs(reportReader())->get(route('dashboard', ['project' => 'nope', 'period' => 5]))
         ->assertInertia(fn (Assert $page) => $page->where('scope', ['project' => null, 'period' => 14]));
 });
+
+it('sends a ready fix per finding to the project page and the dashboard', function () {
+    $shop = Project::factory()->create(['slug' => 'shop']);
+    pushedReport($shop, '2026-11-05 08:00:00', SeverityEnum::High, ['high_count' => 1]);
+
+    $this->actingAs(reportReader())->get(route('projects.show', 'shop'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('findingFixes.composer-audit|guzzlehttp/guzzle|')
+            ->where('findingFixes.composer-audit|guzzlehttp/guzzle|.command', null)
+            ->where('findingFixes.composer-audit|guzzlehttp/guzzle|.prompt', fn (string $prompt): bool => str_contains($prompt, 'composer update guzzlehttp/guzzle')));
+
+    $this->actingAs(reportReader())->get(route('dashboard'))
+        ->assertInertia(fn (Assert $page) => $page->has('overview.topIssues.0.fix.prompt'));
+});
