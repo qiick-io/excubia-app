@@ -507,7 +507,7 @@
     },
     "assistant": {
         "title": "Assistente",
-        "newConversation": "Nuova conversazione",
+        "newConversation": "Nuova chat",
         "conversations": "Conversazioni",
         "emptyTitle": "Chiedi dei tuoi progetti",
         "emptyDescription": "L'assistente legge solo i report salvati. Non può modificare nulla.",
@@ -522,7 +522,16 @@
             "package": "Quali progetti usano guzzlehttp/guzzle?",
             "upgradeFirst": "Quale progetto aggiorno per primo, e perché?",
             "lastWeek": "Cos'è peggiorato rispetto alla settimana scorsa?"
-        }
+        },
+        "searchConversations": "Cerca conversazioni…",
+        "noConversations": "Nessuna conversazione.",
+        "today": "Oggi",
+        "yesterday": "Ieri",
+        "twoDaysAgo": "2 giorni fa",
+        "thisWeek": "Questa settimana",
+        "aWeekAgo": "Una settimana fa",
+        "thisMonth": "Questo mese",
+        "older": "Più vecchie"
     },
     "permissions": {
         "description": "I permessi sono definiti in PermissionEnum e sincronizzati nel database. Assegnali ai ruoli dalla pagina di modifica del ruolo.",

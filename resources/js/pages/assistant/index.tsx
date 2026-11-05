@@ -1,13 +1,29 @@
-import { Head, Link, useForm } from '@inertiajs/react';
-import { Plus, Send } from 'lucide-react';
-import { useEffect, useMemo, useRef } from 'react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
+import { Plus, Sparkles } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ThinkingDots } from '@/components/ai/thinking-dots';
 import InputError from '@/components/input-error';
+import {
+    ChatComposer,
+    ChatLayout,
+    ChatListItem,
+    ChatListSection,
+    ChatThread,
+} from '@/components/layout/chat-layout';
+import { FilterSearch } from '@/components/layout/page-header';
+import { PageLayout } from '@/components/layout/page-layout';
+import { Bubble, BubbleContent } from '@/components/ui/bubble';
 import { Button } from '@/components/ui/button';
-import { Spinner } from '@/components/ui/spinner';
-import { Textarea } from '@/components/ui/textarea';
+import {
+    Empty,
+    EmptyDescription,
+    EmptyHeader,
+    EmptyMedia,
+    EmptyTitle,
+} from '@/components/ui/empty';
+import { Message, MessageContent } from '@/components/ui/message';
 import AppLayout from '@/layouts/app-layout';
-import { cn } from '@/lib/utils';
 import assistantRoutes from '@/routes/assistant';
 import type {
     AssistantConversation,
@@ -22,9 +38,17 @@ const EXAMPLES = [
     'assistant.examples.lastWeek',
 ];
 
+type ConversationSection = {
+    key: string;
+    labelKey: string;
+    order: number;
+    conversations: AssistantConversation[];
+};
+
 /**
- * Assistant chat: the user's conversations on the left, the selected one on the right.
- * The answer arrives when the request finishes (no streaming).
+ * Assistant chat, laid out as externa-core `/ai`: the searchable conversation list on the left,
+ * the thread on the right with the composer always at the bottom. The answer arrives when the
+ * request finishes (no streaming).
  * ponytail: answers render as plain text with line breaks; add a Markdown renderer if needed.
  */
 export default function AssistantIndex({
@@ -38,6 +62,7 @@ export default function AssistantIndex({
 }) {
     const { t } = useTranslation();
     const endRef = useRef<HTMLDivElement>(null);
+    const [query, setQuery] = useState('');
     const form = useForm({
         message: '',
         conversation_id: conversationId ?? '',
@@ -49,6 +74,18 @@ export default function AssistantIndex({
         ],
         [t],
     );
+
+    const sections = useMemo(() => {
+        const needle = query.trim().toLowerCase();
+
+        return groupConversations(
+            needle === ''
+                ? conversations
+                : conversations.filter((conversation) =>
+                      conversation.title.toLowerCase().includes(needle),
+                  ),
+        );
+    }, [conversations, query]);
 
     useEffect(() => {
         form.setData('conversation_id', conversationId ?? '');
@@ -76,171 +113,255 @@ export default function AssistantIndex({
     };
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <AppLayout
+            breadcrumbs={breadcrumbs}
+            headerActions={
+                <Button asChild>
+                    <Link href={assistantRoutes.index.url()}>
+                        <Plus className="size-4" />
+                        {t('assistant.newConversation')}
+                    </Link>
+                </Button>
+            }
+        >
             <Head title={t('assistant.title')} />
-            <div className="flex min-h-0 flex-1 gap-4 p-4">
-                <aside className="hidden w-64 shrink-0 flex-col gap-2 md:flex">
-                    <Button asChild variant="outline" className="justify-start">
-                        <Link href={assistantRoutes.index.url()}>
-                            <Plus className="mr-1 size-4" />
-                            {t('assistant.newConversation')}
-                        </Link>
-                    </Button>
-                    <nav
-                        aria-label={t('assistant.conversations')}
-                        className="flex flex-col gap-0.5 overflow-y-auto"
-                    >
-                        {conversations.map((conversation) => (
-                            <Link
-                                key={conversation.id}
-                                href={assistantRoutes.show.url(conversation.id)}
-                                className={cn(
-                                    'truncate rounded-md px-2 py-1.5 text-sm hover:bg-accent',
-                                    conversation.id === conversationId &&
-                                        'bg-accent font-medium',
-                                )}
-                                aria-current={
-                                    conversation.id === conversationId
-                                        ? 'page'
-                                        : undefined
-                                }
-                            >
-                                {conversation.title}
-                            </Link>
-                        ))}
-                    </nav>
-                </aside>
-
-                <section className="flex min-h-0 flex-1 flex-col rounded-xl border">
-                    <div
-                        className="flex-1 space-y-4 overflow-y-auto p-4"
-                        aria-live="polite"
-                    >
-                        {messages.length === 0 && !form.processing ? (
-                            <div className="mx-auto max-w-xl space-y-3 py-8 text-center">
-                                <p className="font-medium">
-                                    {t('assistant.emptyTitle')}
-                                </p>
-                                <p className="text-sm text-muted-foreground">
-                                    {t('assistant.emptyDescription')}
-                                </p>
-                                <div className="flex flex-wrap justify-center gap-2 pt-2">
-                                    {EXAMPLES.map((key) => (
-                                        <Button
-                                            key={key}
-                                            type="button"
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() =>
-                                                form.setData('message', t(key))
-                                            }
-                                        >
-                                            {t(key)}
-                                        </Button>
-                                    ))}
-                                </div>
-                            </div>
-                        ) : null}
-
-                        {messages.map((message) => (
-                            <div
-                                key={message.id}
-                                className={cn(
-                                    'flex',
-                                    message.role === 'user'
-                                        ? 'justify-end'
-                                        : 'justify-start',
-                                )}
-                            >
-                                <div
-                                    className={cn(
-                                        'max-w-[85%] rounded-lg px-3 py-2 text-sm whitespace-pre-wrap',
-                                        message.role === 'user'
-                                            ? 'bg-primary text-primary-foreground'
-                                            : 'bg-muted',
-                                        message.is_failed &&
-                                            'border border-destructive',
-                                    )}
+            <PageLayout
+                filters={
+                    <FilterSearch
+                        className="w-64 flex-none sm:max-w-none lg:w-80"
+                        value={query}
+                        placeholder={t('assistant.searchConversations')}
+                        onChange={setQuery}
+                    />
+                }
+            >
+                <ChatLayout
+                    listLabel={t('assistant.conversations')}
+                    isListCentered={sections.length === 0}
+                    list={
+                        sections.length === 0 ? (
+                            <p className="px-3 text-center text-sm text-muted-foreground">
+                                {t('assistant.noConversations')}
+                            </p>
+                        ) : (
+                            sections.map((section) => (
+                                <ChatListSection
+                                    key={section.key}
+                                    label={t(section.labelKey)}
                                 >
-                                    <span className="sr-only">
-                                        {message.role === 'user'
-                                            ? t('assistant.you')
-                                            : t('assistant.title')}
-                                        :{' '}
-                                    </span>
-                                    {message.is_failed && message.content === ''
-                                        ? t('assistant.failed')
-                                        : message.content}
-                                </div>
-                            </div>
-                        ))}
-
-                        {form.processing ? (
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                <Spinner />
-                                {t('assistant.thinking')}
-                            </div>
-                        ) : null}
-                        <div ref={endRef} />
-                    </div>
-
-                    <form
-                        className="border-t p-3"
-                        onSubmit={(event) => {
-                            event.preventDefault();
-                            submit();
-                        }}
-                    >
-                        <label htmlFor="assistant_message" className="sr-only">
-                            {t('assistant.placeholder')}
-                        </label>
-                        <div className="flex items-end gap-2">
-                            <Textarea
-                                id="assistant_message"
-                                value={form.data.message}
-                                onChange={(event) =>
-                                    form.setData('message', event.target.value)
-                                }
-                                onKeyDown={(event) => {
-                                    if (
-                                        event.key === 'Enter' &&
-                                        !event.shiftKey
-                                    ) {
-                                        event.preventDefault();
-                                        submit();
+                                    {section.conversations.map(
+                                        (conversation) => (
+                                            <ChatListItem
+                                                key={conversation.id}
+                                                isSelected={
+                                                    conversation.id ===
+                                                    conversationId
+                                                }
+                                                onSelect={() =>
+                                                    router.visit(
+                                                        assistantRoutes.show.url(
+                                                            conversation.id,
+                                                        ),
+                                                    )
+                                                }
+                                            >
+                                                <span className="min-w-0 flex-1 truncate">
+                                                    {conversation.title}
+                                                </span>
+                                            </ChatListItem>
+                                        ),
+                                    )}
+                                </ChatListSection>
+                            ))
+                        )
+                    }
+                >
+                    <ChatThread
+                        composer={
+                            <>
+                                <ChatComposer
+                                    value={form.data.message}
+                                    onChange={(value) =>
+                                        form.setData('message', value)
                                     }
-                                }}
-                                placeholder={t('assistant.placeholder')}
-                                maxLength={4000}
-                                rows={2}
-                                disabled={form.processing}
-                                className="min-h-0 resize-none"
-                            />
-                            <Button
-                                type="submit"
-                                size="icon"
-                                disabled={
-                                    form.processing ||
-                                    form.data.message.trim() === ''
-                                }
-                                aria-label={t('assistant.send')}
-                            >
-                                <Send className="size-4" />
-                            </Button>
+                                    onSubmit={submit}
+                                    label={t('assistant.placeholder')}
+                                    sendLabel={t('assistant.send')}
+                                    placeholder={t('assistant.placeholder')}
+                                    disabled={form.processing}
+                                />
+                                <InputError
+                                    message={
+                                        form.errors.message ??
+                                        form.errors.conversation_id
+                                    }
+                                    className="mt-1"
+                                />
+                                <p className="mt-1 text-xs text-muted-foreground">
+                                    {t('assistant.disclaimer')}
+                                </p>
+                            </>
+                        }
+                    >
+                        <div aria-live="polite" className="contents">
+                            {messages.length === 0 && !form.processing ? (
+                                <Empty className="m-auto">
+                                    <EmptyHeader>
+                                        <EmptyMedia
+                                            variant="icon"
+                                            className="bg-ai/10 text-ai"
+                                        >
+                                            <Sparkles />
+                                        </EmptyMedia>
+                                        <EmptyTitle>
+                                            {t('assistant.emptyTitle')}
+                                        </EmptyTitle>
+                                        <EmptyDescription>
+                                            {t('assistant.emptyDescription')}
+                                        </EmptyDescription>
+                                    </EmptyHeader>
+                                    <div className="flex flex-wrap justify-center gap-2">
+                                        {EXAMPLES.map((key) => (
+                                            <Button
+                                                key={key}
+                                                type="button"
+                                                variant="outline"
+                                                onClick={() =>
+                                                    form.setData(
+                                                        'message',
+                                                        t(key),
+                                                    )
+                                                }
+                                            >
+                                                {t(key)}
+                                            </Button>
+                                        ))}
+                                    </div>
+                                </Empty>
+                            ) : null}
+
+                            {messages.map((message) => (
+                                <AssistantChatMessage
+                                    key={message.id}
+                                    message={message}
+                                />
+                            ))}
+
+                            {form.processing ? (
+                                <ThinkingDots label={t('assistant.thinking')} />
+                            ) : null}
+                            <div ref={endRef} />
                         </div>
-                        <InputError
-                            message={
-                                form.errors.message ??
-                                form.errors.conversation_id
-                            }
-                            className="mt-1"
-                        />
-                        <p className="mt-1 text-xs text-muted-foreground">
-                            {t('assistant.disclaimer')}
-                        </p>
-                    </form>
-                </section>
-            </div>
+                    </ChatThread>
+                </ChatLayout>
+            </PageLayout>
         </AppLayout>
+    );
+}
+
+/**
+ * One message: user bubbles muted and aligned to the end, assistant answers ghost and full
+ * width, failed answers destructive (app-ui `docs/chat-and-assistant.md`).
+ */
+function AssistantChatMessage({ message }: { message: AssistantMessage }) {
+    const { t } = useTranslation();
+    const isUser = message.role === 'user';
+
+    return (
+        <Message align={isUser ? 'end' : 'start'}>
+            <MessageContent>
+                <Bubble
+                    variant={
+                        message.is_failed
+                            ? 'destructive'
+                            : isUser
+                              ? 'muted'
+                              : 'ghost'
+                    }
+                    align={isUser ? 'end' : 'start'}
+                >
+                    <BubbleContent
+                        className={
+                            isUser
+                                ? 'whitespace-pre-wrap text-foreground'
+                                : 'w-full max-w-full whitespace-pre-wrap'
+                        }
+                    >
+                        <span className="sr-only">
+                            {isUser ? t('assistant.you') : t('assistant.title')}
+                            :{' '}
+                        </span>
+                        {message.is_failed && message.content === ''
+                            ? t('assistant.failed')
+                            : message.content}
+                    </BubbleContent>
+                </Bubble>
+            </MessageContent>
+        </Message>
+    );
+}
+
+function startOfLocalDay(date: Date): Date {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+/**
+ * Date bucket of a conversation, as externa-core `pages/ai/index.tsx`.
+ */
+function conversationDateGroup(
+    updatedAt: string | null,
+): Omit<ConversationSection, 'conversations'> {
+    const now = new Date();
+    const updated = updatedAt ? new Date(updatedAt) : now;
+    const dayDelta = Math.round(
+        (startOfLocalDay(now).getTime() - startOfLocalDay(updated).getTime()) /
+            86_400_000,
+    );
+
+    if (dayDelta <= 0) {
+        return { key: 'today', labelKey: 'assistant.today', order: 0 };
+    }
+
+    if (dayDelta === 1) {
+        return { key: 'yesterday', labelKey: 'assistant.yesterday', order: 1 };
+    }
+
+    if (dayDelta === 2) {
+        return { key: '2-days', labelKey: 'assistant.twoDaysAgo', order: 2 };
+    }
+
+    if (dayDelta < 7) {
+        return { key: 'week', labelKey: 'assistant.thisWeek', order: 3 };
+    }
+
+    if (dayDelta < 14) {
+        return { key: 'last-week', labelKey: 'assistant.aWeekAgo', order: 4 };
+    }
+
+    if (dayDelta < 30) {
+        return { key: 'month', labelKey: 'assistant.thisMonth', order: 5 };
+    }
+
+    return { key: 'older', labelKey: 'assistant.older', order: 6 };
+}
+
+function groupConversations(
+    conversations: AssistantConversation[],
+): ConversationSection[] {
+    const buckets = new Map<string, ConversationSection>();
+
+    for (const conversation of conversations) {
+        const group = conversationDateGroup(conversation.updated_at);
+        const bucket = buckets.get(group.key);
+
+        if (bucket) {
+            bucket.conversations.push(conversation);
+        } else {
+            buckets.set(group.key, { ...group, conversations: [conversation] });
+        }
+    }
+
+    return [...buckets.values()].sort(
+        (first, second) => first.order - second.order,
     );
 }

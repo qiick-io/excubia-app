@@ -507,7 +507,7 @@
     },
     "assistant": {
         "title": "Assistant",
-        "newConversation": "New conversation",
+        "newConversation": "New chat",
         "conversations": "Conversations",
         "emptyTitle": "Ask about your projects",
         "emptyDescription": "The assistant reads the stored reports only. It cannot change anything.",
@@ -522,7 +522,16 @@
             "package": "Which projects use guzzlehttp/guzzle?",
             "upgradeFirst": "Which project should I upgrade first, and why?",
             "lastWeek": "What got worse since last week?"
-        }
+        },
+        "searchConversations": "Search conversations…",
+        "noConversations": "No conversations yet.",
+        "today": "Today",
+        "yesterday": "Yesterday",
+        "twoDaysAgo": "2 days ago",
+        "thisWeek": "This week",
+        "aWeekAgo": "A week ago",
+        "thisMonth": "This month",
+        "older": "Older"
     },
     "permissions": {
         "description": "Permissions are defined in PermissionEnum and synced to the database. Assign them to roles on the role edit page.",
