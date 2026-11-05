@@ -14,5 +14,8 @@ Schedule::command('activitylog:clean')->daily();
 // Keeps the newest reports of each project (setting "Reports kept per project").
 Schedule::command('excubia:prune-reports')->daily();
 
+// Runtime aggregates and exception groups past their retention (#48, #49).
+Schedule::command('excubia:prune-telemetry')->daily();
+
 // Excubia checks itself and stores the report on the system project (#70).
 Schedule::command('excubia:system-report')->daily();

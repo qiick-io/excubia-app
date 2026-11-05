@@ -64,6 +64,7 @@ The app runs scheduled tasks:
 
 - `excubia:system-report` checks this Excubia install and stores the report on the system project (daily);
 - `excubia:prune-reports` keeps the newest reports of each project (30 by default, in **Settings → Project**);
+- `excubia:prune-telemetry` keeps 14 days of runtime aggregates and exception groups seen in the last 90 days (`EXCUBIA_RUNTIME_RETENTION_DAYS`, `EXCUBIA_EXCEPTIONS_RETENTION_DAYS`);
 - `activitylog:clean` trims the activity log.
 
 Run the Laravel scheduler with a cron entry:
@@ -103,6 +104,8 @@ The **Excubia** system project runs the `qiick/excubia-core` checks on this inst
     ```
 
 Run `php artisan excubia:push` once to send the first report. A project that has not reported for 36 hours (setting in **Settings → Project**) shows as stale. Lost the token? Use **New push token** on the project row. **Revoke** stops pushes until you issue a new one. For the project side (CI pushes, `--strict`, exit codes), see [`qiick/excubia-core`](https://github.com/qiick-io/excubia-core#readme).
+
+**Runtime and exceptions (optional).** With `runtime.enabled` or `exceptions.enabled` in the project's `excubia.json`, `excubia:push-runtime` runs every minute and sends per-minute aggregates (requests per route, slow queries, jobs, scheduled tasks, outgoing HTTP per host) to `/api/runtime` and masked exception groups to `/api/exceptions`, with the same URL and token. The core masks everything before it leaves the project; no request bodies, headers, users, IP addresses or query bindings are sent.
 
 ### AI assistant (optional)
 
