@@ -1,21 +1,30 @@
+import { getInitials } from '@/components/admin/user-avatar';
+import { ConnectionDot } from '@/components/realtime/connection-dot';
+import type { ConnectionState } from '@/components/realtime/connection-dot';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useInitials } from '@/hooks/use-initials';
-import type { User } from '@/types';
+
+/** The signed-in user, as the sidebar user menu shows it. */
+export type NavUserData = {
+    id: number | string;
+    /** Display name (externa-core: `formatUserDisplayName(first, last)`). */
+    name: string;
+    email: string;
+    avatar?: string | null;
+};
 
 /**
- * Avatar plus display name (and optional email) for the authenticated user.
- * @param {{ user: User, showEmail?: boolean }} props
+ * Avatar plus display name (and optional email) for the signed-in user. With
+ * `connectionState`, the realtime connection dot sits on the avatar.
  */
 export function UserInfo({
     user,
     showEmail = false,
+    connectionState,
 }: {
-    user: User;
+    user: NavUserData;
     showEmail?: boolean;
+    connectionState?: ConnectionState;
 }) {
-    const getInitials = useInitials();
-    const displayName = user.name;
-
     return (
         <>
             <span className="relative shrink-0">
@@ -23,14 +32,19 @@ export function UserInfo({
                     userId={user.id}
                     className="h-8 w-8 overflow-hidden rounded-full"
                 >
-                    <AvatarImage src={user.avatar} alt={displayName} />
+                    {user.avatar ? (
+                        <AvatarImage src={user.avatar} alt={user.name} />
+                    ) : null}
                     <AvatarFallback className="rounded-lg text-xs font-medium">
-                        {getInitials(user.name)}
+                        {getInitials(user.name, user.email)}
                     </AvatarFallback>
                 </Avatar>
+                {connectionState ? (
+                    <ConnectionDot state={connectionState} />
+                ) : null}
             </span>
             <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{displayName}</span>
+                <span className="truncate font-medium">{user.name}</span>
                 {showEmail && (
                     <span className="truncate text-xs text-muted-foreground">
                         {user.email}

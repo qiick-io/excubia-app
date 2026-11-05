@@ -21,7 +21,9 @@
         "rowsPerPage": "Righe per pagina",
         "selectedCount": "{{count}} selezionati",
         "clearFilters": "Cancella filtri",
-        "back": "Indietro"
+        "back": "Indietro",
+        "offline": "Offline",
+        "online": "Online"
     },
     "emptyState": {
         "users": {
@@ -97,7 +99,8 @@
         "loading": "Caricamento",
         "saving": "Salvataggio",
         "reorder": "Riordina",
-        "selectAll": "Seleziona tutto"
+        "selectAll": "Seleziona tutto",
+        "moreActions": "Altre azioni"
     },
     "auth": {
         "login": {
@@ -762,5 +765,26 @@
         "resolve": "Risolvi",
         "ignore": "Ignora",
         "reopen": "Riapri"
+    },
+    "ai": {
+        "fabDescription": "Drawer rapido dell'assistente. Apri la pagina completa per la cronologia.",
+        "fabTitle": "Nuova chat",
+        "openFullPage": "Apri a schermo intero"
+    },
+    "files": {
+        "card": {
+            "select": "Seleziona {{name}}"
+        },
+        "loadMore": "Carica altri",
+        "loading": "Caricamento…",
+        "tags": {
+            "moreTags": "{{count}} altri tag"
+        }
+    },
+    "realtime": {
+        "connected": "Realtime connesso",
+        "connecting": "Connessione…",
+        "disabled": "Realtime off",
+        "offline": "Realtime offline"
     }
 }

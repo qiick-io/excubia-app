@@ -1,5 +1,6 @@
-import { usePage } from '@inertiajs/react';
 import { ChevronsUpDown } from 'lucide-react';
+import type { ReactNode } from 'react';
+import type { ConnectionState } from '@/components/realtime/connection-dot';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -12,16 +13,23 @@ import {
     useSidebar,
 } from '@/components/ui/sidebar';
 import { UserInfo } from '@/components/user-info';
-import { UserMenuContent } from '@/components/user-menu-content';
+import type { NavUserData } from '@/components/user-info';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 /**
- * Sidebar user menu with avatar trigger and account dropdown.
- * @returns {JSX.Element | null}
+ * Sidebar user menu: avatar (with the realtime connection dot), name and
+ * chevron; the dropdown body is `children`, normally {@link UserMenuContent}.
+ * Renders nothing without a user.
  */
-export function NavUser() {
-    const { auth } = usePage().props;
-    const user = auth.user;
+export function NavUser({
+    user,
+    connectionState,
+    children,
+}: {
+    user: NavUserData | null | undefined;
+    connectionState?: ConnectionState;
+    children: ReactNode;
+}) {
     const { state } = useSidebar();
     const isMobile = useIsMobile();
 
@@ -39,7 +47,10 @@ export function NavUser() {
                             className="group text-sidebar-accent-foreground data-[state=open]:bg-sidebar-accent"
                             data-test="sidebar-menu-button"
                         >
-                            <UserInfo user={user} />
+                            <UserInfo
+                                user={user}
+                                connectionState={connectionState}
+                            />
                             <ChevronsUpDown className="ml-auto size-4" />
                         </SidebarMenuButton>
                     </DropdownMenuTrigger>
@@ -54,7 +65,7 @@ export function NavUser() {
                                   : 'bottom'
                         }
                     >
-                        <UserMenuContent user={user} />
+                        {children}
                     </DropdownMenuContent>
                 </DropdownMenu>
             </SidebarMenuItem>
