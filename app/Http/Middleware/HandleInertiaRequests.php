@@ -45,6 +45,12 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'name' => $settings->appName(),
+            // ponytail: composer.json is the single version source, as in externa-core
+            'appVersion' => once(function (): string {
+                $composer = json_decode((string) file_get_contents(base_path('composer.json')), true);
+
+                return is_array($composer) && is_string($composer['version'] ?? null) ? $composer['version'] : 'dev';
+            }),
             'auth' => [
                 'user' => $user,
                 // Only hides UI: the server still checks every request.
