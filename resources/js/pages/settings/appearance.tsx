@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import AppearanceSettingsController from '@/actions/App/Http/Controllers/Settings/AppearanceSettingsController';
 import Heading from '@/components/heading';
+import { BrandingFileField } from '@/components/settings/branding-file-field';
 import { ThemePresetField } from '@/components/settings/theme-preset-field';
 import { SettingsFormActions } from '@/components/settings-form-actions';
 import { Button } from '@/components/ui/button';
@@ -52,7 +53,7 @@ function restoreThemeFromAppearance(
 
 /**
  * Project theme preset, optional brand colours and default theme settings.
- * Logo and favicon uploads from externa-core are not ported (they need its file manager).
+ * The logo and favicon fields upload straight to the app (no file manager, unlike externa-core).
  */
 export default function Appearance({
     appearance,
@@ -328,6 +329,46 @@ export default function Appearance({
                                             )}
                                         </p>
                                     ) : null}
+
+                                    {(
+                                        [
+                                            [
+                                                'project_logo',
+                                                'settings.appearance.projectLogo',
+                                                'image/png,image/jpeg,image/webp,image/svg+xml',
+                                                appearance.branding.logoUrl,
+                                            ],
+                                            [
+                                                'project_logo_dark',
+                                                'settings.appearance.projectLogoDark',
+                                                'image/png,image/jpeg,image/webp,image/svg+xml',
+                                                appearance.branding.logoDarkUrl,
+                                            ],
+                                            [
+                                                'public_favicon',
+                                                'settings.appearance.publicFavicon',
+                                                'image/x-icon,image/vnd.microsoft.icon,image/png,image/svg+xml,.ico',
+                                                appearance.branding.faviconUrl,
+                                            ],
+                                        ] as const
+                                    ).map(
+                                        ([
+                                            field,
+                                            labelKey,
+                                            accept,
+                                            savedUrl,
+                                        ]) => (
+                                            <BrandingFileField
+                                                // Remounts after a save, with the new file.
+                                                key={`${field}-${savedUrl ?? 'none'}`}
+                                                name={field}
+                                                label={t(labelKey)}
+                                                accept={accept}
+                                                savedUrl={savedUrl}
+                                                error={errors[field]}
+                                            />
+                                        ),
+                                    )}
                                 </FieldGroup>
                             </div>
 

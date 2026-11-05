@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Settings;
 
+use App\Actions\SaveBrandingFilesAction;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Settings\Concerns\LogsProjectSettingsUpdateTrait;
 use App\Http\Requests\Settings\UpdateAppearanceSettingsRequest;
@@ -37,14 +38,16 @@ class AppearanceSettingsController extends Controller
                 'default_appearance' => $this->settings->defaultAppearance(),
                 'theme_presets' => $this->themePresets->catalog(),
                 'brand_passes_aa' => $this->themePresets->current()['brandPassesAa'],
+                'branding' => $this->settings->brandingUrls(),
             ],
         ]);
     }
 
-    public function update(UpdateAppearanceSettingsRequest $request): RedirectResponse
+    public function update(UpdateAppearanceSettingsRequest $request, SaveBrandingFilesAction $saveBranding): RedirectResponse
     {
         $values = $request->settings();
         $this->settings->save($values);
+        $values += $saveBranding->execute($request->brandingUploads(), $request->brandingRemovals());
         $this->logProjectSettingsUpdate($request, 'appearance', $values);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Settings saved.')]);

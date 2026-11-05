@@ -9,6 +9,7 @@ use App\Http\Requests\Settings\Concerns\AuthorizesProjectSettingsTrait;
 use App\Services\SettingsRepositoryService;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Validation\Rule;
 
 /**
@@ -29,7 +30,34 @@ class UpdateAppearanceSettingsRequest extends FormRequest
             'project_color' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'project_color_dark' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'default_appearance' => ['required', 'string', Rule::in(SettingsRepositoryService::APPEARANCES)],
+            'project_logo' => ['nullable', 'file', 'mimes:png,jpg,jpeg,webp,svg', 'max:1024'],
+            'project_logo_dark' => ['nullable', 'file', 'mimes:png,jpg,jpeg,webp,svg', 'max:1024'],
+            'public_favicon' => ['nullable', 'file', 'mimes:ico,png,svg', 'max:512'],
+            'remove_files' => ['array'],
+            'remove_files.*' => ['string', Rule::in(SettingsRepositoryService::BRANDING_ASSETS)],
         ];
+    }
+
+    /**
+     * The uploaded branding files, keyed by setting (`project_logo`, …).
+     *
+     * @return array<string, UploadedFile>
+     */
+    public function brandingUploads(): array
+    {
+        return array_filter(
+            array_map(fn (string $key): ?UploadedFile => $this->file($key), array_combine(SettingsRepositoryService::BRANDING_ASSETS, SettingsRepositoryService::BRANDING_ASSETS)),
+        );
+    }
+
+    /**
+     * Branding files to clear (setting keys).
+     *
+     * @return list<string>
+     */
+    public function brandingRemovals(): array
+    {
+        return array_values(array_map('strval', (array) $this->input('remove_files', [])));
     }
 
     /**

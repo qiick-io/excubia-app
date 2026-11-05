@@ -45,6 +45,16 @@ class SettingsRepositoryService
         ['id' => 'settings', 'locked' => true],
     ];
 
+    /**
+     * Uploaded branding files: the public asset name → the setting holding its path on the local
+     * disk (`branding/`). Excubia has no file manager, so they live next to the app.
+     */
+    public const BRANDING_ASSETS = [
+        'logo' => 'project_logo',
+        'logo-dark' => 'project_logo_dark',
+        'favicon' => 'public_favicon',
+    ];
+
     /** @var array<string, mixed>|null */
     private ?array $values = null;
 
@@ -67,6 +77,9 @@ class SettingsRepositoryService
             'theme_preset' => ThemePresetEnum::default()->value,
             'project_color' => null,
             'project_color_dark' => null,
+            'project_logo' => null,
+            'project_logo_dark' => null,
+            'public_favicon' => null,
             'sidebar_modules' => null,
             'password_policy' => app()->isProduction() ? 'strong' : 'weak',
             'login_max_attempts' => 5,
@@ -183,6 +196,23 @@ class SettingsRepositoryService
         $name = $this->all()['app_name'];
 
         return is_string($name) && trim($name) !== '' ? trim($name) : (string) config('app.name');
+    }
+
+    /**
+     * Public URLs of the uploaded logo, dark logo and favicon (null when not uploaded), served by
+     * BrandingController. The stored file name changes on every upload, so it busts caches.
+     *
+     * @return array{logoUrl: string|null, logoDarkUrl: string|null, faviconUrl: string|null}
+     */
+    public function brandingUrls(): array
+    {
+        $url = function (string $asset): ?string {
+            $path = $this->string(self::BRANDING_ASSETS[$asset]);
+
+            return $path === null ? null : route('branding.show', ['asset' => $asset, 'v' => pathinfo($path, PATHINFO_FILENAME)]);
+        };
+
+        return ['logoUrl' => $url('logo'), 'logoDarkUrl' => $url('logo-dark'), 'faviconUrl' => $url('favicon')];
     }
 
     public function reportBugUrl(): ?string
