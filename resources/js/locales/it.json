@@ -505,10 +505,9 @@
             "endOfSupport": "Fine supporto",
             "endOfSupportDescription": "Runtime scadute o in scadenza entro 180 giorni",
             "stale": "Senza report",
-            "staleDescription": "Su {{total}} progetti, oltre la soglia impostata",
-            "up": "+{{count}}",
-            "down": "−{{count}}",
-            "unchanged": "Invariato"
+            "findingsContext": "Ultimo report di ogni progetto",
+            "staleHeadline": "Su {{total}} progetti",
+            "staleContext": "Nessun report entro la soglia impostata"
         },
         "topIssues": {
             "title": "Problemi principali",
@@ -540,7 +539,8 @@
             "openExceptions": "Eccezioni aperte",
             "newExceptions": "{{count}} nuove nel periodo",
             "topExceptions": "Ultime eccezioni aperte",
-            "noOpenExceptions": "Nessuna eccezione aperta."
+            "noOpenExceptions": "Nessuna eccezione aperta.",
+            "openExceptionsContext": "Raggruppate per fingerprint"
         }
     },
     "report": {
@@ -724,7 +724,8 @@
             "failed": "Falliti",
             "finished": "Completati",
             "skipped": "Saltati"
-        }
+        },
+        "sampled": "~ stimato dagli eventi campionati"
     },
     "exceptions": {
         "emptyTitle": "Nessuna eccezione",

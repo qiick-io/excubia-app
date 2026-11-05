@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PageEmptyState } from '@/components/admin/page-empty-state';
 import { StackedBarChart } from '@/components/reports/severity-chart';
+import { StatCard } from '@/components/reports/stat-card';
 import {
     Card,
     CardContent,
@@ -56,33 +57,35 @@ export function RuntimeView({ runtime }: { runtime: RuntimeSummary | null }) {
     return (
         <div className="flex flex-col gap-4">
             <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-12">
-                <Tile
-                    title={t('runtime.requests')}
+                <StatCard
+                    className="xl:col-span-3"
+                    label={t('runtime.requests')}
                     value={count(requests.count)}
-                >
-                    {t('runtime.lastHours', { count: runtime.hours })}
-                </Tile>
-                <Tile
-                    title={t('runtime.errors')}
+                    headline={t('runtime.lastHours', { count: runtime.hours })}
+                    context={
+                        runtime.isSampled ? t('runtime.sampled') : undefined
+                    }
+                />
+                <StatCard
+                    className="xl:col-span-3"
+                    label={t('runtime.errors')}
                     value={count(requests.errors)}
-                    isAlert={requests.errors > 0}
-                >
-                    {t('runtime.errorRate', {
+                    headline={t('runtime.errorRate', {
                         rate: errorRate.toFixed(errorRate < 1 ? 2 : 1),
                     })}
-                </Tile>
-                <Tile
-                    title={t('runtime.averageResponse')}
+                />
+                <StatCard
+                    className="xl:col-span-3"
+                    label={t('runtime.averageResponse')}
                     value={ms(requests.averageMs)}
-                >
-                    {t('runtime.allRoutes')}
-                </Tile>
-                <Tile
-                    title={t('runtime.slowestResponse')}
+                    headline={t('runtime.allRoutes')}
+                />
+                <StatCard
+                    className="xl:col-span-3"
+                    label={t('runtime.slowestResponse')}
                     value={ms(requests.maxMs)}
-                >
-                    {t('runtime.allRoutes')}
-                </Tile>
+                    headline={t('runtime.allRoutes')}
+                />
             </section>
 
             <Card>
@@ -207,41 +210,6 @@ export function RuntimeView({ runtime }: { runtime: RuntimeSummary | null }) {
                 />
             </section>
         </div>
-    );
-}
-
-function Tile({
-    title,
-    value,
-    isAlert = false,
-    children,
-}: {
-    title: string;
-    value: string;
-    isAlert?: boolean;
-    children: ReactNode;
-}) {
-    return (
-        <Card className="xl:col-span-3">
-            <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                    {title}
-                </CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-1">
-                <span
-                    className={cn(
-                        'text-2xl font-semibold tabular-nums',
-                        isAlert && 'text-destructive',
-                    )}
-                >
-                    {value}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                    {children}
-                </span>
-            </CardContent>
-        </Card>
     );
 }
 
