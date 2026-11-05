@@ -305,7 +305,6 @@ export default function Appearance({
                                         <Button
                                             type="button"
                                             variant="ghost"
-                                            size="sm"
                                             className="w-fit"
                                             onClick={() => {
                                                 setProjectColor(null);

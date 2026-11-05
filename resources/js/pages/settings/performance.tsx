@@ -219,7 +219,6 @@ export default function PerformanceSettingsPage({
                                 <div className="flex flex-wrap gap-3">
                                     <Button
                                         variant="outline"
-                                        size="sm"
                                         asChild
                                         data-test="performance-link-jobs"
                                     >
@@ -257,7 +256,6 @@ export default function PerformanceSettingsPage({
                                     <Button
                                         type="button"
                                         variant="outline"
-                                        size="sm"
                                         disabled={flushing !== null}
                                         data-test={`performance-flush-${action.key}`}
                                         onClick={() => runFlush(action)}

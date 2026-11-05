@@ -1,11 +1,15 @@
 import { Head, Link } from '@inertiajs/react';
+import { FolderKanban, Plus } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
+import { PageEmptyState } from '@/components/admin/page-empty-state';
+import { PageLayout } from '@/components/layout/page-layout';
 import {
     SeverityBadge,
     SeverityCounts,
 } from '@/components/reports/severity-badge';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
     Card,
     CardContent,
@@ -38,38 +42,37 @@ export default function Dashboard({
     return (
         <>
             <Head title={t('nav.dashboard')} />
-            <div className="flex flex-1 flex-col gap-4 p-4">
+            <PageLayout scrollContent>
                 {!canViewProjects ? (
                     <p className="text-sm text-muted-foreground">
                         {t('dashboard.noAccess')}
                     </p>
                 ) : projects.length === 0 ? (
-                    <div className="rounded-xl border border-dashed p-8 text-center">
-                        <p className="font-medium">
-                            {t('dashboard.emptyTitle')}
-                        </p>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                            {t('dashboard.emptyDescription')}
-                        </p>
-                        {can(PermissionEnum.ProjectsManage) ? (
-                            <Link
-                                href={projectsRoutes.index.url()}
-                                className="mt-4 inline-block text-sm font-medium text-primary underline-offset-4 hover:underline"
-                            >
-                                {t('projects.newProject')}
-                            </Link>
-                        ) : null}
-                    </div>
+                    <PageEmptyState
+                        icon={FolderKanban}
+                        title={t('dashboard.emptyTitle')}
+                        description={t('dashboard.emptyDescription')}
+                        action={
+                            can(PermissionEnum.ProjectsManage) ? (
+                                <Button asChild>
+                                    <Link href={projectsRoutes.index.url()}>
+                                        <Plus className="size-4" />
+                                        {t('projects.newProject')}
+                                    </Link>
+                                </Button>
+                            ) : undefined
+                        }
+                    />
                 ) : (
-                    <ul className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    <ul className="grid grid-cols-1 gap-4 xl:grid-cols-12">
                         {projects.map((project) => (
-                            <li key={project.id}>
+                            <li key={project.id} className="xl:col-span-4">
                                 <ProjectCard project={project} />
                             </li>
                         ))}
                     </ul>
                 )}
-            </div>
+            </PageLayout>
         </>
     );
 }
@@ -92,7 +95,7 @@ function ProjectCard({ project }: { project: ProjectRow }) {
                     project.is_stale && 'opacity-60',
                 )}
             >
-                <CardHeader>
+                <CardHeader className="pb-3">
                     <div className="flex items-start justify-between gap-2">
                         <CardTitle className="truncate">
                             {project.name}
@@ -117,9 +120,7 @@ function ProjectCard({ project }: { project: ProjectRow }) {
                         <Badge variant="muted">{t('dashboard.stale')}</Badge>
                     ) : null}
                     {!project.is_enabled ? (
-                        <Badge variant="outline">
-                            {t('projects.disabled')}
-                        </Badge>
+                        <Badge variant="muted">{t('projects.disabled')}</Badge>
                     ) : null}
                 </CardContent>
             </Card>

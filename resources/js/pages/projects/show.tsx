@@ -1,7 +1,9 @@
 import { Head } from '@inertiajs/react';
-import { ExternalLink } from 'lucide-react';
+import { Activity, ExternalLink } from 'lucide-react';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { PageEmptyState } from '@/components/admin/page-empty-state';
+import { PageLayout } from '@/components/layout/page-layout';
 import {
     SEVERITIES,
     SeverityBadge,
@@ -58,127 +60,141 @@ export default function ProjectShow({
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={project.name} />
-            <div className="flex flex-1 flex-col gap-6 p-4">
-                <header className="flex flex-wrap items-center gap-2">
-                    <h1 className="text-xl font-semibold">{project.name}</h1>
-                    {latest ? (
-                        <SeverityBadge severity={latest.worst_severity} />
-                    ) : null}
-                    {project.is_stale ? (
-                        <Badge variant="muted">{t('dashboard.stale')}</Badge>
-                    ) : null}
-                    <span className="text-sm text-muted-foreground">
-                        {latest
-                            ? t('dashboard.lastReport', {
-                                  date: new Date(
-                                      latest.received_at,
-                                  ).toLocaleString(),
-                              })
-                            : t('dashboard.noReports')}
-                    </span>
-                </header>
-
-                {report === null ? (
-                    <p className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
-                        {t('report.empty')}
-                    </p>
-                ) : (
-                    <>
-                        <section
-                            aria-labelledby="checks-heading"
-                            className="space-y-3"
-                        >
-                            <h2
-                                id="checks-heading"
-                                className="text-lg font-medium"
-                            >
-                                {t('report.checks')}
-                            </h2>
-                            {report.checks.map((check) => (
-                                <CheckCard key={check.checkId} check={check} />
-                            ))}
-                        </section>
-
-                        <section
-                            aria-labelledby="plan-heading"
-                            className="space-y-3"
-                        >
-                            <h2
-                                id="plan-heading"
-                                className="text-lg font-medium"
-                            >
-                                {t('report.upgradePlan')}
-                            </h2>
-                            {report.upgradePlan.length === 0 ? (
-                                <p className="text-sm text-muted-foreground">
-                                    {t('report.noUpgradeSteps')}
-                                </p>
-                            ) : (
-                                <ol className="list-decimal space-y-1 pl-6 text-sm">
-                                    {report.upgradePlan.map((step) => (
-                                        <li key={step.stepNumber}>
-                                            {step.message}
-                                        </li>
-                                    ))}
-                                </ol>
-                            )}
-                        </section>
-                    </>
-                )}
-
-                <section
-                    aria-labelledby="history-heading"
-                    className="space-y-3"
-                >
-                    <h2 id="history-heading" className="text-lg font-medium">
-                        {t('report.history')}
-                    </h2>
-                    {reports.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">
-                            {t('dashboard.noReports')}
-                        </p>
+            <PageLayout
+                scrollContent
+                subheader={
+                    <div className="flex flex-wrap items-center gap-2">
+                        {latest ? (
+                            <SeverityBadge severity={latest.worst_severity} />
+                        ) : null}
+                        {project.is_stale ? (
+                            <Badge variant="muted">
+                                {t('dashboard.stale')}
+                            </Badge>
+                        ) : null}
+                        <span className="text-sm text-muted-foreground">
+                            {latest
+                                ? t('dashboard.lastReport', {
+                                      date: new Date(
+                                          latest.received_at,
+                                      ).toLocaleString(),
+                                  })
+                                : t('dashboard.noReports')}
+                        </span>
+                    </div>
+                }
+            >
+                <div className="flex flex-col gap-6">
+                    {report === null ? (
+                        <PageEmptyState
+                            icon={Activity}
+                            title={t('dashboard.noReports')}
+                            description={t('report.empty')}
+                        />
                     ) : (
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>
-                                        {t('report.receivedAt')}
-                                    </TableHead>
-                                    <TableHead>
-                                        {t('report.worstSeverity')}
-                                    </TableHead>
-                                    <TableHead>
-                                        {t('report.findings')}
-                                    </TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {reports.map((summary) => (
-                                    <TableRow key={summary.id}>
-                                        <TableCell className="tabular-nums">
-                                            {new Date(
-                                                summary.received_at,
-                                            ).toLocaleString()}
-                                        </TableCell>
-                                        <TableCell>
-                                            <SeverityBadge
-                                                severity={
-                                                    summary.worst_severity
-                                                }
-                                            />
-                                        </TableCell>
-                                        <TableCell>
-                                            <SeverityCounts
-                                                counts={summary.counts}
-                                            />
-                                        </TableCell>
-                                    </TableRow>
+                        <>
+                            <section
+                                aria-labelledby="checks-heading"
+                                className="space-y-3"
+                            >
+                                <h2
+                                    id="checks-heading"
+                                    className="text-lg font-medium"
+                                >
+                                    {t('report.checks')}
+                                </h2>
+                                {report.checks.map((check) => (
+                                    <CheckCard
+                                        key={check.checkId}
+                                        check={check}
+                                    />
                                 ))}
-                            </TableBody>
-                        </Table>
+                            </section>
+
+                            <section
+                                aria-labelledby="plan-heading"
+                                className="space-y-3"
+                            >
+                                <h2
+                                    id="plan-heading"
+                                    className="text-lg font-medium"
+                                >
+                                    {t('report.upgradePlan')}
+                                </h2>
+                                {report.upgradePlan.length === 0 ? (
+                                    <p className="text-sm text-muted-foreground">
+                                        {t('report.noUpgradeSteps')}
+                                    </p>
+                                ) : (
+                                    <ol className="list-decimal space-y-1 pl-6 text-sm">
+                                        {report.upgradePlan.map((step) => (
+                                            <li key={step.stepNumber}>
+                                                {step.message}
+                                            </li>
+                                        ))}
+                                    </ol>
+                                )}
+                            </section>
+                        </>
                     )}
-                </section>
-            </div>
+
+                    <section
+                        aria-labelledby="history-heading"
+                        className="space-y-3"
+                    >
+                        <h2
+                            id="history-heading"
+                            className="text-lg font-medium"
+                        >
+                            {t('report.history')}
+                        </h2>
+                        {reports.length === 0 ? (
+                            <p className="text-sm text-muted-foreground">
+                                {t('dashboard.noReports')}
+                            </p>
+                        ) : (
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>
+                                            {t('report.receivedAt')}
+                                        </TableHead>
+                                        <TableHead>
+                                            {t('report.worstSeverity')}
+                                        </TableHead>
+                                        <TableHead>
+                                            {t('report.findings')}
+                                        </TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {reports.map((summary) => (
+                                        <TableRow key={summary.id}>
+                                            <TableCell className="tabular-nums">
+                                                {new Date(
+                                                    summary.received_at,
+                                                ).toLocaleString()}
+                                            </TableCell>
+                                            <TableCell>
+                                                <SeverityBadge
+                                                    severity={
+                                                        summary.worst_severity
+                                                    }
+                                                />
+                                            </TableCell>
+                                            <TableCell>
+                                                <SeverityCounts
+                                                    counts={summary.counts}
+                                                />
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        )}
+                    </section>
+                </div>
+            </PageLayout>
         </AppLayout>
     );
 }
@@ -200,7 +216,7 @@ function CheckCard({ check }: { check: ReportCheck }) {
 
     return (
         <Card>
-            <CardHeader>
+            <CardHeader className="pb-3">
                 <div className="flex flex-wrap items-center gap-2">
                     <CardTitle>{check.name}</CardTitle>
                     <Badge
