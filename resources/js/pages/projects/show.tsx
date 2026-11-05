@@ -2,9 +2,11 @@ import { Head, Link, router } from '@inertiajs/react';
 import {
     Activity,
     Bug,
+    CircleCheck,
     ExternalLink,
     Gauge,
     History,
+    Info,
     LayoutGrid,
     ListChecks,
     ListOrdered,
@@ -28,19 +30,24 @@ import {
 import { RuntimeView } from '@/components/reports/runtime-view';
 import {
     RUNTIMES,
+    runtimeLabel,
     RuntimeSupportBadge,
+    supportStatus,
 } from '@/components/reports/runtime-support';
 import {
     SEVERITIES,
     SeverityBadge,
     SeverityCounts,
+    severitySummary,
 } from '@/components/reports/severity-badge';
 import { SeverityStackedBarChart } from '@/components/reports/severity-chart';
+import { StatCard, trendOf } from '@/components/stat-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
     Card,
+    CardAction,
     CardContent,
     CardDescription,
     CardHeader,
@@ -62,6 +69,11 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
 import projectsRoutes from '@/routes/projects';
@@ -138,6 +150,7 @@ export default function ProjectShow({
             breadcrumbs={breadcrumbs}
             headerActions={
                 <>
+                    {project.is_system ? <SystemProjectBadge /> : null}
                     {canRefreshReport ? (
                         <Button
                             type="button"
@@ -167,37 +180,7 @@ export default function ProjectShow({
                     canManage={canManageExceptions}
                 />
             ) : (
-                <PageLayout
-                    scrollContent
-                    subheader={
-                        <div className="flex flex-wrap items-center gap-2">
-                            {latest ? (
-                                <SeverityBadge
-                                    severity={latest.worst_severity}
-                                />
-                            ) : null}
-                            {project.is_system ? (
-                                <Badge variant="info">
-                                    {t('projects.system')}
-                                </Badge>
-                            ) : null}
-                            {project.is_stale ? (
-                                <Badge variant="muted">
-                                    {t('dashboard.stale')}
-                                </Badge>
-                            ) : null}
-                            <span className="text-sm text-muted-foreground">
-                                {latest
-                                    ? t('dashboard.lastReport', {
-                                          date: new Date(
-                                              latest.received_at,
-                                          ).toLocaleString(),
-                                      })
-                                    : t('dashboard.noReports')}
-                            </span>
-                        </div>
-                    }
-                >
+                <PageLayout scrollContent>
                     {view === 'history' ? (
                         <HistoryView reports={reports} />
                     ) : view === 'runtime' ? (
@@ -215,7 +198,15 @@ export default function ProjectShow({
                     ) : view === 'plan' ? (
                         <PlanView report={report} />
                     ) : (
-                        <OverviewView latest={latest} report={report} />
+                        <OverviewView
+                            project={project}
+                            latest={latest}
+                            previous={reports[1] ?? null}
+                            report={report}
+                            fixes={findingFixes}
+                            runtime={runtime}
+                            exceptions={exceptions}
+                        />
                     )}
                 </PageLayout>
             )}
@@ -233,6 +224,30 @@ const VIEW_ICONS = {
 } as const;
 
 /**
+ * "System project" in the header, with what it means in a tooltip (keyboard reachable: the
+ * badge is a button).
+ */
+function SystemProjectBadge() {
+    const { t } = useTranslation();
+
+    return (
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <Badge variant="info" asChild>
+                    <button type="button">
+                        <Info />
+                        {t('report.overview.systemProject')}
+                    </button>
+                </Badge>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-xs">
+                {t('report.overview.systemProjectHint')}
+            </TooltipContent>
+        </Tooltip>
+    );
+}
+
+/**
  * The project's tabs (shadcn `Tabs`, `line` variant) as links to their own URLs, under the
  * header and above the view.
  */
@@ -240,7 +255,11 @@ function ProjectTabs({ slug, view }: { slug: string; view: ProjectView }) {
     const { t } = useTranslation();
 
     return (
-        <Tabs value={view} activationMode="manual" className="border-b px-4">
+        <Tabs
+            value={view}
+            activationMode="manual"
+            className="overflow-x-auto border-b px-4"
+        >
             <TabsList variant="line" aria-label={t('report.views.label')}>
                 {VIEWS.map((item) => {
                     const Icon = VIEW_ICONS[item];
@@ -269,224 +288,595 @@ function ProjectTabs({ slug, view }: { slug: string; view: ProjectView }) {
     );
 }
 
+type AttentionItem =
+    | {
+          kind: 'finding';
+          key: string;
+          finding: FindingRow;
+          fix: FindingFix | null;
+      }
+    | { kind: 'exception'; key: string; group: ExceptionGroupRow };
+
+/** Rows of each kind the "Needs attention" card shows; the tabs hold the rest. */
+const ATTENTION_FINDINGS = 8;
+const ATTENTION_EXCEPTIONS = 3;
+
 /**
- * Flat cards in the 12-column grid, as the externa-core dashboard: runtimes, findings per
- * severity, and the report itself.
+ * Problems first: a row of stat cards (shadcn `dashboard-01`, as the dashboard) for findings,
+ * checks, runtimes and, when the project pushes them, exceptions and requests; then what needs
+ * attention, worst first, with its fix; then the runtimes and every check.
  */
 function OverviewView({
+    project,
     latest,
+    previous,
     report,
+    fixes,
+    runtime,
+    exceptions,
 }: {
+    project: ProjectRow;
     latest: HealthReportSummary;
+    previous: HealthReportSummary | null;
     report: HealthReportBody;
+    fixes: Record<string, FindingFix>;
+    runtime: RuntimeSummary | null;
+    exceptions: ExceptionGroupRow[];
 }) {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
+
+    const findings: FindingRow[] = report.checks
+        .flatMap((check) =>
+            check.findings
+                .filter(
+                    (finding) =>
+                        finding.status === 'warn' || finding.status === 'fail',
+                )
+                .map((finding) => ({ ...finding, checkName: check.name })),
+        )
+        .sort(
+            (a, b) =>
+                SEVERITIES.indexOf(a.severity) - SEVERITIES.indexOf(b.severity),
+        );
+    const openExceptions = exceptions.filter(
+        (group) => group.status === 'open',
+    );
+    const items: AttentionItem[] = [
+        ...findings
+            .slice(0, ATTENTION_FINDINGS)
+            .map((finding): AttentionItem => ({
+                kind: 'finding',
+                key: findingKey(finding),
+                finding,
+                fix: fixes[findingKey(finding)] ?? null,
+            })),
+        ...openExceptions
+            .slice(0, ATTENTION_EXCEPTIONS)
+            .map((group): AttentionItem => ({
+                kind: 'exception',
+                key: `exception-${group.id}`,
+                group,
+            })),
+    ];
+
+    const total = SEVERITIES.reduce(
+        (sum, severity) => sum + latest.counts[severity],
+        0,
+    );
+    const previousTotal = previous
+        ? SEVERITIES.reduce(
+              (sum, severity) => sum + previous.counts[severity],
+              0,
+          )
+        : null;
+    const checksTotal =
+        latest.checks.pass +
+        latest.checks.warn +
+        latest.checks.fail +
+        latest.checks.skipped;
+    const checksSummary = (['fail', 'warn', 'skipped'] as const)
+        .filter((status) => latest.checks[status] > 0)
+        .map((status) =>
+            t(`report.overview.checkCount.${status}`, {
+                count: latest.checks[status],
+            }),
+        );
+
+    const usedRuntimes = RUNTIMES.flatMap((name) => {
+        const version = latest.runtime?.[name] ?? null;
+
+        return version === null ? [] : [{ name, version }];
+    });
+    const supportedRuntimes = usedRuntimes.filter(
+        (item) =>
+            supportStatus(item.version.security_support_ends_on) ===
+            'supported',
+    );
+    const notSupported = usedRuntimes.find(
+        (item) =>
+            supportStatus(item.version.security_support_ends_on) !==
+            'supported',
+    );
+    const nextEnd = usedRuntimes
+        .filter((item) => item.version.security_support_ends_on)
+        .sort((a, b) =>
+            String(a.version.security_support_ends_on).localeCompare(
+                String(b.version.security_support_ends_on),
+            ),
+        )[0];
+
+    const errorRate =
+        runtime && runtime.requests.count > 0
+            ? (runtime.requests.errors / runtime.requests.count) * 100
+            : 0;
+    const cardCount =
+        3 + (exceptions.length > 0 ? 1 : 0) + (runtime !== null ? 1 : 0);
+    const lastSeen = openExceptions[0]?.last_seen ?? null;
 
     return (
         <div className="flex flex-col gap-4">
-            <section className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-                <Card className="xl:col-span-5">
-                    <CardHeader className="pb-3">
-                        <CardTitle>{t('report.runtime.title')}</CardTitle>
-                        <CardDescription>
-                            {t('report.runtime.description')}
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        {latest.runtime === null ? (
-                            <p className="text-sm text-muted-foreground">
-                                {t('report.runtime.unavailable')}
-                            </p>
-                        ) : (
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>
-                                            {t('report.runtime.name')}
-                                        </TableHead>
-                                        <TableHead>
-                                            {t('report.runtime.version')}
-                                        </TableHead>
-                                        <TableHead className="text-right">
-                                            {t('report.runtime.securityUntil')}
-                                        </TableHead>
-                                        <TableHead className="text-right">
-                                            {t('report.runtime.status')}
-                                        </TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {RUNTIMES.map((name) => {
-                                        const runtime =
-                                            latest.runtime?.[name] ?? null;
-
-                                        return (
-                                            <TableRow key={name}>
-                                                <TableCell className="font-medium">
-                                                    {t(
-                                                        `report.runtime.${name}`,
-                                                    )}
-                                                </TableCell>
-                                                <TableCell className="font-mono text-xs">
-                                                    {runtime?.version ?? '—'}
-                                                    {runtime?.cycle ? (
-                                                        <span className="ml-1 text-muted-foreground">
-                                                            ({runtime.cycle})
-                                                        </span>
-                                                    ) : null}
-                                                </TableCell>
-                                                <TableCell className="text-right tabular-nums">
-                                                    {runtime?.security_support_ends_on ??
-                                                        '—'}
-                                                </TableCell>
-                                                <TableCell className="text-right">
-                                                    {runtime === null ? (
-                                                        <span className="text-sm text-muted-foreground">
-                                                            {t(
-                                                                'report.runtime.notUsed',
-                                                            )}
-                                                        </span>
-                                                    ) : (
-                                                        <RuntimeSupportBadge
-                                                            runtime={runtime}
-                                                        />
-                                                    )}
-                                                </TableCell>
-                                            </TableRow>
-                                        );
-                                    })}
-                                </TableBody>
-                            </Table>
-                        )}
-                    </CardContent>
-                </Card>
-
-                <Card className="xl:col-span-4">
-                    <CardHeader className="pb-3">
-                        <CardTitle>{t('report.findings')}</CardTitle>
-                        <CardDescription>
-                            {t('report.findingsDescription')}
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="grid grid-cols-3 gap-3">
-                        {SEVERITIES.map((severity) => (
-                            <div key={severity}>
-                                <div className="text-xs text-muted-foreground">
-                                    {t(`report.severity.${severity}`)}
-                                </div>
-                                <div
-                                    className={cn(
-                                        'text-2xl font-semibold tabular-nums',
-                                        severity === 'critical' &&
-                                            latest.counts.critical > 0 &&
-                                            'text-destructive',
-                                    )}
-                                >
-                                    {latest.counts[severity].toLocaleString()}
-                                </div>
-                            </div>
-                        ))}
-                    </CardContent>
-                </Card>
-
-                <Card className="xl:col-span-3">
-                    <CardHeader className="pb-3">
-                        <CardTitle>{t('report.lastReport')}</CardTitle>
-                        <CardDescription>
-                            {t('report.generatedAt', {
-                                date: new Date(
-                                    latest.generated_at,
-                                ).toLocaleString(),
-                            })}
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="grid grid-cols-2 gap-3">
-                        {(['pass', 'warn', 'fail', 'skipped'] as const).map(
-                            (status) => (
-                                <div key={status}>
-                                    <div className="text-xs text-muted-foreground">
-                                        {t(`report.status.${status}`)}
-                                    </div>
-                                    <div className="text-2xl font-semibold tabular-nums">
-                                        {latest.checks[status]}
-                                    </div>
-                                </div>
+            <section
+                className={cn(
+                    'grid grid-cols-1 gap-4 sm:grid-cols-2',
+                    STAT_GRID[cardCount],
+                )}
+            >
+                <StatCard
+                    label={t('report.overview.findings')}
+                    value={total.toLocaleString()}
+                    trend={trendOf(total, previousTotal)}
+                    headline={severitySummary(latest.counts, t)}
+                    context={t(
+                        project.is_stale
+                            ? 'report.overview.lastReportStale'
+                            : 'report.overview.lastReport',
+                        {
+                            time: relativeTime(
+                                latest.received_at,
+                                i18n.language,
                             ),
-                        )}
-                        {latest.excubia_version ? (
-                            <p className="col-span-2 text-xs text-muted-foreground">
-                                {t('report.coreVersion', {
-                                    version: latest.excubia_version,
-                                })}
-                            </p>
-                        ) : null}
-                    </CardContent>
-                </Card>
+                        },
+                    )}
+                />
+                <StatCard
+                    label={t('report.overview.checks')}
+                    value={`${latest.checks.pass}/${checksTotal}`}
+                    headline={
+                        checksSummary.length === 0
+                            ? t('report.overview.allChecksPass')
+                            : checksSummary.join(' · ')
+                    }
+                    context={
+                        latest.excubia_version
+                            ? t('report.coreVersion', {
+                                  version: latest.excubia_version,
+                              })
+                            : undefined
+                    }
+                />
+                <StatCard
+                    label={t('report.overview.runtimes')}
+                    value={
+                        latest.runtime === null
+                            ? '—'
+                            : `${supportedRuntimes.length}/${usedRuntimes.length}`
+                    }
+                    headline={
+                        latest.runtime === null
+                            ? t('report.overview.runtimesUnavailable')
+                            : notSupported
+                              ? t('report.overview.runtimeStatus', {
+                                    runtime: runtimeLabel(
+                                        notSupported.name,
+                                        notSupported.version,
+                                        t,
+                                    ),
+                                    status: t(
+                                        `report.support.${supportStatus(notSupported.version.security_support_ends_on)}`,
+                                    ).toLowerCase(),
+                                })
+                              : t('report.overview.allRuntimesSupported')
+                    }
+                    context={
+                        nextEnd
+                            ? t('report.overview.nextEnd', {
+                                  runtime: runtimeLabel(
+                                      nextEnd.name,
+                                      nextEnd.version,
+                                      t,
+                                  ),
+                                  date: nextEnd.version
+                                      .security_support_ends_on,
+                              })
+                            : undefined
+                    }
+                />
+                {exceptions.length > 0 ? (
+                    <StatCard
+                        label={t('dashboard.telemetry.openExceptions')}
+                        value={openExceptions.length.toLocaleString()}
+                        headline={t('report.overview.events', {
+                            count: openExceptions.reduce(
+                                (sum, group) => sum + group.count,
+                                0,
+                            ),
+                        })}
+                        context={
+                            lastSeen
+                                ? t('report.overview.lastSeen', {
+                                      time: relativeTime(
+                                          lastSeen,
+                                          i18n.language,
+                                      ),
+                                  })
+                                : t('dashboard.telemetry.noOpenExceptions')
+                        }
+                    />
+                ) : null}
+                {runtime !== null ? (
+                    <StatCard
+                        label={t('report.overview.requests', {
+                            count: runtime.hours,
+                        })}
+                        value={runtime.requests.count.toLocaleString()}
+                        headline={t('dashboard.telemetry.errors', {
+                            count: runtime.requests.errors,
+                            rate: errorRate.toFixed(errorRate < 1 ? 2 : 1),
+                        })}
+                        context={
+                            runtime.requests.averageMs !== null
+                                ? t('report.overview.averageMs', {
+                                      ms: runtime.requests.averageMs,
+                                  })
+                                : undefined
+                        }
+                    />
+                ) : null}
             </section>
 
-            <Card>
-                <CardHeader className="pb-3">
-                    <CardTitle>{t('report.checks')}</CardTitle>
-                    <CardDescription>
-                        {t('report.checksDescription')}
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
+            <NeedsAttentionCard
+                slug={project.slug}
+                items={items}
+                total={findings.length + openExceptions.length}
+            />
+
+            <section className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+                <RuntimesCard latest={latest} className="xl:col-span-5" />
+                <ChecksCard report={report} className="xl:col-span-7" />
+            </section>
+        </div>
+    );
+}
+
+/** Static classes, so Tailwind sees them: one column per stat card on wide screens. */
+const STAT_GRID: Record<number, string> = {
+    3: 'xl:grid-cols-3',
+    4: 'xl:grid-cols-4',
+    5: 'xl:grid-cols-5',
+};
+
+/**
+ * What to fix first: the worst findings, then the open exceptions seen most recently, each
+ * with its ready command or prompt. The tabs list everything.
+ */
+function NeedsAttentionCard({
+    slug,
+    items,
+    total,
+}: {
+    slug: string;
+    items: AttentionItem[];
+    total: number;
+}) {
+    const { t } = useTranslation();
+    const findingsUrl = projectsRoutes.view.url({
+        project: slug,
+        view: 'findings',
+    });
+    const exceptionsUrl = projectsRoutes.view.url({
+        project: slug,
+        view: 'exceptions',
+    });
+
+    return (
+        <Card>
+            <CardHeader className="pb-3">
+                <CardTitle>{t('report.overview.attention.title')}</CardTitle>
+                <CardDescription>
+                    {t('report.overview.attention.description', {
+                        shown: items.length,
+                        total,
+                    })}
+                </CardDescription>
+                <CardAction>
+                    <Button variant="outline" size="sm" asChild>
+                        <Link href={findingsUrl}>
+                            {t('report.overview.attention.allFindings')}
+                        </Link>
+                    </Button>
+                </CardAction>
+            </CardHeader>
+            <CardContent>
+                {items.length === 0 ? (
+                    <PageEmptyState
+                        icon={CircleCheck}
+                        title={t('report.overview.attention.emptyTitle')}
+                        description={t('report.noIssuesDescription')}
+                        compact
+                        className="border-0"
+                    />
+                ) : (
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>{t('report.check')}</TableHead>
-                                <TableHead>
-                                    {t('report.runtime.status')}
+                                <TableHead className="w-[1%]">
+                                    {t('report.severityLabel')}
                                 </TableHead>
-                                <TableHead className="text-right">
-                                    {t('report.findings')}
+                                <TableHead>
+                                    {t('dashboard.topIssues.issue')}
+                                </TableHead>
+                                <TableHead className="w-[1%] text-right">
+                                    {t('fix.actions')}
                                 </TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {report.checks.map((check) => (
-                                <TableRow key={check.checkId}>
-                                    <TableCell>
-                                        <div className="font-medium">
-                                            {check.name}
-                                        </div>
-                                        <div className="font-mono text-xs text-muted-foreground">
-                                            {check.checkId}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge
-                                            variant={
-                                                check.status === 'fail'
-                                                    ? 'destructive'
-                                                    : check.status === 'warn'
-                                                      ? 'warning'
-                                                      : check.status === 'pass'
-                                                        ? 'success'
-                                                        : 'muted'
-                                            }
-                                        >
-                                            {t(`report.status.${check.status}`)}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell className="text-right tabular-nums">
-                                        {
-                                            check.findings.filter(
-                                                (finding) =>
-                                                    finding.status === 'warn' ||
-                                                    finding.status === 'fail',
-                                            ).length
-                                        }
-                                    </TableCell>
-                                </TableRow>
-                            ))}
+                            {items.map((item) =>
+                                item.kind === 'finding' ? (
+                                    <TableRow key={item.key}>
+                                        <TableCell>
+                                            <SeverityBadge
+                                                severity={item.finding.severity}
+                                            />
+                                        </TableCell>
+                                        <TableCell className="max-w-[40rem] whitespace-normal">
+                                            <Link
+                                                href={findingsUrl}
+                                                className="font-medium underline-offset-4 hover:underline"
+                                            >
+                                                {item.finding.subject}
+                                            </Link>
+                                            <div className="text-xs text-muted-foreground">
+                                                {item.finding.checkName}
+                                                {item.finding.advisoryId ? (
+                                                    <span className="font-mono">
+                                                        {' · '}
+                                                        {
+                                                            item.finding
+                                                                .advisoryId
+                                                        }
+                                                    </span>
+                                                ) : null}
+                                            </div>
+                                            <div className="mt-1 text-sm">
+                                                {item.finding.message}
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            {item.fix ? (
+                                                <FixActions fix={item.fix} />
+                                            ) : null}
+                                        </TableCell>
+                                    </TableRow>
+                                ) : (
+                                    <TableRow key={item.key}>
+                                        <TableCell>
+                                            <Badge variant="outline">
+                                                <Bug />
+                                                {t(
+                                                    'report.overview.attention.exception',
+                                                )}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell className="max-w-[40rem] whitespace-normal">
+                                            <Link
+                                                href={exceptionsUrl}
+                                                className="font-mono text-xs font-medium break-all underline-offset-4 hover:underline"
+                                            >
+                                                {item.group.class}
+                                            </Link>
+                                            <div className="text-xs text-muted-foreground">
+                                                {item.group.context.name} ·{' '}
+                                                {t('report.overview.events', {
+                                                    count: item.group.count,
+                                                })}
+                                            </div>
+                                            <div className="mt-1 text-sm">
+                                                {item.group.message}
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <FixActions fix={item.group.fix} />
+                                        </TableCell>
+                                    </TableRow>
+                                ),
+                            )}
                         </TableBody>
                     </Table>
-                </CardContent>
-            </Card>
-        </div>
+                )}
+            </CardContent>
+        </Card>
     );
+}
+
+/** Each runtime of the latest report, its version and its security support. */
+function RuntimesCard({
+    latest,
+    className,
+}: {
+    latest: HealthReportSummary;
+    className?: string;
+}) {
+    const { t } = useTranslation();
+
+    return (
+        <Card className={className}>
+            <CardHeader className="pb-3">
+                <CardTitle>{t('report.runtime.title')}</CardTitle>
+                <CardDescription>
+                    {t('report.runtime.description')}
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                {latest.runtime === null ? (
+                    <p className="text-sm text-muted-foreground">
+                        {t('report.runtime.unavailable')}
+                    </p>
+                ) : (
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>
+                                    {t('report.runtime.name')}
+                                </TableHead>
+                                <TableHead>
+                                    {t('report.runtime.version')}
+                                </TableHead>
+                                <TableHead className="text-right">
+                                    {t('report.runtime.securityUntil')}
+                                </TableHead>
+                                <TableHead className="text-right">
+                                    {t('report.runtime.status')}
+                                </TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {RUNTIMES.map((name) => {
+                                const runtime = latest.runtime?.[name] ?? null;
+
+                                return (
+                                    <TableRow key={name}>
+                                        <TableCell className="font-medium">
+                                            {t(`report.runtime.${name}`)}
+                                        </TableCell>
+                                        <TableCell className="font-mono text-xs">
+                                            {runtime?.version ?? '—'}
+                                            {runtime?.cycle ? (
+                                                <span className="ml-1 text-muted-foreground">
+                                                    ({runtime.cycle})
+                                                </span>
+                                            ) : null}
+                                        </TableCell>
+                                        <TableCell className="text-right tabular-nums">
+                                            {runtime?.security_support_ends_on ??
+                                                '—'}
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            {runtime === null ? (
+                                                <span className="text-sm text-muted-foreground">
+                                                    {t(
+                                                        'report.runtime.notUsed',
+                                                    )}
+                                                </span>
+                                            ) : (
+                                                <RuntimeSupportBadge
+                                                    runtime={runtime}
+                                                />
+                                            )}
+                                        </TableCell>
+                                    </TableRow>
+                                );
+                            })}
+                        </TableBody>
+                    </Table>
+                )}
+            </CardContent>
+        </Card>
+    );
+}
+
+/** Every check of the latest report, its status and how many findings it raised. */
+function ChecksCard({
+    report,
+    className,
+}: {
+    report: HealthReportBody;
+    className?: string;
+}) {
+    const { t } = useTranslation();
+
+    return (
+        <Card className={className}>
+            <CardHeader className="pb-3">
+                <CardTitle>{t('report.checks')}</CardTitle>
+                <CardDescription>
+                    {t('report.checksDescription')}
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>{t('report.check')}</TableHead>
+                            <TableHead>{t('report.runtime.status')}</TableHead>
+                            <TableHead className="text-right">
+                                {t('report.findings')}
+                            </TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {report.checks.map((check) => (
+                            <TableRow key={check.checkId}>
+                                <TableCell>
+                                    <div className="font-medium">
+                                        {check.name}
+                                    </div>
+                                    <div className="font-mono text-xs text-muted-foreground">
+                                        {check.checkId}
+                                    </div>
+                                </TableCell>
+                                <TableCell>
+                                    <Badge
+                                        variant={
+                                            check.status === 'fail'
+                                                ? 'destructive'
+                                                : check.status === 'warn'
+                                                  ? 'warning'
+                                                  : check.status === 'pass'
+                                                    ? 'success'
+                                                    : 'muted'
+                                        }
+                                    >
+                                        {t(`report.status.${check.status}`)}
+                                    </Badge>
+                                </TableCell>
+                                <TableCell className="text-right tabular-nums">
+                                    {
+                                        check.findings.filter(
+                                            (finding) =>
+                                                finding.status === 'warn' ||
+                                                finding.status === 'fail',
+                                        ).length
+                                    }
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </CardContent>
+        </Card>
+    );
+}
+
+/**
+ * "5 minutes ago" in the user's language, from an ISO date.
+ */
+function relativeTime(iso: string, locale: string): string {
+    const seconds = (Date.parse(iso) - Date.now()) / 1000;
+    const units: [Intl.RelativeTimeFormatUnit, number][] = [
+        ['day', 86_400],
+        ['hour', 3_600],
+        ['minute', 60],
+    ];
+    const format = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
+
+    for (const [unit, size] of units) {
+        if (Math.abs(seconds) >= size) {
+            return format.format(Math.round(seconds / size), unit);
+        }
+    }
+
+    return format.format(0, 'minute');
 }
 
 /**

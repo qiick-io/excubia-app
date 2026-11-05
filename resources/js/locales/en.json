@@ -624,6 +624,41 @@
             "title": "Findings over time",
             "description": "Findings that warn or fail in each report, per severity.",
             "label": "Stacked bar chart of findings per severity across {{count}} reports; the latest has {{total}} findings."
+        },
+        "overview": {
+            "findings": "Open findings",
+            "lastReport": "Last report {{time}}",
+            "lastReportStale": "Stale · last report {{time}}",
+            "checks": "Checks passing",
+            "allChecksPass": "All checks pass",
+            "checkCount": {
+                "fail_one": "{{count}} failed",
+                "fail_other": "{{count}} failed",
+                "warn_one": "{{count}} warning",
+                "warn_other": "{{count}} warnings",
+                "skipped_one": "{{count}} skipped",
+                "skipped_other": "{{count}} skipped"
+            },
+            "runtimes": "Runtimes supported",
+            "runtimesUnavailable": "No runtime details in this report",
+            "allRuntimesSupported": "All in security support",
+            "runtimeStatus": "{{runtime}}: {{status}}",
+            "nextEnd": "Next end: {{runtime}} on {{date}}",
+            "events_one": "{{count}} event",
+            "events_other": "{{count}} events",
+            "lastSeen": "Last seen {{time}}",
+            "requests_one": "Requests, last hour",
+            "requests_other": "Requests, last {{count}} hours",
+            "averageMs": "Average {{ms}} ms",
+            "systemProject": "System project",
+            "systemProjectHint": "Excubia monitoring itself. It reports every day on its own, and it cannot be deleted.",
+            "attention": {
+                "title": "Needs attention",
+                "description": "{{shown}} of {{total}} open problems, worst first.",
+                "allFindings": "All findings",
+                "exception": "Exception",
+                "emptyTitle": "Nothing needs attention"
+            }
         }
     },
     "assistant": {

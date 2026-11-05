@@ -24,6 +24,7 @@ import {
     SEVERITIES,
     SeverityBadge,
     SeverityCounts,
+    severitySummary,
 } from '@/components/reports/severity-badge';
 import type { SeverityChartPoint } from '@/components/reports/severity-chart';
 import { SeverityStackedBarChart } from '@/components/reports/severity-chart';
@@ -908,21 +909,6 @@ function ProjectsCard({ projects }: { projects: ProjectRow[] }) {
             </CardContent>
         </Card>
     );
-}
-
-/**
- * "11 medium · 3 low": the non-zero severities, worst first.
- */
-function severitySummary(
-    counts: Record<Severity, number>,
-    t: (key: string) => string,
-): string {
-    const parts = SEVERITIES.filter((severity) => counts[severity] > 0).map(
-        (severity) =>
-            `${counts[severity]} ${t(`report.severity.${severity}`).toLowerCase()}`,
-    );
-
-    return parts.length === 0 ? t('report.noIssues') : parts.join(' · ');
 }
 
 function severityRank(project: ProjectRow): number {

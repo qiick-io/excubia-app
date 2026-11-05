@@ -624,6 +624,41 @@
             "title": "Problemi nel tempo",
             "description": "Problemi che avvisano o falliscono in ogni report, per severità.",
             "label": "Grafico a barre impilate dei problemi per severità su {{count}} report; l'ultimo ha {{total}} problemi."
+        },
+        "overview": {
+            "findings": "Problemi aperti",
+            "lastReport": "Ultimo report {{time}}",
+            "lastReportStale": "Non aggiornato · ultimo report {{time}}",
+            "checks": "Controlli superati",
+            "allChecksPass": "Tutti i controlli superati",
+            "checkCount": {
+                "fail_one": "{{count}} fallito",
+                "fail_other": "{{count}} falliti",
+                "warn_one": "{{count}} avviso",
+                "warn_other": "{{count}} avvisi",
+                "skipped_one": "{{count}} saltato",
+                "skipped_other": "{{count}} saltati"
+            },
+            "runtimes": "Runtime supportati",
+            "runtimesUnavailable": "Nessun dettaglio sui runtime in questo report",
+            "allRuntimesSupported": "Tutti con supporto di sicurezza",
+            "runtimeStatus": "{{runtime}}: {{status}}",
+            "nextEnd": "Prossima scadenza: {{runtime}} il {{date}}",
+            "events_one": "{{count}} evento",
+            "events_other": "{{count}} eventi",
+            "lastSeen": "Visto l'ultima volta {{time}}",
+            "requests_one": "Richieste, ultima ora",
+            "requests_other": "Richieste, ultime {{count}} ore",
+            "averageMs": "Media {{ms}} ms",
+            "systemProject": "Progetto di sistema",
+            "systemProjectHint": "Excubia che controlla se stessa. Invia un report ogni giorno da sola e non si può eliminare.",
+            "attention": {
+                "title": "Da sistemare",
+                "description": "{{shown}} di {{total}} problemi aperti, i più gravi prima.",
+                "allFindings": "Tutti i problemi",
+                "exception": "Eccezione",
+                "emptyTitle": "Niente da sistemare"
+            }
         }
     },
     "assistant": {

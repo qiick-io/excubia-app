@@ -624,6 +624,41 @@
             "title": "Befunde im Zeitverlauf",
             "description": "Befunde mit Warnung oder Fehler je Bericht, nach Schweregrad.",
             "label": "Gestapeltes Balkendiagramm der Befunde nach Schweregrad über {{count}} Berichte; der letzte hat {{total}} Befunde."
+        },
+        "overview": {
+            "findings": "Offene Befunde",
+            "lastReport": "Letzter Bericht {{time}}",
+            "lastReportStale": "Veraltet · letzter Bericht {{time}}",
+            "checks": "Bestandene Prüfungen",
+            "allChecksPass": "Alle Prüfungen bestanden",
+            "checkCount": {
+                "fail_one": "{{count}} fehlgeschlagen",
+                "fail_other": "{{count}} fehlgeschlagen",
+                "warn_one": "{{count}} Warnung",
+                "warn_other": "{{count}} Warnungen",
+                "skipped_one": "{{count}} übersprungen",
+                "skipped_other": "{{count}} übersprungen"
+            },
+            "runtimes": "Unterstützte Laufzeiten",
+            "runtimesUnavailable": "Keine Laufzeitdetails in diesem Bericht",
+            "allRuntimesSupported": "Alle mit Sicherheitssupport",
+            "runtimeStatus": "{{runtime}}: {{status}}",
+            "nextEnd": "Nächstes Ende: {{runtime}} am {{date}}",
+            "events_one": "{{count}} Ereignis",
+            "events_other": "{{count}} Ereignisse",
+            "lastSeen": "Zuletzt gesehen {{time}}",
+            "requests_one": "Anfragen, letzte Stunde",
+            "requests_other": "Anfragen, letzte {{count}} Stunden",
+            "averageMs": "Durchschnitt {{ms}} ms",
+            "systemProject": "Systemprojekt",
+            "systemProjectHint": "Excubia überwacht sich selbst. Es berichtet täglich von allein und kann nicht gelöscht werden.",
+            "attention": {
+                "title": "Handlungsbedarf",
+                "description": "{{shown}} von {{total}} offenen Problemen, die schwersten zuerst.",
+                "allFindings": "Alle Befunde",
+                "exception": "Exception",
+                "emptyTitle": "Kein Handlungsbedarf"
+            }
         }
     },
     "assistant": {
