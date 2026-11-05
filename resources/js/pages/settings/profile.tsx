@@ -71,35 +71,78 @@ export default function Profile({
                                     <FieldGroup className="gap-6">
                                         <Field
                                             data-invalid={
-                                                errors.name ? true : undefined
+                                                errors.first_name
+                                                    ? true
+                                                    : undefined
                                             }
                                         >
-                                            <FieldLabel htmlFor="name">
-                                                {t('common.name')}
+                                            <FieldLabel htmlFor="first_name">
+                                                {t('common.firstName')}
                                             </FieldLabel>
 
                                             <Input
-                                                id="name"
+                                                id="first_name"
                                                 className="mt-1 block w-full"
-                                                defaultValue={user.name}
-                                                name="name"
+                                                defaultValue={user.first_name}
+                                                name="first_name"
                                                 required
-                                                autoComplete="name"
-                                                placeholder={t('common.name')}
+                                                autoComplete="given-name"
+                                                placeholder={t(
+                                                    'common.firstName',
+                                                )}
                                                 aria-invalid={
-                                                    errors.name
+                                                    errors.first_name
                                                         ? true
                                                         : undefined
                                                 }
                                                 aria-describedby={
-                                                    errors.name
-                                                        ? 'name-error'
+                                                    errors.first_name
+                                                        ? 'first-name-error'
                                                         : undefined
                                                 }
                                             />
 
-                                            <FieldError id="name-error">
-                                                {errors.name}
+                                            <FieldError id="first-name-error">
+                                                {errors.first_name}
+                                            </FieldError>
+                                        </Field>
+
+                                        <Field
+                                            data-invalid={
+                                                errors.last_name
+                                                    ? true
+                                                    : undefined
+                                            }
+                                        >
+                                            <FieldLabel htmlFor="last_name">
+                                                {t('common.lastName')}
+                                            </FieldLabel>
+
+                                            <Input
+                                                id="last_name"
+                                                className="mt-1 block w-full"
+                                                defaultValue={
+                                                    user.last_name ?? ''
+                                                }
+                                                name="last_name"
+                                                autoComplete="family-name"
+                                                placeholder={t(
+                                                    'common.lastName',
+                                                )}
+                                                aria-invalid={
+                                                    errors.last_name
+                                                        ? true
+                                                        : undefined
+                                                }
+                                                aria-describedby={
+                                                    errors.last_name
+                                                        ? 'last-name-error'
+                                                        : undefined
+                                                }
+                                            />
+
+                                            <FieldError id="last-name-error">
+                                                {errors.last_name}
                                             </FieldError>
                                         </Field>
 

@@ -14,7 +14,8 @@ return [
     |
     */
 
-    'name' => env('INITIAL_SUPER_ADMIN_NAME', 'Super Admin'),
+    'first_name' => env('INITIAL_SUPER_ADMIN_FIRST_NAME', 'Super'),
+    'last_name' => env('INITIAL_SUPER_ADMIN_LAST_NAME', 'Admin'),
     'email' => env('INITIAL_SUPER_ADMIN_EMAIL', 'superadmin@example.com'),
     'password' => env('INITIAL_SUPER_ADMIN_PASSWORD', 'password'),
 

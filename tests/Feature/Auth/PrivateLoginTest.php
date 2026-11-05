@@ -15,7 +15,8 @@ it('sends guests to the login page', function (string $path) {
 
 it('creates a user from the CLI who can log in', function () {
     $this->artisan('excubia:create-user')
-        ->expectsQuestion('Name', 'Ada Lovelace')
+        ->expectsQuestion('First name', 'Ada')
+        ->expectsQuestion('Last name', 'Lovelace')
         ->expectsQuestion('Email', 'Ada@Example.com')
         ->expectsQuestion('Password', 'correct-horse-battery')
         ->expectsChoice('Role', 'super-admin', ['admin', 'reader', 'super-admin'])
@@ -37,7 +38,7 @@ it('creates a user from the CLI who can log in', function () {
 it('refuses a duplicate email from the CLI', function () {
     User::factory()->create(['email' => 'ada@example.com']);
 
-    $this->artisan('excubia:create-user', ['--name' => 'Ada', '--email' => 'ada@example.com'])
+    $this->artisan('excubia:create-user', ['--first-name' => 'Ada', '--last-name' => 'Lovelace', '--email' => 'ada@example.com'])
         ->expectsQuestion('Password', 'correct-horse-battery')
         ->expectsChoice('Role', 'reader', ['admin', 'reader', 'super-admin'])
         ->assertFailed();

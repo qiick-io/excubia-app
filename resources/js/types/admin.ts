@@ -42,6 +42,9 @@ export type AdminUserRef = {
 /** One row of `App\Http\Resources\UserResource`. */
 export type AdminUserRow = {
     id: number;
+    first_name: string;
+    last_name: string | null;
+    /** First and last name. */
     name: string;
     email: string;
     is_active: boolean;

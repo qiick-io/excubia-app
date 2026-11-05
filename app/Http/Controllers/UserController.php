@@ -44,14 +44,20 @@ class UserController extends Controller
         $sort = $request->sortColumn(self::SORTABLE_COLUMNS, 'created_at');
         $direction = $request->sortDirection('desc');
 
-        $query = $request->applySearch(User::query(), ['name', 'email']);
+        $query = $request->applySearch(User::query(), ['first_name', 'last_name', 'email']);
 
         if (! $wantsJson) {
             $query->with(['roles:id,name', 'groups:id,name']);
         }
 
+        // "name" sorts by first, then last name.
+        if ($sort === 'name') {
+            $query->orderBy('first_name', $direction)->orderBy('last_name', $direction);
+        } else {
+            $query->orderBy($sort, $direction);
+        }
+
         $users = $query
-            ->orderBy($sort, $direction)
             ->orderByDesc('id')
             ->paginate($request->perPage())
             ->withQueryString();
@@ -70,7 +76,8 @@ class UserController extends Controller
     public function store(StoreUserRequest $request, CreateUserAction $createUser): RedirectResponse
     {
         $createUser->execute(
-            $request->string('name')->toString(),
+            $request->string('first_name')->toString(),
+            $request->filled('last_name') ? $request->string('last_name')->toString() : null,
             $request->string('email')->toString(),
             $request->string('password')->toString(),
             $request->roles(),
@@ -86,7 +93,8 @@ class UserController extends Controller
     {
         $updateUser->execute(
             $user,
-            $request->string('name')->toString(),
+            $request->string('first_name')->toString(),
+            $request->filled('last_name') ? $request->string('last_name')->toString() : null,
             $request->string('email')->toString(),
             $request->filled('password') ? $request->string('password')->toString() : null,
             $request->roles(),

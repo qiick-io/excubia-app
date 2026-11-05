@@ -26,7 +26,8 @@ function managedUser(RoleEnum $role = RoleEnum::Reader, array $attributes = []):
 function userPayload(array $overrides = []): array
 {
     return [
-        'name' => 'Grace Hopper',
+        'first_name' => 'Grace',
+        'last_name' => 'Hopper',
         'email' => 'grace@example.com',
         'password' => 'correct-horse-battery',
         'roles' => [RoleEnum::Reader->value],
@@ -58,9 +59,9 @@ it('lists users for an admin', function () {
 });
 
 it('searches, sorts and paginates users', function () {
-    $admin = managedUser(RoleEnum::Admin, ['name' => 'Zed Admin']);
-    managedUser(attributes: ['name' => 'Ada Lovelace', 'email' => 'ada@example.com']);
-    managedUser(attributes: ['name' => 'Alan Turing']);
+    $admin = managedUser(RoleEnum::Admin, ['first_name' => 'Zed', 'last_name' => 'Admin']);
+    managedUser(attributes: ['first_name' => 'Ada', 'last_name' => 'Lovelace', 'email' => 'ada@example.com']);
+    managedUser(attributes: ['first_name' => 'Alan', 'last_name' => 'Turing']);
 
     $this->actingAs($admin)->get(route('users.index', ['search' => 'ada@', 'sort' => 'name', 'direction' => 'asc']))
         ->assertInertia(fn (Assert $page) => $page
@@ -69,7 +70,7 @@ it('searches, sorts and paginates users', function () {
             ->where('filters', ['search' => 'ada@', 'sort' => 'name', 'direction' => 'asc']));
 
     foreach (range(1, 8) as $index) {
-        managedUser(attributes: ['name' => "Zz User {$index}"]);
+        managedUser(attributes: ['first_name' => 'Zz', 'last_name' => "User {$index}"]);
     }
 
     $this->actingAs($admin)->get(route('users.index', ['sort' => 'name', 'direction' => 'asc', 'per_page' => 10]))

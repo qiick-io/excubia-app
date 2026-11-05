@@ -24,7 +24,8 @@ import users from '@/routes/users';
 import type { AdminRoleRef, AdminUserRow } from '@/types/admin';
 
 const EMPTY_USER_FORM = {
-    name: '',
+    first_name: '',
+    last_name: '',
     email: '',
     password: '',
     is_active: true,
@@ -65,7 +66,8 @@ export function UserFormDrawer({
         if (editing) {
             // Fresh object for setDefaults — avoid sharing the setData reference.
             const payload = {
-                name: editing.name,
+                first_name: editing.first_name,
+                last_name: editing.last_name ?? '',
                 email: editing.email,
                 password: '',
                 is_active: editing.is_active,
@@ -130,33 +132,75 @@ export function UserFormDrawer({
                         Fields marked with * are required.
                     </p>
                     <FieldGroup className="gap-4">
-                        <Field
-                            data-invalid={form.errors.name ? true : undefined}
-                        >
-                            <FieldLabel htmlFor="user_name">Name *</FieldLabel>
-                            <Input
-                                id="user_name"
-                                value={form.data.name}
-                                onChange={(e) =>
-                                    form.setData('name', e.target.value)
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            <Field
+                                data-invalid={
+                                    form.errors.first_name ? true : undefined
                                 }
-                                required
-                                maxLength={STRING_LIMITS.NAME}
-                                disabled={readOnly}
-                                autoComplete="name"
-                                aria-invalid={
-                                    form.errors.name ? true : undefined
+                            >
+                                <FieldLabel htmlFor="user_first_name">
+                                    First name *
+                                </FieldLabel>
+                                <Input
+                                    id="user_first_name"
+                                    value={form.data.first_name}
+                                    onChange={(e) =>
+                                        form.setData(
+                                            'first_name',
+                                            e.target.value,
+                                        )
+                                    }
+                                    required
+                                    maxLength={STRING_LIMITS.NAME}
+                                    disabled={readOnly}
+                                    aria-invalid={
+                                        form.errors.first_name
+                                            ? true
+                                            : undefined
+                                    }
+                                    aria-describedby={
+                                        form.errors.first_name
+                                            ? 'user-first-name-error'
+                                            : undefined
+                                    }
+                                />
+                                <FieldError id="user-first-name-error">
+                                    {form.errors.first_name}
+                                </FieldError>
+                            </Field>
+                            <Field
+                                data-invalid={
+                                    form.errors.last_name ? true : undefined
                                 }
-                                aria-describedby={
-                                    form.errors.name
-                                        ? 'user-name-error'
-                                        : undefined
-                                }
-                            />
-                            <FieldError id="user-name-error">
-                                {form.errors.name}
-                            </FieldError>
-                        </Field>
+                            >
+                                <FieldLabel htmlFor="user_last_name">
+                                    Last name
+                                </FieldLabel>
+                                <Input
+                                    id="user_last_name"
+                                    value={form.data.last_name}
+                                    onChange={(e) =>
+                                        form.setData(
+                                            'last_name',
+                                            e.target.value,
+                                        )
+                                    }
+                                    maxLength={STRING_LIMITS.NAME}
+                                    disabled={readOnly}
+                                    aria-invalid={
+                                        form.errors.last_name ? true : undefined
+                                    }
+                                    aria-describedby={
+                                        form.errors.last_name
+                                            ? 'user-last-name-error'
+                                            : undefined
+                                    }
+                                />
+                                <FieldError id="user-last-name-error">
+                                    {form.errors.last_name}
+                                </FieldError>
+                            </Field>
+                        </div>
 
                         <Field
                             data-invalid={form.errors.email ? true : undefined}

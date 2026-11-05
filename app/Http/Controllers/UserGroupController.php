@@ -40,7 +40,7 @@ class UserGroupController extends Controller
         $direction = $request->sortDirection('asc');
 
         $groups = $request->applySearch(UserGroup::query(), ['name', 'description'])
-            ->with(['roles:id,name', 'users:id,name,email'])
+            ->with(['roles:id,name', 'users:id,first_name,last_name,email'])
             ->withCount('users')
             ->orderBy($sort, $direction)
             ->orderBy('id')

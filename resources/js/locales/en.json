@@ -16,6 +16,8 @@
         "sortAscending": "Sort ascending",
         "sortDescending": "Sort descending",
         "name": "Name",
+        "firstName": "First name",
+        "lastName": "Last name",
         "pageRange": "{{from}}–{{to}} of {{total}}",
         "perPageOption": "{{count}} / page",
         "rowsPerPage": "Rows per page",

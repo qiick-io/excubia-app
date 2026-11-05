@@ -20,7 +20,9 @@ use Spatie\Permission\Traits\HasRoles;
 
 /**
  * @property int $id
- * @property string $name
+ * @property string $first_name
+ * @property string|null $last_name
+ * @property-read string $name first and last name
  * @property string $email
  * @property string|null $oidc_sub
  * @property Carbon|null $email_verified_at
@@ -33,12 +35,19 @@ use Spatie\Permission\Traits\HasRoles;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'email', 'password'])]
+#[Fillable(['first_name', 'last_name', 'email', 'password'])]
 #[Hidden(['password', 'oidc_sub', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, HasRoles, LogsApplicationActivityTrait, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
+
+    /**
+     * The full name travels with the user to the pages (avatar, menus).
+     *
+     * @var list<string>
+     */
+    protected $appends = ['name'];
 
     /**
      * Activity log options excluding sensitive credential fields.
@@ -57,6 +66,14 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
     public function groups(): BelongsToMany
     {
         return $this->belongsToMany(UserGroup::class, 'user_group_user')->withTimestamps();
+    }
+
+    /**
+     * Full display name from first and last name, as in externa-core.
+     */
+    public function getNameAttribute(): string
+    {
+        return trim("{$this->first_name} {$this->last_name}");
     }
 
     /**

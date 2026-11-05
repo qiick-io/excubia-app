@@ -72,7 +72,8 @@ it('logs user creation, updates, role changes and deletion with the acting user'
     $admin = activityActor(RoleEnum::Admin);
 
     $this->actingAs($admin)->post(route('users.store'), [
-        'name' => 'Grace Hopper',
+        'first_name' => 'Grace',
+        'last_name' => 'Hopper',
         'email' => 'grace@example.com',
         'password' => 'correct-horse-battery',
         'roles' => [RoleEnum::Reader->value],
@@ -89,7 +90,8 @@ it('logs user creation, updates, role changes and deletion with the acting user'
         ->and(latestActivity('roles_synced')->properties['role_names'])->toBe([RoleEnum::Reader->value]);
 
     $this->actingAs($admin)->put(route('users.update', $user), [
-        'name' => 'Grace Hopper',
+        'first_name' => 'Grace',
+        'last_name' => 'Hopper',
         'email' => 'grace@example.com',
         'roles' => [RoleEnum::Admin->value],
         'is_active' => false,
