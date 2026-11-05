@@ -23,9 +23,16 @@ export type DefaultAppearance = 'system' | 'light' | 'dark';
  */
 export type ProjectSettingsForm = {
     app_name: string | null;
+    description: string | null;
+    url: string | null;
+    report_issue_url: string | null;
     report_bug_url: string | null;
-    reports_kept_per_project: number;
+    report_error_url: string | null;
     stale_after_hours: number;
+    reports_kept_per_project: number;
+    runtime_retention_days: number;
+    exceptions_retention_days: number;
+    activity_retention_days: number;
     default_language: string;
     default_appearance: DefaultAppearance;
     sidebar_modules: SidebarModuleSetting[];

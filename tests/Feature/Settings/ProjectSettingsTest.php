@@ -30,9 +30,16 @@ function generalSettingsPayload(array $overrides = []): array
 {
     return [
         'app_name' => 'Acme Health',
+        'description' => 'Health of the Acme apps.',
+        'url' => 'https://acme.example.com',
+        'report_issue_url' => 'https://example.com/issues/new',
         'report_bug_url' => 'https://example.com/bugs/new',
+        'report_error_url' => 'https://example.com/errors/new',
         'reports_kept_per_project' => 10,
         'stale_after_hours' => 12,
+        'runtime_retention_days' => 7,
+        'exceptions_retention_days' => 30,
+        'activity_retention_days' => 180,
         ...$overrides,
     ];
 }
@@ -90,15 +97,26 @@ it('sends guests to the login page', function (string $route) {
 })->with('project settings pages');
 
 it('shows defaults from config until a value is saved', function () {
-    config(['excubia.reports_kept_per_project' => 30, 'excubia.stale_after_hours' => 36]);
+    config([
+        'excubia.reports_kept_per_project' => 30,
+        'excubia.stale_after_hours' => 36,
+        'excubia.runtime_retention_days' => 14,
+        'excubia.exceptions_retention_days' => 90,
+        'activitylog.clean_after_days' => 365,
+    ]);
     $manager = projectSettingsManager();
 
     $this->actingAs($manager)->get(route('project.edit'))
         ->assertInertia(fn (Assert $page) => $page
             ->where('project.app_name', null)
             ->where('project.report_bug_url', null)
+            ->where('project.description', null)
+            ->where('project.report_issue_url', null)
             ->where('project.reports_kept_per_project', 30)
-            ->where('project.stale_after_hours', 36));
+            ->where('project.stale_after_hours', 36)
+            ->where('project.runtime_retention_days', 14)
+            ->where('project.exceptions_retention_days', 90)
+            ->where('project.activity_retention_days', 365));
 
     $this->actingAs($manager)->get(route('project.security.edit'))
         ->assertInertia(fn (Assert $page) => $page
@@ -120,7 +138,16 @@ it('saves the general settings and the app uses them', function () {
     expect($settings->appName())->toBe('Acme Health')
         ->and($settings->reportBugUrl())->toBe('https://example.com/bugs/new')
         ->and($settings->reportsKeptPerProject())->toBe(10)
-        ->and($settings->staleAfterHours())->toBe(12);
+        ->and($settings->staleAfterHours())->toBe(12)
+        ->and($settings->runtimeRetentionDays())->toBe(7)
+        ->and($settings->exceptionsRetentionDays())->toBe(30)
+        ->and($settings->activityRetentionDays())->toBe(180)
+        ->and($settings->all())->toMatchArray([
+            'description' => 'Health of the Acme apps.',
+            'url' => 'https://acme.example.com',
+            'report_issue_url' => 'https://example.com/issues/new',
+            'report_error_url' => 'https://example.com/errors/new',
+        ]);
 
     $this->get(route('dashboard'))->assertInertia(fn (Assert $page) => $page
         ->where('name', 'Acme Health')
@@ -139,11 +166,16 @@ it('validates the general settings', function () {
     $this->actingAs(projectSettingsManager())
         ->put(route('project.update'), generalSettingsPayload([
             'app_name' => str_repeat('a', 101),
+            'description' => str_repeat('a', 1001),
+            'url' => 'ftp://example.com',
             'report_bug_url' => 'not a url',
+            'report_error_url' => 'not a url',
             'reports_kept_per_project' => 'many',
             'stale_after_hours' => 9999,
+            'runtime_retention_days' => 0,
+            'activity_retention_days' => 4000,
         ]))
-        ->assertSessionHasErrors(['app_name', 'report_bug_url', 'reports_kept_per_project', 'stale_after_hours']);
+        ->assertSessionHasErrors(['app_name', 'description', 'url', 'report_bug_url', 'report_error_url', 'reports_kept_per_project', 'stale_after_hours', 'runtime_retention_days', 'activity_retention_days']);
 });
 
 it('saves the authentication and security settings and the app uses them', function () {

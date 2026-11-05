@@ -57,7 +57,11 @@ class SettingsRepositoryService
     {
         return [
             'app_name' => null,
+            'description' => null,
+            'url' => null,
+            'report_issue_url' => null,
             'report_bug_url' => null,
+            'report_error_url' => null,
             'default_language' => $this->configLanguage(),
             'default_appearance' => 'system',
             'theme_preset' => ThemePresetEnum::default()->value,
@@ -69,6 +73,9 @@ class SettingsRepositoryService
             'two_factor_required' => false,
             'reports_kept_per_project' => config('excubia.reports_kept_per_project'),
             'stale_after_hours' => config('excubia.stale_after_hours'),
+            'runtime_retention_days' => config('excubia.runtime_retention_days'),
+            'exceptions_retention_days' => config('excubia.exceptions_retention_days'),
+            'activity_retention_days' => config('activitylog.clean_after_days'),
             'oidc_enabled' => false,
             'oidc_issuer' => null,
             'oidc_client_id' => null,
@@ -311,6 +318,24 @@ class SettingsRepositoryService
     public function staleAfterHours(): int
     {
         return $this->integer('stale_after_hours', 1, 8760);
+    }
+
+    /** Days runtime aggregates are kept (Data retention). */
+    public function runtimeRetentionDays(): int
+    {
+        return $this->integer('runtime_retention_days', 1, 3650);
+    }
+
+    /** Days exception groups are kept after they were last seen (Data retention). */
+    public function exceptionsRetentionDays(): int
+    {
+        return $this->integer('exceptions_retention_days', 1, 3650);
+    }
+
+    /** Days activity log entries are kept (Data retention). */
+    public function activityRetentionDays(): int
+    {
+        return $this->integer('activity_retention_days', 1, 3650);
     }
 
     public function isOidcEnabled(): bool

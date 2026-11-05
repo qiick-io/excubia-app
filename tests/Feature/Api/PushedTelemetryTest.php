@@ -9,6 +9,7 @@ use App\Enums\RuntimeTypeEnum;
 use App\Models\ExceptionGroup;
 use App\Models\Project;
 use App\Models\RuntimeAggregate;
+use App\Services\SettingsRepositoryService;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
@@ -212,4 +213,22 @@ it('prunes runtime aggregates and exception groups past their retention', functi
 
     expect(RuntimeAggregate::query()->pluck('dimensions')->pluck('route')->all())->toBe(['new'])
         ->and(ExceptionGroup::query()->pluck('fingerprint')->all())->toBe([str_repeat('d', 64)]);
+});
+
+it('prunes with the Data retention settings over the config defaults', function () {
+    [$project, $token] = telemetryProject();
+    $headers = ['Authorization' => "Bearer {$token}"];
+    app(SettingsRepositoryService::class)->setMany(['runtime_retention_days' => 1, 'exceptions_retention_days' => 1]);
+
+    $this->postJson(route('api.runtime.store'), runtimeEnvelope([
+        ['type' => 'request', 'bucket' => '2026-11-04T10:00:00Z', 'sampleRate' => 1, 'route' => 'yesterday', 'method' => 'GET', 'statusClass' => '2xx', 'count' => 1, 'errorCount' => 0, 'totalMs' => 1, 'maxMs' => 1],
+    ]), $headers)->assertCreated();
+    $this->postJson(route('api.exceptions.store'), exceptionsEnvelope([
+        exceptionGroupPayload(['firstSeen' => '2026-11-01T10:00:00Z', 'lastSeen' => '2026-11-02T10:00:00Z']),
+    ]), $headers)->assertCreated();
+
+    $this->artisan('excubia:prune-telemetry')->assertSuccessful();
+
+    expect(RuntimeAggregate::query()->count())->toBe(0)
+        ->and(ExceptionGroup::query()->count())->toBe(0);
 });

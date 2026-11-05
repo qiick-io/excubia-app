@@ -13,8 +13,9 @@ use Inertia\Inertia;
 use Inertia\Response;
 
 /**
- * General project settings: application name, bug report link and Checks (report history,
- * stale projects). The routes require `settings.manage`.
+ * General project settings, as in externa-core: identity (name, description, URL), the
+ * reporting links, Checks (stale projects) and Data retention (reports, runtime, exceptions,
+ * activity log). The routes require `settings.manage`.
  */
 class ProjectSettingsController extends Controller
 {
@@ -25,7 +26,10 @@ class ProjectSettingsController extends Controller
     public function edit(): Response
     {
         return Inertia::render('settings/project', [
-            'project' => $this->settings->forEditOnly(['app_name', 'report_bug_url', 'reports_kept_per_project', 'stale_after_hours']),
+            'project' => $this->settings->forEditOnly([
+                'app_name', 'description', 'url', 'report_issue_url', 'report_bug_url', 'report_error_url',
+                'stale_after_hours', 'reports_kept_per_project', 'runtime_retention_days', 'exceptions_retention_days', 'activity_retention_days',
+            ]),
         ]);
     }
 
