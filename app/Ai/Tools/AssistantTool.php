@@ -23,7 +23,7 @@ abstract class AssistantTool implements Tool
     public function handle(Request $request): Stringable|string
     {
         if (! $this->user->can('viewAny', Project::class)) {
-            return $this->json(['error' => 'The user lacks the projects.view permission.']);
+            return $this->json(['error' => 'The user lacks the can-show-projects permission.']);
         }
 
         $data = $this->read(app(AssistantQueryService::class)->forUser($this->user), $request);

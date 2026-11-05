@@ -12,6 +12,7 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { PermissionEnum } from '@/enums/permission-enum';
+import aiSettings from '@/routes/ai-settings';
 import { useCan } from '@/hooks/use-can';
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import { cn, toUrl } from '@/lib/utils';
@@ -128,6 +129,17 @@ export default function SettingsLayout({
             : []),
     ];
 
+    // AI group, as externa-core's (Settings → AI tools).
+    const aiNavItems: NavItem[] = can(PermissionEnum.CanManageProjectSettings)
+        ? [
+              {
+                  title: t('settings.layout.aiTools'),
+                  href: aiSettings.edit.url(),
+                  icon: null,
+              },
+          ]
+        : [];
+
     const reportBugUrl =
         projectSettings.reportBugUrl?.trim() || DEFAULT_REPORT_BUG_URL;
 
@@ -187,6 +199,13 @@ export default function SettingsLayout({
                             ? renderNavGroup(
                                   t('settings.layout.sectionAccess'),
                                   accessNavItems,
+                              )
+                            : null}
+
+                        {aiNavItems.length > 0
+                            ? renderNavGroup(
+                                  t('settings.layout.sectionAi'),
+                                  aiNavItems,
                               )
                             : null}
 

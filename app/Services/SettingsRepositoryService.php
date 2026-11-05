@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Ai\Agents\ExcubiaAssistantAgent;
 use App\Enums\ThemePresetEnum;
 use App\Models\Setting;
 use Illuminate\Contracts\Encryption\DecryptException;
@@ -95,6 +96,7 @@ class SettingsRepositoryService
             'oidc_client_secret' => null,
             'oidc_button_label' => null,
             'oidc_jit_provisioning' => false,
+            'ai_enabled_tools' => null,
         ];
     }
 
@@ -348,6 +350,19 @@ class SettingsRepositoryService
     public function staleAfterHours(): int
     {
         return $this->integer('stale_after_hours', 1, 8760);
+    }
+
+    /**
+     * Assistant tools enabled in Settings → AI; every tool until the setting is saved.
+     *
+     * @return list<string>
+     */
+    public function aiEnabledTools(): array
+    {
+        $value = $this->all()['ai_enabled_tools'];
+        $names = array_keys(ExcubiaAssistantAgent::TOOLS);
+
+        return is_array($value) ? array_values(array_intersect($names, $value)) : $names;
     }
 
     /** Days runtime aggregates are kept (Data retention). */

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Settings\AiSettingsController;
 use App\Http\Controllers\Settings\AppearanceSettingsController;
 use App\Http\Controllers\Settings\AppearanceSidebarSettingsController;
 use App\Http\Controllers\Settings\LocaleController;
@@ -48,6 +49,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::get('settings/appearance/sidebar', [AppearanceSidebarSettingsController::class, 'edit'])->name('appearance.sidebar.edit');
         Route::put('settings/appearance/sidebar', [AppearanceSidebarSettingsController::class, 'update'])->name('appearance.sidebar.update');
+
+        Route::get('settings/ai', [AiSettingsController::class, 'edit'])->name('ai-settings.edit');
+        Route::put('settings/ai', [AiSettingsController::class, 'update'])->name('ai-settings.update');
 
         Route::get('settings/performance', [PerformanceSettingsController::class, 'edit'])->name('performance.edit');
         Route::post('settings/performance/flush-spatie-permissions', [PerformanceSettingsController::class, 'flushSpatiePermissions'])

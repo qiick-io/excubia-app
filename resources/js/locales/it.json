@@ -181,7 +181,9 @@
             "general": "Generale",
             "localization": "Localizzazione",
             "authSecurity": "Autenticazione e sicurezza",
-            "sidebar": "Barra laterale"
+            "sidebar": "Barra laterale",
+            "sectionAi": "AI",
+            "aiTools": "Strumenti"
         },
         "profile": {
             "breadcrumb": "Impostazioni profilo",
@@ -368,6 +370,19 @@
             "flushSpatiePermissionsDescription": "Cancella la cache ruoli e permessi di Spatie.",
             "flushSpatiePermissionsButton": "Svuota cache permessi Spatie",
             "flushing": "Svuotamento…"
+        },
+        "ai": {
+            "breadcrumb": "Impostazioni AI",
+            "head": "Impostazioni AI",
+            "title": "Strumenti dell'assistente",
+            "description": "Gli strumenti in sola lettura che l'assistente può usare per rispondere. Non modifica mai nulla.",
+            "statusLabel": "Assistente",
+            "statusOn": "Attivo",
+            "statusOff": "Spento (EXCUBIA_AI_ENABLED=false)",
+            "providerLabel": "Provider",
+            "modelLabel": "Modello",
+            "envHint": "Provider, modello e chiavi si impostano nel .env (AI_DEFAULT_PROVIDER e le chiavi del provider). I dati inviati a un provider cloud escono dal tuo server.",
+            "readOnly": "sola lettura"
         }
     },
     "activityLog": {
@@ -690,7 +705,7 @@
         "newConversation": "Nuova chat",
         "conversations": "Conversazioni",
         "emptyTitle": "Chiedi dei tuoi progetti",
-        "emptyDescription": "L'assistente legge solo i report salvati. Non può modificare nulla.",
+        "emptyDescription": "Legge i report salvati: elenca i progetti, cerca i problemi, mostra l'ultimo report e lo storico di un progetto, confronta due report e propone un piano di aggiornamento. Non può modificare nulla.",
         "placeholder": "Fai una domanda… (Invio per inviare, Maiusc+Invio per andare a capo)",
         "send": "Invia",
         "you": "Tu",
@@ -715,7 +730,12 @@
         "panelDescription": "Drawer rapido dell'assistente. Apri la pagina completa per la cronologia.",
         "openFullPage": "Apri a schermo intero",
         "openPanel": "Apri nel pannello laterale",
-        "unreachable": "L'assistente non è raggiungibile. Controlla le impostazioni del provider AI."
+        "unreachable": "L'assistente non è raggiungibile. Controlla le impostazioni del provider AI.",
+        "deleteSelected": "Elimina le chat selezionate",
+        "selectConversation": "Seleziona {{title}}",
+        "deleteTitle": "Eliminare le chat selezionate?",
+        "deleteDescription_one": "Stai per eliminare {{count}} chat. Questa azione non si può annullare.",
+        "deleteDescription_other": "Stai per eliminare {{count}} chat. Questa azione non si può annullare."
     },
     "permissions": {
         "description": "I permessi sono definiti in PermissionEnum e sincronizzati nel database. Assegnali ai ruoli dalla pagina di modifica del ruolo.",

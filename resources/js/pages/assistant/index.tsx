@@ -1,9 +1,11 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
-import { Plus, Sparkles } from 'lucide-react';
+import { Plus, Sparkles, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AssistantChatMessage } from '@/components/ai/assistant-chat-message';
 import { ThinkingDots } from '@/components/ai/thinking-dots';
+import { HeaderIconButton } from '@/components/admin/header-icon-button';
+import { ConfirmDestructiveDialog } from '@/components/confirm-destructive-dialog';
 import InputError from '@/components/input-error';
 import {
     ChatComposer,
@@ -15,6 +17,7 @@ import {
 import { FilterSearch } from '@/components/layout/page-header';
 import { PageLayout } from '@/components/layout/page-layout';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
     Empty,
     EmptyDescription,
@@ -23,7 +26,7 @@ import {
     EmptyTitle,
 } from '@/components/ui/empty';
 import AppLayout from '@/layouts/app-layout';
-import assistantRoutes from '@/routes/assistant';
+import aiRoutes from '@/routes/ai';
 import type {
     AssistantConversation,
     AssistantMessage,
@@ -47,7 +50,8 @@ type ConversationSection = {
 /**
  * Assistant chat, laid out as externa-core `/ai`: the searchable conversation list on the left,
  * the thread on the right with the composer always at the bottom. The answer arrives when the
- * request finishes (no streaming).
+ * request finishes (no streaming). Conversations are selected with checkboxes and deleted with
+ * the trash button on the right of the filter row, as in externa-core.
  * ponytail: answers render as plain text with line breaks; add a Markdown renderer if needed.
  */
 export default function AssistantIndex({
@@ -62,15 +66,16 @@ export default function AssistantIndex({
     const { t } = useTranslation();
     const endRef = useRef<HTMLDivElement>(null);
     const [query, setQuery] = useState('');
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
     const form = useForm({
         message: '',
         conversation_id: conversationId ?? '',
     });
 
     const breadcrumbs: BreadcrumbItem[] = useMemo(
-        () => [
-            { title: t('assistant.title'), href: assistantRoutes.index.url() },
-        ],
+        () => [{ title: t('assistant.title'), href: aiRoutes.index.url() }],
         [t],
     );
 
@@ -95,12 +100,39 @@ export default function AssistantIndex({
         endRef.current?.scrollIntoView({ block: 'end' });
     }, [messages.length, form.processing]);
 
+    const toggleSelected = (id: string, isChecked: boolean): void => {
+        setSelectedIds((current) => {
+            const next = new Set(current);
+
+            if (isChecked) {
+                next.add(id);
+            } else {
+                next.delete(id);
+            }
+
+            return next;
+        });
+    };
+
+    const deleteSelected = (): void => {
+        setIsDeleting(true);
+        router.delete(aiRoutes.conversations.destroy.url(), {
+            data: { ids: [...selectedIds], current: conversationId ?? '' },
+            preserveScroll: true,
+            onSuccess: () => {
+                setSelectedIds(new Set());
+                setIsConfirmOpen(false);
+            },
+            onFinish: () => setIsDeleting(false),
+        });
+    };
+
     const submit = (): void => {
         if (form.data.message.trim() === '' || form.processing) {
             return;
         }
 
-        form.post(assistantRoutes.store.url(), {
+        form.post(aiRoutes.store.url(), {
             preserveScroll: true,
             // Keep the question when the provider failed, so it can be sent again.
             onSuccess: (page) => {
@@ -116,7 +148,7 @@ export default function AssistantIndex({
             breadcrumbs={breadcrumbs}
             headerActions={
                 <Button asChild>
-                    <Link href={assistantRoutes.index.url()}>
+                    <Link href={aiRoutes.index.url()}>
                         <Plus className="size-4" />
                         {t('assistant.newConversation')}
                     </Link>
@@ -132,6 +164,17 @@ export default function AssistantIndex({
                         placeholder={t('assistant.searchConversations')}
                         onChange={setQuery}
                     />
+                }
+                filtersRight={
+                    <HeaderIconButton
+                        type="button"
+                        variant="outline"
+                        disabled={selectedIds.size === 0 || isDeleting}
+                        onClick={() => setIsConfirmOpen(true)}
+                        label={t('assistant.deleteSelected')}
+                    >
+                        <Trash2 className="size-4" />
+                    </HeaderIconButton>
                 }
             >
                 <ChatLayout
@@ -150,24 +193,48 @@ export default function AssistantIndex({
                                 >
                                     {section.conversations.map(
                                         (conversation) => (
-                                            <ChatListItem
+                                            <div
                                                 key={conversation.id}
-                                                isSelected={
-                                                    conversation.id ===
-                                                    conversationId
-                                                }
-                                                onSelect={() =>
-                                                    router.visit(
-                                                        assistantRoutes.show.url(
-                                                            conversation.id,
-                                                        ),
-                                                    )
-                                                }
+                                                className="flex items-center gap-1"
                                             >
-                                                <span className="min-w-0 flex-1 truncate">
-                                                    {conversation.title}
-                                                </span>
-                                            </ChatListItem>
+                                                <Checkbox
+                                                    className="ml-2"
+                                                    checked={selectedIds.has(
+                                                        conversation.id,
+                                                    )}
+                                                    onCheckedChange={(
+                                                        checked,
+                                                    ) =>
+                                                        toggleSelected(
+                                                            conversation.id,
+                                                            checked === true,
+                                                        )
+                                                    }
+                                                    aria-label={t(
+                                                        'assistant.selectConversation',
+                                                        {
+                                                            title: conversation.title,
+                                                        },
+                                                    )}
+                                                />
+                                                <ChatListItem
+                                                    isSelected={
+                                                        conversation.id ===
+                                                        conversationId
+                                                    }
+                                                    onSelect={() =>
+                                                        router.visit(
+                                                            aiRoutes.show.url(
+                                                                conversation.id,
+                                                            ),
+                                                        )
+                                                    }
+                                                >
+                                                    <span className="min-w-0 flex-1 truncate">
+                                                        {conversation.title}
+                                                    </span>
+                                                </ChatListItem>
+                                            </div>
                                         ),
                                     )}
                                 </ChatListSection>
@@ -254,6 +321,17 @@ export default function AssistantIndex({
                     </ChatThread>
                 </ChatLayout>
             </PageLayout>
+
+            <ConfirmDestructiveDialog
+                open={isConfirmOpen}
+                onOpenChange={setIsConfirmOpen}
+                title={t('assistant.deleteTitle')}
+                description={t('assistant.deleteDescription', {
+                    count: selectedIds.size,
+                })}
+                confirming={isDeleting}
+                onConfirm={deleteSelected}
+            />
         </AppLayout>
     );
 }
