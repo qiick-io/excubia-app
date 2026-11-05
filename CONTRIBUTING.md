@@ -7,5 +7,5 @@ Thanks for helping. Excubia App is the self-hosted Laravel dashboard built on [`
 3. Use Conventional Commits; PR titles follow the same format.
 4. Open the PR against `develop` with `Closes #N`. PRs are squash-merged.
 5. Before pushing run the quality gates: `composer test` (Pint, PHPStan and Pest), then `npm run lint && npm run types && npm run build`.
-6. Code style: strict types, explicit role suffixes, thin controllers, readonly `*Data` classes, English docblocks that explain *why*, no abbreviations. `tests/Arch/NamingArchitectureTest.php` enforces the naming rules.
+6. Code style: strict types, explicit role suffixes, thin controllers, readonly `*Data` classes, English docblocks that explain _why_, no abbreviations. `tests/Arch/NamingArchitectureTest.php` enforces the naming rules.
 7. Checks live in `qiick/excubia-core`: never reimplement one here. Scope is defined by the issues of the current milestone. New features start as an issue labelled `needs-decision`.

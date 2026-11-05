@@ -485,7 +485,15 @@ function TelemetryRow({
                                             <TableRow key={group.id}>
                                                 <TableCell className="max-w-[24rem] min-w-0">
                                                     <Link
-                                                        href={`${projectsRoutes.show.url(group.project.slug)}?view=exceptions`}
+                                                        href={projectsRoutes.view.url(
+                                                            {
+                                                                project:
+                                                                    group
+                                                                        .project
+                                                                        .slug,
+                                                                view: 'exceptions',
+                                                            },
+                                                        )}
                                                         className="block truncate font-mono text-xs font-medium underline-offset-4 hover:underline"
                                                     >
                                                         {group.class}
@@ -609,7 +617,13 @@ function TopIssuesCard({
                                                             asChild
                                                         >
                                                             <Link
-                                                                href={`${projectsRoutes.show.url(project.slug)}?view=findings`}
+                                                                href={projectsRoutes.view.url(
+                                                                    {
+                                                                        project:
+                                                                            project.slug,
+                                                                        view: 'findings',
+                                                                    },
+                                                                )}
                                                             >
                                                                 {project.name}
                                                             </Link>
@@ -755,7 +769,10 @@ function ConfigurationCard({
                                                 {row.message}
                                             </div>
                                             <Link
-                                                href={`${projectsRoutes.show.url(row.project.slug)}?view=findings`}
+                                                href={projectsRoutes.view.url({
+                                                    project: row.project.slug,
+                                                    view: 'findings',
+                                                })}
                                                 className="text-xs text-muted-foreground underline-offset-4 hover:underline"
                                             >
                                                 {row.project.name}

@@ -172,7 +172,9 @@ export function AppSidebar() {
                 isActive={isCurrentUrl(
                     item.id === 'settings' ? '/settings' : item.href,
                     undefined,
-                    item.id === 'assistant' || item.id === 'settings',
+                    item.id === 'assistant' ||
+                        item.id === 'projects' ||
+                        item.id === 'settings',
                 )}
                 tooltip={{ children: t(item.titleKey) }}
                 className={item.accent ? 'sidebar-ai-nav' : undefined}
