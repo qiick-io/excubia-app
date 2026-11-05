@@ -32,6 +32,7 @@ use Spatie\Activitylog\Support\LogOptions;
  * @property ProjectVisibilityEnum $visibility
  * @property string|null $push_token_hash
  * @property Carbon|null $last_report_at
+ * @property Carbon|null $stale_alerted_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
@@ -58,7 +59,7 @@ class Project extends Model
      */
     public function getActivitylogOptions(): LogOptions
     {
-        return $this->applicationActivityLogOptions()->logExcept(['push_token_hash', 'last_report_at']);
+        return $this->applicationActivityLogOptions()->logExcept(['push_token_hash', 'last_report_at', 'stale_alerted_at']);
     }
 
     /**
@@ -119,6 +120,7 @@ class Project extends Model
             'is_system' => 'boolean',
             'visibility' => ProjectVisibilityEnum::class,
             'last_report_at' => 'datetime',
+            'stale_alerted_at' => 'datetime',
         ];
     }
 }

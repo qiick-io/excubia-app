@@ -183,7 +183,8 @@
             "authSecurity": "Authentication & Security",
             "sidebar": "Sidebar",
             "sectionAi": "AI",
-            "aiTools": "Tools"
+            "aiTools": "Tools",
+            "integrations": "Integrations"
         },
         "profile": {
             "breadcrumb": "Profile settings",
@@ -383,6 +384,47 @@
             "modelLabel": "Model",
             "envHint": "The provider, model and keys are set in .env (AI_DEFAULT_PROVIDER and the provider's keys). The data sent to a cloud provider leaves your server.",
             "readOnly": "read-only"
+        },
+        "integrations": {
+            "breadcrumb": "Integrations",
+            "head": "Integrations",
+            "webhookTitle": "Outbound webhooks",
+            "webhookDescription": "Send signed alerts to your endpoint when a project changes",
+            "webhookUrl": "Webhook URL",
+            "webhookUrlHint": "HTTPS only. Leave empty to disable. Receives every event. Requires a queue worker.",
+            "webhookSecret": "Webhook secret",
+            "webhookSecretHint": "Used for the HMAC-SHA256 signature (X-Excubia-Signature of \"timestamp.body\"). Leave blank to keep the current secret.",
+            "generateSecret": "Generate secret",
+            "sendTest": "Send test event",
+            "sendTestHint": "Save the webhook URL and secret first, then queue a signed ping. Requires a queue worker.",
+            "deliveryTitle": "Delivery status",
+            "lastSuccess": "Last successful delivery",
+            "lastError": "Last failed delivery",
+            "deliveryNone": "None yet.",
+            "notifiersTitle": "Outbound notifiers (Slack & Telegram)",
+            "notifiersDescription": "Optional human-readable alerts for the chosen events. Outbound only.",
+            "eventTypes": "Notify on these events",
+            "eventTypesHint": "Slack and Telegram only send these events; the webhook gets every event. Send test always works.",
+            "minimumSeverity": "Minimum severity",
+            "minimumSeverityHint": "Slack and Telegram skip alerts below this severity.",
+            "slackUrl": "Slack incoming webhook URL",
+            "slackUrlHint": "https://hooks.slack.com/services/… Leave empty to disable.",
+            "sendTestSlack": "Send Slack test",
+            "sendTestTelegram": "Send Telegram test",
+            "sendTestNotifierHint": "Save first. Requires a queue worker.",
+            "telegramToken": "Telegram bot token",
+            "telegramTokenHint": "From BotFather, like 123456:ABC… Stored encrypted; leave blank to keep it.",
+            "telegramChatId": "Telegram chat ID",
+            "telegramChatIdHint": "A numeric chat ID (groups start with -100) or a @channel name.",
+            "events": {
+                "finding.new": "A finding that warns or fails and was not in the previous report. Takes the finding's severity.",
+                "finding.resolved": "A finding of the previous report is gone.",
+                "project.worsened": "The worst severity of the latest report is higher than before.",
+                "project.recovered": "The worst severity of the latest report is lower than before.",
+                "project.stale": "A project sent no report within the stale window.",
+                "project.reporting_again": "A stale project sends reports again.",
+                "project.token_changed": "A push token was rotated or revoked."
+            }
         }
     },
     "activityLog": {

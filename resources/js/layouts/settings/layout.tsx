@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/sidebar';
 import { PermissionEnum } from '@/enums/permission-enum';
 import aiSettings from '@/routes/ai-settings';
+import integrationsRoutes from '@/routes/project/integrations';
 import { useCan } from '@/hooks/use-can';
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import { cn, toUrl } from '@/lib/utils';
@@ -79,6 +80,11 @@ export default function SettingsLayout({
               {
                   title: t('settings.layout.authSecurity'),
                   href: editProjectSecurity(),
+                  icon: null,
+              },
+              {
+                  title: t('settings.layout.integrations'),
+                  href: integrationsRoutes.edit.url(),
                   icon: null,
               },
               {

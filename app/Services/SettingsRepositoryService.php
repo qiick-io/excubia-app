@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Ai\Agents\ExcubiaAssistantAgent;
+use App\Enums\AlertEventEnum;
+use App\Enums\SeverityEnum;
 use App\Enums\ThemePresetEnum;
 use App\Models\Setting;
 use Illuminate\Contracts\Encryption\DecryptException;
@@ -27,7 +29,7 @@ class SettingsRepositoryService
 
     public const APPEARANCES = ['system', 'light', 'dark'];
 
-    public const SECRET_KEYS = ['oidc_client_secret'];
+    public const SECRET_KEYS = ['oidc_client_secret', 'webhook_secret', 'notifier_telegram_bot_token'];
 
     /**
      * Main sidebar modules in their default order: the single source for the sidebar settings
@@ -97,6 +99,15 @@ class SettingsRepositoryService
             'oidc_button_label' => null,
             'oidc_jit_provisioning' => false,
             'ai_enabled_tools' => null,
+            'webhook_url' => null,
+            'webhook_secret' => null,
+            'notifier_slack_webhook_url' => null,
+            'notifier_telegram_bot_token' => null,
+            'notifier_telegram_chat_id' => null,
+            'notifier_event_types' => null,
+            'notifier_minimum_severity' => SeverityEnum::High->value,
+            'webhook_last_success' => null,
+            'webhook_last_error' => null,
         ];
     }
 
@@ -413,7 +424,59 @@ class SettingsRepositoryService
      */
     public function oidcClientSecret(): ?string
     {
-        $stored = $this->string('oidc_client_secret');
+        return $this->secret('oidc_client_secret');
+    }
+
+    public function webhookUrl(): ?string
+    {
+        return $this->string('webhook_url');
+    }
+
+    public function webhookSecret(): ?string
+    {
+        return $this->secret('webhook_secret');
+    }
+
+    public function slackWebhookUrl(): ?string
+    {
+        return $this->string('notifier_slack_webhook_url');
+    }
+
+    public function telegramBotToken(): ?string
+    {
+        return $this->secret('notifier_telegram_bot_token');
+    }
+
+    public function telegramChatId(): ?string
+    {
+        return $this->string('notifier_telegram_chat_id');
+    }
+
+    /**
+     * Events the Slack / Telegram notifiers send; every event until the setting is saved.
+     *
+     * @return list<string>
+     */
+    public function notifierEventTypes(): array
+    {
+        $value = $this->all()['notifier_event_types'];
+        $names = AlertEventEnum::selectableValues();
+
+        return is_array($value) ? array_values(array_intersect($names, $value)) : $names;
+    }
+
+    /** Alerts below this severity are not sent to Slack or Telegram. */
+    public function notifierMinimumSeverity(): SeverityEnum
+    {
+        return SeverityEnum::tryFrom((string) $this->all()['notifier_minimum_severity']) ?? SeverityEnum::High;
+    }
+
+    /**
+     * A decrypted secret setting, or null when it is missing or unreadable.
+     */
+    private function secret(string $key): ?string
+    {
+        $stored = $this->string($key);
 
         if ($stored === null) {
             return null;

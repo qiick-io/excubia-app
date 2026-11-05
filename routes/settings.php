@@ -6,6 +6,7 @@ use App\Http\Controllers\Settings\AppearanceSidebarSettingsController;
 use App\Http\Controllers\Settings\LocaleController;
 use App\Http\Controllers\Settings\PerformanceSettingsController;
 use App\Http\Controllers\Settings\ProfileController;
+use App\Http\Controllers\Settings\ProjectIntegrationsSettingsController;
 use App\Http\Controllers\Settings\ProjectLocalizationSettingsController;
 use App\Http\Controllers\Settings\ProjectSecuritySettingsController;
 use App\Http\Controllers\Settings\ProjectSettingsController;
@@ -49,6 +50,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::get('settings/appearance/sidebar', [AppearanceSidebarSettingsController::class, 'edit'])->name('appearance.sidebar.edit');
         Route::put('settings/appearance/sidebar', [AppearanceSidebarSettingsController::class, 'update'])->name('appearance.sidebar.update');
+
+        Route::get('settings/project/integrations', [ProjectIntegrationsSettingsController::class, 'edit'])->name('project.integrations.edit');
+        Route::put('settings/project/integrations', [ProjectIntegrationsSettingsController::class, 'update'])->name('project.integrations.update');
+        Route::post('settings/project/integrations/test/{channel}', [ProjectIntegrationsSettingsController::class, 'sendTest'])
+            ->whereIn('channel', ['webhook', 'slack', 'telegram'])
+            ->middleware('throttle:10,1')
+            ->name('project.integrations.test');
 
         Route::get('settings/ai', [AiSettingsController::class, 'edit'])->name('ai-settings.edit');
         Route::put('settings/ai', [AiSettingsController::class, 'update'])->name('ai-settings.update');
