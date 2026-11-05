@@ -570,7 +570,9 @@
             "overview": "Overview",
             "findings": "Findings",
             "plan": "Upgrade plan",
-            "history": "History"
+            "history": "History",
+            "runtime": "Runtime",
+            "exceptions": "Exceptions"
         },
         "support": {
             "supported": "Supported",
@@ -682,5 +684,74 @@
         "copyPrompt": "Copy prompt for your AI assistant",
         "copyPromptForSelected": "Copy prompt ({{count}})",
         "select": "Select {{subject}}"
+    },
+    "runtime": {
+        "emptyTitle": "No runtime data yet",
+        "emptyDescription": "Turn on runtime monitoring in the project's excubia.json; excubia:push-runtime then sends per-minute aggregates every minute.",
+        "guide": "Runtime monitoring guide",
+        "requests": "Requests",
+        "errors": "Server errors (5xx)",
+        "errorRate": "{{rate}}% of requests",
+        "averageResponse": "Average response",
+        "slowestResponse": "Slowest response",
+        "allRoutes": "All routes",
+        "lastHours": "Last {{count}} hours",
+        "requestsPerHour": "Requests per hour",
+        "requestsPerHourDescription": "Successful requests and server errors (5xx), last 24 hours.",
+        "successful": "Successful",
+        "serverErrors": "5xx",
+        "chartLabel": "Stacked bar chart of requests per hour: {{count}} requests, {{errors}} server errors in the last 24 hours.",
+        "routes": "Routes",
+        "outgoingHttp": "Outgoing HTTP",
+        "slowQueries": "Slow queries",
+        "jobs": "Jobs",
+        "scheduledTasks": "Scheduled tasks",
+        "noData": "No data in the last 24 hours.",
+        "name": "Name",
+        "count": "Count",
+        "average": "Average",
+        "max": "Max",
+        "outcome": {
+            "processed": "Processed",
+            "failed": "Failed",
+            "finished": "Finished",
+            "skipped": "Skipped"
+        }
+    },
+    "exceptions": {
+        "emptyTitle": "No exceptions",
+        "emptyDescription": "Turn on exception capture in the project's excubia.json to group its exceptions here, masked before they leave the project.",
+        "guide": "Exception capture guide",
+        "search": "Search exceptions…",
+        "statusFilter": "Status",
+        "status": {
+            "open": "Open",
+            "resolved": "Resolved",
+            "ignored": "Ignored",
+            "all": "All"
+        },
+        "noMatchTitle": "No exceptions match",
+        "noMatchDescription": "Try another search or status.",
+        "exception": "Exception",
+        "context": "Where",
+        "environment": "Environment",
+        "count": "Count",
+        "lastSeen": "Last seen",
+        "statusLabel": "Status",
+        "kind": {
+            "request": "Request",
+            "job": "Job",
+            "command": "Command",
+            "unknown": "Unknown"
+        },
+        "summary": "{{count}} occurrences in {{environment}}, first {{first}}, last {{last}}",
+        "message": "Message (masked)",
+        "causedBy": "Caused by",
+        "stack": "Stack",
+        "internal": "[internal]",
+        "stackHint": "Innermost first; project code highlighted. Paths are relative and arguments are never sent.",
+        "resolve": "Resolve",
+        "ignore": "Ignore",
+        "reopen": "Reopen"
     }
 }

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Models\ExceptionGroup;
+
 /**
  * A ready fix for a finding (#78), built from the report alone with no AI call: a shell command
  * where one exists, and a prompt for the user's own coding assistant. The text holds only safe
@@ -81,6 +83,39 @@ class FixSuggestionService
             'command' => $command,
             'prompt' => $this->prompt($finding, $task),
         ];
+    }
+
+    /**
+     * A prompt to fix an exception group (#26): its class, masked message, where it ran, the
+     * previous exceptions and the in-app frames (relative paths, as the core sends them).
+     *
+     * @return array{command: null, prompt: string}
+     */
+    public function forException(ExceptionGroup $group): array
+    {
+        $frames = array_values(array_filter($group->frames, fn (array $frame): bool => $frame['inApp']));
+        $lines = [
+            "In this Laravel project, fix this exception reported by Excubia ({$group->count} occurrences in {$group->environment}, {$group->context_kind} `{$group->context_name}`):",
+            "{$group->class}: {$group->message}",
+        ];
+
+        if ($group->previous !== []) {
+            $lines[] = 'Caused by: '.implode(' ← ', $group->previous);
+        }
+
+        if ($frames !== []) {
+            $lines[] = '';
+            $lines[] = 'Stack (project code, innermost first):';
+
+            foreach (array_slice($frames, 0, 10) as $frame) {
+                $lines[] = '- '.($frame['file'] ?? '?').($frame['line'] !== null ? ':'.$frame['line'] : '').($frame['function'] !== null ? ' in '.$frame['function'] : '');
+            }
+        }
+
+        $lines[] = '';
+        $lines[] = 'Find the cause, fix it with the smallest change, add a test that reproduces it, run the test suite, and list what you changed. Placeholders like [email] or [number] are masked values.';
+
+        return ['command' => null, 'prompt' => implode("\n", $lines)];
     }
 
     /**

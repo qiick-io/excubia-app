@@ -50,6 +50,7 @@ it('maps the built-in roles to their default permissions', function (RoleEnum $r
         PermissionEnum::GroupsManage,
         PermissionEnum::ActivityView,
         PermissionEnum::AiUse,
+        PermissionEnum::ExceptionsManage,
     ]],
     'reader' => [RoleEnum::Reader, [PermissionEnum::ProjectsView]],
 ]);

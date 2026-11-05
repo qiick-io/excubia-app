@@ -19,6 +19,7 @@ enum PermissionEnum: string
     case ActivityView = 'activity.view';
     case JobsManage = 'jobs.manage';
     case AiUse = 'ai.use';
+    case ExceptionsManage = 'exceptions.manage';
 
     /**
      * @return list<string>

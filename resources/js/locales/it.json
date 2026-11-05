@@ -570,7 +570,9 @@
             "overview": "Panoramica",
             "findings": "Problemi",
             "plan": "Piano di upgrade",
-            "history": "Storico"
+            "history": "Storico",
+            "runtime": "Runtime",
+            "exceptions": "Eccezioni"
         },
         "support": {
             "supported": "Supportato",
@@ -682,5 +684,74 @@
         "copyPrompt": "Copia prompt per il tuo assistente AI",
         "copyPromptForSelected": "Copia prompt ({{count}})",
         "select": "Seleziona {{subject}}"
+    },
+    "runtime": {
+        "emptyTitle": "Ancora nessun dato di runtime",
+        "emptyDescription": "Attiva il monitoraggio runtime nell'excubia.json del progetto; excubia:push-runtime invierà gli aggregati al minuto ogni minuto.",
+        "guide": "Guida al monitoraggio runtime",
+        "requests": "Richieste",
+        "errors": "Errori server (5xx)",
+        "errorRate": "{{rate}}% delle richieste",
+        "averageResponse": "Risposta media",
+        "slowestResponse": "Risposta più lenta",
+        "allRoutes": "Tutte le route",
+        "lastHours": "Ultime {{count}} ore",
+        "requestsPerHour": "Richieste per ora",
+        "requestsPerHourDescription": "Richieste riuscite ed errori server (5xx), ultime 24 ore.",
+        "successful": "Riuscite",
+        "serverErrors": "5xx",
+        "chartLabel": "Grafico a barre impilate delle richieste per ora: {{count}} richieste, {{errors}} errori server nelle ultime 24 ore.",
+        "routes": "Route",
+        "outgoingHttp": "HTTP in uscita",
+        "slowQueries": "Query lente",
+        "jobs": "Job",
+        "scheduledTasks": "Task schedulati",
+        "noData": "Nessun dato nelle ultime 24 ore.",
+        "name": "Nome",
+        "count": "Conteggio",
+        "average": "Media",
+        "max": "Max",
+        "outcome": {
+            "processed": "Eseguiti",
+            "failed": "Falliti",
+            "finished": "Completati",
+            "skipped": "Saltati"
+        }
+    },
+    "exceptions": {
+        "emptyTitle": "Nessuna eccezione",
+        "emptyDescription": "Attiva la cattura delle eccezioni nell'excubia.json del progetto per raggrupparle qui, mascherate prima di lasciare il progetto.",
+        "guide": "Guida alla cattura delle eccezioni",
+        "search": "Cerca eccezioni…",
+        "statusFilter": "Stato",
+        "status": {
+            "open": "Aperte",
+            "resolved": "Risolte",
+            "ignored": "Ignorate",
+            "all": "Tutte"
+        },
+        "noMatchTitle": "Nessuna eccezione corrisponde",
+        "noMatchDescription": "Prova un'altra ricerca o un altro stato.",
+        "exception": "Eccezione",
+        "context": "Dove",
+        "environment": "Ambiente",
+        "count": "Occorrenze",
+        "lastSeen": "Ultima volta",
+        "statusLabel": "Stato",
+        "kind": {
+            "request": "Richiesta",
+            "job": "Job",
+            "command": "Comando",
+            "unknown": "Sconosciuto"
+        },
+        "summary": "{{count}} occorrenze in {{environment}}, prima {{first}}, ultima {{last}}",
+        "message": "Messaggio (mascherato)",
+        "causedBy": "Causata da",
+        "stack": "Stack",
+        "internal": "[interno]",
+        "stackHint": "Dal più interno; il codice del progetto è evidenziato. I percorsi sono relativi e gli argomenti non vengono mai inviati.",
+        "resolve": "Risolvi",
+        "ignore": "Ignora",
+        "reopen": "Riapri"
     }
 }

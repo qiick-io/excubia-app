@@ -14,22 +14,31 @@ import type { Severity } from '@/types';
 
 export type SeverityChartPoint = { label: string } & Record<Severity, number>;
 
+export type ChartSeries = {
+    key: string;
+    label: string;
+    /** A CSS colour, always a theme variable. */
+    color: string;
+};
+
 /**
- * Findings per severity as stacked bars, one bar per point (a report, a day). Styled like the
- * externa-core dashboard charts: dashed horizontal grid, small axis ticks, theme tokens. The
- * severity colours are the ordinal red ramp in app.css; the legend and the tooltip name every
- * severity, so colour is never the only signal.
+ * Stacked bars, one bar per point, styled like the externa-core dashboard charts: dashed
+ * horizontal grid, small axis ticks, theme tokens for grid, axes and tooltip. The legend keeps
+ * the series order and its text stays in a text token; the tooltip names every series, so
+ * colour is never the only signal.
  */
-export function SeverityStackedBarChart({
+export function StackedBarChart({
     data,
+    series,
     label,
 }: {
-    data: SeverityChartPoint[];
+    data: ({ label: string } & Record<string, number | string>)[];
+    series: ChartSeries[];
     /** Accessible summary of what the chart shows. */
     label: string;
 }) {
-    const { t } = useTranslation();
-    const lastSeverity = SEVERITIES[SEVERITIES.length - 1];
+    const order = series.map((item) => item.key);
+    const last = order[order.length - 1];
 
     return (
         <div role="img" aria-label={label} className="h-full w-full">
@@ -56,7 +65,7 @@ export function SeverityStackedBarChart({
                             fill: 'var(--color-muted-foreground)',
                         }}
                         stroke="var(--color-border)"
-                        width={32}
+                        width={40}
                     />
                     <Tooltip
                         cursor={{ fill: 'var(--color-accent)', opacity: 0.5 }}
@@ -74,36 +83,56 @@ export function SeverityStackedBarChart({
                     <Legend
                         iconType="square"
                         iconSize={10}
-                        // Worst first, like the badges; legend text stays in a text token.
                         itemSorter={(item) =>
-                            SEVERITIES.indexOf(item.dataKey as Severity)
+                            order.indexOf(String(item.dataKey))
                         }
                         formatter={(value) => (
                             <span className="text-muted-foreground">
                                 {value}
                             </span>
                         )}
-                        wrapperStyle={{
-                            fontSize: 12,
-                            color: 'var(--color-muted-foreground)',
-                        }}
+                        wrapperStyle={{ fontSize: 12 }}
                     />
-                    {SEVERITIES.map((severity) => (
+                    {series.map((item) => (
                         <Bar
-                            key={severity}
-                            dataKey={severity}
-                            name={t(`report.severity.${severity}`)}
-                            stackId="severity"
-                            fill={`var(--severity-chart-${severity})`}
+                            key={item.key}
+                            dataKey={item.key}
+                            name={item.label}
+                            stackId="stack"
+                            fill={item.color}
                             stroke="var(--color-card)"
                             strokeWidth={1}
-                            radius={
-                                severity === lastSeverity ? [4, 4, 0, 0] : 0
-                            }
+                            radius={item.key === last ? [4, 4, 0, 0] : 0}
                         />
                     ))}
                 </BarChart>
             </ResponsiveContainer>
         </div>
+    );
+}
+
+/**
+ * Findings per severity as stacked bars, one bar per point (a report, a day). The severity
+ * colours are the ordinal red ramp in app.css (`--severity-chart-*`).
+ */
+export function SeverityStackedBarChart({
+    data,
+    label,
+}: {
+    data: SeverityChartPoint[];
+    label: string;
+}) {
+    const { t } = useTranslation();
+
+    return (
+        <StackedBarChart
+            data={data}
+            label={label}
+            series={SEVERITIES.map((severity) => ({
+                key: severity,
+                label: t(`report.severity.${severity}`),
+                color: `var(--severity-chart-${severity})`,
+            }))}
+        />
     );
 }
