@@ -482,24 +482,56 @@
         "lastReport": "Ultimo report {{date}}",
         "noReports": "Nessun report",
         "stale": "Fermo",
-        "sort": {
-            "label": "Ordina per",
-            "severity": "Severità peggiore",
-            "lastReport": "Ultimo report"
-        },
-        "view": {
-            "cards": "Schede",
-            "table": "Tabella"
-        },
         "trend": {
-            "title": "Problemi, ultimi 30 giorni",
-            "description": "L'ultimo report di ogni progetto per ciascun giorno, sommato per severità.",
-            "label": "Grafico a barre impilate dei problemi giornalieri per severità negli ultimi 30 giorni; oggi {{total}} problemi."
+            "title": "Problemi nel tempo",
+            "description": "L'ultimo report di ogni progetto per ogni giorno degli ultimi {{count}} giorni, per severità.",
+            "label": "Grafico a barre impilate dei problemi giornalieri per severità negli ultimi {{count}} giorni; oggi {{total}} problemi."
         },
-        "totals": {
-            "title": "Problemi aperti",
-            "description": "Ultimi report di {{count}} progetti.",
-            "total": "Totale"
+        "scope": {
+            "project": "Progetto",
+            "allProjects": "Tutti i progetti ({{count}})",
+            "openProject": "Apri progetto"
+        },
+        "period": {
+            "label": "Periodo",
+            "days": "{{count}}g",
+            "previous": "rispetto ai {{count}} giorni precedenti"
+        },
+        "kpi": {
+            "findings": "Problemi aperti",
+            "atRisk": "Progetti a rischio",
+            "atRiskDescription": "Problema più grave critico o alto",
+            "endOfSupport": "Fine supporto",
+            "endOfSupportDescription": "Runtime scadute o in scadenza entro 180 giorni",
+            "stale": "Senza report",
+            "staleDescription": "Su {{total}} progetti, oltre la soglia impostata",
+            "up": "+{{count}}",
+            "down": "−{{count}}",
+            "unchanged": "Invariato"
+        },
+        "topIssues": {
+            "title": "Problemi principali",
+            "description": "{{shown}} di {{total}} problemi, raggruppati fra i progetti, dal più grave.",
+            "issue": "Problema",
+            "projects": "Progetti",
+            "emptyTitle": "Nessun problema aperto",
+            "emptyDescription": "Gli ultimi report non hanno problemi che avvisano o falliscono."
+        },
+        "endOfSupport": {
+            "title": "Fine supporto",
+            "description": "PHP, Laravel e Node scaduti o in scadenza entro un anno.",
+            "emptyTitle": "Niente in scadenza",
+            "emptyDescription": "Nessuna runtime termina il supporto di sicurezza entro un anno."
+        },
+        "configuration": {
+            "title": "Configurazione",
+            "description": "Debug, cache, migration, job falliti, scheduler e manutenzione.",
+            "emptyTitle": "Configurazione a posto",
+            "emptyDescription": "Nessun controllo di configurazione avvisa o fallisce, oppure i progetti usano un core precedente alla 1.0."
+        },
+        "projects": {
+            "title": "Progetti",
+            "description": "Dal più grave."
         }
     },
     "report": {

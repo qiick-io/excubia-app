@@ -482,24 +482,56 @@
         "lastReport": "Last report {{date}}",
         "noReports": "No reports yet",
         "stale": "Stale",
-        "sort": {
-            "label": "Sort by",
-            "severity": "Worst severity",
-            "lastReport": "Last report"
-        },
-        "view": {
-            "cards": "Cards",
-            "table": "Table"
-        },
         "trend": {
-            "title": "Findings, last 30 days",
-            "description": "Every project's latest report on each day, summed per severity.",
-            "label": "Stacked bar chart of daily findings per severity over the last 30 days; {{total}} findings today."
+            "title": "Findings over time",
+            "description": "Every project's latest report on each day of the last {{count}} days, per severity.",
+            "label": "Stacked bar chart of daily findings per severity over the last {{count}} days; {{total}} findings today."
         },
-        "totals": {
-            "title": "Open findings",
-            "description": "Latest reports of {{count}} projects.",
-            "total": "Total"
+        "scope": {
+            "project": "Project",
+            "allProjects": "All projects ({{count}})",
+            "openProject": "Open project"
+        },
+        "period": {
+            "label": "Period",
+            "days": "{{count}}d",
+            "previous": "vs previous {{count}} days"
+        },
+        "kpi": {
+            "findings": "Open findings",
+            "atRisk": "Projects at risk",
+            "atRiskDescription": "Worst finding critical or high",
+            "endOfSupport": "End of support",
+            "endOfSupportDescription": "Runtimes ended or ending within 180 days",
+            "stale": "Not reporting",
+            "staleDescription": "Of {{total}} projects, past the stale setting",
+            "up": "+{{count}}",
+            "down": "−{{count}}",
+            "unchanged": "No change"
+        },
+        "topIssues": {
+            "title": "Top issues",
+            "description": "{{shown}} of {{total}} issues, grouped across projects, worst first.",
+            "issue": "Issue",
+            "projects": "Projects",
+            "emptyTitle": "No open issues",
+            "emptyDescription": "The latest reports have no finding that warns or fails."
+        },
+        "endOfSupport": {
+            "title": "End of support",
+            "description": "PHP, Laravel and Node ended or ending within a year.",
+            "emptyTitle": "Nothing ending soon",
+            "emptyDescription": "No runtime reaches the end of security support within a year."
+        },
+        "configuration": {
+            "title": "Configuration",
+            "description": "Debug mode, caches, migrations, failed jobs, scheduler and maintenance checks.",
+            "emptyTitle": "Configuration is fine",
+            "emptyDescription": "No configuration check warns or fails, or the projects run a core before 1.0."
+        },
+        "projects": {
+            "title": "Projects",
+            "description": "Worst first."
         }
     },
     "report": {

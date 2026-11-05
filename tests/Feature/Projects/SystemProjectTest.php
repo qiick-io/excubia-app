@@ -137,6 +137,7 @@ it('stores the local report on the system project with no network call', functio
     expect($report)->not->toBeNull()
         ->and($report->project_id)->toBe($project->id)
         ->and($report->report['schemaVersion'])->toBe(1)
+        ->and(collect($report->report['checks'])->firstWhere('checkId', 'laravel-pending-migrations')['status'] ?? null)->not->toBe('skipped')
         ->and($project->fresh()->last_report_at)->not->toBeNull();
 
     $this->artisan('excubia:system-report')->assertSuccessful();

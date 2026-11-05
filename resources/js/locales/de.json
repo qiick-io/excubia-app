@@ -482,24 +482,56 @@
         "lastReport": "Letzter Bericht {{date}}",
         "noReports": "Noch keine Berichte",
         "stale": "Veraltet",
-        "sort": {
-            "label": "Sortieren nach",
-            "severity": "Schwerster Befund",
-            "lastReport": "Letzter Bericht"
-        },
-        "view": {
-            "cards": "Karten",
-            "table": "Tabelle"
-        },
         "trend": {
-            "title": "Befunde, letzte 30 Tage",
-            "description": "Der letzte Bericht jedes Projekts pro Tag, nach Schweregrad summiert.",
-            "label": "Gestapeltes Balkendiagramm der täglichen Befunde nach Schweregrad der letzten 30 Tage; heute {{total}} Befunde."
+            "title": "Befunde im Zeitverlauf",
+            "description": "Der letzte Bericht jedes Projekts an jedem der letzten {{count}} Tage, nach Schweregrad.",
+            "label": "Gestapeltes Balkendiagramm der täglichen Befunde nach Schweregrad der letzten {{count}} Tage; heute {{total}} Befunde."
         },
-        "totals": {
-            "title": "Offene Befunde",
-            "description": "Letzte Berichte von {{count}} Projekten.",
-            "total": "Gesamt"
+        "scope": {
+            "project": "Projekt",
+            "allProjects": "Alle Projekte ({{count}})",
+            "openProject": "Projekt öffnen"
+        },
+        "period": {
+            "label": "Zeitraum",
+            "days": "{{count}} T",
+            "previous": "ggü. den vorherigen {{count}} Tagen"
+        },
+        "kpi": {
+            "findings": "Offene Befunde",
+            "atRisk": "Gefährdete Projekte",
+            "atRiskDescription": "Schwerster Befund kritisch oder hoch",
+            "endOfSupport": "Supportende",
+            "endOfSupportDescription": "Laufzeiten beendet oder endend innerhalb von 180 Tagen",
+            "stale": "Ohne Bericht",
+            "staleDescription": "Von {{total}} Projekten, über der eingestellten Schwelle",
+            "up": "+{{count}}",
+            "down": "−{{count}}",
+            "unchanged": "Unverändert"
+        },
+        "topIssues": {
+            "title": "Wichtigste Befunde",
+            "description": "{{shown}} von {{total}} Befunden, projektübergreifend gruppiert, die schwersten zuerst.",
+            "issue": "Befund",
+            "projects": "Projekte",
+            "emptyTitle": "Keine offenen Befunde",
+            "emptyDescription": "Die letzten Berichte haben keine Befunde mit Warnung oder Fehler."
+        },
+        "endOfSupport": {
+            "title": "Supportende",
+            "description": "PHP, Laravel und Node beendet oder endend innerhalb eines Jahres.",
+            "emptyTitle": "Nichts endet bald",
+            "emptyDescription": "Keine Laufzeit erreicht das Ende des Sicherheitssupports innerhalb eines Jahres."
+        },
+        "configuration": {
+            "title": "Konfiguration",
+            "description": "Debug-Modus, Caches, Migrationen, fehlgeschlagene Jobs, Scheduler und Wartungsmodus.",
+            "emptyTitle": "Konfiguration in Ordnung",
+            "emptyDescription": "Keine Konfigurationsprüfung warnt oder schlägt fehl, oder die Projekte nutzen einen Core vor 1.0."
+        },
+        "projects": {
+            "title": "Projekte",
+            "description": "Die schwersten zuerst."
         }
     },
     "report": {
