@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PageEmptyState } from '@/components/admin/page-empty-state';
 import { StackedBarChart } from '@/components/reports/severity-chart';
-import { StatCard } from '@/components/reports/stat-card';
+import { StatCard } from '@/components/stat-card';
 import {
     Card,
     CardContent,
