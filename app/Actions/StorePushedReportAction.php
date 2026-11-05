@@ -33,12 +33,14 @@ class StorePushedReportAction
             return DB::transaction(function () use ($project, $batchId, $sentAt, $report): HealthReport {
                 $receivedAt = Date::now();
 
-                // ponytail: the report has no generatedAt yet (qiick-io/excubia-core#92), so the
+                // Reports from excubia-core before 1.0.0-beta.1 have no generatedAt: the
                 // envelope's sentAt (built right after the scan) stands in for it.
+                $generatedAt = is_string($report['generatedAt'] ?? null) ? Date::parse($report['generatedAt']) : $sentAt;
+
                 $healthReport = $project->healthReports()->create([
                     'batch_id' => $batchId,
                     'received_at' => $receivedAt,
-                    'generated_at' => $sentAt,
+                    'generated_at' => $generatedAt,
                     'report' => $report,
                     ...$this->summary($report),
                 ]);
