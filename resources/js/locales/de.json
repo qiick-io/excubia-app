@@ -199,7 +199,17 @@
             "passwordDescription": "Verwenden Sie ein langes, zufälliges Passwort, um Ihr Konto zu schützen",
             "currentPassword": "Aktuelles Passwort",
             "newPassword": "Neues Passwort",
-            "savePassword": "Passwort speichern"
+            "savePassword": "Passwort speichern",
+            "passkeysTitle": "Passkeys",
+            "passkeysDescription": "Melden Sie sich ohne Passwort mit einem Geräte-Passkey an. Ein Passkey erfüllt auch die Zwei-Faktor-Anforderung des Projekts.",
+            "passkeysEmpty": "Noch keine Passkeys registriert.",
+            "passkeyName": "Passkey-Name",
+            "passkeyNamePlaceholder": "z. B. MacBook Pro",
+            "passkeyCreated": "Hinzugefügt {{date}}",
+            "addPasskey": "Passkey hinzufügen",
+            "deletePasskey": "Löschen",
+            "passkeysUnsupported": "Passkeys werden in diesem Browser nicht unterstützt.",
+            "passkeysNeedHttps": "Passkeys benötigen HTTPS."
         },
         "project": {
             "breadcrumb": "Projekteinstellungen",

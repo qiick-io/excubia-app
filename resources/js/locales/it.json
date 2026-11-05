@@ -199,7 +199,17 @@
             "passwordDescription": "Usa una password lunga e casuale per mantenere l'account al sicuro",
             "currentPassword": "Password attuale",
             "newPassword": "Nuova password",
-            "savePassword": "Salva password"
+            "savePassword": "Salva password",
+            "passkeysTitle": "Passkey",
+            "passkeysDescription": "Accedi senza password con una passkey del dispositivo. Una passkey soddisfa anche il requisito di autenticazione a due fattori del progetto.",
+            "passkeysEmpty": "Nessuna passkey registrata.",
+            "passkeyName": "Nome passkey",
+            "passkeyNamePlaceholder": "es. MacBook Pro",
+            "passkeyCreated": "Aggiunta {{date}}",
+            "addPasskey": "Aggiungi passkey",
+            "deletePasskey": "Elimina",
+            "passkeysUnsupported": "Le passkey non sono supportate in questo browser.",
+            "passkeysNeedHttps": "Le passkey richiedono HTTPS."
         },
         "project": {
             "breadcrumb": "Impostazioni progetto",

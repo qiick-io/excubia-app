@@ -199,7 +199,17 @@
             "passwordDescription": "Ensure your account is using a long, random password to stay secure",
             "currentPassword": "Current password",
             "newPassword": "New password",
-            "savePassword": "Save password"
+            "savePassword": "Save password",
+            "passkeysTitle": "Passkeys",
+            "passkeysDescription": "Sign in without a password using a device passkey. A passkey also satisfies the project two-factor requirement.",
+            "passkeysEmpty": "No passkeys registered yet.",
+            "passkeyName": "Passkey name",
+            "passkeyNamePlaceholder": "e.g. MacBook Pro",
+            "passkeyCreated": "Added {{date}}",
+            "addPasskey": "Add passkey",
+            "deletePasskey": "Delete",
+            "passkeysUnsupported": "Passkeys are not supported in this browser.",
+            "passkeysNeedHttps": "Passkeys need HTTPS."
         },
         "project": {
             "breadcrumb": "Project settings",
