@@ -37,6 +37,7 @@ class StorePushedReportRequest extends FormRequest
             'sentAt' => ['required', 'date'],
             'report' => ['required', 'array'],
             'report.schemaVersion' => ['required', 'integer', Rule::in([1])],
+            'report.generatedAt' => ['sometimes', 'nullable', 'date'],
             'report.checks' => ['present', 'list'],
             'report.checks.*' => ['array'],
             'report.checks.*.checkId' => ['required', 'string'],
