@@ -183,7 +183,8 @@
             "authSecurity": "Authentifizierung & Sicherheit",
             "sidebar": "Seitenleiste",
             "sectionAi": "KI",
-            "aiTools": "Werkzeuge"
+            "aiTools": "Werkzeuge",
+            "integrations": "Integrationen"
         },
         "profile": {
             "breadcrumb": "Profileinstellungen",
@@ -383,6 +384,47 @@
             "modelLabel": "Modell",
             "envHint": "Anbieter, Modell und Schlüssel werden in der .env gesetzt (AI_DEFAULT_PROVIDER und die Schlüssel des Anbieters). Daten an einen Cloud-Anbieter verlassen deinen Server.",
             "readOnly": "schreibgeschützt"
+        },
+        "integrations": {
+            "breadcrumb": "Integrationen",
+            "head": "Integrationen",
+            "webhookTitle": "Ausgehende Webhooks",
+            "webhookDescription": "Signierte Warnungen an deinen Endpunkt senden, wenn sich ein Projekt ändert",
+            "webhookUrl": "Webhook-URL",
+            "webhookUrlHint": "Nur HTTPS. Leer lassen zum Deaktivieren. Erhält alle Ereignisse. Benötigt einen Queue-Worker.",
+            "webhookSecret": "Webhook-Geheimnis",
+            "webhookSecretHint": "Für die HMAC-SHA256-Signatur (X-Excubia-Signature von \"timestamp.body\"). Leer lassen, um das aktuelle zu behalten.",
+            "generateSecret": "Geheimnis erzeugen",
+            "sendTest": "Testereignis senden",
+            "sendTestHint": "Erst URL und Geheimnis speichern, dann einen signierten Ping einreihen. Benötigt einen Queue-Worker.",
+            "deliveryTitle": "Zustellstatus",
+            "lastSuccess": "Letzte erfolgreiche Zustellung",
+            "lastError": "Letzte fehlgeschlagene Zustellung",
+            "deliveryNone": "Noch keine.",
+            "notifiersTitle": "Ausgehende Benachrichtigungen (Slack & Telegram)",
+            "notifiersDescription": "Optionale lesbare Warnungen für die gewählten Ereignisse. Nur ausgehend.",
+            "eventTypes": "Bei diesen Ereignissen benachrichtigen",
+            "eventTypesHint": "Slack und Telegram senden nur diese Ereignisse; der Webhook erhält alle. Der Test funktioniert immer.",
+            "minimumSeverity": "Mindestschweregrad",
+            "minimumSeverityHint": "Slack und Telegram überspringen Warnungen unter diesem Schweregrad.",
+            "slackUrl": "Slack-Incoming-Webhook-URL",
+            "slackUrlHint": "https://hooks.slack.com/services/… Leer lassen zum Deaktivieren.",
+            "sendTestSlack": "Slack-Test senden",
+            "sendTestTelegram": "Telegram-Test senden",
+            "sendTestNotifierHint": "Erst speichern. Benötigt einen Queue-Worker.",
+            "telegramToken": "Telegram-Bot-Token",
+            "telegramTokenHint": "Von BotFather, z. B. 123456:ABC… Verschlüsselt gespeichert; leer lassen, um ihn zu behalten.",
+            "telegramChatId": "Telegram-Chat-ID",
+            "telegramChatIdHint": "Eine numerische Chat-ID (Gruppen beginnen mit -100) oder ein @Kanal.",
+            "events": {
+                "finding.new": "Ein Befund, der warnt oder fehlschlägt und im vorherigen Bericht fehlte. Hat den Schweregrad des Befunds.",
+                "finding.resolved": "Ein Befund des vorherigen Berichts ist verschwunden.",
+                "project.worsened": "Der höchste Schweregrad des letzten Berichts ist höher als zuvor.",
+                "project.recovered": "Der höchste Schweregrad des letzten Berichts ist niedriger als zuvor.",
+                "project.stale": "Ein Projekt hat im Veraltungsfenster keinen Bericht gesendet.",
+                "project.reporting_again": "Ein veraltetes Projekt sendet wieder Berichte.",
+                "project.token_changed": "Ein Push-Token wurde erneuert oder widerrufen."
+            }
         }
     },
     "activityLog": {

@@ -7,6 +7,7 @@ namespace App\Actions;
 use App\Enums\SeverityEnum;
 use App\Models\HealthReport;
 use App\Models\Project;
+use App\Services\ReportAlertsService;
 use Carbon\CarbonInterface;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\Date;
@@ -18,6 +19,8 @@ use Illuminate\Support\Facades\DB;
  */
 class StorePushedReportAction
 {
+    public function __construct(private ReportAlertsService $reportAlerts) {}
+
     /**
      * @param  array<string, mixed>  $report  excubia-core JSON report, already validated
      */
@@ -37,6 +40,9 @@ class StorePushedReportAction
                 // envelope's sentAt (built right after the scan) stands in for it.
                 $generatedAt = is_string($report['generatedAt'] ?? null) ? Date::parse($report['generatedAt']) : $sentAt;
 
+                $previous = $project->healthReports()->latest('received_at')->latest('id')->first();
+                $wasStale = $project->stale_alerted_at !== null;
+
                 $healthReport = $project->healthReports()->create([
                     'batch_id' => $batchId,
                     'received_at' => $receivedAt,
@@ -45,7 +51,8 @@ class StorePushedReportAction
                     ...$this->summary($report),
                 ]);
 
-                $project->forceFill(['last_report_at' => $receivedAt])->save();
+                $project->forceFill(['last_report_at' => $receivedAt, 'stale_alerted_at' => null])->save();
+                $this->reportAlerts->afterReport($project, $healthReport, $previous, $wasStale);
 
                 return $healthReport;
             });

@@ -27,3 +27,6 @@ Schedule::command('excubia:system-report')->daily();
 
 // Excubia's own runtime and exceptions, moved from the core's buffers to the system project (#84).
 Schedule::command('excubia:system-telemetry')->everyMinute()->when(fn (): bool => (bool) config('excubia.self_monitoring'));
+
+// Alerts (#22): one project.stale per project that stopped reporting.
+Schedule::command('excubia:alert-stale')->hourly();

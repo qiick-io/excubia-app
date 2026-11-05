@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Actions;
 
+use App\Enums\AlertEventEnum;
 use App\Models\Project;
+use App\Services\AlertDispatcherService;
 use Illuminate\Support\Str;
 
 /**
@@ -23,6 +25,7 @@ class RotateProjectTokenAction
         $project->forceFill(['push_token_hash' => hash('sha256', $token)])->save();
 
         activity()->performedOn($project)->event('token_rotated')->log('Push token rotated');
+        app(AlertDispatcherService::class)->dispatch(AlertEventEnum::ProjectTokenChanged, $project, 'push token rotated', ['change' => 'rotated']);
 
         return $token;
     }

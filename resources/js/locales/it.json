@@ -183,7 +183,8 @@
             "authSecurity": "Autenticazione e sicurezza",
             "sidebar": "Barra laterale",
             "sectionAi": "AI",
-            "aiTools": "Strumenti"
+            "aiTools": "Strumenti",
+            "integrations": "Integrazioni"
         },
         "profile": {
             "breadcrumb": "Impostazioni profilo",
@@ -383,6 +384,47 @@
             "modelLabel": "Modello",
             "envHint": "Provider, modello e chiavi si impostano nel .env (AI_DEFAULT_PROVIDER e le chiavi del provider). I dati inviati a un provider cloud escono dal tuo server.",
             "readOnly": "sola lettura"
+        },
+        "integrations": {
+            "breadcrumb": "Integrazioni",
+            "head": "Integrazioni",
+            "webhookTitle": "Webhook in uscita",
+            "webhookDescription": "Invia avvisi firmati al tuo endpoint quando un progetto cambia",
+            "webhookUrl": "URL del webhook",
+            "webhookUrlHint": "Solo HTTPS. Lascia vuoto per disattivare. Riceve tutti gli eventi. Serve un queue worker.",
+            "webhookSecret": "Segreto del webhook",
+            "webhookSecretHint": "Usato per la firma HMAC-SHA256 (X-Excubia-Signature di \"timestamp.body\"). Lascia vuoto per mantenere quello attuale.",
+            "generateSecret": "Genera segreto",
+            "sendTest": "Invia evento di test",
+            "sendTestHint": "Salva prima URL e segreto, poi metti in coda un ping firmato. Serve un queue worker.",
+            "deliveryTitle": "Stato delle consegne",
+            "lastSuccess": "Ultima consegna riuscita",
+            "lastError": "Ultima consegna fallita",
+            "deliveryNone": "Ancora nessuna.",
+            "notifiersTitle": "Notifiche in uscita (Slack e Telegram)",
+            "notifiersDescription": "Avvisi leggibili, facoltativi, per gli eventi scelti. Solo in uscita.",
+            "eventTypes": "Notifica questi eventi",
+            "eventTypesHint": "Slack e Telegram inviano solo questi eventi; il webhook li riceve tutti. Il test funziona sempre.",
+            "minimumSeverity": "Gravità minima",
+            "minimumSeverityHint": "Slack e Telegram ignorano gli avvisi sotto questa gravità.",
+            "slackUrl": "URL incoming webhook di Slack",
+            "slackUrlHint": "https://hooks.slack.com/services/… Lascia vuoto per disattivare.",
+            "sendTestSlack": "Test Slack",
+            "sendTestTelegram": "Test Telegram",
+            "sendTestNotifierHint": "Salva prima. Serve un queue worker.",
+            "telegramToken": "Token del bot Telegram",
+            "telegramTokenHint": "Da BotFather, come 123456:ABC… Salvato cifrato; lascia vuoto per mantenerlo.",
+            "telegramChatId": "Chat ID Telegram",
+            "telegramChatIdHint": "Un chat ID numerico (i gruppi iniziano con -100) o un nome @canale.",
+            "events": {
+                "finding.new": "Un problema che avvisa o fallisce e non era nel report precedente. Ha la gravità del problema.",
+                "finding.resolved": "Un problema del report precedente non c'è più.",
+                "project.worsened": "La gravità peggiore dell'ultimo report è più alta di prima.",
+                "project.recovered": "La gravità peggiore dell'ultimo report è più bassa di prima.",
+                "project.stale": "Un progetto non ha inviato report entro la finestra di aggiornamento.",
+                "project.reporting_again": "Un progetto non aggiornato torna a inviare report.",
+                "project.token_changed": "Un token di push è stato rigenerato o revocato."
+            }
         }
     },
     "activityLog": {
