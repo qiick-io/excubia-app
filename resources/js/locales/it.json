@@ -96,7 +96,8 @@
         "toggleSidebar": "Attiva/disattiva barra laterale",
         "loading": "Caricamento",
         "saving": "Salvataggio",
-        "reorder": "Riordina"
+        "reorder": "Riordina",
+        "selectAll": "Seleziona tutto"
     },
     "auth": {
         "login": {
@@ -672,5 +673,14 @@
             "exception": "Eccezione",
             "actions": "Azioni"
         }
+    },
+    "fix": {
+        "actions": "Fix",
+        "copied": "Copiato negli appunti",
+        "copyFailed": "Impossibile copiare negli appunti",
+        "copyCommand": "Copia comando: {{command}}",
+        "copyPrompt": "Copia prompt per il tuo assistente AI",
+        "copyPromptForSelected": "Copia prompt ({{count}})",
+        "select": "Seleziona {{subject}}"
     }
 }

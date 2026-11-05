@@ -96,7 +96,8 @@
         "toggleSidebar": "Seitenleiste umschalten",
         "loading": "Wird geladen",
         "saving": "Wird gespeichert",
-        "reorder": "Neu ordnen"
+        "reorder": "Neu ordnen",
+        "selectAll": "Alle auswählen"
     },
     "auth": {
         "login": {
@@ -672,5 +673,14 @@
             "exception": "Exception",
             "actions": "Aktionen"
         }
+    },
+    "fix": {
+        "actions": "Fix",
+        "copied": "In die Zwischenablage kopiert",
+        "copyFailed": "Kopieren in die Zwischenablage fehlgeschlagen",
+        "copyCommand": "Befehl kopieren: {{command}}",
+        "copyPrompt": "Prompt für deinen KI-Assistenten kopieren",
+        "copyPromptForSelected": "Prompt kopieren ({{count}})",
+        "select": "{{subject}} auswählen"
     }
 }

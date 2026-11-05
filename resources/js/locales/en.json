@@ -96,7 +96,8 @@
         "toggleSidebar": "Toggle sidebar",
         "loading": "Loading",
         "saving": "Saving",
-        "reorder": "Reorder"
+        "reorder": "Reorder",
+        "selectAll": "Select all"
     },
     "auth": {
         "login": {
@@ -672,5 +673,14 @@
             "exception": "Exception",
             "actions": "Actions"
         }
+    },
+    "fix": {
+        "actions": "Fix",
+        "copied": "Copied to the clipboard",
+        "copyFailed": "Could not copy to the clipboard",
+        "copyCommand": "Copy command: {{command}}",
+        "copyPrompt": "Copy prompt for your AI assistant",
+        "copyPromptForSelected": "Copy prompt ({{count}})",
+        "select": "Select {{subject}}"
     }
 }
