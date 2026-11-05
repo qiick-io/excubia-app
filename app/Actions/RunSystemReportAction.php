@@ -12,13 +12,15 @@ use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Str;
 use Qiick\Excubia\Configuration\ExcubiaConfigurationLoader;
 use Qiick\Excubia\Contracts\HttpClientContract;
+use Qiick\Excubia\Laravel\LaravelPostureService;
 use Qiick\Excubia\Renderers\JsonReportRenderer;
 use Qiick\Excubia\Services\HealthCheckRunnerService;
 
 /**
  * Runs the excubia-core checks on this Excubia install and stores the report on the system
  * project (#70), through the same action as a pushed report: no HTTP push and no token. A data
- * source that is down becomes a skipped check, as with `excubia check`.
+ * source that is down becomes a skipped check, as with `excubia check`. The configuration
+ * (posture) checks read this running app, as `php artisan excubia:check` does.
  */
 class RunSystemReportAction
 {
@@ -40,7 +42,7 @@ class RunSystemReportAction
 
         $configuration = (new ExcubiaConfigurationLoader)->load(null, base_path());
         $result = (new HealthCheckRunnerService($this->httpClient, new DateTimeImmutable('now', new DateTimeZone('UTC'))))
-            ->run(base_path(), $configuration, null, null, false, false);
+            ->run(base_path(), $configuration, null, null, false, false, (new LaravelPostureService)->collect(app()));
 
         /** @var array<string, mixed> $report */
         $report = json_decode((new JsonReportRenderer)->render($result['report']), true, flags: JSON_THROW_ON_ERROR);

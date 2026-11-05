@@ -1,23 +1,21 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import {
-    ArrowDownAZ,
-    ArrowUpAZ,
+    ArrowDownRight,
+    ArrowUpRight,
+    CalendarClock,
+    CircleCheck,
     FolderKanban,
-    LayoutGrid,
-    List,
+    Minus,
     Plus,
-    SearchX,
+    ShieldCheck,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PageEmptyState } from '@/components/admin/page-empty-state';
-import { EmptyStatus } from '@/components/empty-status';
-import { FilterSearch } from '@/components/layout/page-header';
-import { PageLayout, TablePanel } from '@/components/layout/page-layout';
+import { PageLayout } from '@/components/layout/page-layout';
 import {
     RuntimeSupportBadge,
-    runtimeLabel,
+    supportStatus,
 } from '@/components/reports/runtime-support';
 import {
     SEVERITIES,
@@ -59,159 +57,126 @@ import { dashboard } from '@/routes';
 import projectsRoutes from '@/routes/projects';
 import type { ProjectRow, RuntimeName, Severity } from '@/types';
 
+const PERIODS = [7, 14, 30, 90] as const;
+const DEFAULT_PERIOD = 14;
+const ALL_PROJECTS = '__all__';
+
 type TrendPoint = { date: string } & Record<Severity, number>;
+type ProjectRef = { slug: string; name: string };
 
-type SortField = 'severity' | 'name' | 'last_report';
-type SortDirection = 'asc' | 'desc';
-type DashboardView = 'cards' | 'table';
+type TopIssue = {
+    key: string;
+    severity: Severity;
+    checkId: string;
+    checkName: string | null;
+    package: string;
+    message: string;
+    fixHint: string;
+    advisoryId: string | null;
+    evidenceUrl: string | null;
+    installed: string[];
+    fixedVersions: string[];
+    projects: (ProjectRef & { installed: string | null })[];
+};
 
-/** Runtimes shown on the overview; Node stays on the project page. */
-const OVERVIEW_RUNTIMES: RuntimeName[] = ['php', 'laravel'];
+type EndOfSupportRow = {
+    project: ProjectRef;
+    runtime: RuntimeName;
+    version: string | null;
+    cycle: string | null;
+    securitySupportEndsOn: string | null;
+    activeSupportEndsOn: string | null;
+};
+
+type ConfigurationRow = {
+    project: ProjectRef;
+    checkId: string;
+    checkName: string | null;
+    severity: Severity;
+    subject: string;
+    message: string;
+    fixHint: string;
+};
+
+type Overview = {
+    kpis: {
+        findings: {
+            counts: Record<Severity, number>;
+            total: number;
+            previous: number | null;
+        };
+        atRisk: { value: number; previous: number | null };
+        endOfSupport: { value: number; previous: number | null };
+        stale: { value: number; total: number };
+    };
+    topIssues: TopIssue[];
+    topIssuesTotal: number;
+    endOfSupport: EndOfSupportRow[];
+    configuration: ConfigurationRow[];
+};
 
 /**
- * Projects overview: what to fix first without opening each project. Every project shows its
- * worst severity and counts, PHP and Laravel with their support status, the worst finding and
- * when it last reported, as cards or as a table. Search, sort and view sit in the filter row
- * (app-ui `docs/list-page.md`); sorting happens in the browser.
+ * Issue-first overview (#77), following the overview → filter → details convention: a context
+ * bar (project, period) in the filter row, key numbers compared with the previous period, the
+ * findings trend, then actionable lists (top issues, end of support, configuration) and the
+ * projects. Every row links to the detail. Layout from the externa-core dashboard: flat cards
+ * in the 12-column grid, stat tiles, tables in cards.
  */
 export default function Dashboard({
-    projects,
     canViewProjects,
-    trend = [],
+    projects,
+    scope,
+    overview,
+    trend,
 }: {
-    projects: ProjectRow[];
     canViewProjects: boolean;
-    trend?: TrendPoint[];
+    projects: ProjectRow[];
+    scope: { project: string | null; period: number };
+    overview: Overview | null;
+    trend: TrendPoint[];
 }) {
     const { t } = useTranslation();
     const { can } = useCan();
-    const [search, setSearch] = useState('');
-    const [sort, setSort] = useState<SortField>('severity');
-    const [direction, setDirection] = useState<SortDirection>('asc');
-    const [view, setView] = useState<DashboardView>('cards');
+    const selected = projects.find((project) => project.slug === scope.project);
 
-    const visible = useMemo(() => {
-        const needle = search.trim().toLowerCase();
+    const visit = (next: {
+        project?: string | null;
+        period?: number;
+    }): void => {
+        const project =
+            next.project !== undefined ? next.project : scope.project;
+        const period = next.period ?? scope.period;
 
-        return projects
-            .filter(
-                (project) =>
-                    needle === '' ||
-                    `${project.name} ${project.slug}`
-                        .toLowerCase()
-                        .includes(needle),
-            )
-            .sort(
-                (first, second) =>
-                    compareProjects(first, second, sort) *
-                    (direction === 'asc' ? 1 : -1),
-            );
-    }, [projects, search, sort, direction]);
+        router.get(
+            dashboard.url({
+                query: {
+                    project: project ?? undefined,
+                    period: period === DEFAULT_PERIOD ? undefined : period,
+                },
+            }),
+            {},
+            { preserveScroll: true, preserveState: true, replace: true },
+        );
+    };
 
-    const sortFields: { value: SortField; label: string }[] = [
-        { value: 'severity', label: t('dashboard.sort.severity') },
-        { value: 'name', label: t('common.name') },
-        { value: 'last_report', label: t('dashboard.sort.lastReport') },
-    ];
-
-    return (
-        <>
-            <Head title={t('nav.dashboard')} />
-            <PageLayout
-                scrollContent
-                filters={
-                    canViewProjects && projects.length > 0 ? (
-                        <FilterSearch
-                            value={search}
-                            onChange={setSearch}
-                            placeholder={t('projects.searchPlaceholder')}
-                        />
-                    ) : undefined
-                }
-                filtersRight={
-                    canViewProjects && projects.length > 0 ? (
-                        <div className="flex items-center gap-1.5">
-                            <Select
-                                value={sort}
-                                onValueChange={(value) =>
-                                    setSort(value as SortField)
-                                }
-                            >
-                                <SelectTrigger
-                                    aria-label={t('dashboard.sort.label')}
-                                    className="w-[9rem]"
-                                >
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent align="end">
-                                    {sortFields.map((field) => (
-                                        <SelectItem
-                                            key={field.value}
-                                            value={field.value}
-                                        >
-                                            {field.label}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="icon"
-                                aria-label={
-                                    direction === 'asc'
-                                        ? t('common.sortAscending')
-                                        : t('common.sortDescending')
-                                }
-                                onClick={() =>
-                                    setDirection(
-                                        direction === 'asc' ? 'desc' : 'asc',
-                                    )
-                                }
-                            >
-                                {direction === 'asc' ? (
-                                    <ArrowUpAZ className="size-4" />
-                                ) : (
-                                    <ArrowDownAZ className="size-4" />
-                                )}
-                            </Button>
-                            <ToggleGroup
-                                type="single"
-                                variant="outline"
-                                value={view}
-                                onValueChange={(value) => {
-                                    if (
-                                        value === 'cards' ||
-                                        value === 'table'
-                                    ) {
-                                        setView(value);
-                                    }
-                                }}
-                            >
-                                <ToggleGroupItem
-                                    value="cards"
-                                    aria-label={t('dashboard.view.cards')}
-                                    className="px-2.5"
-                                >
-                                    <LayoutGrid className="size-4" />
-                                </ToggleGroupItem>
-                                <ToggleGroupItem
-                                    value="table"
-                                    aria-label={t('dashboard.view.table')}
-                                    className="px-2.5"
-                                >
-                                    <List className="size-4" />
-                                </ToggleGroupItem>
-                            </ToggleGroup>
-                        </div>
-                    ) : undefined
-                }
-            >
-                {!canViewProjects ? (
+    if (!canViewProjects || overview === null) {
+        return (
+            <>
+                <Head title={t('nav.dashboard')} />
+                <PageLayout>
                     <p className="text-sm text-muted-foreground">
                         {t('dashboard.noAccess')}
                     </p>
-                ) : projects.length === 0 ? (
+                </PageLayout>
+            </>
+        );
+    }
+
+    if (projects.length === 0) {
+        return (
+            <>
+                <Head title={t('nav.dashboard')} />
+                <PageLayout>
                     <PageEmptyState
                         icon={FolderKanban}
                         title={t('dashboard.emptyTitle')}
@@ -227,73 +192,15 @@ export default function Dashboard({
                             ) : undefined
                         }
                     />
-                ) : visible.length === 0 ? (
-                    <PageEmptyState
-                        icon={SearchX}
-                        title={
-                            <EmptyStatus>
-                                {t('emptyState.projects.filteredTitle')}
-                            </EmptyStatus>
-                        }
-                        description={t(
-                            'emptyState.projects.filteredDescription',
-                        )}
-                        action={
-                            <Button type="button" onClick={() => setSearch('')}>
-                                {t('common.clearFilters')}
-                            </Button>
-                        }
-                    />
-                ) : (
-                    <div className="flex flex-col gap-4">
-                        <FleetOverview projects={projects} trend={trend} />
-                        {view === 'table' ? (
-                            <ProjectsTable projects={visible} />
-                        ) : (
-                            <ul className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-                                {visible.map((project) => (
-                                    <li
-                                        key={project.id}
-                                        className="xl:col-span-4"
-                                    >
-                                        <ProjectCard project={project} />
-                                    </li>
-                                ))}
-                            </ul>
-                        )}
-                    </div>
-                )}
-            </PageLayout>
-        </>
-    );
-}
+                </PageLayout>
+            </>
+        );
+    }
 
-/**
- * Findings across every project: the daily trend of the last 30 days as stacked bars, and
- * today's totals per severity as stat tiles (externa-core dashboard cards).
- */
-function FleetOverview({
-    projects,
-    trend,
-}: {
-    projects: ProjectRow[];
-    trend: TrendPoint[];
-}) {
-    const { t } = useTranslation();
-    const totals = Object.fromEntries(
-        SEVERITIES.map((severity) => [
-            severity,
-            projects.reduce(
-                (total, project) =>
-                    total + (project.latest_report?.counts[severity] ?? 0),
-                0,
-            ),
-        ]),
-    ) as Record<Severity, number>;
-    const total = SEVERITIES.reduce(
-        (sum, severity) => sum + totals[severity],
-        0,
-    );
+    const { kpis } = overview;
+    const periodLabel = t('dashboard.period.previous', {
+        count: scope.period,
+    });
     const chartData: SeverityChartPoint[] = trend.map((point) => ({
         ...point,
         label: new Date(`${point.date}T00:00:00`).toLocaleDateString(
@@ -303,82 +210,613 @@ function FleetOverview({
     }));
 
     return (
-        <section className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-            <Card className="xl:col-span-8">
-                <CardHeader className="pb-3">
-                    <CardTitle>{t('dashboard.trend.title')}</CardTitle>
-                    <CardDescription>
-                        {t('dashboard.trend.description')}
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="h-64">
-                    <SeverityStackedBarChart
-                        data={chartData}
-                        label={t('dashboard.trend.label', { total })}
-                    />
-                </CardContent>
-            </Card>
-            <Card className="xl:col-span-4">
-                <CardHeader className="pb-3">
-                    <CardTitle>{t('dashboard.totals.title')}</CardTitle>
-                    <CardDescription>
-                        {t('dashboard.totals.description', {
-                            count: projects.length,
-                        })}
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="grid grid-cols-3 gap-3">
-                    {SEVERITIES.map((severity) => (
-                        <div key={severity}>
-                            <div className="text-xs text-muted-foreground">
-                                {t(`report.severity.${severity}`)}
-                            </div>
-                            <div
-                                className={cn(
-                                    'text-2xl font-semibold tabular-nums',
-                                    severity === 'critical' &&
-                                        totals.critical > 0 &&
-                                        'text-destructive',
-                                )}
-                            >
-                                {totals[severity].toLocaleString()}
-                            </div>
-                        </div>
-                    ))}
-                    <div>
-                        <div className="text-xs text-muted-foreground">
-                            {t('dashboard.totals.total')}
-                        </div>
-                        <div className="text-2xl font-semibold tabular-nums">
-                            {total.toLocaleString()}
-                        </div>
+        <>
+            <Head title={t('nav.dashboard')} />
+            <PageLayout
+                scrollContent
+                filters={
+                    <Select
+                        value={scope.project ?? ALL_PROJECTS}
+                        onValueChange={(value) =>
+                            visit({
+                                project: value === ALL_PROJECTS ? null : value,
+                            })
+                        }
+                    >
+                        <SelectTrigger
+                            aria-label={t('dashboard.scope.project')}
+                            className="w-64"
+                        >
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value={ALL_PROJECTS}>
+                                {t('dashboard.scope.allProjects', {
+                                    count: projects.length,
+                                })}
+                            </SelectItem>
+                            {projects.map((project) => (
+                                <SelectItem
+                                    key={project.slug}
+                                    value={project.slug}
+                                >
+                                    {project.name}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                }
+                filtersRight={
+                    <div className="flex items-center gap-1.5">
+                        {selected ? (
+                            <Button variant="outline" asChild>
+                                <Link
+                                    href={projectsRoutes.show.url(
+                                        selected.slug,
+                                    )}
+                                >
+                                    {t('dashboard.scope.openProject')}
+                                    <ArrowUpRight className="size-4" />
+                                </Link>
+                            </Button>
+                        ) : null}
+                        <ToggleGroup
+                            type="single"
+                            variant="outline"
+                            value={String(scope.period)}
+                            onValueChange={(value) => {
+                                if (value) {
+                                    visit({ period: Number(value) });
+                                }
+                            }}
+                            aria-label={t('dashboard.period.label')}
+                        >
+                            {PERIODS.map((period) => (
+                                <ToggleGroupItem
+                                    key={period}
+                                    value={String(period)}
+                                    className="px-2.5"
+                                >
+                                    {t('dashboard.period.days', {
+                                        count: period,
+                                    })}
+                                </ToggleGroupItem>
+                            ))}
+                        </ToggleGroup>
                     </div>
-                </CardContent>
-            </Card>
-        </section>
+                }
+            >
+                <div className="flex flex-col gap-4">
+                    <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-12">
+                        <KpiCard
+                            title={t('dashboard.kpi.findings')}
+                            value={kpis.findings.total}
+                            previous={kpis.findings.previous}
+                            periodLabel={periodLabel}
+                        >
+                            <SeverityCounts counts={kpis.findings.counts} />
+                        </KpiCard>
+                        <KpiCard
+                            title={t('dashboard.kpi.atRisk')}
+                            value={kpis.atRisk.value}
+                            previous={kpis.atRisk.previous}
+                            periodLabel={periodLabel}
+                            description={t('dashboard.kpi.atRiskDescription')}
+                        />
+                        <KpiCard
+                            title={t('dashboard.kpi.endOfSupport')}
+                            value={kpis.endOfSupport.value}
+                            previous={kpis.endOfSupport.previous}
+                            periodLabel={periodLabel}
+                            description={t(
+                                'dashboard.kpi.endOfSupportDescription',
+                            )}
+                        />
+                        <KpiCard
+                            title={t('dashboard.kpi.stale')}
+                            value={kpis.stale.value}
+                            previous={null}
+                            periodLabel={periodLabel}
+                            description={t('dashboard.kpi.staleDescription', {
+                                total: kpis.stale.total,
+                            })}
+                        />
+                    </section>
+
+                    <section className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+                        <Card className="xl:col-span-8">
+                            <CardHeader className="pb-3">
+                                <CardTitle>
+                                    {t('dashboard.trend.title')}
+                                </CardTitle>
+                                <CardDescription>
+                                    {t('dashboard.trend.description', {
+                                        count: scope.period,
+                                    })}
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="h-64">
+                                <SeverityStackedBarChart
+                                    data={chartData}
+                                    label={t('dashboard.trend.label', {
+                                        count: scope.period,
+                                        total: kpis.findings.total,
+                                    })}
+                                />
+                            </CardContent>
+                        </Card>
+                        <EndOfSupportCard rows={overview.endOfSupport} />
+                    </section>
+
+                    <TopIssuesCard
+                        issues={overview.topIssues}
+                        total={overview.topIssuesTotal}
+                    />
+
+                    <section className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+                        <ConfigurationCard
+                            rows={overview.configuration}
+                            className={selected ? 'xl:col-span-12' : undefined}
+                        />
+                        {selected ? null : <ProjectsCard projects={projects} />}
+                    </section>
+                </div>
+            </PageLayout>
+        </>
     );
 }
 
 /**
- * Worst severity first (projects with no report last), then name, then last report.
+ * A key number with its change against the previous period (fewer is better for all of them),
+ * as the externa-core stat tiles. The change names its direction in text, not colour only.
  */
-function compareProjects(
-    first: ProjectRow,
-    second: ProjectRow,
-    sort: SortField,
-): number {
-    if (sort === 'name') {
-        return first.name.localeCompare(second.name);
-    }
+function KpiCard({
+    title,
+    value,
+    previous,
+    periodLabel,
+    description,
+    children,
+}: {
+    title: string;
+    value: number;
+    previous: number | null;
+    periodLabel: string;
+    description?: string;
+    children?: ReactNode;
+}) {
+    const { t } = useTranslation();
+    const delta = previous === null ? null : value - previous;
 
-    if (sort === 'last_report') {
-        return (
-            (Date.parse(second.last_report_at ?? '') || 0) -
-            (Date.parse(first.last_report_at ?? '') || 0)
-        );
-    }
+    return (
+        <Card className="xl:col-span-3">
+            <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                    {title}
+                </CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-2">
+                <div className="flex items-baseline gap-2">
+                    <span className="text-2xl font-semibold tabular-nums">
+                        {value.toLocaleString()}
+                    </span>
+                    {delta === null ? null : (
+                        <span
+                            className={cn(
+                                'inline-flex items-center gap-0.5 text-xs font-medium',
+                                delta > 0 && 'text-destructive',
+                                delta < 0 && 'text-success',
+                                delta === 0 && 'text-muted-foreground',
+                            )}
+                        >
+                            {delta > 0 ? (
+                                <ArrowUpRight
+                                    className="size-3.5"
+                                    aria-hidden
+                                />
+                            ) : delta < 0 ? (
+                                <ArrowDownRight
+                                    className="size-3.5"
+                                    aria-hidden
+                                />
+                            ) : (
+                                <Minus className="size-3.5" aria-hidden />
+                            )}
+                            {delta === 0
+                                ? t('dashboard.kpi.unchanged')
+                                : t(
+                                      delta > 0
+                                          ? 'dashboard.kpi.up'
+                                          : 'dashboard.kpi.down',
+                                      { count: Math.abs(delta) },
+                                  )}
+                        </span>
+                    )}
+                </div>
+                {children}
+                {description || delta !== null ? (
+                    <p className="text-xs text-muted-foreground">
+                        {[description, delta !== null ? periodLabel : null]
+                            .filter(Boolean)
+                            .join(' · ')}
+                    </p>
+                ) : null}
+            </CardContent>
+        </Card>
+    );
+}
 
-    return severityRank(first) - severityRank(second);
+/**
+ * The grouped findings across projects, worst first: the Sentry "issues" of Excubia.
+ */
+function TopIssuesCard({
+    issues,
+    total,
+}: {
+    issues: TopIssue[];
+    total: number;
+}) {
+    const { t } = useTranslation();
+
+    return (
+        <Card>
+            <CardHeader className="pb-3">
+                <CardTitle>{t('dashboard.topIssues.title')}</CardTitle>
+                <CardDescription>
+                    {t('dashboard.topIssues.description', {
+                        shown: issues.length,
+                        total,
+                    })}
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                {issues.length === 0 ? (
+                    <PageEmptyState
+                        icon={CircleCheck}
+                        title={t('dashboard.topIssues.emptyTitle')}
+                        description={t('dashboard.topIssues.emptyDescription')}
+                        compact
+                        className="border-0"
+                    />
+                ) : (
+                    <div className="max-h-96 overflow-auto">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>
+                                        {t('report.severityLabel')}
+                                    </TableHead>
+                                    <TableHead>
+                                        {t('dashboard.topIssues.issue')}
+                                    </TableHead>
+                                    <TableHead>
+                                        {t('report.installed')}
+                                    </TableHead>
+                                    <TableHead>{t('report.fixedIn')}</TableHead>
+                                    <TableHead>
+                                        {t('dashboard.topIssues.projects')}
+                                    </TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {issues.map((issue) => (
+                                    <TableRow key={issue.key}>
+                                        <TableCell>
+                                            <SeverityBadge
+                                                severity={issue.severity}
+                                            />
+                                        </TableCell>
+                                        <TableCell className="max-w-[28rem] whitespace-normal">
+                                            <div className="font-medium">
+                                                {issue.package}
+                                            </div>
+                                            <div className="text-xs text-muted-foreground">
+                                                {issue.checkName ??
+                                                    issue.checkId}
+                                                {issue.advisoryId ? (
+                                                    <span className="font-mono">
+                                                        {' · '}
+                                                        {issue.advisoryId}
+                                                    </span>
+                                                ) : null}
+                                            </div>
+                                            <div className="mt-1 text-sm">
+                                                {issue.message}
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="font-mono text-xs whitespace-normal">
+                                            {issue.installed.join(', ') || '—'}
+                                        </TableCell>
+                                        <TableCell className="font-mono text-xs whitespace-normal">
+                                            {issue.fixedVersions.join(', ') ||
+                                                '—'}
+                                        </TableCell>
+                                        <TableCell className="whitespace-normal">
+                                            <div className="flex flex-wrap gap-1">
+                                                {issue.projects.map(
+                                                    (project) => (
+                                                        <Badge
+                                                            key={project.slug}
+                                                            variant="outline"
+                                                            asChild
+                                                        >
+                                                            <Link
+                                                                href={`${projectsRoutes.show.url(project.slug)}?view=findings`}
+                                                            >
+                                                                {project.name}
+                                                            </Link>
+                                                        </Badge>
+                                                    ),
+                                                )}
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
+                )}
+            </CardContent>
+        </Card>
+    );
+}
+
+function EndOfSupportCard({ rows }: { rows: EndOfSupportRow[] }) {
+    const { t } = useTranslation();
+
+    return (
+        <Card className="xl:col-span-4">
+            <CardHeader className="pb-3">
+                <CardTitle>{t('dashboard.endOfSupport.title')}</CardTitle>
+                <CardDescription>
+                    {t('dashboard.endOfSupport.description')}
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                {rows.length === 0 ? (
+                    <PageEmptyState
+                        icon={CalendarClock}
+                        title={t('dashboard.endOfSupport.emptyTitle')}
+                        description={t(
+                            'dashboard.endOfSupport.emptyDescription',
+                        )}
+                        compact
+                        className="border-0"
+                    />
+                ) : (
+                    <div className="max-h-64 overflow-auto">
+                        <Table>
+                            <TableBody>
+                                {rows.map((row) => (
+                                    <TableRow
+                                        key={`${row.project.slug}-${row.runtime}`}
+                                    >
+                                        <TableCell className="min-w-0">
+                                            <div className="truncate font-medium">
+                                                {t(
+                                                    `report.runtime.${row.runtime}`,
+                                                )}{' '}
+                                                <span className="font-mono text-xs">
+                                                    {row.version ?? row.cycle}
+                                                </span>
+                                            </div>
+                                            <Link
+                                                href={projectsRoutes.show.url(
+                                                    row.project.slug,
+                                                )}
+                                                className="truncate text-xs text-muted-foreground underline-offset-4 hover:underline"
+                                            >
+                                                {row.project.name}
+                                            </Link>
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <div className="text-xs tabular-nums">
+                                                {row.securitySupportEndsOn}
+                                            </div>
+                                            <RuntimeSupportBadge
+                                                runtime={{
+                                                    version: row.version,
+                                                    cycle: row.cycle,
+                                                    security_support_ends_on:
+                                                        row.securitySupportEndsOn,
+                                                    active_support_ends_on:
+                                                        row.activeSupportEndsOn,
+                                                }}
+                                            />
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
+                )}
+            </CardContent>
+        </Card>
+    );
+}
+
+function ConfigurationCard({
+    rows,
+    className,
+}: {
+    rows: ConfigurationRow[];
+    className?: string;
+}) {
+    const { t } = useTranslation();
+
+    return (
+        <Card className={cn('xl:col-span-5', className)}>
+            <CardHeader className="pb-3">
+                <CardTitle>{t('dashboard.configuration.title')}</CardTitle>
+                <CardDescription>
+                    {t('dashboard.configuration.description')}
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                {rows.length === 0 ? (
+                    <PageEmptyState
+                        icon={ShieldCheck}
+                        title={t('dashboard.configuration.emptyTitle')}
+                        description={t(
+                            'dashboard.configuration.emptyDescription',
+                        )}
+                        compact
+                        className="border-0"
+                    />
+                ) : (
+                    <div className="max-h-80 overflow-auto">
+                        <Table>
+                            <TableBody>
+                                {rows.map((row, index) => (
+                                    <TableRow
+                                        key={`${row.project.slug}-${row.checkId}-${index}`}
+                                    >
+                                        <TableCell>
+                                            <SeverityBadge
+                                                severity={row.severity}
+                                            />
+                                        </TableCell>
+                                        <TableCell className="whitespace-normal">
+                                            <div className="font-medium">
+                                                {row.checkName ?? row.checkId}
+                                            </div>
+                                            <div className="text-sm">
+                                                {row.message}
+                                            </div>
+                                            <Link
+                                                href={`${projectsRoutes.show.url(row.project.slug)}?view=findings`}
+                                                className="text-xs text-muted-foreground underline-offset-4 hover:underline"
+                                            >
+                                                {row.project.name}
+                                            </Link>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
+                )}
+            </CardContent>
+        </Card>
+    );
+}
+
+/**
+ * Every project in one compact table, worst first, each linking to its page.
+ */
+function ProjectsCard({ projects }: { projects: ProjectRow[] }) {
+    const { t } = useTranslation();
+    const rows = [...projects].sort(
+        (first, second) => severityRank(first) - severityRank(second),
+    );
+
+    return (
+        <Card className="xl:col-span-7">
+            <CardHeader className="pb-3">
+                <CardTitle>{t('dashboard.projects.title')}</CardTitle>
+                <CardDescription>
+                    {t('dashboard.projects.description')}
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="max-h-80 overflow-auto">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>{t('common.name')}</TableHead>
+                                <TableHead>{t('report.findings')}</TableHead>
+                                <TableHead>{t('report.runtime.php')}</TableHead>
+                                <TableHead>
+                                    {t('report.runtime.laravel')}
+                                </TableHead>
+                                <TableHead className="text-right">
+                                    {t('projects.lastReport')}
+                                </TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {rows.map((project) => {
+                                const report = project.latest_report ?? null;
+
+                                return (
+                                    <TableRow key={project.id}>
+                                        <TableCell className="max-w-[14rem]">
+                                            <Link
+                                                href={projectsRoutes.show.url(
+                                                    project.slug,
+                                                )}
+                                                className="block truncate font-medium underline-offset-4 hover:underline"
+                                            >
+                                                {project.name}
+                                            </Link>
+                                            <div className="flex items-center gap-1">
+                                                {report ? (
+                                                    <SeverityBadge
+                                                        severity={
+                                                            report.worst_severity
+                                                        }
+                                                    />
+                                                ) : null}
+                                                {project.is_stale ? (
+                                                    <Badge variant="muted">
+                                                        {t('dashboard.stale')}
+                                                    </Badge>
+                                                ) : null}
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            {report ? (
+                                                <SeverityCounts
+                                                    counts={report.counts}
+                                                />
+                                            ) : (
+                                                <span className="text-sm text-muted-foreground">
+                                                    {t('dashboard.noReports')}
+                                                </span>
+                                            )}
+                                        </TableCell>
+                                        {(['php', 'laravel'] as const).map(
+                                            (name) => {
+                                                const runtime =
+                                                    report?.runtime?.[name] ??
+                                                    null;
+                                                const status = supportStatus(
+                                                    runtime?.security_support_ends_on,
+                                                );
+
+                                                return (
+                                                    <TableCell
+                                                        key={name}
+                                                        className={cn(
+                                                            'font-mono text-xs',
+                                                            status ===
+                                                                'ended' &&
+                                                                'text-destructive',
+                                                        )}
+                                                    >
+                                                        {runtime?.version ??
+                                                            runtime?.cycle ??
+                                                            '—'}
+                                                    </TableCell>
+                                                );
+                                            },
+                                        )}
+                                        <TableCell className="text-right text-xs text-muted-foreground tabular-nums">
+                                            {project.last_report_at
+                                                ? new Date(
+                                                      project.last_report_at,
+                                                  ).toLocaleString()
+                                                : t('projects.never')}
+                                        </TableCell>
+                                    </TableRow>
+                                );
+                            })}
+                        </TableBody>
+                    </Table>
+                </div>
+            </CardContent>
+        </Card>
+    );
 }
 
 function severityRank(project: ProjectRow): number {
@@ -391,204 +829,6 @@ function severityRank(project: ProjectRow): number {
     return report.worst_severity === null
         ? SEVERITIES.length
         : SEVERITIES.indexOf(report.worst_severity);
-}
-
-/**
- * One project on the overview. The whole card is a link to the project page.
- */
-function ProjectCard({ project }: { project: ProjectRow }) {
-    const { t } = useTranslation();
-    const report = project.latest_report ?? null;
-
-    return (
-        <Link
-            href={projectsRoutes.show.url(project.slug)}
-            className="block h-full rounded-xl focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-        >
-            <Card
-                className={cn(
-                    'h-full transition-colors hover:bg-accent/40',
-                    project.is_stale && 'opacity-60',
-                )}
-            >
-                <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between gap-2">
-                        <CardTitle className="truncate">
-                            {project.name}
-                        </CardTitle>
-                        {report ? (
-                            <SeverityBadge severity={report.worst_severity} />
-                        ) : null}
-                    </div>
-                    <CardDescription>
-                        {report
-                            ? t('dashboard.lastReport', {
-                                  date: new Date(
-                                      report.received_at,
-                                  ).toLocaleString(),
-                              })
-                            : t('dashboard.noReports')}
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="flex flex-col gap-3">
-                    {report?.runtime ? (
-                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                            {OVERVIEW_RUNTIMES.map((name) =>
-                                report.runtime?.[name] ? (
-                                    <span
-                                        key={name}
-                                        className="inline-flex items-center gap-1.5 text-sm"
-                                    >
-                                        <span className="font-mono text-xs">
-                                            {runtimeLabel(
-                                                name,
-                                                report.runtime[name],
-                                                t,
-                                            )}
-                                        </span>
-                                        <RuntimeSupportBadge
-                                            runtime={report.runtime[name]}
-                                        />
-                                    </span>
-                                ) : null,
-                            )}
-                        </div>
-                    ) : null}
-                    {report ? <SeverityCounts counts={report.counts} /> : null}
-                    {report?.top_finding ? (
-                        <p className="line-clamp-2 text-sm text-muted-foreground">
-                            <span className="font-medium text-foreground">
-                                {report.top_finding.subject}
-                            </span>
-                            {' — '}
-                            {report.top_finding.message}
-                        </p>
-                    ) : null}
-                    {project.is_stale || !project.is_enabled ? (
-                        <div className="flex flex-wrap gap-1">
-                            {project.is_stale ? (
-                                <Badge variant="muted">
-                                    {t('dashboard.stale')}
-                                </Badge>
-                            ) : null}
-                            {!project.is_enabled ? (
-                                <Badge variant="muted">
-                                    {t('projects.disabled')}
-                                </Badge>
-                            ) : null}
-                        </div>
-                    ) : null}
-                </CardContent>
-            </Card>
-        </Link>
-    );
-}
-
-/**
- * The same overview as a table, one project per row.
- */
-function ProjectsTable({ projects }: { projects: ProjectRow[] }) {
-    const { t } = useTranslation();
-
-    return (
-        <TablePanel>
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead>{t('common.name')}</TableHead>
-                        <TableHead>{t('report.worstSeverity')}</TableHead>
-                        <TableHead>{t('report.findings')}</TableHead>
-                        {OVERVIEW_RUNTIMES.map((name) => (
-                            <TableHead key={name}>
-                                {t(`report.runtime.${name}`)}
-                            </TableHead>
-                        ))}
-                        <TableHead className="text-right">
-                            {t('projects.lastReport')}
-                        </TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {projects.map((project) => {
-                        const report = project.latest_report ?? null;
-
-                        return (
-                            <TableRow key={project.id}>
-                                <TableCell className="max-w-[16rem]">
-                                    <Link
-                                        href={projectsRoutes.show.url(
-                                            project.slug,
-                                        )}
-                                        className="block truncate font-medium underline-offset-4 hover:underline"
-                                    >
-                                        {project.name}
-                                    </Link>
-                                    <div className="truncate font-mono text-xs text-muted-foreground">
-                                        {project.slug}
-                                    </div>
-                                </TableCell>
-                                <TableCell>
-                                    {report ? (
-                                        <SeverityBadge
-                                            severity={report.worst_severity}
-                                        />
-                                    ) : (
-                                        <span className="text-sm text-muted-foreground">
-                                            {t('dashboard.noReports')}
-                                        </span>
-                                    )}
-                                </TableCell>
-                                <TableCell>
-                                    {report ? (
-                                        <SeverityCounts
-                                            counts={report.counts}
-                                        />
-                                    ) : null}
-                                </TableCell>
-                                {OVERVIEW_RUNTIMES.map((name) => {
-                                    const runtime =
-                                        report?.runtime?.[name] ?? null;
-
-                                    return (
-                                        <TableCell key={name}>
-                                            {runtime ? (
-                                                <span className="inline-flex items-center gap-1.5">
-                                                    <span className="font-mono text-xs">
-                                                        {runtime.version ??
-                                                            runtime.cycle}
-                                                    </span>
-                                                    <RuntimeSupportBadge
-                                                        runtime={runtime}
-                                                    />
-                                                </span>
-                                            ) : (
-                                                <span className="text-muted-foreground">
-                                                    —
-                                                </span>
-                                            )}
-                                        </TableCell>
-                                    );
-                                })}
-                                <TableCell
-                                    className={cn(
-                                        'text-right tabular-nums',
-                                        project.is_stale &&
-                                            'text-muted-foreground',
-                                    )}
-                                >
-                                    {project.last_report_at
-                                        ? new Date(
-                                              project.last_report_at,
-                                          ).toLocaleString()
-                                        : t('projects.never')}
-                                </TableCell>
-                            </TableRow>
-                        );
-                    })}
-                </TableBody>
-            </Table>
-        </TablePanel>
-    );
 }
 
 Dashboard.layout = (page: ReactNode) => (

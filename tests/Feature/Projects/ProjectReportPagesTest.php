@@ -175,8 +175,9 @@ it('sums the latest report of each project per day for the dashboard trend', fun
     pushedReport($shop, '2026-11-04 09:00:00', SeverityEnum::High, ['high_count' => 1, 'low_count' => 2]);
     pushedReport($blog, '2026-11-05 07:00:00', SeverityEnum::Critical, ['critical_count' => 1]);
 
-    $this->actingAs(reportReader())->get(route('dashboard'))
+    $this->actingAs(reportReader())->get(route('dashboard', ['period' => 30]))
         ->assertInertia(fn (Assert $page) => $page
+            ->where('scope.period', 30)
             ->has('trend', 30)
             ->where('trend.0.date', '2026-10-07')
             ->where('trend.0.high', 4)
@@ -194,5 +195,58 @@ it('leaves projects restricted to admins out of the trend', function () {
     pushedReport($hidden, '2026-11-05 07:00:00', SeverityEnum::Critical, ['critical_count' => 3]);
 
     $this->actingAs(reportReader())->get(route('dashboard'))
-        ->assertInertia(fn (Assert $page) => $page->where('trend.29.critical', 0));
+        ->assertInertia(fn (Assert $page) => $page->has('trend', 14)->where('trend.13.critical', 0)->where('overview.kpis.findings.total', 0));
+});
+
+it('builds the issue-first overview for all projects or one, with the previous period', function () {
+    $shop = Project::factory()->create(['name' => 'Shop', 'slug' => 'shop']);
+    $blog = Project::factory()->create(['name' => 'Blog', 'slug' => 'blog']);
+    $finding = fn (string $package, string $locked) => ['checkId' => 'composer-advisories', 'severity' => 'high', 'status' => 'fail', 'subject' => "{$package} {$locked}", 'message' => 'Known vulnerability', 'fixHint' => "Update {$package}", 'evidenceUrl' => null, 'advisoryId' => 'GHSA-1', 'details' => ['package' => $package, 'lockedVersion' => $locked, 'fixedVersions' => ['7.9.0']]];
+    $body = fn (array $findings, ?string $phpEnd = null) => [
+        'schemaVersion' => 1,
+        'project' => ['php' => ['version' => '8.2.10', 'cycle' => '8.2', 'securitySupportEndsOn' => $phpEnd, 'activeSupportEndsOn' => null], 'laravel' => null, 'node' => null],
+        'checks' => [
+            ['checkId' => 'composer-advisories', 'name' => 'Known vulnerabilities (Composer)', 'status' => 'fail', 'findings' => $findings],
+            ['checkId' => 'laravel-debug-mode', 'name' => 'Debug mode', 'status' => 'fail', 'findings' => [['checkId' => 'laravel-debug-mode', 'severity' => 'high', 'status' => 'fail', 'subject' => 'app.debug', 'message' => 'Debug mode is on', 'fixHint' => 'Set APP_DEBUG=false', 'evidenceUrl' => null]]],
+        ],
+        'upgradePlan' => [],
+    ];
+
+    // Previous period (14 days ago): one high finding in shop only.
+    pushedReport($shop, '2026-10-20 08:00:00', SeverityEnum::High, ['high_count' => 1])->update(['report' => $body([])]);
+    pushedReport($shop, '2026-11-05 08:00:00', SeverityEnum::High, ['high_count' => 2])->update(['report' => $body([$finding('guzzlehttp/guzzle', '7.4.0')], '2026-12-31')]);
+    pushedReport($blog, '2026-11-05 09:00:00', SeverityEnum::High, ['high_count' => 2])->update(['report' => $body([$finding('guzzlehttp/guzzle', '7.5.0')], '2028-12-31')]);
+
+    $this->actingAs(reportReader())->get(route('dashboard'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('scope', ['project' => null, 'period' => 14])
+            ->where('overview.kpis.findings.total', 4)
+            ->where('overview.kpis.findings.previous', 1)
+            ->where('overview.kpis.atRisk.value', 2)
+            ->where('overview.kpis.atRisk.previous', 1)
+            ->where('overview.kpis.endOfSupport.value', 1)
+            ->where('overview.kpis.stale.total', 2)
+            ->where('overview.topIssuesTotal', 1)
+            ->where('overview.topIssues.0.package', 'guzzlehttp/guzzle')
+            ->where('overview.topIssues.0.installed', ['7.5.0', '7.4.0'])
+            ->where('overview.topIssues.0.fixedVersions', ['7.9.0'])
+            ->has('overview.topIssues.0.projects', 2)
+            ->has('overview.endOfSupport', 1)
+            ->where('overview.endOfSupport.0.project.slug', 'shop')
+            ->where('overview.endOfSupport.0.securitySupportEndsOn', '2026-12-31')
+            ->has('overview.configuration', 2)
+            ->where('overview.configuration.0.checkId', 'laravel-debug-mode'));
+
+    $this->actingAs(reportReader())->get(route('dashboard', ['project' => 'blog', 'period' => 7]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('scope', ['project' => 'blog', 'period' => 7])
+            ->has('projects', 2)
+            ->where('overview.kpis.findings.total', 2)
+            ->where('overview.kpis.findings.previous', null)
+            ->where('overview.topIssues.0.projects.0.slug', 'blog')
+            ->has('overview.configuration', 1)
+            ->has('trend', 7));
+
+    $this->actingAs(reportReader())->get(route('dashboard', ['project' => 'nope', 'period' => 5]))
+        ->assertInertia(fn (Assert $page) => $page->where('scope', ['project' => null, 'period' => 14]));
 });
