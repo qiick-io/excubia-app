@@ -8,8 +8,9 @@ import { HeaderIconButton } from '@/components/admin/header-icon-button';
 import { NameSlugCell } from '@/components/admin/name-slug-cell';
 import { ConfirmDestructiveDialog } from '@/components/confirm-destructive-dialog';
 import {
+    hasTablePaginationFooter,
     PageLayout,
-    TablePagination,
+    TablePaginationFooter,
     TablePanel,
 } from '@/components/layout/page-layout';
 import { Badge } from '@/components/ui/badge';
@@ -35,6 +36,7 @@ import { useCan } from '@/hooks/use-can';
 import { useDebouncedServerSearch } from '@/hooks/use-debounced-server-search';
 import { useDrawerDeepLink } from '@/hooks/use-drawer-deep-link';
 import AppLayout from '@/layouts/app-layout';
+import { listPerPageQuery } from '@/lib/list-per-page';
 import { normalizePaginated } from '@/lib/pagination';
 import type { LaravelPaginated } from '@/lib/pagination';
 import { toast } from '@/lib/toast';
@@ -126,13 +128,14 @@ export default function AdminGroupsIndex({
                         search: nextSearch || undefined,
                         sort: nextSort,
                         direction: nextDirection,
+                        per_page: listPerPageQuery(groups.per_page),
                     },
                 }),
                 {},
                 { preserveState: true, preserveScroll: true },
             );
         },
-        [direction, search, sort],
+        [direction, groups.per_page, search, sort],
     );
 
     useEffect(() => {
@@ -221,7 +224,6 @@ export default function AdminGroupsIndex({
                                 }}
                             >
                                 <SelectTrigger
-                                    size="sm"
                                     aria-label={t('groups.sortBy')}
                                     className="w-[7.5rem]"
                                 >
@@ -241,7 +243,7 @@ export default function AdminGroupsIndex({
                             <Button
                                 type="button"
                                 variant="outline"
-                                size="icon-sm"
+                                size="icon"
                                 aria-label={
                                     direction === 'asc'
                                         ? t('common.sortAscending')
@@ -265,8 +267,8 @@ export default function AdminGroupsIndex({
                 >
                     <TablePanel
                         footer={
-                            groups.last_page > 1 ? (
-                                <TablePagination links={groups.links ?? []} />
+                            hasTablePaginationFooter(groups) ? (
+                                <TablePaginationFooter pagination={groups} />
                             ) : undefined
                         }
                     >

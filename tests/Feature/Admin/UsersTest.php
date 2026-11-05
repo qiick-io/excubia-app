@@ -68,11 +68,20 @@ it('searches, sorts and paginates users', function () {
             ->where('users.data.0.name', 'Ada Lovelace')
             ->where('filters', ['search' => 'ada@', 'sort' => 'name', 'direction' => 'asc']));
 
-    $this->actingAs($admin)->get(route('users.index', ['sort' => 'name', 'direction' => 'asc', 'per_page' => 2]))
+    foreach (range(1, 8) as $index) {
+        managedUser(attributes: ['name' => "Zz User {$index}"]);
+    }
+
+    $this->actingAs($admin)->get(route('users.index', ['sort' => 'name', 'direction' => 'asc', 'per_page' => 10]))
         ->assertInertia(fn (Assert $page) => $page
-            ->has('users.data', 2)
+            ->has('users.data', 10)
             ->where('users.data.0.name', 'Ada Lovelace')
+            ->where('users.meta.per_page', 10)
             ->where('users.meta.last_page', 2));
+
+    $this->actingAs($admin)->get(route('users.index', ['per_page' => 7]))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->where('users.meta.per_page', 20));
 });
 
 it('lets group managers search users for the group picker', function () {

@@ -19,7 +19,25 @@
         "pageRange": "{{from}}–{{to}} von {{total}}",
         "perPageOption": "{{count}} / Seite",
         "rowsPerPage": "Zeilen pro Seite",
-        "selectedCount": "{{count}} ausgewählt"
+        "selectedCount": "{{count}} ausgewählt",
+        "clearFilters": "Filter zurücksetzen",
+        "back": "Zurück"
+    },
+    "emptyState": {
+        "users": {
+            "title": "Noch keine Benutzer",
+            "description": "Lade Teammitglieder ein, damit sie Inhalte und Einstellungen verwalten können.",
+            "cta": "Ersten Benutzer erstellen",
+            "filteredTitle": "Keine Benutzer gefunden",
+            "filteredDescription": "Andere Suche versuchen oder Filter zurücksetzen, um alle Benutzer zu sehen."
+        },
+        "projects": {
+            "title": "Noch keine Projekte",
+            "description": "Registriere ein Laravel-Projekt, um seine Berichte zu empfangen.",
+            "cta": "Erstes Projekt erstellen",
+            "filteredTitle": "Keine Projekte gefunden",
+            "filteredDescription": "Andere Suche versuchen oder Filter zurücksetzen, um alle Projekte zu sehen."
+        }
     },
     "roles": {
         "names": {
@@ -421,7 +439,6 @@
         "status": "Status",
         "lastReport": "Letzter Bericht",
         "actions": "Aktionen",
-        "empty": "Noch keine Projekte.",
         "enabled": "Aktiv",
         "disabled": "Deaktiviert",
         "noToken": "Kein Token",

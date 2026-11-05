@@ -15,7 +15,10 @@ use Illuminate\Foundation\Http\FormRequest;
  */
 class ListQueryRequest extends FormRequest
 {
-    private const DEFAULT_PER_PAGE = 15;
+    /** @var list<int> Page sizes offered by the "Rows per page" select (qiick app UI). */
+    public const PER_PAGE_OPTIONS = [10, 20, 50, 100];
+
+    public const DEFAULT_PER_PAGE = 20;
 
     public function authorize(): bool
     {
@@ -31,7 +34,6 @@ class ListQueryRequest extends FormRequest
             'search' => ['nullable', 'string', 'max:255'],
             'sort' => ['nullable', 'string'],
             'direction' => ['nullable', 'in:asc,desc'],
-            'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
             'page' => ['nullable', 'integer', 'min:1'],
         ];
     }
@@ -61,9 +63,15 @@ class ListQueryRequest extends FormRequest
         return $this->string('direction', $default)->toString() === 'asc' ? 'asc' : 'desc';
     }
 
+    /**
+     * One of the "Rows per page" sizes; anything else (missing, stale or hand-edited URL) falls
+     * back to the default instead of failing, as externa-core's ValidatesListPerPageTrait.
+     */
     public function perPage(): int
     {
-        return $this->integer('per_page', self::DEFAULT_PER_PAGE);
+        $perPage = $this->integer('per_page');
+
+        return in_array($perPage, self::PER_PAGE_OPTIONS, true) ? $perPage : self::DEFAULT_PER_PAGE;
     }
 
     /**

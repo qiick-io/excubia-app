@@ -9,8 +9,9 @@ import {
     filterSelectClassName,
 } from '@/components/layout/page-header';
 import {
+    hasTablePaginationFooter,
     PageLayout,
-    TablePagination,
+    TablePaginationFooter,
     TablePanel,
 } from '@/components/layout/page-layout';
 import { Badge } from '@/components/ui/badge';
@@ -26,6 +27,7 @@ import {
 } from '@/components/ui/table';
 import { useDebouncedServerSearch } from '@/hooks/use-debounced-server-search';
 import AppLayout from '@/layouts/app-layout';
+import { listPerPageQuery } from '@/lib/list-per-page';
 import { normalizePaginated } from '@/lib/pagination';
 import type { LaravelPaginated } from '@/lib/pagination';
 import { cn } from '@/lib/utils';
@@ -130,13 +132,22 @@ export default function AdminActivityLogsIndex({
                         log_name: nextLogName || undefined,
                         date_from: nextDateFrom || undefined,
                         date_to: nextDateTo || undefined,
+                        per_page: listPerPageQuery(activityLogs.per_page),
                     },
                 }),
                 {},
                 { preserveState: true, preserveScroll: true },
             );
         },
-        [search, userIds, event, logName, dateFrom, dateTo],
+        [
+            search,
+            userIds,
+            event,
+            logName,
+            dateFrom,
+            dateTo,
+            activityLogs.per_page,
+        ],
     );
 
     const onDebouncedSearch = useCallback(
@@ -305,8 +316,8 @@ export default function AdminActivityLogsIndex({
             >
                 <TablePanel
                     footer={
-                        activityLogs.last_page > 1 ? (
-                            <TablePagination links={activityLogs.links ?? []} />
+                        hasTablePaginationFooter(activityLogs) ? (
+                            <TablePaginationFooter pagination={activityLogs} />
                         ) : undefined
                     }
                 >
