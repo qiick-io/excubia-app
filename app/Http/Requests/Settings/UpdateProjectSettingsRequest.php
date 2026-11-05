@@ -15,31 +15,56 @@ class UpdateProjectSettingsRequest extends FormRequest
 {
     use AuthorizesProjectSettingsTrait;
 
+    /** URL keys of the Reporting section. */
+    private const URL_KEYS = ['url', 'report_issue_url', 'report_bug_url', 'report_error_url'];
+
+    /** Number keys with their bounds: Checks and Data retention. */
+    private const NUMBER_KEYS = [
+        'stale_after_hours' => [1, 8760],
+        'reports_kept_per_project' => [1, 1000],
+        'runtime_retention_days' => [1, 3650],
+        'exceptions_retention_days' => [1, 3650],
+        'activity_retention_days' => [1, 3650],
+    ];
+
     /**
      * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
-        return [
+        $rules = [
             'app_name' => ['nullable', 'string', 'max:100'],
-            'report_bug_url' => ['nullable', 'url:http,https', 'max:2048'],
-            'reports_kept_per_project' => ['required', 'integer', 'between:1,1000'],
-            'stale_after_hours' => ['required', 'integer', 'between:1,8760'],
+            'description' => ['nullable', 'string', 'max:1000'],
         ];
+
+        foreach (self::URL_KEYS as $key) {
+            $rules[$key] = ['nullable', 'url:http,https', 'max:2048'];
+        }
+
+        foreach (self::NUMBER_KEYS as $key => [$min, $max]) {
+            $rules[$key] = ['required', 'integer', "between:{$min},{$max}"];
+        }
+
+        return $rules;
     }
 
     /**
-     * Values to store, with their final types.
+     * Values to store, with their final types: empty text becomes null.
      *
-     * @return array{app_name: string|null, report_bug_url: string|null, reports_kept_per_project: int, stale_after_hours: int}
+     * @return array<string, string|int|null>
      */
     public function settings(): array
     {
-        return [
-            'app_name' => $this->string('app_name')->trim()->toString() ?: null,
-            'report_bug_url' => $this->string('report_bug_url')->trim()->toString() ?: null,
-            'reports_kept_per_project' => $this->integer('reports_kept_per_project'),
-            'stale_after_hours' => $this->integer('stale_after_hours'),
-        ];
+        $values = [];
+
+        foreach (['app_name', 'description', ...self::URL_KEYS] as $key) {
+            $values[$key] = $this->string($key)->trim()->toString() ?: null;
+        }
+
+        foreach (array_keys(self::NUMBER_KEYS) as $key) {
+            $values[$key] = $this->integer($key);
+        }
+
+        return $values;
     }
 }

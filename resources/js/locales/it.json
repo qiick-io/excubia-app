@@ -273,11 +273,23 @@
                 "head": "Autenticazione e sicurezza"
             },
             "checksTitle": "Controlli",
-            "checksDescription": "Cronologia dei report e progetti obsoleti",
+            "checksDescription": "Progetti non aggiornati",
             "reportsKeptPerProject": "Report conservati per progetto",
             "reportsKeptPerProjectHint": "Quanti report conservare per ogni progetto; i più vecchi vengono rimossi.",
             "staleAfterHours": "Obsoleto dopo (ore)",
-            "staleAfterHoursHint": "Ore senza report prima che un progetto sia considerato obsoleto."
+            "staleAfterHoursHint": "Ore senza report prima che un progetto sia considerato obsoleto.",
+            "description": "Descrizione del progetto",
+            "url": "URL del progetto",
+            "reportIssueUrl": "URL segnalazione problema",
+            "reportErrorUrl": "URL segnalazione errore",
+            "retentionTitle": "Conservazione dei dati",
+            "retentionDescription": "Per quanto tempo Excubia conserva report, telemetria e registro attività. I dati più vecchi vengono eliminati ogni giorno.",
+            "runtimeRetentionDays": "Dati di runtime (giorni)",
+            "runtimeRetentionDaysHint": "Gli aggregati di richieste, query, job e HTTP più vecchi vengono eliminati.",
+            "exceptionsRetentionDays": "Eccezioni (giorni)",
+            "exceptionsRetentionDaysHint": "I gruppi di eccezioni non visti da questo numero di giorni vengono eliminati.",
+            "activityRetentionDays": "Registro attività (giorni)",
+            "activityRetentionDaysHint": "Le voci del registro attività più vecchie vengono eliminate."
         },
         "appearance": {
             "breadcrumb": "Impostazioni aspetto",

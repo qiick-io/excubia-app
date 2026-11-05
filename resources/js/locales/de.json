@@ -273,11 +273,23 @@
                 "head": "Authentifizierung & Sicherheit"
             },
             "checksTitle": "Prüfungen",
-            "checksDescription": "Berichtsverlauf und veraltete Projekte",
+            "checksDescription": "Veraltete Projekte",
             "reportsKeptPerProject": "Aufbewahrte Berichte pro Projekt",
             "reportsKeptPerProjectHint": "Wie viele Berichte pro Projekt aufbewahrt werden; ältere werden entfernt.",
             "staleAfterHours": "Veraltet nach (Stunden)",
-            "staleAfterHoursHint": "Stunden ohne Bericht, bevor ein Projekt als veraltet gilt."
+            "staleAfterHoursHint": "Stunden ohne Bericht, bevor ein Projekt als veraltet gilt.",
+            "description": "Projektbeschreibung",
+            "url": "Projekt-URL",
+            "reportIssueUrl": "URL für Problem melden",
+            "reportErrorUrl": "URL für Fehler melden",
+            "retentionTitle": "Datenaufbewahrung",
+            "retentionDescription": "Wie lange Excubia Berichte, Telemetrie und das Aktivitätsprotokoll aufbewahrt. Ältere Daten werden täglich gelöscht.",
+            "runtimeRetentionDays": "Laufzeitdaten (Tage)",
+            "runtimeRetentionDaysHint": "Ältere Aggregate von Anfragen, Abfragen, Jobs und HTTP werden gelöscht.",
+            "exceptionsRetentionDays": "Exceptions (Tage)",
+            "exceptionsRetentionDaysHint": "Exception-Gruppen, die so viele Tage nicht gesehen wurden, werden gelöscht.",
+            "activityRetentionDays": "Aktivitätsprotokoll (Tage)",
+            "activityRetentionDaysHint": "Ältere Einträge im Aktivitätsprotokoll werden gelöscht."
         },
         "appearance": {
             "breadcrumb": "Darstellungseinstellungen",

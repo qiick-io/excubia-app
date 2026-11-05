@@ -1,5 +1,6 @@
 <?php
 
+use App\Services\SettingsRepositoryService;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -8,8 +9,12 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-// Drops activity log entries older than `activitylog.clean_after_days`, as in qiick-io/externa-core.
-Schedule::command('activitylog:clean')->daily();
+// Drops activity log entries past the Data retention setting (default `activitylog.clean_after_days`).
+// A closure, so the setting is read when the task runs, not on every artisan boot.
+Schedule::call(fn () => Artisan::call('activitylog:clean', [
+    '--days' => app(SettingsRepositoryService::class)->activityRetentionDays(),
+    '--force' => true,
+]))->name('activitylog:clean')->daily();
 
 // Keeps the newest reports of each project (setting "Reports kept per project").
 Schedule::command('excubia:prune-reports')->daily();

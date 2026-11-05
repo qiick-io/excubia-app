@@ -273,11 +273,23 @@
                 "head": "Authentication & security"
             },
             "checksTitle": "Checks",
-            "checksDescription": "Report history and stale projects",
+            "checksDescription": "Stale projects",
             "reportsKeptPerProject": "Reports kept per project",
             "reportsKeptPerProjectHint": "How many reports to keep for each project; older ones are removed.",
             "staleAfterHours": "Stale after (hours)",
-            "staleAfterHoursHint": "Hours without a report before a project counts as stale."
+            "staleAfterHoursHint": "Hours without a report before a project counts as stale.",
+            "description": "Project description",
+            "url": "Project URL",
+            "reportIssueUrl": "Report issue URL",
+            "reportErrorUrl": "Report error URL",
+            "retentionTitle": "Data retention",
+            "retentionDescription": "How long Excubia keeps reports, telemetry and the activity log. Older data is deleted daily.",
+            "runtimeRetentionDays": "Runtime data (days)",
+            "runtimeRetentionDaysHint": "Request, query, job and HTTP aggregates older than this are deleted.",
+            "exceptionsRetentionDays": "Exceptions (days)",
+            "exceptionsRetentionDaysHint": "Exception groups not seen for this many days are deleted.",
+            "activityRetentionDays": "Activity log (days)",
+            "activityRetentionDaysHint": "Activity log entries older than this are deleted."
         },
         "appearance": {
             "breadcrumb": "Appearance settings",
