@@ -54,7 +54,7 @@ export function AiAssistantPanel() {
         PanelResponse
     >({ message: '', conversation_id: '' });
 
-    const isAvailable = isAssistantEnabled && can(PermissionEnum.AiUse);
+    const isAvailable = isAssistantEnabled && can(PermissionEnum.CanUseAi);
     const isAssistantRoute = isCurrentUrl(
         assistantRoutes.index.url(),
         undefined,

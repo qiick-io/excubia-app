@@ -61,7 +61,9 @@ export default function SettingsLayout({
         },
     ];
 
-    const projectNavItems: NavItem[] = can(PermissionEnum.SettingsManage)
+    const projectNavItems: NavItem[] = can(
+        PermissionEnum.CanManageProjectSettings,
+    )
         ? [
               {
                   title: t('settings.layout.general'),
@@ -97,13 +99,17 @@ export default function SettingsLayout({
         : [];
 
     const accessNavItems: NavItem[] = [
-        ...(can(PermissionEnum.RolesManage)
+        ...(can(PermissionEnum.CanShowRoles)
             ? [
                   {
                       title: t('settings.layout.roles'),
                       href: roles.index.url(),
                       icon: null,
                   },
+              ]
+            : []),
+        ...(can(PermissionEnum.CanShowPermissions)
+            ? [
                   {
                       title: t('settings.layout.permissions'),
                       href: permissions.index.url(),
@@ -111,7 +117,7 @@ export default function SettingsLayout({
                   },
               ]
             : []),
-        ...(can(PermissionEnum.JobsManage)
+        ...(can(PermissionEnum.CanShowJobs)
             ? [
                   {
                       title: t('settings.layout.jobs'),

@@ -65,7 +65,7 @@ export default function AdminRolesIndex({
         <AppLayout
             breadcrumbs={breadcrumbs}
             headerActions={
-                can(PermissionEnum.RolesManage) ? (
+                can(PermissionEnum.CanCreateRoles) ? (
                     <Button asChild>
                         <Link href={rolesRoutes.create.url()}>
                             <Plus className="mr-1 size-4" />

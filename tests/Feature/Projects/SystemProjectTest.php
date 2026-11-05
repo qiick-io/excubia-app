@@ -96,7 +96,7 @@ it('keeps the system project name but lets it be disabled', function () {
 
 it('lets only admins restrict a project to admins', function () {
     $project = systemProject();
-    Role::create(['name' => 'project-manager'])->givePermissionTo(['projects.view', 'projects.manage']);
+    Role::create(['name' => 'project-manager'])->givePermissionTo(['can-show-projects', 'can-create-projects', 'can-edit-projects', 'can-delete-projects']);
     $manager = User::factory()->create()->assignRole('project-manager');
 
     $this->actingAs($manager)

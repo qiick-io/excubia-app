@@ -74,7 +74,7 @@ it('sends guests to the login page', function () {
 });
 
 it('lets a custom role with jobs.manage open the jobs page', function () {
-    Role::create(['name' => 'operator'])->givePermissionTo(PermissionEnum::JobsManage->value);
+    Role::create(['name' => 'operator'])->givePermissionTo([PermissionEnum::CanShowJobs->value, PermissionEnum::CanManageJobs->value]);
 
     $this->actingAs(jobsPageUser('operator'))->get(route('jobs.index'))->assertOk();
 });
@@ -151,7 +151,7 @@ it('links the jobs page from the performance page for jobs.manage only', functio
         ->get(route('performance.edit'))
         ->assertInertia(fn (Assert $page) => $page->where('links.jobs', route('jobs.index')));
 
-    Role::create(['name' => 'settings-manager'])->givePermissionTo(PermissionEnum::SettingsManage->value);
+    Role::create(['name' => 'settings-manager'])->givePermissionTo(PermissionEnum::CanManageProjectSettings->value);
 
     $this->actingAs(jobsPageUser('settings-manager'))
         ->get(route('performance.edit'))

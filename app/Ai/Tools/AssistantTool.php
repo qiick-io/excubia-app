@@ -12,7 +12,7 @@ use Laravel\Ai\Tools\Request;
 use Stringable;
 
 /**
- * Base of the read-only assistant tools: checks `projects.view` for the user who asked, then
+ * Base of the read-only assistant tools: checks `can-show-projects` for the user who asked, then
  * returns the tool's data as JSON. A missing permission or project comes back as an `error`
  * the model can explain to the user.
  */

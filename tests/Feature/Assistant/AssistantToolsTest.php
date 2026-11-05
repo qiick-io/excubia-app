@@ -127,7 +127,7 @@ it('compares the latest two reports and returns the history', function () {
         ->and(collect($history['reports'])->pluck('id')->all())->toBe([$newer->id, $older->id]);
 });
 
-it('gives nothing to a user without projects.view', function (string $tool) {
+it('gives nothing to a user without can-show-projects', function (string $tool) {
     $shop = Project::factory()->create(['slug' => 'shop']);
     toolReport($shop, '2026-11-02 08:00:00', [toolFinding('guzzlehttp/guzzle', 'high')]);
 

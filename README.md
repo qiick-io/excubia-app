@@ -120,7 +120,7 @@ OLLAMA_URL=http://localhost:11434
 OLLAMA_MODEL=qwen3.5:4b
 ```
 
-Pick a model that supports tool calling. For an OpenAI-compatible local server such as LM Studio, set `AI_DEFAULT_PROVIDER=local`, `LOCAL_AI_URL` and `LOCAL_AI_MODEL` instead. Users with the `ai.use` permission (admin and super-admin by default) see **Assistant** in the sidebar and can ask questions about the stored reports, such as "which projects have critical advisories?" or "what got worse since last week?". The assistant is read-only. To use a cloud provider instead, set `AI_DEFAULT_PROVIDER` and that provider's key (see `config/ai.php`). The data in the Privacy section below then leaves your server.
+Pick a model that supports tool calling. For an OpenAI-compatible local server such as LM Studio, set `AI_DEFAULT_PROVIDER=local`, `LOCAL_AI_URL` and `LOCAL_AI_MODEL` instead. Users with the `can-use-ai` permission (admin and super-admin by default) see **Assistant** in the sidebar and can ask questions about the stored reports, such as "which projects have critical advisories?" or "what got worse since last week?". The assistant is read-only. To use a cloud provider instead, set `AI_DEFAULT_PROVIDER` and that provider's key (see `config/ai.php`). The data in the Privacy section below then leaves your server.
 
 ### Update
 

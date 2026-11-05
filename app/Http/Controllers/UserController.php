@@ -20,7 +20,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 
 /**
- * Admin pages for dashboard users, behind `users.manage` (UserPolicy). Create and edit happen
+ * Admin pages for dashboard users, behind `can-*-users` (UserPolicy). Create and edit happen
  * in a drawer on the list page.
  */
 class UserController extends Controller

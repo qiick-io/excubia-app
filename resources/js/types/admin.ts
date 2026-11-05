@@ -8,7 +8,7 @@ export type Paginated<T> = {
     links?: { url: string | null; label: string; active: boolean }[];
 };
 
-/** Permission names grouped by resource (`users.manage` → `users`) for the role form. */
+/** Permission names grouped by resource (`can-create-users` → `users`) for the role form. */
 export type PermissionGroup = {
     section: string;
     label: string;

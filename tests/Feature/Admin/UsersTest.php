@@ -86,7 +86,7 @@ it('searches, sorts and paginates users', function () {
 });
 
 it('lets group managers search users for the group picker', function () {
-    Role::create(['name' => 'group-keeper'])->givePermissionTo(PermissionEnum::GroupsManage->value);
+    Role::create(['name' => 'group-keeper'])->givePermissionTo([PermissionEnum::CanShowGroups->value, PermissionEnum::CanCreateGroups->value, PermissionEnum::CanEditGroups->value, PermissionEnum::CanDeleteGroups->value]);
     $keeper = User::factory()->create()->assignRole('group-keeper');
 
     $this->actingAs($keeper)->get(route('users.index'))->assertForbidden();
@@ -228,4 +228,24 @@ it('sends a password-reset email through Fortify', function () {
         ->assertRedirect();
 
     Notification::assertSentTo($user, ResetPassword::class);
+});
+
+it('splits user permissions per operation, as in externa-core', function () {
+    Role::create(['name' => 'user-viewer'])->givePermissionTo(PermissionEnum::CanShowUsers->value);
+    Role::create(['name' => 'user-editor'])->givePermissionTo([PermissionEnum::CanShowUsers->value, PermissionEnum::CanEditUsers->value]);
+    $viewer = User::factory()->create()->assignRole('user-viewer');
+    $editor = User::factory()->create()->assignRole('user-editor');
+    $target = managedUser();
+
+    $this->actingAs($viewer)->get(route('users.index'))->assertOk();
+    $this->actingAs($viewer)->post(route('users.store'), userPayload())->assertForbidden();
+    $this->actingAs($viewer)->put(route('users.update', $target), userPayload(['email' => $target->email]))->assertForbidden();
+
+    $this->actingAs($editor)->post(route('users.store'), userPayload())->assertForbidden();
+    $this->actingAs($editor)->delete(route('users.destroy', $target))->assertForbidden();
+    $this->actingAs($editor)
+        ->put(route('users.update', $target), userPayload(['email' => $target->email, 'password' => '']))
+        ->assertRedirect(route('users.index'));
+
+    expect($target->fresh()->first_name)->toBe('Grace');
 });

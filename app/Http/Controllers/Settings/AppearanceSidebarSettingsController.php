@@ -13,7 +13,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 
 /**
- * Main sidebar module order and visibility. The routes require `settings.manage`.
+ * Main sidebar module order and visibility. The routes require `can-manage-project-settings`.
  */
 class AppearanceSidebarSettingsController extends Controller
 {

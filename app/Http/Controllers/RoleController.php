@@ -79,19 +79,19 @@ class RoleController extends Controller
     }
 
     /**
-     * The role form with permissions grouped by resource (`users.manage` → `users`).
+     * The role form with permissions grouped by resource (`can-create-users` → `users`).
      */
     private function form(?Role $role): Response
     {
         return Inertia::render('admin/roles/form', [
             // Resolved so Inertia gets a flat object (not { data: ... }).
             'role' => $role === null ? null : (new RoleResource($role))->resolve(),
-            'permissionGroups' => collect(PermissionEnum::values())
-                ->groupBy(fn (string $permission): string => Str::before($permission, '.'))
+            'permissionGroups' => collect(PermissionEnum::cases())
+                ->groupBy(fn (PermissionEnum $permission): string => $permission->resource())
                 ->map(fn ($permissions, string $section): array => [
                     'section' => $section,
                     'label' => Str::headline($section),
-                    'permissions' => $permissions->values()->all(),
+                    'permissions' => $permissions->map(fn (PermissionEnum $permission): string => $permission->value)->values()->all(),
                 ])
                 ->values()
                 ->all(),

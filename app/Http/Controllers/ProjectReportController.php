@@ -74,7 +74,7 @@ class ProjectReportController extends Controller
                     ->limit(100)
                     ->get(),
             )->resolve(),
-            'canManageExceptions' => (bool) $request->user()?->can(PermissionEnum::ExceptionsManage->value),
+            'canManageExceptions' => (bool) $request->user()?->can(PermissionEnum::CanManageExceptions->value),
             'reports' => HealthReportResource::collection(
                 $project->healthReports()->orderByDesc('received_at')->orderByDesc('id')->get(),
             )->resolve(),

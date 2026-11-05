@@ -15,7 +15,7 @@ use Inertia\Response;
 use Spatie\Activitylog\Models\Activity;
 
 /**
- * Activity log browser with user, action, log and date filters, behind `activity.view`
+ * Activity log browser with user, action, log and date filters, behind `can-show-activity-logs`
  * (ActivityPolicy). Copied from qiick-io/externa-core.
  */
 class ActivityLogController extends Controller

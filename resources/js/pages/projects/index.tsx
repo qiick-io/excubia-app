@@ -67,7 +67,10 @@ export default function ProjectsIndex({
     const projects = normalizePaginated(projectsProp);
     const { t } = useTranslation();
     const { can } = useCan();
-    const canManage = can(PermissionEnum.ProjectsManage);
+    const canCreate = can(PermissionEnum.CanCreateProjects);
+    const canEdit = can(PermissionEnum.CanEditProjects);
+    const canDelete = can(PermissionEnum.CanDeleteProjects);
+    const hasRowActions = canEdit || canDelete;
     const [search, setSearch] = useState(filters.search ?? '');
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [editing, setEditing] = useState<ProjectRow | null>(null);
@@ -104,7 +107,7 @@ export default function ProjectsIndex({
     useDebouncedServerSearch(search, filters.search ?? '', onDebouncedSearch);
 
     const openDrawer = (project: ProjectRow | null): void => {
-        if (!canManage) {
+        if (project ? !canEdit : !canCreate) {
             return;
         }
 
@@ -161,7 +164,7 @@ export default function ProjectsIndex({
         <AppLayout
             breadcrumbs={breadcrumbs}
             headerActions={
-                canManage ? (
+                canCreate ? (
                     <Button type="button" onClick={() => openDrawer(null)}>
                         <Plus className="mr-1 size-4" />
                         {t('projects.newProject')}
@@ -219,7 +222,7 @@ export default function ProjectsIndex({
                                     >
                                         {t('common.clearFilters')}
                                     </Button>
-                                ) : canManage ? (
+                                ) : canCreate ? (
                                     <Button
                                         type="button"
                                         onClick={() => openDrawer(null)}
@@ -252,7 +255,7 @@ export default function ProjectsIndex({
                                         <TableHead>
                                             {t('projects.lastReport')}
                                         </TableHead>
-                                        {canManage ? (
+                                        {hasRowActions ? (
                                             <TableHead className="w-[1%] text-right">
                                                 {t('projects.actions')}
                                             </TableHead>
@@ -356,79 +359,85 @@ export default function ProjectsIndex({
                                                       ).toLocaleString()
                                                     : t('projects.never')}
                                             </TableCell>
-                                            {canManage ? (
+                                            {hasRowActions ? (
                                                 <TableCell
                                                     className="text-right whitespace-nowrap"
                                                     onClick={(event) =>
                                                         event.stopPropagation()
                                                     }
                                                 >
-                                                    <HeaderIconButton
-                                                        type="button"
-                                                        size="icon-sm"
-                                                        label={t(
-                                                            'projects.editProject',
-                                                        )}
-                                                        onClick={() =>
-                                                            openDrawer(project)
-                                                        }
-                                                    >
-                                                        <Pencil className="size-3.5" />
-                                                    </HeaderIconButton>
-                                                    {project.is_system ? null : (
-                                                        <>
-                                                            <HeaderIconButton
-                                                                type="button"
-                                                                size="icon-sm"
-                                                                label={t(
-                                                                    'projects.token.rotate',
-                                                                )}
-                                                                onClick={() =>
-                                                                    setPending({
-                                                                        kind: 'rotate',
-                                                                        project,
-                                                                    })
-                                                                }
-                                                            >
-                                                                <KeyRound className="size-3.5" />
-                                                            </HeaderIconButton>
-                                                            {project.has_push_token ? (
-                                                                <HeaderIconButton
-                                                                    type="button"
-                                                                    size="icon-sm"
-                                                                    label={t(
-                                                                        'projects.token.revoke',
-                                                                    )}
-                                                                    onClick={() =>
-                                                                        setPending(
-                                                                            {
-                                                                                kind: 'revoke',
-                                                                                project,
-                                                                            },
-                                                                        )
-                                                                    }
-                                                                >
-                                                                    <ShieldOff className="size-3.5" />
-                                                                </HeaderIconButton>
-                                                            ) : null}
-                                                            <HeaderIconButton
-                                                                type="button"
-                                                                variant="destructive-ghost"
-                                                                size="icon-sm"
-                                                                label={t(
-                                                                    'common.delete',
-                                                                )}
-                                                                onClick={() =>
-                                                                    setPending({
-                                                                        kind: 'delete',
-                                                                        project,
-                                                                    })
-                                                                }
-                                                            >
-                                                                <Trash2 className="size-3.5" />
-                                                            </HeaderIconButton>
-                                                        </>
-                                                    )}
+                                                    {canEdit ? (
+                                                        <HeaderIconButton
+                                                            type="button"
+                                                            size="icon-sm"
+                                                            label={t(
+                                                                'projects.editProject',
+                                                            )}
+                                                            onClick={() =>
+                                                                openDrawer(
+                                                                    project,
+                                                                )
+                                                            }
+                                                        >
+                                                            <Pencil className="size-3.5" />
+                                                        </HeaderIconButton>
+                                                    ) : null}
+                                                    {canEdit &&
+                                                    !project.is_system ? (
+                                                        <HeaderIconButton
+                                                            type="button"
+                                                            size="icon-sm"
+                                                            label={t(
+                                                                'projects.token.rotate',
+                                                            )}
+                                                            onClick={() =>
+                                                                setPending({
+                                                                    kind: 'rotate',
+                                                                    project,
+                                                                })
+                                                            }
+                                                        >
+                                                            <KeyRound className="size-3.5" />
+                                                        </HeaderIconButton>
+                                                    ) : null}
+                                                    {canEdit &&
+                                                    !project.is_system &&
+                                                    project.has_push_token ? (
+                                                        <HeaderIconButton
+                                                            type="button"
+                                                            size="icon-sm"
+                                                            label={t(
+                                                                'projects.token.revoke',
+                                                            )}
+                                                            onClick={() =>
+                                                                setPending({
+                                                                    kind: 'revoke',
+                                                                    project,
+                                                                })
+                                                            }
+                                                        >
+                                                            <ShieldOff className="size-3.5" />
+                                                        </HeaderIconButton>
+                                                    ) : null}
+                                                    {canDelete &&
+                                                    !project.is_system ? (
+                                                        <HeaderIconButton
+                                                            type="button"
+                                                            variant="destructive-ghost"
+                                                            size="icon-sm"
+                                                            label={t(
+                                                                'common.delete',
+                                                            )}
+                                                            onClick={() =>
+                                                                setPending({
+                                                                    kind: 'delete',
+                                                                    project,
+                                                                })
+                                                            }
+                                                        >
+                                                            <Trash2 className="size-3.5" />
+                                                        </HeaderIconButton>
+                                                    ) : null}
                                                 </TableCell>
                                             ) : null}
                                         </TableRow>
@@ -442,7 +451,7 @@ export default function ProjectsIndex({
                 <ProjectFormDrawer
                     editing={editing}
                     open={drawerOpen}
-                    readOnly={!canManage}
+                    readOnly={editing ? !canEdit : !canCreate}
                     canChangeVisibility={canChangeVisibility}
                     onCancel={closeDrawer}
                     onSuccess={closeDrawer}

@@ -62,7 +62,7 @@ function resolveInitialUserIds(filters: Filters): number[] {
 }
 
 /**
- * Searchable activity log (`activity.view`) with user, action, log and date filters and
+ * Searchable activity log (`can-show-activity-logs`) with user, action, log and date filters and
  * expandable details (log, IP, changes). Copied from qiick-io/externa-core.
  */
 export default function AdminActivityLogsIndex({

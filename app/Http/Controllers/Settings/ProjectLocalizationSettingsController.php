@@ -13,7 +13,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 
 /**
- * Localization project settings: the default UI language. The routes require `settings.manage`.
+ * Localization project settings: the default UI language. The routes require `can-manage-project-settings`.
  */
 class ProjectLocalizationSettingsController extends Controller
 {

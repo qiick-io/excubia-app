@@ -67,7 +67,7 @@ export default function AdminPermissionsIndex({
         <AppLayout
             breadcrumbs={breadcrumbs}
             headerActions={
-                can(PermissionEnum.RolesManage) ? (
+                can(PermissionEnum.CanEditPermissions) ? (
                     <HeaderIconButton
                         type="button"
                         variant="outline"

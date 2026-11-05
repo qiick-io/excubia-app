@@ -10,28 +10,28 @@ use App\Models\User;
 use Spatie\Permission\Models\Role;
 
 /**
- * Custom roles are managed with `roles.manage`. Built-in roles (RoleEnum) are read-only:
+ * Custom roles are managed with `can-*-roles`. Built-in roles (RoleEnum) are read-only:
  * PermissionSeeder owns their permissions.
  */
 class RolePolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->can(PermissionEnum::RolesManage->value);
+        return $user->can(PermissionEnum::CanShowRoles->value);
     }
 
     public function create(User $user): bool
     {
-        return $this->viewAny($user);
+        return $user->can(PermissionEnum::CanCreateRoles->value);
     }
 
     public function update(User $user, Role $role): bool
     {
-        return $this->viewAny($user) && RoleEnum::tryFrom($role->name) === null;
+        return $user->can(PermissionEnum::CanEditRoles->value) && RoleEnum::tryFrom($role->name) === null;
     }
 
     public function delete(User $user, Role $role): bool
     {
-        return $this->update($user, $role);
+        return $user->can(PermissionEnum::CanDeleteRoles->value) && RoleEnum::tryFrom($role->name) === null;
     }
 }

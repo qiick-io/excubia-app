@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Enums;
 
 /**
- * Who sees a project (#70): everyone with `projects.view`, or only admins and super-admins.
+ * Who sees a project (#70): everyone with `can-show-projects`, or only admins and super-admins.
  */
 enum ProjectVisibilityEnum: string
 {

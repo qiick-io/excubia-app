@@ -18,7 +18,7 @@ class StoreAssistantMessageRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return (bool) config('excubia.ai_enabled') && (bool) $this->user()?->can(PermissionEnum::AiUse->value);
+        return (bool) config('excubia.ai_enabled') && (bool) $this->user()?->can(PermissionEnum::CanUseAi->value);
     }
 
     /**

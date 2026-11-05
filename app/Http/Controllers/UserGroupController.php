@@ -18,7 +18,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 
 /**
- * Admin pages for user groups and their members, behind `groups.manage` (UserGroupPolicy).
+ * Admin pages for user groups and their members, behind `can-*-groups` (UserGroupPolicy).
  * Create and edit happen in a drawer on the list page.
  */
 class UserGroupController extends Controller

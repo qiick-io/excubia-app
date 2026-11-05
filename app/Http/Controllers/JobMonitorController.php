@@ -14,7 +14,7 @@ use Inertia\Response;
 
 /**
  * Lightweight queue monitor (`/settings/jobs`): pending jobs and failed jobs with retry and
- * delete, behind `jobs.manage` (JobPolicy). Copied from qiick-io/externa-core.
+ * delete, behind `can-show-jobs` / `can-manage-jobs` (JobPolicy). Copied from qiick-io/externa-core.
  */
 class JobMonitorController extends Controller
 {

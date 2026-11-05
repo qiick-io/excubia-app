@@ -15,7 +15,7 @@ use Inertia\Response;
 /**
  * Home page (#77): the issue-first overview of the projects the user may see, scoped to one
  * project and a period from the URL (`?project=slug&period=14`). An unknown project or period
- * falls back to all projects and 14 days. Users without `projects.view` see the page without
+ * falls back to all projects and 14 days. Users without `can-show-projects` see the page without
  * projects.
  */
 class DashboardController extends Controller

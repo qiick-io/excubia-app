@@ -15,7 +15,7 @@ use Inertia\Testing\AssertableInertia as Assert;
 
 /**
  * Project settings pages copied from externa-core (General, Localization, Authentication &
- * security, Appearance, Sidebar, Performance), all behind `settings.manage`.
+ * security, Appearance, Sidebar, Performance), all behind `can-manage-project-settings`.
  */
 beforeEach(function () {
     $this->seed(PermissionSeeder::class);
@@ -74,19 +74,19 @@ dataset('project settings writes', [
     'permission cache flush' => ['post', 'performance.flush-spatie-permissions'],
 ]);
 
-it('shows every project settings page to settings.manage', function (string $route, string $component) {
+it('shows every project settings page to can-manage-project-settings', function (string $route, string $component) {
     $this->actingAs(projectSettingsManager())->get(route($route))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page->component($component));
 })->with('project settings pages');
 
-it('keeps every project settings page behind settings.manage', function (string $route, string $component, RoleEnum $role) {
+it('keeps every project settings page behind can-manage-project-settings', function (string $route, string $component, RoleEnum $role) {
     $this->actingAs(User::factory()->create()->assignRole($role->value))
         ->get(route($route))
         ->assertForbidden();
 })->with('project settings pages')->with([RoleEnum::Admin, RoleEnum::Reader]);
 
-it('keeps every project settings write behind settings.manage', function (string $method, string $route, RoleEnum $role) {
+it('keeps every project settings write behind can-manage-project-settings', function (string $method, string $route, RoleEnum $role) {
     $this->actingAs(User::factory()->create()->assignRole($role->value))
         ->{$method}(route($route), [...generalSettingsPayload(), ...securitySettingsPayload()])
         ->assertForbidden();
