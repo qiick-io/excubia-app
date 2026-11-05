@@ -265,7 +265,14 @@ function ProjectTabs({ slug, view }: { slug: string; view: ProjectView }) {
                     const Icon = VIEW_ICONS[item];
 
                     return (
-                        <TabsTrigger key={item} value={item} asChild>
+                        <TabsTrigger
+                            key={item}
+                            value={item}
+                            // Each tab is a link to its own page: there is no TabsContent, so
+                            // Radix's aria-controls would point at a missing id (axe critical).
+                            aria-controls={undefined}
+                            asChild
+                        >
                             <Link
                                 href={
                                     item === 'overview'
