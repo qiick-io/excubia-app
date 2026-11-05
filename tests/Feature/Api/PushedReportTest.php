@@ -65,6 +65,25 @@ function pushReport(?string $token, array $envelope): TestResponse
     return test()->postJson(route('api.reports.store'), $envelope, $headers);
 }
 
+it('uses the generatedAt of an excubia-core 1.0 report and keeps its details', function () {
+    [, $token] = pushingProject();
+    $envelope = pushEnvelope();
+    $envelope['report']['generatedAt'] = '2026-11-05T07:58:30Z';
+    $envelope['report']['excubiaVersion'] = '1.0.0-beta.1';
+    $envelope['report']['project'] = ['php' => ['version' => '8.4.12', 'cycle' => '8.4', 'securitySupportEndsOn' => '2028-12-31', 'activeSupportEndsOn' => '2026-12-31'], 'laravel' => null, 'node' => null];
+
+    pushReport($token, $envelope)->assertCreated();
+
+    $report = HealthReport::query()->sole();
+
+    expect($report->generated_at->toIso8601ZuluString())->toBe('2026-11-05T07:58:30Z')
+        ->and($report->report['project']['php']['cycle'])->toBe('8.4');
+
+    pushReport($token, [...pushEnvelope(), 'report' => [...pushEnvelope()['report'], 'generatedAt' => 'yesterday-ish']])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('report.generatedAt');
+});
+
 it('stores a valid push with its summary and updates last_report_at', function () {
     [$project, $token] = pushingProject();
     $envelope = pushEnvelope();
