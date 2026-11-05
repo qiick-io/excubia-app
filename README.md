@@ -81,10 +81,10 @@ The **Excubia** system project runs the `qiick/excubia-core` checks on this inst
 ### Add a project
 
 1. In the app, open **Projects → New project** and give it a name. The app shows the push token **once**: copy it.
-2. In the Laravel project to watch, install the core package. You need a version with `excubia push`, which comes in 0.2.0:
+2. In the Laravel project to watch, install the core package (1.0.0-beta.1 or later, the first version with `excubia push`):
 
     ```bash
-    composer require qiick/excubia-core
+    composer require qiick/excubia-core:^1.0@beta
     ```
 
 3. Add the two lines from the token dialog to the project's `.env`:
