@@ -21,7 +21,9 @@
         "rowsPerPage": "Zeilen pro Seite",
         "selectedCount": "{{count}} ausgewählt",
         "clearFilters": "Filter zurücksetzen",
-        "back": "Zurück"
+        "back": "Zurück",
+        "offline": "Offline",
+        "online": "Online"
     },
     "emptyState": {
         "users": {
@@ -97,7 +99,8 @@
         "loading": "Wird geladen",
         "saving": "Wird gespeichert",
         "reorder": "Neu ordnen",
-        "selectAll": "Alle auswählen"
+        "selectAll": "Alle auswählen",
+        "moreActions": "Weitere Aktionen"
     },
     "auth": {
         "login": {
@@ -762,5 +765,26 @@
         "resolve": "Lösen",
         "ignore": "Ignorieren",
         "reopen": "Wieder öffnen"
+    },
+    "ai": {
+        "fabDescription": "Schnelle Assistenten-Schublade. Öffnen Sie die Vollseite für den Verlauf.",
+        "fabTitle": "Neuer Chat",
+        "openFullPage": "Ganze Seite öffnen"
+    },
+    "files": {
+        "card": {
+            "select": "{{name}} auswählen"
+        },
+        "loadMore": "Mehr laden",
+        "loading": "Laden…",
+        "tags": {
+            "moreTags": "{{count}} weitere Tags"
+        }
+    },
+    "realtime": {
+        "connected": "Realtime verbunden",
+        "connecting": "Verbinde…",
+        "disabled": "Realtime aus",
+        "offline": "Realtime offline"
     }
 }

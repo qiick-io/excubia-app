@@ -16,7 +16,7 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
-import { NavUser } from '@/components/nav-user';
+import { AppNavUser } from '@/components/app-user-menu';
 import {
     Sidebar,
     SidebarContent,
@@ -254,7 +254,7 @@ export function AppSidebar() {
 
                 <SidebarFooter>
                     <NavFooter items={footerNavItems} className="mt-auto" />
-                    <NavUser />
+                    <AppNavUser />
                     {appVersion ? (
                         <p className="truncate px-2 text-center text-xs leading-none text-muted-foreground group-data-[collapsible=icon]:hidden">
                             v{appVersion}
