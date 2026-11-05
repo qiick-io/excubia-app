@@ -38,6 +38,10 @@ return [
 
     'exceptions_retention_days' => (int) env('EXCUBIA_EXCEPTIONS_RETENTION_DAYS', 90),
 
+    // The system project also records this install's own runtime and exceptions (#84). The data
+    // stays in this database, masked by excubia-core like any project's.
+    'self_monitoring' => (bool) env('EXCUBIA_SELF_MONITORING', true),
+
     /*
     |--------------------------------------------------------------------------
     | Assistant

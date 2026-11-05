@@ -19,3 +19,6 @@ Schedule::command('excubia:prune-telemetry')->daily();
 
 // Excubia checks itself and stores the report on the system project (#70).
 Schedule::command('excubia:system-report')->daily();
+
+// Excubia's own runtime and exceptions, moved from the core's buffers to the system project (#84).
+Schedule::command('excubia:system-telemetry')->everyMinute()->when(fn (): bool => (bool) config('excubia.self_monitoring'));

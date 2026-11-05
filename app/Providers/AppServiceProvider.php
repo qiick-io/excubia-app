@@ -10,6 +10,7 @@ use App\Policies\PermissionPolicy;
 use App\Policies\RolePolicy;
 use App\Services\EffectivePermissionResolverService;
 use App\Services\JobMonitorQueryService;
+use App\Services\SelfMonitoringService;
 use App\Services\SettingsRepositoryService;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Events\Failed;
@@ -53,6 +54,8 @@ class AppServiceProvider extends ServiceProvider
         $this->configureActivityLogging();
         $this->registerAuthActivityListeners();
         $this->configureRateLimiting();
+        // Excubia's own runtime and exceptions for the system project (#84).
+        app(SelfMonitoringService::class)->register($this->app);
     }
 
     /**

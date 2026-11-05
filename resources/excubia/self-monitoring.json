@@ -1,0 +1,8 @@
+{
+    "runtime": {
+        "enabled": true
+    },
+    "exceptions": {
+        "enabled": true
+    }
+}

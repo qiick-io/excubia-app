@@ -63,6 +63,7 @@ php artisan excubia:create-user
 The app runs scheduled tasks:
 
 - `excubia:system-report` checks this Excubia install and stores the report on the system project (daily);
+- `excubia:system-telemetry` stores this install's own runtime and exceptions on the system project (every minute);
 - `excubia:prune-reports` keeps the newest reports of each project (30 by default, in **Settings → Project**);
 - `excubia:prune-telemetry` keeps 14 days of runtime aggregates and exception groups seen in the last 90 days (`EXCUBIA_RUNTIME_RETENTION_DAYS`, `EXCUBIA_EXCEPTIONS_RETENTION_DAYS`);
 - `activitylog:clean` trims the activity log.
@@ -78,6 +79,8 @@ or keep `php artisan schedule:work` running. **Refresh now** on the system proje
 ### Excubia watches itself
 
 The **Excubia** system project runs the `qiick/excubia-core` checks on this install every day, with no push token: the report is built and stored locally. Only package names and versions leave the server, as for any project. It cannot be deleted or renamed. Disable it in its drawer to stop the checks. Everyone with access to projects sees it; an admin can set its **Visibility** to _Admins only_, since the instance's own findings can be sensitive. The same setting works on any project.
+
+It also records this install's own runtime (requests, slow queries, jobs, scheduled tasks, outgoing HTTP) and exceptions: excubia-core's collectors run on the app, and `excubia:system-telemetry` (every minute) moves them to the system project, with no push token or HTTP call. The data stays in this database, masked by the core. Turn it off with `EXCUBIA_SELF_MONITORING=false`.
 
 ### Add a project
 
