@@ -1,6 +1,9 @@
 /** Authenticated user record from shared Inertia props. */
 export type User = {
     id: number;
+    first_name: string;
+    last_name: string | null;
+    /** First and last name. */
     name: string;
     email: string;
     avatar?: string;

@@ -155,12 +155,12 @@ it('detects the last active super-admin', function () {
 });
 
 it('makes the first CLI user super-admin and later ones reader', function () {
-    $this->artisan('excubia:create-user', ['--name' => 'Ada', '--email' => 'ada@example.com'])
+    $this->artisan('excubia:create-user', ['--first-name' => 'Ada', '--last-name' => 'Lovelace', '--email' => 'ada@example.com'])
         ->expectsQuestion('Password', 'correct-horse-battery')
         ->expectsChoice('Role', 'super-admin', ['admin', 'reader', 'super-admin'])
         ->assertSuccessful();
 
-    $this->artisan('excubia:create-user', ['--name' => 'Bob', '--email' => 'bob@example.com', '--role' => 'reader'])
+    $this->artisan('excubia:create-user', ['--first-name' => 'Bob', '--last-name' => 'Builder', '--email' => 'bob@example.com', '--role' => 'reader'])
         ->expectsQuestion('Password', 'correct-horse-battery')
         ->assertSuccessful();
 

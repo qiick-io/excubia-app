@@ -29,7 +29,8 @@ use function Laravel\Prompts\text;
 class CreateUserCommand extends Command
 {
     protected $signature = 'excubia:create-user
-        {--name= : Display name}
+        {--first-name= : First name}
+        {--last-name= : Last name (optional)}
         {--email= : Login email}
         {--role= : Role name (default: super-admin for the first user, reader afterwards)}';
 
@@ -44,14 +45,16 @@ class CreateUserCommand extends Command
         $roles = Role::query()->orderBy('name')->pluck('name')->all();
 
         $input = [
-            'name' => $this->option('name') ?? text('Name', required: true),
+            'first_name' => $this->option('first-name') ?? text('First name', required: true),
+            'last_name' => $this->option('last-name') ?? text('Last name'),
             'email' => Str::lower((string) ($this->option('email') ?? text('Email', required: true))),
             'password' => password('Password', required: true),
             'role' => $this->option('role') ?? select('Role', $roles, default: $defaultRole),
         ];
 
         $validator = Validator::make($input, [
-            'name' => ['required', 'string', 'max:255'],
+            'first_name' => ['required', 'string', 'max:255'],
+            'last_name' => ['nullable', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', Password::default()],
             'role' => ['required', 'string', Rule::in($roles)],
@@ -67,7 +70,7 @@ class CreateUserCommand extends Command
 
         $validated = $validator->validated();
 
-        $user = $createUser->execute($validated['name'], $validated['email'], $validated['password'], [$validated['role']]);
+        $user = $createUser->execute($validated['first_name'], ($validated['last_name'] ?? '') !== '' ? $validated['last_name'] : null, $validated['email'], $validated['password'], [$validated['role']]);
 
         $this->info("Created user {$user->email} with role {$validated['role']}.");
 

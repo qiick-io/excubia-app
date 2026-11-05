@@ -164,7 +164,24 @@ it('creates a reader for an unknown user when JIT is on', function () {
     expect($user->oidc_sub)->toBe('sub-abc')
         ->and($user->getRoleNames()->all())->toBe([RoleEnum::Reader->value])
         ->and($user->hasVerifiedEmail())->toBeTrue()
-        ->and($user->password)->toBeNull();
+        ->and($user->password)->toBeNull()
+        ->and($user->first_name)->toBe('Sso')
+        ->and($user->last_name)->toBe('User');
+});
+
+it('takes the first and last name from the given_name and family_name claims', function () {
+    enableOidc(['oidc_jit_provisioning' => true]);
+    $identity = fakeOidcIdentity(email: 'new.person@example.com');
+    $identity->setRaw([...$identity->getRaw(), 'given_name' => 'Maria Luisa', 'family_name' => 'Rossi']);
+    fakeOidcProvider($identity);
+
+    $this->get(route('auth.oidc.callback'))->assertRedirect(route('dashboard', absolute: false));
+
+    $user = User::query()->where('email', 'new.person@example.com')->sole();
+
+    expect($user->first_name)->toBe('Maria Luisa')
+        ->and($user->last_name)->toBe('Rossi')
+        ->and($user->name)->toBe('Maria Luisa Rossi');
 });
 
 it('validates the SSO settings', function () {
@@ -183,9 +200,9 @@ it('validates the SSO settings', function () {
 });
 
 it('shows SSO-linked users in the user list', function () {
-    User::factory()->create(['name' => 'A linked', 'oidc_sub' => 'sub-abc']);
+    User::factory()->create(['first_name' => 'A', 'last_name' => 'linked', 'oidc_sub' => 'sub-abc']);
 
-    $this->actingAs(User::factory()->create(['name' => 'B local'])->assignRole(RoleEnum::Admin->value))
+    $this->actingAs(User::factory()->create(['first_name' => 'B', 'last_name' => 'local'])->assignRole(RoleEnum::Admin->value))
         ->get(route('users.index', ['sort' => 'name', 'direction' => 'asc']))
         ->assertInertia(fn (Assert $page) => $page
             ->where('users.data.0.is_sso_linked', true)

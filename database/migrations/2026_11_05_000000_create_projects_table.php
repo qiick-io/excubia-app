@@ -19,6 +19,9 @@ return new class extends Migration
             $table->string('name')->unique();
             $table->string('slug')->unique();
             $table->boolean('is_enabled')->default(true);
+            // Excubia itself (#70): seeded, reported locally, never deleted.
+            $table->boolean('is_system')->default(false);
+            $table->string('visibility', 16)->default('everyone');
             $table->string('push_token_hash', 64)->nullable()->unique();
             $table->timestamp('last_report_at')->nullable();
             $table->timestamps();

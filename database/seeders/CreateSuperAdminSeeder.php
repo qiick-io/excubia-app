@@ -21,7 +21,8 @@ class CreateSuperAdminSeeder extends Seeder
         $user = User::query()->firstOrNew(['email' => config('super_admin.email')]);
 
         if (! $user->exists) {
-            $user->name = config('super_admin.name');
+            $user->first_name = config('super_admin.first_name');
+            $user->last_name = config('super_admin.last_name');
             $user->password = config('super_admin.password');
         }
 

@@ -13,10 +13,18 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
+            $table->boolean('is_active')->default(true);
+            $table->string('first_name');
+            $table->string('last_name')->nullable();
             $table->string('email')->unique();
+            $table->string('oidc_sub')->nullable()->unique();
+            $table->string('locale')->default('en');
             $table->timestamp('email_verified_at')->nullable();
-            $table->string('password');
+            // Null for accounts that only sign in through OIDC.
+            $table->string('password')->nullable();
+            $table->text('two_factor_secret')->nullable();
+            $table->text('two_factor_recovery_codes')->nullable();
+            $table->timestamp('two_factor_confirmed_at')->nullable();
             $table->rememberToken();
             $table->timestamps();
         });

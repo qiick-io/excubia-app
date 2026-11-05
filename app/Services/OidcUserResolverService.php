@@ -67,10 +67,11 @@ class OidcUserResolverService
             $this->refuse(__('No local account matches this SSO email. Ask an admin to create your user first.'));
         }
 
-        $name = trim((string) $socialiteUser->getName());
+        [$firstName, $lastName] = $this->nameParts($raw, (string) $socialiteUser->getName(), $email);
 
         $user = (new User)->forceFill([
-            'name' => $name !== '' ? $name : Str::before($email, '@'),
+            'first_name' => $firstName,
+            'last_name' => $lastName,
             'email' => $email,
             'password' => null,
             'oidc_sub' => $sub,
@@ -114,5 +115,33 @@ class OidcUserResolverService
     private function refuse(string $message): never
     {
         throw ValidationException::withMessages(['email' => $message]);
+    }
+
+    /**
+     * First and last name from the OIDC `given_name` / `family_name` claims, else from `name`
+     * (first word, then the rest), else the email's local part.
+     *
+     * @param  array<string, mixed>  $raw
+     * @return array{0: string, 1: string|null}
+     */
+    private function nameParts(array $raw, string $name, string $email): array
+    {
+        $given = trim((string) ($raw['given_name'] ?? ''));
+
+        if ($given !== '') {
+            $family = trim((string) ($raw['family_name'] ?? ''));
+
+            return [$given, $family !== '' ? $family : null];
+        }
+
+        $name = trim($name);
+
+        if ($name === '') {
+            return [Str::before($email, '@'), null];
+        }
+
+        $last = trim(Str::after($name, ' '));
+
+        return [Str::before($name, ' '), str_contains($name, ' ') && $last !== '' ? $last : null];
     }
 }

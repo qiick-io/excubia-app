@@ -33,8 +33,9 @@ class ActivityLogController extends Controller
             // Labels for the selected users of the user filter; the picker searches the rest.
             'users' => User::query()
                 ->whereIn('id', $filters['user_ids'])
-                ->orderBy('name')
-                ->get(['id', 'name', 'email'])
+                ->orderBy('first_name')
+                ->orderBy('last_name')
+                ->get(['id', 'first_name', 'last_name', 'email'])
                 ->map(fn (User $user): array => ['id' => $user->id, 'name' => $user->name, 'email' => $user->email]),
             'events' => ActivityEventEnum::values(),
             'logNames' => ActivityLogRequest::LOG_NAMES,
