@@ -32,6 +32,12 @@ return [
 
     'push_requests_per_minute' => (int) env('EXCUBIA_PUSH_REQUESTS_PER_MINUTE', 30),
 
+    // Days of runtime aggregates (#48) and of exception groups not seen since (#49) kept;
+    // older ones are pruned daily by excubia:prune-telemetry.
+    'runtime_retention_days' => (int) env('EXCUBIA_RUNTIME_RETENTION_DAYS', 14),
+
+    'exceptions_retention_days' => (int) env('EXCUBIA_EXCEPTIONS_RETENTION_DAYS', 90),
+
     /*
     |--------------------------------------------------------------------------
     | Assistant

@@ -70,6 +70,22 @@ class Project extends Model
     }
 
     /**
+     * @return HasMany<RuntimeAggregate, $this>
+     */
+    public function runtimeAggregates(): HasMany
+    {
+        return $this->hasMany(RuntimeAggregate::class);
+    }
+
+    /**
+     * @return HasMany<ExceptionGroup, $this>
+     */
+    public function exceptionGroups(): HasMany
+    {
+        return $this->hasMany(ExceptionGroup::class);
+    }
+
+    /**
      * @return HasOne<HealthReport, $this>
      */
     public function latestReport(): HasOne
