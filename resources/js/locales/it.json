@@ -481,7 +481,16 @@
         "emptyDescription": "Registra un progetto, poi imposta il suo token di push nel progetto per inviare il primo report.",
         "lastReport": "Ultimo report {{date}}",
         "noReports": "Nessun report",
-        "stale": "Fermo"
+        "stale": "Fermo",
+        "sort": {
+            "label": "Ordina per",
+            "severity": "Severità peggiore",
+            "lastReport": "Ultimo report"
+        },
+        "view": {
+            "cards": "Schede",
+            "table": "Tabella"
+        }
     },
     "report": {
         "noIssues": "Nessun problema",
@@ -512,7 +521,49 @@
             "skipped": "Saltato"
         },
         "refresh": "Aggiorna ora",
-        "systemEmpty": "Excubia controlla se stessa ogni giorno. Usa \"Aggiorna ora\" per il primo report."
+        "systemEmpty": "Excubia controlla se stessa ogni giorno. Usa \"Aggiorna ora\" per il primo report.",
+        "views": {
+            "label": "Viste del progetto",
+            "overview": "Panoramica",
+            "findings": "Problemi",
+            "plan": "Piano di upgrade",
+            "history": "Storico"
+        },
+        "support": {
+            "supported": "Supportato",
+            "ending": "In scadenza",
+            "ended": "Scaduto",
+            "unknown": "Sconosciuto"
+        },
+        "runtime": {
+            "title": "Runtime",
+            "description": "Versioni e supporto di sicurezza dall'ultimo report.",
+            "unavailable": "Questo report non ha i dettagli delle runtime. Aggiorna qiick/excubia-core alla 1.0 nel progetto.",
+            "name": "Runtime",
+            "version": "Versione",
+            "securityUntil": "Sicurezza fino al",
+            "status": "Stato",
+            "notUsed": "Non usato",
+            "php": "PHP",
+            "laravel": "Laravel",
+            "node": "Node"
+        },
+        "findingsDescription": "Problemi che avvisano o falliscono, per severità.",
+        "lastReport": "Ultimo report",
+        "generatedAt": "Generato il {{date}}",
+        "coreVersion": "Generato da excubia-core {{version}}",
+        "coreVersionShort": "Core",
+        "checksDescription": "Tutti i controlli dell'ultimo report e il loro stato.",
+        "check": "Controllo",
+        "searchFindings": "Cerca problemi…",
+        "allSeverities": "Tutte le severità",
+        "allChecks": "Tutti i controlli",
+        "noMatchingFindings": "Nessun problema corrisponde",
+        "noMatchingFindingsDescription": "Prova un'altra ricerca o cancella i filtri.",
+        "noIssuesDescription": "L'ultimo report non ha problemi che avvisano o falliscono.",
+        "installed": "Installata",
+        "fixedIn": "Corretto in",
+        "planDescription": "L'ordine consigliato degli aggiornamenti, dal più urgente."
     },
     "assistant": {
         "title": "Assistente",

@@ -481,7 +481,16 @@
         "emptyDescription": "Register a project, then set its push token in the project to send the first report.",
         "lastReport": "Last report {{date}}",
         "noReports": "No reports yet",
-        "stale": "Stale"
+        "stale": "Stale",
+        "sort": {
+            "label": "Sort by",
+            "severity": "Worst severity",
+            "lastReport": "Last report"
+        },
+        "view": {
+            "cards": "Cards",
+            "table": "Table"
+        }
     },
     "report": {
         "noIssues": "No issues",
@@ -512,7 +521,49 @@
             "skipped": "Skipped"
         },
         "refresh": "Refresh now",
-        "systemEmpty": "Excubia checks itself every day. Use \"Refresh now\" for the first report."
+        "systemEmpty": "Excubia checks itself every day. Use \"Refresh now\" for the first report.",
+        "views": {
+            "label": "Project views",
+            "overview": "Overview",
+            "findings": "Findings",
+            "plan": "Upgrade plan",
+            "history": "History"
+        },
+        "support": {
+            "supported": "Supported",
+            "ending": "Ends soon",
+            "ended": "Ended",
+            "unknown": "Unknown"
+        },
+        "runtime": {
+            "title": "Runtimes",
+            "description": "Versions and security support from the latest report.",
+            "unavailable": "This report has no runtime details. Update qiick/excubia-core to 1.0 in the project.",
+            "name": "Runtime",
+            "version": "Version",
+            "securityUntil": "Security until",
+            "status": "Status",
+            "notUsed": "Not used",
+            "php": "PHP",
+            "laravel": "Laravel",
+            "node": "Node"
+        },
+        "findingsDescription": "Findings that warn or fail, per severity.",
+        "lastReport": "Latest report",
+        "generatedAt": "Generated {{date}}",
+        "coreVersion": "Built by excubia-core {{version}}",
+        "coreVersionShort": "Core",
+        "checksDescription": "Every check of the latest report and its status.",
+        "check": "Check",
+        "searchFindings": "Search findings…",
+        "allSeverities": "All severities",
+        "allChecks": "All checks",
+        "noMatchingFindings": "No findings match",
+        "noMatchingFindingsDescription": "Try a different search or clear the filters.",
+        "noIssuesDescription": "The latest report has no finding that warns or fails.",
+        "installed": "Installed",
+        "fixedIn": "Fixed in",
+        "planDescription": "The suggested order of the upgrades, most urgent first."
     },
     "assistant": {
         "title": "Assistant",

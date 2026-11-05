@@ -121,3 +121,49 @@ it('keeps the project page behind projects.view', function () {
     $this->actingAs(User::factory()->create())->get(route('projects.show', 'shop'))->assertForbidden();
     $this->actingAs(reportReader())->get(route('projects.show', 'unknown'))->assertNotFound();
 });
+
+it('summarises the core 1.0 fields of the latest report for the dashboard and the project page', function () {
+    $shop = Project::factory()->create(['name' => 'Shop', 'slug' => 'shop']);
+    $report = pushedReport($shop, '2026-11-05 08:00:00', SeverityEnum::High, ['high_count' => 1]);
+    $report->update(['report' => [
+        ...$report->report,
+        'excubiaVersion' => '1.0.0-beta.1',
+        'project' => [
+            'php' => ['version' => '8.4.12', 'cycle' => '8.4', 'securitySupportEndsOn' => '2028-12-31', 'activeSupportEndsOn' => '2026-12-31'],
+            'laravel' => ['version' => 'v13.2.0', 'cycle' => '13', 'securitySupportEndsOn' => '2028-03-17', 'activeSupportEndsOn' => '2027-09-17'],
+            'node' => null,
+        ],
+        'checks' => [
+            ...$report->report['checks'],
+            ['checkId' => 'php-eol', 'name' => 'PHP end of life', 'status' => 'pass', 'findings' => []],
+            ['checkId' => 'node-eol', 'name' => 'Node end of life', 'status' => 'skipped', 'findings' => [['checkId' => 'node-eol', 'severity' => 'info', 'status' => 'skipped', 'subject' => 'node', 'message' => 'No Node', 'fixHint' => '', 'evidenceUrl' => null]]],
+        ],
+    ]]);
+
+    $this->actingAs(reportReader())->get(route('projects.show', 'shop'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('project.latest_report.excubia_version', '1.0.0-beta.1')
+            ->where('project.latest_report.runtime.php.cycle', '8.4')
+            ->where('project.latest_report.runtime.laravel.version', '13.2.0')
+            ->where('project.latest_report.runtime.php.security_support_ends_on', '2028-12-31')
+            ->where('project.latest_report.runtime.node', null)
+            ->where('project.latest_report.checks', ['pass' => 1, 'warn' => 0, 'fail' => 1, 'skipped' => 1])
+            ->where('project.latest_report.top_finding.subject', 'guzzlehttp/guzzle')
+            ->where('project.latest_report.top_finding.severity', 'high')
+            ->where('project.latest_report.top_finding.check_name', 'Composer audit'));
+
+    $this->actingAs(reportReader())->get(route('dashboard'))
+        ->assertInertia(fn (Assert $page) => $page->where('projects.0.latest_report.runtime.laravel.cycle', '13'));
+});
+
+it('keeps the summary working for reports from cores before 1.0', function () {
+    $blog = Project::factory()->create(['slug' => 'blog']);
+    pushedReport($blog, '2026-11-05 08:00:00', SeverityEnum::High, ['high_count' => 1]);
+
+    $this->actingAs(reportReader())->get(route('projects.show', 'blog'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('project.latest_report.excubia_version', null)
+            ->where('project.latest_report.runtime', null)
+            ->where('project.latest_report.checks.fail', 1)
+            ->where('project.latest_report.top_finding.severity', 'high'));
+});

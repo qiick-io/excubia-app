@@ -481,7 +481,16 @@
         "emptyDescription": "Registriere ein Projekt und hinterlege sein Push-Token im Projekt, um den ersten Bericht zu senden.",
         "lastReport": "Letzter Bericht {{date}}",
         "noReports": "Noch keine Berichte",
-        "stale": "Veraltet"
+        "stale": "Veraltet",
+        "sort": {
+            "label": "Sortieren nach",
+            "severity": "Schwerster Befund",
+            "lastReport": "Letzter Bericht"
+        },
+        "view": {
+            "cards": "Karten",
+            "table": "Tabelle"
+        }
     },
     "report": {
         "noIssues": "Keine Probleme",
@@ -512,7 +521,49 @@
             "skipped": "Übersprungen"
         },
         "refresh": "Jetzt aktualisieren",
-        "systemEmpty": "Excubia prüft sich jeden Tag selbst. Nutze „Jetzt aktualisieren“ für den ersten Bericht."
+        "systemEmpty": "Excubia prüft sich jeden Tag selbst. Nutze „Jetzt aktualisieren“ für den ersten Bericht.",
+        "views": {
+            "label": "Projektansichten",
+            "overview": "Übersicht",
+            "findings": "Befunde",
+            "plan": "Upgrade-Plan",
+            "history": "Verlauf"
+        },
+        "support": {
+            "supported": "Unterstützt",
+            "ending": "Endet bald",
+            "ended": "Beendet",
+            "unknown": "Unbekannt"
+        },
+        "runtime": {
+            "title": "Laufzeiten",
+            "description": "Versionen und Sicherheitssupport aus dem letzten Bericht.",
+            "unavailable": "Dieser Bericht enthält keine Laufzeitdetails. Aktualisiere qiick/excubia-core im Projekt auf 1.0.",
+            "name": "Laufzeit",
+            "version": "Version",
+            "securityUntil": "Sicherheit bis",
+            "status": "Status",
+            "notUsed": "Nicht verwendet",
+            "php": "PHP",
+            "laravel": "Laravel",
+            "node": "Node"
+        },
+        "findingsDescription": "Befunde mit Warnung oder Fehler, nach Schweregrad.",
+        "lastReport": "Letzter Bericht",
+        "generatedAt": "Erstellt am {{date}}",
+        "coreVersion": "Erstellt mit excubia-core {{version}}",
+        "coreVersionShort": "Core",
+        "checksDescription": "Alle Prüfungen des letzten Berichts und ihr Status.",
+        "check": "Prüfung",
+        "searchFindings": "Befunde suchen…",
+        "allSeverities": "Alle Schweregrade",
+        "allChecks": "Alle Prüfungen",
+        "noMatchingFindings": "Keine passenden Befunde",
+        "noMatchingFindingsDescription": "Andere Suche versuchen oder Filter zurücksetzen.",
+        "noIssuesDescription": "Der letzte Bericht hat keine Befunde mit Warnung oder Fehler.",
+        "installed": "Installiert",
+        "fixedIn": "Behoben in",
+        "planDescription": "Die empfohlene Reihenfolge der Upgrades, das Dringendste zuerst."
     },
     "assistant": {
         "title": "Assistent",
