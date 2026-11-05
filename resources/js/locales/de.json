@@ -533,6 +533,14 @@
         "projects": {
             "title": "Projekte",
             "description": "Die schwersten zuerst."
+        },
+        "telemetry": {
+            "requests": "Anfragen",
+            "errors": "{{count}} Serverfehler ({{rate}} %)",
+            "openExceptions": "Offene Exceptions",
+            "newExceptions": "{{count}} neu im Zeitraum",
+            "topExceptions": "Neueste offene Exceptions",
+            "noOpenExceptions": "Keine offenen Exceptions."
         }
     },
     "report": {

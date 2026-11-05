@@ -79,6 +79,13 @@ export function StackedBarChart({
                         labelStyle={{
                             color: 'var(--color-popover-foreground)',
                         }}
+                        // Same order as the legend; text in a text token, not the series colour.
+                        itemSorter={(item) =>
+                            order.indexOf(String(item.dataKey))
+                        }
+                        itemStyle={{
+                            color: 'var(--color-popover-foreground)',
+                        }}
                     />
                     <Legend
                         iconType="square"
