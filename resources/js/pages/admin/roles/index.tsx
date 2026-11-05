@@ -5,8 +5,9 @@ import { useTranslation } from 'react-i18next';
 import { HeaderIconButton } from '@/components/admin/header-icon-button';
 import { ConfirmDestructiveDialog } from '@/components/confirm-destructive-dialog';
 import {
+    hasTablePaginationFooter,
     PageLayout,
-    TablePagination,
+    TablePaginationFooter,
     TablePanel,
 } from '@/components/layout/page-layout';
 import { Button } from '@/components/ui/button';
@@ -80,8 +81,8 @@ export default function AdminRolesIndex({
                 <PageLayout className="p-0">
                     <TablePanel
                         footer={
-                            roles.last_page > 1 ? (
-                                <TablePagination links={roles.links ?? []} />
+                            hasTablePaginationFooter(roles) ? (
+                                <TablePaginationFooter pagination={roles} />
                             ) : undefined
                         }
                     >

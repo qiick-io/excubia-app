@@ -3,19 +3,24 @@ import {
     ArrowDownAZ,
     ArrowUpAZ,
     KeyRound,
+    SearchX,
     Trash2,
     UserPlus,
+    Users,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DataTableToolbar } from '@/components/admin/data-table-toolbar';
 import { HeaderIconButton } from '@/components/admin/header-icon-button';
+import { PageEmptyState } from '@/components/admin/page-empty-state';
 import { TruncatedText } from '@/components/admin/truncated-text';
 import { UserFormDrawer } from '@/components/admin/user-form-drawer';
 import { ConfirmDestructiveDialog } from '@/components/confirm-destructive-dialog';
+import { EmptyStatus } from '@/components/empty-status';
 import {
+    hasTablePaginationFooter,
     PageLayout,
-    TablePagination,
+    TablePaginationFooter,
     TablePanel,
 } from '@/components/layout/page-layout';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -43,6 +48,7 @@ import { useDebouncedServerSearch } from '@/hooks/use-debounced-server-search';
 import { useDrawerDeepLink } from '@/hooks/use-drawer-deep-link';
 import { useInitials } from '@/hooks/use-initials';
 import AppLayout from '@/layouts/app-layout';
+import { listPerPageQuery } from '@/lib/list-per-page';
 import { normalizePaginated } from '@/lib/pagination';
 import type { LaravelPaginated } from '@/lib/pagination';
 import { toast } from '@/lib/toast';
@@ -139,13 +145,14 @@ export default function AdminUsersIndex({
                         search: nextSearch || undefined,
                         sort: nextSort,
                         direction: nextDirection,
+                        per_page: listPerPageQuery(users.per_page),
                     },
                 }),
                 {},
                 { preserveState: true, preserveScroll: true },
             );
         },
-        [direction, search, sort],
+        [direction, users.per_page, search, sort],
     );
 
     useEffect(() => {
@@ -191,6 +198,10 @@ export default function AdminUsersIndex({
         deepLink.syncClosed();
     };
 
+    const hasActiveFilters = search.trim() !== '';
+    const isListEmpty = users.data.length === 0;
+    const hideListChrome = isListEmpty && !hasActiveFilters;
+
     const sendPasswordReset = (user: AdminUserRow): void => {
         router.post(
             usersRoutes.passwordReset.url(user.id),
@@ -220,103 +231,133 @@ export default function AdminUsersIndex({
             >
                 <PageLayout
                     filters={
-                        <DataTableToolbar
-                            search={search}
-                            onSearchChange={setSearch}
-                            searchPlaceholder={t('users.searchPlaceholder')}
-                        />
+                        hideListChrome ? undefined : (
+                            <DataTableToolbar
+                                search={search}
+                                onSearchChange={setSearch}
+                                searchPlaceholder={t('users.searchPlaceholder')}
+                            />
+                        )
                     }
                     filtersRight={
-                        <div className="flex items-center gap-1.5">
-                            <Select
-                                value={sort}
-                                onValueChange={(value) => {
-                                    if (
-                                        value === 'name' ||
-                                        value === 'email' ||
-                                        value === 'created_at' ||
-                                        value === 'updated_at'
-                                    ) {
-                                        setSort(value);
-                                        visit({ sort: value });
-                                    }
-                                }}
-                            >
-                                <SelectTrigger
-                                    size="sm"
-                                    aria-label={t('users.sortBy')}
-                                    className="w-[7.5rem]"
+                        hideListChrome ? null : (
+                            <div className="flex items-center gap-1.5">
+                                <Select
+                                    value={sort}
+                                    onValueChange={(value) => {
+                                        if (
+                                            value === 'name' ||
+                                            value === 'email' ||
+                                            value === 'created_at' ||
+                                            value === 'updated_at'
+                                        ) {
+                                            setSort(value);
+                                            visit({ sort: value });
+                                        }
+                                    }}
                                 >
-                                    <SelectValue placeholder="Sort" />
-                                </SelectTrigger>
-                                <SelectContent align="end">
-                                    {userSortFields.map((field) => (
-                                        <SelectItem
-                                            key={field.value}
-                                            value={field.value}
-                                        >
-                                            {field.label}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="icon-sm"
-                                aria-label={
-                                    direction === 'asc'
-                                        ? t('common.sortAscending')
-                                        : t('common.sortDescending')
-                                }
-                                onClick={() => {
-                                    const nextDirection =
-                                        direction === 'asc' ? 'desc' : 'asc';
-                                    setDirection(nextDirection);
-                                    visit({ direction: nextDirection });
-                                }}
-                            >
-                                {direction === 'asc' ? (
-                                    <ArrowUpAZ className="size-4" />
-                                ) : (
-                                    <ArrowDownAZ className="size-4" />
-                                )}
-                            </Button>
-                        </div>
+                                    <SelectTrigger
+                                        aria-label={t('users.sortBy')}
+                                        className="w-[7.5rem]"
+                                    >
+                                        <SelectValue placeholder="Sort" />
+                                    </SelectTrigger>
+                                    <SelectContent align="end">
+                                        {userSortFields.map((field) => (
+                                            <SelectItem
+                                                key={field.value}
+                                                value={field.value}
+                                            >
+                                                {field.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="icon"
+                                    aria-label={
+                                        direction === 'asc'
+                                            ? t('common.sortAscending')
+                                            : t('common.sortDescending')
+                                    }
+                                    onClick={() => {
+                                        const nextDirection =
+                                            direction === 'asc'
+                                                ? 'desc'
+                                                : 'asc';
+                                        setDirection(nextDirection);
+                                        visit({ direction: nextDirection });
+                                    }}
+                                >
+                                    {direction === 'asc' ? (
+                                        <ArrowUpAZ className="size-4" />
+                                    ) : (
+                                        <ArrowDownAZ className="size-4" />
+                                    )}
+                                </Button>
+                            </div>
+                        )
                     }
                 >
-                    <TablePanel
-                        footer={
-                            users.last_page > 1 ? (
-                                <TablePagination links={users.links ?? []} />
-                            ) : undefined
-                        }
-                    >
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Name</TableHead>
-                                    <TableHead>Email</TableHead>
-                                    <TableHead>Roles</TableHead>
-                                    <TableHead>Groups</TableHead>
-                                    <TableHead>Status</TableHead>
-                                    <TableHead className="w-[1%] text-right">
-                                        Actions
-                                    </TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {users.data.length === 0 ? (
+                    {isListEmpty ? (
+                        <PageEmptyState
+                            icon={hasActiveFilters ? SearchX : Users}
+                            title={
+                                <EmptyStatus>
+                                    {hasActiveFilters
+                                        ? t('emptyState.users.filteredTitle')
+                                        : t('emptyState.users.title')}
+                                </EmptyStatus>
+                            }
+                            description={
+                                hasActiveFilters
+                                    ? t('emptyState.users.filteredDescription')
+                                    : t('emptyState.users.description')
+                            }
+                            action={
+                                hasActiveFilters ? (
+                                    <Button
+                                        type="button"
+                                        onClick={() => {
+                                            setSearch('');
+                                            visit({ search: undefined });
+                                        }}
+                                    >
+                                        {t('common.clearFilters')}
+                                    </Button>
+                                ) : can(PermissionEnum.UsersManage) ? (
+                                    <Button type="button" onClick={openCreate}>
+                                        <UserPlus className="size-4" />
+                                        {t('emptyState.users.cta')}
+                                    </Button>
+                                ) : undefined
+                            }
+                        />
+                    ) : (
+                        <TablePanel
+                            footer={
+                                hasTablePaginationFooter(users) ? (
+                                    <TablePaginationFooter pagination={users} />
+                                ) : undefined
+                            }
+                        >
+                            <Table>
+                                <TableHeader>
                                     <TableRow>
-                                        <TableCell
-                                            colSpan={6}
-                                            className="text-muted-foreground"
-                                        >
-                                            No users found.
-                                        </TableCell>
+                                        <TableHead>Name</TableHead>
+                                        <TableHead>Email</TableHead>
+                                        <TableHead>Roles</TableHead>
+                                        <TableHead>Groups</TableHead>
+                                        <TableHead>Status</TableHead>
+                                        <TableHead className="w-[1%] text-right">
+                                            Actions
+                                        </TableHead>
                                     </TableRow>
-                                ) : (
-                                    users.data.map((user) => (
+                                </TableHeader>
+                                <TableBody>
+                                    {users.data.map((user) => (
                                         <TableRow
                                             key={user.id}
                                             className={
@@ -417,7 +458,7 @@ export default function AdminUsersIndex({
                                                     {user.can_update && (
                                                         <HeaderIconButton
                                                             type="button"
-                                                            variant="outline"
+                                                            variant="ghost"
                                                             size="icon-sm"
                                                             label={t(
                                                                 'users.actions.sendResetEmail',
@@ -451,11 +492,11 @@ export default function AdminUsersIndex({
                                                 </div>
                                             </TableCell>
                                         </TableRow>
-                                    ))
-                                )}
-                            </TableBody>
-                        </Table>
-                    </TablePanel>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </TablePanel>
+                    )}
                 </PageLayout>
 
                 <UserFormDrawer

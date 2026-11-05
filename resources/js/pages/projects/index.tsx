@@ -1,14 +1,24 @@
 import { Head, router } from '@inertiajs/react';
-import { KeyRound, Plus, ShieldOff, Trash2 } from 'lucide-react';
+import {
+    FolderKanban,
+    KeyRound,
+    Plus,
+    SearchX,
+    ShieldOff,
+    Trash2,
+} from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DataTableToolbar } from '@/components/admin/data-table-toolbar';
 import { HeaderIconButton } from '@/components/admin/header-icon-button';
 import { NameSlugCell } from '@/components/admin/name-slug-cell';
+import { PageEmptyState } from '@/components/admin/page-empty-state';
 import { ConfirmDestructiveDialog } from '@/components/confirm-destructive-dialog';
+import { EmptyStatus } from '@/components/empty-status';
 import {
+    hasTablePaginationFooter,
     PageLayout,
-    TablePagination,
+    TablePaginationFooter,
     TablePanel,
 } from '@/components/layout/page-layout';
 import { ProjectFormDrawer } from '@/components/projects/project-form-drawer';
@@ -28,6 +38,7 @@ import { PermissionEnum } from '@/enums/permission-enum';
 import { useCan } from '@/hooks/use-can';
 import { useDebouncedServerSearch } from '@/hooks/use-debounced-server-search';
 import AppLayout from '@/layouts/app-layout';
+import { listPerPageQuery } from '@/lib/list-per-page';
 import { normalizePaginated } from '@/lib/pagination';
 import type { LaravelPaginated } from '@/lib/pagination';
 import { toast } from '@/lib/toast';
@@ -71,13 +82,21 @@ export default function ProjectsIndex({
         setSearch(filters.search ?? '');
     }, [filters.search]);
 
-    const onDebouncedSearch = useCallback((value: string): void => {
-        router.get(
-            projectsRoutes.index.url({ query: { search: value || undefined } }),
-            {},
-            { preserveState: true, preserveScroll: true },
-        );
-    }, []);
+    const onDebouncedSearch = useCallback(
+        (value: string): void => {
+            router.get(
+                projectsRoutes.index.url({
+                    query: {
+                        search: value || undefined,
+                        per_page: listPerPageQuery(projects.per_page),
+                    },
+                }),
+                {},
+                { preserveState: true, preserveScroll: true },
+            );
+        },
+        [projects.per_page],
+    );
 
     useDebouncedServerSearch(search, filters.search ?? '', onDebouncedSearch);
 
@@ -131,6 +150,10 @@ export default function ProjectsIndex({
         }
     };
 
+    const hasActiveFilters = search.trim() !== '';
+    const isListEmpty = projects.data.length === 0;
+    const hideListChrome = isListEmpty && !hasActiveFilters;
+
     return (
         <AppLayout
             breadcrumbs={breadcrumbs}
@@ -154,49 +177,87 @@ export default function ProjectsIndex({
             >
                 <PageLayout
                     filters={
-                        <DataTableToolbar
-                            search={search}
-                            onSearchChange={setSearch}
-                            searchPlaceholder={t('projects.searchPlaceholder')}
-                        />
+                        hideListChrome ? undefined : (
+                            <DataTableToolbar
+                                search={search}
+                                onSearchChange={setSearch}
+                                searchPlaceholder={t(
+                                    'projects.searchPlaceholder',
+                                )}
+                            />
+                        )
                     }
                 >
-                    <TablePanel
-                        footer={
-                            projects.last_page > 1 ? (
-                                <TablePagination links={projects.links ?? []} />
-                            ) : undefined
-                        }
-                    >
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>{t('common.name')}</TableHead>
-                                    <TableHead>
-                                        {t('projects.status')}
-                                    </TableHead>
-                                    <TableHead>
-                                        {t('projects.lastReport')}
-                                    </TableHead>
-                                    {canManage ? (
-                                        <TableHead className="w-[1%] text-right">
-                                            {t('projects.actions')}
-                                        </TableHead>
-                                    ) : null}
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {projects.data.length === 0 ? (
+                    {isListEmpty ? (
+                        <PageEmptyState
+                            icon={hasActiveFilters ? SearchX : FolderKanban}
+                            title={
+                                <EmptyStatus>
+                                    {hasActiveFilters
+                                        ? t('emptyState.projects.filteredTitle')
+                                        : t('emptyState.projects.title')}
+                                </EmptyStatus>
+                            }
+                            description={
+                                hasActiveFilters
+                                    ? t(
+                                          'emptyState.projects.filteredDescription',
+                                      )
+                                    : t('emptyState.projects.description')
+                            }
+                            action={
+                                hasActiveFilters ? (
+                                    <Button
+                                        type="button"
+                                        onClick={() => {
+                                            setSearch('');
+                                            onDebouncedSearch('');
+                                        }}
+                                    >
+                                        {t('common.clearFilters')}
+                                    </Button>
+                                ) : canManage ? (
+                                    <Button
+                                        type="button"
+                                        onClick={() => openDrawer(null)}
+                                    >
+                                        <Plus className="size-4" />
+                                        {t('emptyState.projects.cta')}
+                                    </Button>
+                                ) : undefined
+                            }
+                        />
+                    ) : (
+                        <TablePanel
+                            footer={
+                                hasTablePaginationFooter(projects) ? (
+                                    <TablePaginationFooter
+                                        pagination={projects}
+                                    />
+                                ) : undefined
+                            }
+                        >
+                            <Table>
+                                <TableHeader>
                                     <TableRow>
-                                        <TableCell
-                                            colSpan={canManage ? 4 : 3}
-                                            className="text-muted-foreground"
-                                        >
-                                            {t('projects.empty')}
-                                        </TableCell>
+                                        <TableHead>
+                                            {t('common.name')}
+                                        </TableHead>
+                                        <TableHead>
+                                            {t('projects.status')}
+                                        </TableHead>
+                                        <TableHead>
+                                            {t('projects.lastReport')}
+                                        </TableHead>
+                                        {canManage ? (
+                                            <TableHead className="w-[1%] text-right">
+                                                {t('projects.actions')}
+                                            </TableHead>
+                                        ) : null}
                                     </TableRow>
-                                ) : (
-                                    projects.data.map((project) => (
+                                </TableHeader>
+                                <TableBody>
+                                    {projects.data.map((project) => (
                                         <TableRow
                                             key={project.id}
                                             className={
@@ -214,23 +275,35 @@ export default function ProjectsIndex({
                                             </TableCell>
                                             <TableCell>
                                                 <div className="flex flex-wrap gap-1">
-                                                    <Badge
-                                                        variant={
-                                                            project.is_enabled
-                                                                ? 'secondary'
-                                                                : 'outline'
-                                                        }
-                                                    >
-                                                        {project.is_enabled
-                                                            ? t(
-                                                                  'projects.enabled',
-                                                              )
-                                                            : t(
-                                                                  'projects.disabled',
-                                                              )}
-                                                    </Badge>
+                                                    {project.is_enabled ? (
+                                                        <Badge
+                                                            variant="success"
+                                                            className="gap-1.5"
+                                                        >
+                                                            <span
+                                                                className="size-1.5 rounded-full bg-success"
+                                                                aria-hidden
+                                                            />
+                                                            {t(
+                                                                'projects.enabled',
+                                                            )}
+                                                        </Badge>
+                                                    ) : (
+                                                        <Badge
+                                                            variant="muted"
+                                                            className="gap-1.5"
+                                                        >
+                                                            <span
+                                                                className="size-1.5 rounded-full bg-muted-foreground"
+                                                                aria-hidden
+                                                            />
+                                                            {t(
+                                                                'projects.disabled',
+                                                            )}
+                                                        </Badge>
+                                                    )}
                                                     {project.has_push_token ? null : (
-                                                        <Badge variant="outline">
+                                                        <Badge variant="warning">
                                                             {t(
                                                                 'projects.noToken',
                                                             )}
@@ -309,11 +382,11 @@ export default function ProjectsIndex({
                                                 </TableCell>
                                             ) : null}
                                         </TableRow>
-                                    ))
-                                )}
-                            </TableBody>
-                        </Table>
-                    </TablePanel>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </TablePanel>
+                    )}
                 </PageLayout>
 
                 <ProjectFormDrawer

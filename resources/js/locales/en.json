@@ -19,7 +19,25 @@
         "pageRange": "{{from}}–{{to}} of {{total}}",
         "perPageOption": "{{count}} / page",
         "rowsPerPage": "Rows per page",
-        "selectedCount": "{{count}} selected"
+        "selectedCount": "{{count}} selected",
+        "clearFilters": "Clear filters",
+        "back": "Back"
+    },
+    "emptyState": {
+        "users": {
+            "title": "No users yet",
+            "description": "Invite teammates so they can manage content and settings.",
+            "cta": "Create your first user",
+            "filteredTitle": "No users found",
+            "filteredDescription": "Try a different search or clear filters to see all users."
+        },
+        "projects": {
+            "title": "No projects yet",
+            "description": "Register a Laravel project to start receiving its health reports.",
+            "cta": "Create your first project",
+            "filteredTitle": "No projects found",
+            "filteredDescription": "Try a different search or clear filters to see all projects."
+        }
     },
     "roles": {
         "names": {
@@ -421,7 +439,6 @@
         "status": "Status",
         "lastReport": "Last report",
         "actions": "Actions",
-        "empty": "No projects yet.",
         "enabled": "Enabled",
         "disabled": "Disabled",
         "noToken": "No token",
