@@ -128,3 +128,23 @@ it('lets only exceptions.manage resolve, ignore or reopen a group of a visible p
     $this->actingAs($admin)->patch(route('projects.exceptions.update', [$project, $group]), ['status' => 'open'])->assertRedirect();
     expect($group->fresh())->status->toBe(ExceptionStatusEnum::Open)->resolved_at->toBeNull();
 });
+
+it('adds runtime and open exceptions to the dashboard for the scoped projects', function () {
+    $shop = Project::factory()->create(['name' => 'Shop', 'slug' => 'shop']);
+    $blog = Project::factory()->create(['name' => 'Blog', 'slug' => 'blog']);
+    runtimeRow($shop, 'request', ['route' => 'home', 'method' => 'GET', 'statusClass' => '2xx'], ['count' => 90]);
+    runtimeRow($shop, 'request', ['route' => 'home', 'method' => 'GET', 'statusClass' => '5xx'], ['count' => 10, 'error_count' => 10]);
+    runtimeRow($shop, 'request', ['route' => 'home', 'method' => 'GET', 'statusClass' => '2xx'], ['count' => 40, 'bucket' => '2026-10-15 10:00:00']);
+    exceptionRow($shop);
+    exceptionRow($shop, ['fingerprint' => str_repeat('c', 64), 'status' => 'ignored']);
+
+    $this->actingAs(telemetryViewer())->get(route('dashboard'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('overview.runtime', ['requests' => 100, 'errors' => 10, 'previousRequests' => 40])
+            ->where('overview.exceptions.open', 1)
+            ->where('overview.exceptions.new', 1)
+            ->where('overview.exceptions.top.0.project.slug', 'shop'));
+
+    $this->actingAs(telemetryViewer())->get(route('dashboard', ['project' => 'blog']))
+        ->assertInertia(fn (Assert $page) => $page->where('overview.runtime', null)->where('overview.exceptions', null));
+});

@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enums\ExceptionStatusEnum;
 use App\Enums\SeverityEnum;
+use App\Models\ExceptionGroup;
 use App\Models\HealthReport;
 use App\Models\Project;
+use App\Models\RuntimeAggregate;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Date;
@@ -80,6 +83,7 @@ class DashboardOverviewService
             ...$this->topIssues($projects),
             'endOfSupport' => $this->endOfSupport($projects, $today),
             'configuration' => $this->configuration($projects),
+            ...$this->telemetry($projects, $today, $periodDays),
         ];
     }
 
@@ -291,6 +295,63 @@ class DashboardOverviewService
         usort($rows, fn (array $first, array $second): int => (SeverityEnum::tryFrom($first['severity'])?->rank() ?? 9) <=> (SeverityEnum::tryFrom($second['severity'])?->rank() ?? 9));
 
         return $rows;
+    }
+
+    /** Open exception groups listed on the dashboard. */
+    public const TOP_EXCEPTIONS_LIMIT = 10;
+
+    /**
+     * Runtime and exceptions across the scoped projects for the period (#24, #26): estimated
+     * requests and 5xx, open exception groups (and how many first appeared in the period), and
+     * the open groups seen most recently. Null blocks when no project pushes that data.
+     *
+     * @param  Collection<int, Project>  $projects
+     * @return array{runtime: array{requests: int, errors: int, previousRequests: int}|null, exceptions: array{open: int, new: int, top: list<array<string, mixed>>}|null}
+     */
+    private function telemetry(Collection $projects, CarbonImmutable $today, int $periodDays): array
+    {
+        $ids = $projects->pluck('id');
+        $from = $today->subDays($periodDays);
+        $requests = fn (CarbonImmutable $start, CarbonImmutable $end): array => RuntimeAggregate::query()
+            ->whereIn('project_id', $ids)
+            ->where('type', 'request')
+            ->where('bucket', '>=', $start)
+            ->where('bucket', '<', $end)
+            ->get(['count', 'error_count', 'sample_rate'])
+            ->reduce(fn (array $sum, RuntimeAggregate $row): array => [
+                $sum[0] + $row->count / $row->sample_rate,
+                $sum[1] + $row->error_count / $row->sample_rate,
+            ], [0.0, 0.0]);
+
+        $hasRuntime = RuntimeAggregate::query()->whereIn('project_id', $ids)->exists();
+        $hasExceptions = ExceptionGroup::query()->whereIn('project_id', $ids)->exists();
+        [$count, $errors] = $requests($from, $today->addMinute());
+        [$previousCount] = $requests($from->subDays($periodDays), $from);
+        $open = ExceptionGroup::query()->whereIn('project_id', $ids)->where('status', ExceptionStatusEnum::Open->value);
+        $names = $projects->pluck('name', 'id');
+        $slugs = $projects->pluck('slug', 'id');
+
+        return [
+            'runtime' => $hasRuntime ? [
+                'requests' => (int) round($count),
+                'errors' => (int) round($errors),
+                'previousRequests' => (int) round($previousCount),
+            ] : null,
+            'exceptions' => $hasExceptions ? [
+                'open' => (clone $open)->count(),
+                'new' => (clone $open)->where('first_seen', '>=', $from)->count(),
+                'top' => array_values((clone $open)->orderByDesc('last_seen')->limit(self::TOP_EXCEPTIONS_LIMIT)->get()
+                    ->map(fn (ExceptionGroup $group): array => [
+                        'id' => $group->id,
+                        'class' => $group->class,
+                        'message' => $group->message,
+                        'count' => $group->count,
+                        'lastSeen' => $group->last_seen->toIso8601String(),
+                        'context' => $group->context_name,
+                        'project' => ['slug' => $slugs[$group->project_id], 'name' => $names[$group->project_id]],
+                    ])->all()),
+            ] : null,
+        ];
     }
 
     /**

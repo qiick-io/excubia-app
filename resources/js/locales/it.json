@@ -533,6 +533,14 @@
         "projects": {
             "title": "Progetti",
             "description": "Dal più grave."
+        },
+        "telemetry": {
+            "requests": "Richieste",
+            "errors": "{{count}} errori server ({{rate}}%)",
+            "openExceptions": "Eccezioni aperte",
+            "newExceptions": "{{count}} nuove nel periodo",
+            "topExceptions": "Ultime eccezioni aperte",
+            "noOpenExceptions": "Nessuna eccezione aperta."
         }
     },
     "report": {

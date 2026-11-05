@@ -117,6 +117,24 @@ type Overview = {
     topIssuesTotal: number;
     endOfSupport: EndOfSupportRow[];
     configuration: ConfigurationRow[];
+    runtime: {
+        requests: number;
+        errors: number;
+        previousRequests: number;
+    } | null;
+    exceptions: {
+        open: number;
+        new: number;
+        top: {
+            id: number;
+            class: string;
+            message: string;
+            count: number;
+            lastSeen: string;
+            context: string;
+            project: ProjectRef;
+        }[];
+    } | null;
 };
 
 /**
@@ -327,6 +345,14 @@ export default function Dashboard({
                         />
                     </section>
 
+                    {overview.runtime || overview.exceptions ? (
+                        <TelemetryRow
+                            runtime={overview.runtime}
+                            exceptions={overview.exceptions}
+                            periodLabel={periodLabel}
+                        />
+                    ) : null}
+
                     <section className="grid grid-cols-1 gap-4 xl:grid-cols-12">
                         <Card className="xl:col-span-8">
                             <CardHeader className="pb-3">
@@ -380,6 +406,7 @@ function KpiCard({
     previous,
     periodLabel,
     description,
+    isMoreBetter = false,
     children,
 }: {
     title: string;
@@ -387,10 +414,14 @@ function KpiCard({
     previous: number | null;
     periodLabel: string;
     description?: string;
+    /** Requests: more is not worse, so the change stays neutral. */
+    isMoreBetter?: boolean;
     children?: ReactNode;
 }) {
     const { t } = useTranslation();
     const delta = previous === null ? null : value - previous;
+    const isWorse = delta !== null && !isMoreBetter && delta > 0;
+    const isBetter = delta !== null && !isMoreBetter && delta < 0;
 
     return (
         <Card className="xl:col-span-3">
@@ -408,9 +439,11 @@ function KpiCard({
                         <span
                             className={cn(
                                 'inline-flex items-center gap-0.5 text-xs font-medium',
-                                delta > 0 && 'text-destructive',
-                                delta < 0 && 'text-success',
-                                delta === 0 && 'text-muted-foreground',
+                                isWorse && 'text-destructive',
+                                isBetter && 'text-success',
+                                !isWorse &&
+                                    !isBetter &&
+                                    'text-muted-foreground',
                             )}
                         >
                             {delta > 0 ? (
@@ -447,6 +480,97 @@ function KpiCard({
                 ) : null}
             </CardContent>
         </Card>
+    );
+}
+
+/**
+ * Runtime and exceptions across the scoped projects (#24, #26): requests and 5xx for the
+ * period, open exception groups, and the open groups seen most recently.
+ */
+function TelemetryRow({
+    runtime,
+    exceptions,
+    periodLabel,
+}: {
+    runtime: Overview['runtime'];
+    exceptions: Overview['exceptions'];
+    periodLabel: string;
+}) {
+    const { t } = useTranslation();
+    const errorRate =
+        runtime && runtime.requests > 0
+            ? (runtime.errors / runtime.requests) * 100
+            : 0;
+
+    return (
+        <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-12">
+            {runtime ? (
+                <KpiCard
+                    title={t('dashboard.telemetry.requests')}
+                    value={runtime.requests}
+                    previous={runtime.previousRequests}
+                    periodLabel={periodLabel}
+                    isMoreBetter
+                    description={t('dashboard.telemetry.errors', {
+                        count: runtime.errors,
+                        rate: errorRate.toFixed(errorRate < 1 ? 2 : 1),
+                    })}
+                />
+            ) : null}
+            {exceptions ? (
+                <KpiCard
+                    title={t('dashboard.telemetry.openExceptions')}
+                    value={exceptions.open}
+                    previous={null}
+                    periodLabel={periodLabel}
+                    description={t('dashboard.telemetry.newExceptions', {
+                        count: exceptions.new,
+                    })}
+                />
+            ) : null}
+            {exceptions ? (
+                <Card className="sm:col-span-2 xl:col-span-6">
+                    <CardHeader className="pb-3">
+                        <CardTitle>
+                            {t('dashboard.telemetry.topExceptions')}
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        {exceptions.top.length === 0 ? (
+                            <p className="text-sm text-muted-foreground">
+                                {t('dashboard.telemetry.noOpenExceptions')}
+                            </p>
+                        ) : (
+                            <div className="max-h-48 overflow-auto">
+                                <Table>
+                                    <TableBody>
+                                        {exceptions.top.map((group) => (
+                                            <TableRow key={group.id}>
+                                                <TableCell className="max-w-[24rem] min-w-0">
+                                                    <Link
+                                                        href={`${projectsRoutes.show.url(group.project.slug)}?view=exceptions`}
+                                                        className="block truncate font-mono text-xs font-medium underline-offset-4 hover:underline"
+                                                    >
+                                                        {group.class}
+                                                    </Link>
+                                                    <div className="truncate text-xs text-muted-foreground">
+                                                        {group.project.name} ·{' '}
+                                                        {group.context}
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell className="text-right tabular-nums">
+                                                    {group.count.toLocaleString()}
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            ) : null}
+        </section>
     );
 }
 
