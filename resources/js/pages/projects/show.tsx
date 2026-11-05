@@ -1,7 +1,9 @@
 import { Head, router } from '@inertiajs/react';
 import {
     Activity,
+    Bug,
     ExternalLink,
+    Gauge,
     History,
     LayoutGrid,
     ListChecks,
@@ -16,12 +18,14 @@ import { PageEmptyState } from '@/components/admin/page-empty-state';
 import { EmptyStatus } from '@/components/empty-status';
 import { DataTableToolbar } from '@/components/admin/data-table-toolbar';
 import { PageLayout, TablePanel } from '@/components/layout/page-layout';
+import { ExceptionsView } from '@/components/reports/exceptions-view';
 import type { FindingFix } from '@/components/reports/fix-actions';
 import {
     combinedPrompt,
     FixActions,
     useCopyWithToast,
 } from '@/components/reports/fix-actions';
+import { RuntimeView } from '@/components/reports/runtime-view';
 import {
     RUNTIMES,
     RuntimeSupportBadge,
@@ -63,14 +67,23 @@ import { cn } from '@/lib/utils';
 import projectsRoutes from '@/routes/projects';
 import type {
     BreadcrumbItem,
+    ExceptionGroupRow,
     HealthReportBody,
     HealthReportSummary,
     ProjectRow,
     ReportFinding,
+    RuntimeSummary,
     Severity,
 } from '@/types';
 
-const VIEWS = ['overview', 'findings', 'plan', 'history'] as const;
+const VIEWS = [
+    'overview',
+    'findings',
+    'runtime',
+    'exceptions',
+    'plan',
+    'history',
+] as const;
 
 type ProjectView = (typeof VIEWS)[number];
 
@@ -87,8 +100,14 @@ export default function ProjectShow({
     report,
     reports,
     findingFixes = {},
+    runtime = null,
+    exceptions = [],
+    canManageExceptions = false,
     canRefreshReport = false,
 }: {
+    runtime?: RuntimeSummary | null;
+    exceptions?: ExceptionGroupRow[];
+    canManageExceptions?: boolean;
     canRefreshReport?: boolean;
     /** Ready command and prompt per finding, keyed by `checkId|subject|advisoryId` (#78). */
     findingFixes?: Record<string, FindingFix>;
@@ -150,6 +169,14 @@ export default function ProjectShow({
                             <ListChecks className="size-4" />
                             <span>{t('report.views.findings')}</span>
                         </ToggleGroupItem>
+                        <ToggleGroupItem value="runtime">
+                            <Gauge className="size-4" />
+                            <span>{t('report.views.runtime')}</span>
+                        </ToggleGroupItem>
+                        <ToggleGroupItem value="exceptions">
+                            <Bug className="size-4" />
+                            <span>{t('report.views.exceptions')}</span>
+                        </ToggleGroupItem>
                         <ToggleGroupItem value="plan">
                             <ListOrdered className="size-4" />
                             <span>{t('report.views.plan')}</span>
@@ -180,6 +207,12 @@ export default function ProjectShow({
             <Head title={project.name} />
             {view === 'findings' && report !== null ? (
                 <FindingsView report={report} fixes={findingFixes} />
+            ) : view === 'exceptions' ? (
+                <ExceptionsView
+                    projectId={project.id}
+                    groups={exceptions}
+                    canManage={canManageExceptions}
+                />
             ) : (
                 <PageLayout
                     scrollContent
@@ -214,6 +247,8 @@ export default function ProjectShow({
                 >
                     {view === 'history' ? (
                         <HistoryView reports={reports} />
+                    ) : view === 'runtime' ? (
+                        <RuntimeView runtime={runtime} />
                     ) : report === null || latest === null ? (
                         <PageEmptyState
                             icon={Activity}

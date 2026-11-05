@@ -112,3 +112,56 @@ export type AssistantMessage = {
     is_failed: boolean;
     created_at: string | null;
 };
+
+/** A row of a runtime table (ProjectRuntimeService): its dimensions plus totals. */
+export type RuntimeRow = {
+    count: number;
+    errors: number;
+    averageMs: number | null;
+    maxMs: number | null;
+    outcomes: Record<string, number>;
+    lastAt: string | null;
+} & Record<string, unknown>;
+
+/** The runtime of a project over the last hours (#24). Counts are estimated real counts. */
+export type RuntimeSummary = {
+    hours: number;
+    isSampled: boolean;
+    requests: {
+        count: number;
+        errors: number;
+        averageMs: number | null;
+        maxMs: number | null;
+        hourly: { hour: string; ok: number; errors: number }[];
+        routes: RuntimeRow[];
+    };
+    slowQueries: RuntimeRow[];
+    jobs: RuntimeRow[];
+    scheduledTasks: RuntimeRow[];
+    outgoingHttp: RuntimeRow[];
+};
+
+export type ExceptionFrame = {
+    file: string | null;
+    line: number | null;
+    function: string | null;
+    inApp: boolean;
+};
+
+/** An exception group of a project (#26), masked by excubia-core. */
+export type ExceptionGroupRow = {
+    id: number;
+    fingerprint: string;
+    environment: string;
+    class: string;
+    message: string;
+    frames: ExceptionFrame[];
+    previous: string[];
+    context: { kind: 'request' | 'job' | 'command' | 'unknown'; name: string };
+    count: number;
+    first_seen: string;
+    last_seen: string;
+    status: 'open' | 'resolved' | 'ignored';
+    resolved_at: string | null;
+    fix: { command: string | null; prompt: string };
+};

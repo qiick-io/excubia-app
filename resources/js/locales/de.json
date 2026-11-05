@@ -570,7 +570,9 @@
             "overview": "Übersicht",
             "findings": "Befunde",
             "plan": "Upgrade-Plan",
-            "history": "Verlauf"
+            "history": "Verlauf",
+            "runtime": "Laufzeit",
+            "exceptions": "Exceptions"
         },
         "support": {
             "supported": "Unterstützt",
@@ -682,5 +684,74 @@
         "copyPrompt": "Prompt für deinen KI-Assistenten kopieren",
         "copyPromptForSelected": "Prompt kopieren ({{count}})",
         "select": "{{subject}} auswählen"
+    },
+    "runtime": {
+        "emptyTitle": "Noch keine Laufzeitdaten",
+        "emptyDescription": "Aktiviere das Laufzeit-Monitoring in der excubia.json des Projekts; excubia:push-runtime sendet dann jede Minute Aggregate pro Minute.",
+        "guide": "Leitfaden zum Laufzeit-Monitoring",
+        "requests": "Anfragen",
+        "errors": "Serverfehler (5xx)",
+        "errorRate": "{{rate}} % der Anfragen",
+        "averageResponse": "Mittlere Antwortzeit",
+        "slowestResponse": "Langsamste Antwort",
+        "allRoutes": "Alle Routen",
+        "lastHours": "Letzte {{count}} Stunden",
+        "requestsPerHour": "Anfragen pro Stunde",
+        "requestsPerHourDescription": "Erfolgreiche Anfragen und Serverfehler (5xx), letzte 24 Stunden.",
+        "successful": "Erfolgreich",
+        "serverErrors": "5xx",
+        "chartLabel": "Gestapeltes Balkendiagramm der Anfragen pro Stunde: {{count}} Anfragen, {{errors}} Serverfehler in den letzten 24 Stunden.",
+        "routes": "Routen",
+        "outgoingHttp": "Ausgehendes HTTP",
+        "slowQueries": "Langsame Abfragen",
+        "jobs": "Jobs",
+        "scheduledTasks": "Geplante Aufgaben",
+        "noData": "Keine Daten in den letzten 24 Stunden.",
+        "name": "Name",
+        "count": "Anzahl",
+        "average": "Mittel",
+        "max": "Max",
+        "outcome": {
+            "processed": "Verarbeitet",
+            "failed": "Fehlgeschlagen",
+            "finished": "Beendet",
+            "skipped": "Übersprungen"
+        }
+    },
+    "exceptions": {
+        "emptyTitle": "Keine Exceptions",
+        "emptyDescription": "Aktiviere die Exception-Erfassung in der excubia.json des Projekts, um sie hier zu gruppieren, maskiert bevor sie das Projekt verlassen.",
+        "guide": "Leitfaden zur Exception-Erfassung",
+        "search": "Exceptions suchen…",
+        "statusFilter": "Status",
+        "status": {
+            "open": "Offen",
+            "resolved": "Gelöst",
+            "ignored": "Ignoriert",
+            "all": "Alle"
+        },
+        "noMatchTitle": "Keine passenden Exceptions",
+        "noMatchDescription": "Andere Suche oder anderen Status versuchen.",
+        "exception": "Exception",
+        "context": "Wo",
+        "environment": "Umgebung",
+        "count": "Anzahl",
+        "lastSeen": "Zuletzt",
+        "statusLabel": "Status",
+        "kind": {
+            "request": "Anfrage",
+            "job": "Job",
+            "command": "Befehl",
+            "unknown": "Unbekannt"
+        },
+        "summary": "{{count}} Vorkommen in {{environment}}, zuerst {{first}}, zuletzt {{last}}",
+        "message": "Nachricht (maskiert)",
+        "causedBy": "Verursacht durch",
+        "stack": "Stack",
+        "internal": "[intern]",
+        "stackHint": "Innerster zuerst; Projektcode hervorgehoben. Pfade sind relativ, Argumente werden nie gesendet.",
+        "resolve": "Lösen",
+        "ignore": "Ignorieren",
+        "reopen": "Wieder öffnen"
     }
 }

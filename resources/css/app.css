@@ -29,3 +29,17 @@
     --severity-chart-low: var(--color-red-400);
     --severity-chart-info: var(--color-red-600);
 }
+
+/*
+ * Requests chart (successful vs 5xx), validated as a 2-slot categorical palette against the
+ * card surfaces (dataviz validate_palette, light and dark).
+ */
+:root {
+    --runtime-chart-ok: var(--color-blue-600);
+    --runtime-chart-error: var(--color-red-600);
+}
+
+.dark {
+    --runtime-chart-ok: var(--color-blue-500);
+    --runtime-chart-error: var(--color-red-400);
+}
