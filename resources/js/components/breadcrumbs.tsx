@@ -1,4 +1,5 @@
 import { Link } from '@inertiajs/react';
+import type { InertiaLinkProps } from '@inertiajs/react';
 import { Fragment } from 'react';
 import { useTranslation } from 'react-i18next';
 import { TruncatedText } from '@/components/admin/truncated-text';
@@ -10,7 +11,15 @@ import {
     BreadcrumbPage,
     BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
-import type { BreadcrumbItem as BreadcrumbItemType } from '@/types';
+
+/**
+ * One breadcrumb segment, the starter kit's `BreadcrumbItem` from `@/types`.
+ * Declared here because `shadcn add` rewrites `@/types` imports.
+ */
+export type BreadcrumbItemType = {
+    title: string;
+    href: NonNullable<InertiaLinkProps['href']>;
+};
 
 /**
  * Renders a linked breadcrumb trail from the given items.

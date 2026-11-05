@@ -1,26 +1,46 @@
 import * as React from 'react';
 import { SidebarInset } from '@/components/ui/sidebar';
-import type { AppVariant } from '@/types';
+import { cn } from '@/lib/utils';
 
 type Props = React.ComponentProps<'main'> & {
-    variant?: AppVariant;
+    variant?: 'header' | 'sidebar';
 };
 
 /**
  * Main content region; uses sidebar inset or centered main depending on layout variant.
  * @param {Props} props - Main element props plus layout variant.
- * @param {AppVariant} [props.variant='sidebar'] - Layout mode (`sidebar` or `header`).
+ * @param {'header' | 'sidebar'} [props.variant='sidebar'] - Layout mode (`sidebar` or `header`).
  * @param {React.ReactNode} props.children - Page content.
  * @returns {JSX.Element}
  */
-export function AppContent({ variant = 'sidebar', children, ...props }: Props) {
+export function AppContent({
+    variant = 'sidebar',
+    className,
+    children,
+    ...props
+}: Props) {
     if (variant === 'sidebar') {
-        return <SidebarInset {...props}>{children}</SidebarInset>;
+        // Frame the inset panel: in dark themes it shares the sidebar colour, so without
+        // a border the header's bottom rule would end in mid-air.
+        return (
+            <SidebarInset
+                className={cn(
+                    'md:peer-data-[variant=inset]:border md:peer-data-[variant=inset]:border-sidebar-border/40',
+                    className,
+                )}
+                {...props}
+            >
+                {children}
+            </SidebarInset>
+        );
     }
 
     return (
         <main
-            className="mx-auto flex h-full w-full max-w-7xl flex-1 flex-col gap-4 rounded-xl"
+            className={cn(
+                'mx-auto flex h-full w-full max-w-7xl flex-1 flex-col gap-4 rounded-xl',
+                className,
+            )}
             {...props}
         >
             {children}
