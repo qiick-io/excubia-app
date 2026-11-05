@@ -10,6 +10,7 @@ namespace App\Enums;
 enum ThemePresetEnum: string
 {
     case Teal = 'teal';
+    case Blue = 'blue';
     case Indigo = 'indigo';
     case Violet = 'violet';
     case Rose = 'rose';
@@ -23,9 +24,12 @@ enum ThemePresetEnum: string
         return array_column(self::cases(), 'value');
     }
 
+    /**
+     * Excubia's brand preset (config/theme-presets.php `default`).
+     */
     public static function default(): self
     {
-        return self::Teal;
+        return self::Blue;
     }
 
     public static function tryFromNullable(?string $value): self

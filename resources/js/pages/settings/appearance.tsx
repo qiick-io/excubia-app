@@ -31,7 +31,6 @@ import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 import { brandPassesAa } from '@/lib/brand-contrast';
 import { applyThemeCss, buildPreviewThemeCss } from '@/lib/theme-css';
-import { themePresetBySlug } from '@/lib/theme-presets';
 import { edit as editAppearance } from '@/routes/appearance';
 import type {
     AppearanceSettings,
@@ -78,7 +77,10 @@ export default function Appearance({
     const [defaultAppearance, setDefaultAppearance] =
         useState(initialAppearance);
 
-    const selectedPreset = themePresetBySlug(themePreset);
+    const selectedPreset =
+        appearance.theme_presets.find(
+            (preset) => preset.slug === themePreset,
+        ) ?? appearance.theme_presets[0];
     const displayColor = projectColor ?? selectedPreset.swatchLight;
     const displayColorDark =
         projectColorDark ?? projectColor ?? selectedPreset.swatchDark;
@@ -96,13 +98,17 @@ export default function Appearance({
     // Live preview of the draft; the cleanup restores the latest saved theme.
     useEffect(() => {
         applyThemeCss(
-            buildPreviewThemeCss(themePreset, projectColor, projectColorDark),
+            buildPreviewThemeCss(
+                selectedPreset,
+                projectColor,
+                projectColorDark,
+            ),
         );
 
         return () => {
             restoreThemeFromAppearance(projectAppearance);
         };
-    }, [themePreset, projectColor, projectColorDark, projectAppearance]);
+    }, [selectedPreset, projectColor, projectColorDark, projectAppearance]);
 
     const breadcrumbs: BreadcrumbItem[] = [
         {

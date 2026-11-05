@@ -8,12 +8,14 @@ use App\Enums\ThemePresetEnum;
 
 /**
  * Resolves built-in theme presets (config/theme-presets.php) into CSS variables for the
- * document shell, as in qiick-io/externa-core. Precedence: custom brand hex → selected preset
- * → default teal. A custom hex removes the brand-linked preset keys so `--brand-primary`
- * (resources/css/app.css) wins, and gets an AA-checked foreground.
+ * document shell, as in qiick-io/externa-core: the shared `base` surfaces with the selected
+ * preset's brand colours merged over them. Precedence: custom brand hex → selected preset
+ * → default blue. A custom hex removes the brand-linked preset keys so `--brand-primary`
+ * (resources/css/app.css) wins, and gets an AA-checked foreground. A preset with
+ * `ai_override` (Violet) switches the AI accent to teal.
  *
- * ponytail: externa's AI-accent override (OKLCH hue check) is left out because Excubia has no
- * AI surfaces; port OklchHue and the `ai_override*` config if one is added.
+ * ponytail: externa's OKLCH hue check that also switches the AI accent for a near-violet
+ * custom hex is left out; port OklchHue if custom violet brands become a problem.
  *
  * @phpstan-type ThemeCssBag array{
  *     light: array<string, string>,
@@ -72,9 +74,10 @@ class ThemePresetService
     }
 
     /**
-     * Presets for the Appearance picker.
+     * Presets for the Appearance picker, each with its merged base + brand tokens so the page
+     * previews them without a client-side copy of the config.
      *
-     * @return list<array{slug: string, name: string, swatchLight: string, swatchDark: string}>
+     * @return list<array{slug: string, name: string, aiOverride: bool, swatchLight: string, swatchDark: string, light: array<string, string>, dark: array<string, string>}>
      */
     public function catalog(): array
     {
@@ -87,14 +90,17 @@ class ThemePresetService
                 continue;
             }
 
-            $light = is_array($definition['light'] ?? null) ? $definition['light'] : [];
-            $dark = is_array($definition['dark'] ?? null) ? $definition['dark'] : [];
+            $light = $this->presetTokens($definition, 'light');
+            $dark = $this->presetTokens($definition, 'dark');
 
             $catalog[] = [
                 'slug' => $case->value,
                 'name' => is_string($definition['name'] ?? null) ? $definition['name'] : $case->value,
-                'swatchLight' => is_string($light['primary'] ?? null) ? $light['primary'] : '#0E7C86',
-                'swatchDark' => is_string($dark['primary'] ?? null) ? $dark['primary'] : '#2CB1BC',
+                'aiOverride' => (bool) ($definition['ai_override'] ?? false),
+                'swatchLight' => $light['primary'] ?? '#1375A7',
+                'swatchDark' => $dark['primary'] ?? '#2BB0ED',
+                'light' => $light,
+                'dark' => $dark,
             ];
         }
 
@@ -112,8 +118,8 @@ class ThemePresetService
         $preset = ThemePresetEnum::tryFromNullable($themePresetSlug);
         $definition = $this->presetDefinition($preset);
 
-        $light = $this->tokenMap(is_array($definition['light'] ?? null) ? $definition['light'] : []);
-        $dark = $this->tokenMap(is_array($definition['dark'] ?? null) ? $definition['dark'] : []);
+        $light = $this->presetTokens($definition, 'light');
+        $dark = $this->presetTokens($definition, 'dark');
 
         $hasCustomLight = is_string($projectColor) && $projectColor !== '';
         $hasCustomDark = is_string($projectColorDark) && $projectColorDark !== '';
@@ -284,6 +290,25 @@ class ThemePresetService
         $definition = config('theme-presets.presets.'.$preset->value);
 
         return is_array($definition) ? $definition : [];
+    }
+
+    /**
+     * Shared base surfaces with the preset's brand colours merged over them, plus the teal AI
+     * accent when the preset sets `ai_override`.
+     *
+     * @param  array<mixed>  $definition
+     * @return array<string, string>
+     */
+    private function presetTokens(array $definition, string $mode): array
+    {
+        $base = config('theme-presets.base.'.$mode, []);
+        $aiOverride = (bool) ($definition['ai_override'] ?? false) ? config('theme-presets.ai_override_'.$mode, []) : [];
+
+        return [
+            ...$this->tokenMap(is_array($base) ? $base : []),
+            ...$this->tokenMap(is_array($definition[$mode] ?? null) ? $definition[$mode] : []),
+            ...$this->tokenMap(is_array($aiOverride) ? $aiOverride : []),
+        ];
     }
 
     /**

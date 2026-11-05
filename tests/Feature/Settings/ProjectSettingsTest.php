@@ -364,11 +364,13 @@ it('flushes the permission cache', function () {
 it('offers the built-in theme presets on the appearance page', function () {
     $this->actingAs(projectSettingsManager())->get(route('appearance.edit'))
         ->assertInertia(fn (Assert $page) => $page
-            ->where('appearance.theme_preset', 'teal')
+            ->where('appearance.theme_preset', 'blue')
             ->where('appearance.project_color', null)
             ->where('appearance.brand_passes_aa', true)
             ->has('appearance.theme_presets', count(ThemePresetEnum::cases()))
-            ->where('appearance.theme_presets.1.slug', 'indigo'));
+            ->where('appearance.theme_presets.1.slug', 'blue')
+            ->where('appearance.theme_presets.1.light.primary', '#1375A7')
+            ->where('appearance.theme_presets.1.light.background', '#FFFFFF'));
 });
 
 it('saves the theme preset and brand colours', function () {
@@ -417,7 +419,20 @@ it('rejects an unknown theme preset and invalid brand colours', function () {
         ])
         ->assertSessionHasErrors(['theme_preset', 'project_color', 'project_color_dark']);
 
-    expect(app(SettingsRepositoryService::class)->themePreset())->toBe('teal');
+    expect(app(SettingsRepositoryService::class)->themePreset())->toBe('blue');
+});
+
+it('merges the shared base with the preset brand colours', function () {
+    $blue = app(ThemePresetService::class)->resolve(null, null, null);
+    $violet = app(ThemePresetService::class)->resolve('violet', null, null);
+
+    expect($blue['themePreset'])->toBe('blue')
+        ->and($blue['light']['primary'])->toBe('#1375A7')
+        ->and($blue['light']['sidebar'])->toBe(config('theme-presets.base.light.sidebar'))
+        ->and($blue['dark']['background'])->toBe('#0E171E')
+        ->and($blue['light']['ai'])->toBe('#7F35BB')
+        ->and($violet['light']['ai'])->toBe(config('theme-presets.ai_override_light.ai'))
+        ->and($violet['dark']['ai'])->toBe(config('theme-presets.ai_override_dark.ai'));
 });
 
 it('renders the theme variables of a non-default preset in the HTML', function () {
