@@ -91,18 +91,18 @@ export function UserMenuContent({ user }: Props) {
             <DropdownMenuGroup>
                 <DropdownMenuItem asChild>
                     <Link
-                        className="block w-full cursor-pointer"
+                        className="w-full cursor-pointer"
                         href={edit()}
                         prefetch
                         onClick={cleanup}
                     >
-                        <Settings className="mr-2" />
+                        <Settings />
                         {t('userMenu.settings')}
                     </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSub>
                     <DropdownMenuSubTrigger className="cursor-pointer">
-                        <Languages className="mr-2 size-4" />
+                        <Languages className="size-4" />
                         {t('userMenu.language')}
                     </DropdownMenuSubTrigger>
                     <DropdownMenuSubContent>
@@ -124,7 +124,7 @@ export function UserMenuContent({ user }: Props) {
                 </DropdownMenuSub>
                 <DropdownMenuSub>
                     <DropdownMenuSubTrigger className="cursor-pointer">
-                        <SunMoon className="mr-2 size-4" />
+                        <SunMoon className="size-4" />
                         {t('userMenu.appearance')}
                     </DropdownMenuSubTrigger>
                     <DropdownMenuSubContent>
@@ -149,11 +149,11 @@ export function UserMenuContent({ user }: Props) {
                         className="cursor-pointer"
                         data-test="accessibility-menu"
                     >
-                        <Accessibility className="mr-2 size-4" />
+                        <Accessibility className="size-4" />
                         <span className="flex-1">
                             {t('userMenu.accessibility')}
                         </span>
-                        <span className="ml-2 text-xs text-muted-foreground">
+                        <span className="text-xs text-muted-foreground">
                             {accessibilitySummary}
                         </span>
                     </DropdownMenuSubTrigger>
@@ -194,13 +194,13 @@ export function UserMenuContent({ user }: Props) {
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
                 <Link
-                    className="block w-full cursor-pointer"
+                    className="w-full cursor-pointer"
                     href={logout()}
                     as="button"
                     onClick={handleLogout}
                     data-test="logout-button"
                 >
-                    <LogOut className="mr-2" />
+                    <LogOut />
                     {t('userMenu.logOut')}
                 </Link>
             </DropdownMenuItem>

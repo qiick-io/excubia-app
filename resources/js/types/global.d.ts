@@ -18,6 +18,7 @@ declare module '@inertiajs/core' {
             locale: string;
             availableLocales: Record<string, string>;
             sidebarOpen: boolean;
+            appVersion: string;
             isAssistantEnabled: boolean;
             projectSettings: SharedProjectSettings;
             projectAppearance: ProjectAppearance;

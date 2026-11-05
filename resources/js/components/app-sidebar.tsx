@@ -1,12 +1,12 @@
 import { Link, usePage } from '@inertiajs/react';
 import {
     BookOpen,
-    Bot,
     FolderGit2,
     FolderKanban,
     LayoutGrid,
     ScrollText,
     Settings,
+    Sparkles,
     Users,
     UsersRound,
 } from 'lucide-react';
@@ -45,7 +45,11 @@ type ModuleDef = {
     href: NavItem['href'];
     icon: LucideIcon;
     permission?: PermissionEnum;
+    accent?: boolean;
 };
+
+/** Always first in the nav, regardless of persisted module order. */
+const PINNED_SIDEBAR_MODULE_IDS = ['assistant'] as const;
 
 /**
  * Primary application sidebar with navigation and user menu.
@@ -54,7 +58,7 @@ export function AppSidebar() {
     const { t } = useTranslation();
     const { can } = useCan();
     const { isCurrentUrl } = useCurrentUrl();
-    const { projectSettings, isAssistantEnabled } = usePage().props;
+    const { projectSettings, isAssistantEnabled, appVersion } = usePage().props;
 
     const moduleDefs = useMemo<Record<string, ModuleDef>>(
         () => ({
@@ -75,8 +79,9 @@ export function AppSidebar() {
                 id: 'assistant',
                 titleKey: 'nav.assistant',
                 href: assistant.index.url(),
-                icon: Bot,
+                icon: Sparkles,
                 permission: PermissionEnum.AiUse,
+                accent: true,
             },
             activity: {
                 id: 'activity',
@@ -109,12 +114,22 @@ export function AppSidebar() {
         [],
     );
 
-    const visibleModules = projectSettings.sidebarModules
-        .filter((module) => module.enabled)
-        .map((module) => moduleDefs[module.id])
-        .filter((def): def is ModuleDef => !!def)
-        .filter((def) => def.id !== 'assistant' || isAssistantEnabled)
-        .filter((def) => !def.permission || can(def.permission));
+    const visibleModules = pinModulesFirst(
+        projectSettings.sidebarModules
+            .filter((module) => module.enabled)
+            .map((module) => moduleDefs[module.id])
+            .filter((def): def is ModuleDef => !!def)
+            .filter((def) => def.id !== 'assistant' || isAssistantEnabled)
+            .filter((def) => !def.permission || can(def.permission)),
+    );
+
+    const pinnedIds = new Set<string>(PINNED_SIDEBAR_MODULE_IDS);
+    const pinnedModules = visibleModules.filter((item) =>
+        pinnedIds.has(item.id),
+    );
+    const platformModules = visibleModules.filter(
+        (item) => !pinnedIds.has(item.id),
+    );
 
     const footerNavItems: NavItem[] = [
         {
@@ -136,11 +151,12 @@ export function AppSidebar() {
                 isActive={isCurrentUrl(
                     item.id === 'settings' ? '/settings' : item.href,
                     undefined,
-                    item.id === 'settings',
+                    item.id === 'assistant' || item.id === 'settings',
                 )}
                 tooltip={{ children: t(item.titleKey) }}
+                className={item.accent ? 'sidebar-ai-nav' : undefined}
             >
-                <Link href={item.href} prefetch className="relative">
+                <Link href={item.href} prefetch>
                     <item.icon />
                     <span>{t(item.titleKey)}</span>
                 </Link>
@@ -171,13 +187,21 @@ export function AppSidebar() {
                 </SidebarHeader>
 
                 <SidebarContent>
-                    {visibleModules.length > 0 ? (
+                    {pinnedModules.length > 0 ? (
+                        <SidebarGroup className="px-2 py-0">
+                            <SidebarMenu>
+                                {pinnedModules.map(renderModuleItem)}
+                            </SidebarMenu>
+                        </SidebarGroup>
+                    ) : null}
+
+                    {platformModules.length > 0 ? (
                         <SidebarGroup className="px-2 py-0">
                             <SidebarGroupLabel>
                                 {t('nav.platform')}
                             </SidebarGroupLabel>
                             <SidebarMenu>
-                                {visibleModules.map(renderModuleItem)}
+                                {platformModules.map(renderModuleItem)}
                             </SidebarMenu>
                         </SidebarGroup>
                     ) : null}
@@ -186,8 +210,22 @@ export function AppSidebar() {
                 <SidebarFooter>
                     <NavFooter items={footerNavItems} className="mt-auto" />
                     <NavUser />
+                    {appVersion ? (
+                        <p className="truncate px-2 text-center text-xs leading-none text-muted-foreground group-data-[collapsible=icon]:hidden">
+                            v{appVersion}
+                        </p>
+                    ) : null}
                 </SidebarFooter>
             </nav>
         </Sidebar>
     );
+}
+
+function pinModulesFirst<T extends { id: string }>(items: T[]): T[] {
+    const pinnedIds = new Set<string>(PINNED_SIDEBAR_MODULE_IDS);
+    const pinned = PINNED_SIDEBAR_MODULE_IDS.map((id) =>
+        items.find((item) => item.id === id),
+    ).filter((item): item is T => !!item);
+
+    return [...pinned, ...items.filter((item) => !pinnedIds.has(item.id))];
 }
