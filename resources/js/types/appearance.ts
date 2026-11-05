@@ -1,13 +1,23 @@
 import type { DefaultAppearance } from '@/types/project-settings';
 
-export type ThemePresetSlug = 'teal' | 'indigo' | 'violet' | 'rose' | 'slate';
+export type ThemePresetSlug =
+    | 'teal'
+    | 'blue'
+    | 'indigo'
+    | 'violet'
+    | 'rose'
+    | 'slate';
 
 /** One preset offered by the Appearance picker (ThemePresetService::catalog()). */
 export type ThemePresetCatalogItem = {
     slug: ThemePresetSlug;
     name: string;
+    aiOverride: boolean;
     swatchLight: string;
     swatchDark: string;
+    /** Base surfaces merged with the preset's brand colours (server-resolved). */
+    light: Record<string, string>;
+    dark: Record<string, string>;
 };
 
 /** Resolved theme CSS variables, as rendered in the app.blade.php `<style>` block. */

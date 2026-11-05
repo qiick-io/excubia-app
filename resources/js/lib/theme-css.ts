@@ -1,8 +1,10 @@
 import { meetsUiContrast } from '@/lib/brand-contrast';
 import { contrastingForeground } from '@/lib/contrasting-foreground';
-import { themePresetBySlug } from '@/lib/theme-presets';
-import type { ThemePresetSlug, ThemePresetTokens } from '@/lib/theme-presets';
-import type { ThemeCssPayload } from '@/types/appearance';
+import type { ThemePresetTokens } from '@/lib/theme-presets';
+import type {
+    ThemeCssPayload,
+    ThemePresetCatalogItem,
+} from '@/types/appearance';
 
 const BRAND_LINKED_KEYS = [
     'primary',
@@ -78,14 +80,14 @@ function cssDeclarations(tokens: ThemePresetTokens): string {
 }
 
 /**
- * Build a ThemeCssPayload client-side for appearance form live preview.
+ * Build a ThemeCssPayload client-side for appearance form live preview, from
+ * the server-resolved preset tokens (no client copy of the presets).
  */
 export function buildPreviewThemeCss(
-    themePreset: ThemePresetSlug,
+    preset: ThemePresetCatalogItem,
     projectColor: string | null,
     projectColorDark: string | null,
 ): ThemeCssPayload {
-    const preset = themePresetBySlug(themePreset);
     let light: ThemePresetTokens = { ...preset.light };
     let dark: ThemePresetTokens = { ...preset.dark };
 
