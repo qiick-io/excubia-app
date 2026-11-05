@@ -505,10 +505,9 @@
             "endOfSupport": "Supportende",
             "endOfSupportDescription": "Laufzeiten beendet oder endend innerhalb von 180 Tagen",
             "stale": "Ohne Bericht",
-            "staleDescription": "Von {{total}} Projekten, über der eingestellten Schwelle",
-            "up": "+{{count}}",
-            "down": "−{{count}}",
-            "unchanged": "Unverändert"
+            "findingsContext": "Letzter Bericht jedes Projekts",
+            "staleHeadline": "Von {{total}} Projekten",
+            "staleContext": "Kein Bericht innerhalb der eingestellten Schwelle"
         },
         "topIssues": {
             "title": "Wichtigste Befunde",
@@ -540,7 +539,8 @@
             "openExceptions": "Offene Exceptions",
             "newExceptions": "{{count}} neu im Zeitraum",
             "topExceptions": "Neueste offene Exceptions",
-            "noOpenExceptions": "Keine offenen Exceptions."
+            "noOpenExceptions": "Keine offenen Exceptions.",
+            "openExceptionsContext": "Nach Fingerprint gruppiert"
         }
     },
     "report": {
@@ -724,7 +724,8 @@
             "failed": "Fehlgeschlagen",
             "finished": "Beendet",
             "skipped": "Übersprungen"
-        }
+        },
+        "sampled": "~ geschätzt aus Stichproben"
     },
     "exceptions": {
         "emptyTitle": "Keine Exceptions",

@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { PageEmptyState } from '@/components/admin/page-empty-state';
 import { PageLayout } from '@/components/layout/page-layout';
 import type { FindingFix } from '@/components/reports/fix-actions';
+import { StatCard, trendOf } from '@/components/reports/stat-card';
 import { FixActions } from '@/components/reports/fix-actions';
 import {
     RuntimeSupportBadge,
@@ -310,38 +311,61 @@ export default function Dashboard({
             >
                 <div className="flex flex-col gap-4">
                     <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-12">
-                        <KpiCard
-                            title={t('dashboard.kpi.findings')}
-                            value={kpis.findings.total}
-                            previous={kpis.findings.previous}
-                            periodLabel={periodLabel}
-                        >
-                            <SeverityCounts counts={kpis.findings.counts} />
-                        </KpiCard>
-                        <KpiCard
-                            title={t('dashboard.kpi.atRisk')}
-                            value={kpis.atRisk.value}
-                            previous={kpis.atRisk.previous}
-                            periodLabel={periodLabel}
-                            description={t('dashboard.kpi.atRiskDescription')}
+                        <StatCard
+                            className="xl:col-span-3"
+                            label={t('dashboard.kpi.findings')}
+                            value={kpis.findings.total.toLocaleString()}
+                            trend={trendOf(
+                                kpis.findings.total,
+                                kpis.findings.previous,
+                            )}
+                            headline={severitySummary(kpis.findings.counts, t)}
+                            context={
+                                kpis.findings.previous === null
+                                    ? t('dashboard.kpi.findingsContext')
+                                    : periodLabel
+                            }
                         />
-                        <KpiCard
-                            title={t('dashboard.kpi.endOfSupport')}
-                            value={kpis.endOfSupport.value}
-                            previous={kpis.endOfSupport.previous}
-                            periodLabel={periodLabel}
-                            description={t(
+                        <StatCard
+                            className="xl:col-span-3"
+                            label={t('dashboard.kpi.atRisk')}
+                            value={kpis.atRisk.value.toLocaleString()}
+                            trend={trendOf(
+                                kpis.atRisk.value,
+                                kpis.atRisk.previous,
+                            )}
+                            headline={t('dashboard.kpi.atRiskDescription')}
+                            context={
+                                kpis.atRisk.previous === null
+                                    ? undefined
+                                    : periodLabel
+                            }
+                        />
+                        <StatCard
+                            className="xl:col-span-3"
+                            label={t('dashboard.kpi.endOfSupport')}
+                            value={kpis.endOfSupport.value.toLocaleString()}
+                            trend={trendOf(
+                                kpis.endOfSupport.value,
+                                kpis.endOfSupport.previous,
+                            )}
+                            headline={t(
                                 'dashboard.kpi.endOfSupportDescription',
                             )}
+                            context={
+                                kpis.endOfSupport.previous === null
+                                    ? undefined
+                                    : periodLabel
+                            }
                         />
-                        <KpiCard
-                            title={t('dashboard.kpi.stale')}
-                            value={kpis.stale.value}
-                            previous={null}
-                            periodLabel={periodLabel}
-                            description={t('dashboard.kpi.staleDescription', {
+                        <StatCard
+                            className="xl:col-span-3"
+                            label={t('dashboard.kpi.stale')}
+                            value={kpis.stale.value.toLocaleString()}
+                            headline={t('dashboard.kpi.staleHeadline', {
                                 total: kpis.stale.total,
                             })}
+                            context={t('dashboard.kpi.staleContext')}
                         />
                     </section>
 
@@ -397,93 +421,6 @@ export default function Dashboard({
 }
 
 /**
- * A key number with its change against the previous period (fewer is better for all of them),
- * as the externa-core stat tiles. The change names its direction in text, not colour only.
- */
-function KpiCard({
-    title,
-    value,
-    previous,
-    periodLabel,
-    description,
-    isMoreBetter = false,
-    children,
-}: {
-    title: string;
-    value: number;
-    previous: number | null;
-    periodLabel: string;
-    description?: string;
-    /** Requests: more is not worse, so the change stays neutral. */
-    isMoreBetter?: boolean;
-    children?: ReactNode;
-}) {
-    const { t } = useTranslation();
-    const delta = previous === null ? null : value - previous;
-    const isWorse = delta !== null && !isMoreBetter && delta > 0;
-    const isBetter = delta !== null && !isMoreBetter && delta < 0;
-
-    return (
-        <Card className="xl:col-span-3">
-            <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                    {title}
-                </CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-2">
-                <div className="flex items-baseline gap-2">
-                    <span className="text-2xl font-semibold tabular-nums">
-                        {value.toLocaleString()}
-                    </span>
-                    {delta === null ? null : (
-                        <span
-                            className={cn(
-                                'inline-flex items-center gap-0.5 text-xs font-medium',
-                                isWorse && 'text-destructive',
-                                isBetter && 'text-success',
-                                !isWorse &&
-                                    !isBetter &&
-                                    'text-muted-foreground',
-                            )}
-                        >
-                            {delta > 0 ? (
-                                <ArrowUpRight
-                                    className="size-3.5"
-                                    aria-hidden
-                                />
-                            ) : delta < 0 ? (
-                                <ArrowDownRight
-                                    className="size-3.5"
-                                    aria-hidden
-                                />
-                            ) : (
-                                <Minus className="size-3.5" aria-hidden />
-                            )}
-                            {delta === 0
-                                ? t('dashboard.kpi.unchanged')
-                                : t(
-                                      delta > 0
-                                          ? 'dashboard.kpi.up'
-                                          : 'dashboard.kpi.down',
-                                      { count: Math.abs(delta) },
-                                  )}
-                        </span>
-                    )}
-                </div>
-                {children}
-                {description || delta !== null ? (
-                    <p className="text-xs text-muted-foreground">
-                        {[description, delta !== null ? periodLabel : null]
-                            .filter(Boolean)
-                            .join(' · ')}
-                    </p>
-                ) : null}
-            </CardContent>
-        </Card>
-    );
-}
-
-/**
  * Runtime and exceptions across the scoped projects (#24, #26): requests and 5xx for the
  * period, open exception groups, and the open groups seen most recently.
  */
@@ -505,27 +442,27 @@ function TelemetryRow({
     return (
         <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-12">
             {runtime ? (
-                <KpiCard
-                    title={t('dashboard.telemetry.requests')}
-                    value={runtime.requests}
-                    previous={runtime.previousRequests}
-                    periodLabel={periodLabel}
-                    isMoreBetter
-                    description={t('dashboard.telemetry.errors', {
+                <StatCard
+                    className="xl:col-span-3"
+                    label={t('dashboard.telemetry.requests')}
+                    value={runtime.requests.toLocaleString()}
+                    trend={trendOf(runtime.requests, runtime.previousRequests)}
+                    headline={t('dashboard.telemetry.errors', {
                         count: runtime.errors,
                         rate: errorRate.toFixed(errorRate < 1 ? 2 : 1),
                     })}
+                    context={periodLabel}
                 />
             ) : null}
             {exceptions ? (
-                <KpiCard
-                    title={t('dashboard.telemetry.openExceptions')}
-                    value={exceptions.open}
-                    previous={null}
-                    periodLabel={periodLabel}
-                    description={t('dashboard.telemetry.newExceptions', {
+                <StatCard
+                    className="xl:col-span-3"
+                    label={t('dashboard.telemetry.openExceptions')}
+                    value={exceptions.open.toLocaleString()}
+                    headline={t('dashboard.telemetry.newExceptions', {
                         count: exceptions.new,
                     })}
+                    context={t('dashboard.telemetry.openExceptionsContext')}
                 />
             ) : null}
             {exceptions ? (
@@ -954,6 +891,21 @@ function ProjectsCard({ projects }: { projects: ProjectRow[] }) {
             </CardContent>
         </Card>
     );
+}
+
+/**
+ * "11 medium · 3 low": the non-zero severities, worst first.
+ */
+function severitySummary(
+    counts: Record<Severity, number>,
+    t: (key: string) => string,
+): string {
+    const parts = SEVERITIES.filter((severity) => counts[severity] > 0).map(
+        (severity) =>
+            `${counts[severity]} ${t(`report.severity.${severity}`).toLowerCase()}`,
+    );
+
+    return parts.length === 0 ? t('report.noIssues') : parts.join(' · ');
 }
 
 function severityRank(project: ProjectRow): number {

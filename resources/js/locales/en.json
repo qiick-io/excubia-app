@@ -505,10 +505,9 @@
             "endOfSupport": "End of support",
             "endOfSupportDescription": "Runtimes ended or ending within 180 days",
             "stale": "Not reporting",
-            "staleDescription": "Of {{total}} projects, past the stale setting",
-            "up": "+{{count}}",
-            "down": "−{{count}}",
-            "unchanged": "No change"
+            "findingsContext": "Latest report of each project",
+            "staleHeadline": "Of {{total}} projects",
+            "staleContext": "No report within the stale setting"
         },
         "topIssues": {
             "title": "Top issues",
@@ -540,7 +539,8 @@
             "openExceptions": "Open exceptions",
             "newExceptions": "{{count}} new in the period",
             "topExceptions": "Latest open exceptions",
-            "noOpenExceptions": "No open exceptions."
+            "noOpenExceptions": "No open exceptions.",
+            "openExceptionsContext": "Grouped by fingerprint"
         }
     },
     "report": {
@@ -724,7 +724,8 @@
             "failed": "Failed",
             "finished": "Finished",
             "skipped": "Skipped"
-        }
+        },
+        "sampled": "~ estimated from sampled events"
     },
     "exceptions": {
         "emptyTitle": "No exceptions",
