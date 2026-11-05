@@ -24,6 +24,7 @@ import {
     SeverityBadge,
     SeverityCounts,
 } from '@/components/reports/severity-badge';
+import { SeverityStackedBarChart } from '@/components/reports/severity-chart';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -723,40 +724,76 @@ function HistoryView({ reports }: { reports: HealthReportSummary[] }) {
         );
     }
 
+    // Oldest first, so the chart reads left to right in time.
+    const chartData = [...reports].reverse().map((summary) => ({
+        label: new Date(summary.received_at).toLocaleString(undefined, {
+            day: 'numeric',
+            month: 'short',
+            hour: '2-digit',
+            minute: '2-digit',
+        }),
+        ...summary.counts,
+    }));
+    const latestTotal = SEVERITIES.reduce(
+        (total, severity) => total + reports[0].counts[severity],
+        0,
+    );
+
     return (
-        <TablePanel>
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead>{t('report.receivedAt')}</TableHead>
-                        <TableHead>{t('report.worstSeverity')}</TableHead>
-                        <TableHead>{t('report.findings')}</TableHead>
-                        <TableHead className="text-right">
-                            {t('report.coreVersionShort')}
-                        </TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {reports.map((summary) => (
-                        <TableRow key={summary.id}>
-                            <TableCell className="tabular-nums">
-                                {new Date(summary.received_at).toLocaleString()}
-                            </TableCell>
-                            <TableCell>
-                                <SeverityBadge
-                                    severity={summary.worst_severity}
-                                />
-                            </TableCell>
-                            <TableCell>
-                                <SeverityCounts counts={summary.counts} />
-                            </TableCell>
-                            <TableCell className="text-right font-mono text-xs text-muted-foreground">
-                                {summary.excubia_version ?? '—'}
-                            </TableCell>
+        <div className="flex flex-col gap-4">
+            <Card>
+                <CardHeader className="pb-3">
+                    <CardTitle>{t('report.trend.title')}</CardTitle>
+                    <CardDescription>
+                        {t('report.trend.description')}
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="h-64">
+                    <SeverityStackedBarChart
+                        data={chartData}
+                        label={t('report.trend.label', {
+                            count: reports.length,
+                            total: latestTotal,
+                        })}
+                    />
+                </CardContent>
+            </Card>
+            <TablePanel>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>{t('report.receivedAt')}</TableHead>
+                            <TableHead>{t('report.worstSeverity')}</TableHead>
+                            <TableHead>{t('report.findings')}</TableHead>
+                            <TableHead className="text-right">
+                                {t('report.coreVersionShort')}
+                            </TableHead>
                         </TableRow>
-                    ))}
-                </TableBody>
-            </Table>
-        </TablePanel>
+                    </TableHeader>
+                    <TableBody>
+                        {reports.map((summary) => (
+                            <TableRow key={summary.id}>
+                                <TableCell className="tabular-nums">
+                                    {new Date(
+                                        summary.received_at,
+                                    ).toLocaleString()}
+                                </TableCell>
+                                <TableCell>
+                                    <SeverityBadge
+                                        severity={summary.worst_severity}
+                                    />
+                                </TableCell>
+                                <TableCell>
+                                    <SeverityCounts counts={summary.counts} />
+                                </TableCell>
+                                <TableCell className="text-right font-mono text-xs text-muted-foreground">
+                                    {summary.excubia_version ?? '—'}
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </TablePanel>
+        </div>
     );
 }

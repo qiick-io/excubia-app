@@ -8,3 +8,24 @@
 
 @source '../views';
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+
+/*
+ * Severity scale for charts (stacked by severity): one red ramp, critical darkest on light and
+ * brightest on dark, validated as an ordinal ramp (dataviz validate_palette --ordinal) against
+ * the card surfaces. Badges keep the status tokens.
+ */
+:root {
+    --severity-chart-critical: var(--color-red-900);
+    --severity-chart-high: var(--color-red-700);
+    --severity-chart-medium: var(--color-red-500);
+    --severity-chart-low: var(--color-red-400);
+    --severity-chart-info: var(--color-red-300);
+}
+
+.dark {
+    --severity-chart-critical: var(--color-red-100);
+    --severity-chart-high: var(--color-red-200);
+    --severity-chart-medium: var(--color-red-300);
+    --severity-chart-low: var(--color-red-400);
+    --severity-chart-info: var(--color-red-600);
+}

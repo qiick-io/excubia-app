@@ -490,6 +490,16 @@
         "view": {
             "cards": "Schede",
             "table": "Tabella"
+        },
+        "trend": {
+            "title": "Problemi, ultimi 30 giorni",
+            "description": "L'ultimo report di ogni progetto per ciascun giorno, sommato per severità.",
+            "label": "Grafico a barre impilate dei problemi giornalieri per severità negli ultimi 30 giorni; oggi {{total}} problemi."
+        },
+        "totals": {
+            "title": "Problemi aperti",
+            "description": "Ultimi report di {{count}} progetti.",
+            "total": "Totale"
         }
     },
     "report": {
@@ -563,7 +573,12 @@
         "noIssuesDescription": "L'ultimo report non ha problemi che avvisano o falliscono.",
         "installed": "Installata",
         "fixedIn": "Corretto in",
-        "planDescription": "L'ordine consigliato degli aggiornamenti, dal più urgente."
+        "planDescription": "L'ordine consigliato degli aggiornamenti, dal più urgente.",
+        "trend": {
+            "title": "Problemi nel tempo",
+            "description": "Problemi che avvisano o falliscono in ogni report, per severità.",
+            "label": "Grafico a barre impilate dei problemi per severità su {{count}} report; l'ultimo ha {{total}} problemi."
+        }
     },
     "assistant": {
         "title": "Assistente",
