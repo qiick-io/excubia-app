@@ -101,7 +101,7 @@ export default function AdminGroupsIndex({
             setDrawerOpen(true);
         },
         onNew: () => {
-            if (!can(PermissionEnum.GroupsManage)) {
+            if (!can(PermissionEnum.CanCreateGroups)) {
                 return;
             }
 
@@ -185,7 +185,7 @@ export default function AdminGroupsIndex({
         <AppLayout
             breadcrumbs={breadcrumbs}
             headerActions={
-                can(PermissionEnum.GroupsManage) ? (
+                can(PermissionEnum.CanCreateGroups) ? (
                     <Button type="button" onClick={openCreate}>
                         <Plus className="mr-1 size-4" />
                         {t('groups.newGroup')}
@@ -366,7 +366,7 @@ export default function AdminGroupsIndex({
                     readOnly={
                         editing
                             ? !editing.can_update
-                            : !can(PermissionEnum.GroupsManage)
+                            : !can(PermissionEnum.CanCreateGroups)
                     }
                     onCancel={() => handleDrawerOpenChange(false)}
                     onSuccess={() => {

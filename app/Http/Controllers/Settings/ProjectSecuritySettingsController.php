@@ -14,7 +14,7 @@ use Inertia\Response;
 
 /**
  * Authentication & security project settings: password policy, login attempts, required 2FA
- * and SSO (OIDC). The client secret is write-only. The routes require `settings.manage`.
+ * and SSO (OIDC). The client secret is write-only. The routes require `can-manage-project-settings`.
  */
 class ProjectSecuritySettingsController extends Controller
 {

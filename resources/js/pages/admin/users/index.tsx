@@ -118,7 +118,7 @@ export default function AdminUsersIndex({
             setDrawerOpen(true);
         },
         onNew: () => {
-            if (!can(PermissionEnum.UsersManage)) {
+            if (!can(PermissionEnum.CanCreateUsers)) {
                 return;
             }
 
@@ -214,7 +214,7 @@ export default function AdminUsersIndex({
         <AppLayout
             breadcrumbs={breadcrumbs}
             headerActions={
-                can(PermissionEnum.UsersManage) ? (
+                can(PermissionEnum.CanCreateUsers) ? (
                     <Button type="button" onClick={openCreate}>
                         <UserPlus className="mr-1 size-4" />
                         {t('users.newUser')}
@@ -327,7 +327,7 @@ export default function AdminUsersIndex({
                                     >
                                         {t('common.clearFilters')}
                                     </Button>
-                                ) : can(PermissionEnum.UsersManage) ? (
+                                ) : can(PermissionEnum.CanCreateUsers) ? (
                                     <Button type="button" onClick={openCreate}>
                                         <UserPlus className="size-4" />
                                         {t('emptyState.users.cta')}
@@ -506,7 +506,7 @@ export default function AdminUsersIndex({
                     readOnly={
                         editing
                             ? !editing.can_update
-                            : !can(PermissionEnum.UsersManage)
+                            : !can(PermissionEnum.CanCreateUsers)
                     }
                     onCancel={() => handleDrawerOpenChange(false)}
                     onSuccess={() => {

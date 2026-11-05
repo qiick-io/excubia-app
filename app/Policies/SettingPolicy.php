@@ -8,12 +8,12 @@ use App\Enums\PermissionEnum;
 use App\Models\User;
 
 /**
- * Application settings are edited with `settings.manage`.
+ * Application settings are edited with `can-manage-project-settings`.
  */
 class SettingPolicy
 {
     public function update(User $user): bool
     {
-        return $user->can(PermissionEnum::SettingsManage->value);
+        return $user->can(PermissionEnum::CanManageProjectSettings->value);
     }
 }

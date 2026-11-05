@@ -9,17 +9,17 @@ use App\Models\User;
 
 /**
  * Permissions come from PermissionEnum, so they are only listed and re-synced, with
- * `roles.manage` (the same people who assign them to roles).
+ * `can-*-roles` (the same people who assign them to roles).
  */
 class PermissionPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->can(PermissionEnum::RolesManage->value);
+        return $user->can(PermissionEnum::CanShowPermissions->value);
     }
 
     public function sync(User $user): bool
     {
-        return $this->viewAny($user);
+        return $user->can(PermissionEnum::CanEditPermissions->value);
     }
 }

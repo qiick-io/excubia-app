@@ -206,7 +206,7 @@ export default function Dashboard({
                         title={t('dashboard.emptyTitle')}
                         description={t('dashboard.emptyDescription')}
                         action={
-                            can(PermissionEnum.ProjectsManage) ? (
+                            can(PermissionEnum.CanCreateProjects) ? (
                                 <Button asChild>
                                     <Link href={projectsRoutes.index.url()}>
                                         <Plus className="size-4" />

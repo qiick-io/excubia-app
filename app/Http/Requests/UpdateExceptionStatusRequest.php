@@ -13,7 +13,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 /**
- * Resolves, ignores or reopens an exception group of a project (#26). Needs `exceptions.manage`
+ * Resolves, ignores or reopens an exception group of a project (#26). Needs `can-manage-exceptions`
  * and a project the user may see; the group must belong to the project.
  */
 class UpdateExceptionStatusRequest extends FormRequest
@@ -30,7 +30,7 @@ class UpdateExceptionStatusRequest extends FormRequest
             && $group instanceof ExceptionGroup
             && $group->project_id === $project->id
             && $user->can('view', $project)
-            && $user->can(PermissionEnum::ExceptionsManage->value);
+            && $user->can(PermissionEnum::CanManageExceptions->value);
     }
 
     /**

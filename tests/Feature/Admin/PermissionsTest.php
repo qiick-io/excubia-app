@@ -39,7 +39,7 @@ it('sends guests to the login page', function () {
 });
 
 it('lets a custom role with roles.manage open the permissions page', function () {
-    Role::create(['name' => 'access-manager'])->givePermissionTo(PermissionEnum::RolesManage->value);
+    Role::create(['name' => 'access-manager'])->givePermissionTo([PermissionEnum::CanShowRoles->value, PermissionEnum::CanCreateRoles->value, PermissionEnum::CanEditRoles->value, PermissionEnum::CanDeleteRoles->value, PermissionEnum::CanShowPermissions->value, PermissionEnum::CanEditPermissions->value]);
 
     $this->actingAs(permissionsPageUser('access-manager'))
         ->get(route('permissions.index'))
@@ -55,17 +55,17 @@ it('lists every permission with the roles that hold it', function () {
             ->has('permissions.data', count(PermissionEnum::cases()))
             ->where('permissions.data', fn ($rows): bool => collect($rows)->pluck('name')->sort()->values()->all()
                 === collect(PermissionEnum::values())->sort()->values()->all())
-            ->where('permissions.data', fn ($rows): bool => collect($rows)->firstWhere('name', PermissionEnum::ProjectsView->value)['roles']
+            ->where('permissions.data', fn ($rows): bool => collect($rows)->firstWhere('name', PermissionEnum::CanShowProjects->value)['roles']
                 === [RoleEnum::Admin->value, RoleEnum::Reader->value, RoleEnum::SuperAdmin->value])
-            ->where('permissions.data', fn ($rows): bool => collect($rows)->firstWhere('name', PermissionEnum::JobsManage->value)['roles']
+            ->where('permissions.data', fn ($rows): bool => collect($rows)->firstWhere('name', PermissionEnum::CanShowJobs->value)['roles']
                 === [RoleEnum::SuperAdmin->value]));
 });
 
 it('syncs the permissions from the enum idempotently', function () {
-    Permission::findByName(PermissionEnum::ActivityView->value)->delete();
-    Role::findByName(RoleEnum::Reader->value)->givePermissionTo(PermissionEnum::UsersManage->value);
+    Permission::findByName(PermissionEnum::CanShowActivityLogs->value)->delete();
+    Role::findByName(RoleEnum::Reader->value)->givePermissionTo([PermissionEnum::CanShowUsers->value, PermissionEnum::CanCreateUsers->value, PermissionEnum::CanEditUsers->value, PermissionEnum::CanDeleteUsers->value]);
     $custom = Role::create(['name' => 'auditor']);
-    $custom->givePermissionTo(PermissionEnum::ProjectsView->value);
+    $custom->givePermissionTo(PermissionEnum::CanShowProjects->value);
 
     $manager = permissionsPageUser(RoleEnum::SuperAdmin);
 
@@ -78,8 +78,8 @@ it('syncs the permissions from the enum idempotently', function () {
         expect(Permission::query()->pluck('name')->sort()->values()->all())
             ->toBe(collect(PermissionEnum::values())->sort()->values()->all())
             ->and(Role::findByName(RoleEnum::Reader->value)->permissions->pluck('name')->all())
-            ->toBe([PermissionEnum::ProjectsView->value])
+            ->toBe([PermissionEnum::CanShowProjects->value])
             ->and($custom->fresh()->permissions->pluck('name')->all())
-            ->toBe([PermissionEnum::ProjectsView->value]);
+            ->toBe([PermissionEnum::CanShowProjects->value]);
     }
 });

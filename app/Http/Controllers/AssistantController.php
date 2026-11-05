@@ -19,7 +19,7 @@ use Inertia\Response;
 use Throwable;
 
 /**
- * Assistant chat (#17), behind `excubia.ai_enabled` (404 while off) and `ai.use`. The page posts
+ * Assistant chat (#17), behind `excubia.ai_enabled` (404 while off) and `can-use-ai`. The page posts
  * with Inertia and is redirected; the ⌘J side panel posts JSON and gets the thread back.
  * ponytail: the answer is awaited in the request (no streaming); stream it when answers get long.
  */
@@ -79,7 +79,7 @@ class AssistantController extends Controller
     private function authorizedUser(Request $request): User
     {
         abort_unless((bool) config('excubia.ai_enabled'), 404);
-        Gate::authorize(PermissionEnum::AiUse->value);
+        Gate::authorize(PermissionEnum::CanUseAi->value);
 
         /** @var User $user */
         $user = $request->user();

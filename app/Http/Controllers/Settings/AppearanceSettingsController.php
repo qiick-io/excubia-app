@@ -16,7 +16,7 @@ use Inertia\Response;
 /**
  * Project appearance: theme preset, optional brand colours and the default theme for visitors
  * without a personal choice.
- * The routes require `settings.manage`.
+ * The routes require `can-manage-project-settings`.
  */
 class AppearanceSettingsController extends Controller
 {

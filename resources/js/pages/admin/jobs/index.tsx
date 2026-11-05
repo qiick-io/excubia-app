@@ -40,7 +40,7 @@ type FailedJob = {
 
 /**
  * Queue monitor: pending sample + failed jobs with retry/delete.
- * The page itself requires `jobs.manage`, so the actions are always shown.
+ * The page itself requires `can-show-jobs` / `can-manage-jobs`, so the actions are always shown.
  */
 export default function JobsIndex({
     pending_count,

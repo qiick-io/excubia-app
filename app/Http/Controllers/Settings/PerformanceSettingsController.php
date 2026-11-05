@@ -14,7 +14,7 @@ use Spatie\Permission\PermissionRegistrar;
 
 /**
  * Runtime and bootstrap cache status, the queue monitor link, and the permission cache flush.
- * The routes require `settings.manage`.
+ * The routes require `can-manage-project-settings`.
  */
 class PerformanceSettingsController extends Controller
 {
@@ -29,7 +29,7 @@ class PerformanceSettingsController extends Controller
             ],
             'bootstrap' => $this->bootstrapCacheStatus(),
             'links' => [
-                'jobs' => $request->user()?->can(PermissionEnum::JobsManage->value) ? route('jobs.index') : null,
+                'jobs' => $request->user()?->can(PermissionEnum::CanShowJobs->value) ? route('jobs.index') : null,
             ],
         ]);
     }

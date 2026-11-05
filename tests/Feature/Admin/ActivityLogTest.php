@@ -50,7 +50,7 @@ it('shows the activity log to admins and super-admins', function (RoleEnum $role
 })->with([RoleEnum::Admin, RoleEnum::SuperAdmin]);
 
 it('shows the activity log to a custom role with activity.view', function () {
-    Role::create(['name' => 'auditor'])->givePermissionTo(PermissionEnum::ActivityView->value);
+    Role::create(['name' => 'auditor'])->givePermissionTo(PermissionEnum::CanShowActivityLogs->value);
 
     $this->actingAs(User::factory()->create()->assignRole('auditor'))
         ->get(route('activity-logs.index'))
@@ -61,11 +61,11 @@ it('shares the activity sidebar module and its permission with allowed users onl
     $this->actingAs(activityActor(RoleEnum::Admin))->get(route('dashboard'))
         ->assertInertia(fn (Assert $page) => $page
             ->where('projectSettings.sidebarModules.3', ['id' => 'activity', 'enabled' => true, 'locked' => false])
-            ->where('auth.permissions', fn ($permissions) => collect($permissions)->contains(PermissionEnum::ActivityView->value)));
+            ->where('auth.permissions', fn ($permissions) => collect($permissions)->contains(PermissionEnum::CanShowActivityLogs->value)));
 
     $this->actingAs(activityActor(RoleEnum::Reader))->get(route('dashboard'))
         ->assertInertia(fn (Assert $page) => $page
-            ->where('auth.permissions', fn ($permissions) => ! collect($permissions)->contains(PermissionEnum::ActivityView->value)));
+            ->where('auth.permissions', fn ($permissions) => ! collect($permissions)->contains(PermissionEnum::CanShowActivityLogs->value)));
 });
 
 it('logs user creation, updates, role changes and deletion with the acting user', function () {
@@ -152,22 +152,22 @@ it('logs role changes with their permissions', function () {
 
     $this->actingAs($owner)->post(route('roles.store'), [
         'name' => 'operator',
-        'permissions' => [PermissionEnum::ProjectsView->value, PermissionEnum::ChecksRun->value],
+        'permissions' => [PermissionEnum::CanShowProjects->value, PermissionEnum::CanRunChecks->value],
     ])->assertRedirect(route('roles.index'));
 
     $role = Role::findByName('operator');
 
     expect(latestActivity('created', $role->getMorphClass()))
         ->causer_id->toBe($owner->id)
-        ->and(latestActivity('permissions_synced')->properties['permission_names'])->toBe(['checks.run', 'projects.view']);
+        ->and(latestActivity('permissions_synced')->properties['permission_names'])->toBe(['can-run-checks', 'can-show-projects']);
 
     $this->actingAs($owner)->put(route('roles.update', $role), [
         'name' => 'runner',
-        'permissions' => [PermissionEnum::ChecksRun->value],
+        'permissions' => [PermissionEnum::CanRunChecks->value],
     ])->assertRedirect(route('roles.index'));
 
     expect(latestActivity('updated', $role->getMorphClass())->attribute_changes['attributes']['name'])->toBe('runner')
-        ->and(latestActivity('permissions_synced')->properties['permission_names'])->toBe(['checks.run']);
+        ->and(latestActivity('permissions_synced')->properties['permission_names'])->toBe(['can-run-checks']);
 
     $this->actingAs($owner)->delete(route('roles.destroy', $role))->assertRedirect(route('roles.index'));
 

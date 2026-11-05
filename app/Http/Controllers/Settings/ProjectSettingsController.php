@@ -15,7 +15,7 @@ use Inertia\Response;
 /**
  * General project settings, as in externa-core: identity (name, description, URL), the
  * reporting links, Checks (stale projects) and Data retention (reports, runtime, exceptions,
- * activity log). The routes require `settings.manage`.
+ * activity log). The routes require `can-manage-project-settings`.
  */
 class ProjectSettingsController extends Controller
 {

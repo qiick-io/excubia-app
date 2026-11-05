@@ -11,7 +11,7 @@ use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Ai\Models\Conversation;
 
 /**
- * The assistant chat (#17): off by default, behind `ai.use`, with a faked provider so no test
+ * The assistant chat (#17): off by default, behind `can-use-ai`, with a faked provider so no test
  * makes a network call or a paid request.
  */
 beforeEach(function () {
@@ -36,7 +36,7 @@ it('is disabled by default, with no page, no module and no outbound call', funct
     ExcubiaAssistantAgent::assertNeverPrompted();
 });
 
-it('keeps the assistant behind ai.use', function () {
+it('keeps the assistant behind can-use-ai', function () {
     config(['excubia.ai_enabled' => true]);
     ExcubiaAssistantAgent::fake()->preventStrayPrompts();
     $reader = assistantUser(RoleEnum::Reader);

@@ -43,29 +43,37 @@ it('maps the built-in roles to their default permissions', function (RoleEnum $r
 })->with([
     'super-admin' => [RoleEnum::SuperAdmin, PermissionEnum::cases()],
     'admin' => [RoleEnum::Admin, [
-        PermissionEnum::ProjectsView,
-        PermissionEnum::ProjectsManage,
-        PermissionEnum::ChecksRun,
-        PermissionEnum::UsersManage,
-        PermissionEnum::GroupsManage,
-        PermissionEnum::ActivityView,
-        PermissionEnum::AiUse,
-        PermissionEnum::ExceptionsManage,
+        PermissionEnum::CanShowProjects,
+        PermissionEnum::CanCreateProjects,
+        PermissionEnum::CanEditProjects,
+        PermissionEnum::CanDeleteProjects,
+        PermissionEnum::CanRunChecks,
+        PermissionEnum::CanManageExceptions,
+        PermissionEnum::CanShowUsers,
+        PermissionEnum::CanCreateUsers,
+        PermissionEnum::CanEditUsers,
+        PermissionEnum::CanDeleteUsers,
+        PermissionEnum::CanShowGroups,
+        PermissionEnum::CanCreateGroups,
+        PermissionEnum::CanEditGroups,
+        PermissionEnum::CanDeleteGroups,
+        PermissionEnum::CanShowActivityLogs,
+        PermissionEnum::CanUseAi,
     ]],
-    'reader' => [RoleEnum::Reader, [PermissionEnum::ProjectsView]],
+    'reader' => [RoleEnum::Reader, [PermissionEnum::CanShowProjects]],
 ]);
 
 it('lets the super-admin pass a permission that no role holds yet', function () {
     $user = userWithRole(RoleEnum::SuperAdmin);
     Role::findByName(RoleEnum::SuperAdmin->value)->syncPermissions([]);
 
-    expect($user->fresh()->can(PermissionEnum::SettingsManage->value))->toBeTrue();
+    expect($user->fresh()->can(PermissionEnum::CanManageProjectSettings->value))->toBeTrue();
 });
 
 it('shares the user permissions with Inertia', function () {
     $this->actingAs(userWithRole(RoleEnum::Reader))
         ->get(route('dashboard'))
-        ->assertInertia(fn (Assert $page) => $page->where('auth.permissions', [PermissionEnum::ProjectsView->value]));
+        ->assertInertia(fn (Assert $page) => $page->where('auth.permissions', [PermissionEnum::CanShowProjects->value]));
 });
 
 it('serves the role pages under settings', function () {
@@ -92,23 +100,23 @@ it('creates, updates and deletes a custom role', function () {
 
     $this->post(route('roles.store'), [
         'name' => 'operator',
-        'permissions' => [PermissionEnum::ProjectsView->value, PermissionEnum::ChecksRun->value],
+        'permissions' => [PermissionEnum::CanShowProjects->value, PermissionEnum::CanRunChecks->value],
     ])->assertRedirect(route('roles.index'));
 
     $role = Role::findByName('operator');
-    expect($role->permissions->pluck('name')->sort()->values()->all())->toBe(['checks.run', 'projects.view']);
+    expect($role->permissions->pluck('name')->sort()->values()->all())->toBe(['can-run-checks', 'can-show-projects']);
 
     $member = userWithRole('operator');
-    expect($member->can(PermissionEnum::ChecksRun->value))->toBeTrue()
-        ->and($member->can(PermissionEnum::ProjectsManage->value))->toBeFalse();
+    expect($member->can(PermissionEnum::CanRunChecks->value))->toBeTrue()
+        ->and($member->can(PermissionEnum::CanEditProjects->value))->toBeFalse();
 
     $this->put(route('roles.update', $role), [
         'name' => 'runner',
-        'permissions' => [PermissionEnum::ProjectsView->value],
+        'permissions' => [PermissionEnum::CanShowProjects->value],
     ])->assertRedirect(route('roles.index'));
 
     expect($role->fresh()->name)->toBe('runner')
-        ->and($member->fresh()->can(PermissionEnum::ChecksRun->value))->toBeFalse();
+        ->and($member->fresh()->can(PermissionEnum::CanRunChecks->value))->toBeFalse();
 
     $this->delete(route('roles.destroy', $role))->assertRedirect(route('roles.index'));
 

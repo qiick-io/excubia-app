@@ -11,8 +11,8 @@ use App\Models\User;
 use App\Services\EffectivePermissionResolverService;
 
 /**
- * Projects are listed with `projects.view` and created, edited, deleted and given push tokens
- * with `projects.manage`. A project visible to admins only is hidden from everyone else. The
+ * Projects are listed with `can-show-projects` and created, edited, deleted and given push tokens
+ * with `can-*-projects`. A project visible to admins only is hidden from everyone else. The
  * system project (#70) is never deleted and has no push token; only admins change visibility.
  */
 class ProjectPolicy
@@ -21,7 +21,7 @@ class ProjectPolicy
 
     public function viewAny(User $actor): bool
     {
-        return $actor->can(PermissionEnum::ProjectsView->value);
+        return $actor->can(PermissionEnum::CanShowProjects->value);
     }
 
     public function view(User $actor, Project $project): bool
@@ -32,17 +32,19 @@ class ProjectPolicy
 
     public function create(User $actor): bool
     {
-        return $actor->can(PermissionEnum::ProjectsManage->value);
+        return $actor->can(PermissionEnum::CanCreateProjects->value);
     }
 
     public function update(User $actor, Project $project): bool
     {
-        return $this->create($actor) && $this->view($actor, $project);
+        return $actor->can(PermissionEnum::CanEditProjects->value) && $this->view($actor, $project);
     }
 
     public function delete(User $actor, Project $project): bool
     {
-        return ! $project->is_system && $this->update($actor, $project);
+        return ! $project->is_system
+            && $actor->can(PermissionEnum::CanDeleteProjects->value)
+            && $this->view($actor, $project);
     }
 
     public function manageToken(User $actor, Project $project): bool
@@ -57,6 +59,8 @@ class ProjectPolicy
 
     public function refreshReport(User $actor, Project $project): bool
     {
-        return $project->is_system && $this->update($actor, $project);
+        return $project->is_system
+            && $actor->can(PermissionEnum::CanRunChecks->value)
+            && $this->view($actor, $project);
     }
 }

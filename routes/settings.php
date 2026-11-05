@@ -32,7 +32,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->middleware('throttle:6,1')
         ->name('user-password.update');
 
-    // Project settings, as in externa-core, behind `settings.manage` (SettingPolicy).
+    // Project settings, as in externa-core, behind `can-manage-project-settings` (SettingPolicy).
     Route::middleware('can:update,'.Setting::class)->group(function () {
         Route::get('settings/project', [ProjectSettingsController::class, 'edit'])->name('project.edit');
         Route::put('settings/project', [ProjectSettingsController::class, 'update'])->name('project.update');

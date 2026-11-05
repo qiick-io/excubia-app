@@ -45,7 +45,7 @@ it('lets a user gain and lose a permission through a group', function () {
     $admin = groupMember(RoleEnum::Admin);
     $member = groupMember();
 
-    expect($member->can(PermissionEnum::ProjectsView->value))->toBeFalse();
+    expect($member->can(PermissionEnum::CanShowProjects->value))->toBeFalse();
 
     $this->actingAs($admin)->post(route('groups.store'), [
         'name' => 'viewers',
@@ -55,10 +55,10 @@ it('lets a user gain and lose a permission through a group', function () {
 
     $group = UserGroup::query()->where('name', 'viewers')->sole();
 
-    expect($member->fresh()->can(PermissionEnum::ProjectsView->value))->toBeTrue();
+    expect($member->fresh()->can(PermissionEnum::CanShowProjects->value))->toBeTrue();
 
     $this->actingAs($member)->get(route('dashboard'))
-        ->assertInertia(fn (Assert $page) => $page->where('auth.permissions', [PermissionEnum::ProjectsView->value]));
+        ->assertInertia(fn (Assert $page) => $page->where('auth.permissions', [PermissionEnum::CanShowProjects->value]));
 
     $this->actingAs($admin)->put(route('groups.update', $group), [
         'name' => 'viewers',
@@ -66,14 +66,14 @@ it('lets a user gain and lose a permission through a group', function () {
         'users' => [],
     ])->assertRedirect(route('groups.index'));
 
-    expect($member->fresh()->can(PermissionEnum::ProjectsView->value))->toBeFalse();
+    expect($member->fresh()->can(PermissionEnum::CanShowProjects->value))->toBeFalse();
 });
 
 it('makes group members super-admins through a group role', function () {
     $member = groupMember();
     groupWithRoles('owners', [RoleEnum::SuperAdmin->value], [$member]);
 
-    expect($member->can(PermissionEnum::SettingsManage->value))->toBeTrue();
+    expect($member->can(PermissionEnum::CanManageProjectSettings->value))->toBeTrue();
 });
 
 it('lists and deletes groups', function () {
@@ -90,7 +90,7 @@ it('lists and deletes groups', function () {
     $this->actingAs($admin)->delete(route('groups.destroy', $group))->assertRedirect(route('groups.index'));
 
     expect(UserGroup::query()->count())->toBe(0)
-        ->and($member->fresh()->can(PermissionEnum::ProjectsView->value))->toBeFalse();
+        ->and($member->fresh()->can(PermissionEnum::CanShowProjects->value))->toBeFalse();
 });
 
 it('never removes the last super-admin through a group', function () {
@@ -104,7 +104,7 @@ it('never removes the last super-admin through a group', function () {
         ->assertSessionHasErrors('roles');
 
     expect($group->fresh()->users()->count())->toBe(1)
-        ->and($owner->fresh()->can(PermissionEnum::SettingsManage->value))->toBeTrue();
+        ->and($owner->fresh()->can(PermissionEnum::CanManageProjectSettings->value))->toBeTrue();
 
     groupMember(RoleEnum::SuperAdmin);
 
@@ -137,7 +137,7 @@ it('keeps super-admin groups away from admins', function () {
         'users' => [$admin->id],
     ])->assertSessionHasErrors('roles.0');
 
-    expect($admin->fresh()->can(PermissionEnum::SettingsManage->value))->toBeFalse();
+    expect($admin->fresh()->can(PermissionEnum::CanManageProjectSettings->value))->toBeFalse();
 });
 
 it('searches and sorts groups', function () {

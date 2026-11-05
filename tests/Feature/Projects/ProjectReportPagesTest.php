@@ -75,7 +75,7 @@ it('lists every project with the summary of its latest report on the dashboard',
             ->missing('projects.2.latest_report.report'));
 });
 
-it('shows the dashboard without projects to users without projects.view', function () {
+it('shows the dashboard without projects to users without can-show-projects', function () {
     Project::factory()->create();
 
     $this->actingAs(User::factory()->create())->get(route('dashboard'))
@@ -115,7 +115,7 @@ it('shows an empty project page before the first report', function () {
             ->has('reports', 0));
 });
 
-it('keeps the project page behind projects.view', function () {
+it('keeps the project page behind can-show-projects', function () {
     Project::factory()->create(['slug' => 'shop']);
 
     $this->actingAs(User::factory()->create())->get(route('projects.show', 'shop'))->assertForbidden();
