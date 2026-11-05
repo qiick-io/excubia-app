@@ -70,3 +70,18 @@ export function SeverityCounts({
         </div>
     );
 }
+
+/**
+ * "11 medium · 3 low": the non-zero severities, worst first.
+ */
+export function severitySummary(
+    counts: Record<Severity, number>,
+    t: (key: string) => string,
+): string {
+    const parts = SEVERITIES.filter((severity) => counts[severity] > 0).map(
+        (severity) =>
+            `${counts[severity]} ${t(`report.severity.${severity}`).toLowerCase()}`,
+    );
+
+    return parts.length === 0 ? t('report.noIssues') : parts.join(' · ');
+}
