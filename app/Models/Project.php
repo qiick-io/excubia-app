@@ -33,6 +33,7 @@ use Spatie\Activitylog\Support\LogOptions;
  * @property string|null $push_token_hash
  * @property Carbon|null $last_report_at
  * @property Carbon|null $stale_alerted_at
+ * @property int $skipped_runtime_aggregates runtime entries of unknown types skipped on ingest (#111)
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
@@ -59,7 +60,7 @@ class Project extends Model
      */
     public function getActivitylogOptions(): LogOptions
     {
-        return $this->applicationActivityLogOptions()->logExcept(['push_token_hash', 'last_report_at', 'stale_alerted_at']);
+        return $this->applicationActivityLogOptions()->logExcept(['push_token_hash', 'last_report_at', 'stale_alerted_at', 'skipped_runtime_aggregates']);
     }
 
     /**

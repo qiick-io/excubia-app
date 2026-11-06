@@ -11,9 +11,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
- * One minute of one runtime series of a project (#48): requests per route, method and status
- * class, slow queries per SQL, jobs, scheduled tasks or outgoing HTTP per host. Counts are the
- * recorded events; the estimated real count is `count / sample_rate`.
+ * One minute of one runtime series of a project (#48, #111): one of the 16 core runtime types
+ * per its dimensions (and the batch's release, when sent). Counts are the recorded events; the
+ * estimated real count is `count / sample_rate`. `total_ms` and `max_ms` are null for types that
+ * are not timed; `metrics` holds the type-specific metrics of `RuntimeTypeEnum::metrics()`
+ * (memory, cache counters, repeats, server gauges and `isContainer`), `histogram` the optional
+ * 12 latency counts.
  *
  * @property int $id
  * @property int $project_id
@@ -24,10 +27,13 @@ use Illuminate\Support\Carbon;
  * @property array<string, string> $dimensions
  * @property int $count
  * @property int $error_count
- * @property float $total_ms
- * @property float $max_ms
+ * @property string|null $release
+ * @property float|null $total_ms
+ * @property float|null $max_ms
+ * @property array<string, int|float|bool|null>|null $metrics
+ * @property list<int>|null $histogram
  */
-#[Fillable(['project_id', 'type', 'bucket', 'sample_rate', 'dimension_key', 'dimensions', 'count', 'error_count', 'total_ms', 'max_ms'])]
+#[Fillable(['project_id', 'type', 'bucket', 'sample_rate', 'dimension_key', 'dimensions', 'count', 'error_count', 'total_ms', 'max_ms', 'release', 'metrics', 'histogram'])]
 class RuntimeAggregate extends Model
 {
     /**
@@ -52,6 +58,8 @@ class RuntimeAggregate extends Model
             'error_count' => 'integer',
             'total_ms' => 'float',
             'max_ms' => 'float',
+            'metrics' => 'array',
+            'histogram' => 'array',
         ];
     }
 }
