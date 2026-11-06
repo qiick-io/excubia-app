@@ -37,8 +37,14 @@ return new class extends Migration
             $table->json('dimensions');
             $table->unsignedBigInteger('count');
             $table->unsignedBigInteger('error_count');
-            $table->double('total_ms');
-            $table->double('max_ms');
+            // Null for the types that are not timed (#111).
+            $table->double('total_ms')->nullable();
+            $table->double('max_ms')->nullable();
+            // Type-specific metrics (memory, cache counters, repeats, server gauges), the
+            // optional latency histogram and the batch's release (#111).
+            $table->json('metrics')->nullable();
+            $table->json('histogram')->nullable();
+            $table->string('release', 100)->nullable();
             $table->timestamps();
 
             $table->unique(['project_id', 'type', 'bucket', 'sample_rate', 'dimension_key'], 'runtime_aggregates_identity');

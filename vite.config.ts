@@ -66,6 +66,8 @@ export default defineConfig({
             // Registry item (app-ui), formatted upstream; the drift check keeps it in sync.
             'resources/js/components/realtime/*',
             'resources/views/mail/*',
+            // Verbatim copies of excubia-core contracts (#111), kept byte for byte.
+            'tests/Fixtures/core/*',
         ],
         sortTailwindcss: {
             functions: ['clsx', 'cn', 'cva'],

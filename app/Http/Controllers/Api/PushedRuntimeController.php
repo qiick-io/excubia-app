@@ -24,7 +24,8 @@ class PushedRuntimeController extends Controller
         /** @var list<array<string, mixed>> $aggregates */
         $aggregates = $request->json('runtime.aggregates');
 
-        $isNew = $storeRuntime->execute($project, $request->string('batchId')->toString(), $aggregates);
+        $release = $request->json('runtime.release');
+        $isNew = $storeRuntime->execute($project, $request->string('batchId')->toString(), $aggregates, is_string($release) ? $release : null);
 
         return response()->json(['status' => $isNew ? 'stored' : 'duplicate'], $isNew ? 201 : 200);
     }
