@@ -1,11 +1,9 @@
 import { Head, Link, router } from '@inertiajs/react';
 import {
-    ArrowDownRight,
     ArrowUpRight,
     CalendarClock,
     CircleCheck,
     FolderKanban,
-    Minus,
     Plus,
     ShieldCheck,
 } from 'lucide-react';

@@ -544,7 +544,7 @@ for (const [mode, tokens] of Object.entries(modes)) {
             }
         } catch (error) {
             console.error(
-                `  FAIL  ${pair.name}: ${error instanceof Error ? error.message : error}`,
+                `  FAIL  ${pair.name}: ${error instanceof Error ? error.message : String(error)}`,
             );
             failures += 1;
         }

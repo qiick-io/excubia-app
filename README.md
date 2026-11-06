@@ -155,6 +155,22 @@ PHP 8.4, Laravel 13, Inertia, React 19, TypeScript, Tailwind CSS v4, Pest, Pint,
 
 Open or pick an issue first; one issue per pull request, branches from `develop`, Conventional Commits. Details will land in `CONTRIBUTING.md`.
 
+### Checks
+
+CI (`.github/workflows/ci.yml`) runs on every pull request and push to `develop` and `main`:
+
+- **PHP 8.4** and **PHP 8.5**: `npm run build`, Pint, PHPStan, Pest, `npm run lint` and `npm run types`. Run the same locally before a push (see `CLAUDE.md`).
+- **Core contract (^1.0@beta)** and **Core contract (dev-develop)**: the end-to-end test between `qiick/excubia-core` and this app.
+
+The contract test serves this app with `php artisan serve` on a throwaway SQLite database, registers a project with a push token, and creates a throwaway Laravel app that installs `qiick/excubia-core` with every runtime type and exception capture turned on. It sends some traffic to that app, then runs `excubia:check --format=json`, `excubia:push` and `excubia:push-runtime` against this app. It fails unless every command succeeds (the push commands fail on any non-2xx answer) and the app stored a report, runtime aggregates and an exception group. Runtime entries of a type this app does not know yet are reported as a warning. Run it locally after `composer install`:
+
+```bash
+scripts/e2e/core-contract.sh               # latest tag (^1.0@beta)
+scripts/e2e/core-contract.sh dev-develop   # excubia-core develop
+```
+
+It needs PHP 8.4+ with `pdo_sqlite`, Composer and curl, and uses ports 8765 and 8766 (`E2E_APP_PORT`, `E2E_PROBE_PORT`). Your `.env` and database are not touched; `E2E_KEEP=1` keeps the work directory with the logs.
+
 ## License
 
 [MIT](./LICENSE)
