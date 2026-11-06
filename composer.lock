@@ -4453,16 +4453,16 @@
         },
         {
             "name": "qiick/excubia-core",
-            "version": "v1.0.0-beta.1",
+            "version": "v1.0.0-beta.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/qiick-io/excubia-core.git",
-                "reference": "b069c3b1747259046686c5291fd7b1c2988856b7"
+                "reference": "5ee0304551214048b2ec031e425cef80b362e9fc"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/qiick-io/excubia-core/zipball/b069c3b1747259046686c5291fd7b1c2988856b7",
-                "reference": "b069c3b1747259046686c5291fd7b1c2988856b7",
+                "url": "https://api.github.com/repos/qiick-io/excubia-core/zipball/5ee0304551214048b2ec031e425cef80b362e9fc",
+                "reference": "5ee0304551214048b2ec031e425cef80b362e9fc",
                 "shasum": ""
             },
             "require": {
@@ -4526,7 +4526,7 @@
                 "issues": "https://github.com/qiick-io/excubia-core/issues",
                 "source": "https://github.com/qiick-io/excubia-core"
             },
-            "time": "2026-11-05T11:45:41+00:00"
+            "time": "2026-11-06T15:29:20+00:00"
         },
         {
             "name": "ramsey/collection",

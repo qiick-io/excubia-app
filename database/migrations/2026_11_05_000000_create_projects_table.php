@@ -26,6 +26,8 @@ return new class extends Migration
             $table->timestamp('last_report_at')->nullable();
             // When the project.stale alert was sent; cleared by the next report (#22).
             $table->timestamp('stale_alerted_at')->nullable();
+            // Runtime entries of unknown types skipped on ingest (#111).
+            $table->unsignedBigInteger('skipped_runtime_aggregates')->default(0);
             $table->timestamps();
         });
     }
