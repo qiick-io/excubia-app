@@ -44,13 +44,14 @@ function visitA11y(string $path, string $mode): mixed
 }
 
 /**
- * A project with one report, runtime rows, an exception group, scheduled tasks and alerts with
- * a mute and a maintenance window, so every tab renders content.
+ * A project with one report (every core check id), runtime rows, an exception group, scheduled
+ * tasks and alerts with a mute and a maintenance window, so every tab renders content.
  */
 function seededA11yProject(): Project
 {
     $project = Project::factory()->create(['name' => 'Shop', 'slug' => 'shop']);
     $now = now();
+    $coreReport = json_decode((string) file_get_contents(base_path('tests/Fixtures/core/report-every-check.json')), true, flags: JSON_THROW_ON_ERROR);
 
     $project->healthReports()->create([
         'batch_id' => (string) Str::uuid(),
@@ -58,14 +59,15 @@ function seededA11yProject(): Project
         'generated_at' => $now,
         'worst_severity' => SeverityEnum::High,
         'high_count' => 1,
+        // Every core check id with its details (#109) and the license inventory (#108).
         'report' => [
-            'schemaVersion' => 1,
+            ...$coreReport,
             'checks' => [[
                 'checkId' => 'composer-audit',
                 'name' => 'Composer audit',
                 'status' => 'fail',
                 'findings' => [['checkId' => 'composer-audit', 'severity' => 'high', 'status' => 'fail', 'subject' => 'guzzlehttp/guzzle', 'message' => 'Known vulnerability', 'fixHint' => 'composer update guzzlehttp/guzzle']],
-            ]],
+            ], ...$coreReport['checks']],
             'upgradePlan' => [['stepNumber' => 1, 'message' => 'composer update guzzlehttp/guzzle']],
         ],
     ]);
@@ -138,6 +140,8 @@ it('has no critical or serious axe issues on the main authenticated pages in lig
         route('dashboard', absolute: false),
         route('projects.index', absolute: false),
         route('projects.show', $project, false),
+        route('projects.view', [$project, 'findings'], false).'?finding='.rawurlencode('laravel-backups|s3|'),
+        route('projects.view', [$project, 'licenses'], false),
         route('projects.view', [$project, 'runtime'], false),
         route('projects.view', [$project, 'exceptions'], false),
         route('projects.view', [$project, 'schedule'], false),

@@ -12,6 +12,8 @@ enum AlertEventEnum: string
 {
     case FindingNew = 'finding.new';
     case FindingResolved = 'finding.resolved';
+    // A database, storage or disk failure (#109), sent at once, even on a project's first report.
+    case InfrastructureFailed = 'infrastructure.failed';
     case ProjectWorsened = 'project.worsened';
     case ProjectRecovered = 'project.recovered';
     case ProjectStale = 'project.stale';
@@ -37,6 +39,7 @@ enum AlertEventEnum: string
     public function defaultSeverity(): SeverityEnum
     {
         return match ($this) {
+            self::InfrastructureFailed => SeverityEnum::Critical,
             self::ProjectStale, self::ScheduleMissed, self::CacheHitRatioLow => SeverityEnum::Medium,
             self::FindingNew, self::ProjectWorsened, self::ScheduleFailed, self::SchedulerDown, self::DeliveryFailed, self::LogSpike => SeverityEnum::High,
             default => SeverityEnum::Info,
