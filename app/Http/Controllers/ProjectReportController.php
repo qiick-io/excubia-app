@@ -5,15 +5,19 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Actions\UpdateExceptionStatusAction;
+use App\Actions\UpdateFindingDismissalAction;
 use App\Enums\ExceptionStatusEnum;
 use App\Enums\PermissionEnum;
 use App\Enums\TimeRangeEnum;
 use App\Http\Requests\UpdateExceptionStatusRequest;
+use App\Http\Requests\UpdateFindingDismissalRequest;
 use App\Http\Resources\HealthReportResource;
 use App\Http\Resources\ProjectResource;
 use App\Jobs\RunSystemReportJob;
 use App\Models\ExceptionGroup;
+use App\Models\Finding;
 use App\Models\Project;
+use App\Services\FindingLifecycleService;
 use App\Services\FixSuggestionService;
 use App\Services\HealthStatusService;
 use App\Services\ProjectAlertsService;
@@ -63,14 +67,17 @@ class ProjectReportController extends Controller
         $now = CarbonImmutable::instance(Date::now());
         $schedule = $view === 'schedule' ? $telemetry->schedule($project, $range, $now) : null;
 
+        // The Findings tab lists the lifecycle (#18): every open finding, also from checks the
+        // latest report did not run, and the latest resolved ones.
+        $lifecycleFindings = $view === 'findings' ? app(FindingLifecycleService::class)->forPage($project) : [];
+
         // A ready command and prompt per finding that warns or fails (#78), keyed like
         // ReportFindingsService::identity() so the page can match its rows.
         $findingFixes = [];
+        $openFindings = array_filter($lifecycleFindings, fn (array $finding): bool => $finding['lifecycle']['status'] !== 'resolved');
 
-        if ($project->latestReport !== null) {
-            foreach ($findings->issues($project->latestReport) as $finding) {
-                $findingFixes[$findings->identity($finding)] = $fixes->forFinding($finding);
-            }
+        foreach ([...($project->latestReport === null ? [] : $findings->issues($project->latestReport)), ...$openFindings] as $finding) {
+            $findingFixes[$findings->identity($finding)] ??= $fixes->forFinding($finding);
         }
 
         return Inertia::render('projects/show', [
@@ -81,6 +88,9 @@ class ProjectReportController extends Controller
             'findingFixes' => (object) $findingFixes,
             // The issues in page order with their check group, and the health summary (#108, #109).
             'issues' => $project->latestReport === null ? [] : $findings->prioritized($project->latestReport),
+            // The finding lifecycle (#18), on the Findings tab only.
+            'findings' => $lifecycleFindings,
+            'canDismissFindings' => (bool) $request->user()?->can(PermissionEnum::CanDismissFindings->value),
             'health' => $project->latestReport === null ? null : $health->summary($project->latestReport->report),
             // Minute-level status per check and server (#115), on the overview, which polls it.
             'liveHealth' => fn (): array => $view === null ? app(HealthStatusService::class)->forPage($project, $now) : [],
@@ -116,6 +126,26 @@ class ProjectReportController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => __('System report started.')]);
 
         return to_route('projects.show', $project->slug);
+    }
+
+    /**
+     * Dismisses a finding with a reason and an optional last day, or removes the dismissal (#18).
+     */
+    public function updateFinding(UpdateFindingDismissalRequest $request, Project $project, Finding $finding, UpdateFindingDismissalAction $updateDismissal): RedirectResponse
+    {
+        $isDismissed = $request->boolean('is_dismissed');
+        $until = $request->date('until', 'Y-m-d');
+
+        $updateDismissal->execute(
+            $finding,
+            $request->user(),
+            $isDismissed ? $request->string('reason')->trim()->toString() : null,
+            $isDismissed ? $until : null,
+        );
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => $isDismissed ? __('Finding dismissed.') : __('Dismissal removed.')]);
+
+        return back();
     }
 
     /**

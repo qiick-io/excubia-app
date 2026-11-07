@@ -8,6 +8,7 @@ export enum PermissionEnum {
     CanDeleteProjects = 'can-delete-projects',
     CanRunChecks = 'can-run-checks',
     CanManageExceptions = 'can-manage-exceptions',
+    CanDismissFindings = 'can-dismiss-findings',
     CanShowUsers = 'can-show-users',
     CanCreateUsers = 'can-create-users',
     CanEditUsers = 'can-edit-users',

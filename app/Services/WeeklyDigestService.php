@@ -18,8 +18,8 @@ use Illuminate\Support\Facades\Date;
 
 /**
  * The weekly email digest of one user (#114), over the projects they may see and the last 7
- * days: new findings (latest report against the last one before the week), regressions (the
- * week's `project.worsened` alerts), EOL findings of the latest report, the most frequent open
+ * days: new findings (opened or back this week and still open, not dismissed: the finding
+ * lifecycle, #18), regressions (the week's `project.worsened` alerts, which follow the lifecycle), EOL findings of the latest report, the most frequent open
  * exceptions seen this week (class, where and count, never the message) and scheduled tasks
  * with a problem (#110). Projects with nothing to say are left out; null when none has.
  */
@@ -32,7 +32,10 @@ class WeeklyDigestService
 
     private const SCHEDULE_PROBLEMS = [ScheduledTaskStatusEnum::Late, ScheduledTaskStatusEnum::Missed, ScheduledTaskStatusEnum::Failed, ScheduledTaskStatusEnum::SchedulerDown];
 
-    public function __construct(private ReportFindingsService $findings) {}
+    public function __construct(
+        private ReportFindingsService $findings,
+        private FindingLifecycleService $lifecycle,
+    ) {}
 
     /**
      * @return list<array{name: string, url: string, newFindings: list<array{severity: string, text: string}>, newFindingsCount: int, regressions: list<string>, eol: list<string>, exceptions: list<array{class: string, where: string, count: int}>, schedule: list<array{task: string, status: string}>}>|null
@@ -63,8 +66,9 @@ class WeeklyDigestService
     private function forProject(Project $project, CarbonInterface $since): ?array
     {
         $latest = $this->latestReport($project, null);
-        $baseline = $this->latestReport($project, $since);
-        $new = $latest !== null && $baseline !== null && $latest->id !== $baseline->id ? $this->findings->compare($baseline, $latest)['new'] : [];
+        // The first report of a project brings everything at once: as alerts, it is no news.
+        $hasBaseline = $this->latestReport($project, $since) !== null;
+        $new = $hasBaseline ? $this->lifecycle->newSince($project, $since) : [];
 
         $digest = [
             'name' => $project->name,
