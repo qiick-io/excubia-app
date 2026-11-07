@@ -82,7 +82,7 @@ it('summarises the last 24 hours of runtime on the project page', function () {
             ->where('runtime.requests.errors', 10)
             ->where('runtime.requests.averageMs', 100)
             ->where('runtime.requests.maxMs', 800)
-            ->has('runtime.requests.hourly', 25)
+            ->has('runtime.requests.timeline', 25)
             ->has('runtime.requests.routes', 1)
             ->where('runtime.requests.routes.0.route', 'checkout.store')
             ->where('runtime.jobs.0.outcomes.failed', 2)
@@ -171,8 +171,8 @@ it('marks the deploys of the runtime window and shows releases on reports and ex
 
     $this->actingAs(telemetryViewer())->get(route('projects.show', 'shop'))
         ->assertInertia(fn (Assert $page) => $page
-            ->where('runtime.deploys', [['release' => 'v1.0.0', 'deployedAt' => '2026-11-05T11:20:00Z', 'hour' => '2026-11-05T11:00:00Z']])
-            ->where('runtime.requests.hourly', fn ($hourly): bool => collect($hourly)->contains('hour', '2026-11-05T11:00:00Z'))
+            ->where('runtime.deploys', [['release' => 'v1.0.0', 'deployedAt' => '2026-11-05T11:20:00Z', 'bucket' => '2026-11-05T11:00:00Z']])
+            ->where('runtime.requests.timeline', fn ($timeline): bool => collect($timeline)->contains('at', '2026-11-05T11:00:00Z'))
             ->where('reports.0.release', 'v1.0.0')
             ->where('reports.0.deployed_at', null)
             ->where('reports.1.deployed_at', '2026-11-05T11:20:00+00:00')
