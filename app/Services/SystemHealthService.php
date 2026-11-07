@@ -12,6 +12,7 @@ use App\Models\Project;
 use App\Models\PushedBatch;
 use App\Models\RuntimeAggregate;
 use App\Models\RuntimeHourlyRollup;
+use App\Models\User;
 use Carbon\CarbonImmutable;
 use Composer\InstalledVersions;
 use Illuminate\Support\Carbon;
@@ -25,7 +26,9 @@ use Throwable;
 /**
  * Read model of the System page (#117): the health of this Excubia install. Each item has a
  * status (ok, warning, error, unknown) and the `docs/self-hosting.md` anchor of its fix hint.
- * Only names, counts and times: no host, token, path or payload.
+ * Only names, counts and times: no host, token, path or payload. Per-project rows list only the
+ * projects the viewer may see (`Project::visibleTo`), so a non-admin holding `can-show-system`
+ * never learns the names of projects restricted to admins (#152).
  *
  * @phpstan-type Status 'ok'|'warning'|'error'|'unknown'
  */
@@ -53,7 +56,7 @@ class SystemHealthService
     /**
      * @return array<string, mixed> one entry per item: `status`, `hint` and its values
      */
-    public function snapshot(): array
+    public function snapshot(User $viewer): array
     {
         $scheduler = $this->scheduler();
 
@@ -61,10 +64,10 @@ class SystemHealthService
             'docsUrl' => self::DOCS_URL,
             'scheduler' => $scheduler,
             'queue' => $this->queue($scheduler['status'] === 'ok'),
-            'pushes' => $this->pushes(),
+            'pushes' => $this->pushes($viewer),
             'rejections' => $this->rejections(),
-            'skippedRuntime' => $this->skippedRuntime(),
-            'alertFailures' => $this->alertFailures(),
+            'skippedRuntime' => $this->skippedRuntime($viewer),
+            'alertFailures' => $this->alertFailures($viewer),
             'rollups' => $this->rollups(),
             'version' => $this->version(),
         ];
@@ -143,7 +146,7 @@ class SystemHealthService
      *
      * @return array{status: Status, hint: string, staleAfterHours: int, projects: list<array{name: string, slug: string, reportAt: string|null, isReportStale: bool, runtimeAt: string|null, isRuntimeStale: bool, exceptionsAt: string|null}>}
      */
-    private function pushes(): array
+    private function pushes(User $viewer): array
     {
         $batches = PushedBatch::query()->toBase()
             ->select(['project_id', 'type', DB::raw('max(received_at) as received_at')])
@@ -152,7 +155,7 @@ class SystemHealthService
             ->mapWithKeys(fn (object $row): array => [$row->project_id.'|'.$row->type => CarbonImmutable::parse((string) $row->received_at)]);
         $runtimeCutoff = Date::now()->subMinutes(self::RUNTIME_STALE_MINUTES);
 
-        $projects = array_values(Project::query()->where('is_enabled', true)->orderBy('name')->get()
+        $projects = array_values(Project::query()->visibleTo($viewer)->where('is_enabled', true)->orderBy('name')->get()
             ->map(function (Project $project) use ($batches, $runtimeCutoff): array {
                 $runtimeAt = $batches->get($project->id.'|runtime');
 
@@ -208,9 +211,9 @@ class SystemHealthService
      *
      * @return array{status: Status, hint: string, projects: list<array{name: string, slug: string, count: int}>}
      */
-    private function skippedRuntime(): array
+    private function skippedRuntime(User $viewer): array
     {
-        $projects = array_values(Project::query()->where('skipped_runtime_aggregates', '>', 0)->orderBy('name')->get()
+        $projects = array_values(Project::query()->visibleTo($viewer)->where('skipped_runtime_aggregates', '>', 0)->orderBy('name')->get()
             ->map(fn (Project $project): array => ['name' => $project->name, 'slug' => $project->slug, 'count' => $project->skipped_runtime_aggregates])
             ->all());
 
@@ -222,9 +225,10 @@ class SystemHealthService
      *
      * @return array{status: Status, hint: string, total: int, latest: list<array{project: string, event: string, channels: list<string>, at: string}>}
      */
-    private function alertFailures(): array
+    private function alertFailures(User $viewer): array
     {
-        $query = AlertLog::query()->where('status', AlertLog::FAILED)->where('created_at', '>=', Date::now()->subDay());
+        $query = AlertLog::query()->where('status', AlertLog::FAILED)->where('created_at', '>=', Date::now()->subDay())
+            ->whereIn('project_id', Project::query()->visibleTo($viewer)->select('id'));
         $total = (clone $query)->count();
         $latest = array_values($query->with('project:id,name')->latest()->limit(self::ALERT_FAILURES_SHOWN)->get()
             ->map(fn (AlertLog $log): array => [

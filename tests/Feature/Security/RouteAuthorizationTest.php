@@ -9,6 +9,7 @@ use App\Enums\ProjectVisibilityEnum;
 use App\Enums\RoleEnum;
 use App\Http\Controllers\FleetController;
 use App\Http\Controllers\ProjectReportController;
+use App\Jobs\DeliverAlertJob;
 use App\Models\AlertLog;
 use App\Models\AlertMute;
 use App\Models\ExceptionGroup;
@@ -20,6 +21,7 @@ use App\Models\UserGroup;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Routing\Route;
 use Illuminate\Support\Facades\Date;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Route as RouteFacade;
@@ -252,6 +254,39 @@ it('keeps the hidden project and its children out of reach of a non-admin holdin
         ->and($this->hidden->fresh()->push_token_hash)->not->toBeNull()
         ->and($this->children['finding']->fresh()->dismissed_at)->toBeNull()
         ->and($this->children['exceptionGroup']->fresh()->status->value)->toBe('open');
+});
+
+it('keeps the hidden project off the install-wide pages for a non-admin holding every permission', function () {
+    // Something about both projects on each install-wide page: pushes, skipped runtime types,
+    // a failed alert delivery, activity log entries (created, token rotated) and a failed job.
+    foreach ([$this->hidden, $this->visible] as $project) {
+        $project->forceFill(['skipped_runtime_aggregates' => 3])->save();
+        AlertLog::query()->forceCreate([
+            'uuid' => (string) Str::uuid(), 'project_id' => $project->id, 'event' => 'project.stale', 'severity' => 'warning',
+            'summary' => $project->name.' is stale', 'status' => AlertLog::FAILED, 'deliveries' => ['webhook' => AlertLog::FAILED],
+        ]);
+        DB::table('failed_jobs')->insert([
+            'uuid' => (string) Str::uuid(), 'connection' => 'database', 'queue' => 'default',
+            'payload' => json_encode(['displayName' => DeliverAlertJob::class, 'data' => ['command' => serialize(new DeliverAlertJob('webhook', ['project' => ['name' => $project->name, 'slug' => $project->slug]]))]]),
+            'exception' => 'RuntimeException: Alert delivery to webhook failed: HTTP 500', 'failed_at' => Date::now(),
+        ]);
+    }
+
+    $role = Role::query()->create(['name' => 'operator', 'guard_name' => 'web']);
+    $role->syncPermissions(PermissionEnum::values());
+    $operator = User::factory()->create()->assignRole('operator');
+
+    foreach (['system.index', 'activity-logs.index', 'jobs.index'] as $name) {
+        $content = (string) $this->actingAs($operator)->get(route($name))->assertOk()->getContent();
+
+        expect(str_contains($content, HIDDEN_PROJECT_NAME) || str_contains($content, HIDDEN_PROJECT_SLUG))->toBeFalse("{$name} leaked the hidden project");
+    }
+
+    // The pages still list the visible project to the operator, and everything to an admin.
+    expect((string) $this->actingAs($operator)->get(route('system.index'))->getContent())->toContain('Public Shop')
+        ->and((string) $this->actingAs($operator)->get(route('activity-logs.index'))->getContent())->toContain('Public Shop')
+        ->and((string) $this->actingAs($this->admin)->get(route('system.index'))->getContent())->toContain(HIDDEN_PROJECT_NAME)
+        ->and((string) $this->actingAs($this->admin)->get(route('activity-logs.index'))->getContent())->toContain(HIDDEN_PROJECT_NAME);
 });
 
 it('does not let a user continue or read another user\'s assistant conversation', function () {

@@ -47,6 +47,10 @@ return [
     // the app (Docker), so URLs and push snippets use https and the client IP is the real one.
     'trusted_proxies' => env('TRUSTED_PROXIES'),
 
+    // Strict-Transport-Security max-age in seconds on https requests (#153). 0 (the default)
+    // sends none: HSTS is usually set by the TLS proxy. 31536000 is one year.
+    'hsts_max_age' => (int) env('EXCUBIA_HSTS_MAX_AGE', 0),
+
     /*
     |--------------------------------------------------------------------------
     | Assistant
