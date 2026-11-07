@@ -462,7 +462,9 @@
                 "runtime.cache_hit_ratio_low": "Uno store di cache ha un hit ratio sotto la soglia.",
                 "runtime.delivery_failed": "Un mailable o una notifica è fallito.",
                 "runtime.log_spike": "Un canale di log ha scritto più voci di errore della soglia.",
-                "infrastructure.failed": "Un controllo di database, storage o disco fallisce (nuovo, o al primo report). Inviato subito, critico."
+                "infrastructure.failed": "Un controllo di database, storage o disco fallisce (nuovo, o al primo report). Inviato subito, critico.",
+                "health.failed": "Un controllo dei campioni di salute al minuto fallisce su un server per due letture di fila. Prende la gravità del finding.",
+                "health.recovered": "Un controllo fallito dei campioni di salute non fallisce più su nessun server."
             },
             "runtimeRulesTitle": "Regole di avviso runtime",
             "runtimeRulesDescription": "Avvisi opzionali dai dati runtime inviati dai progetti, controllati ogni 15 minuti sull'ultima ora. Vuoto disattiva la regola.",
@@ -796,7 +798,15 @@
             "deployCount_other": "{{count}} deploy nella cronologia"
         },
         "release": "Release",
-        "deploy": "Deploy"
+        "deploy": "Deploy",
+        "liveHealth": {
+            "title": "Salute in tempo reale",
+            "description": "I campioni di salute al minuto dell'ultima ora, per controllo e server. Si aggiorna ogni minuto.",
+            "servers": "Server",
+            "lastSample": "Ultimo campione",
+            "serverStatus": "{{server}}: {{status}}",
+            "serverStale": "{{server}}: nessun campione"
+        }
     },
     "assistant": {
         "title": "Assistente",

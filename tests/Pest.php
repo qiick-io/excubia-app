@@ -87,7 +87,14 @@ function something()
 function coreSchemaErrors(mixed $value, array $schema, array $root, string $path = '$'): array
 {
     if (isset($schema['$ref'])) {
-        $schema = [...$root['$defs'][substr($schema['$ref'], strlen('#/$defs/'))], ...array_diff_key($schema, ['$ref' => true])];
+        // A JSON pointer into the root, e.g. `#/$defs/server/properties/server`.
+        $target = $root;
+
+        foreach (explode('/', substr($schema['$ref'], 2)) as $segment) {
+            $target = $target[$segment];
+        }
+
+        $schema = [...$target, ...array_diff_key($schema, ['$ref' => true])];
     }
 
     $errors = [];

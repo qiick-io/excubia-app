@@ -462,7 +462,9 @@
                 "runtime.cache_hit_ratio_low": "Ein Cache-Store liegt unter der Trefferquote.",
                 "runtime.delivery_failed": "Ein Mailable oder eine Benachrichtigung ist fehlgeschlagen.",
                 "runtime.log_spike": "Ein Log-Kanal hat mehr Fehlereinträge als den Schwellwert geschrieben.",
-                "infrastructure.failed": "Eine Datenbank-, Speicher- oder Festplattenprüfung schlägt fehl (neu oder im ersten Bericht). Sofort gesendet, kritisch."
+                "infrastructure.failed": "Eine Datenbank-, Speicher- oder Festplattenprüfung schlägt fehl (neu oder im ersten Bericht). Sofort gesendet, kritisch.",
+                "health.failed": "Eine Prüfung der minütlichen Zustandsproben schlägt auf einem Server zweimal in Folge fehl. Übernimmt den Schweregrad des Befunds.",
+                "health.recovered": "Eine fehlschlagende Prüfung der Zustandsproben schlägt auf keinem Server mehr fehl."
             },
             "runtimeRulesTitle": "Runtime-Alarmregeln",
             "runtimeRulesDescription": "Optionale Alarme aus den Runtime-Daten der Projekte, alle 15 Minuten über die letzte Stunde geprüft. Leer schaltet eine Regel ab.",
@@ -796,7 +798,15 @@
             "deployCount_other": "{{count}} Deploys im Verlauf"
         },
         "release": "Release",
-        "deploy": "Deploy"
+        "deploy": "Deploy",
+        "liveHealth": {
+            "title": "Live-Zustand",
+            "description": "Die minütlichen Zustandsproben der letzten Stunde, je Prüfung und Server. Aktualisiert sich jede Minute.",
+            "servers": "Server",
+            "lastSample": "Letzte Probe",
+            "serverStatus": "{{server}}: {{status}}",
+            "serverStale": "{{server}}: keine Probe"
+        }
     },
     "assistant": {
         "title": "Assistent",

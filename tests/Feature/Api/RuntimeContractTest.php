@@ -16,7 +16,7 @@ use Illuminate\Support\Str;
  * stored; a type the app does not know is skipped and counted, never rejected.
  *
  * `tests/Fixtures/core/runtime-schema.json` is a copy of excubia-core `develop` at
- * adcbc56832709d5caf79998ec943c6a941b039bd (2026-11-06). Refresh it when core adds a type.
+ * f92f50b490ed381d2fa5431ae5c169a621c64b1c (2026-11-07). Refresh it when core adds a type.
  * The app has no JSON Schema validator, so coreSchemaErrors() (tests/Pest.php) checks the keywords
  * the runtime schema uses (required, additionalProperties, const, enum, type, pattern, min/max, lengths).
  */
@@ -61,6 +61,7 @@ function coreRuntimeAggregates(): array
         'duplicateQuery' => ['type' => 'duplicateQuery', ...$base, ...$quiet, 'origin' => 'request', 'name' => 'projects.index', 'sql' => 'select * from reports where project_id IN (…)', 'connection' => 'sqlite', 'totalRepeats' => 40, 'maxRepeats' => 15],
         'server' => ['type' => 'server', ...$base, ...$quiet, 'count' => 1, 'server' => 'a1b2c3d4e5f6', 'loadAverage1' => 0.52, 'loadAverage5' => 0.4, 'loadAverage15' => 0.3, 'cpuCores' => 8, 'cpuLimit' => 1.5, 'memoryUsedMb' => 900, 'memoryTotalMb' => 2048, 'diskUsedGb' => 20.5, 'diskTotalGb' => 80, 'isContainer' => true],
         'command' => ['type' => 'command', ...$base, 'command' => 'migrate', 'exitCodeClass' => 'other', ...$timed],
+        'health' => ['type' => 'health', ...$base, 'count' => 1, 'server' => 'web-1', 'checkId' => 'laravel-database', 'status' => 'fail', 'severity' => 'critical', 'findingCount' => 1, 'fingerprints' => [str_repeat('c', 64)]],
     ];
 }
 

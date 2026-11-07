@@ -462,7 +462,9 @@
                 "runtime.cache_hit_ratio_low": "A cache store hits less than the threshold.",
                 "runtime.delivery_failed": "A mailable or notification failed.",
                 "runtime.log_spike": "A log channel wrote more error entries than the threshold.",
-                "infrastructure.failed": "A database, storage or disk check fails (new, or on the first report). Sent at once, critical."
+                "infrastructure.failed": "A database, storage or disk check fails (new, or on the first report). Sent at once, critical.",
+                "health.failed": "A check of the minute-level health samples fails on a server for two readings in a row. Takes the finding's severity.",
+                "health.recovered": "A failing check of the health samples no longer fails on any server."
             },
             "runtimeRulesTitle": "Runtime alert rules",
             "runtimeRulesDescription": "Optional alerts from the runtime data the projects push, checked every 15 minutes over the last hour. Empty turns a rule off.",
@@ -796,7 +798,15 @@
             "deployCount_other": "{{count}} deploys in the history"
         },
         "release": "Release",
-        "deploy": "Deploy"
+        "deploy": "Deploy",
+        "liveHealth": {
+            "title": "Live health",
+            "description": "The minute-level health samples of the last hour, per check and server. Updates every minute.",
+            "servers": "Servers",
+            "lastSample": "Last sample",
+            "serverStatus": "{{server}}: {{status}}",
+            "serverStale": "{{server}}: no sample"
+        }
     },
     "assistant": {
         "title": "Assistant",
