@@ -3,7 +3,20 @@ import { useTranslation } from 'react-i18next';
 import { PageEmptyState } from '@/components/admin/page-empty-state';
 import { PageLayout, TablePanel } from '@/components/layout/page-layout';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { StackedBarChart } from '@/components/reports/severity-chart';
+import {
+    bucketLabel,
+    deployMarkers,
+    TimeRangePicker,
+} from '@/components/reports/time-range-picker';
 import { Badge } from '@/components/ui/badge';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
 import {
     Table,
     TableBody,
@@ -12,7 +25,13 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import type { ScheduledTaskRow, ScheduledTaskStatus } from '@/types';
+import type {
+    RuntimeDeploy,
+    ScheduledTaskRow,
+    ScheduledTaskStatus,
+    ScheduleTimelinePoint,
+    TimeRange,
+} from '@/types';
 
 const SCHEDULE_GUIDE_URL =
     'https://github.com/qiick-io/excubia-core/blob/main/docs/guides/excubia-app.md#scheduled-tasks';
@@ -39,10 +58,23 @@ function formatTime(value: string | null): string {
 
 /**
  * The project's scheduled tasks (#110), in schedule order: each task with its expression and
- * timezone, its last run, its next due time and its status. A destructive alert on top when the
+ * timezone, its runs in the time range (#113), its last run, its next due time and its status,
+ * under a chart of all runs per outcome over the range. A destructive alert on top when the
  * `excubia:heartbeat` task is late or missed, i.e. the whole scheduler is down.
  */
-export function ScheduleView({ tasks }: { tasks: ScheduledTaskRow[] }) {
+export function ScheduleView({
+    slug,
+    tasks,
+    timeline,
+    range,
+    deploys,
+}: {
+    slug: string;
+    tasks: ScheduledTaskRow[];
+    timeline: ScheduleTimelinePoint[];
+    range: TimeRange;
+    deploys: RuntimeDeploy[];
+}) {
     const { t } = useTranslation();
 
     if (tasks.length === 0) {
@@ -63,9 +95,25 @@ export function ScheduleView({ tasks }: { tasks: ScheduledTaskRow[] }) {
     const isSchedulerDown =
         heartbeat !== null &&
         (heartbeat.status === 'late' || heartbeat.status === 'missed');
+    const phrases = {
+        bucket: t(`timeRange.bucket.${range}`),
+        during: t(`timeRange.during.${range}`),
+    };
+    const totals = { finished: 0, failed: 0, skipped: 0 };
+
+    for (const point of timeline) {
+        totals.finished += point.finished;
+        totals.failed += point.failed;
+        totals.skipped += point.skipped;
+    }
 
     return (
-        <PageLayout description={t('schedule.description')}>
+        <PageLayout
+            description={t('schedule.description')}
+            filtersRight={
+                <TimeRangePicker slug={slug} view="schedule" range={range} />
+            }
+        >
             {isSchedulerDown ? (
                 <Alert variant="destructive">
                     <CircleAlert />
@@ -77,11 +125,53 @@ export function ScheduleView({ tasks }: { tasks: ScheduledTaskRow[] }) {
                     </AlertDescription>
                 </Alert>
             ) : null}
+            <Card>
+                <CardHeader className="pb-3">
+                    <CardTitle>{t('schedule.runsOverTime')}</CardTitle>
+                    <CardDescription>
+                        {t('schedule.runsOverTimeDescription', phrases)}
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="h-48">
+                    <StackedBarChart
+                        data={timeline.map((point) => ({
+                            label: point.at,
+                            finished: point.finished,
+                            failed: point.failed,
+                            skipped: point.skipped,
+                        }))}
+                        formatLabel={bucketLabel(range)}
+                        markers={deployMarkers(deploys, t('runtime.deploy'))}
+                        series={[
+                            {
+                                key: 'finished',
+                                label: t('schedule.outcome.finished'),
+                                color: 'var(--runtime-chart-ok)',
+                            },
+                            {
+                                key: 'failed',
+                                label: t('schedule.outcome.failed'),
+                                color: 'var(--runtime-chart-error)',
+                            },
+                            {
+                                key: 'skipped',
+                                label: t('schedule.outcome.skipped'),
+                                color: 'var(--color-muted-foreground)',
+                            },
+                        ]}
+                        label={t('schedule.runsChartLabel', {
+                            ...totals,
+                            ...phrases,
+                        })}
+                    />
+                </CardContent>
+            </Card>
             <TablePanel>
                 <Table>
                     <TableHeader>
                         <TableRow>
                             <TableHead>{t('schedule.task')}</TableHead>
+                            <TableHead>{t('schedule.runs')}</TableHead>
                             <TableHead>{t('schedule.lastRun')}</TableHead>
                             <TableHead>{t('schedule.nextDue')}</TableHead>
                             <TableHead>{t('schedule.statusLabel')}</TableHead>
@@ -110,6 +200,9 @@ export function ScheduleView({ tasks }: { tasks: ScheduledTaskRow[] }) {
                                             ),
                                         )}
                                     </div>
+                                </TableCell>
+                                <TableCell className="text-xs tabular-nums">
+                                    {t('schedule.runsSummary', task.runs)}
                                 </TableCell>
                                 <TableCell className="text-xs tabular-nums">
                                     <div>{formatTime(task.last_run_at)}</div>

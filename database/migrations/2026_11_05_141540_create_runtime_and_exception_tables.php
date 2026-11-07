@@ -49,7 +49,9 @@ return new class extends Migration
             $table->timestamps();
 
             $table->unique(['project_id', 'type', 'bucket', 'sample_rate', 'dimension_key'], 'runtime_aggregates_identity');
-            $table->index(['project_id', 'type', 'bucket']);
+            // Covers the per-bucket sums of the charts and the dashboard (#113): MySQL and
+            // PostgreSQL read them from the index without visiting the rows.
+            $table->index(['project_id', 'type', 'bucket', 'sample_rate', 'count', 'error_count'], 'runtime_aggregates_buckets');
         });
 
         Schema::create('exception_groups', function (Blueprint $table): void {

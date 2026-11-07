@@ -157,8 +157,15 @@ export type RuntimeServer = {
     lastAt: string;
 };
 
-/** The runtime of a project over the last hours (#24, #107). Counts are estimated real counts. */
+/** A time range of the runtime, exceptions and schedule tabs (#113), `TimeRangeEnum`. */
+export type TimeRange = '1h' | '6h' | '24h' | '7d' | '14d';
+
+/**
+ * The runtime of a project over a time range (#24, #107, #113). Counts are estimated real
+ * counts; `timeline` has one point per chart bucket, `at` being its ISO start.
+ */
 export type RuntimeSummary = {
+    range: TimeRange;
     hours: number;
     isSampled: boolean;
     /** Entries of runtime types this app does not know, skipped on ingest (all time). */
@@ -168,7 +175,7 @@ export type RuntimeSummary = {
         errors: number;
         averageMs: number | null;
         maxMs: number | null;
-        hourly: { hour: string; ok: number; errors: number }[];
+        timeline: { at: string; ok: number; errors: number }[];
         routes: RuntimeRow[];
     } & RuntimePercentiles;
     slowQueries: RuntimeRow[];
@@ -190,12 +197,12 @@ export type RuntimeSummary = {
     logLevels: {
         levels: { level: string; count: number }[];
         rows: RuntimeCountRow[];
-        hourly: { hour: string; count: number }[];
+        timeline: { at: string; count: number }[];
     };
     deprecations: RuntimeCountRow[];
     duplicateQueries: RuntimeCountRow[];
     servers: RuntimeServer[];
-    /** Deploys of the window, oldest first (#106); `hour` matches an `hourly` point. */
+    /** Deploys of the range, oldest first (#106); `bucket` matches a `timeline` point. */
     deploys: RuntimeDeploy[];
 };
 
@@ -203,7 +210,7 @@ export type RuntimeSummary = {
 export type RuntimeDeploy = {
     release: string | null;
     deployedAt: string;
-    hour: string;
+    bucket: string;
 };
 
 export type ExceptionFrame = {
@@ -234,6 +241,9 @@ export type ExceptionGroupRow = {
     status: 'open' | 'resolved' | 'ignored';
     resolved_at: string | null;
     fix: { command: string | null; prompt: string };
+    /** On the Exceptions tab (#113): occurrences in the range and per chart bucket. */
+    range_count?: number;
+    timeline?: { at: string; count: number }[];
 };
 
 /** Status of a scheduled task (#110), see `ScheduledTaskStatusEnum`. */
@@ -269,4 +279,14 @@ export type ScheduledTaskRow = {
     last_outcome: 'finished' | 'failed' | 'skipped' | null;
     status_changed_at: string | null;
     evaluated_at: string | null;
+    /** Estimated runs per outcome in the range (#113). */
+    runs: Record<'finished' | 'failed' | 'skipped', number>;
+};
+
+/** Estimated runs of all scheduled tasks per chart bucket and outcome (#113). */
+export type ScheduleTimelinePoint = {
+    at: string;
+    finished: number;
+    failed: number;
+    skipped: number;
 };

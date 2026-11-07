@@ -838,18 +838,15 @@
         "averageResponse": "Risposta media",
         "slowestResponse": "Risposta più lenta",
         "allRoutes": "Tutte le route",
-        "lastHours": "Ultime {{count}} ore",
-        "requestsPerHour": "Richieste per ora",
-        "requestsPerHourDescription": "Richieste riuscite ed errori server (5xx), ultime 24 ore.",
         "successful": "Riuscite",
         "serverErrors": "5xx",
-        "chartLabel": "Grafico a barre impilate delle richieste per ora: {{count}} richieste, {{errors}} errori server nelle ultime 24 ore.",
+        "chartLabel": "Grafico a barre impilate delle richieste {{bucket}}: {{count}} richieste, {{errors}} errori server {{during}}.",
         "routes": "Route",
         "outgoingHttp": "HTTP in uscita",
         "slowQueries": "Query lente",
         "jobs": "Job",
         "scheduledTasks": "Task schedulati",
-        "noData": "Nessun dato nelle ultime 24 ore.",
+        "noData": "Nessun dato in questo intervallo.",
         "name": "Nome",
         "count": "Conteggio",
         "average": "Media",
@@ -892,9 +889,9 @@
         "notifications": "Notifiche",
         "sent": "Inviate",
         "logLevels": "Log",
-        "logLevelsDescription": "Voci di log per livello e canale; il grafico mostra per ora quelle di livello error e superiore.",
+        "logLevelsDescription": "Voci di log per livello e canale; il grafico mostra {{bucket}} quelle di livello error e superiore.",
         "errorLogs": "Voci di livello error",
-        "logChartLabel": "Grafico a barre delle voci di log di livello error per ora: {{count}} nelle ultime 24 ore.",
+        "logChartLabel": "Grafico a barre delle voci di log di livello error {{bucket}}: {{count}} {{during}}.",
         "level": "Livello",
         "channel": "Canale",
         "unknownChannel": "sconosciuto",
@@ -915,7 +912,9 @@
         "deploy": "Deploy",
         "deployMarkersHint": "Le linee tratteggiate segnano i deploy.",
         "deploysLabel_one": "{{count}} deploy: {{releases}}.",
-        "deploysLabel_other": "{{count}} deploy: {{releases}}."
+        "deploysLabel_other": "{{count}} deploy: {{releases}}.",
+        "requestsOverTime": "Richieste nel tempo",
+        "requestsOverTimeDescription": "Richieste riuscite ed errori server (5xx) {{bucket}} {{during}}."
     },
     "exceptions": {
         "emptyTitle": "Nessuna eccezione",
@@ -954,7 +953,13 @@
         "reopen": "Riapri",
         "firstRelease": "Vista la prima volta nella release",
         "lastRelease": "Vista l'ultima volta nella release",
-        "regressedIn": "Regressione in {{release}}"
+        "regressedIn": "Regressione in {{release}}",
+        "inRange": "Nell’intervallo",
+        "occurrences": "Occorrenze",
+        "occurrencesDescription": "Occorrenze {{bucket}} {{during}}, contate all'ultima occorrenza di ogni invio.",
+        "occurrencesChartLabel": "Grafico a barre delle occorrenze {{bucket}}: {{count}} {{during}}.",
+        "emptyRangeTitle": "Nessuna eccezione in questo intervallo",
+        "emptyRangeDescription": "Nessun gruppo di eccezioni visto {{during}}. Scegli un intervallo più lungo per vedere i gruppi più vecchi."
     },
     "schedule": {
         "description": "I task pianificati dell'ultimo report, ognuno con l'ultima esecuzione, la prossima scadenza e lo stato. Controllati ogni minuto con le esecuzioni inviate dal monitoraggio runtime.",
@@ -984,7 +989,12 @@
             "not_expected": "Altro ambiente",
             "paused": "Manutenzione",
             "unknown": "Nessun dato"
-        }
+        },
+        "runs": "Esecuzioni",
+        "runsOverTime": "Esecuzioni nel tempo",
+        "runsOverTimeDescription": "Esecuzioni di tutti i task pianificati per esito {{bucket}} {{during}}.",
+        "runsChartLabel": "Grafico a barre impilate delle esecuzioni dei task pianificati {{bucket}}: {{finished}} completate, {{failed}} fallite, {{skipped}} saltate {{during}}.",
+        "runsSummary": "{{finished}} completate · {{failed}} fallite · {{skipped}} saltate"
     },
     "ai": {
         "fabDescription": "Drawer rapido dell'assistente. Apri la pagina completa per la cronologia.",
@@ -1006,5 +1016,36 @@
         "connecting": "Connessione…",
         "disabled": "Realtime off",
         "offline": "Realtime offline"
+    },
+    "timeRange": {
+        "label": "Intervallo di tempo",
+        "option": {
+            "1h": "1 h",
+            "6h": "6 h",
+            "24h": "24 h",
+            "7d": "7 g",
+            "14d": "14 g"
+        },
+        "last": {
+            "1h": "Ultima ora",
+            "6h": "Ultime 6 ore",
+            "24h": "Ultime 24 ore",
+            "7d": "Ultimi 7 giorni",
+            "14d": "Ultimi 14 giorni"
+        },
+        "during": {
+            "1h": "nell'ultima ora",
+            "6h": "nelle ultime 6 ore",
+            "24h": "nelle ultime 24 ore",
+            "7d": "negli ultimi 7 giorni",
+            "14d": "negli ultimi 14 giorni"
+        },
+        "bucket": {
+            "1h": "al minuto",
+            "6h": "ogni 10 minuti",
+            "24h": "per ora",
+            "7d": "ogni 6 ore",
+            "14d": "al giorno"
+        }
     }
 }

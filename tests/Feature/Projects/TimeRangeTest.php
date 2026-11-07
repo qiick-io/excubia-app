@@ -202,3 +202,13 @@ it('prunes exception occurrences past the exceptions retention', function () {
     expect(ExceptionOccurrence::query()->pluck('count')->all())->toBe([1])
         ->and(ExceptionGroup::query()->count())->toBe(1);
 });
+
+it('tells an exceptions tab without groups in the range from a project without exceptions', function () {
+    $this->get(route('projects.view', ['shop', 'exceptions']))
+        ->assertInertia(fn (Assert $page) => $page->has('exceptions', 0)->where('hasExceptions', false));
+
+    app(StorePushedExceptionsAction::class)->execute($this->project, (string) Str::uuid(), [rangeExceptionGroup('a', 1, '2026-11-01T00:00:00Z')]);
+
+    $this->get(route('projects.view', ['shop', 'exceptions', 'range' => '24h']))
+        ->assertInertia(fn (Assert $page) => $page->has('exceptions', 0)->where('hasExceptions', true));
+});

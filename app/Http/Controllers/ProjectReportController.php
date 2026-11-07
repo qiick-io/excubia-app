@@ -79,6 +79,8 @@ class ProjectReportController extends Controller
             'range' => $range->value,
             'runtime' => $runtime->summary($project, $range),
             'exceptions' => $telemetry->exceptions($project, $view === 'exceptions' ? $range : null, $now),
+            // Tells "none in this range" from "none yet" on the Exceptions tab.
+            'hasExceptions' => $view === 'exceptions' && $project->exceptionGroups()->exists(),
             // Schedule inventory, status and runs (#110), only on its tab.
             'schedule' => $schedule['tasks'] ?? [],
             'scheduleTimeline' => $schedule['timeline'] ?? [],
