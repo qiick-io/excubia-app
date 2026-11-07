@@ -48,6 +48,10 @@ return [
 
     'push_rejected_alert_after' => (int) env('EXCUBIA_PUSH_REJECTED_ALERT_AFTER', 10),
 
+    // Days before the end of security support of PHP, Laravel or Node at which `eol.approaching`
+    // alerts (#157), comma-separated; each one alerts once per runtime cycle.
+    'eol_alert_days' => array_map('intval', explode(',', (string) env('EXCUBIA_EOL_ALERT_DAYS', '90,30,7'))),
+
     // Days of runtime aggregates (#48) and of exception groups not seen since (#49) kept;
     // older ones are pruned daily by excubia:prune-telemetry.
     'runtime_retention_days' => (int) env('EXCUBIA_RUNTIME_RETENTION_DAYS', 14),

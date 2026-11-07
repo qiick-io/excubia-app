@@ -38,6 +38,9 @@ enum AlertEventEnum: string
     case CacheHitRatioLow = 'runtime.cache_hit_ratio_low';
     case DeliveryFailed = 'runtime.delivery_failed';
     case LogSpike = 'runtime.log_spike';
+    // PHP, Laravel or Node security support ends within a lead time, or has ended (#157).
+    case EolApproaching = 'eol.approaching';
+    case EolReached = 'eol.reached';
     case Ping = 'ping';
 
     /**
@@ -64,8 +67,8 @@ enum AlertEventEnum: string
     {
         return match ($this) {
             self::InfrastructureFailed => SeverityEnum::Critical,
-            self::ProjectStale, self::HealthStale, self::ScheduleMissed, self::CacheHitRatioLow => SeverityEnum::Medium,
-            self::FindingNew, self::HealthFailed, self::ProjectWorsened, self::ScheduleFailed, self::SchedulerDown, self::DeliveryFailed, self::LogSpike, self::PushRejected => SeverityEnum::High,
+            self::ProjectStale, self::HealthStale, self::ScheduleMissed, self::CacheHitRatioLow, self::EolApproaching => SeverityEnum::Medium,
+            self::FindingNew, self::HealthFailed, self::ProjectWorsened, self::ScheduleFailed, self::SchedulerDown, self::DeliveryFailed, self::LogSpike, self::PushRejected, self::EolReached => SeverityEnum::High,
             self::ReportChecksSkipped => SeverityEnum::Low,
             default => SeverityEnum::Info,
         };
