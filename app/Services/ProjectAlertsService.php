@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Jobs\DeliverAlertJob;
 use App\Models\AlertLog;
 use App\Models\AlertMute;
 use App\Models\MaintenanceWindow;
@@ -44,7 +45,7 @@ class ProjectAlertsService
                 'has_subject' => $alert->subject !== null,
                 'status' => $alert->status,
                 'reason' => $alert->reason,
-                'deliveries' => (object) $alert->deliveries,
+                'deliveries' => (object) $this->deliveries($alert->deliveries),
                 'created_at' => $alert->created_at->toIso8601String(),
             ])
             ->all();
@@ -87,5 +88,28 @@ class ProjectAlertsService
             'windows' => array_values($windows),
             'isInMaintenanceMode' => $this->findings->isInMaintenanceMode($project),
         ];
+    }
+
+    /**
+     * The outcome per channel, the `email:<user id>` channels folded into one `email` entry
+     * (failed if a mail failed, queued while one is queued), so no user id reaches the page.
+     *
+     * @param  array<string, string>  $deliveries
+     * @return array<string, string>
+     */
+    private function deliveries(array $deliveries): array
+    {
+        $mails = array_filter($deliveries, fn (string $channel): bool => DeliverAlertJob::emailUserId($channel) !== null, ARRAY_FILTER_USE_KEY);
+        $folded = array_diff_key($deliveries, $mails);
+
+        if ($mails !== []) {
+            $folded[DeliverAlertJob::EMAIL] = match (true) {
+                in_array(AlertLog::FAILED, $mails, true) => AlertLog::FAILED,
+                in_array(AlertLog::QUEUED, $mails, true) => AlertLog::QUEUED,
+                default => AlertLog::SENT,
+            };
+        }
+
+        return $folded;
     }
 }

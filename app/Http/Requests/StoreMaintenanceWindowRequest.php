@@ -11,8 +11,8 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 /**
- * A one-off or weekly maintenance window of a project (#114). Needs the right to edit the
- * project. One-off: local start and end (`Y-m-d\TH:i`, end after start). Weekly: ISO weekdays,
+ * A one-off or weekly maintenance window of a project (#114). Needs `can-manage-alerts` on a
+ * project the user can see (#22). One-off: local start and end (`Y-m-d\TH:i`, end after start). Weekly: ISO weekdays,
  * a local start time and a duration up to a week.
  */
 class StoreMaintenanceWindowRequest extends FormRequest
@@ -21,7 +21,7 @@ class StoreMaintenanceWindowRequest extends FormRequest
     {
         $project = $this->route('project');
 
-        return $project instanceof Project && (bool) $this->user()?->can('update', $project);
+        return $project instanceof Project && (bool) $this->user()?->can('manageAlerts', $project);
     }
 
     /**

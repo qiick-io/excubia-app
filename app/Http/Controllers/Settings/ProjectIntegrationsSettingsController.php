@@ -10,16 +10,19 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\Settings\Concerns\LogsProjectSettingsUpdateTrait;
 use App\Http\Requests\Settings\UpdateProjectIntegrationsSettingsRequest;
 use App\Jobs\DeliverAlertJob;
+use App\Models\Project;
 use App\Services\AlertDispatcherService;
 use App\Services\SettingsRepositoryService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 /**
  * Settings → Integrations (#22), copied from externa-core: the signed outbound webhook with its
- * delivery status, the Slack and Telegram notifiers, the events they send and a test per
- * channel, and the optional runtime alert rules (#114). Secrets are write-only. The routes require `can-manage-project-settings`.
+ * delivery status, the Slack and Telegram notifiers, each channel's minimum severity, events and
+ * projects, a test per channel, the default severity per event, and the optional runtime alert
+ * rules (#114). Secrets are write-only. The routes require `can-manage-alerts`.
  */
 class ProjectIntegrationsSettingsController extends Controller
 {
@@ -27,7 +30,7 @@ class ProjectIntegrationsSettingsController extends Controller
 
     public function __construct(private readonly SettingsRepositoryService $settings) {}
 
-    public function edit(): Response
+    public function edit(Request $request): Response
     {
         $values = $this->settings->forEditOnly([
             'webhook_url', 'has_webhook_secret', 'has_notifier_slack_webhook_url', 'has_notifier_telegram_bot_token',
@@ -37,14 +40,21 @@ class ProjectIntegrationsSettingsController extends Controller
         return Inertia::render('settings/project/integrations', [
             'project' => [
                 ...$values,
-                'notifier_event_types' => $this->settings->notifierEventTypes(),
-                'notifier_minimum_severity' => $this->settings->notifierMinimumSeverity()->value,
+                'channels' => array_combine(
+                    UpdateProjectIntegrationsSettingsRequest::CHANNELS,
+                    array_map(fn (string $channel): array => $this->settings->alertChannelFilter($channel)->toArray(), UpdateProjectIntegrationsSettingsRequest::CHANNELS),
+                ),
+                'event_severities' => array_combine(
+                    AlertEventEnum::severityEditableValues(),
+                    array_map(fn (string $event): string => $this->settings->alertEventSeverity(AlertEventEnum::from($event))->value, AlertEventEnum::severityEditableValues()),
+                ),
                 'alert_cache_hit_ratio_below' => $this->settings->alertCacheHitRatioBelow(),
                 'alert_delivery_failures_enabled' => $this->settings->shouldAlertDeliveryFailures(),
                 'alert_log_spike_per_hour' => $this->settings->alertLogSpikePerHour(),
             ],
             'events' => AlertEventEnum::selectableValues(),
             'severities' => SeverityEnum::values(),
+            'projects' => Project::query()->visibleTo($request->user())->orderBy('name')->get(['id', 'name'])->map(fn (Project $project): array => ['id' => $project->id, 'name' => $project->name])->all(),
         ]);
     }
 

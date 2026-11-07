@@ -120,7 +120,7 @@ class ProjectReportController extends Controller
             'deploys' => fn (): array => in_array($view, ['exceptions', 'schedule'], true) ? $timeSeries->deploys($project, $range, $now) : [],
             // Alert history, mutes and maintenance windows (#114), only on its tab.
             'alerts' => fn (): ?array => $view === 'alerts' ? app(ProjectAlertsService::class)->forPage($project) : null,
-            'canManageAlerts' => fn (): bool => (bool) $request->user()?->can('update', $project),
+            'canManageAlerts' => fn (): bool => (bool) $request->user()?->can('manageAlerts', $project),
             'canManageExceptions' => fn (): bool => (bool) $request->user()?->can(PermissionEnum::CanManageExceptions->value),
             'reports' => fn (): array => HealthReportResource::collection(
                 $project->healthReports()->orderByDesc('received_at')->orderByDesc('id')->get(),

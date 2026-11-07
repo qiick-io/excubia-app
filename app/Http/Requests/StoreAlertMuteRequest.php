@@ -12,8 +12,9 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 /**
- * Mutes the rule or the issue of an alert of the project's history (#114). Needs the right to
- * edit the project; the alert must belong to it, and an issue mute needs an alert with a subject.
+ * Mutes the rule or the issue of an alert of the project's history (#114). Needs
+ * `can-manage-alerts` on a project the user can see (#22); the alert must belong to it, and an
+ * issue mute needs an alert with a subject.
  */
 class StoreAlertMuteRequest extends FormRequest
 {
@@ -21,7 +22,7 @@ class StoreAlertMuteRequest extends FormRequest
     {
         $project = $this->route('project');
 
-        return $project instanceof Project && (bool) $this->user()?->can('update', $project);
+        return $project instanceof Project && (bool) $this->user()?->can('manageAlerts', $project);
     }
 
     /**

@@ -59,6 +59,7 @@ it('maps the built-in roles to their default permissions', function (RoleEnum $r
         PermissionEnum::CanEditGroups,
         PermissionEnum::CanDeleteGroups,
         PermissionEnum::CanShowActivityLogs,
+        PermissionEnum::CanManageAlerts,
         PermissionEnum::CanUseAi,
     ]],
     'reader' => [RoleEnum::Reader, [PermissionEnum::CanShowProjects]],

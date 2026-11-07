@@ -4,18 +4,22 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Data\AlertFilterData;
 use App\Enums\AlertEventEnum;
 use App\Enums\SeverityEnum;
 use App\Jobs\DeliverAlertJob;
 use App\Models\AlertLog;
 use App\Models\Project;
+use App\Models\User;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Str;
 
 /**
- * Sends an alert (#22) to the configured channels, as queued jobs: the signed webhook gets every
- * event; Slack and Telegram only the events chosen in Settings → Integrations, at or above the
- * minimum severity. Nothing is queued when no channel is configured.
+ * Sends an alert (#22) to the configured channels, as queued jobs: the signed webhook, Slack and
+ * Telegram each take the events, minimum severity and projects chosen for them in Settings →
+ * Integrations; every user who turned alert emails on gets a mail when their own filters take
+ * it and they can see the project. Nothing is queued when no channel takes the alert. An event
+ * without a finding severity takes the admin's severity for it, else its default.
  *
  * Every alert passes through here, so this is where mutes, maintenance windows and maintenance
  * mode suppress it (AlertSuppressionService) and where the alert history row is written (#114).
@@ -37,7 +41,7 @@ class AlertDispatcherService
      */
     public function dispatch(AlertEventEnum $event, Project $project, string $summary, array $data = [], ?SeverityEnum $severity = null, ?string $subject = null, array $fingerprints = []): void
     {
-        $severity ??= $event->defaultSeverity();
+        $severity ??= $this->settings->alertEventSeverity($event);
         $payload = [
             'id' => (string) Str::uuid(),
             'event' => $event->value,
@@ -50,7 +54,7 @@ class AlertDispatcherService
 
         $reason = $this->suppression->reason($project, $event, $subject)
             ?? ($this->suppression->isDuplicate($project, $event, $subject, $fingerprints) ? AlertSuppressionService::DUPLICATE : null);
-        $channels = $reason === null ? $this->channels($event, $severity) : [];
+        $channels = $reason === null ? $this->channels($event, $severity, $project) : [];
 
         AlertLog::query()->create([
             'uuid' => $payload['id'],
@@ -72,26 +76,51 @@ class AlertDispatcherService
         $text = sprintf('[%s] %s · %s: %s%s%s', Str::upper($severity->value), $event->value, $project->name, $summary, PHP_EOL, $payload['url']);
 
         foreach ($channels as $channel) {
-            DeliverAlertJob::dispatch($channel, $payload, $channel === DeliverAlertJob::WEBHOOK ? '' : $text)->afterCommit();
+            $body = match (true) {
+                $channel === DeliverAlertJob::WEBHOOK => '',
+                DeliverAlertJob::emailUserId($channel) !== null => $summary,
+                default => $text,
+            };
+
+            DeliverAlertJob::dispatch($channel, $payload, $body)->afterCommit();
         }
     }
 
     /**
-     * The configured channels that take the event: the webhook every event, Slack and Telegram
-     * the chosen events at or above the minimum severity.
+     * The configured channels whose filters take the alert, then one `email:<user id>` channel
+     * per subscribed, active and verified user whose filters take it and who can see the project.
      *
      * @return list<string>
      */
-    private function channels(AlertEventEnum $event, SeverityEnum $severity): array
+    private function channels(AlertEventEnum $event, SeverityEnum $severity, Project $project): array
     {
-        $isNotified = in_array($event->value, $this->settings->notifierEventTypes(), true)
-            && $severity->rank() <= $this->settings->notifierMinimumSeverity()->rank();
-
-        return array_keys(array_filter([
+        $isConfigured = [
             DeliverAlertJob::WEBHOOK => $this->settings->webhookUrl() !== null && $this->settings->webhookSecret() !== null,
-            DeliverAlertJob::SLACK => $isNotified && $this->settings->slackWebhookUrl() !== null,
-            DeliverAlertJob::TELEGRAM => $isNotified && $this->settings->telegramBotToken() !== null && $this->settings->telegramChatId() !== null,
-        ]));
+            DeliverAlertJob::SLACK => $this->settings->slackWebhookUrl() !== null,
+            DeliverAlertJob::TELEGRAM => $this->settings->telegramBotToken() !== null && $this->settings->telegramChatId() !== null,
+        ];
+        $channels = array_keys(array_filter(
+            $isConfigured,
+            fn (bool $isReady, string $channel): bool => $isReady && $this->settings->alertChannelFilter($channel)->accepts($event, $severity, $project),
+            ARRAY_FILTER_USE_BOTH,
+        ));
+
+        // ponytail: one policy check per subscriber; fine for a self-hosted team, cache the
+        // visible project ids per user if installs get hundreds of subscribers.
+        $subscribers = User::query()
+            ->where('is_active', true)
+            ->where('has_alert_emails', true)
+            ->whereNotNull('email_verified_at')
+            ->orderBy('id')
+            ->get()
+            ->filter(fn (User $user): bool => AlertFilterData::fromStored($user->alert_email_filters, SeverityEnum::High)->accepts($event, $severity, $project)
+                && $user->can('view', $project));
+
+        foreach ($subscribers as $user) {
+            $channels[] = DeliverAlertJob::EMAIL.':'.$user->id;
+        }
+
+        return $channels;
     }
 
     /**

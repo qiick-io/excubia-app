@@ -5,11 +5,14 @@ declare(strict_types=1);
 namespace App\Jobs;
 
 use App\Actions\RecordAlertDeliveryAction;
+use App\Mail\AlertMail;
+use App\Models\User;
 use App\Services\SettingsRepositoryService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Mail;
 use RuntimeException;
 use Symfony\Component\HttpFoundation\IpUtils;
 use Throwable;
@@ -18,7 +21,8 @@ use Throwable;
  * Delivers one alert (#22) to one channel, as externa-core's outbound webhook and notifier jobs:
  * - webhook: JSON body signed with HMAC-SHA256 of `timestamp.body` (`X-Excubia-Signature`);
  * - slack: an incoming-webhook message;
- * - telegram: a Bot API sendMessage.
+ * - telegram: a Bot API sendMessage;
+ * - email:<user id>: an AlertMail to that user, in their locale (the user must still be active).
  * HTTPS only, no redirects, and hosts that resolve to private or reserved addresses are refused;
  * the connection goes to the checked address, and transport errors never quote the URL.
  * Retried 3 times with backoff; the webhook's last success and last error are kept for Settings,
@@ -33,6 +37,9 @@ class DeliverAlertJob implements ShouldQueue
     public const SLACK = 'slack';
 
     public const TELEGRAM = 'telegram';
+
+    /** Prefix of the per-user email channel, `email:<user id>`. */
+    public const EMAIL = 'email';
 
     public int $tries = 3;
 
@@ -60,6 +67,14 @@ class DeliverAlertJob implements ShouldQueue
      */
     public function handle(SettingsRepositoryService $settings): void
     {
+        $userId = self::emailUserId($this->channel);
+
+        if ($userId !== null) {
+            $this->sendMail($settings, $userId);
+
+            return;
+        }
+
         [$url, $headers, $body] = match ($this->channel) {
             self::WEBHOOK => $this->webhookRequest($settings),
             self::SLACK => [$settings->slackWebhookUrl(), [], (string) json_encode(['text' => $this->text], JSON_THROW_ON_ERROR)],
@@ -100,6 +115,32 @@ class DeliverAlertJob implements ShouldQueue
         }
 
         $this->record($settings, true, "HTTP {$response->status()}");
+    }
+
+    /**
+     * The user id of an `email:<user id>` channel, else null.
+     */
+    public static function emailUserId(string $channel): ?int
+    {
+        return preg_match('/^'.self::EMAIL.':(\d+)$/', $channel, $matches) === 1 ? (int) $matches[1] : null;
+    }
+
+    /**
+     * Mails the alert to one subscriber, synchronously inside this queued job, so the outcome
+     * can be recorded and a transport error retried.
+     */
+    private function sendMail(SettingsRepositoryService $settings, int $userId): void
+    {
+        $user = User::query()->whereKey($userId)->where('is_active', true)->first();
+
+        if ($user === null) {
+            $this->record($settings, false, 'Refused: the user is gone or disabled.');
+
+            return;
+        }
+
+        Mail::to($user)->locale($user->locale)->send(new AlertMail($this->payload, $this->text));
+        $this->record($settings, true, 'sent');
     }
 
     public function failed(Throwable $exception): void

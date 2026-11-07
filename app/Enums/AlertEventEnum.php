@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Enums;
 
 /**
- * Events sent to the outbound webhook and the Slack / Telegram notifiers (#22). A finding event
+ * Events sent to the outbound webhook, the Slack / Telegram notifiers and the email subscribers (#22). A finding event
  * takes the finding's severity; the others have the default below.
  */
 enum AlertEventEnum: string
@@ -41,6 +41,18 @@ enum AlertEventEnum: string
         return array_column(array_filter(self::cases(), fn (self $event): bool => $event !== self::Ping), 'value');
     }
 
+    /**
+     * @return list<string> the events whose severity admins can change (#22): not those that
+     *                      take it from the finding or the report (`finding.new`, `project.worsened`)
+     */
+    public static function severityEditableValues(): array
+    {
+        return array_values(array_diff(self::selectableValues(), [self::FindingNew->value, self::ProjectWorsened->value]));
+    }
+
+    /**
+     * The built-in severity; Settings → Integrations can override it (SettingsRepositoryService::alertEventSeverity()).
+     */
     public function defaultSeverity(): SeverityEnum
     {
         return match ($this) {

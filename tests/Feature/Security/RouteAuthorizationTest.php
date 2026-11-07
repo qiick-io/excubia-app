@@ -40,7 +40,7 @@ const HIDDEN_PROJECT_SLUG = 'classified-vault';
  * Account routes every signed-in user may call on their own account; a reader changing its own
  * profile is not a finding.
  */
-const SELF_SERVICE_ROUTES = ['profile.update', 'profile.destroy', 'locale.update', 'user-password.update'];
+const SELF_SERVICE_ROUTES = ['profile.update', 'profile.destroy', 'locale.update', 'user-password.update', 'profile.alerts.update', 'profile.alerts.test'];
 
 beforeEach(function () {
     $this->withoutVite();

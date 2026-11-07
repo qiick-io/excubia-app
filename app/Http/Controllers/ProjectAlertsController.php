@@ -19,7 +19,7 @@ use Inertia\Inertia;
 
 /**
  * Alert controls of the project's Alerts tab (#114): mute or unmute a rule or an issue, add or
- * remove a maintenance window. Needs the right to edit the project.
+ * remove a maintenance window. Needs `can-manage-alerts` and a project the user can see (#22).
  */
 class ProjectAlertsController extends Controller
 {
@@ -32,7 +32,7 @@ class ProjectAlertsController extends Controller
 
     public function destroyMute(Project $project, AlertMute $alertMute, UnmuteAlertAction $unmute): RedirectResponse
     {
-        Gate::authorize('update', $project);
+        Gate::authorize('manageAlerts', $project);
         abort_unless($alertMute->project_id === $project->id, 404);
 
         $unmute->execute($alertMute);
@@ -51,7 +51,7 @@ class ProjectAlertsController extends Controller
 
     public function destroyWindow(Project $project, MaintenanceWindow $maintenanceWindow, DeleteMaintenanceWindowAction $delete): RedirectResponse
     {
-        Gate::authorize('update', $project);
+        Gate::authorize('manageAlerts', $project);
         abort_unless($maintenanceWindow->project_id === $project->id, 404);
 
         $delete->execute($maintenanceWindow);

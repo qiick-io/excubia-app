@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Ai\Agents\ExcubiaAssistantAgent;
+use App\Data\AlertFilterData;
 use App\Enums\AlertEventEnum;
 use App\Enums\SeverityEnum;
 use App\Enums\ThemePresetEnum;
@@ -107,8 +108,10 @@ class SettingsRepositoryService
             'notifier_slack_webhook_url' => null,
             'notifier_telegram_bot_token' => null,
             'notifier_telegram_chat_id' => null,
-            'notifier_event_types' => null,
-            'notifier_minimum_severity' => SeverityEnum::High->value,
+            // Per channel (webhook, slack, telegram): AlertFilterData::toArray(); see alertChannelFilter().
+            'alert_channels' => null,
+            // Event → severity, overriding AlertEventEnum::defaultSeverity().
+            'alert_event_severities' => null,
             // Optional runtime alert rules (#107, #114): null / false is off.
             'alert_cache_hit_ratio_below' => null,
             'alert_delivery_failures_enabled' => false,
@@ -465,22 +468,32 @@ class SettingsRepositoryService
     }
 
     /**
-     * Events the Slack / Telegram notifiers send; every event until the setting is saved.
-     *
-     * @return list<string>
+     * The filters of one alert channel (#22). Until saved, the webhook takes every event and
+     * severity, Slack and Telegram every event from `high`, or the shared filter they had before
+     * per-channel filters (`notifier_event_types`, `notifier_minimum_severity`).
      */
-    public function notifierEventTypes(): array
+    public function alertChannelFilter(string $channel): AlertFilterData
     {
-        $value = $this->all()['notifier_event_types'];
-        $names = AlertEventEnum::selectableValues();
+        $values = $this->all();
+        $stored = is_array($values['alert_channels']) ? ($values['alert_channels'][$channel] ?? null) : null;
 
-        return is_array($value) ? array_values(array_intersect($names, $value)) : $names;
+        if ($stored === null && $channel !== 'webhook' && array_key_exists('notifier_minimum_severity', $values)) {
+            $stored = ['minimum_severity' => $values['notifier_minimum_severity'], 'event_types' => $values['notifier_event_types'] ?? null];
+        }
+
+        return AlertFilterData::fromStored($stored, $channel === 'webhook' ? SeverityEnum::Info : SeverityEnum::High);
     }
 
-    /** Alerts below this severity are not sent to Slack or Telegram. */
-    public function notifierMinimumSeverity(): SeverityEnum
+    /**
+     * The severity of an event that does not take one from a finding: the admin's choice in
+     * Settings → Integrations, else the built-in default.
+     */
+    public function alertEventSeverity(AlertEventEnum $event): SeverityEnum
     {
-        return SeverityEnum::tryFrom((string) $this->all()['notifier_minimum_severity']) ?? SeverityEnum::High;
+        $stored = $this->all()['alert_event_severities'];
+        $value = is_array($stored) && in_array($event->value, AlertEventEnum::severityEditableValues(), true) ? ($stored[$event->value] ?? null) : null;
+
+        return SeverityEnum::tryFrom((string) $value) ?? $event->defaultSeverity();
     }
 
     /** Cache hit ratio (percent) under which a store alerts, or null when the rule is off. */

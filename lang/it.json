@@ -14,5 +14,17 @@
     "Scheduler down": "Scheduler fermo",
     "You get this email because the weekly digest is on in your profile settings.": "Ricevi questa email perché il riepilogo settimanale è attivo nelle impostazioni del profilo.",
     "Finding dismissed.": "Problema ignorato.",
-    "Dismissal removed.": "Ignora rimosso."
+    "Dismissal removed.": "Ignora rimosso.",
+    "Event": "Evento",
+    "Severity": "Gravità",
+    "Critical": "Critica",
+    "High": "Alta",
+    "Medium": "Media",
+    "Low": "Bassa",
+    "Info": "Info",
+    "Open in :app": "Apri in :app",
+    "You get this email because alert emails are on in your profile settings.": "Ricevi questa email perché gli avvisi via email sono attivi nelle impostazioni del profilo.",
+    "Alert emails saved.": "Avvisi email salvati.",
+    "Test email queued. It needs a queue worker.": "Email di prova in coda. Serve un queue worker.",
+    "Verify your email address first.": "Verifica prima il tuo indirizzo email."
 }

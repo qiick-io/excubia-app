@@ -60,15 +60,39 @@ function storeAlertReport(Project $project, array $findings): void
     app(StorePushedReportAction::class)->execute($project, (string) Str::uuid(), Date::now(), alertReport($findings));
 }
 
-function configureAlertChannels(array $overrides = []): void
+/**
+ * The webhook (every event and severity) and Slack (every event from the given severity),
+ * plus any other settings.
+ *
+ * @param  array<string, mixed>  $overrides
+ * @param  list<string>|null  $slackEvents  null: every event
+ */
+function configureAlertChannels(array $overrides = [], string $slackSeverity = 'high', ?array $slackEvents = null): void
 {
     app(SettingsRepositoryService::class)->save([
         'webhook_url' => 'https://hooks.example.com/excubia',
         'webhook_secret' => str_repeat('s', 32),
         'notifier_slack_webhook_url' => 'https://hooks.slack.com/services/T/B/X',
-        'notifier_minimum_severity' => 'high',
+        'alert_channels' => ['slack' => ['minimum_severity' => $slackSeverity, 'event_types' => $slackEvents]],
         ...$overrides,
     ]);
+}
+
+/**
+ * The form fields of Settings → Integrations for the channel filters.
+ *
+ * @param  array<string, array<string, mixed>>  $overrides  channel → filter
+ * @return array<string, array<string, mixed>>
+ */
+function integrationChannels(array $overrides = []): array
+{
+    $default = ['minimum_severity' => 'high', 'event_types' => ['finding.new']];
+
+    return ['channels' => [
+        'webhook' => $overrides['webhook'] ?? ['minimum_severity' => 'info', 'event_types' => ['finding.new']],
+        'slack' => $overrides['slack'] ?? $default,
+        'telegram' => $overrides['telegram'] ?? $default,
+    ]];
 }
 
 it('saves the integrations settings, keeps secrets write-only and validates them', function () {
@@ -80,8 +104,7 @@ it('saves the integrations settings, keeps secrets write-only and validates them
         'notifier_slack_webhook_url' => 'https://hooks.slack.com/services/T/B/X',
         'notifier_telegram_bot_token' => '123456:ABC-def_1',
         'notifier_telegram_chat_id' => '-1001234567890',
-        'notifier_event_types' => ['finding.new', 'project.stale'],
-        'notifier_minimum_severity' => 'medium',
+        ...integrationChannels(['slack' => ['minimum_severity' => 'medium', 'event_types' => ['finding.new', 'project.stale']]]),
     ])->assertRedirect(route('project.integrations.edit'));
 
     $settings = app(SettingsRepositoryService::class);
@@ -91,7 +114,7 @@ it('saves the integrations settings, keeps secrets write-only and validates them
         // The Slack incoming-webhook URL is a bearer secret (#51): encrypted at rest.
         ->and($settings->slackWebhookUrl())->toBe('https://hooks.slack.com/services/T/B/X')
         ->and(Setting::query()->where('key', 'notifier_slack_webhook_url')->value('value'))->not->toContain('hooks.slack.com')
-        ->and($settings->notifierEventTypes())->toBe(['finding.new', 'project.stale']);
+        ->and($settings->alertChannelFilter('slack')->eventTypes)->toBe(['finding.new', 'project.stale']);
 
     $this->actingAs($manager)->get(route('project.integrations.edit'))
         ->assertInertia(fn (Assert $page) => $page->component('settings/project/integrations')
@@ -101,27 +124,27 @@ it('saves the integrations settings, keeps secrets write-only and validates them
             ->missing('project.notifier_telegram_bot_token')
             ->where('project.has_notifier_slack_webhook_url', true)
             ->missing('project.notifier_slack_webhook_url')
-            ->where('project.notifier_minimum_severity', 'medium'));
+            ->where('project.channels.slack.minimum_severity', 'medium')
+            ->where('project.channels.webhook.minimum_severity', 'info'));
 
     // A save with empty secrets keeps them; no event box means no event.
     $this->actingAs($manager)->put(route('project.integrations.update'), [
         'webhook_url' => 'https://hooks.example.com/excubia',
-        'notifier_minimum_severity' => 'high',
+        ...integrationChannels(['slack' => ['minimum_severity' => 'high']]),
     ]);
 
     expect(app(SettingsRepositoryService::class)->webhookSecret())->toBe(str_repeat('a', 32))
-        ->and(app(SettingsRepositoryService::class)->notifierEventTypes())->toBe([]);
+        ->and(app(SettingsRepositoryService::class)->alertChannelFilter('slack')->eventTypes)->toBe([]);
 
     $this->actingAs($manager)->put(route('project.integrations.update'), [
         'webhook_url' => 'http://hooks.example.com',
         'webhook_secret' => 'short',
         'notifier_slack_webhook_url' => 'https://example.com/slack',
         'notifier_telegram_bot_token' => 'MyBot',
-        'notifier_event_types' => ['users.deleted'],
-        'notifier_minimum_severity' => 'loud',
-    ])->assertSessionHasErrors(['webhook_url', 'webhook_secret', 'notifier_slack_webhook_url', 'notifier_telegram_bot_token', 'notifier_event_types.0', 'notifier_minimum_severity']);
+        ...integrationChannels(['slack' => ['minimum_severity' => 'loud', 'event_types' => ['users.deleted'], 'project_ids' => [999]]]),
+    ])->assertSessionHasErrors(['webhook_url', 'webhook_secret', 'notifier_slack_webhook_url', 'notifier_telegram_bot_token', 'channels.slack.event_types.0', 'channels.slack.minimum_severity', 'channels.slack.project_ids.0']);
 
-    $this->actingAs(User::factory()->create()->assignRole(RoleEnum::Admin->value))
+    $this->actingAs(User::factory()->create()->assignRole(RoleEnum::Reader->value))
         ->get(route('project.integrations.edit'))->assertForbidden();
 });
 
@@ -134,7 +157,7 @@ it('keeps using a Slack URL saved in plain text before it was encrypted (#51)', 
 
 it('raises new, resolved and worsened alerts by comparing reports', function () {
     Queue::fake();
-    configureAlertChannels(['notifier_minimum_severity' => 'info']);
+    configureAlertChannels(slackSeverity: 'info');
     $project = Project::factory()->create();
 
     storeAlertReport($project, [['old/package', 'low']]);
@@ -153,7 +176,7 @@ it('raises new, resolved and worsened alerts by comparing reports', function () 
 
 it('sends Slack only the chosen events at or above the minimum severity', function () {
     Queue::fake();
-    configureAlertChannels(['notifier_event_types' => ['finding.new'], 'notifier_minimum_severity' => 'high']);
+    configureAlertChannels(slackSeverity: 'high', slackEvents: ['finding.new']);
     $project = Project::factory()->create();
 
     storeAlertReport($project, []);

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Settings\AiSettingsController;
+use App\Http\Controllers\Settings\AlertSubscriptionController;
 use App\Http\Controllers\Settings\AppearanceSettingsController;
 use App\Http\Controllers\Settings\AppearanceSidebarSettingsController;
 use App\Http\Controllers\Settings\LocaleController;
@@ -34,6 +35,22 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->middleware('throttle:6,1')
         ->name('user-password.update');
 
+    // Alert channels and default severities (#22), behind `can-manage-alerts` (SettingPolicy).
+    Route::middleware('can:manageAlerts,'.Setting::class)->group(function () {
+        Route::get('settings/project/integrations', [ProjectIntegrationsSettingsController::class, 'edit'])->name('project.integrations.edit');
+        Route::put('settings/project/integrations', [ProjectIntegrationsSettingsController::class, 'update'])->name('project.integrations.update');
+        Route::post('settings/project/integrations/test/{channel}', [ProjectIntegrationsSettingsController::class, 'sendTest'])
+            ->whereIn('channel', ['webhook', 'slack', 'telegram'])
+            ->middleware('throttle:10,1')
+            ->name('project.integrations.test');
+    });
+
+    // Alert emails of the signed-in user (#22): their own filters and a test mail to themselves.
+    Route::put('settings/profile/alerts', [AlertSubscriptionController::class, 'update'])->name('profile.alerts.update');
+    Route::post('settings/profile/alerts/test', [AlertSubscriptionController::class, 'sendTest'])
+        ->middleware('throttle:10,1')
+        ->name('profile.alerts.test');
+
     // Project settings, as in externa-core, behind `can-manage-project-settings` (SettingPolicy).
     Route::middleware('can:update,'.Setting::class)->group(function () {
         Route::get('settings/project', [ProjectSettingsController::class, 'edit'])->name('project.edit');
@@ -50,13 +67,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::get('settings/appearance/sidebar', [AppearanceSidebarSettingsController::class, 'edit'])->name('appearance.sidebar.edit');
         Route::put('settings/appearance/sidebar', [AppearanceSidebarSettingsController::class, 'update'])->name('appearance.sidebar.update');
-
-        Route::get('settings/project/integrations', [ProjectIntegrationsSettingsController::class, 'edit'])->name('project.integrations.edit');
-        Route::put('settings/project/integrations', [ProjectIntegrationsSettingsController::class, 'update'])->name('project.integrations.update');
-        Route::post('settings/project/integrations/test/{channel}', [ProjectIntegrationsSettingsController::class, 'sendTest'])
-            ->whereIn('channel', ['webhook', 'slack', 'telegram'])
-            ->middleware('throttle:10,1')
-            ->name('project.integrations.test');
 
         Route::get('settings/ai', [AiSettingsController::class, 'edit'])->name('ai-settings.edit');
         Route::put('settings/ai', [AiSettingsController::class, 'update'])->name('ai-settings.update');
