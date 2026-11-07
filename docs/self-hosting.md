@@ -169,13 +169,18 @@ A JSON `POST` to the HTTPS URL, retried 3 times with backoff (10, 30, 60 seconds
 
 ```json
 {
-  "id": "4f8e…",
-  "event": "finding.new",
-  "severity": "high",
-  "project": { "name": "Shop", "slug": "shop" },
-  "occurredAt": "2026-11-07T12:00:00Z",
-  "url": "https://excubia.example.com/projects/shop",
-  "data": { "checkId": "composer-audit", "subject": "laravel/framework", "severity": "high", "message": "…" }
+    "id": "4f8e…",
+    "event": "finding.new",
+    "severity": "high",
+    "project": { "name": "Shop", "slug": "shop" },
+    "occurredAt": "2026-11-07T12:00:00Z",
+    "url": "https://excubia.example.com/projects/shop",
+    "data": {
+        "checkId": "composer-audit",
+        "subject": "laravel/framework",
+        "severity": "high",
+        "message": "…"
+    }
 }
 ```
 

@@ -156,7 +156,7 @@ it('saves the per-channel filters and the default severities, and applies them',
         'event_severities' => ['finding.new' => 'low', 'project.stale' => 'low'],
     ])->assertSessionHasNoErrors();
 
-    expect(app(SettingsRepositoryService::class)->all()['alert_event_severities'])->toBe(['project.stale' => 'low']);
+    expect(app(SettingsRepositoryService::class)->all()['alert_event_severities'])->toEqual(['project.stale' => 'low']);
 });
 
 it('lets a user subscribe to alert emails with their own filters, limited to the projects they can see', function () {
@@ -181,7 +181,7 @@ it('lets a user subscribe to alert emails with their own filters, limited to the
     ])->assertRedirect(route('profile.edit'));
 
     expect($reader->fresh()->has_alert_emails)->toBeTrue()
-        ->and($reader->fresh()->alert_email_filters)->toBe(['minimum_severity' => 'medium', 'event_types' => ['project.stale'], 'project_ids' => [$public->id]]);
+        ->and($reader->fresh()->alert_email_filters)->toEqual(['minimum_severity' => 'medium', 'event_types' => ['project.stale'], 'project_ids' => [$public->id]]);
 
     // Users who cannot see projects have no subscription.
     Role::create(['name' => 'nobody']);
@@ -228,7 +228,7 @@ it('mails the alert in the user\'s locale and records the delivery per user', fu
 
     $log = AlertLog::query()->sole();
     expect($log->status)->toBe(AlertLog::SENT)
-        ->and($log->deliveries)->toBe(['email:'.$italian->id => AlertLog::SENT, 'email:'.$german->id => AlertLog::SENT]);
+        ->and($log->deliveries)->toEqual(['email:'.$italian->id => AlertLog::SENT, 'email:'.$german->id => AlertLog::SENT]);
 
     // The rendered mail is translated and carries no user data.
     app()->setLocale('it');
