@@ -447,7 +447,7 @@
             "minimumSeverity": "Mindestschweregrad",
             "minimumSeverityHint": "Warnungen unter diesem Schweregrad werden hier nicht gesendet.",
             "slackUrl": "Slack-Incoming-Webhook-URL",
-            "slackUrlHint": "https://hooks.slack.com/services/… Leer lassen zum Deaktivieren.",
+            "slackUrlHint": "https://hooks.slack.com/services/… Verschlüsselt gespeichert; leer lassen, um sie zu behalten.",
             "sendTestSlack": "Slack-Test senden",
             "sendTestTelegram": "Telegram-Test senden",
             "sendTestNotifierHint": "Erst speichern. Benötigt einen Queue-Worker.",

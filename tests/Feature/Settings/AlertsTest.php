@@ -6,9 +6,11 @@ use App\Actions\StorePushedReportAction;
 use App\Enums\RoleEnum;
 use App\Jobs\DeliverAlertJob;
 use App\Models\Project;
+use App\Models\Setting;
 use App\Models\User;
 use App\Services\SettingsRepositoryService;
 use Database\Seeders\PermissionSeeder;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
@@ -109,6 +111,9 @@ it('saves the integrations settings, keeps secrets write-only and validates them
 
     expect($settings->webhookSecret())->toBe(str_repeat('a', 32))
         ->and($settings->telegramBotToken())->toBe('123456:ABC-def_1')
+        // The Slack incoming-webhook URL is a bearer secret (#51): encrypted at rest.
+        ->and($settings->slackWebhookUrl())->toBe('https://hooks.slack.com/services/T/B/X')
+        ->and(Setting::query()->where('key', 'notifier_slack_webhook_url')->value('value'))->not->toContain('hooks.slack.com')
         ->and($settings->alertChannelFilter('slack')->eventTypes)->toBe(['finding.new', 'project.stale']);
 
     $this->actingAs($manager)->get(route('project.integrations.edit'))
@@ -117,6 +122,8 @@ it('saves the integrations settings, keeps secrets write-only and validates them
             ->where('project.has_notifier_telegram_bot_token', true)
             ->missing('project.webhook_secret')
             ->missing('project.notifier_telegram_bot_token')
+            ->where('project.has_notifier_slack_webhook_url', true)
+            ->missing('project.notifier_slack_webhook_url')
             ->where('project.channels.slack.minimum_severity', 'medium')
             ->where('project.channels.webhook.minimum_severity', 'info'));
 
@@ -139,6 +146,13 @@ it('saves the integrations settings, keeps secrets write-only and validates them
 
     $this->actingAs(User::factory()->create()->assignRole(RoleEnum::Reader->value))
         ->get(route('project.integrations.edit'))->assertForbidden();
+});
+
+it('keeps using a Slack URL saved in plain text before it was encrypted (#51)', function () {
+    app(SettingsRepositoryService::class)->setMany(['notifier_slack_webhook_url' => 'https://hooks.slack.com/services/T/B/OLD']);
+
+    expect(app(SettingsRepositoryService::class)->slackWebhookUrl())->toBe('https://hooks.slack.com/services/T/B/OLD')
+        ->and(app(SettingsRepositoryService::class)->forEdit()['has_notifier_slack_webhook_url'])->toBeTrue();
 });
 
 it('raises new, resolved and worsened alerts by comparing reports', function () {
@@ -202,6 +216,39 @@ it('refuses deliveries to private addresses', function () {
 
     Http::assertNothingSent();
     expect(app(SettingsRepositoryService::class)->all()['webhook_last_error']['message'])->toContain('Refused');
+});
+
+it('refuses IPv6 loopback, private and IPv4-mapped literals (#51)', function (string $url) {
+    configureAlertChannels(['webhook_url' => $url]);
+    Http::fake();
+
+    (new DeliverAlertJob(DeliverAlertJob::WEBHOOK, ['id' => (string) Str::uuid(), 'event' => 'ping']))->handle(app(SettingsRepositoryService::class));
+
+    Http::assertNothingSent();
+    expect(app(SettingsRepositoryService::class)->all()['webhook_last_error']['message'])->toContain('Refused');
+})->with([
+    'loopback' => 'https://[::1]/hook',
+    'unique local' => 'https://[fd00::1]/hook',
+    'link local' => 'https://[fe80::1]/hook',
+    'mapped loopback' => 'https://[::ffff:127.0.0.1]/hook',
+    'metadata' => 'https://169.254.169.254/latest',
+    'credentials' => 'https://user:pass@93.184.216.34/hook',
+]);
+
+it('never quotes the delivery URL in a transport error, so channel secrets stay out of failed jobs (#51)', function () {
+    configureAlertChannels(['webhook_url' => 'https://93.184.216.34/hook?key=url-secret-value']);
+    Http::fake(fn () => throw new ConnectionException('cURL error 28: timed out for https://93.184.216.34/hook?key=url-secret-value'));
+    $job = new DeliverAlertJob(DeliverAlertJob::WEBHOOK, ['id' => (string) Str::uuid(), 'event' => 'ping']);
+
+    try {
+        $job->handle(app(SettingsRepositoryService::class));
+        $this->fail('The delivery should fail.');
+    } catch (RuntimeException $exception) {
+        expect($exception->getMessage())->toBe('Alert delivery to webhook failed: ConnectionException');
+        $job->failed($exception);
+    }
+
+    expect(json_encode(app(SettingsRepositoryService::class)->all()['webhook_last_error']))->not->toContain('url-secret-value');
 });
 
 it('alerts once for a stale project and again when it reports', function () {

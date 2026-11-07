@@ -33,7 +33,7 @@ class ProjectIntegrationsSettingsController extends Controller
     public function edit(Request $request): Response
     {
         $values = $this->settings->forEditOnly([
-            'webhook_url', 'has_webhook_secret', 'notifier_slack_webhook_url', 'has_notifier_telegram_bot_token',
+            'webhook_url', 'has_webhook_secret', 'has_notifier_slack_webhook_url', 'has_notifier_telegram_bot_token',
             'notifier_telegram_chat_id', 'webhook_last_success', 'webhook_last_error',
         ]);
 

@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Enums\PermissionEnum;
+use App\Models\Project;
 use App\Models\User;
 use App\Policies\ActivityPolicy;
 use App\Policies\JobPolicy;
@@ -21,6 +22,7 @@ use Illuminate\Auth\Events\Logout;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Http\Request;
+use Illuminate\Mail\Markdown;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
@@ -78,15 +80,18 @@ class AppServiceProvider extends ServiceProvider
     }
 
     /**
-     * `excubia-push`: pushes per minute for one project token (by its hash), or per IP without one.
+     * `excubia-push`: pushes per minute for one project, or per IP for a missing or unknown token.
+     * Keying on the token itself would give every made-up token its own bucket (#51), so a client
+     * could send unlimited requests by changing the token on each one.
      */
     protected function configureRateLimiting(): void
     {
         RateLimiter::for('excubia-push', function (Request $request): Limit {
             $token = $request->bearerToken();
+            $projectId = $token === null ? null : Project::query()->where('push_token_hash', hash('sha256', $token))->value('id');
 
             return Limit::perMinute(config('excubia.push_requests_per_minute'))
-                ->by($token === null ? 'ip:'.$request->ip() : 'token:'.hash('sha256', $token));
+                ->by($projectId === null ? 'ip:'.$request->ip() : 'project:'.$projectId);
         });
     }
 
@@ -175,5 +180,9 @@ class AppServiceProvider extends ServiceProvider
         );
 
         Password::defaults(fn (): Password => app(SettingsRepositoryService::class)->passwordRule());
+
+        // Values echoed into Markdown mails (the weekly digest) come from pushed reports: escape
+        // their `[` and `<`, so a package or task name cannot plant a link in the email (#51).
+        Markdown::withSecuredEncoding();
     }
 }

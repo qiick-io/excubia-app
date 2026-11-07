@@ -39,6 +39,8 @@ class StorePushedReportAction
             return $existing;
         }
 
+        $report = $this->withSafeEvidenceUrls($report);
+
         try {
             return DB::transaction(function () use ($project, $batchId, $sentAt, $report): HealthReport {
                 $receivedAt = Date::now();
@@ -111,5 +113,27 @@ class StorePushedReportAction
             'low_count' => $counts['low'],
             'info_count' => $counts['info'],
         ];
+    }
+
+    /**
+     * Drops an `evidenceUrl` that is not an http(s) URL: the pages render it as a link, so a
+     * `javascript:` or `data:` value from a push would run in the viewer's session (#51).
+     *
+     * @param  array<string, mixed>  $report
+     * @return array<string, mixed>
+     */
+    private function withSafeEvidenceUrls(array $report): array
+    {
+        foreach ((array) ($report['checks'] ?? []) as $checkIndex => $check) {
+            foreach ((array) ($check['findings'] ?? []) as $findingIndex => $finding) {
+                $url = $finding['evidenceUrl'] ?? null;
+
+                if (is_string($url) && preg_match('#^https?://#i', $url) !== 1) {
+                    $report['checks'][$checkIndex]['findings'][$findingIndex]['evidenceUrl'] = null;
+                }
+            }
+        }
+
+        return $report;
     }
 }

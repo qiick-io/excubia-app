@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use RuntimeException;
+use Symfony\Component\HttpFoundation\IpUtils;
 use Throwable;
 
 /**
@@ -22,7 +23,8 @@ use Throwable;
  * - slack: an incoming-webhook message;
  * - telegram: a Bot API sendMessage;
  * - email:<user id>: an AlertMail to that user, in their locale (the user must still be active).
- * HTTPS only, no redirects, and hosts that resolve to private or reserved addresses are refused.
+ * HTTPS only, no redirects, and hosts that resolve to private or reserved addresses are refused;
+ * the connection goes to the checked address, and transport errors never quote the URL.
  * Retried 3 times with backoff; the webhook's last success and last error are kept for Settings,
  * and every channel's outcome goes on the alert's history row (#114).
  */
@@ -84,18 +86,29 @@ class DeliverAlertJob implements ShouldQueue
             default => [null, [], ''],
         };
 
-        if ($url === null || ! $this->isSafeUrl($url)) {
+        $address = $url === null ? null : $this->publicAddress($url);
+
+        if ($url === null || $address === null) {
             $this->record($settings, false, 'Refused: the URL is missing, not HTTPS or points to a private address.');
 
             return;
         }
 
-        $response = Http::timeout(5)
-            ->connectTimeout(3)
-            ->withoutRedirecting()
-            ->withHeaders(['User-Agent' => 'Excubia-Alerts/1.0', ...$headers])
-            ->withBody($body, 'application/json')
-            ->post($url);
+        try {
+            $response = Http::timeout(5)
+                ->connectTimeout(3)
+                ->withoutRedirecting()
+                // Connects to the address checked above, so a second DNS answer cannot point the
+                // request at a private host (DNS rebinding, #51).
+                ->withOptions(['curl' => [CURLOPT_RESOLVE => [$this->pinnedResolve($url, $address)]]])
+                ->withHeaders(['User-Agent' => 'Excubia-Alerts/1.0', ...$headers])
+                ->withBody($body, 'application/json')
+                ->post($url);
+        } catch (Throwable $exception) {
+            // Transport errors quote the URL, which holds the Slack webhook secret or the
+            // Telegram bot token: never let it reach failed_jobs, the logs or Settings (#51).
+            throw new RuntimeException("Alert delivery to {$this->channel} failed: ".class_basename($exception));
+        }
 
         if (! $response->successful()) {
             throw new RuntimeException("Alert delivery to {$this->channel} failed: HTTP {$response->status()}");
@@ -157,23 +170,39 @@ class DeliverAlertJob implements ShouldQueue
     }
 
     /**
-     * HTTPS, and every resolved address of the host is public (no loopback, private or
-     * reserved range).
+     * The address to connect to: the URL is HTTPS and every IPv4 and IPv6 address of its host is
+     * public (no loopback, private, link-local, mapped or reserved range). Null when refused, also
+     * when the host does not resolve, so an unresolvable or IPv6-only name is never let through
+     * unchecked (#51).
      */
-    private function isSafeUrl(string $url): bool
+    private function publicAddress(string $url): ?string
     {
         $parts = parse_url($url);
 
-        if (($parts['scheme'] ?? null) !== 'https' || ! is_string($parts['host'] ?? null)) {
-            return false;
+        if (($parts['scheme'] ?? null) !== 'https' || ! is_string($parts['host'] ?? null) || isset($parts['user']) || isset($parts['pass'])) {
+            return null;
         }
 
-        // A host that does not resolve cannot be reached either; the connection fails on its own.
-        $addresses = filter_var($parts['host'], FILTER_VALIDATE_IP) !== false ? [$parts['host']] : (gethostbynamel($parts['host']) ?: []);
+        $host = trim($parts['host'], '[]');
+        $addresses = filter_var($host, FILTER_VALIDATE_IP) !== false ? [$host] : [
+            ...(gethostbynamel($host) ?: []),
+            ...array_column(@dns_get_record($host, DNS_AAAA) ?: [], 'ipv6'),
+        ];
+        $isPublic = fn (string $address): bool => ! IpUtils::isPrivateIp($address)
+            && filter_var($address, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) !== false;
 
-        return collect($addresses)->every(
-            fn (string $address): bool => filter_var($address, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) !== false,
-        );
+        return $addresses !== [] && collect($addresses)->every($isPublic) ? $addresses[0] : null;
+    }
+
+    /**
+     * The `CURLOPT_RESOLVE` entry that maps the URL's host and port to the checked address.
+     */
+    private function pinnedResolve(string $url, string $address): string
+    {
+        $parts = parse_url($url);
+        $host = trim((string) ($parts['host'] ?? ''), '[]');
+
+        return sprintf('%s:%d:%s', $host, (int) ($parts['port'] ?? 443), str_contains($address, ':') ? "[{$address}]" : $address);
     }
 
     /**

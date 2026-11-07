@@ -200,6 +200,25 @@ it('rate limits pushes per token', function () {
     pushReport($token, pushEnvelope())->assertTooManyRequests();
 });
 
+it('drops evidence URLs that are not http(s), so a push cannot plant a script link (#51)', function () {
+    [$project, $token] = pushingProject();
+    $envelope = pushEnvelope();
+    $envelope['report']['checks'][0]['findings'][0]['evidenceUrl'] = 'javascript:alert(document.cookie)';
+
+    pushReport($token, $envelope)->assertCreated();
+
+    expect(HealthReport::query()->sole()->report['checks'][0]['findings'][0]['evidenceUrl'])->toBeNull()
+        ->and(json_encode($project->findings()->pluck('finding')->all()))->not->toContain('javascript:');
+});
+
+it('rate limits unknown tokens per IP, so a new made-up token per request does not bypass the limit (#51)', function () {
+    config(['excubia.push_requests_per_minute' => 2]);
+
+    pushReport('excubia_'.Str::random(40), pushEnvelope())->assertUnauthorized();
+    pushReport('excubia_'.Str::random(40), pushEnvelope())->assertUnauthorized();
+    pushReport('excubia_'.Str::random(40), pushEnvelope())->assertTooManyRequests();
+});
+
 it('stores the release and the deploy time of a report (#106), and reports without them as before', function () {
     [$project, $token] = pushingProject();
     $deploy = pushEnvelope();

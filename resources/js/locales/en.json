@@ -447,7 +447,7 @@
             "minimumSeverity": "Minimum severity",
             "minimumSeverityHint": "Alerts below this severity are not sent here.",
             "slackUrl": "Slack incoming webhook URL",
-            "slackUrlHint": "https://hooks.slack.com/services/… Leave empty to disable.",
+            "slackUrlHint": "https://hooks.slack.com/services/… Stored encrypted; leave blank to keep it.",
             "sendTestSlack": "Send Slack test",
             "sendTestTelegram": "Send Telegram test",
             "sendTestNotifierHint": "Save first. Requires a queue worker.",

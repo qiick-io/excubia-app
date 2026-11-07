@@ -447,7 +447,7 @@
             "minimumSeverity": "Gravità minima",
             "minimumSeverityHint": "Gli avvisi sotto questa gravità non vengono inviati qui.",
             "slackUrl": "URL incoming webhook di Slack",
-            "slackUrlHint": "https://hooks.slack.com/services/… Lascia vuoto per disattivare.",
+            "slackUrlHint": "https://hooks.slack.com/services/… Salvato cifrato; lascia vuoto per mantenerlo.",
             "sendTestSlack": "Test Slack",
             "sendTestTelegram": "Test Telegram",
             "sendTestNotifierHint": "Salva prima. Serve un queue worker.",
