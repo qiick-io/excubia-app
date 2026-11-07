@@ -109,4 +109,33 @@ enum RuntimeTypeEnum: string
             default => [],
         };
     }
+
+    /**
+     * Merges two entries' type-specific metrics by the rules of metrics(): `sum` adds up, `max`
+     * keeps the larger number, both null only when neither side has a number; `or` is true when
+     * either side is true.
+     *
+     * @param  array<string, int|float|bool|null>  $left
+     * @param  array<string, int|float|bool|null>  $right
+     * @return array<string, int|float|bool|null>
+     */
+    public function mergeMetrics(array $left, array $right): array
+    {
+        $merged = [];
+
+        foreach ($this->metrics() as $metric => $merge) {
+            $first = $left[$metric] ?? null;
+            $second = $right[$metric] ?? null;
+            $numbers = array_values(array_filter([$first, $second], fn (mixed $value): bool => is_int($value) || is_float($value)));
+
+            $merged[$metric] = match (true) {
+                $merge === 'or' => (bool) $first || (bool) $second,
+                $numbers === [] => null,
+                $merge === 'sum' => array_sum($numbers),
+                default => max($numbers),
+            };
+        }
+
+        return $merged;
+    }
 }
