@@ -11,7 +11,9 @@ use Illuminate\Support\Facades\Schema;
  * makes a repeated runtime or exceptions push idempotent. Aggregates are additive per type,
  * minute bucket, sample rate and dimensions; exception groups are additive per fingerprint
  * and environment, and `exception_occurrences` counts each group's occurrences per minute
- * (#113) for its chart.
+ * (#113) for its chart. `runtime_hourly_rollups` sums the aggregates per project, type, hour and
+ * sample rate at ingest (#137), so the dashboard totals read one row per hour, not one per minute
+ * and series.
  */
 return new class extends Migration
 {
@@ -52,6 +54,20 @@ return new class extends Migration
             // Covers the per-bucket sums of the charts and the dashboard (#113): MySQL and
             // PostgreSQL read them from the index without visiting the rows.
             $table->index(['project_id', 'type', 'bucket', 'sample_rate', 'count', 'error_count'], 'runtime_aggregates_buckets');
+        });
+
+        Schema::create('runtime_hourly_rollups', function (Blueprint $table): void {
+            $table->id();
+            $table->foreignId('project_id')->constrained()->cascadeOnDelete();
+            $table->string('type', 16);
+            // The start of the hour (UTC).
+            $table->timestamp('bucket');
+            $table->decimal('sample_rate', 5, 4);
+            $table->unsignedBigInteger('count');
+            $table->unsignedBigInteger('error_count');
+            $table->double('total_ms')->nullable();
+
+            $table->unique(['project_id', 'type', 'bucket', 'sample_rate'], 'runtime_hourly_rollups_identity');
         });
 
         Schema::create('exception_groups', function (Blueprint $table): void {
@@ -97,6 +113,7 @@ return new class extends Migration
     {
         Schema::dropIfExists('exception_occurrences');
         Schema::dropIfExists('exception_groups');
+        Schema::dropIfExists('runtime_hourly_rollups');
         Schema::dropIfExists('runtime_aggregates');
         Schema::dropIfExists('pushed_batches');
     }

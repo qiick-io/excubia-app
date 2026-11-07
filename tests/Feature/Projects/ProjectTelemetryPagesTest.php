@@ -141,6 +141,8 @@ it('adds runtime and open exceptions to the dashboard for the scoped projects', 
     runtimeRow($shop, 'request', ['route' => 'home', 'method' => 'GET', 'statusClass' => '2xx'], ['count' => 40, 'bucket' => '2026-10-15 10:00:00']);
     exceptionRow($shop);
     exceptionRow($shop, ['fingerprint' => str_repeat('c', 64), 'status' => 'ignored']);
+    // The rows are written directly, so their hourly rollups (#137) come from the backfill.
+    $this->artisan('excubia:backfill-runtime-rollups')->assertSuccessful();
 
     $this->actingAs(telemetryViewer())->get(route('dashboard'))
         ->assertInertia(fn (Assert $page) => $page
