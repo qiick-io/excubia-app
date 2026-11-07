@@ -19,6 +19,7 @@ use App\Services\FixSuggestionService;
 use App\Services\ProjectAlertsService;
 use App\Services\ProjectRuntimeService;
 use App\Services\ReportFindingsService;
+use App\Services\ReportHealthService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -26,9 +27,9 @@ use Inertia\Inertia;
 use Inertia\Response;
 
 /**
- * Project page (`/projects/{slug}`): the findings and upgrade plan of the latest report, and
- * the summaries of the reports kept in the history. The system project (#70) can be refreshed
- * from here.
+ * Project page (`/projects/{slug}`): the findings, health summary, licenses and upgrade plan of
+ * the latest report, and the summaries of the reports kept in the history. The system project
+ * (#70) can be refreshed from here.
  */
 class ProjectReportController extends Controller
 {
@@ -37,9 +38,9 @@ class ProjectReportController extends Controller
      *
      * @var list<string>
      */
-    public const VIEWS = ['findings', 'runtime', 'exceptions', 'schedule', 'alerts', 'plan', 'history'];
+    public const VIEWS = ['findings', 'licenses', 'runtime', 'exceptions', 'schedule', 'alerts', 'plan', 'history'];
 
-    public function show(Request $request, Project $project, ReportFindingsService $findings, FixSuggestionService $fixes, ProjectRuntimeService $runtime, ?string $view = null): Response|RedirectResponse
+    public function show(Request $request, Project $project, ReportFindingsService $findings, FixSuggestionService $fixes, ProjectRuntimeService $runtime, ReportHealthService $health, ?string $view = null): Response|RedirectResponse
     {
         Gate::authorize('view', $project);
 
@@ -66,6 +67,9 @@ class ProjectReportController extends Controller
             'canRefreshReport' => (bool) $request->user()?->can('refreshReport', $project),
             'report' => $project->latestReport?->report,
             'findingFixes' => (object) $findingFixes,
+            // The issues in page order with their check group, and the health summary (#108, #109).
+            'issues' => $project->latestReport === null ? [] : $findings->prioritized($project->latestReport),
+            'health' => $project->latestReport === null ? null : $health->summary($project->latestReport->report),
             'runtime' => $runtime->summary($project),
             // ponytail: the 100 most relevant groups (open first, then the latest); paginate if
             // a project keeps more.

@@ -7,6 +7,7 @@ namespace App\Http\Resources;
 use App\Enums\SeverityEnum;
 use App\Models\HealthReport;
 use App\Services\ReportFindingsService;
+use App\Services\ReportHealthService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -47,6 +48,8 @@ class HealthReportResource extends JsonResource
             'runtime' => $this->runtime($report),
             'checks' => $this->checkCounts($report),
             'top_finding' => $this->topFinding($report),
+            // Worst status of the infrastructure checks, for the fleet column (#109); null when none ran.
+            'infrastructure' => app(ReportHealthService::class)->infrastructureStatus($report->report),
         ];
     }
 
