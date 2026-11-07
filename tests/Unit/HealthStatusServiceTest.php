@@ -43,3 +43,29 @@ it('debounces failure and recovery', function (array $readings, bool $isFailing,
     'no readings at all' => [[[], []], true, null],
     'healthy and not failing' => [[['pass', 'pass']], false, null],
 ]);
+
+it('calls a server stale only when every check it sent is stale', function () {
+    $server = fn (string $name, string $lastSampleAt, bool $isStale): array => [
+        'server' => $name, 'status' => 'pass', 'severity' => 'info', 'findingCount' => 0, 'fingerprints' => [],
+        'lastSampleAt' => $lastSampleAt, 'isStale' => $isStale, 'readings' => ['pass'],
+    ];
+    $check = fn (string $checkId, array $servers): array => [
+        'checkId' => $checkId, 'status' => 'pass', 'severity' => 'info', 'findingCount' => 0, 'fingerprints' => [], 'lastSampleAt' => '', 'servers' => $servers,
+    ];
+
+    expect((new HealthStatusService)->staleServers([
+        // web-1 stopped one check only; worker-1 stopped everything.
+        $check('laravel-cache', [$server('web-1', '2026-11-07T09:40:00Z', true), $server('worker-1', '2026-11-07T09:50:00Z', true)]),
+        $check('laravel-database', [$server('web-1', '2026-11-07T10:00:00Z', false), $server('worker-1', '2026-11-07T09:51:00Z', true)]),
+    ]))->toBe(['worker-1' => '2026-11-07T09:51:00Z']);
+});
+
+it('collects the sorted fingerprints of the failing servers only', function () {
+    $server = fn (string $status, array $fingerprints): array => [
+        'server' => 'web-1', 'status' => $status, 'severity' => 'info', 'findingCount' => count($fingerprints), 'fingerprints' => $fingerprints,
+        'lastSampleAt' => '2026-11-07T10:00:00Z', 'isStale' => false, 'readings' => [$status],
+    ];
+
+    expect((new HealthStatusService)->failingFingerprints([$server('fail', ['c', 'a']), $server('warn', ['w']), $server('fail', ['a', 'b'])]))
+        ->toBe(['a', 'b', 'c']);
+});

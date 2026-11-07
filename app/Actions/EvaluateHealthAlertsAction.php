@@ -11,14 +11,21 @@ use App\Models\Project;
 use App\Services\AlertDispatcherService;
 use App\Services\HealthStatusService;
 use App\Services\ReportFindingsService;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
 /**
  * Sends `health.failed` and `health.recovered` (#115) after a runtime batch with health samples,
- * as HealthStatusService::transition() says. The check's last health alert in the history is its
- * state (suppressed alerts count too, so a mute or a maintenance window does not re-alert later),
- * and the subject is the check id, so "mute this issue" mutes one check. The project row is
- * locked first, so two servers pushing at once cannot both send the same alert.
+ * and every minute from excubia:evaluate-schedules, as HealthStatusService::transition() says
+ * for the servers that are not stale. The check's last health alert in the history is its state
+ * (suppressed alerts count too, so a mute or a maintenance window does not re-alert later), and
+ * the subject is the check id, so "mute this issue" mutes one check. While a check fails, a new
+ * set of failing fingerprints alerts `health.failed` again (#143). A server silent on every
+ * check for STALE_MINUTES alerts `health.stale` once per silence, its name as the subject. The
+ * project row is locked first, so two servers pushing at once cannot both send the same alert.
+ *
+ * ponytail: a re-alert follows the latest reading, without the debounce of the first failure;
+ * debounce it like transition() if flapping findings make it noisy.
  */
 class EvaluateHealthAlertsAction
 {
@@ -28,49 +35,83 @@ class EvaluateHealthAlertsAction
         private AlertDispatcherService $alerts,
     ) {}
 
-    public function execute(Project $project): void
+    public function execute(Project $project, ?CarbonImmutable $now = null): void
     {
-        DB::transaction(function () use ($project): void {
+        $now ??= CarbonImmutable::now();
+
+        DB::transaction(function () use ($project, $now): void {
             Project::query()->whereKey($project->id)->lockForUpdate()->first();
+            $checks = $this->health->checks($project, $now);
 
-            foreach ($this->health->checks($project) as $check) {
-                $last = AlertLog::query()
+            foreach ($checks as $check) {
+                $this->evaluateCheck($project, $check);
+            }
+
+            foreach ($this->health->staleServers($checks) as $server => $lastSampleAt) {
+                // This silence is alerted when an alert came at least STALE_MINUTES after its
+                // last sample: a sample of the minute before an older alert starts a new one.
+                $isAlerted = AlertLog::query()
                     ->where('project_id', $project->id)
-                    ->whereIn('event', [AlertEventEnum::HealthFailed->value, AlertEventEnum::HealthRecovered->value])
-                    ->where('subject', $check['checkId'])
-                    ->latest('id')
-                    ->value('event');
-                $event = $this->health->transition(array_column($check['servers'], 'readings'), $last === AlertEventEnum::HealthFailed->value);
+                    ->where('event', AlertEventEnum::HealthStale->value)
+                    ->where('subject', $server)
+                    ->where('created_at', '>=', CarbonImmutable::parse($lastSampleAt)->addMinutes(HealthStatusService::STALE_MINUTES))
+                    ->exists();
 
-                if ($event === null) {
-                    continue;
+                if (! $isAlerted) {
+                    $this->alerts->dispatch(AlertEventEnum::HealthStale, $project, "no health sample from {$server} since ".CarbonImmutable::parse($lastSampleAt)->toDateTimeString(), [
+                        'server' => $server,
+                        'lastSampleAt' => $lastSampleAt,
+                    ], subject: $server);
                 }
-
-                $servers = count($check['servers']);
-                $failing = count(array_filter($check['servers'], fn (array $server): bool => $server['status'] === 'fail'));
-
-                if ($event === AlertEventEnum::HealthRecovered) {
-                    $this->alerts->dispatch($event, $project, "{$check['checkId']} no longer fails ({$check['status']})", [
-                        'checkId' => $check['checkId'],
-                        'status' => $check['status'],
-                        'servers' => $servers,
-                    ], subject: $check['checkId']);
-
-                    continue;
-                }
-
-                $severity = SeverityEnum::tryFrom($check['severity']);
-                $this->alerts->dispatch($event, $project, trim("{$check['checkId']} fails on {$failing} of {$servers} servers: ".$this->message($project, $check['fingerprints']), ': '), [
-                    'checkId' => $check['checkId'],
-                    'status' => 'fail',
-                    'severity' => $check['severity'],
-                    'findingCount' => $check['findingCount'],
-                    'failingServers' => $failing,
-                    'servers' => $servers,
-                    'fingerprints' => $check['fingerprints'],
-                ], $severity === SeverityEnum::Info ? null : $severity, $check['checkId']);
             }
         });
+    }
+
+    /**
+     * @param  array{checkId: string, status: string, severity: string, findingCount: int, servers: list<array{server: string, status: string, severity: string, findingCount: int, fingerprints: list<string>, lastSampleAt: string, isStale: bool, readings: list<string>}>}  $check
+     */
+    private function evaluateCheck(Project $project, array $check): void
+    {
+        $last = AlertLog::query()
+            ->where('project_id', $project->id)
+            ->whereIn('event', [AlertEventEnum::HealthFailed->value, AlertEventEnum::HealthRecovered->value])
+            ->where('subject', $check['checkId'])
+            ->latest('id')
+            ->first(['event', 'fingerprints']);
+        $isFailing = $last?->event === AlertEventEnum::HealthFailed->value;
+        $servers = array_values(array_filter($check['servers'], fn (array $server): bool => ! $server['isStale']));
+        $fingerprints = $this->health->failingFingerprints($servers);
+        $event = $this->health->transition(array_column($servers, 'readings'), $isFailing);
+
+        if ($event === null && $isFailing && $fingerprints !== [] && $fingerprints !== ($last->fingerprints ?? [])) {
+            $event = AlertEventEnum::HealthFailed;
+        }
+
+        if ($event === null) {
+            return;
+        }
+
+        if ($event === AlertEventEnum::HealthRecovered) {
+            $this->alerts->dispatch($event, $project, "{$check['checkId']} no longer fails ({$check['status']})", [
+                'checkId' => $check['checkId'],
+                'status' => $check['status'],
+                'servers' => count($servers),
+            ], subject: $check['checkId']);
+
+            return;
+        }
+
+        $failing = count(array_filter($servers, fn (array $server): bool => $server['status'] === 'fail'));
+        $severity = SeverityEnum::tryFrom($check['severity']);
+        $this->alerts->dispatch($event, $project, trim("{$check['checkId']} fails on {$failing} of ".count($servers).' servers: '.$this->message($project, $fingerprints), ': '), [
+            'checkId' => $check['checkId'],
+            'status' => 'fail',
+            'severity' => $check['severity'],
+            'findingCount' => $check['findingCount'],
+            'failingServers' => $failing,
+            'servers' => count($servers),
+            'fingerprints' => $fingerprints,
+        ], $severity === SeverityEnum::Info ? null : $severity, $check['checkId'], $fingerprints);
     }
 
     /**

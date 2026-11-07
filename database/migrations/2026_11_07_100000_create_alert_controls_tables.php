@@ -58,6 +58,8 @@ return new class extends Migration
             $table->string('summary', 500);
             $table->string('status', 16);
             $table->string('reason', 32)->nullable();
+            // The core finding fingerprints of a finding or health alert, for the duplicate check (#143).
+            $table->json('fingerprints')->nullable();
             // Channel → queued | sent | failed.
             $table->json('deliveries');
             $table->timestamps();

@@ -12,10 +12,12 @@ use App\Models\RuntimeAggregate;
 use App\Models\RuntimeHourlyRollup;
 use App\Models\User;
 use App\Services\AlertSuppressionService;
+use App\Services\ReportAlertsService;
 use App\Services\SettingsRepositoryService;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Date;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
@@ -23,8 +25,10 @@ use Inertia\Testing\AssertableInertia as Assert;
 
 /**
  * Minute-level health samples (#115): ingest and merge of the core `health` type, its hourly
- * rollup, the live health of the project overview, and the debounced `health.failed` /
- * `health.recovered` alerts through the dispatcher (mutes apply).
+ * rollup, the live health of the project overview and of the dashboard list, the debounced
+ * `health.failed` / `health.recovered` alerts through the dispatcher (mutes apply), and the
+ * follow-ups of #143: the duplicate with `infrastructure.failed`, `health.stale`, the re-alert
+ * on new fingerprints and the partial reload of the poll.
  */
 beforeEach(function () {
     Http::preventStrayRequests();
@@ -264,4 +268,162 @@ it('keeps projects without health samples on the daily report', function () {
         ->assertInertia(fn (Assert $page) => $page->where('liveHealth', []));
 
     expect(healthAlerts()->count())->toBe(0);
+});
+
+/**
+ * A report whose database check fails with the finding of `$fingerprint`, its alerts raised as
+ * after a push (`infrastructure.failed` for a new database failure).
+ */
+function reportDatabaseFailure(Project $project, string $fingerprint): void
+{
+    $report = $project->healthReports()->create([
+        'batch_id' => (string) Str::uuid(), 'received_at' => Date::now(), 'generated_at' => Date::now(),
+        'report' => ['schemaVersion' => 1, 'checks' => [[
+            'checkId' => 'laravel-database', 'name' => 'Database', 'status' => 'fail',
+            'findings' => [['checkId' => 'laravel-database', 'severity' => 'critical', 'status' => 'fail', 'subject' => 'mysql', 'message' => 'Cannot connect', 'fingerprint' => $fingerprint]],
+        ]]],
+    ]);
+
+    app(ReportAlertsService::class)->afterReport($project, $report, null, false);
+}
+
+/**
+ * @return list<string> "event:status[:reason]" of the project's health and infrastructure alerts, oldest first
+ */
+function failureAlerts(Project $project): array
+{
+    return AlertLog::query()
+        ->where('project_id', $project->id)
+        ->whereIn('event', ['infrastructure.failed', 'health.failed', 'health.recovered', 'health.stale'])
+        ->orderBy('id')
+        ->get()
+        ->map(fn (AlertLog $alert): string => rtrim("{$alert->event}:{$alert->status}:{$alert->reason}", ':'))
+        ->all();
+}
+
+it('sends one alert when a report failure follows a health failure of the same check and fingerprint', function () {
+    [$project, $headers] = healthProject();
+
+    pushHealth($headers, [healthEntry('2026-11-07T09:58:00Z', 'fail'), healthEntry('2026-11-07T09:59:00Z', 'fail')]);
+    reportDatabaseFailure($project, str_repeat('a', 64));
+
+    expect(failureAlerts($project))->toBe(['health.failed:queued', 'infrastructure.failed:suppressed:duplicate']);
+    Queue::assertNotPushed(DeliverAlertJob::class, fn (DeliverAlertJob $job): bool => $job->payload['event'] === 'infrastructure.failed');
+
+    // Another finding of the check, or the same one past the window, is a new alert.
+    reportDatabaseFailure($project, str_repeat('f', 64));
+    Date::setTestNow(Date::now()->addMinutes(AlertSuppressionService::DUPLICATE_MINUTES + 1));
+    reportDatabaseFailure($project, str_repeat('a', 64));
+
+    expect(array_slice(failureAlerts($project), 2))->toBe(['infrastructure.failed:queued', 'infrastructure.failed:queued']);
+});
+
+it('keeps a health failure that follows a report failure as a duplicate, with its state', function () {
+    [$project, $headers] = healthProject();
+
+    reportDatabaseFailure($project, str_repeat('a', 64));
+    pushHealth($headers, [healthEntry('2026-11-07T09:58:00Z', 'fail'), healthEntry('2026-11-07T09:59:00Z', 'fail')]);
+    pushHealth($headers, [healthEntry('2026-11-07T10:00:00Z', 'pass')]);
+
+    expect(failureAlerts($project))->toBe(['infrastructure.failed:queued', 'health.failed:suppressed:duplicate', 'health.recovered:queued']);
+    Queue::assertNotPushed(DeliverAlertJob::class, fn (DeliverAlertJob $job): bool => $job->payload['event'] === 'health.failed');
+});
+
+it('alerts again when the failing fingerprints change while the check still fails', function () {
+    [$project, $headers] = healthProject();
+    [$first, $second] = [str_repeat('a', 64), str_repeat('b', 64)];
+
+    pushHealth($headers, [healthEntry('2026-11-07T09:58:00Z', 'fail'), healthEntry('2026-11-07T09:59:00Z', 'fail')]);
+    pushHealth($headers, [healthEntry('2026-11-07T10:00:00Z', 'fail', ['fingerprints' => [$second, $first]])]);
+    // The same minute again: the union is still both fingerprints.
+    pushHealth($headers, [healthEntry('2026-11-07T10:00:00Z', 'fail', ['fingerprints' => [$second]])]);
+
+    expect(failureAlerts($project))->toBe(['health.failed:queued', 'health.failed:queued'])
+        ->and(healthAlerts()->orderBy('id')->pluck('fingerprints')->all())->toBe([[$first], [$first, $second]]);
+    Queue::assertPushed(DeliverAlertJob::class, fn (DeliverAlertJob $job): bool => $job->payload['event'] === 'health.failed'
+        && $job->payload['data']->fingerprints === [$first, $second]);
+});
+
+it('alerts a server that stopped sending once per silence, and recovers without it', function () {
+    [$project, $headers] = healthProject();
+    Date::setTestNow('2026-11-07 09:55:00');
+    pushHealth($headers, [
+        healthEntry('2026-11-07T09:53:00Z', 'fail', ['server' => 'web-2']),
+        healthEntry('2026-11-07T09:54:00Z', 'fail', ['server' => 'web-2']),
+        healthEntry('2026-11-07T09:54:00Z', 'pass'),
+    ]);
+    expect(failureAlerts($project))->toBe(['health.failed:queued']);
+
+    // web-2 went silent while failing: web-1's next sample recovers the check.
+    Date::setTestNow('2026-11-07 10:00:30');
+    pushHealth($headers, [healthEntry('2026-11-07T10:00:00Z', 'pass')]);
+    $stale = healthAlerts()->where('event', 'health.stale')->sole();
+
+    expect(failureAlerts($project))->toBe(['health.failed:queued', 'health.recovered:queued', 'health.stale:queued'])
+        ->and($stale->subject)->toBe('web-2')
+        ->and($stale->severity)->toBe('medium')
+        ->and($stale->summary)->toBe('no health sample from web-2 since 2026-11-07 09:54:00');
+
+    // The minute clock does not alert the same silence twice.
+    $this->artisan('excubia:evaluate-schedules')->assertSuccessful();
+    expect(healthAlerts()->where('event', 'health.stale')->count())->toBe(1);
+
+    // web-2 sends again, then stops again: a new silence.
+    pushHealth($headers, [healthEntry('2026-11-07T10:00:00Z', 'pass', ['server' => 'web-2'])]);
+    Date::setTestNow('2026-11-07 10:06:00');
+    $this->artisan('excubia:evaluate-schedules')->assertSuccessful();
+
+    expect(healthAlerts()->where('event', 'health.stale')->orderBy('id')->pluck('subject')->all())->toBe(['web-2', 'web-1', 'web-2']);
+});
+
+it('never recovers when every server went silent', function () {
+    [$project, $headers] = healthProject();
+    pushHealth($headers, [healthEntry('2026-11-07T09:58:00Z', 'fail'), healthEntry('2026-11-07T09:59:00Z', 'fail')]);
+
+    Date::setTestNow('2026-11-07 10:10:00');
+    $this->artisan('excubia:evaluate-schedules')->assertSuccessful();
+    Date::setTestNow('2026-11-07 11:30:00');
+    $this->artisan('excubia:evaluate-schedules')->assertSuccessful();
+
+    expect(failureAlerts($project))->toBe(['health.failed:queued', 'health.stale:queued']);
+});
+
+it('shows the live health of each project in the dashboard list and polls it alone', function () {
+    $this->seed(PermissionSeeder::class);
+    [$shop, $headers] = healthProject();
+    Project::factory()->create(['slug' => 'blog']);
+    pushHealth($headers, [
+        healthEntry('2026-11-07T09:59:00Z', 'fail'),
+        healthEntry('2026-11-07T09:59:00Z', 'pass', ['checkId' => 'laravel-cache']),
+        healthEntry('2026-11-07T09:50:00Z', 'pass', ['checkId' => 'laravel-cache', 'server' => 'worker-1']),
+    ]);
+    $response = $this->actingAs(User::factory()->create()->assignRole(RoleEnum::Reader->value))->get(route('dashboard'));
+    $queries = [];
+    DB::listen(function ($query) use (&$queries): void {
+        $queries[] = $query->sql;
+    });
+
+    $response->assertInertia(fn (Assert $page) => $page
+        ->where('liveHealth', ['shop' => ['status' => 'fail', 'checks' => 2, 'failingChecks' => 1, 'hasStaleServers' => true]])
+        ->reloadOnly('liveHealth', fn (Assert $reload) => $reload->missing('overview')->missing('projects')));
+
+    expect(array_filter($queries, fn (string $sql): bool => str_contains($sql, 'health_reports')))->toBe([]);
+});
+
+it('computes only the live health when the overview polls it', function () {
+    $this->seed(PermissionSeeder::class);
+    [$project, $headers] = healthProject();
+    pushHealth($headers, [healthEntry('2026-11-07T09:59:00Z', 'pass')]);
+    $response = $this->actingAs(User::factory()->create()->assignRole(RoleEnum::Reader->value))->get(route('projects.show', 'shop'));
+    $queries = [];
+    DB::listen(function ($query) use (&$queries): void {
+        $queries[] = $query->sql;
+    });
+
+    $response->assertInertia(fn (Assert $page) => $page
+        ->has('liveHealth', 1)
+        ->reloadOnly('liveHealth', fn (Assert $reload) => $reload->has('liveHealth', 1)->missing('reports')->missing('runtime')));
+
+    expect(array_filter($queries, fn (string $sql): bool => preg_match('/health_reports|exception_groups|alert_logs/', $sql) === 1))->toBe([])
+        ->and(array_filter($queries, fn (string $sql): bool => str_contains($sql, 'runtime_aggregates')))->toHaveCount(1);
 });

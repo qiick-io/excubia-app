@@ -13,6 +13,7 @@ use App\Http\Resources\HealthReportResource;
 use App\Http\Resources\ProjectResource;
 use App\Jobs\RunSystemReportJob;
 use App\Models\ExceptionGroup;
+use App\Models\HealthReport;
 use App\Models\Project;
 use App\Services\FixSuggestionService;
 use App\Services\HealthStatusService;
@@ -57,48 +58,56 @@ class ProjectReportController extends Controller
             return to_route('projects.view', ['project' => $project->slug, 'view' => $request->query('view')]);
         }
 
-        $project->load('latestReport');
+        // Loaded by the first prop that needs it, so the poll does not read the report.
+        $report = fn (): ?HealthReport => $project->loadMissing('latestReport')->latestReport;
         $hasRange = in_array($view, self::RANGE_VIEWS, true);
         $range = $hasRange ? ($request->enum('range', TimeRangeEnum::class) ?? TimeRangeEnum::DEFAULT) : TimeRangeEnum::DEFAULT;
         $now = CarbonImmutable::instance(Date::now());
-        $schedule = $view === 'schedule' ? $telemetry->schedule($project, $range, $now) : null;
-
+        $scheduleData = null;
+        // Shared by `schedule` and `scheduleTimeline`, computed once.
+        $schedule = function () use (&$scheduleData, $view, $telemetry, $project, $range, $now): array {
+            return $scheduleData ??= $view === 'schedule' ? $telemetry->schedule($project, $range, $now) : ['tasks' => [], 'timeline' => []];
+        };
         // A ready command and prompt per finding that warns or fails (#78), keyed like
         // ReportFindingsService::identity() so the page can match its rows.
-        $findingFixes = [];
+        $findingFixes = function () use ($report, $findings, $fixes): object {
+            $byIdentity = [];
 
-        if ($project->latestReport !== null) {
-            foreach ($findings->issues($project->latestReport) as $finding) {
-                $findingFixes[$findings->identity($finding)] = $fixes->forFinding($finding);
+            foreach (($latest = $report()) === null ? [] : $findings->issues($latest) as $finding) {
+                $byIdentity[$findings->identity($finding)] = $fixes->forFinding($finding);
             }
-        }
 
+            return (object) $byIdentity;
+        };
+
+        // Every prop is a closure, so the overview's minute poll of `liveHealth` (#143), a
+        // partial reload, computes that prop only.
         return Inertia::render('projects/show', [
-            'project' => (new ProjectResource($project))->resolve(),
+            'project' => fn (): array => (new ProjectResource($project->loadMissing('latestReport')))->resolve(),
             'view' => $view ?? 'overview',
-            'canRefreshReport' => (bool) $request->user()?->can('refreshReport', $project),
-            'report' => $project->latestReport?->report,
-            'findingFixes' => (object) $findingFixes,
+            'canRefreshReport' => fn (): bool => (bool) $request->user()?->can('refreshReport', $project),
+            'report' => fn (): ?array => $report()?->report,
+            'findingFixes' => $findingFixes,
             // The issues in page order with their check group, and the health summary (#108, #109).
-            'issues' => $project->latestReport === null ? [] : $findings->prioritized($project->latestReport),
-            'health' => $project->latestReport === null ? null : $health->summary($project->latestReport->report),
+            'issues' => fn (): array => ($latest = $report()) === null ? [] : $findings->prioritized($latest),
+            'health' => fn (): ?array => ($latest = $report()) === null ? null : $health->summary($latest->report),
             // Minute-level status per check and server (#115), on the overview, which polls it.
             'liveHealth' => fn (): array => $view === null ? app(HealthStatusService::class)->forPage($project, $now) : [],
             'range' => $range->value,
-            'runtime' => $runtime->summary($project, $range),
-            'exceptions' => $telemetry->exceptions($project, $view === 'exceptions' ? $range : null, $now),
+            'runtime' => fn (): ?array => $runtime->summary($project, $range),
+            'exceptions' => fn (): array => $telemetry->exceptions($project, $view === 'exceptions' ? $range : null, $now),
             // Tells "none in this range" from "none yet" on the Exceptions tab.
-            'hasExceptions' => $view === 'exceptions' && $project->exceptionGroups()->exists(),
+            'hasExceptions' => fn (): bool => $view === 'exceptions' && $project->exceptionGroups()->exists(),
             // Schedule inventory, status and runs (#110), only on its tab.
-            'schedule' => $schedule['tasks'] ?? [],
-            'scheduleTimeline' => $schedule['timeline'] ?? [],
+            'schedule' => fn (): array => $schedule()['tasks'],
+            'scheduleTimeline' => fn (): array => $schedule()['timeline'],
             // Chart markers of the exceptions and schedule tabs; the runtime has its own.
-            'deploys' => in_array($view, ['exceptions', 'schedule'], true) ? $timeSeries->deploys($project, $range, $now) : [],
+            'deploys' => fn (): array => in_array($view, ['exceptions', 'schedule'], true) ? $timeSeries->deploys($project, $range, $now) : [],
             // Alert history, mutes and maintenance windows (#114), only on its tab.
-            'alerts' => $view === 'alerts' ? app(ProjectAlertsService::class)->forPage($project) : null,
-            'canManageAlerts' => (bool) $request->user()?->can('update', $project),
-            'canManageExceptions' => (bool) $request->user()?->can(PermissionEnum::CanManageExceptions->value),
-            'reports' => HealthReportResource::collection(
+            'alerts' => fn (): ?array => $view === 'alerts' ? app(ProjectAlertsService::class)->forPage($project) : null,
+            'canManageAlerts' => fn (): bool => (bool) $request->user()?->can('update', $project),
+            'canManageExceptions' => fn (): bool => (bool) $request->user()?->can(PermissionEnum::CanManageExceptions->value),
+            'reports' => fn (): array => HealthReportResource::collection(
                 $project->healthReports()->orderByDesc('received_at')->orderByDesc('id')->get(),
             )->resolve(),
         ]);
