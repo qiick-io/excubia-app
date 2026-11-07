@@ -458,6 +458,7 @@ export type AlertHistoryRow = {
         | 'maintenance_window'
         | 'maintenance_mode'
         | 'duplicate'
+        | 'throttled'
         | null;
     /** Channel → queued | sent | failed. */
     deliveries: Record<string, 'queued' | 'sent' | 'failed'>;

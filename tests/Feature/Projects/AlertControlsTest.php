@@ -207,6 +207,8 @@ it('honours the core maintenance mode finding, except for schedule and token eve
 });
 
 it('records each channel delivery on the alert history', function () {
+    // Two alerts of the same event in a row: the hourly throttle (#22) would hold the second.
+    config(['excubia.alert_throttle_minutes' => 0]);
     $project = Project::factory()->create();
     app(AlertDispatcherService::class)->dispatch(AlertEventEnum::ProjectStale, $project, 'no report');
     app(AlertDispatcherService::class)->dispatch(AlertEventEnum::ProjectStale, $project, 'no report');

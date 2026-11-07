@@ -21,7 +21,9 @@ use App\Models\Project;
  * The first report of a project raises no finding alerts (everything would be "new"), except
  * `infrastructure.failed` (#109): a database, storage or disk failure that is new or back, or on
  * the first report, alerts at once at critical, instead of as `finding.new`, unless a
- * `health.failed` of the same check and fingerprint just went out (#143).
+ * `health.failed` of the same check and fingerprint just went out (#143). A check whose data
+ * source failed in this report and not in the previous one raises `report.checks_skipped`.
+ * All of a report's alerts go out as one message per Slack, Telegram and email channel.
  */
 class ReportAlertsService
 {
@@ -35,6 +37,21 @@ class ReportAlertsService
 
     public function afterReport(Project $project, HealthReport $report, ?HealthReport $previous, bool $wasStale, FindingChangesData $changes): void
     {
+        $this->alerts->grouped(fn () => $this->raise($project, $report, $previous, $wasStale, $changes));
+    }
+
+    private function raise(Project $project, HealthReport $report, ?HealthReport $previous, bool $wasStale, FindingChangesData $changes): void
+    {
+        $skipped = array_diff_key($this->findings->dataSourceFailures($report), $previous === null ? [] : $this->findings->dataSourceFailures($previous));
+
+        if ($skipped !== []) {
+            ksort($skipped);
+            $this->alerts->dispatch(AlertEventEnum::ReportChecksSkipped, $project, 'skipped, a data source failed: '.implode(', ', $skipped), [
+                'checkIds' => array_keys($skipped),
+                'count' => count($skipped),
+            ], subject: implode(',', array_keys($skipped)));
+        }
+
         if ($wasStale) {
             $this->alerts->dispatch(AlertEventEnum::ProjectReportingAgain, $project, 'reporting again');
         }
