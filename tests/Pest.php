@@ -18,6 +18,13 @@ pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
     ->in('Feature');
 
+// Browser tests (#112) run outside the default suite: `vendor/bin/pest tests/Browser`.
+pest()->extend(TestCase::class)
+    ->use(RefreshDatabase::class)
+    ->in('Browser');
+
+pest()->browser()->timeout(10_000);
+
 /*
 |--------------------------------------------------------------------------
 | Expectations
