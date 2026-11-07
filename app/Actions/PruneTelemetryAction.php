@@ -8,6 +8,7 @@ use App\Models\AlertLog;
 use App\Models\AlertMute;
 use App\Models\ExceptionGroup;
 use App\Models\ExceptionOccurrence;
+use App\Models\IngestRejection;
 use App\Models\PushedBatch;
 use App\Models\RuntimeAggregate;
 use App\Models\RuntimeHourlyRollup;
@@ -18,7 +19,8 @@ use Illuminate\Support\Facades\Date;
  * Bounds the runtime and exception data: runtime aggregates, their hourly rollups (#137) and
  * scheduled-task runs (#110) older than the runtime retention, exception groups not seen within
  * the exceptions retention (and older occurrences of the others, #113), the batch ids and the alert history (#114) older than the
- * longer of the two (a retry that late would be a new batch anyway), and the mutes that ended.
+ * longer of the two (a retry that late would be a new batch anyway), the mutes that ended, and the
+ * push rejection counters (#117) older than two days.
  */
 class PruneTelemetryAction
 {
@@ -35,6 +37,7 @@ class PruneTelemetryAction
         PushedBatch::query()->where('received_at', '<', Date::now()->subDays(max($runtimeDays, $exceptionDays)))->delete();
         AlertLog::query()->where('created_at', '<', Date::now()->subDays(max($runtimeDays, $exceptionDays)))->delete();
         AlertMute::query()->where('until', '<=', Date::now())->delete();
+        IngestRejection::query()->where('bucket', '<', Date::now()->subDays(2))->delete();
 
         return ['runtime' => $runtime, 'exceptions' => $exceptions];
     }

@@ -25,6 +25,7 @@ export enum PermissionEnum {
     CanShowActivityLogs = 'can-show-activity-logs',
     CanShowJobs = 'can-show-jobs',
     CanManageJobs = 'can-manage-jobs',
+    CanShowSystem = 'can-show-system',
     CanUseAi = 'can-use-ai',
     CanManageProjectSettings = 'can-manage-project-settings',
 }

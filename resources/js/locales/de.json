@@ -206,6 +206,7 @@
             "roles": "Rollen",
             "permissions": "Berechtigungen",
             "jobs": "Jobs",
+            "system": "System",
             "reportBug": "Bug melden",
             "performance": "Leistung",
             "general": "Allgemein",
@@ -871,6 +872,75 @@
             "failedAt": "Fehlgeschlagen am",
             "exception": "Exception",
             "actions": "Aktionen"
+        }
+    },
+    "system": {
+        "description": "Zustand dieser Excubia-Installation. Jeder Punkt verlinkt auf seinen Lösungshinweis.",
+        "fixHint": "So beheben: {{item}}",
+        "never": "Nie",
+        "status": {
+            "ok": "OK",
+            "warning": "Warnung",
+            "error": "Fehler",
+            "unknown": "Unbekannt"
+        },
+        "columns": {
+            "project": "Projekt",
+            "count": "Anzahl"
+        },
+        "scheduler": {
+            "title": "Scheduler",
+            "lastRun": "Letzter Heartbeat: {{time}}"
+        },
+        "queue": {
+            "title": "Queue-Worker",
+            "connection": "Verbindung",
+            "lastRun": "Letzter Heartbeat",
+            "pending": "Wartende Jobs",
+            "failed": "Fehlgeschlagene Jobs"
+        },
+        "pushes": {
+            "title": "Letzter Push pro Projekt",
+            "description": "Berichte sind nach {{hours}} Stunden veraltet, Runtime nach 15 Minuten.",
+            "reports": "Berichte",
+            "runtime": "Runtime",
+            "exceptions": "Exceptions",
+            "stale": "Veraltet",
+            "empty": "Keine aktiven Projekte."
+        },
+        "rejections": {
+            "title": "Abgelehnte Pushes (24 h)",
+            "endpoint": "Endpunkt",
+            "status": "Status",
+            "reason": "Grund",
+            "empty": "Keine abgelehnten Pushes in den letzten 24 Stunden."
+        },
+        "skippedRuntime": {
+            "title": "Übersprungene unbekannte Runtime-Typen",
+            "empty": "Keine Runtime-Einträge übersprungen.",
+            "row_one": "{{project}}: {{count}} Eintrag übersprungen",
+            "row_other": "{{project}}: {{count}} Einträge übersprungen"
+        },
+        "alertFailures": {
+            "title": "Fehlgeschlagene Alarmzustellungen (24 h)",
+            "empty": "Keine fehlgeschlagenen Alarmzustellungen in den letzten 24 Stunden.",
+            "total_one": "{{count}} fehlgeschlagener Alarm",
+            "total_other": "{{count}} fehlgeschlagene Alarme",
+            "event": "Ereignis",
+            "channels": "Fehlgeschlagene Kanäle",
+            "at": "Zeit"
+        },
+        "rollups": {
+            "title": "Stündliche Runtime-Rollups",
+            "pending": "Runtime aus der Zeit vor den stündlichen Rollups fehlt in den Dashboard-Summen: einmal das Backfill ausführen.",
+            "done": "Die stündlichen Rollups decken die gespeicherte Runtime ab."
+        },
+        "version": {
+            "title": "Version und Kompatibilität",
+            "app": "Excubia App",
+            "core": "excubia-core in der App",
+            "accepts": "Akzeptiert excubia-core",
+            "protocol": "Protokollversionen"
         }
     },
     "fix": {
