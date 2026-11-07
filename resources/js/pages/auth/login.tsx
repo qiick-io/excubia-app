@@ -1,10 +1,11 @@
 import { Form, Head, router, usePage } from '@inertiajs/react';
 import { UserCancelledError } from '@laravel/passkeys';
 import { usePasskeyVerify } from '@laravel/passkeys/react';
-import { KeyRound } from 'lucide-react';
+import { KeyRound, Rocket } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import PasswordInput from '@/components/password-input';
 import TextLink from '@/components/text-link';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -24,6 +25,7 @@ import AuthLayout from '@/layouts/auth-layout';
 import { redirect as oidcRedirect } from '@/routes/auth/oidc';
 import { store } from '@/routes/login';
 import { request } from '@/routes/password';
+import { show as setup } from '@/routes/setup';
 
 type Props = {
     status?: string;
@@ -31,6 +33,8 @@ type Props = {
     canManagePasskeys?: boolean;
     canUseOidc?: boolean;
     oidcButtonLabel?: string | null;
+    /** No user exists yet: link to the first-run wizard (#116). */
+    needsSetup?: boolean;
 };
 
 /**
@@ -47,6 +51,7 @@ export default function Login({
     canManagePasskeys = false,
     canUseOidc = false,
     oidcButtonLabel = null,
+    needsSetup = false,
 }: Props) {
     const { t } = useTranslation();
     // OIDC callback rejects redirect here with session errors; Form render-prop
@@ -111,6 +116,19 @@ export default function Login({
             description={t('auth.login.description')}
         >
             <Head title={t('auth.login.head')} />
+
+            {needsSetup && (
+                <Alert data-test="setup-notice">
+                    <Rocket />
+                    <AlertTitle>{t('auth.setup.notice.title')}</AlertTitle>
+                    <AlertDescription>
+                        <p>{t('auth.setup.notice.description')}</p>
+                        <TextLink href={setup()}>
+                            {t('auth.setup.notice.link')}
+                        </TextLink>
+                    </AlertDescription>
+                </Alert>
+            )}
 
             {showAltSignIn && (
                 <div className="mb-6 flex flex-col gap-3">

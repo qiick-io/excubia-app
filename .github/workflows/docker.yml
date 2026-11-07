@@ -1,0 +1,103 @@
+name: Docker
+
+# Production image (#116). Pull requests and pushes build the image and smoke-test /up; nothing
+# is pushed. Publishing to GHCR is a release step for Luca: the `publish` job stays disabled
+# until he turns it on (remove `if: false`).
+on:
+  push:
+    branches:
+      - main
+      - develop
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+      - develop
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docker-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Docker image
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Build
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          load: true
+          push: false
+          tags: excubia-app:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # The image migrates a fresh SQLite volume and must answer /up.
+      - name: Smoke test
+        run: |
+          docker run -d --name excubia -p 8080:8080 excubia-app:ci
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8080/up > /dev/null; then
+              curl -fsS -o /dev/null http://127.0.0.1:8080/setup
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs excubia
+          exit 1
+
+  publish:
+    name: Publish image
+    # ponytail: disabled until Luca decides to publish (CLAUDE.md "Ask Luca first"); on a `v*` tag
+    # it would push ghcr.io/qiick-io/excubia-app with the version tags. Remove `if: false` to enable.
+    if: false && startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Log in to GHCR
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Image tags
+        id: meta
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
+        with:
+          images: ghcr.io/qiick-io/excubia-app
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+
+      - name: Build and push
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
