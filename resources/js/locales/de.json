@@ -1575,7 +1575,7 @@
             "description": "Registriere ein Projekt und sende seinen ersten Bericht, um es hier zu sehen."
         },
         "readiness": {
-            "description": "Aus den Blockern der nächsten Major-Version im neuesten Bericht jedes Projekts: Ein Projekt kann wechseln, wenn keine direkte Abhängigkeit die nächste Laravel-Major-Version blockiert.",
+            "description": "Aus den offenen Blockern der nächsten Major-Version jedes Projekts: Ein Projekt kann wechseln, wenn keine direkte Abhängigkeit die nächste Laravel-Major-Version blockiert. Ein ausgeblendeter Blocker blockiert nicht.",
             "target": "Laravel {{major}}",
             "canMove": "{{ready}} von {{total}} Projekten können heute auf Laravel {{major}} wechseln",
             "unknownDescription": "Kein Bericht, Laravel nicht gesperrt oder die Blocker-Prüfung lief nicht.",
@@ -1592,7 +1592,7 @@
             }
         },
         "advisories": {
-            "description": "Pakete mit bekannten Advisories, aufgegebene oder veraltete Pakete und die Projekte, die sie sperren, aus dem neuesten Bericht jedes Projekts.",
+            "description": "Pakete mit bekannten Advisories, aufgegebene oder veraltete Pakete und die Projekte, die sie sperren, aus den offenen Befunden jedes Projekts. Ausgeblendete Befunde stehen separat.",
             "search": "Paket oder Advisory-ID",
             "kindLabel": "Nach Art filtern",
             "allKinds": "Alle Arten",
@@ -1612,7 +1612,9 @@
             "emptyTitle": "Keine betroffenen Pakete",
             "emptyDescription": "Kein neuester Bericht enthält ein bekanntes Advisory, ein aufgegebenes oder veraltetes Paket.",
             "noMatchTitle": "Keine passenden Pakete",
-            "noMatchDescription": "Versuche einen anderen Paketnamen oder eine andere Advisory-ID."
+            "noMatchDescription": "Versuche einen anderen Paketnamen oder eine andere Advisory-ID.",
+            "dismissedTitle": "Ausgeblendete Befunde",
+            "dismissedDescription": "Offene Befunde, die ein Benutzer ausgeblendet hat, mit Grund und letztem gültigen Tag."
         },
         "eol": {
             "description": "Supportzeiträume von PHP, Laravel und Node aller Projekte, das nächste Ende zuerst.",

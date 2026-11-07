@@ -1575,7 +1575,7 @@
             "description": "Register a project and push its first report to see it here."
         },
         "readiness": {
-            "description": "From the next-major blockers of the latest report of each project: a project can move when none of its direct dependencies blocks the next Laravel major.",
+            "description": "From the open next-major blockers of each project: a project can move when none of its direct dependencies blocks the next Laravel major. A dismissed blocker does not block.",
             "target": "Laravel {{major}}",
             "canMove": "{{ready}} of {{total}} projects can move to Laravel {{major}} today",
             "unknownDescription": "No report, Laravel not locked or the blocker check did not run.",
@@ -1592,7 +1592,7 @@
             }
         },
         "advisories": {
-            "description": "Packages with known advisories, abandoned or stale, and the projects that lock them, from the latest report of each project.",
+            "description": "Packages with known advisories, abandoned or stale, and the projects that lock them, from the open findings of each project. Dismissed findings are listed apart.",
             "search": "Package or advisory id",
             "kindLabel": "Filter by kind",
             "allKinds": "All kinds",
@@ -1612,7 +1612,9 @@
             "emptyTitle": "No exposed packages",
             "emptyDescription": "No latest report has a known advisory, an abandoned or a stale package.",
             "noMatchTitle": "No matching packages",
-            "noMatchDescription": "Try another package name or advisory id."
+            "noMatchDescription": "Try another package name or advisory id.",
+            "dismissedTitle": "Dismissed findings",
+            "dismissedDescription": "Open findings a user dismissed, with the reason and the last day the dismissal holds."
         },
         "eol": {
             "description": "PHP, Laravel and Node support windows of every project, soonest end first.",

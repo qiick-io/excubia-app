@@ -35,6 +35,7 @@ class FleetController extends Controller
             'view' => $view,
             'readiness' => $view === 'readiness' ? $fleet->upgradeReadiness($projects) : null,
             'advisories' => $view === 'advisories' ? $fleet->advisoryExposure($projects) : null,
+            'dismissedAdvisories' => $view === 'advisories' ? $fleet->dismissedAdvisories($projects) : null,
             // Pre-fills the search, so a link can open the page on one package or advisory.
             'search' => $request->string('search')->limit(255, '')->toString(),
             'calendar' => $view === 'eol' ? $fleet->endOfLifeCalendar($projects) : null,
