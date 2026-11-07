@@ -13,6 +13,7 @@ use App\Models\Project;
 use App\Models\User;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Str;
+use Throwable;
 
 /**
  * Sends an alert (#22) to the configured channels, as queued jobs: the signed webhook, Slack and
@@ -39,7 +40,7 @@ class AlertDispatcherService
     /**
      * The messages held back by grouped(), per channel.
      *
-     * @var array<string, list<array{payload: array<string, mixed>, summary: string}>>|null
+     * @var array<string, non-empty-list<array{payload: array<string, mixed>, summary: string}>>|null
      */
     private ?array $group = null;
 
@@ -120,14 +121,28 @@ class AlertDispatcherService
 
         try {
             $callback();
-            $group = $this->group;
-        } finally {
-            $this->group = null;
+        } catch (Throwable $exception) {
+            $this->takeGroup();
+
+            throw $exception;
         }
 
-        foreach ($group as $channel => $alerts) {
+        foreach ($this->takeGroup() as $channel => $alerts) {
             $this->queue($channel, $alerts);
         }
+    }
+
+    /**
+     * Ends grouping and returns the messages it held back.
+     *
+     * @return array<string, non-empty-list<array{payload: array<string, mixed>, summary: string}>>
+     */
+    private function takeGroup(): array
+    {
+        $group = $this->group ?? [];
+        $this->group = null;
+
+        return $group;
     }
 
     /**
