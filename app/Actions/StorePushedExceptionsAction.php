@@ -19,21 +19,27 @@ use Illuminate\Support\Facades\DB;
  * across batches. The first occurrence's message and frames are kept; the context follows the
  * latest occurrence. A resolved group reopens when it occurs again; an ignored one stays
  * ignored. A repeated `batchId` stores nothing and returns false.
+ *
+ * The batch's optional `release` (#106) is kept as the group's first and last release. A
+ * resolved group that comes back in another release than the one it was last seen in is a
+ * regression in that release (the fix shipped and did not hold); coming back in the same
+ * release only reopens it, as the fix may not be deployed yet.
  */
 class StorePushedExceptionsAction
 {
     /**
      * @param  list<array<string, mixed>>  $groups  validated by StorePushedExceptionsRequest
+     * @param  string|null  $release  the batch's `exceptions.release`
      * @return bool true when the batch was new
      */
-    public function execute(Project $project, string $batchId, array $groups): bool
+    public function execute(Project $project, string $batchId, array $groups, ?string $release = null): bool
     {
         try {
-            return DB::transaction(function () use ($project, $batchId, $groups): bool {
+            return DB::transaction(function () use ($project, $batchId, $groups, $release): bool {
                 PushedBatch::query()->create(['project_id' => $project->id, 'type' => 'exceptions', 'batch_id' => $batchId, 'received_at' => Date::now()]);
 
                 foreach ($groups as $group) {
-                    $this->add($project, $group);
+                    $this->add($project, $group, $release);
                 }
 
                 return true;
@@ -46,7 +52,7 @@ class StorePushedExceptionsAction
     /**
      * @param  array<string, mixed>  $group
      */
-    private function add(Project $project, array $group): void
+    private function add(Project $project, array $group, ?string $release): void
     {
         $firstSeen = CarbonImmutable::parse((string) $group['firstSeen'])->utc();
         $lastSeen = CarbonImmutable::parse((string) $group['lastSeen'])->utc();
@@ -73,6 +79,8 @@ class StorePushedExceptionsAction
                 'count' => (int) $group['count'],
                 'first_seen' => $firstSeen,
                 'last_seen' => $lastSeen,
+                'first_release' => $release,
+                'last_release' => $release,
                 'status' => ExceptionStatusEnum::Open,
             ]);
 
@@ -80,6 +88,10 @@ class StorePushedExceptionsAction
         }
 
         $isNewer = $lastSeen->gt($existing->last_seen);
+        $isRegression = $existing->status === ExceptionStatusEnum::Resolved
+            && $release !== null
+            && $existing->last_release !== null
+            && $release !== $existing->last_release;
 
         $existing->forceFill([
             'count' => $existing->count + (int) $group['count'],
@@ -87,7 +99,13 @@ class StorePushedExceptionsAction
             'last_seen' => $isNewer ? $lastSeen : $existing->last_seen,
             'context_kind' => $isNewer ? (string) $context['kind'] : $existing->context_kind,
             'context_name' => $isNewer ? (string) $context['name'] : $existing->context_name,
-            ...($existing->status === ExceptionStatusEnum::Resolved ? ['status' => ExceptionStatusEnum::Open, 'resolved_at' => null] : []),
+            'first_release' => $existing->first_release ?? $release,
+            'last_release' => $isNewer && $release !== null ? $release : ($existing->last_release ?? $release),
+            ...($existing->status === ExceptionStatusEnum::Resolved ? [
+                'status' => ExceptionStatusEnum::Open,
+                'resolved_at' => null,
+                'regressed_release' => $isRegression ? $release : null,
+            ] : []),
         ])->save();
     }
 }

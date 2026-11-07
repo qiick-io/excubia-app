@@ -16,6 +16,8 @@ use Illuminate\Support\Facades\DB;
 /**
  * Stores a report pushed by a project and updates `projects.last_report_at`. A repeated
  * `batchId` returns the stored report (`wasRecentlyCreated` false) and stores nothing new.
+ * The report's optional `release` and `deployedAt` (#106) are kept in their own columns: a
+ * report with `deployed_at` is the project's deploy marker.
  */
 class StorePushedReportAction
 {
@@ -47,6 +49,8 @@ class StorePushedReportAction
                     'batch_id' => $batchId,
                     'received_at' => $receivedAt,
                     'generated_at' => $generatedAt,
+                    'release' => is_string($report['release'] ?? null) ? $report['release'] : null,
+                    'deployed_at' => is_string($report['deployedAt'] ?? null) ? Date::parse($report['deployedAt']) : null,
                     'report' => $report,
                     ...$this->summary($report),
                 ]);

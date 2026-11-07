@@ -38,6 +38,10 @@ export type HealthReportSummary = {
     id: number;
     received_at: string;
     generated_at: string;
+    /** Release identifier of the deployed code (excubia-core 1.0.0-beta.2 and later). */
+    release: string | null;
+    /** Set when the report came from `excubia push --deploy`: a deploy marker (#106). */
+    deployed_at: string | null;
     /** Worst severity of the findings that warn or fail; null when there are none. */
     worst_severity: Severity | null;
     counts: Record<Severity, number>;
@@ -191,6 +195,15 @@ export type RuntimeSummary = {
     deprecations: RuntimeCountRow[];
     duplicateQueries: RuntimeCountRow[];
     servers: RuntimeServer[];
+    /** Deploys of the window, oldest first (#106); `hour` matches an `hourly` point. */
+    deploys: RuntimeDeploy[];
+};
+
+/** A deploy marker: a report sent by `excubia push --deploy` (#106). */
+export type RuntimeDeploy = {
+    release: string | null;
+    deployedAt: string;
+    hour: string;
 };
 
 export type ExceptionFrame = {
@@ -213,6 +226,11 @@ export type ExceptionGroupRow = {
     count: number;
     first_seen: string;
     last_seen: string;
+    /** Releases of the first and latest occurrence; null when the core sent none (#106). */
+    first_release: string | null;
+    last_release: string | null;
+    /** Release a resolved group came back in. */
+    regressed_release: string | null;
     status: 'open' | 'resolved' | 'ignored';
     resolved_at: string | null;
     fix: { command: string | null; prompt: string };

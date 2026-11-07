@@ -4,6 +4,7 @@ import {
     BarChart,
     CartesianGrid,
     Legend,
+    ReferenceLine,
     ResponsiveContainer,
     Tooltip,
     XAxis,
@@ -13,6 +14,14 @@ import { SEVERITIES } from '@/components/reports/severity-badge';
 import type { Severity } from '@/types';
 
 export type SeverityChartPoint = { label: string } & Record<Severity, number>;
+
+/** A vertical marker on one point of the chart, such as a deploy (#106). */
+export type ChartMarker = {
+    /** The `label` of the point it marks. */
+    at: string;
+    /** Short text drawn at the top of the line, so colour is not the only signal. */
+    name: string;
+};
 
 export type ChartSeries = {
     key: string;
@@ -25,17 +34,23 @@ export type ChartSeries = {
  * Stacked bars, one bar per point, styled like the externa-core dashboard charts: dashed
  * horizontal grid, small axis ticks, theme tokens for grid, axes and tooltip. The legend keeps
  * the series order and its text stays in a text token; the tooltip names every series, so
- * colour is never the only signal.
+ * colour is never the only signal. Markers are dashed vertical lines with their name on top;
+ * `formatLabel` turns a point's `label` into the axis and tooltip text, so labels can be unique
+ * keys (an ISO hour) that markers point at.
  */
 export function StackedBarChart({
     data,
     series,
     label,
+    markers = [],
+    formatLabel,
 }: {
     data: ({ label: string } & Record<string, number | string>)[];
     series: ChartSeries[];
     /** Accessible summary of what the chart shows. */
     label: string;
+    markers?: ChartMarker[];
+    formatLabel?: (label: string) => string;
 }) {
     const order = series.map((item) => item.key);
     const last = order[order.length - 1];
@@ -57,6 +72,7 @@ export function StackedBarChart({
                         }}
                         stroke="var(--color-border)"
                         minTickGap={12}
+                        tickFormatter={formatLabel}
                     />
                     <YAxis
                         allowDecimals={false}
@@ -79,6 +95,14 @@ export function StackedBarChart({
                         labelStyle={{
                             color: 'var(--color-popover-foreground)',
                         }}
+                        labelFormatter={
+                            formatLabel
+                                ? (value) =>
+                                      typeof value === 'string'
+                                          ? formatLabel(value)
+                                          : value
+                                : undefined
+                        }
                         // Same order as the legend; text in a text token, not the series colour.
                         itemSorter={(item) =>
                             order.indexOf(String(item.dataKey))
@@ -110,6 +134,20 @@ export function StackedBarChart({
                             stroke="var(--color-card)"
                             strokeWidth={1}
                             radius={item.key === last ? [4, 4, 0, 0] : 0}
+                        />
+                    ))}
+                    {markers.map((marker) => (
+                        <ReferenceLine
+                            key={marker.at}
+                            x={marker.at}
+                            stroke="var(--color-primary)"
+                            strokeDasharray="4 3"
+                            label={{
+                                value: marker.name,
+                                position: 'insideTopLeft',
+                                fontSize: 11,
+                                fill: 'var(--color-foreground)',
+                            }}
                         />
                     ))}
                 </BarChart>
