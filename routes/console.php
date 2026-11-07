@@ -1,5 +1,6 @@
 <?php
 
+use App\Jobs\RecordQueueHeartbeatJob;
 use App\Services\SettingsRepositoryService;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
@@ -40,3 +41,6 @@ Schedule::command('excubia:evaluate-runtime-alerts')->everyFifteenMinutes()->wit
 
 // Weekly email digest (#114) for the users who turned it on.
 Schedule::command('excubia:send-digests')->weeklyOn(1, '08:00');
+
+// Queue worker heartbeat for the System page (#117); the scheduler's own is excubia-core's excubia:heartbeat.
+Schedule::job(new RecordQueueHeartbeatJob)->everyMinute();

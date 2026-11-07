@@ -10,6 +10,7 @@ Excubia App is in **beta** (`1.0.0-beta`). The ingest API and the excubia-core c
 - [Backups](#backups)
 - [Upgrades](#upgrades)
 - [Excubia watches itself](#excubia-watches-itself)
+- [System page](#system-page)
 - [AI assistant (optional)](#ai-assistant-optional)
 
 Which excubia-core version each feature needs: [compatibility.md](./compatibility.md).
@@ -141,7 +142,8 @@ The app runs scheduled tasks:
 - `excubia:evaluate-runtime-alerts` runs the optional runtime alert rules of **Settings → Integrations** (every 15 minutes);
 - `excubia:alert-stale` alerts on projects that stopped reporting (hourly);
 - `excubia:send-digests` mails the weekly digest to the users who turned it on in **Settings → Profile** (Mondays at 08:00; needs a mailer);
-- `activitylog:clean` trims the activity log.
+- `activitylog:clean` trims the activity log;
+- `excubia:heartbeat` (scheduled by excubia-core) and a small queued heartbeat job tell the **System** page that the scheduler and the queue worker run (every minute).
 
 Upgrading from a version without the hourly runtime rollups of the dashboard? Run `php artisan excubia:backfill-runtime-rollups` once after `migrate` (Docker: `docker compose exec app php artisan excubia:backfill-runtime-rollups`), so the dashboard totals include the runtime pushed before.
 
@@ -218,6 +220,48 @@ php artisan up
 The **Excubia** system project runs the `qiick/excubia-core` checks on this install every day, with no push token: the report is built and stored locally. Only package names and versions leave the server, as for any project. It cannot be deleted or renamed. Disable it in its drawer to stop the checks. Everyone with access to projects sees it; an admin can set its **Visibility** to _Admins only_, since the instance's own findings can be sensitive.
 
 It also records this install's own runtime and exceptions: excubia-core's collectors run on the app, and `excubia:system-telemetry` moves them to the system project, with no push token or HTTP call. Turn it off with `EXCUBIA_SELF_MONITORING=false`.
+
+## System page
+
+**Settings → System** shows the health of this install. Super-admins see it; give other roles the `can-show-system` permission. Each item links to its section below.
+
+### Scheduler heartbeat
+
+The scheduler runs `excubia:heartbeat` every minute. No run in the last 5 minutes means the scheduler stopped: check the cron entry or `php artisan schedule:work` (Docker: the `scheduler` service, `docker compose ps`). See [Scheduler and queue](#scheduler-and-queue).
+
+### Queue worker
+
+The scheduler queues a heartbeat job every minute; a worker that runs it is alive. No run in the last 5 minutes while the scheduler runs means no worker: start `php artisan queue:work` (Docker: the `queue` service) or set `QUEUE_CONNECTION=sync`. The status is unknown while the scheduler is down. After a deploy, `php artisan queue:restart`. Pending jobs are the default queue's backlog; failed jobs are retried or deleted under **Settings → Jobs**.
+
+### Pushes per project
+
+The last report, runtime and exceptions push of each enabled project. A report older than **Stale after** (**Settings → Project**) or runtime older than 15 minutes is highlighted. In the project, check that its scheduler runs `excubia:push` (daily) and, for runtime, `excubia:push-runtime` (scheduled by excubia-core), and that `EXCUBIA_APP_URL` and `EXCUBIA_APP_TOKEN` are set. Exceptions are only pushed when there are some.
+
+### Ingest rejections
+
+Pushes the app answered with a 4xx in the last 24 hours, per endpoint and reason. Only the endpoint, the status and the reason are kept, never the body, the token or the project.
+
+- `token` (401): missing, unknown or revoked token. Rotate the token in the project's drawer and update `EXCUBIA_APP_TOKEN` in the project.
+- `disabled` (403): the project is disabled in Excubia. Enable it in its drawer.
+- `too_large` (413): the body is above `EXCUBIA_PUSH_MAX_KILOBYTES`. Raise it, or push runtime more often.
+- `throttled` (429): more than `EXCUBIA_PUSH_REQUESTS_PER_MINUTE` pushes per minute for one token.
+- A field name (422): the push does not match the schema, usually a core that is too old or too new. See [compatibility.md](./compatibility.md).
+
+### Unknown runtime types
+
+Runtime entries of types this app does not know yet, sent by a newer excubia-core, are skipped on store (the rest of the push is kept). Upgrade the app to see them, or turn the type off in the project's `excubia.json`.
+
+### Alert delivery failures
+
+Alerts of the last 24 hours that a channel failed to deliver. Check the channel under **Settings → Integrations** with **Send test**, and that a queue worker runs. The project's **Alerts** tab has the full history.
+
+### Runtime rollups
+
+The dashboard totals read hourly rollups. When runtime from before the rollups is stored, run `php artisan excubia:backfill-runtime-rollups` once (Docker: `docker compose exec app php artisan excubia:backfill-runtime-rollups`).
+
+### Version and compatibility
+
+The app version, the excubia-core installed in the app, and the core constraint and protocol version the app accepts from projects. See [compatibility.md](./compatibility.md) and [Upgrades](#upgrades).
 
 ## AI assistant (optional)
 

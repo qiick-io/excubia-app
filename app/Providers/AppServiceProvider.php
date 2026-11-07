@@ -8,10 +8,12 @@ use App\Policies\ActivityPolicy;
 use App\Policies\JobPolicy;
 use App\Policies\PermissionPolicy;
 use App\Policies\RolePolicy;
+use App\Policies\SystemHealthPolicy;
 use App\Services\EffectivePermissionResolverService;
 use App\Services\JobMonitorQueryService;
 use App\Services\SelfMonitoringService;
 use App\Services\SettingsRepositoryService;
+use App\Services\SystemHealthService;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Login;
@@ -99,6 +101,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Permission::class, PermissionPolicy::class);
         // Queue rows have no model: the queue monitor's policy is keyed on its read service.
         Gate::policy(JobMonitorQueryService::class, JobPolicy::class);
+        Gate::policy(SystemHealthService::class, SystemHealthPolicy::class);
 
         Gate::before(fn (User $user, string $ability): ?bool => PermissionEnum::tryFrom($ability) !== null
             && app(EffectivePermissionResolverService::class)->hasPermission($user, $ability) ? true : null);

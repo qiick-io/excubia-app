@@ -50,6 +50,9 @@ enum PermissionEnum: string
     case CanShowJobs = 'can-show-jobs';
     case CanManageJobs = 'can-manage-jobs';
 
+    // System health page (#117)
+    case CanShowSystem = 'can-show-system';
+
     // AI
     case CanUseAi = 'can-use-ai';
 
