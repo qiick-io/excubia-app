@@ -56,6 +56,19 @@ class StorePushedReportRequest extends FormRequest
             'report.upgradePlan' => ['present', 'list'],
             'report.upgradePlan.*.stepNumber' => ['required', 'integer', 'min:1'],
             'report.upgradePlan.*.message' => ['required', 'string'],
+            // Schedule inventory (#110), optional: older cores and the standalone CLI omit it.
+            'report.schedule' => ['sometimes', 'list', 'max:500'],
+            'report.schedule.*' => ['array'],
+            'report.schedule.*.taskId' => ['required', 'string', 'regex:/^[0-9a-f]{64}$/', 'distinct'],
+            'report.schedule.*.task' => ['required', 'string'],
+            'report.schedule.*.expression' => ['required', 'string', 'max:100'],
+            'report.schedule.*.timezone' => ['required', 'string', 'max:64'],
+            'report.schedule.*.withoutOverlapping' => ['required', 'boolean'],
+            'report.schedule.*.onOneServer' => ['required', 'boolean'],
+            'report.schedule.*.runsInMaintenanceMode' => ['required', 'boolean'],
+            'report.schedule.*.environments' => ['present', 'list'],
+            'report.schedule.*.environments.*' => ['string', 'max:64'],
+            'report.schedule.*.lateAfterMinutes' => ['sometimes', 'integer', 'min:1'],
         ];
     }
 

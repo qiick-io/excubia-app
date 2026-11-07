@@ -65,7 +65,8 @@ The app runs scheduled tasks:
 - `excubia:system-report` checks this Excubia install and stores the report on the system project (daily);
 - `excubia:system-telemetry` stores this install's own runtime and exceptions on the system project (every minute);
 - `excubia:prune-reports` keeps the newest reports of each project (30 by default, in **Settings → Project**);
-- `excubia:prune-telemetry` keeps 14 days of runtime aggregates and exception groups seen in the last 90 days (`EXCUBIA_RUNTIME_RETENTION_DAYS`, `EXCUBIA_EXCEPTIONS_RETENTION_DAYS`);
+- `excubia:evaluate-schedules` flags late, missed and failed scheduled tasks of the projects (every minute);
+- `excubia:prune-telemetry` keeps 14 days of runtime aggregates and scheduled-task runs, and exception groups seen in the last 90 days (`EXCUBIA_RUNTIME_RETENTION_DAYS`, `EXCUBIA_EXCEPTIONS_RETENTION_DAYS`);
 - `activitylog:clean` trims the activity log.
 
 Run the Laravel scheduler with a cron entry:
@@ -109,6 +110,8 @@ It also records this install's own runtime (requests, slow queries, jobs, schedu
 Run `php artisan excubia:push` once to send the first report. A project that has not reported for 36 hours (setting in **Settings → Project**) shows as stale. Lost the token? Use **New push token** on the project row. **Revoke** stops pushes until you issue a new one. For the project side (CI pushes, `--strict`, exit codes), see [`qiick/excubia-core`](https://github.com/qiick-io/excubia-core#readme).
 
 **Runtime and exceptions (optional).** With `runtime.enabled` or `exceptions.enabled` in the project's `excubia.json`, `excubia:push-runtime` runs every minute and sends per-minute aggregates (requests per route, slow queries, jobs, scheduled tasks, outgoing HTTP per host) to `/api/runtime` and masked exception groups to `/api/exceptions`, with the same URL and token. The core masks everything before it leaves the project; no request bodies, headers, users, IP addresses or query bindings are sent.
+
+**Scheduled tasks (optional).** `excubia:push` sends the project's schedule with each report, and the runtime `scheduledTask` aggregates carry the same `taskId`. The **Schedule** tab of the project lists each task with its last run, next due time and status: late (no run within `lateAfterMinutes`, default 5, after the due time), missed (still no run at the next due time), failed, or skipped. Tasks limited to other environments (read from the project's exceptions) and, in maintenance mode, tasks without `evenInMaintenanceMode()` are not expected to run. When `excubia:heartbeat` stops too, the tasks show "Scheduler down" and one `schedule.scheduler_down` alert is sent instead of one per task. Missed and failed runs send `schedule.missed` and `schedule.failed` alerts, except when runs are sampled (`sampleRate` below 1), where a missing run proves little.
 
 ### AI assistant (optional)
 

@@ -423,7 +423,10 @@
                 "project.recovered": "Der höchste Schweregrad des letzten Berichts ist niedriger als zuvor.",
                 "project.stale": "Ein Projekt hat im Veraltungsfenster keinen Bericht gesendet.",
                 "project.reporting_again": "Ein veraltetes Projekt sendet wieder Berichte.",
-                "project.token_changed": "Ein Push-Token wurde erneuert oder widerrufen."
+                "project.token_changed": "Ein Push-Token wurde erneuert oder widerrufen.",
+                "schedule.missed": "Eine geplante Aufgabe lief bis zum nächsten Fälligkeitszeitpunkt nicht.",
+                "schedule.failed": "Ein Lauf einer geplanten Aufgabe ist fehlgeschlagen.",
+                "schedule.scheduler_down": "Der Scheduler steht: excubia:heartbeat lief nicht."
             }
         }
     },
@@ -664,7 +667,8 @@
             "plan": "Upgrade-Plan",
             "history": "Verlauf",
             "runtime": "Laufzeit",
-            "exceptions": "Exceptions"
+            "exceptions": "Exceptions",
+            "schedule": "Zeitplan"
         },
         "support": {
             "supported": "Unterstützt",
@@ -937,6 +941,36 @@
         "resolve": "Lösen",
         "ignore": "Ignorieren",
         "reopen": "Wieder öffnen"
+    },
+    "schedule": {
+        "description": "Die geplanten Aufgaben des letzten Berichts, jeweils mit letztem Lauf, nächster Fälligkeit und Status. Jede Minute mit den Läufen aus dem Runtime-Monitoring abgeglichen.",
+        "emptyTitle": "Keine geplanten Aufgaben",
+        "emptyDescription": "Sende mit php artisan excubia:push den Zeitplan und aktiviere das Runtime-Monitoring, um jede Aufgabe mit ihren Läufen abzugleichen.",
+        "guide": "Anleitung zu geplanten Aufgaben",
+        "task": "Aufgabe",
+        "lastRun": "Letzter Lauf",
+        "nextDue": "Nächste Fälligkeit",
+        "statusLabel": "Status",
+        "lowConfidence": "Geringe Sicherheit: Läufe sind gesampelt oder die Umgebung ist unbekannt",
+        "schedulerDownTitle": "Der Scheduler steht",
+        "schedulerDownDescription": "excubia:heartbeat lief seit {{time}} nicht, daher läuft keine Aufgabe.",
+        "outcome": {
+            "finished": "Beendet",
+            "failed": "Fehlgeschlagen",
+            "skipped": "Übersprungen"
+        },
+        "status": {
+            "pending": "Ausstehend",
+            "on_time": "Pünktlich",
+            "late": "Verspätet",
+            "missed": "Verpasst",
+            "failed": "Fehlgeschlagen",
+            "skipped": "Übersprungen",
+            "scheduler_down": "Scheduler steht",
+            "not_expected": "Andere Umgebung",
+            "paused": "Wartung",
+            "unknown": "Keine Laufdaten"
+        }
     },
     "ai": {
         "fabDescription": "Schnelle Assistenten-Schublade. Öffnen Sie die Vollseite für den Verlauf.",

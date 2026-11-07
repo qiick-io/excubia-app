@@ -88,6 +88,16 @@ class Project extends Model
     }
 
     /**
+     * Schedule inventory (#110), in schedule order.
+     *
+     * @return HasMany<ScheduledTask, $this>
+     */
+    public function scheduledTasks(): HasMany
+    {
+        return $this->hasMany(ScheduledTask::class)->orderBy('position');
+    }
+
+    /**
      * @return HasOne<HealthReport, $this>
      */
     public function latestReport(): HasOne
