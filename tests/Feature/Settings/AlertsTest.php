@@ -125,6 +125,13 @@ it('saves the integrations settings, keeps secrets write-only and validates them
         ->get(route('project.integrations.edit'))->assertForbidden();
 });
 
+it('keeps using a Slack URL saved in plain text before it was encrypted (#51)', function () {
+    app(SettingsRepositoryService::class)->setMany(['notifier_slack_webhook_url' => 'https://hooks.slack.com/services/T/B/OLD']);
+
+    expect(app(SettingsRepositoryService::class)->slackWebhookUrl())->toBe('https://hooks.slack.com/services/T/B/OLD')
+        ->and(app(SettingsRepositoryService::class)->forEdit()['has_notifier_slack_webhook_url'])->toBeTrue();
+});
+
 it('raises new, resolved and worsened alerts by comparing reports', function () {
     Queue::fake();
     configureAlertChannels(['notifier_minimum_severity' => 'info']);

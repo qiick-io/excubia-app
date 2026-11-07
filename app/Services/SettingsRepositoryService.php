@@ -446,7 +446,12 @@ class SettingsRepositoryService
 
     public function slackWebhookUrl(): ?string
     {
-        return $this->secret('notifier_slack_webhook_url');
+        // ponytail: installs from before #51 saved the URL in plain text; it is still used until
+        // the next save encrypts it. Drop the fallback at 1.0.0.
+        $legacy = $this->string('notifier_slack_webhook_url');
+
+        return $this->secret('notifier_slack_webhook_url')
+            ?? ($legacy !== null && str_starts_with($legacy, 'https://hooks.slack.com/') ? $legacy : null);
     }
 
     public function telegramBotToken(): ?string
