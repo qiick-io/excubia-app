@@ -19,6 +19,7 @@ The checks run inside each project through [`qiick/excubia-core`](https://github
 ## Features
 
 - **Reports:** worst severity per project, findings with fix hints, upgrade plan, report history, stale projects, license inventory.
+- **Finding lifecycle:** first and last seen, fixed in which report, came back, per-finding history; dismiss a finding with a reason and an optional end date (the fields of an `excubia.json` ignore rule).
 - **Runtime and exceptions (opt-in in each project):** requests, slow and N+1 queries, jobs, queue wait, cache, mail, outgoing HTTP, server metrics, with p50 / p95 / p99; masked exception groups.
 - **Scheduled tasks:** late, missed and failed runs, "scheduler down".
 - **Alerts** by mail and integrations, with mutes and maintenance windows, and a weekly digest.
