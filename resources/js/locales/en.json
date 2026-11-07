@@ -160,6 +160,36 @@
             "authToggle": "login using a recovery code",
             "recoveryPlaceholder": "Enter recovery code",
             "orYouCan": "or you can "
+        },
+        "setup": {
+            "head": "Set up Excubia",
+            "stepOf": "Step {{step}} of {{total}}",
+            "notice": {
+                "title": "Excubia is not set up yet",
+                "description": "This install has no account. Create the first admin to start.",
+                "link": "Set up Excubia"
+            },
+            "admin": {
+                "title": "Create the admin account",
+                "description": "This account becomes the super-admin of this install. There is no public sign-up: add more users later under Users.",
+                "submit": "Create admin"
+            },
+            "project": {
+                "title": "Add your first project",
+                "name": "Project name",
+                "description": "The Laravel app to watch, for example “Shop”. You can add more projects later.",
+                "submit": "Create project",
+                "skip": "Skip for now"
+            },
+            "done": {
+                "title": "Connect your project",
+                "description": "Run these steps in “{{name}}”. Copy the token now: it is shown only once.",
+                "install": "Install the core package",
+                "config": "excubia.json (optional: runtime and exceptions)",
+                "cron": "Server cron (keeps the scheduler running)",
+                "firstPush": "Then run php artisan excubia:push once to send the first report.",
+                "submit": "Go to the dashboard"
+            }
         }
     },
     "settings": {
