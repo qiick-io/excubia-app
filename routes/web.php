@@ -3,6 +3,7 @@
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\AssistantController;
 use App\Http\Controllers\Auth\OidcController;
+use App\Http\Controllers\Auth\SetupController;
 use App\Http\Controllers\BrandingController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\JobMonitorController;
@@ -23,6 +24,11 @@ Route::redirect('/', '/dashboard')->name('home');
 Route::get('branding/{asset}', [BrandingController::class, 'show'])
     ->whereIn('asset', array_keys(SettingsRepositoryService::BRANDING_ASSETS))
     ->name('branding.show');
+
+// First-run wizard (#116): the admin step only while no user exists, then the first project.
+Route::get('setup', [SetupController::class, 'show'])->name('setup.show');
+Route::post('setup/admin', [SetupController::class, 'storeAdmin'])->middleware('throttle:6,1')->name('setup.admin.store');
+Route::post('setup/project', [SetupController::class, 'storeProject'])->middleware(['auth', 'verified'])->name('setup.project.store');
 
 Route::middleware('guest')->group(function () {
     Route::get('auth/oidc/redirect', [OidcController::class, 'redirect'])->name('auth.oidc.redirect');

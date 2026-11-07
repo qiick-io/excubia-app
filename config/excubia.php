@@ -42,6 +42,11 @@ return [
     // stays in this database, masked by excubia-core like any project's.
     'self_monitoring' => (bool) env('EXCUBIA_SELF_MONITORING', true),
 
+    // Reverse proxies whose X-Forwarded-* headers are trusted (#116), comma-separated IPs or
+    // CIDR ranges, or `*` for any. Empty trusts none. Set it when a TLS proxy sits in front of
+    // the app (Docker), so URLs and push snippets use https and the client IP is the real one.
+    'trusted_proxies' => env('TRUSTED_PROXIES'),
+
     /*
     |--------------------------------------------------------------------------
     | Assistant

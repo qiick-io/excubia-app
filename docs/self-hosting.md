@@ -1,0 +1,232 @@
+# Self-hosting Excubia App
+
+Excubia App is in **beta** (`1.0.0-beta`). The ingest API and the excubia-core contracts are frozen for 1.0, and until 1.0.0 only fixes and additive changes land. Expect rough edges, read the [changelog](../CHANGELOG.md) before each upgrade and keep backups.
+
+- [Requirements](#requirements)
+- [Install with Docker](#install-with-docker)
+- [Install on a server (Forge, Ploi or by hand)](#install-on-a-server-forge-ploi-or-by-hand)
+- [First run](#first-run)
+- [Scheduler and queue](#scheduler-and-queue)
+- [Backups](#backups)
+- [Upgrades](#upgrades)
+- [Excubia watches itself](#excubia-watches-itself)
+- [AI assistant (optional)](#ai-assistant-optional)
+
+Which excubia-core version each feature needs: [compatibility.md](./compatibility.md).
+
+## Requirements
+
+- **HTTPS.** `excubia push` refuses plain HTTP except to localhost, so the app needs a public HTTPS URL that the monitored projects can reach.
+- **A database.** SQLite is the default and enough for most installs. MySQL 8 and PostgreSQL work too and run the full test suite in CI; MariaDB works through the MySQL driver.
+- **A scheduler and a queue worker.** Docker runs both for you; on a server, a cron entry and a daemon.
+
+## Install with Docker
+
+The repository ships a production `Dockerfile` (FrankenPHP with PHP 8.4, no Octane) and a `docker-compose.yml` that runs three containers from the same image: `app` (web server on port 8080), `queue` (`queue:work`) and `scheduler` (`schedule:work`). All state lives in one volume mounted at `/app/storage`: the SQLite database, uploaded logos and the generated application key.
+
+```bash
+git clone https://github.com/qiick-io/excubia-app.git
+cd excubia-app
+docker compose up -d --build
+```
+
+Open `http://localhost:8080/setup` and follow the [first run](#first-run). The `app` container is healthy once `/up` answers; `queue` and `scheduler` start after it.
+
+On start, the `app` container:
+
+1. creates the SQLite database in the volume if it is missing;
+2. generates an `APP_KEY` into `storage/app.key` when you did not set one (back it up with the database: it encrypts the OIDC client secret and the two-factor secrets);
+3. runs `migrate --force`, then the idempotent `PermissionSeeder` and `SystemProjectSeeder`;
+4. caches config, routes, views and events (`php artisan optimize`).
+
+Only the `app` container migrates (`EXCUBIA_RUN_MIGRATIONS=false` on the others), so migrations never run twice at once.
+
+### Configuration
+
+`docker compose` reads a `.env` file next to `docker-compose.yml`. The values it passes to the containers:
+
+| Variable                                                                                       | Default                 | Purpose                                                                                   |
+| ---------------------------------------------------------------------------------------------- | ----------------------- | ----------------------------------------------------------------------------------------- |
+| `APP_URL`                                                                                      | `http://localhost:8080` | Public URL of the app (links in mails and digests).                                       |
+| `APP_KEY`                                                                                      | generated in the volume | Set it to manage the key yourself (`base64:…`, 32 bytes).                                 |
+| `TRUSTED_PROXIES`                                                                              | empty                   | Reverse proxies trusted for `X-Forwarded-*`: IPs or CIDR ranges, comma-separated, or `*`. |
+| `EXCUBIA_PORT`                                                                                 | `8080`                  | Host port of the web server.                                                              |
+| `MAIL_MAILER`, `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_FROM_ADDRESS` | `log`                   | Mail for password resets, alerts and digests.                                             |
+
+Any other setting of `.env.example` (another database, `EXCUBIA_AI_ENABLED`, retention days…) can be added under `environment:` in `docker-compose.yml`. To use MySQL or PostgreSQL, set `DB_CONNECTION`, `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME` and `DB_PASSWORD`.
+
+### HTTPS
+
+Put a TLS reverse proxy (Caddy, Traefik, nginx) in front of port 8080, set `APP_URL` to the public `https://` URL and `TRUSTED_PROXIES` to the address of the proxy (`*` when only the proxy can reach the container). Without `TRUSTED_PROXIES`, the app ignores the forwarded headers: it would build `http://` links and see the proxy's IP for every visitor, which also breaks the login rate limit.
+
+### Image without compose
+
+```bash
+docker build -t excubia-app .
+docker run -d -p 8080:8080 -v excubia-storage:/app/storage --name excubia excubia-app
+```
+
+The container then serves the web only: run the scheduler and the queue with the same image and volume (`docker run … excubia-app php artisan schedule:work` and `… php artisan queue:work`, both with `-e EXCUBIA_RUN_MIGRATIONS=false`), or set `QUEUE_CONNECTION=sync` and call `php artisan schedule:run` every minute with `docker exec`.
+
+A published image on GHCR is planned; until then, build it from the tag you want to run.
+
+## Install on a server (Forge, Ploi or by hand)
+
+Requirements: PHP 8.4 with `pdo_sqlite` (or the driver of your database), Composer 2, Node 24 and npm (to build the frontend), and a web server pointing to `public/`.
+
+### Laravel Forge or Ploi
+
+1. Create a site with PHP 8.4 and the web directory `/public`, and enable a Let's Encrypt certificate.
+2. Install the repository `qiick-io/excubia-app`, branch `main` (or a release tag).
+3. Environment: start from `.env.example` and set `APP_ENV=production`, `APP_DEBUG=false`, `APP_URL=https://your-domain`, `APP_KEY` (Forge and Ploi generate it), and `DB_DATABASE` to an absolute path outside the release directory for SQLite (for example `/home/forge/excubia.sqlite`), or the credentials of a database the panel created.
+4. Deploy script:
+
+    ```bash
+    cd $FORGE_SITE_PATH   # Ploi: cd {SITE_DIRECTORY}
+    git pull origin $FORGE_SITE_BRANCH
+    composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+    npm ci && npm run build
+    php artisan migrate --force
+    php artisan db:seed --class=PermissionSeeder --force
+    php artisan db:seed --class=SystemProjectSeeder --force
+    php artisan optimize
+    php artisan queue:restart
+    ```
+
+5. Enable the scheduler (Forge: **Scheduler** → `php artisan schedule:run` every minute; Ploi: **Cronjobs** or the Laravel scheduler toggle).
+6. Add a queue worker / daemon: `php artisan queue:work --tries=3 --max-time=3600`.
+
+### By hand
+
+```bash
+git clone https://github.com/qiick-io/excubia-app.git
+cd excubia-app
+composer install --no-dev --optimize-autoloader
+cp .env.example .env
+php artisan key:generate
+```
+
+Edit `.env` (`APP_ENV=production`, `APP_DEBUG=false`, `APP_URL`), then:
+
+```bash
+touch database/database.sqlite   # SQLite only
+php artisan migrate --force
+php artisan db:seed --class=PermissionSeeder --force
+php artisan db:seed --class=SystemProjectSeeder --force
+npm ci && npm run build
+php artisan optimize
+```
+
+Add the cron entry and a queue worker as in [Scheduler and queue](#scheduler-and-queue).
+
+## First run
+
+Open `/setup` (the login page links to it while no account exists):
+
+1. **Admin.** Create the first account. It becomes super-admin and is logged in. There is no public sign-up: add more users later under **Users**. Once an account exists, the step is locked.
+2. **First project.** Name the first Laravel app to watch (or skip and add projects later under **Projects**).
+3. **Connect it.** The page shows the project's push token **once**, with what the project needs: `composer require qiick/excubia-core:^1.0@beta`, the `EXCUBIA_APP_URL` / `EXCUBIA_APP_TOKEN` lines for its `.env`, an optional `excubia.json` that turns on runtime monitoring and exception capture, and the scheduler lines. Run `php artisan excubia:push` once in the project to send the first report.
+
+On a server without a browser at hand, `php artisan excubia:create-user` creates an account from the CLI instead (the first one becomes super-admin).
+
+## Scheduler and queue
+
+The app runs scheduled tasks:
+
+- `excubia:system-report` checks this install and stores the report on the system project (daily);
+- `excubia:system-telemetry` stores this install's own runtime and exceptions on the system project (every minute);
+- `excubia:prune-reports` keeps the newest reports of each project (30 by default, in **Settings → Project**);
+- `excubia:evaluate-schedules` flags late, missed and failed scheduled tasks of the projects (every minute);
+- `excubia:prune-telemetry` keeps 14 days of runtime aggregates, their hourly rollups and scheduled-task runs, and exception groups seen in the last 90 days (`EXCUBIA_RUNTIME_RETENTION_DAYS`, `EXCUBIA_EXCEPTIONS_RETENTION_DAYS`), and the alert history for the longer of the two;
+- `excubia:evaluate-runtime-alerts` runs the optional runtime alert rules of **Settings → Integrations** (every 15 minutes);
+- `excubia:alert-stale` alerts on projects that stopped reporting (hourly);
+- `excubia:send-digests` mails the weekly digest to the users who turned it on in **Settings → Profile** (Mondays at 08:00; needs a mailer);
+- `activitylog:clean` trims the activity log.
+
+Upgrading from a version without the hourly runtime rollups of the dashboard? Run `php artisan excubia:backfill-runtime-rollups` once after `migrate` (Docker: `docker compose exec app php artisan excubia:backfill-runtime-rollups`), so the dashboard totals include the runtime pushed before.
+
+Outside Docker, run the scheduler with a cron entry:
+
+```cron
+* * * * * cd /path/to/excubia-app && php artisan schedule:run >> /dev/null 2>&1
+```
+
+or keep `php artisan schedule:work` running. **Refresh now** on the system project queues its report, so run a queue worker (`php artisan queue:work`) or set `QUEUE_CONNECTION=sync`. Failed jobs show under **Settings → Jobs**.
+
+## Backups
+
+Back up the database and, with Docker, the application key. Everything else (code, vendor, built assets) comes back from the repository.
+
+### SQLite
+
+Copy the database with SQLite's online backup, which is safe while the app writes:
+
+```bash
+# Docker
+docker compose exec app php -r '$db = new SQLite3("/app/storage/database.sqlite"); $db->exec("VACUUM INTO \"/app/storage/backup.sqlite\"");'
+docker compose cp app:/app/storage/backup.sqlite ./excubia-$(date +%F).sqlite
+docker compose cp app:/app/storage/app.key ./excubia-app.key   # only when APP_KEY is generated
+docker compose exec app rm /app/storage/backup.sqlite
+
+# Server
+sqlite3 /path/to/database.sqlite ".backup '/backups/excubia-$(date +%F).sqlite'"
+```
+
+Do not copy the `.sqlite` file with `cp` while the app runs: a write in progress can leave a broken copy. To back up the whole Docker volume instead, stop the containers first (`docker compose stop`) and archive the volume.
+
+### MySQL, MariaDB, PostgreSQL
+
+```bash
+mysqldump --single-transaction --routines excubia > excubia-$(date +%F).sql
+pg_dump --format=custom excubia > excubia-$(date +%F).dump
+```
+
+### Restore
+
+Stop the app (`docker compose stop` or `php artisan down`), put the database file back (or load the dump), restore the same `APP_KEY`, start again. The entrypoint and the deploy script run any pending migration.
+
+Keep the `APP_KEY` with the backups: without it, the OIDC client secret and the two-factor secrets cannot be read, and every user is logged out. Push tokens are stored as hashes and do not depend on the key.
+
+## Upgrades
+
+Read the [changelog](../CHANGELOG.md) first, back up, then:
+
+```bash
+# Docker
+git fetch --tags && git checkout v1.0.0-beta.2   # the version you want
+docker compose up -d --build
+
+# Server (or the Forge / Ploi deploy script above)
+php artisan down
+git pull
+composer install --no-dev --optimize-autoloader
+npm ci && npm run build
+php artisan migrate --force
+php artisan db:seed --class=PermissionSeeder --force
+php artisan db:seed --class=SystemProjectSeeder --force
+php artisan optimize
+php artisan queue:restart
+php artisan up
+```
+
+- **During the beta,** migrations can change between betas. Upgrade one beta at a time, in order, and always with a backup. From 1.0.0 on, migrations are forward-only and every release upgrades from the previous one.
+- **Monitored projects** do not need to upgrade with the app: the app accepts reports, runtime and exception pushes from every excubia-core 1.x, and stores runtime types it does not know yet without failing (see [compatibility.md](./compatibility.md)). Upgrade excubia-core in the projects when you want the newer checks.
+- **Rollback:** restore the backup taken before the upgrade and run the previous version.
+
+## Excubia watches itself
+
+The **Excubia** system project runs the `qiick/excubia-core` checks on this install every day, with no push token: the report is built and stored locally. Only package names and versions leave the server, as for any project. It cannot be deleted or renamed. Disable it in its drawer to stop the checks. Everyone with access to projects sees it; an admin can set its **Visibility** to _Admins only_, since the instance's own findings can be sensitive.
+
+It also records this install's own runtime and exceptions: excubia-core's collectors run on the app, and `excubia:system-telemetry` moves them to the system project, with no push token or HTTP call. Turn it off with `EXCUBIA_SELF_MONITORING=false`.
+
+## AI assistant (optional)
+
+Off by default. To turn it on, run a model with [Ollama](https://ollama.com) and add to `.env`:
+
+```dotenv
+EXCUBIA_AI_ENABLED=true
+OLLAMA_URL=http://localhost:11434
+OLLAMA_MODEL=qwen3.5:4b
+```
+
+Pick a model that supports tool calling. For an OpenAI-compatible local server such as LM Studio, set `AI_DEFAULT_PROVIDER=local`, `LOCAL_AI_URL` and `LOCAL_AI_MODEL` instead. Users with the `can-use-ai` permission (admin and super-admin by default) see **Assistant** in the sidebar. The assistant is read-only. To use a cloud provider, set `AI_DEFAULT_PROVIDER` and that provider's key (see `config/ai.php`); the questions and the report data its tools read then leave your server (never push tokens, user data or file paths).

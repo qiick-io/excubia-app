@@ -1,7 +1,7 @@
 import { usePage } from '@inertiajs/react';
-import { Check, Copy } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { CopySnippet, SCHEDULE_LINE } from '@/components/projects/copy-snippet';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -13,8 +13,6 @@ import {
 } from '@/components/ui/dialog';
 import { useClipboard } from '@/hooks/use-clipboard';
 import type { PushTokenFlash } from '@/types';
-
-const SCHEDULE_LINE = "Schedule::command('excubia:push')->daily();";
 
 /**
  * Shows a push token flashed by the server once, with the setup the project needs to push
@@ -35,32 +33,6 @@ export function PushTokenDialog() {
     const environment = pushToken
         ? `EXCUBIA_APP_URL=${pushToken.url}\nEXCUBIA_APP_TOKEN=${pushToken.token}`
         : '';
-
-    const snippet = (label: string, text: string) => (
-        <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">{label}</span>
-                <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => void copy(text)}
-                >
-                    {copiedText === text ? (
-                        <Check className="size-3.5" />
-                    ) : (
-                        <Copy className="size-3.5" />
-                    )}
-                    {copiedText === text
-                        ? t('projects.token.copied')
-                        : t('projects.token.copy')}
-                </Button>
-            </div>
-            <pre className="overflow-x-auto rounded-md bg-muted p-3 font-mono text-xs break-all whitespace-pre-wrap">
-                {text}
-            </pre>
-        </div>
-    );
 
     return (
         <Dialog
@@ -83,8 +55,18 @@ export function PushTokenDialog() {
                     </DialogDescription>
                 </DialogHeader>
 
-                {snippet(t('projects.token.environment'), environment)}
-                {snippet(t('projects.token.schedule'), SCHEDULE_LINE)}
+                <CopySnippet
+                    label={t('projects.token.environment')}
+                    text={environment}
+                    copiedText={copiedText}
+                    copy={copy}
+                />
+                <CopySnippet
+                    label={t('projects.token.schedule')}
+                    text={SCHEDULE_LINE}
+                    copiedText={copiedText}
+                    copy={copy}
+                />
 
                 <DialogFooter>
                     <Button type="button" onClick={() => setPushToken(null)}>
