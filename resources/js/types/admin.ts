@@ -53,6 +53,8 @@ export type AdminUserRow = {
     roles: AdminRoleRef[];
     groups: AdminGroupRef[];
     can_update: boolean;
+    /** False on your own account unless you are a super-admin (#151). */
+    can_change_roles: boolean;
     can_delete: boolean;
     created_at: string;
     updated_at: string;
@@ -68,6 +70,8 @@ export type AdminGroupRow = {
     roles: AdminRoleRef[];
     users?: AdminUserRef[];
     can_update: boolean;
+    /** False on a group you belong to unless you are a super-admin (#151). */
+    can_change_roles: boolean;
     created_at: string;
     updated_at: string;
 };

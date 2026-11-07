@@ -5,18 +5,19 @@ declare(strict_types=1);
 namespace App\Policies;
 
 use App\Enums\PermissionEnum;
-use App\Enums\RoleEnum;
 use App\Models\User;
 use App\Models\UserGroup;
-use App\Services\EffectivePermissionResolverService;
+use App\Services\RoleGrantService;
 
 /**
- * Groups are managed with `can-*-groups`. A group that carries the super-admin role is
- * managed by super-admins only, so nobody can join it to promote themselves.
+ * Groups are managed with `can-*-groups`, but only groups whose roles the actor could grant
+ * (RoleGrantService, #151): a group that carries `super-admin` is managed by super-admins only,
+ * one that carries `admin` by admins, so nobody adds members to a role they do not hold or
+ * strips it from them.
  */
 class UserGroupPolicy
 {
-    public function __construct(private EffectivePermissionResolverService $permissionResolver) {}
+    public function __construct(private RoleGrantService $roleGrants) {}
 
     public function viewAny(User $actor): bool
     {
@@ -38,10 +39,9 @@ class UserGroupPolicy
         return $actor->can(PermissionEnum::CanDeleteGroups->value) && $this->canTouch($actor, $group);
     }
 
-    /** Only a super-admin may change a group that carries the super-admin role. */
+    /** The group carries no role the actor could not grant (super-admins pass). */
     private function canTouch(User $actor, UserGroup $group): bool
     {
-        return $this->permissionResolver->isSuperAdmin($actor)
-            || $group->roles()->where('name', RoleEnum::SuperAdmin->value)->doesntExist();
+        return $this->roleGrants->canGrantRoles($actor, array_values($group->roles()->pluck('name')->all()));
     }
 }
