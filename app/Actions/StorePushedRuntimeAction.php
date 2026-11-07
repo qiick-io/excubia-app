@@ -27,6 +27,8 @@ use Illuminate\Support\Facades\DB;
  */
 class StorePushedRuntimeAction
 {
+    public function __construct(private StoreScheduledTaskRunsAction $scheduledTaskRuns) {}
+
     /**
      * @param  list<array<string, mixed>>  $aggregates  validated by StorePushedRuntimeRequest
      * @param  string|null  $release  the batch's `runtime.release`, an extra dimension
@@ -50,6 +52,9 @@ class StorePushedRuntimeAction
 
                     $this->add($project, $type, $aggregate, $release);
                 }
+
+                // Runs per scheduled task for schedule monitoring (#110).
+                $this->scheduledTaskRuns->execute($project, $aggregates);
 
                 if ($skipped > 0) {
                     // A query increment: no model event, so no activity log entry per push.

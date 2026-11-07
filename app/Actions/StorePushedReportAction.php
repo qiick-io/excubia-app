@@ -21,7 +21,10 @@ use Illuminate\Support\Facades\DB;
  */
 class StorePushedReportAction
 {
-    public function __construct(private ReportAlertsService $reportAlerts) {}
+    public function __construct(
+        private ReportAlertsService $reportAlerts,
+        private StoreScheduleInventoryAction $scheduleInventory,
+    ) {}
 
     /**
      * @param  array<string, mixed>  $report  excubia-core JSON report, already validated
@@ -54,6 +57,11 @@ class StorePushedReportAction
                     'report' => $report,
                     ...$this->summary($report),
                 ]);
+
+                // A push without `schedule` (older cores, the standalone CLI) keeps the last inventory (#110).
+                if (is_array($report['schedule'] ?? null)) {
+                    $this->scheduleInventory->execute($project, $report['schedule']);
+                }
 
                 $project->forceFill(['last_report_at' => $receivedAt, 'stale_alerted_at' => null])->save();
                 $this->reportAlerts->afterReport($project, $healthReport, $previous, $wasStale);

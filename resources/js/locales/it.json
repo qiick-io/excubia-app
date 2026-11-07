@@ -423,7 +423,10 @@
                 "project.recovered": "La gravità peggiore dell'ultimo report è più bassa di prima.",
                 "project.stale": "Un progetto non ha inviato report entro la finestra di aggiornamento.",
                 "project.reporting_again": "Un progetto non aggiornato torna a inviare report.",
-                "project.token_changed": "Un token di push è stato rigenerato o revocato."
+                "project.token_changed": "Un token di push è stato rigenerato o revocato.",
+                "schedule.missed": "Un task pianificato non era ancora partito alla scadenza successiva.",
+                "schedule.failed": "Un'esecuzione di un task pianificato è fallita.",
+                "schedule.scheduler_down": "Lo scheduler si è fermato: excubia:heartbeat non è partito."
             }
         }
     },
@@ -664,7 +667,8 @@
             "plan": "Piano di upgrade",
             "history": "Storico",
             "runtime": "Runtime",
-            "exceptions": "Eccezioni"
+            "exceptions": "Eccezioni",
+            "schedule": "Pianificazione"
         },
         "support": {
             "supported": "Supportato",
@@ -951,6 +955,36 @@
         "firstRelease": "Vista la prima volta nella release",
         "lastRelease": "Vista l'ultima volta nella release",
         "regressedIn": "Regressione in {{release}}"
+    },
+    "schedule": {
+        "description": "I task pianificati dell'ultimo report, ognuno con l'ultima esecuzione, la prossima scadenza e lo stato. Controllati ogni minuto con le esecuzioni inviate dal monitoraggio runtime.",
+        "emptyTitle": "Nessun task pianificato",
+        "emptyDescription": "Esegui php artisan excubia:push per inviare la pianificazione e attiva il monitoraggio runtime per collegare ogni task alle sue esecuzioni.",
+        "guide": "Guida ai task pianificati",
+        "task": "Task",
+        "lastRun": "Ultima esecuzione",
+        "nextDue": "Prossima scadenza",
+        "statusLabel": "Stato",
+        "lowConfidence": "Affidabilità bassa: esecuzioni campionate o ambiente sconosciuto",
+        "schedulerDownTitle": "Lo scheduler è fermo",
+        "schedulerDownDescription": "excubia:heartbeat non parte dal {{time}}, quindi nessun task viene eseguito.",
+        "outcome": {
+            "finished": "Completato",
+            "failed": "Fallito",
+            "skipped": "Saltato"
+        },
+        "status": {
+            "pending": "In attesa",
+            "on_time": "In orario",
+            "late": "In ritardo",
+            "missed": "Mancato",
+            "failed": "Fallito",
+            "skipped": "Saltato",
+            "scheduler_down": "Scheduler fermo",
+            "not_expected": "Altro ambiente",
+            "paused": "Manutenzione",
+            "unknown": "Nessun dato"
+        }
     },
     "ai": {
         "fabDescription": "Drawer rapido dell'assistente. Apri la pagina completa per la cronologia.",

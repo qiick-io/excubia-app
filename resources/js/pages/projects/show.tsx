@@ -2,6 +2,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import {
     Activity,
     Bug,
+    CalendarClock,
     CircleCheck,
     ExternalLink,
     Gauge,
@@ -30,6 +31,7 @@ import {
 } from '@/components/reports/fix-actions';
 import { ReleaseLabel, shortRelease } from '@/components/reports/release-label';
 import { RuntimeView } from '@/components/reports/runtime-view';
+import { ScheduleView } from '@/components/reports/schedule-view';
 import {
     RUNTIMES,
     runtimeLabel,
@@ -87,6 +89,7 @@ import type {
     ProjectRow,
     ReportFinding,
     RuntimeSummary,
+    ScheduledTaskRow,
     Severity,
 } from '@/types';
 
@@ -95,6 +98,7 @@ const VIEWS = [
     'findings',
     'runtime',
     'exceptions',
+    'schedule',
     'plan',
     'history',
 ] as const;
@@ -117,11 +121,14 @@ export default function ProjectShow({
     findingFixes = {},
     runtime = null,
     exceptions = [],
+    schedule = [],
     canManageExceptions = false,
     canRefreshReport = false,
 }: {
     runtime?: RuntimeSummary | null;
     exceptions?: ExceptionGroupRow[];
+    /** Scheduled tasks and their status (#110), on the Schedule tab only. */
+    schedule?: ScheduledTaskRow[];
     canManageExceptions?: boolean;
     canRefreshReport?: boolean;
     /** Ready command and prompt per finding, keyed by `checkId|subject|advisoryId` (#78). */
@@ -175,6 +182,8 @@ export default function ProjectShow({
             <ProjectTabs slug={project.slug} view={view} />
             {view === 'findings' && report !== null ? (
                 <FindingsView report={report} fixes={findingFixes} />
+            ) : view === 'schedule' ? (
+                <ScheduleView tasks={schedule} />
             ) : view === 'exceptions' ? (
                 <ExceptionsView
                     projectId={project.id}
@@ -224,6 +233,7 @@ const VIEW_ICONS = {
     findings: ListChecks,
     runtime: Gauge,
     exceptions: Bug,
+    schedule: CalendarClock,
     plan: ListOrdered,
     history: History,
 } as const;
