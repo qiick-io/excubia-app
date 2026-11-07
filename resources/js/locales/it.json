@@ -226,7 +226,12 @@
             "unverified": "Il tuo indirizzo email non è verificato.",
             "resend": "Clicca qui per reinviare l'email di verifica.",
             "linkSent": "Un nuovo link di verifica è stato inviato al tuo indirizzo email.",
-            "weeklyDigest": "Inviami un riepilogo settimanale via email (nuovi problemi, regressioni, EOL, eccezioni principali, problemi di schedule)"
+            "weeklyDigest": "Inviami un riepilogo settimanale via email (nuovi problemi, regressioni, EOL, eccezioni principali, problemi di schedule)",
+            "alertsTitle": "Avvisi via email",
+            "alertsDescription": "Ricevi un'email quando scatta un avviso che ti interessa, per i progetti che puoi vedere.",
+            "alertsEnabled": "Inviami gli avvisi via email",
+            "alertsTest": "Invia email di prova",
+            "alertsTestHint": "Salva prima. L'email arriva al tuo indirizzo e serve un queue worker."
         },
         "security": {
             "breadcrumb": "Impostazioni sicurezza",
@@ -425,7 +430,7 @@
             "webhookTitle": "Webhook in uscita",
             "webhookDescription": "Invia avvisi firmati al tuo endpoint quando un progetto cambia",
             "webhookUrl": "URL del webhook",
-            "webhookUrlHint": "Solo HTTPS. Lascia vuoto per disattivare. Riceve tutti gli eventi. Serve un queue worker.",
+            "webhookUrlHint": "Solo HTTPS. Lascia vuoto per disattivare. Serve un queue worker.",
             "webhookSecret": "Segreto del webhook",
             "webhookSecretHint": "Usato per la firma HMAC-SHA256 (X-Excubia-Signature di \"timestamp.body\"). Lascia vuoto per mantenere quello attuale.",
             "generateSecret": "Genera segreto",
@@ -436,11 +441,11 @@
             "lastError": "Ultima consegna fallita",
             "deliveryNone": "Ancora nessuna.",
             "notifiersTitle": "Notifiche in uscita (Slack e Telegram)",
-            "notifiersDescription": "Avvisi leggibili, facoltativi, per gli eventi scelti. Solo in uscita.",
-            "eventTypes": "Notifica questi eventi",
-            "eventTypesHint": "Slack e Telegram inviano solo questi eventi; il webhook li riceve tutti. Il test funziona sempre.",
+            "notifiersDescription": "Avvisi leggibili, facoltativi. Ogni canale ha la sua gravità minima, i suoi eventi e i suoi progetti. Solo in uscita.",
+            "eventTypes": "Eventi",
+            "eventTypesHint": "Qui vengono inviati solo questi eventi. Il test funziona sempre.",
             "minimumSeverity": "Gravità minima",
-            "minimumSeverityHint": "Slack e Telegram ignorano gli avvisi sotto questa gravità.",
+            "minimumSeverityHint": "Gli avvisi sotto questa gravità non vengono inviati qui.",
             "slackUrl": "URL incoming webhook di Slack",
             "slackUrlHint": "https://hooks.slack.com/services/… Lascia vuoto per disattivare.",
             "sendTestSlack": "Test Slack",
@@ -475,7 +480,14 @@
             "cacheHitRatioHint": "Avvisa quando uno store di cache trova meno di questa quota su almeno 100 letture nell'ultima ora.",
             "logSpike": "Voci di log di errore per canale e ora",
             "logSpikeHint": "Avvisa quando un canale di log scrive almeno questo numero di voci error, critical, alert o emergency nell'ultima ora.",
-            "deliveryFailures": "Avvisa quando email o notifiche falliscono"
+            "deliveryFailures": "Avvisa quando email o notifiche falliscono",
+            "projects": "Progetti",
+            "projectsHint": "Lascia tutte le caselle vuote per inviare gli avvisi di ogni progetto.",
+            "emailTitle": "Email",
+            "emailDescription": "Ogni utente che vede i progetti attiva gli avvisi via email per sé nel proprio profilo, con la sua gravità minima, i suoi eventi e i suoi progetti. Le email usano le impostazioni mail dell'app e servono un queue worker.",
+            "emailLink": "Apri il tuo profilo",
+            "severitiesTitle": "Gravità predefinite",
+            "severitiesDescription": "La gravità di ogni evento che non la prende da un problema. La gravità minima di ogni canale e iscrizione si confronta con questa."
         }
     },
     "activityLog": {
@@ -1189,7 +1201,8 @@
         "channel": {
             "webhook": "Webhook",
             "slack": "Slack",
-            "telegram": "Telegram"
+            "telegram": "Telegram",
+            "email": "Email"
         },
         "delivery": {
             "queued": "in coda",

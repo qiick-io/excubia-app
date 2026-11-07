@@ -6,36 +6,54 @@ namespace App\Http\Requests\Settings;
 
 use App\Enums\AlertEventEnum;
 use App\Enums\SeverityEnum;
-use App\Http\Requests\Settings\Concerns\AuthorizesProjectSettingsTrait;
+use App\Http\Requests\Settings\Concerns\ValidatesAlertFiltersTrait;
+use App\Jobs\DeliverAlertJob;
+use App\Models\Project;
+use App\Models\Setting;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 /**
  * Settings → Integrations (#22), as externa-core's: the signed outbound webhook and the Slack /
- * Telegram notifiers, and the optional runtime alert rules (#114). Empty secrets keep the stored
- * ones.
+ * Telegram notifiers with their own filters (`channels.<channel>`), the default severity per
+ * event (`event_severities`) and the optional runtime alert rules (#114). Empty secrets keep the
+ * stored ones. Needs `can-manage-alerts`.
  */
 class UpdateProjectIntegrationsSettingsRequest extends FormRequest
 {
-    use AuthorizesProjectSettingsTrait;
+    use ValidatesAlertFiltersTrait;
+
+    /** The channels with their own filters; email subscribers set theirs in their profile. */
+    public const CHANNELS = [DeliverAlertJob::WEBHOOK, DeliverAlertJob::SLACK, DeliverAlertJob::TELEGRAM];
+
+    public function authorize(): bool
+    {
+        return (bool) $this->user()?->can('manageAlerts', Setting::class);
+    }
 
     /**
      * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
+        $projectIds = Project::query()->visibleTo($this->user())->pluck('id')->all();
+        $filterRules = array_merge(...array_map(
+            fn (string $channel): array => $this->alertFilterRules("channels.{$channel}", $projectIds),
+            self::CHANNELS,
+        ));
+
         return [
+            ...$filterRules,
+            // Keyed by event; events that take a finding's severity are dropped in settings().
+            'event_severities' => ['nullable', 'array'],
+            'event_severities.*' => [Rule::enum(SeverityEnum::class)],
             'webhook_url' => ['nullable', 'url:https', 'max:2048'],
             'webhook_secret' => ['nullable', 'string', 'min:16', 'max:512'],
             'notifier_slack_webhook_url' => ['nullable', 'url:https', 'starts_with:https://hooks.slack.com/', 'max:2048'],
             // BotFather token shape: "<bot_id>:<secret>".
             'notifier_telegram_bot_token' => ['nullable', 'string', 'max:512', 'regex:/^\d+:[A-Za-z0-9_-]+$/'],
             'notifier_telegram_chat_id' => ['nullable', 'string', 'max:64', 'regex:/^-?\d+$|^@[A-Za-z0-9_]{5,}$/'],
-            // Missing when every box is cleared: no event for Slack and Telegram.
-            'notifier_event_types' => ['nullable', 'array'],
-            'notifier_event_types.*' => ['string', 'distinct', Rule::in(AlertEventEnum::selectableValues())],
-            'notifier_minimum_severity' => ['required', Rule::enum(SeverityEnum::class)],
             // Optional runtime alert rules (#107, #114); empty turns a rule off.
             'alert_cache_hit_ratio_below' => ['nullable', 'integer', 'min:1', 'max:100'],
             'alert_delivery_failures_enabled' => ['sometimes', 'boolean'],
@@ -50,14 +68,27 @@ class UpdateProjectIntegrationsSettingsRequest extends FormRequest
     {
         $text = fn (string $key): ?string => $this->string($key)->trim()->toString() ?: null;
 
+        $projectIds = Project::query()->visibleTo($this->user())->pluck('id')->all();
+        $filterRules = array_merge(...array_map(
+            fn (string $channel): array => $this->alertFilterRules("channels.{$channel}", $projectIds),
+            self::CHANNELS,
+        ));
+
         return [
+            ...$filterRules,
+            // Keyed by event; events that take a finding's severity are dropped in settings().
+            'event_severities' => ['nullable', 'array'],
+            'event_severities.*' => [Rule::enum(SeverityEnum::class)],
             'webhook_url' => $text('webhook_url'),
             'webhook_secret' => $text('webhook_secret'),
             'notifier_slack_webhook_url' => $text('notifier_slack_webhook_url'),
             'notifier_telegram_bot_token' => $text('notifier_telegram_bot_token'),
             'notifier_telegram_chat_id' => $text('notifier_telegram_chat_id'),
-            'notifier_event_types' => array_values(array_map('strval', (array) $this->input('notifier_event_types', []))),
-            'notifier_minimum_severity' => $this->string('notifier_minimum_severity')->toString(),
+            'alert_channels' => array_combine(self::CHANNELS, array_map(fn (string $channel): array => $this->alertFilter("channels.{$channel}")->toArray(), self::CHANNELS)),
+            'alert_event_severities' => array_intersect_key(
+                array_map('strval', (array) $this->input('event_severities', [])),
+                array_flip(AlertEventEnum::severityEditableValues()),
+            ),
             'alert_cache_hit_ratio_below' => $this->filled('alert_cache_hit_ratio_below') ? $this->integer('alert_cache_hit_ratio_below') : null,
             'alert_delivery_failures_enabled' => $this->boolean('alert_delivery_failures_enabled'),
             'alert_log_spike_per_hour' => $this->filled('alert_log_spike_per_hour') ? $this->integer('alert_log_spike_per_hour') : null,

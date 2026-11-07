@@ -64,6 +64,17 @@ export default function SettingsLayout({
         },
     ];
 
+    // Integrations needs `can-manage-alerts` (#22), the other project pages `can-manage-project-settings`.
+    const integrationsNavItem: NavItem[] = can(PermissionEnum.CanManageAlerts)
+        ? [
+              {
+                  title: t('settings.layout.integrations'),
+                  href: integrationsRoutes.edit.url(),
+                  icon: null,
+              },
+          ]
+        : [];
+
     const projectNavItems: NavItem[] = can(
         PermissionEnum.CanManageProjectSettings,
     )
@@ -83,11 +94,7 @@ export default function SettingsLayout({
                   href: editProjectSecurity(),
                   icon: null,
               },
-              {
-                  title: t('settings.layout.integrations'),
-                  href: integrationsRoutes.edit.url(),
-                  icon: null,
-              },
+              ...integrationsNavItem,
               {
                   title: t('settings.layout.appearance'),
                   href: editAppearance(),
@@ -104,7 +111,7 @@ export default function SettingsLayout({
                   icon: null,
               },
           ]
-        : [];
+        : integrationsNavItem;
 
     const accessNavItems: NavItem[] = [
         ...(can(PermissionEnum.CanShowRoles)

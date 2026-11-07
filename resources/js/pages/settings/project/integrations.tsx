@@ -1,12 +1,16 @@
-import { Form, Head, router } from '@inertiajs/react';
+import { Form, Head, Link, router } from '@inertiajs/react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import ProjectIntegrationsSettingsController from '@/actions/App/Http/Controllers/Settings/ProjectIntegrationsSettingsController';
 import Heading from '@/components/heading';
 import { SettingsFormActions } from '@/components/settings-form-actions';
 import BooleanField from '@/components/boolean-field';
+import AlertFilterFields from '@/components/settings/alert-filter-fields';
+import type {
+    AlertFilter,
+    AlertFilterProject,
+} from '@/components/settings/alert-filter-fields';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
     Field,
     FieldDescription,
@@ -26,6 +30,7 @@ import {
 import { Separator } from '@/components/ui/separator';
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
+import { edit as editProfile } from '@/routes/profile';
 import integrationsRoutes from '@/routes/project/integrations';
 import type { BreadcrumbItem } from '@/types';
 
@@ -42,8 +47,8 @@ type IntegrationsSettings = {
     notifier_slack_webhook_url: string | null;
     has_notifier_telegram_bot_token: boolean;
     notifier_telegram_chat_id: string | null;
-    notifier_event_types: string[];
-    notifier_minimum_severity: string;
+    channels: Record<Channel, AlertFilter>;
+    event_severities: Record<string, string>;
     alert_cache_hit_ratio_below: number | null;
     alert_delivery_failures_enabled: boolean;
     alert_log_spike_per_hour: number | null;
@@ -55,18 +60,21 @@ type Channel = 'webhook' | 'slack' | 'telegram';
 
 /**
  * Settings → Integrations (#22), copied from externa-core: the signed outbound webhook with
- * its delivery status, then the Slack and Telegram notifiers with the events they send and
- * their minimum severity, and the optional runtime alert rules (#114). Secrets are write-only:
- * an empty field keeps the stored one.
+ * its delivery status, then the Slack and Telegram notifiers, each channel with its minimum
+ * severity, events and projects; a pointer to the alert emails users set in their profile; the
+ * default severity per event; and the optional runtime alert rules (#114). Secrets are
+ * write-only: an empty field keeps the stored one. Needs `can-manage-alerts`.
  */
 export default function ProjectIntegrationsSettings({
     project,
     events,
     severities,
+    projects,
 }: {
     project: IntegrationsSettings;
     events: string[];
     severities: string[];
+    projects: AlertFilterProject[];
 }) {
     const { t } = useTranslation();
     const [form, setForm] = useState({
@@ -75,8 +83,6 @@ export default function ProjectIntegrationsSettings({
         notifier_slack_webhook_url: project.notifier_slack_webhook_url ?? '',
         notifier_telegram_bot_token: '',
         notifier_telegram_chat_id: project.notifier_telegram_chat_id ?? '',
-        notifier_event_types: project.notifier_event_types,
-        notifier_minimum_severity: project.notifier_minimum_severity,
         alert_cache_hit_ratio_below: String(
             project.alert_cache_hit_ratio_below ?? '',
         ),
@@ -85,6 +91,28 @@ export default function ProjectIntegrationsSettings({
         ),
     });
     const [testing, setTesting] = useState<Channel | null>(null);
+    const [channels, setChannels] = useState(project.channels);
+    const [eventSeverities, setEventSeverities] = useState(
+        project.event_severities,
+    );
+
+    const channelFilter = (
+        channel: Channel,
+        errors: Record<string, string | undefined>,
+    ) => (
+        <AlertFilterFields
+            name={`channels[${channel}]`}
+            errorKey={`channels.${channel}`}
+            value={channels[channel]}
+            onChange={(filter) =>
+                setChannels((current) => ({ ...current, [channel]: filter }))
+            }
+            events={events}
+            severities={severities}
+            projects={projects}
+            errors={errors}
+        />
+    );
 
     const breadcrumbs: BreadcrumbItem[] = [
         {
@@ -234,6 +262,8 @@ export default function ProjectIntegrationsSettings({
                                     </Field>
                                 </FieldGroup>
 
+                                {channelFilter('webhook', errors)}
+
                                 <TestRow
                                     label={t('settings.integrations.sendTest')}
                                     hint={t(
@@ -289,132 +319,6 @@ export default function ProjectIntegrationsSettings({
                                 />
 
                                 <FieldGroup className="gap-6">
-                                    <Field
-                                        data-invalid={
-                                            errors.notifier_event_types
-                                                ? true
-                                                : undefined
-                                        }
-                                    >
-                                        <div className="space-y-1">
-                                            <FieldLabel>
-                                                {t(
-                                                    'settings.integrations.eventTypes',
-                                                )}
-                                            </FieldLabel>
-                                            <FieldDescription>
-                                                {t(
-                                                    'settings.integrations.eventTypesHint',
-                                                )}
-                                            </FieldDescription>
-                                        </div>
-                                        <div className="grid gap-2 sm:grid-cols-2">
-                                            {events.map((event) => (
-                                                <label
-                                                    key={event}
-                                                    htmlFor={`notifier_event_${event}`}
-                                                    className="flex cursor-pointer items-start gap-3 rounded-md border border-border/60 p-3"
-                                                >
-                                                    <Checkbox
-                                                        id={`notifier_event_${event}`}
-                                                        name="notifier_event_types[]"
-                                                        value={event}
-                                                        className="mt-0.5"
-                                                        checked={form.notifier_event_types.includes(
-                                                            event,
-                                                        )}
-                                                        onCheckedChange={(
-                                                            value,
-                                                        ) =>
-                                                            setForm(
-                                                                (current) => ({
-                                                                    ...current,
-                                                                    notifier_event_types:
-                                                                        value ===
-                                                                        true
-                                                                            ? [
-                                                                                  ...current.notifier_event_types,
-                                                                                  event,
-                                                                              ]
-                                                                            : current.notifier_event_types.filter(
-                                                                                  (
-                                                                                      item,
-                                                                                  ) =>
-                                                                                      item !==
-                                                                                      event,
-                                                                              ),
-                                                                }),
-                                                            )
-                                                        }
-                                                    />
-                                                    <span className="min-w-0 space-y-0.5">
-                                                        <span className="block font-mono text-sm">
-                                                            {event}
-                                                        </span>
-                                                        <span className="block text-sm text-muted-foreground">
-                                                            {t(
-                                                                `settings.integrations.events.${event}`,
-                                                            )}
-                                                        </span>
-                                                    </span>
-                                                </label>
-                                            ))}
-                                        </div>
-                                        <FieldError>
-                                            {errors.notifier_event_types}
-                                        </FieldError>
-                                    </Field>
-
-                                    <Field>
-                                        <FieldLabel htmlFor="notifier_minimum_severity">
-                                            {t(
-                                                'settings.integrations.minimumSeverity',
-                                            )}
-                                        </FieldLabel>
-                                        <input
-                                            type="hidden"
-                                            name="notifier_minimum_severity"
-                                            value={
-                                                form.notifier_minimum_severity
-                                            }
-                                        />
-                                        <Select
-                                            value={
-                                                form.notifier_minimum_severity
-                                            }
-                                            onValueChange={(value) =>
-                                                setValue(
-                                                    'notifier_minimum_severity',
-                                                    value,
-                                                )
-                                            }
-                                        >
-                                            <SelectTrigger
-                                                id="notifier_minimum_severity"
-                                                className="w-full sm:w-64"
-                                            >
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {severities.map((severity) => (
-                                                    <SelectItem
-                                                        key={severity}
-                                                        value={severity}
-                                                    >
-                                                        {t(
-                                                            `report.severity.${severity}`,
-                                                        )}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                        <FieldDescription>
-                                            {t(
-                                                'settings.integrations.minimumSeverityHint',
-                                            )}
-                                        </FieldDescription>
-                                    </Field>
-
                                     <TextField
                                         name="notifier_slack_webhook_url"
                                         type="url"
@@ -437,6 +341,8 @@ export default function ProjectIntegrationsSettings({
                                         }
                                     />
                                 </FieldGroup>
+
+                                {channelFilter('slack', errors)}
 
                                 <TestRow
                                     label={t(
@@ -497,6 +403,8 @@ export default function ProjectIntegrationsSettings({
                                     />
                                 </FieldGroup>
 
+                                {channelFilter('telegram', errors)}
+
                                 <TestRow
                                     label={t(
                                         'settings.integrations.sendTestTelegram',
@@ -511,6 +419,97 @@ export default function ProjectIntegrationsSettings({
                                     onClick={() => sendTest('telegram')}
                                 />
                             </div>
+
+                            <Separator />
+
+                            <div className="space-y-6">
+                                <Heading
+                                    variant="small"
+                                    title={t(
+                                        'settings.integrations.emailTitle',
+                                    )}
+                                    description={t(
+                                        'settings.integrations.emailDescription',
+                                    )}
+                                />
+                                <Button variant="outline" asChild>
+                                    <Link href={editProfile()}>
+                                        {t('settings.integrations.emailLink')}
+                                    </Link>
+                                </Button>
+                            </div>
+
+                            <Separator />
+
+                            <div className="space-y-6">
+                                <Heading
+                                    variant="small"
+                                    title={t(
+                                        'settings.integrations.severitiesTitle',
+                                    )}
+                                    description={t(
+                                        'settings.integrations.severitiesDescription',
+                                    )}
+                                />
+                                <div className="grid gap-3">
+                                    {Object.entries(eventSeverities).map(
+                                        ([event, severity]) => (
+                                            <div
+                                                key={event}
+                                                className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+                                            >
+                                                <label
+                                                    htmlFor={`severity-${event}`}
+                                                    className="font-mono text-sm"
+                                                >
+                                                    {event}
+                                                </label>
+                                                <input
+                                                    type="hidden"
+                                                    name={`event_severities[${event}]`}
+                                                    value={severity}
+                                                />
+                                                <Select
+                                                    value={severity}
+                                                    onValueChange={(value) =>
+                                                        setEventSeverities(
+                                                            (current) => ({
+                                                                ...current,
+                                                                [event]: value,
+                                                            }),
+                                                        )
+                                                    }
+                                                >
+                                                    <SelectTrigger
+                                                        id={`severity-${event}`}
+                                                        className="w-full sm:w-48"
+                                                    >
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {severities.map(
+                                                            (option) => (
+                                                                <SelectItem
+                                                                    key={option}
+                                                                    value={
+                                                                        option
+                                                                    }
+                                                                >
+                                                                    {t(
+                                                                        `report.severity.${option}`,
+                                                                    )}
+                                                                </SelectItem>
+                                                            ),
+                                                        )}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                        ),
+                                    )}
+                                </div>
+                            </div>
+
+                            <Separator />
 
                             <div className="space-y-6">
                                 <Heading

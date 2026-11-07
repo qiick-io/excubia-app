@@ -155,6 +155,32 @@ Outside Docker, run the scheduler with a cron entry:
 
 or keep `php artisan schedule:work` running. **Refresh now** on the system project queues its report, so run a queue worker (`php artisan queue:work`) or set `QUEUE_CONNECTION=sync`. Failed jobs show under **Settings → Jobs**.
 
+## Alerts
+
+Alerts go out through the queue, so the queue worker is required for them (Docker runs it).
+
+- **Settings → Integrations** (the `can-manage-alerts` permission, admin and super-admin by default) configures the signed webhook, Slack and Telegram. Each channel has its own minimum severity, events and, optionally, projects (none checked: every project), and a **Send test** button. The same page sets the default severity of every event that does not take one from a finding.
+- **Email:** every user who can see projects turns alert emails on in **Settings → Profile**, with their own minimum severity, events and projects, and can send a test mail to themselves. A mail goes only to active, verified users who can see the project, in their language, through the `MAIL_*` settings.
+- Every delivery is recorded in the project's **Alerts** tab; failed ones also show under **Settings → Jobs**. `can-manage-alerts` is also needed to mute alerts and add maintenance windows there.
+
+### Webhook payload
+
+A JSON `POST` to the HTTPS URL, retried 3 times with backoff (10, 30, 60 seconds). Redirects are not followed, and hosts that resolve to private addresses are refused.
+
+```json
+{
+  "id": "4f8e…",
+  "event": "finding.new",
+  "severity": "high",
+  "project": { "name": "Shop", "slug": "shop" },
+  "occurredAt": "2026-11-07T12:00:00Z",
+  "url": "https://excubia.example.com/projects/shop",
+  "data": { "checkId": "composer-audit", "subject": "laravel/framework", "severity": "high", "message": "…" }
+}
+```
+
+`data` holds the event's details and is an empty object when there are none. Headers: `X-Excubia-Event` (the event), `X-Excubia-Event-Id` (the `id`), `X-Excubia-Timestamp` (Unix seconds) and `X-Excubia-Signature: sha256=<hex>`, the HMAC-SHA256 of `<timestamp>.<raw body>` with the webhook secret. Check the signature on the raw body and reject old timestamps. The test event is `ping`, with `project: null`.
+
 ## Backups
 
 Back up the database and, with Docker, the application key. Everything else (code, vendor, built assets) comes back from the repository.
