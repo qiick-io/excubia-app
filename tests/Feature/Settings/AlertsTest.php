@@ -157,7 +157,8 @@ it('signs webhook deliveries and records the outcome', function () {
     // An IP literal: the address check needs no DNS lookup in tests.
     configureAlertChannels(['webhook_url' => 'https://93.184.216.34/excubia']);
     Http::fake(['93.184.216.34/*' => Http::response('', 204)]);
-    $payload = ['id' => 'evt-1', 'event' => 'finding.new', 'severity' => 'high', 'project' => null, 'occurredAt' => '2026-11-05T12:00:00Z', 'url' => 'https://excubia.test', 'data' => []];
+    $eventId = (string) Str::uuid();
+    $payload = ['id' => $eventId, 'event' => 'finding.new', 'severity' => 'high', 'project' => null, 'occurredAt' => '2026-11-05T12:00:00Z', 'url' => 'https://excubia.test', 'data' => []];
 
     (new DeliverAlertJob(DeliverAlertJob::WEBHOOK, $payload))->handle(app(SettingsRepositoryService::class));
 
@@ -167,14 +168,14 @@ it('signs webhook deliveries and records the outcome', function () {
         return $request->url() === 'https://93.184.216.34/excubia'
             && $request->header('X-Excubia-Signature')[0] === 'sha256='.hash_hmac('sha256', $timestamp.'.'.$request->body(), str_repeat('s', 32));
     });
-    expect(app(SettingsRepositoryService::class)->all()['webhook_last_success']['eventId'])->toBe('evt-1');
+    expect(app(SettingsRepositoryService::class)->all()['webhook_last_success']['eventId'])->toBe($eventId);
 });
 
 it('refuses deliveries to private addresses', function () {
     configureAlertChannels(['webhook_url' => 'https://127.0.0.1/hook']);
     Http::fake();
 
-    (new DeliverAlertJob(DeliverAlertJob::WEBHOOK, ['id' => 'evt-2', 'event' => 'ping']))->handle(app(SettingsRepositoryService::class));
+    (new DeliverAlertJob(DeliverAlertJob::WEBHOOK, ['id' => (string) Str::uuid(), 'event' => 'ping']))->handle(app(SettingsRepositoryService::class));
 
     Http::assertNothingSent();
     expect(app(SettingsRepositoryService::class)->all()['webhook_last_error']['message'])->toContain('Refused');

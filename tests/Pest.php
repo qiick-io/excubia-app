@@ -40,6 +40,26 @@ expect()->extend('toBeOne', function () {
     return $this->toBe(1);
 });
 
+/**
+ * Strict comparison of a decoded JSON column that ignores object key order: MySQL stores JSON
+ * with its keys reordered (#136). List order and value types still have to match.
+ */
+expect()->extend('toBeSameJson', function (array $expected) {
+    $sortKeys = function (mixed $value) use (&$sortKeys): mixed {
+        if (! is_array($value)) {
+            return $value;
+        }
+
+        if (! array_is_list($value)) {
+            ksort($value);
+        }
+
+        return array_map($sortKeys, $value);
+    };
+
+    return expect($sortKeys($this->value))->toBe($sortKeys($expected));
+});
+
 /*
 |--------------------------------------------------------------------------
 | Functions
