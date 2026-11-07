@@ -181,7 +181,7 @@ Alerts go out through the queue, so the queue worker is required for them (Docke
 | `project.token_changed`                                  | `info`           | A push token was rotated or revoked.                                                                                                                                                                                                                                                                                           |
 | `project.created`, `project.deleted`, `project.disabled` | `info`           | A project was created, deleted or disabled. `project.deleted` links to the dashboard, and its history goes with the project.                                                                                                                                                                                                   |
 
-The health, schedule and runtime events are described with their features in the README. `eol.approaching` and `eol.reached` are not sent yet: they need structured runtime data from qiick/excubia-core.
+The health, schedule and runtime events are described with their features in the README. `eol.approaching` and `eol.reached` are not sent yet (#157).
 
 ### Webhook payload
 
