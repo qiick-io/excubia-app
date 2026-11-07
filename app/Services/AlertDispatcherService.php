@@ -19,6 +19,8 @@ use Illuminate\Support\Str;
  *
  * Every alert passes through here, so this is where mutes, maintenance windows and maintenance
  * mode suppress it (AlertSuppressionService) and where the alert history row is written (#114).
+ * The finding fingerprints of the alert are kept on that row, for the duplicate check and the
+ * health re-alert (#143).
  */
 class AlertDispatcherService
 {
@@ -31,8 +33,9 @@ class AlertDispatcherService
      * @param  array<string, mixed>  $data  event details (no secrets, no user data)
      * @param  string  $summary  one line for Slack / Telegram, e.g. "laravel/framework: CVE-…"
      * @param  string|null  $subject  the issue the alert is about (finding identity, task id…), for mutes
+     * @param  list<string>  $fingerprints  the core finding fingerprints the alert is about
      */
-    public function dispatch(AlertEventEnum $event, Project $project, string $summary, array $data = [], ?SeverityEnum $severity = null, ?string $subject = null): void
+    public function dispatch(AlertEventEnum $event, Project $project, string $summary, array $data = [], ?SeverityEnum $severity = null, ?string $subject = null, array $fingerprints = []): void
     {
         $severity ??= $event->defaultSeverity();
         $payload = [
@@ -45,7 +48,8 @@ class AlertDispatcherService
             'data' => (object) $data,
         ];
 
-        $reason = $this->suppression->reason($project, $event, $subject);
+        $reason = $this->suppression->reason($project, $event, $subject)
+            ?? ($this->suppression->isDuplicate($project, $event, $subject, $fingerprints) ? AlertSuppressionService::DUPLICATE : null);
         $channels = $reason === null ? $this->channels($event, $severity) : [];
 
         AlertLog::query()->create([
@@ -61,6 +65,7 @@ class AlertDispatcherService
                 default => AlertLog::QUEUED,
             },
             'reason' => $reason,
+            'fingerprints' => $fingerprints === [] ? null : $fingerprints,
             'deliveries' => array_fill_keys($channels, AlertLog::QUEUED),
         ]);
 

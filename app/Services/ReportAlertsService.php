@@ -15,7 +15,8 @@ use App\Models\Project;
  * new and resolved findings, a worse or better worst severity, and a stale project reporting
  * again. The first report of a project raises no finding alerts (everything would be "new"),
  * except `infrastructure.failed` (#109): a database, storage or disk failure that is new, or on
- * the first report, alerts at once at critical, instead of as `finding.new`.
+ * the first report, alerts at once at critical, instead of as `finding.new`, unless a
+ * `health.failed` of the same check and fingerprint just went out (#143).
  */
 class ReportAlertsService
 {
@@ -39,7 +40,7 @@ class ReportAlertsService
             && in_array($finding['checkId'] ?? null, CheckCategoryEnum::IMMEDIATE_ALERT_CHECK_IDS, true);
 
         foreach (array_filter($new, $isImmediate) as $finding) {
-            $this->alerts->dispatch(AlertEventEnum::InfrastructureFailed, $project, $this->summary($finding), $this->details($finding), subject: $this->findings->identity($finding));
+            $this->alerts->dispatch(AlertEventEnum::InfrastructureFailed, $project, $this->summary($finding), $this->details($finding), subject: $this->findings->identity($finding), fingerprints: is_string($finding['fingerprint'] ?? null) ? [$finding['fingerprint']] : []);
         }
 
         if ($previous === null || $changes === null) {

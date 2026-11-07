@@ -5,19 +5,23 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Enums\AlertEventEnum;
+use App\Models\AlertLog;
 use App\Models\AlertMute;
 use App\Models\MaintenanceWindow;
 use App\Models\Project;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\Date;
+use Illuminate\Support\Str;
 
 /**
  * Whether an alert of a project is suppressed (#114), and why. AlertDispatcherService asks it
  * for every alert, so a mute or a maintenance window holds for every event and channel:
  * - `muted`: an active mute of the event (rule) or of the event and its subject (issue);
  * - `maintenance_window`: a one-off or weekly maintenance window of the project is in force;
- * - `maintenance_mode`: the latest report has the core `laravel-maintenance-mode` finding.
+ * - `maintenance_mode`: the latest report has the core `laravel-maintenance-mode` finding;
+ * - `duplicate` (#143): an `infrastructure.failed` and a `health.failed` of the same check and
+ *   fingerprint within DUPLICATE_MINUTES: the first one goes out, the other is kept as history.
  * `project.token_changed` is a security event: only an explicit mute silences it. Schedule
  * events ignore maintenance mode: the schedule evaluation (#110) already pauses the tasks that
  * do not run then, so a task that runs in maintenance mode and misses still alerts.
@@ -29,6 +33,11 @@ class AlertSuppressionService
     public const MAINTENANCE_WINDOW = 'maintenance_window';
 
     public const MAINTENANCE_MODE = 'maintenance_mode';
+
+    public const DUPLICATE = 'duplicate';
+
+    /** How far back a report failure and a health failure of one check count as one alert. */
+    public const DUPLICATE_MINUTES = 15;
 
     public function __construct(private ReportFindingsService $findings) {}
 
@@ -63,6 +72,39 @@ class AlertSuppressionService
         // ponytail: reads the latest report once per alert; keep a maintenance flag on the
         // report row if a big report raises many alerts at once.
         return $this->findings->isInMaintenanceMode($project) ? self::MAINTENANCE_MODE : null;
+    }
+
+    /**
+     * Whether the other of `infrastructure.failed` / `health.failed` already went out (or found
+     * no channel) for the same check and one of the fingerprints within DUPLICATE_MINUTES. An
+     * `infrastructure.failed` subject is a finding identity (`checkId|subject|advisoryId`), a
+     * `health.failed` subject the check id. A suppressed alert reached no one: it does not count.
+     *
+     * @param  list<string>  $fingerprints
+     */
+    public function isDuplicate(Project $project, AlertEventEnum $event, ?string $subject, array $fingerprints): bool
+    {
+        $other = match ($event) {
+            AlertEventEnum::InfrastructureFailed => AlertEventEnum::HealthFailed,
+            AlertEventEnum::HealthFailed => AlertEventEnum::InfrastructureFailed,
+            default => null,
+        };
+
+        if ($other === null || $subject === null || $fingerprints === []) {
+            return false;
+        }
+
+        $checkId = Str::before($subject, '|');
+
+        return AlertLog::query()
+            ->where('project_id', $project->id)
+            ->where('event', $other->value)
+            ->where('status', '!=', AlertLog::SUPPRESSED)
+            ->where('created_at', '>=', Date::now()->subMinutes(self::DUPLICATE_MINUTES))
+            ->whereNotNull('fingerprints')
+            ->get(['subject', 'fingerprints'])
+            ->contains(fn (AlertLog $alert): bool => Str::before((string) $alert->subject, '|') === $checkId
+                && array_intersect($alert->fingerprints ?? [], $fingerprints) !== []);
     }
 
     public function isInMaintenanceWindow(Project $project, ?CarbonInterface $at = null): bool

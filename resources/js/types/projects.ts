@@ -52,6 +52,18 @@ export type LiveHealthCheck = {
     }[];
 };
 
+/**
+ * A project's live health in the dashboard list (#143, `HealthStatusService::summaries()`):
+ * the worst check status, the number of checks and of failing checks, and whether a server
+ * stopped sending.
+ */
+export type LiveHealthSummary = {
+    status: CheckStatus;
+    checks: number;
+    failingChecks: number;
+    hasStaleServers: boolean;
+};
+
 /** One row of `App\Http\Resources\HealthReportResource`. */
 export type HealthReportSummary = {
     id: number;
@@ -410,7 +422,12 @@ export type AlertHistoryRow = {
     /** Whether the alert is about one issue, so the issue can be muted. */
     has_subject: boolean;
     status: AlertStatus;
-    reason: 'muted' | 'maintenance_window' | 'maintenance_mode' | null;
+    reason:
+        | 'muted'
+        | 'maintenance_window'
+        | 'maintenance_mode'
+        | 'duplicate'
+        | null;
     /** Channel → queued | sent | failed. */
     deliveries: Record<string, 'queued' | 'sent' | 'failed'>;
     created_at: string;

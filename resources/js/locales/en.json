@@ -462,8 +462,9 @@
                 "runtime.delivery_failed": "A mailable or notification failed.",
                 "runtime.log_spike": "A log channel wrote more error entries than the threshold.",
                 "infrastructure.failed": "A database, storage or disk check fails (new, or on the first report). Sent at once, critical.",
-                "health.failed": "A check of the minute-level health samples fails on a server for two readings in a row. Takes the finding's severity.",
-                "health.recovered": "A failing check of the health samples no longer fails on any server."
+                "health.failed": "A check of the minute-level health samples fails on a server for two readings in a row. Takes the finding's severity; sent again when the failing findings change.",
+                "health.recovered": "A failing check of the health samples no longer fails on any server.",
+                "health.stale": "A server that was sending health samples sent none for five minutes. The health alerts ignore it until it sends again."
             },
             "runtimeRulesTitle": "Runtime alert rules",
             "runtimeRulesDescription": "Optional alerts from the runtime data the projects push, checked every 15 minutes over the last hour. Empty turns a rule off.",
@@ -614,6 +615,9 @@
         "lastReport": "Last report {{date}}",
         "noReports": "No reports yet",
         "stale": "Stale",
+        "liveHealthFailing_one": "{{count}} failing",
+        "liveHealthFailing_other": "{{count}} failing",
+        "liveHealthStale": "Server silent",
         "trend": {
             "title": "Findings over time",
             "description": "Every project's latest report on each day of the last {{count}} days, per severity.",
@@ -1107,7 +1111,8 @@
         "reason": {
             "muted": "Muted",
             "maintenance_window": "Maintenance window",
-            "maintenance_mode": "Maintenance mode"
+            "maintenance_mode": "Maintenance mode",
+            "duplicate": "Duplicate"
         },
         "channel": {
             "webhook": "Webhook",

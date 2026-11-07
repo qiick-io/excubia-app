@@ -462,8 +462,9 @@
                 "runtime.delivery_failed": "Un mailable o una notifica è fallito.",
                 "runtime.log_spike": "Un canale di log ha scritto più voci di errore della soglia.",
                 "infrastructure.failed": "Un controllo di database, storage o disco fallisce (nuovo, o al primo report). Inviato subito, critico.",
-                "health.failed": "Un controllo dei campioni di salute al minuto fallisce su un server per due letture di fila. Prende la gravità del finding.",
-                "health.recovered": "Un controllo fallito dei campioni di salute non fallisce più su nessun server."
+                "health.failed": "Un controllo dei campioni di salute al minuto fallisce su un server per due letture di fila. Prende la gravità del finding; viene inviato di nuovo quando cambiano i finding falliti.",
+                "health.recovered": "Un controllo fallito dei campioni di salute non fallisce più su nessun server.",
+                "health.stale": "Un server che inviava campioni di salute non ne invia da cinque minuti. Gli avvisi di salute lo ignorano finché non riprende."
             },
             "runtimeRulesTitle": "Regole di avviso runtime",
             "runtimeRulesDescription": "Avvisi opzionali dai dati runtime inviati dai progetti, controllati ogni 15 minuti sull'ultima ora. Vuoto disattiva la regola.",
@@ -614,6 +615,9 @@
         "lastReport": "Ultimo report {{date}}",
         "noReports": "Nessun report",
         "stale": "Fermo",
+        "liveHealthFailing_one": "{{count}} fallito",
+        "liveHealthFailing_other": "{{count}} falliti",
+        "liveHealthStale": "Server silente",
         "trend": {
             "title": "Problemi nel tempo",
             "description": "L'ultimo report di ogni progetto per ogni giorno degli ultimi {{count}} giorni, per severità.",
@@ -1107,7 +1111,8 @@
         "reason": {
             "muted": "Silenziato",
             "maintenance_window": "Finestra di manutenzione",
-            "maintenance_mode": "Modalità manutenzione"
+            "maintenance_mode": "Modalità manutenzione",
+            "duplicate": "Duplicato"
         },
         "channel": {
             "webhook": "Webhook",

@@ -19,13 +19,11 @@ use Carbon\CarbonImmutable;
  *
  * A server's status is its latest reading; a check's status is the worst of its servers'. A
  * check starts failing when one server's last FAILING_READINGS readings all fail (debounce),
- * and recovers when no server's latest reading fails any more. A server that stopped sending
- * keeps its last reading, so silence is never a recovery.
+ * and recovers when no server's latest reading fails any more. A server without a sample of
+ * the check for STALE_MINUTES is stale (#143): the alerts ignore it, and `health.stale` says
+ * it went silent. When every server is stale nothing recovers: silence is never a recovery.
  *
- * ponytail: a server that stops while failing holds the recovery back until it leaves the
- * window; a staleness alert of its own (core's suggestion) is the upgrade path.
- *
- * @phpstan-type HealthServer array{server: string, status: string, severity: string, findingCount: int, fingerprints: list<string>, lastSampleAt: string, readings: list<string>}
+ * @phpstan-type HealthServer array{server: string, status: string, severity: string, findingCount: int, fingerprints: list<string>, lastSampleAt: string, isStale: bool, readings: list<string>}
  * @phpstan-type HealthCheck array{checkId: string, status: string, severity: string, findingCount: int, fingerprints: list<string>, lastSampleAt: string, servers: list<HealthServer>}
  */
 class HealthStatusService
@@ -35,7 +33,7 @@ class HealthStatusService
     /** Consecutive failing readings of one server before `health.failed`. */
     public const FAILING_READINGS = 2;
 
-    /** A server without a sample for this long is shown as stale. */
+    /** A server without a sample for this long is stale: shown so, left out of the alerts, and `health.stale`. */
     public const STALE_MINUTES = 5;
 
     /**
@@ -76,6 +74,7 @@ class HealthStatusService
                     ...$this->reading($readings[0] ?? $buckets[array_key_first($buckets)] ?? []),
                     // Buckets are newest first, from the query order.
                     'lastSampleAt' => (string) array_key_first($buckets),
+                    'isStale' => CarbonImmutable::parse((string) array_key_first($buckets))->lessThan($now->subMinutes(self::STALE_MINUTES)),
                     'readings' => array_map(fn (array $metrics): string => (string) $metrics['status'], $readings),
                 ];
             }
@@ -96,24 +95,95 @@ class HealthStatusService
     }
 
     /**
-     * The live health for the project overview: checks() without the readings, each server
-     * with `isStale` when its last sample is older than STALE_MINUTES.
+     * The live health for the project overview: checks() without the fingerprints and readings.
      *
      * @return list<array<string, mixed>>
      */
     public function forPage(Project $project, ?CarbonImmutable $now = null): array
     {
-        $now ??= CarbonImmutable::now();
-
         return array_map(fn (array $check): array => [
             ...array_diff_key($check, ['fingerprints' => true]),
-            'servers' => array_map(fn (array $server): array => [
-                'server' => $server['server'],
-                'status' => $server['status'],
-                'lastSampleAt' => $server['lastSampleAt'],
-                'isStale' => CarbonImmutable::parse($server['lastSampleAt'])->lessThan($now->subMinutes(self::STALE_MINUTES)),
-            ], $check['servers']),
+            'servers' => array_map(fn (array $server): array => array_intersect_key($server, array_flip(['server', 'status', 'lastSampleAt', 'isStale'])), $check['servers']),
         ], $this->checks($project, $now));
+    }
+
+    /**
+     * The live health of each project in the dashboard list (#143), keyed by slug, for the
+     * projects with samples in the window: the worst check status, the number of checks and of
+     * failing checks, and whether a server is stale.
+     *
+     * ponytail: one checks() query per project; one grouped query over every project's latest
+     * samples is the upgrade path when a fleet makes the dashboard slow.
+     *
+     * @param  iterable<Project>  $projects
+     * @return array<string, array{status: string, checks: int, failingChecks: int, hasStaleServers: bool}>
+     */
+    public function summaries(iterable $projects, ?CarbonImmutable $now = null): array
+    {
+        $summaries = [];
+
+        foreach ($projects as $project) {
+            $checks = $this->checks($project, $now);
+
+            if ($checks === []) {
+                continue;
+            }
+
+            $summaries[$project->slug] = [
+                // checks() puts the worst status first.
+                'status' => $checks[0]['status'],
+                'checks' => count($checks),
+                'failingChecks' => count(array_filter($checks, fn (array $check): bool => $check['status'] === 'fail')),
+                'hasStaleServers' => array_any($checks, fn (array $check): bool => array_any($check['servers'], fn (array $server): bool => $server['isStale'])),
+            ];
+        }
+
+        return $summaries;
+    }
+
+    /**
+     * The servers stale on every check they sent in the window, with their latest sample: a
+     * server that stopped sending, not one check turned off.
+     *
+     * @param  list<HealthCheck>  $checks  from checks()
+     * @return array<string, string> server → its latest sample (ISO 8601 UTC)
+     */
+    public function staleServers(array $checks): array
+    {
+        $latest = [];
+        $isStale = [];
+
+        foreach ($checks as $check) {
+            foreach ($check['servers'] as $server) {
+                $latest[$server['server']] = max($latest[$server['server']] ?? '', $server['lastSampleAt']);
+                $isStale[$server['server']] = ($isStale[$server['server']] ?? true) && $server['isStale'];
+            }
+        }
+
+        return array_intersect_key($latest, array_filter($isStale));
+    }
+
+    /**
+     * The sorted fingerprints of the servers whose latest reading fails: the failure a
+     * `health.failed` names, and re-alerts on when it changes (#143).
+     *
+     * @param  list<HealthServer>  $servers
+     * @return list<string>
+     */
+    public function failingFingerprints(array $servers): array
+    {
+        $fingerprints = [];
+
+        foreach ($servers as $server) {
+            if ($server['status'] === 'fail') {
+                $fingerprints = [...$fingerprints, ...$server['fingerprints']];
+            }
+        }
+
+        $fingerprints = array_values(array_unique($fingerprints));
+        sort($fingerprints);
+
+        return $fingerprints;
     }
 
     /**
