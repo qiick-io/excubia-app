@@ -70,6 +70,7 @@
         "platform": "Plattform",
         "dashboard": "Dashboard",
         "projects": "Projekte",
+        "fleet": "Flotte",
         "assistant": "Assistent",
         "activityLog": "Aktivitätsprotokoll",
         "users": "Benutzer",
@@ -295,6 +296,7 @@
             "modules": {
                 "dashboard": "Dashboard",
                 "projects": "Projekte",
+                "fleet": "Flotte",
                 "assistant": "Assistent",
                 "files": "Dateien",
                 "collections": "Sammlungen",
@@ -1544,5 +1546,70 @@
         "inventoryTitle": "Inventar",
         "fleetTitle": "Zu prüfende Lizenzen",
         "fleetDescription": "Verbotene, stark Copyleft- und unbekannte Lizenzen in den letzten Berichten, mit den Projekten, die sie nutzen."
+    },
+    "fleet": {
+        "title": "Flotte",
+        "project": "Projekt",
+        "status": "Status",
+        "views": {
+            "label": "Flottenansichten",
+            "readiness": "Upgrade-Bereitschaft",
+            "advisories": "Advisory-Betroffenheit",
+            "eol": "EOL-Kalender"
+        },
+        "empty": {
+            "title": "Noch keine Projekte",
+            "description": "Registriere ein Projekt und sende seinen ersten Bericht, um es hier zu sehen."
+        },
+        "readiness": {
+            "description": "Aus den Blockern der nächsten Major-Version im neuesten Bericht jedes Projekts: Ein Projekt kann wechseln, wenn keine direkte Abhängigkeit die nächste Laravel-Major-Version blockiert.",
+            "target": "Laravel {{major}}",
+            "canMove": "{{ready}} von {{total}} Projekten können heute auf Laravel {{major}} wechseln",
+            "unknownDescription": "Kein Bericht, Laravel nicht gesperrt oder die Blocker-Prüfung lief nicht.",
+            "blockers": "Blockierende Pakete",
+            "preReleaseOnly": "Nur Vorabversion",
+            "uncheckedPackages_one": "{{count}} privates Paket nicht geprüft",
+            "uncheckedPackages_other": "{{count}} private Pakete nicht geprüft",
+            "planLink_one": "Upgrade-Plan ({{count}} Schritt)",
+            "planLink_other": "Upgrade-Plan ({{count}} Schritte)",
+            "status": {
+                "ready": "Bereit für Laravel {{major}}",
+                "blocked": "Blockiert für Laravel {{major}}",
+                "unknown": "Unbekannt"
+            }
+        },
+        "advisories": {
+            "description": "Pakete mit bekannten Advisories, aufgegebene oder veraltete Pakete und die Projekte, die sie sperren, aus dem neuesten Bericht jedes Projekts.",
+            "search": "Paket oder Advisory-ID",
+            "kindLabel": "Nach Art filtern",
+            "allKinds": "Alle Arten",
+            "kind": {
+                "advisory": "Advisory",
+                "abandoned": "Aufgegeben",
+                "stale": "Veraltet"
+            },
+            "ecosystem": {
+                "composer": "Composer",
+                "npm": "npm"
+            },
+            "package": "Paket",
+            "advisory": "Advisory",
+            "projects": "Projekte: gesperrt → behoben",
+            "replacement": "Ersetzen durch {{package}}",
+            "emptyTitle": "Keine betroffenen Pakete",
+            "emptyDescription": "Kein neuester Bericht enthält ein bekanntes Advisory, ein aufgegebenes oder veraltetes Paket.",
+            "noMatchTitle": "Keine passenden Pakete",
+            "noMatchDescription": "Versuche einen anderen Paketnamen oder eine andere Advisory-ID."
+        },
+        "eol": {
+            "description": "Supportzeiträume von PHP, Laravel und Node aller Projekte, das nächste Ende zuerst.",
+            "active": "Aktiver Support",
+            "security": "Sicherheitssupport",
+            "today": "Heute",
+            "activeUntil": "Aktiv bis",
+            "timeline": "Zeitachse",
+            "emptyTitle": "Keine Supportdaten",
+            "emptyDescription": "Noch kein neuester Bericht enthält Supportdaten für PHP, Laravel oder Node."
+        }
     }
 }

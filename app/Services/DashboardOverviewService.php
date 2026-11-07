@@ -182,7 +182,7 @@ class DashboardOverviewService
         $count = 0;
 
         foreach ($reports as $report) {
-            foreach ($this->runtimes($report) as $runtime) {
+            foreach ($this->health->runtimes($report->report) as $runtime) {
                 if ($runtime['securitySupportEndsOn'] !== null && $runtime['securitySupportEndsOn'] <= $limit) {
                     $count++;
                 }
@@ -288,7 +288,7 @@ class DashboardOverviewService
                 continue;
             }
 
-            foreach ($this->runtimes($project->latestReport) as $name => $runtime) {
+            foreach ($this->health->runtimes($project->latestReport->report) as $name => $runtime) {
                 if ($runtime['securitySupportEndsOn'] !== null && $runtime['securitySupportEndsOn'] <= $horizon) {
                     $rows[] = ['project' => ['slug' => $project->slug, 'name' => $project->name], 'runtime' => $name, ...$runtime];
                 }
@@ -419,37 +419,5 @@ class DashboardOverviewService
             ->first();
 
         return [(float) ($sum->requests ?? 0), (float) ($sum->errors ?? 0)];
-    }
-
-    /**
-     * The report's `project` block (excubia-core 1.0), per runtime, versions without a leading "v".
-     *
-     * @return array<string, array{version: string|null, cycle: string|null, securitySupportEndsOn: string|null, activeSupportEndsOn: string|null}>
-     */
-    private function runtimes(HealthReport $report): array
-    {
-        $project = $report->report['project'] ?? null;
-        $runtimes = [];
-
-        if (! is_array($project)) {
-            return $runtimes;
-        }
-
-        foreach (['php', 'laravel', 'node'] as $name) {
-            $entry = $project[$name] ?? null;
-
-            if (! is_array($entry)) {
-                continue;
-            }
-
-            $runtimes[$name] = [
-                'version' => is_string($entry['version'] ?? null) ? ltrim($entry['version'], 'vV') : null,
-                'cycle' => is_string($entry['cycle'] ?? null) ? $entry['cycle'] : null,
-                'securitySupportEndsOn' => is_string($entry['securitySupportEndsOn'] ?? null) ? $entry['securitySupportEndsOn'] : null,
-                'activeSupportEndsOn' => is_string($entry['activeSupportEndsOn'] ?? null) ? $entry['activeSupportEndsOn'] : null,
-            ];
-        }
-
-        return $runtimes;
     }
 }
