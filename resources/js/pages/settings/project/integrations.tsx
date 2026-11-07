@@ -39,7 +39,7 @@ type Delivery = {
 type IntegrationsSettings = {
     webhook_url: string | null;
     has_webhook_secret: boolean;
-    notifier_slack_webhook_url: string | null;
+    has_notifier_slack_webhook_url: boolean;
     has_notifier_telegram_bot_token: boolean;
     notifier_telegram_chat_id: string | null;
     notifier_event_types: string[];
@@ -72,7 +72,7 @@ export default function ProjectIntegrationsSettings({
     const [form, setForm] = useState({
         webhook_url: project.webhook_url ?? '',
         webhook_secret: '',
-        notifier_slack_webhook_url: project.notifier_slack_webhook_url ?? '',
+        notifier_slack_webhook_url: '',
         notifier_telegram_bot_token: '',
         notifier_telegram_chat_id: project.notifier_telegram_chat_id ?? '',
         notifier_event_types: project.notifier_event_types,
@@ -116,7 +116,7 @@ export default function ProjectIntegrationsSettings({
         );
     };
 
-    const isSlackConfigured = Boolean(project.notifier_slack_webhook_url);
+    const isSlackConfigured = project.has_notifier_slack_webhook_url;
     const isTelegramConfigured =
         project.has_notifier_telegram_bot_token &&
         Boolean(project.notifier_telegram_chat_id);
@@ -135,6 +135,7 @@ export default function ProjectIntegrationsSettings({
                         setForm((current) => ({
                             ...current,
                             webhook_secret: '',
+                            notifier_slack_webhook_url: '',
                             notifier_telegram_bot_token: '',
                         }))
                     }
@@ -424,7 +425,11 @@ export default function ProjectIntegrationsSettings({
                                         hint={t(
                                             'settings.integrations.slackUrlHint',
                                         )}
-                                        placeholder="https://hooks.slack.com/services/…"
+                                        placeholder={
+                                            project.has_notifier_slack_webhook_url
+                                                ? '••••••••'
+                                                : 'https://hooks.slack.com/services/…'
+                                        }
                                         value={form.notifier_slack_webhook_url}
                                         error={
                                             errors.notifier_slack_webhook_url

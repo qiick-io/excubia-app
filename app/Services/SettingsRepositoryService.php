@@ -19,7 +19,9 @@ use Illuminate\Validation\Rules\Password;
  * for the code that uses them (login, password rule, 2FA requirement, report history, SSO,
  * UI locale, default appearance, sidebar modules).
  *
- * Secrets (`oidc_client_secret`) are stored encrypted and left out of forEdit().
+ * Secrets (SECRET_KEYS: the OIDC client secret, the webhook signing secret, the Slack incoming-
+ * webhook URL, which is a bearer secret, and the Telegram bot token) are stored encrypted and
+ * left out of forEdit().
  *
  * Registered as a singleton; values are read once per instance and reloaded after a write.
  */
@@ -29,7 +31,7 @@ class SettingsRepositoryService
 
     public const APPEARANCES = ['system', 'light', 'dark'];
 
-    public const SECRET_KEYS = ['oidc_client_secret', 'webhook_secret', 'notifier_telegram_bot_token'];
+    public const SECRET_KEYS = ['oidc_client_secret', 'webhook_secret', 'notifier_slack_webhook_url', 'notifier_telegram_bot_token'];
 
     /**
      * Main sidebar modules in their default order: the single source for the sidebar settings
@@ -444,7 +446,7 @@ class SettingsRepositoryService
 
     public function slackWebhookUrl(): ?string
     {
-        return $this->string('notifier_slack_webhook_url');
+        return $this->secret('notifier_slack_webhook_url');
     }
 
     public function telegramBotToken(): ?string
