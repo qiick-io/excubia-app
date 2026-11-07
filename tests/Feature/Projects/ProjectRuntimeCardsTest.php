@@ -224,11 +224,12 @@ it('shows the latest sample of each server, gauges merged by max', function () {
         ->where('runtime.servers.1.lastAt', '2026-11-05T11:58:00Z'));
 });
 
-it('reads every summed and maxed metric but the server gauges in SQL', function () {
+it('reads every summed and maxed metric but the server gauges and health readings in SQL', function () {
     $metrics = [];
 
     foreach (RuntimeTypeEnum::cases() as $type) {
-        if ($type !== RuntimeTypeEnum::Server) {
+        // Server gauges and health readings (#115) have their own reading paths.
+        if (! in_array($type, [RuntimeTypeEnum::Server, RuntimeTypeEnum::Health], true)) {
             $metrics = [...$metrics, ...$type->metrics()];
         }
     }

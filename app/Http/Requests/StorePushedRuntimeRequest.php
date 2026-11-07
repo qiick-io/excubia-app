@@ -32,6 +32,11 @@ class StorePushedRuntimeRequest extends FormRequest
         'command' => ['exitCodeClass' => ['0', '1', 'other']],
     ];
 
+    /** Dimensions with a pattern (`docs/runtime-schema.json`); unknown check ids are accepted. */
+    private const DIMENSION_PATTERNS = [
+        'health' => ['checkId' => '/^[a-z0-9-]{1,64}$/'],
+    ];
+
     /** Validation of the type-specific metrics (`RuntimeTypeEnum::metrics()`). */
     private const METRIC_RULES = [
         'totalMb' => ['required', 'numeric', 'min:0'],
@@ -52,6 +57,11 @@ class StorePushedRuntimeRequest extends FormRequest
         'diskUsedGb' => ['present', 'nullable', 'numeric', 'min:0'],
         'diskTotalGb' => ['present', 'nullable', 'numeric', 'min:0'],
         'isContainer' => ['sometimes', 'boolean'],
+        'status' => ['required', 'string', 'in:pass,warn,fail,skipped'],
+        'severity' => ['required', 'string', 'in:critical,high,medium,low,info'],
+        'findingCount' => ['required', 'integer', 'min:0'],
+        'fingerprints' => ['present', 'list', 'max:'.RuntimeTypeEnum::HEALTH_FINGERPRINTS],
+        'fingerprints.*' => ['string', 'regex:/^[0-9a-f]{64}$/'],
     ];
 
     public function authorize(): bool
@@ -129,7 +139,12 @@ class StorePushedRuntimeRequest extends FormRequest
 
         foreach ($type->dimensions() as $dimension) {
             $values = self::DIMENSION_VALUES[$type->value][$dimension] ?? null;
-            $rules[$dimension] = $values === null ? ['present', 'string', 'max:2000'] : ['required', 'string', Rule::in($values)];
+            $pattern = self::DIMENSION_PATTERNS[$type->value][$dimension] ?? null;
+            $rules[$dimension] = match (true) {
+                $values !== null => ['required', 'string', Rule::in($values)],
+                $pattern !== null => ['required', 'string', 'regex:'.$pattern],
+                default => ['present', 'string', 'max:2000'],
+            };
         }
 
         foreach ($type->optionalDimensions() as $dimension) {
@@ -145,6 +160,10 @@ class StorePushedRuntimeRequest extends FormRequest
 
         foreach (array_keys($type->metrics()) as $metric) {
             $rules[$metric] = self::METRIC_RULES[$metric];
+
+            if (isset(self::METRIC_RULES[$metric.'.*'])) {
+                $rules[$metric.'.*'] = self::METRIC_RULES[$metric.'.*'];
+            }
         }
 
         return $rules;

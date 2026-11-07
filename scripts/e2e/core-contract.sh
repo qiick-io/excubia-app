@@ -7,7 +7,8 @@
 # runtime type and exception capture turned on, generates some traffic there, then runs
 # `excubia:check --format=json`, `excubia:push` and `excubia:push-runtime` against this app.
 # It fails unless every command exits 0 (the push commands exit 3 on any non-2xx answer) and the
-# app stored a report, runtime aggregates and exception groups for the project.
+# app stored a report, runtime aggregates and exception groups for the project, and `health`
+# aggregates when the core has them (#115). Skipped runtime types only warn.
 #
 # Usage: scripts/e2e/core-contract.sh [core constraint]   (default: ^1.0@beta; e.g. dev-develop)
 # Environment: E2E_WORK_DIR (default: a new temp dir), E2E_APP_PORT (8765), E2E_PROBE_PORT (8766),
@@ -165,6 +166,13 @@ ENV
     echo "runtime types enabled: ".implode(", ", array_slice(array_keys($runtime), 1)).PHP_EOL;
 ')
 
+# A core with minute-level health samples (#115) must have them stored, not skipped.
+EXPECT_HEALTH=0
+
+if php -r 'exit(isset(json_decode(file_get_contents($argv[1]), true)["runtime"]["health"]) ? 0 : 1);' "${PROBE_DIR}/excubia.json"; then
+    EXPECT_HEALTH=1
+fi
+
 cat >> "${PROBE_DIR}/routes/web.php" <<'PHP'
 
 // Traffic for the Excubia end-to-end contract test (scripts/e2e/core-contract.sh in excubia-app).
@@ -260,6 +268,10 @@ php -r '
         }
     }
 
+    if ($argv[2] === "1" && ($result["runtimeTypes"]["health"] ?? 0) < 1) {
+        $errors[] = "no health aggregates stored";
+    }
+
     if ($result["skippedRuntimeAggregates"] > 0) {
         // A type this app does not store yet: the push still succeeds (#111), so warn only.
         $message = $result["skippedRuntimeAggregates"]." runtime aggregates of a type this app does not know were skipped";
@@ -270,6 +282,6 @@ php -r '
         fwrite(STDERR, implode(PHP_EOL, $errors).PHP_EOL);
         exit(1);
     }
-' "${RESULT}" || fail "excubia-app did not store the pushed data"
+' "${RESULT}" "${EXPECT_HEALTH}" || fail "excubia-app did not store the pushed data"
 
 step "E2E passed against qiick/excubia-core:${CORE_VERSION}"
