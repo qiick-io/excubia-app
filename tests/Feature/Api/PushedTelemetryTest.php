@@ -232,3 +232,43 @@ it('prunes with the Data retention settings over the config defaults', function 
     expect(RuntimeAggregate::query()->count())->toBe(0)
         ->and(ExceptionGroup::query()->count())->toBe(0);
 });
+
+it('keeps the first and last release of an exception group and flags a regression (#106)', function () {
+    [$project, $token] = telemetryProject();
+    $headers = ['Authorization' => "Bearer {$token}"];
+    $push = fn (array $group, ?string $release) => test()->postJson(
+        route('api.exceptions.store'),
+        array_replace_recursive(exceptionsEnvelope([$group]), $release === null ? [] : ['exceptions' => ['release' => $release]]),
+        $headers,
+    )->assertCreated();
+    $group = fn (): ExceptionGroup => $project->exceptionGroups()->sole();
+
+    $push(exceptionGroupPayload(), 'v1.0.0');
+    $push(exceptionGroupPayload(['lastSeen' => '2026-11-05T11:40:00Z']), 'v1.1.0');
+    expect($group())->first_release->toBe('v1.0.0')->last_release->toBe('v1.1.0')->regressed_release->toBeNull();
+
+    // Back in the release it was last seen in: the fix may not be deployed yet, only a reopen.
+    $group()->update(['status' => 'resolved', 'resolved_at' => Date::now()]);
+    $push(exceptionGroupPayload(['lastSeen' => '2026-11-05T11:45:00Z']), 'v1.1.0');
+    expect($group())->status->toBe(ExceptionStatusEnum::Open)->regressed_release->toBeNull();
+
+    // Back in a later release: a regression in that release.
+    $group()->update(['status' => 'resolved', 'resolved_at' => Date::now()]);
+    $push(exceptionGroupPayload(['lastSeen' => '2026-11-05T11:50:00Z']), 'v1.2.0');
+    expect($group())->status->toBe(ExceptionStatusEnum::Open)->last_release->toBe('v1.2.0')->regressed_release->toBe('v1.2.0');
+
+    // A batch without a release (older core) keeps what is known.
+    $push(exceptionGroupPayload(['lastSeen' => '2026-11-05T11:55:00Z']), null);
+    expect($group())->first_release->toBe('v1.0.0')->last_release->toBe('v1.2.0')->count->toBe(15);
+});
+
+it('stores exception groups without a release as before (#106)', function () {
+    [$project, $token] = telemetryProject();
+
+    $this->postJson(route('api.exceptions.store'), exceptionsEnvelope([exceptionGroupPayload()]), ['Authorization' => "Bearer {$token}"])->assertCreated();
+    $this->postJson(route('api.exceptions.store'), [...exceptionsEnvelope([exceptionGroupPayload()]), 'exceptions' => ['groups' => [exceptionGroupPayload()], 'release' => str_repeat('a', 101)]], ['Authorization' => "Bearer {$token}"])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('exceptions.release');
+
+    expect($project->exceptionGroups()->sole())->first_release->toBeNull()->last_release->toBeNull()->regressed_release->toBeNull();
+});

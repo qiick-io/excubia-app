@@ -35,6 +35,7 @@ class StorePushedExceptionsRequest extends FormRequest
             'batchId' => ['required', 'string', 'regex:/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/'],
             'sentAt' => ['required', 'date'],
             'exceptions' => ['required', 'array'],
+            'exceptions.release' => ['sometimes', 'string', 'max:100'],
             'exceptions.groups' => ['present', 'list'],
             'exceptions.groups.*' => ['array'],
             'exceptions.groups.*.class' => ['required', 'string', 'max:255'],

@@ -38,6 +38,9 @@ class StorePushedReportRequest extends FormRequest
             'report' => ['required', 'array'],
             'report.schemaVersion' => ['required', 'integer', Rule::in([1])],
             'report.generatedAt' => ['sometimes', 'nullable', 'date'],
+            // Optional since excubia-core 1.0.0-beta.2 (#106): release and, with --deploy, deployedAt.
+            'report.release' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'report.deployedAt' => ['sometimes', 'nullable', 'date'],
             'report.checks' => ['present', 'list'],
             'report.checks.*' => ['array'],
             'report.checks.*.checkId' => ['required', 'string'],

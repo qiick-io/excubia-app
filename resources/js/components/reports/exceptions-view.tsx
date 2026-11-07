@@ -7,6 +7,7 @@ import { PageEmptyState } from '@/components/admin/page-empty-state';
 import { EmptyStatus } from '@/components/empty-status';
 import { PageLayout, TablePanel } from '@/components/layout/page-layout';
 import { useCopyWithToast } from '@/components/reports/fix-actions';
+import { ReleaseLabel, shortRelease } from '@/components/reports/release-label';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -222,17 +223,38 @@ export function ExceptionsView({
                                             ).toLocaleString()}
                                         </TableCell>
                                         <TableCell>
-                                            <Badge
-                                                variant={
-                                                    STATUS_VARIANTS[
-                                                        group.status
-                                                    ]
-                                                }
-                                            >
-                                                {t(
-                                                    `exceptions.status.${group.status}`,
-                                                )}
-                                            </Badge>
+                                            <div className="flex flex-wrap gap-1">
+                                                <Badge
+                                                    variant={
+                                                        STATUS_VARIANTS[
+                                                            group.status
+                                                        ]
+                                                    }
+                                                >
+                                                    {t(
+                                                        `exceptions.status.${group.status}`,
+                                                    )}
+                                                </Badge>
+                                                {group.regressed_release !==
+                                                null ? (
+                                                    <Badge
+                                                        variant="warning"
+                                                        title={
+                                                            group.regressed_release
+                                                        }
+                                                    >
+                                                        {t(
+                                                            'exceptions.regressedIn',
+                                                            {
+                                                                release:
+                                                                    shortRelease(
+                                                                        group.regressed_release,
+                                                                    ),
+                                                            },
+                                                        )}
+                                                    </Badge>
+                                                ) : null}
+                                            </div>
                                         </TableCell>
                                     </TableRow>
                                 ))}
@@ -311,6 +333,32 @@ function ExceptionDrawer({
                         </span>{' '}
                         {group.context.name}
                     </span>
+                    {group.first_release !== null ? (
+                        <span>
+                            <span className="text-muted-foreground">
+                                {t('exceptions.firstRelease')}:
+                            </span>{' '}
+                            <ReleaseLabel release={group.first_release} />
+                        </span>
+                    ) : null}
+                    {group.last_release !== null ? (
+                        <span>
+                            <span className="text-muted-foreground">
+                                {t('exceptions.lastRelease')}:
+                            </span>{' '}
+                            <ReleaseLabel release={group.last_release} />
+                        </span>
+                    ) : null}
+                    {group.regressed_release !== null ? (
+                        <Badge
+                            variant="warning"
+                            title={group.regressed_release}
+                        >
+                            {t('exceptions.regressedIn', {
+                                release: shortRelease(group.regressed_release),
+                            })}
+                        </Badge>
+                    ) : null}
                     {group.previous.length > 0 ? (
                         <span>
                             <span className="text-muted-foreground">

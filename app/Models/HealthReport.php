@@ -6,6 +6,8 @@ namespace App\Models;
 
 use App\Enums\SeverityEnum;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
@@ -19,6 +21,8 @@ use Illuminate\Support\Carbon;
  * @property string $batch_id
  * @property Carbon $received_at
  * @property Carbon $generated_at
+ * @property string|null $release release identifier of the deployed code (#106)
+ * @property Carbon|null $deployed_at set by `excubia push --deploy`: the report is a deploy marker
  * @property SeverityEnum|null $worst_severity
  * @property int $critical_count
  * @property int $high_count
@@ -29,9 +33,20 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['batch_id', 'received_at', 'generated_at', 'worst_severity', 'critical_count', 'high_count', 'medium_count', 'low_count', 'info_count', 'report'])]
+#[Fillable(['batch_id', 'received_at', 'generated_at', 'release', 'deployed_at', 'worst_severity', 'critical_count', 'high_count', 'medium_count', 'low_count', 'info_count', 'report'])]
 class HealthReport extends Model
 {
+    /**
+     * Reports sent by `excubia push --deploy`, the project's deploys.
+     *
+     * @param  Builder<self>  $query
+     */
+    #[Scope]
+    protected function deploys(Builder $query): void
+    {
+        $query->whereNotNull('deployed_at');
+    }
+
     /**
      * @return BelongsTo<Project, $this>
      */
@@ -48,6 +63,7 @@ class HealthReport extends Model
         return [
             'received_at' => 'datetime',
             'generated_at' => 'datetime',
+            'deployed_at' => 'datetime',
             'worst_severity' => SeverityEnum::class,
             'report' => 'array',
         ];
