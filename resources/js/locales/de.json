@@ -755,8 +755,15 @@
                 "allFindings": "Alle Befunde",
                 "exception": "Exception",
                 "emptyTitle": "Kein Handlungsbedarf"
-            }
-        }
+            },
+            "release": "Release",
+            "lastDeploy": "Deployt {{time}}",
+            "noDeploy": "Noch keine Deploy-Markierung",
+            "deployCount_one": "{{count}} Deploy im Verlauf",
+            "deployCount_other": "{{count}} Deploys im Verlauf"
+        },
+        "release": "Release",
+        "deploy": "Deploy"
     },
     "assistant": {
         "title": "Assistent",
@@ -916,7 +923,11 @@
         "cpuLimit_one": "Limit {{count}} CPU",
         "cpuLimit_other": "Limit {{count}} CPUs",
         "cpuCores_one": "{{count}} Kern",
-        "cpuCores_other": "{{count}} Kerne"
+        "cpuCores_other": "{{count}} Kerne",
+        "deploy": "Deploy",
+        "deployMarkersHint": "Gestrichelte Linien markieren Deploys.",
+        "deploysLabel_one": "{{count}} Deploy: {{releases}}.",
+        "deploysLabel_other": "{{count}} Deploys: {{releases}}."
     },
     "exceptions": {
         "emptyTitle": "Keine Exceptions",
@@ -952,7 +963,10 @@
         "stackHint": "Innerster zuerst; Projektcode hervorgehoben. Pfade sind relativ, Argumente werden nie gesendet.",
         "resolve": "Lösen",
         "ignore": "Ignorieren",
-        "reopen": "Wieder öffnen"
+        "reopen": "Wieder öffnen",
+        "firstRelease": "Zuerst gesehen in Release",
+        "lastRelease": "Zuletzt gesehen in Release",
+        "regressedIn": "Regression in {{release}}"
     },
     "schedule": {
         "description": "Die geplanten Aufgaben des letzten Berichts, jeweils mit letztem Lauf, nächster Fälligkeit und Status. Jede Minute mit den Läufen aus dem Runtime-Monitoring abgeglichen.",

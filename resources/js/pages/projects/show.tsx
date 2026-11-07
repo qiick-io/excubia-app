@@ -13,6 +13,7 @@ import {
     ListChecks,
     ListOrdered,
     RefreshCw,
+    Rocket,
     SearchX,
     Sparkles,
 } from 'lucide-react';
@@ -30,6 +31,7 @@ import {
     FixActions,
     useCopyWithToast,
 } from '@/components/reports/fix-actions';
+import { ReleaseLabel, shortRelease } from '@/components/reports/release-label';
 import { RuntimeView } from '@/components/reports/runtime-view';
 import { ScheduleView } from '@/components/reports/schedule-view';
 import {
@@ -226,6 +228,9 @@ export default function ProjectShow({
                             project={project}
                             latest={latest}
                             previous={reports[1] ?? null}
+                            deploys={reports.filter(
+                                (summary) => summary.deployed_at !== null,
+                            )}
                             report={report}
                             fixes={findingFixes}
                             runtime={runtime}
@@ -343,6 +348,7 @@ function OverviewView({
     project,
     latest,
     previous,
+    deploys,
     report,
     fixes,
     runtime,
@@ -351,6 +357,8 @@ function OverviewView({
     project: ProjectRow;
     latest: HealthReportSummary;
     previous: HealthReportSummary | null;
+    /** Reports sent with `excubia push --deploy`, newest first (#106). */
+    deploys: HealthReportSummary[];
     report: HealthReportBody;
     fixes: Record<string, FindingFix>;
     runtime: RuntimeSummary | null;
@@ -442,8 +450,14 @@ function OverviewView({
         runtime && runtime.requests.count > 0
             ? (runtime.requests.errors / runtime.requests.count) * 100
             : 0;
+    const lastDeploy = deploys[0] ?? null;
+    const currentRelease = latest.release ?? lastDeploy?.release ?? null;
+    const hasRelease = currentRelease !== null || lastDeploy !== null;
     const cardCount =
-        3 + (exceptions.length > 0 ? 1 : 0) + (runtime !== null ? 1 : 0);
+        3 +
+        (exceptions.length > 0 ? 1 : 0) +
+        (runtime !== null ? 1 : 0) +
+        (hasRelease ? 1 : 0);
     const lastSeen = openExceptions[0]?.last_seen ?? null;
 
     return (
@@ -565,6 +579,33 @@ function OverviewView({
                         }
                     />
                 ) : null}
+                {hasRelease ? (
+                    <StatCard
+                        label={t('report.overview.release')}
+                        value={
+                            currentRelease === null
+                                ? '—'
+                                : shortRelease(currentRelease)
+                        }
+                        headline={
+                            lastDeploy?.deployed_at
+                                ? t('report.overview.lastDeploy', {
+                                      time: relativeTime(
+                                          lastDeploy.deployed_at,
+                                          i18n.language,
+                                      ),
+                                  })
+                                : t('report.overview.noDeploy')
+                        }
+                        context={
+                            deploys.length > 0
+                                ? t('report.overview.deployCount', {
+                                      count: deploys.length,
+                                  })
+                                : undefined
+                        }
+                    />
+                ) : null}
             </section>
 
             <NeedsAttentionCard
@@ -586,6 +627,7 @@ const STAT_GRID: Record<number, string> = {
     3: 'xl:grid-cols-3',
     4: 'xl:grid-cols-4',
     5: 'xl:grid-cols-5',
+    6: 'xl:grid-cols-3',
 };
 
 /**
@@ -1311,6 +1353,7 @@ function HistoryView({ reports }: { reports: HealthReportSummary[] }) {
                             <TableHead>{t('report.receivedAt')}</TableHead>
                             <TableHead>{t('report.worstSeverity')}</TableHead>
                             <TableHead>{t('report.findings')}</TableHead>
+                            <TableHead>{t('report.release')}</TableHead>
                             <TableHead className="text-right">
                                 {t('report.coreVersionShort')}
                             </TableHead>
@@ -1331,6 +1374,25 @@ function HistoryView({ reports }: { reports: HealthReportSummary[] }) {
                                 </TableCell>
                                 <TableCell>
                                     <SeverityCounts counts={summary.counts} />
+                                </TableCell>
+                                <TableCell>
+                                    <div className="flex items-center gap-2 text-xs">
+                                        {summary.release === null ? (
+                                            <span className="text-muted-foreground">
+                                                —
+                                            </span>
+                                        ) : (
+                                            <ReleaseLabel
+                                                release={summary.release}
+                                            />
+                                        )}
+                                        {summary.deployed_at !== null ? (
+                                            <Badge variant="info">
+                                                <Rocket />
+                                                {t('report.deploy')}
+                                            </Badge>
+                                        ) : null}
+                                    </div>
                                 </TableCell>
                                 <TableCell className="text-right font-mono text-xs text-muted-foreground">
                                     {summary.excubia_version ?? '—'}

@@ -28,10 +28,13 @@ use Illuminate\Support\Carbon;
  * @property int $count
  * @property Carbon $first_seen
  * @property Carbon $last_seen
+ * @property string|null $first_release release of the first batch with the group (#106)
+ * @property string|null $last_release release of the batch with the latest occurrence
+ * @property string|null $regressed_release release a resolved group came back in
  * @property ExceptionStatusEnum $status
  * @property Carbon|null $resolved_at
  */
-#[Fillable(['project_id', 'fingerprint', 'environment', 'class', 'message', 'frames', 'previous', 'context_kind', 'context_name', 'count', 'first_seen', 'last_seen', 'status', 'resolved_at'])]
+#[Fillable(['project_id', 'fingerprint', 'environment', 'class', 'message', 'frames', 'previous', 'context_kind', 'context_name', 'count', 'first_seen', 'last_seen', 'first_release', 'last_release', 'regressed_release', 'status', 'resolved_at'])]
 class ExceptionGroup extends Model
 {
     /**

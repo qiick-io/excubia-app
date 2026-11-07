@@ -755,8 +755,15 @@
                 "allFindings": "All findings",
                 "exception": "Exception",
                 "emptyTitle": "Nothing needs attention"
-            }
-        }
+            },
+            "release": "Release",
+            "lastDeploy": "Deployed {{time}}",
+            "noDeploy": "No deploy marker yet",
+            "deployCount_one": "{{count}} deploy in the history",
+            "deployCount_other": "{{count}} deploys in the history"
+        },
+        "release": "Release",
+        "deploy": "Deploy"
     },
     "assistant": {
         "title": "Assistant",
@@ -916,7 +923,11 @@
         "cpuLimit_one": "limit {{count}} CPU",
         "cpuLimit_other": "limit {{count}} CPUs",
         "cpuCores_one": "{{count}} core",
-        "cpuCores_other": "{{count}} cores"
+        "cpuCores_other": "{{count}} cores",
+        "deploy": "Deploy",
+        "deployMarkersHint": "Dashed lines mark deploys.",
+        "deploysLabel_one": "{{count}} deploy: {{releases}}.",
+        "deploysLabel_other": "{{count}} deploys: {{releases}}."
     },
     "exceptions": {
         "emptyTitle": "No exceptions",
@@ -952,7 +963,10 @@
         "stackHint": "Innermost first; project code highlighted. Paths are relative and arguments are never sent.",
         "resolve": "Resolve",
         "ignore": "Ignore",
-        "reopen": "Reopen"
+        "reopen": "Reopen",
+        "firstRelease": "First seen in release",
+        "lastRelease": "Last seen in release",
+        "regressedIn": "Regressed in {{release}}"
     },
     "schedule": {
         "description": "The scheduled tasks of the latest report, each with its last run, next due time and status. Checked every minute against the runs pushed with runtime monitoring.",

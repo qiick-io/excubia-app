@@ -65,6 +65,11 @@ return new class extends Migration
             $table->unsignedBigInteger('count');
             $table->timestamp('first_seen');
             $table->timestamp('last_seen');
+            // The batch releases of the first and latest occurrence, and the release a resolved
+            // group came back in (#106). Null when the core sent no release.
+            $table->string('first_release', 100)->nullable();
+            $table->string('last_release', 100)->nullable();
+            $table->string('regressed_release', 100)->nullable();
             $table->string('status', 16)->default('open');
             $table->timestamp('resolved_at')->nullable();
             $table->timestamps();

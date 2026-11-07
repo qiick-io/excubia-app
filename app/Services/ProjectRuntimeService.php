@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Enums\RuntimeTypeEnum;
+use App\Models\HealthReport;
 use App\Models\Project;
 use App\Models\RuntimeAggregate;
 use Carbon\CarbonImmutable;
@@ -22,7 +23,8 @@ use Illuminate\Support\Facades\Date;
  *
  * SQL sums each series (type, dimensions with release, sample rate) over the window, histogram
  * buckets and summed metrics included, so PHP only folds series that differ by release or sample
- * rate. Server gauges are readings: the card shows each server's latest sample.
+ * rate. Server gauges are readings: the card shows each server's latest sample. The deploys of the
+ * window (#106) come along for the chart markers.
  *
  * @phpstan-type Series array{type: string, sampleRate: float, dimensions: array<string, string>, count: int, errorCount: int, totalMs: float|null, maxMs: float|null, lastAt: CarbonImmutable, histogram: list<float>|null, metrics: array<string, float|null>}
  */
@@ -92,7 +94,34 @@ class ProjectRuntimeService
             'deprecations' => $this->countTable($of(RuntimeTypeEnum::Deprecation), ['source', 'message', 'phpVersion']),
             'duplicateQueries' => $this->duplicateQueries($of(RuntimeTypeEnum::DuplicateQuery)),
             'servers' => $this->servers($project, $of(RuntimeTypeEnum::Server)),
+            'deploys' => $this->deploys($project, $from),
         ];
+    }
+
+    /**
+     * The deploys (#106) of the window, oldest first, for the markers on the hourly charts:
+     * `hour` is the start of the hour bucket the deploy falls in, as in hourly().
+     *
+     * @return list<array{release: string|null, deployedAt: string, hour: string}>
+     */
+    private function deploys(Project $project, CarbonImmutable $from): array
+    {
+        return array_values($project->healthReports()
+            ->deploys()
+            ->where('deployed_at', '>=', $from)
+            ->orderBy('deployed_at')
+            ->get(['release', 'deployed_at'])
+            ->map(function (HealthReport $report) use ($from): array {
+                // Never null here (deploys() scope); the fallback only satisfies the type.
+                $deployedAt = CarbonImmutable::instance($report->deployed_at ?? $from)->utc();
+
+                return [
+                    'release' => $report->release,
+                    'deployedAt' => $deployedAt->toIso8601ZuluString(),
+                    'hour' => $deployedAt->startOfHour()->toIso8601ZuluString(),
+                ];
+            })
+            ->all());
     }
 
     /**

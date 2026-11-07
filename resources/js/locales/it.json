@@ -755,8 +755,15 @@
                 "allFindings": "Tutti i problemi",
                 "exception": "Eccezione",
                 "emptyTitle": "Niente da sistemare"
-            }
-        }
+            },
+            "release": "Release",
+            "lastDeploy": "Deploy {{time}}",
+            "noDeploy": "Ancora nessun deploy segnato",
+            "deployCount_one": "{{count}} deploy nella cronologia",
+            "deployCount_other": "{{count}} deploy nella cronologia"
+        },
+        "release": "Release",
+        "deploy": "Deploy"
     },
     "assistant": {
         "title": "Assistente",
@@ -916,7 +923,11 @@
         "cpuLimit_one": "limite {{count}} CPU",
         "cpuLimit_other": "limite {{count}} CPU",
         "cpuCores_one": "{{count}} core",
-        "cpuCores_other": "{{count}} core"
+        "cpuCores_other": "{{count}} core",
+        "deploy": "Deploy",
+        "deployMarkersHint": "Le linee tratteggiate segnano i deploy.",
+        "deploysLabel_one": "{{count}} deploy: {{releases}}.",
+        "deploysLabel_other": "{{count}} deploy: {{releases}}."
     },
     "exceptions": {
         "emptyTitle": "Nessuna eccezione",
@@ -952,7 +963,10 @@
         "stackHint": "Dal più interno; il codice del progetto è evidenziato. I percorsi sono relativi e gli argomenti non vengono mai inviati.",
         "resolve": "Risolvi",
         "ignore": "Ignora",
-        "reopen": "Riapri"
+        "reopen": "Riapri",
+        "firstRelease": "Vista la prima volta nella release",
+        "lastRelease": "Vista l'ultima volta nella release",
+        "regressedIn": "Regressione in {{release}}"
     },
     "schedule": {
         "description": "I task pianificati dell'ultimo report, ognuno con l'ultima esecuzione, la prossima scadenza e lo stato. Controllati ogni minuto con le esecuzioni inviate dal monitoraggio runtime.",
