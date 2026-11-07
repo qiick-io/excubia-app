@@ -116,7 +116,7 @@ class StorePushedRuntimeAction
             'error_count' => $existing->error_count + (int) $aggregate['errorCount'],
             'total_ms' => $type->isTimed() ? (float) $existing->total_ms + (float) $aggregate['totalMs'] : null,
             'max_ms' => $type->isTimed() ? max((float) $existing->max_ms, (float) $aggregate['maxMs']) : null,
-            'metrics' => $metrics === null ? null : $this->mergeMetrics($type, $existing->metrics ?? [], $metrics),
+            'metrics' => $metrics === null ? null : $type->mergeMetrics($existing->metrics ?? [], $metrics),
             'histogram' => $this->mergeHistograms($existing->histogram, $histogram),
         ])->save();
     }
@@ -143,31 +143,6 @@ class StorePushedRuntimeAction
         }
 
         return $metrics === [] ? null : $metrics;
-    }
-
-    /**
-     * @param  array<string, int|float|bool|null>  $existing
-     * @param  array<string, int|float|bool|null>  $incoming
-     * @return array<string, int|float|bool|null>
-     */
-    private function mergeMetrics(RuntimeTypeEnum $type, array $existing, array $incoming): array
-    {
-        $merged = [];
-
-        foreach ($type->metrics() as $metric => $merge) {
-            $left = $existing[$metric] ?? null;
-            $right = $incoming[$metric] ?? null;
-            $numbers = array_values(array_filter([$left, $right], fn (mixed $value): bool => is_int($value) || is_float($value)));
-
-            $merged[$metric] = match (true) {
-                $merge === 'or' => (bool) $left || (bool) $right,
-                $numbers === [] => null,
-                $merge === 'sum' => array_sum($numbers),
-                default => max($numbers),
-            };
-        }
-
-        return $merged;
     }
 
     /**

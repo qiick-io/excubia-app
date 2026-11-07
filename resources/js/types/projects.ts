@@ -113,7 +113,14 @@ export type AssistantMessage = {
     created_at: string | null;
 };
 
-/** A row of a runtime table (ProjectRuntimeService): its dimensions plus totals. */
+/** p50, p95 and p99 in ms from the latency histograms; null without histograms. */
+export type RuntimePercentiles = {
+    p50: number | null;
+    p95: number | null;
+    p99: number | null;
+};
+
+/** A row of a timed runtime table (ProjectRuntimeService): its dimensions plus totals. */
 export type RuntimeRow = {
     count: number;
     errors: number;
@@ -121,12 +128,37 @@ export type RuntimeRow = {
     maxMs: number | null;
     outcomes: Record<string, number>;
     lastAt: string | null;
+} & RuntimePercentiles &
+    Record<string, unknown>;
+
+/** A row of a runtime card without durations: its dimensions plus card-specific numbers. */
+export type RuntimeCountRow = {
+    count: number;
+    lastAt: string | null;
 } & Record<string, unknown>;
 
-/** The runtime of a project over the last hours (#24). Counts are estimated real counts. */
+/** The latest sample of one server (`server` aggregates). Gauges are null when unknown. */
+export type RuntimeServer = {
+    server: string;
+    loadAverage1: number | null;
+    loadAverage5: number | null;
+    loadAverage15: number | null;
+    cpuCores: number | null;
+    cpuLimit: number | null;
+    memoryUsedMb: number | null;
+    memoryTotalMb: number | null;
+    diskUsedGb: number | null;
+    diskTotalGb: number | null;
+    isContainer: boolean;
+    lastAt: string;
+};
+
+/** The runtime of a project over the last hours (#24, #107). Counts are estimated real counts. */
 export type RuntimeSummary = {
     hours: number;
     isSampled: boolean;
+    /** Entries of runtime types this app does not know, skipped on ingest (all time). */
+    skippedAggregates: number;
     requests: {
         count: number;
         errors: number;
@@ -134,11 +166,31 @@ export type RuntimeSummary = {
         maxMs: number | null;
         hourly: { hour: string; ok: number; errors: number }[];
         routes: RuntimeRow[];
-    };
+    } & RuntimePercentiles;
     slowQueries: RuntimeRow[];
     jobs: RuntimeRow[];
     scheduledTasks: RuntimeRow[];
     outgoingHttp: RuntimeRow[];
+    queueWait: RuntimeRow[];
+    commands: RuntimeRow[];
+    requestMemory: RuntimeCountRow[];
+    jobMemory: RuntimeCountRow[];
+    cache: {
+        hits: number;
+        misses: number;
+        hitRate: number | null;
+        rows: RuntimeCountRow[];
+    };
+    mail: RuntimeCountRow[];
+    notifications: RuntimeCountRow[];
+    logLevels: {
+        levels: { level: string; count: number }[];
+        rows: RuntimeCountRow[];
+        hourly: { hour: string; count: number }[];
+    };
+    deprecations: RuntimeCountRow[];
+    duplicateQueries: RuntimeCountRow[];
+    servers: RuntimeServer[];
 };
 
 export type ExceptionFrame = {

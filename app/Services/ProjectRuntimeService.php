@@ -8,116 +8,517 @@ use App\Enums\RuntimeTypeEnum;
 use App\Models\Project;
 use App\Models\RuntimeAggregate;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Query\Builder;
+use Illuminate\Database\Query\Expression;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Date;
 
 /**
- * The runtime of a project over the last hours (#24), from the aggregates excubia-core pushes:
- * request totals and per route, an hourly request series, slow queries, jobs, scheduled tasks
- * and outgoing HTTP per host. Counts are estimated real counts (`count / sample_rate`);
- * `isSampled` tells the page to show them as approximate. Durations are the recorded ones.
+ * The runtime of a project over the last hours (#24, #107), from the aggregates excubia-core
+ * pushes: one card per runtime type. Counts are estimated real counts (`count / sample_rate`);
+ * `isSampled` tells the page to show them as approximate. Durations, memory and repeats are the
+ * recorded ones; p50, p95 and p99 come from the optional latency histograms (core
+ * `$defs.histogram`).
+ *
+ * SQL sums each series (type, dimensions with release, sample rate) over the window, histogram
+ * buckets and summed metrics included, so PHP only folds series that differ by release or sample
+ * rate. Server gauges are readings: the card shows each server's latest sample.
+ *
+ * @phpstan-type Series array{type: string, sampleRate: float, dimensions: array<string, string>, count: int, errorCount: int, totalMs: float|null, maxMs: float|null, lastAt: CarbonImmutable, histogram: list<float>|null, metrics: array<string, float|null>}
  */
 class ProjectRuntimeService
 {
     /** Rows per table, so the page stays light. */
     public const TABLE_LIMIT = 20;
 
+    /** Upper bounds (inclusive, ms) of histogram buckets 0 to 10; bucket 11 is the overflow. */
+    private const HISTOGRAM_BOUNDS = [5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000];
+
+    /** Log levels of core's `logLevel`, most severe first. */
+    private const LOG_LEVELS = ['emergency', 'alert', 'critical', 'error', 'warning', 'notice', 'info', 'debug', 'unknown'];
+
+    /** Histogram bucket indexes (RuntimeTypeEnum::HISTOGRAM_LENGTH of them). */
+    private const HISTOGRAM_INDEXES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+
+    /**
+     * The summed and maxed metrics of RuntimeTypeEnum::metrics(), server gauges aside (they are
+     * readings, see servers()), read in SQL. A test keeps the two lists in step.
+     */
+    public const SQL_METRICS = ['totalMb' => 'sum', 'maxMb' => 'max', 'hits' => 'sum', 'misses' => 'sum', 'writes' => 'sum', 'deletes' => 'sum', 'totalRepeats' => 'sum', 'maxRepeats' => 'max'];
+
+    /** The levels the error-log chart counts. */
+    private const ERROR_LOG_LEVELS = ['emergency', 'alert', 'critical', 'error'];
+
     /**
      * @return array<string, mixed>|null null when the project never pushed runtime data
      */
     public function summary(Project $project, int $hours = 24): ?array
     {
-        if (! $project->runtimeAggregates()->exists()) {
+        if ($project->skipped_runtime_aggregates === 0 && ! $project->runtimeAggregates()->exists()) {
             return null;
         }
 
         $now = CarbonImmutable::instance(Date::now());
         $from = $now->subHours($hours)->startOfHour();
-
-        /** @var Collection<int, RuntimeAggregate> $rows */
-        $rows = $project->runtimeAggregates()->where('bucket', '>=', $from)->get();
-        $byType = $rows->groupBy(fn (RuntimeAggregate $row): string => $row->type->value);
-        $requests = $byType->get(RuntimeTypeEnum::Request->value, collect());
+        $series = $this->series($project, $from);
+        $byType = $series->groupBy('type');
+        $of = fn (RuntimeTypeEnum $type): Collection => $byType->get($type->value, collect());
+        $requests = $of(RuntimeTypeEnum::Request);
 
         return [
             'hours' => $hours,
-            'isSampled' => $rows->contains(fn (RuntimeAggregate $row): bool => $row->sample_rate < 1),
+            'isSampled' => $series->contains(fn (array $one): bool => $one['sampleRate'] < 1),
+            'skippedAggregates' => $project->skipped_runtime_aggregates,
             'requests' => [
                 ...$this->totals($requests),
-                'hourly' => $this->hourly($requests, $from, $now),
-                'routes' => $this->table($requests, ['route', 'method']),
+                'hourly' => array_map(
+                    fn (array $point): array => ['hour' => $point['hour'], 'ok' => $point['count'] - $point['errors'], 'errors' => $point['errors']],
+                    $this->hourly($this->window($project, RuntimeTypeEnum::Request, $from), $from, $now),
+                ),
+                'routes' => $this->timedTable($requests, ['route', 'method']),
             ],
-            'slowQueries' => $this->table($byType->get(RuntimeTypeEnum::SlowQuery->value, collect()), ['sql', 'connection']),
-            'jobs' => $this->table($byType->get(RuntimeTypeEnum::Job->value, collect()), ['job', 'queue']),
-            'scheduledTasks' => $this->table($byType->get(RuntimeTypeEnum::ScheduledTask->value, collect()), ['task']),
-            'outgoingHttp' => $this->table($byType->get(RuntimeTypeEnum::OutgoingHttp->value, collect()), ['host']),
+            'slowQueries' => $this->timedTable($of(RuntimeTypeEnum::SlowQuery), ['sql', 'connection']),
+            'jobs' => $this->timedTable($of(RuntimeTypeEnum::Job), ['job', 'queue']),
+            'scheduledTasks' => $this->timedTable($of(RuntimeTypeEnum::ScheduledTask), ['task']),
+            'outgoingHttp' => $this->timedTable($of(RuntimeTypeEnum::OutgoingHttp), ['host']),
+            'queueWait' => $this->timedTable($of(RuntimeTypeEnum::QueueWait), ['job', 'queue']),
+            'commands' => $this->timedTable($of(RuntimeTypeEnum::Command), ['command']),
+            'requestMemory' => $this->memoryTable($of(RuntimeTypeEnum::RequestMemory), ['route', 'method']),
+            'jobMemory' => $this->memoryTable($of(RuntimeTypeEnum::JobMemory), ['job', 'queue']),
+            'cache' => $this->cache($of(RuntimeTypeEnum::Cache)),
+            'mail' => $this->countTable($of(RuntimeTypeEnum::Mail), ['mailable', 'mailer']),
+            'notifications' => $this->countTable($of(RuntimeTypeEnum::Notification), ['notification', 'channel']),
+            'logLevels' => $this->logLevels($project, $of(RuntimeTypeEnum::LogLevel), $from, $now),
+            'deprecations' => $this->countTable($of(RuntimeTypeEnum::Deprecation), ['source', 'message', 'phpVersion']),
+            'duplicateQueries' => $this->duplicateQueries($of(RuntimeTypeEnum::DuplicateQuery)),
+            'servers' => $this->servers($project, $of(RuntimeTypeEnum::Server)),
         ];
     }
 
     /**
-     * @param  Collection<int, RuntimeAggregate>  $rows
-     * @return array{count: int, errors: int, averageMs: float|null, maxMs: float|null}
+     * The project's aggregates of one type (or all) since the start of the window, as a base query.
      */
-    private function totals(Collection $rows): array
+    private function window(Project $project, ?RuntimeTypeEnum $type, CarbonImmutable $from): Builder
     {
-        $recorded = $rows->sum('count');
+        return RuntimeAggregate::query()
+            ->where('project_id', $project->id)
+            ->when($type !== null, fn ($query) => $query->where('type', $type?->value))
+            ->where('bucket', '>=', $from)
+            ->toBase();
+    }
+
+    /**
+     * Every series of the window, summed in SQL: counts, durations, histogram buckets and the
+     * summed or maxed type metrics (server gauges excluded, see servers()). A JSON number is cast
+     * to decimal so MySQL and PostgreSQL add it like SQLite does. A series' histogram sums only
+     * the minutes that have one, and is null when none has.
+     *
+     * @return Collection<int, Series>
+     */
+    private function series(Project $project, CarbonImmutable $from): Collection
+    {
+        $query = $this->window($project, null, $from);
+        $driver = (new RuntimeAggregate)->getConnection()->getDriverName();
+        $selects = ['min(id) as id', 'sum(count) as count', 'sum(error_count) as error_count', 'sum(total_ms) as total_ms', 'max(max_ms) as max_ms', 'max(bucket) as last_at', 'count(histogram) as histogram_rows'];
+
+        foreach (self::HISTOGRAM_INDEXES as $i) {
+            $selects[] = 'sum('.$this->jsonNumber($driver, 'histogram', $i).') as histogram_'.$i;
+        }
+
+        foreach (self::SQL_METRICS as $metric => $merge) {
+            $selects[] = $merge.'('.$this->jsonNumber($driver, 'metrics', $metric).') as metric_'.$metric;
+        }
+
+        $rows = $query
+            ->select(['type', 'dimension_key', 'sample_rate'])
+            ->addSelect(array_map(fn (string $select): Expression => new Expression($select), $selects))
+            ->groupBy('type', 'dimension_key', 'sample_rate')
+            ->get();
+
+        /** @var array<int, array<string, string>> $dimensions */
+        $dimensions = [];
+
+        foreach ($rows->pluck('id')->chunk(500) as $ids) {
+            foreach (RuntimeAggregate::query()->whereKey($ids->all())->get(['id', 'dimensions']) as $aggregate) {
+                $dimensions[$aggregate->id] = $aggregate->dimensions;
+            }
+        }
+
+        return $rows->map(fn (object $row): array => $this->toSeries((array) $row, $dimensions))->values();
+    }
+
+    /**
+     * One row of the series query as a series, with its dimensions.
+     *
+     * @param  array<string, mixed>  $row
+     * @param  array<int, array<string, string>>  $dimensions  by the series' first id
+     * @return Series
+     */
+    private function toSeries(array $row, array $dimensions): array
+    {
+        // Lower case: PostgreSQL folds the unquoted metric aliases.
+        $values = array_change_key_case($row);
+        $histogram = null;
+
+        if ((int) $values['histogram_rows'] > 0) {
+            $histogram = [];
+
+            foreach (self::HISTOGRAM_INDEXES as $i) {
+                $histogram[] = (float) $values["histogram_{$i}"];
+            }
+        }
+
+        $metrics = [];
+
+        foreach (array_keys(self::SQL_METRICS) as $metric) {
+            $value = $values['metric_'.strtolower($metric)];
+            $metrics[$metric] = $value === null ? null : (float) $value;
+        }
 
         return [
-            'count' => (int) round($rows->sum(fn (RuntimeAggregate $row): float => $row->count / $row->sample_rate)),
-            'errors' => (int) round($rows->sum(fn (RuntimeAggregate $row): float => $row->error_count / $row->sample_rate)),
-            'averageMs' => $recorded > 0 ? round($rows->sum('total_ms') / $recorded, 1) : null,
-            'maxMs' => $rows->isEmpty() ? null : round((float) $rows->max('max_ms'), 1),
+            'type' => (string) $values['type'],
+            'sampleRate' => (float) $values['sample_rate'],
+            'dimensions' => $dimensions[(int) $values['id']] ?? [],
+            'count' => (int) $values['count'],
+            'errorCount' => (int) $values['error_count'],
+            'totalMs' => $values['total_ms'] === null ? null : (float) $values['total_ms'],
+            'maxMs' => $values['max_ms'] === null ? null : (float) $values['max_ms'],
+            'lastAt' => CarbonImmutable::parse((string) $values['last_at'], 'UTC'),
+            'histogram' => $histogram,
+            'metrics' => $metrics,
         ];
     }
 
     /**
-     * Estimated requests per hour, split in successful and failed (5xx), one point per hour.
+     * A number inside a JSON column as SQL, cast to decimal so MySQL and PostgreSQL (which read
+     * JSON values as text) add and compare it like SQLite does. Missing or JSON null is NULL.
      *
-     * @param  Collection<int, RuntimeAggregate>  $rows
-     * @return list<array{hour: string, ok: int, errors: int}>
+     * @param  'histogram'|'metrics'  $column
+     * @param  key-of<self::SQL_METRICS>|value-of<self::HISTOGRAM_INDEXES>  $key  a metric name or a histogram index
+     * @return literal-string
      */
-    private function hourly(Collection $rows, CarbonImmutable $from, CarbonImmutable $now): array
+    private function jsonNumber(string $driver, string $column, string|int $key): string
     {
-        $byHour = $rows->groupBy(fn (RuntimeAggregate $row): string => $row->bucket->copy()->utc()->startOfHour()->toIso8601ZuluString());
+        $value = match ($driver) {
+            'mysql', 'mariadb' => is_int($key) ? "json_unquote(json_extract({$column}, '$[{$key}]'))" : "json_unquote(json_extract({$column}, '$.\"{$key}\"'))",
+            'pgsql' => is_int($key) ? "({$column}->>{$key})" : "({$column}->>'{$key}')",
+            default => is_int($key) ? "json_extract({$column}, '$[{$key}]')" : "json_extract({$column}, '$.\"{$key}\"')",
+        };
+
+        return "cast({$value} as decimal(20, 4))";
+    }
+
+    /**
+     * Estimated events and errors per hour of the window, one point per hour, from the given
+     * query of minutes (summed per minute and sample rate in SQL).
+     *
+     * @return list<array{hour: string, count: int, errors: int}>
+     */
+    private function hourly(Builder $query, CarbonImmutable $from, CarbonImmutable $now): array
+    {
+        $byHour = [];
+        $minutes = $query->select(['bucket', 'sample_rate'])
+            ->selectRaw('sum(count) as count, sum(error_count) as error_count')
+            ->groupBy('bucket', 'sample_rate')
+            ->get();
+
+        foreach ($minutes as $minute) {
+            $hour = CarbonImmutable::parse((string) $minute->bucket, 'UTC')->startOfHour()->toIso8601ZuluString();
+            $byHour[$hour]['count'] = ($byHour[$hour]['count'] ?? 0) + $minute->count / $minute->sample_rate;
+            $byHour[$hour]['errors'] = ($byHour[$hour]['errors'] ?? 0) + $minute->error_count / $minute->sample_rate;
+        }
+
         $series = [];
 
         for ($hour = $from; $hour->lte($now); $hour = $hour->addHour()) {
-            $bucket = $byHour->get($hour->toIso8601ZuluString(), collect());
-            $total = $this->totals($bucket);
-            $series[] = ['hour' => $hour->toIso8601ZuluString(), 'ok' => $total['count'] - $total['errors'], 'errors' => $total['errors']];
+            $key = $hour->toIso8601ZuluString();
+            $series[] = ['hour' => $key, 'count' => (int) round($byHour[$key]['count'] ?? 0), 'errors' => (int) round($byHour[$key]['errors'] ?? 0)];
         }
 
         return $series;
     }
 
     /**
-     * Rows grouped by the given dimensions, the busiest first, with the outcome split for jobs
-     * and scheduled tasks.
+     * Estimated count and errors, average and slowest duration, and percentiles of the series.
      *
-     * @param  Collection<int, RuntimeAggregate>  $rows
+     * @param  Collection<int, Series>  $series
+     * @return array{count: int, errors: int, averageMs: float|null, maxMs: float|null, p50: float|null, p95: float|null, p99: float|null}
+     */
+    private function totals(Collection $series): array
+    {
+        $recorded = $series->sum('count');
+
+        return [
+            'count' => $this->estimate($series, fn (array $one): float => $one['count']),
+            'errors' => $this->estimate($series, fn (array $one): float => $one['errorCount']),
+            'averageMs' => $recorded > 0 ? round($series->sum('totalMs') / $recorded, 1) : null,
+            'maxMs' => $series->isEmpty() ? null : round((float) $series->max('maxMs'), 1),
+            ...$this->percentiles($series->reject(fn (array $one): bool => ($one['dimensions']['outcome'] ?? '') === 'skipped')),
+        ];
+    }
+
+    /**
+     * p50, p95 and p99 by the recipe of core `$defs.histogram`: histograms summed element by
+     * element (each divided by its sample rate), then linear interpolation inside the bucket that
+     * holds the rank, never above the slowest duration. Series without a histogram are left out;
+     * all null when none has one. Skipped scheduled tasks (0 ms) are left out by totals().
+     *
+     * @param  Collection<int, Series>  $series
+     * @return array{p50: float|null, p95: float|null, p99: float|null}
+     */
+    private function percentiles(Collection $series): array
+    {
+        $withHistogram = $series->filter(fn (array $one): bool => $one['histogram'] !== null);
+        $buckets = array_fill(0, RuntimeTypeEnum::HISTOGRAM_LENGTH, 0.0);
+
+        foreach ($withHistogram as $one) {
+            foreach ((array) $one['histogram'] as $i => $value) {
+                $buckets[$i] += $value / $one['sampleRate'];
+            }
+        }
+
+        $total = array_sum($buckets);
+        $max = (float) $withHistogram->max('maxMs');
+        $result = ['p50' => null, 'p95' => null, 'p99' => null];
+
+        if ($total <= 0) {
+            return $result;
+        }
+
+        foreach (['p50' => 0.5, 'p95' => 0.95, 'p99' => 0.99] as $key => $share) {
+            $rank = $share * $total;
+            $cumulative = 0.0;
+
+            foreach ($buckets as $i => $value) {
+                $previous = $cumulative;
+                $cumulative += $value;
+
+                if ($value <= 0 || $cumulative < $rank) {
+                    continue;
+                }
+
+                $lower = $i === 0 ? 0 : self::HISTOGRAM_BOUNDS[$i - 1];
+                $upper = self::HISTOGRAM_BOUNDS[$i] ?? max($max, 10000);
+                $result[$key] = round(min($lower + ($upper - $lower) * ($rank - $previous) / $value, $max), 1);
+
+                break;
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * The estimated real total of a per-series value (`value / sample_rate`), rounded.
+     *
+     * @param  Collection<int, Series>  $series
+     * @param  callable(Series): (int|float|null)  $value
+     */
+    private function estimate(Collection $series, callable $value): int
+    {
+        return (int) round($series->sum(fn (array $one): float => (float) $value($one) / $one['sampleRate']));
+    }
+
+    /**
+     * Series grouped by the given dimensions (across releases and sample rates), each group
+     * mapped to a row that starts with those dimensions, the largest `$sortBy` first.
+     *
+     * @param  Collection<int, Series>  $series
+     * @param  list<string>  $dimensions
+     * @param  callable(Collection<int, Series>): array<string, mixed>  $row
+     * @return list<array<string, mixed>>
+     */
+    private function table(Collection $series, array $dimensions, callable $row, string $sortBy = 'count'): array
+    {
+        return array_values($series
+            ->groupBy(fn (array $one): string => implode("\0", array_map(fn (string $dimension): string => $one['dimensions'][$dimension] ?? '', $dimensions)))
+            ->map(function (Collection $group) use ($dimensions, $row): array {
+                /** @var Series $first */
+                $first = $group->first();
+
+                return [
+                    ...array_combine($dimensions, array_map(fn (string $dimension): string => $first['dimensions'][$dimension] ?? '', $dimensions)),
+                    ...$row($group),
+                    'lastAt' => $group->max('lastAt')?->toIso8601ZuluString(),
+                ];
+            })
+            ->sortByDesc($sortBy)
+            ->take(self::TABLE_LIMIT)
+            ->all());
+    }
+
+    /**
+     * Timed series (requests, slow queries, jobs, tasks, outgoing HTTP, queue wait, commands):
+     * totals and percentiles, with the outcome split for jobs and scheduled tasks.
+     *
+     * @param  Collection<int, Series>  $series
      * @param  list<string>  $dimensions
      * @return list<array<string, mixed>>
      */
-    private function table(Collection $rows, array $dimensions): array
+    private function timedTable(Collection $series, array $dimensions): array
     {
-        return array_values($rows
-            ->groupBy(fn (RuntimeAggregate $row): string => implode("\0", array_map(fn (string $dimension): string => $row->dimensions[$dimension] ?? '', $dimensions)))
-            ->map(function (Collection $group) use ($dimensions): array {
-                /** @var RuntimeAggregate $first */
-                $first = $group->first();
-                $outcomes = $group->groupBy(fn (RuntimeAggregate $row): string => $row->dimensions['outcome'] ?? '')
-                    ->filter(fn (Collection $rows, string $outcome): bool => $outcome !== '')
-                    ->map(fn (Collection $rows): int => (int) round($rows->sum(fn (RuntimeAggregate $row): float => $row->count / $row->sample_rate)));
+        return $this->table($series, $dimensions, fn (Collection $group): array => [
+            ...$this->totals($group),
+            'outcomes' => $group->groupBy(fn (array $one): string => $one['dimensions']['outcome'] ?? '')
+                ->filter(fn (Collection $rows, string $outcome): bool => $outcome !== '')
+                ->map(fn (Collection $rows): int => $this->estimate($rows, fn (array $one): float => $one['count']))
+                ->all(),
+        ]);
+    }
 
-                return [
-                    ...array_combine($dimensions, array_map(fn (string $dimension): string => $first->dimensions[$dimension] ?? '', $dimensions)),
-                    ...$this->totals($group),
-                    'outcomes' => $outcomes->all(),
-                    'lastAt' => $group->max('bucket')?->toIso8601ZuluString(),
-                ];
-            })
-            ->sortByDesc('count')
-            ->take(self::TABLE_LIMIT)
-            ->all());
+    /**
+     * Peak memory per route or job: the average and the largest peak (MB) of the recorded runs.
+     *
+     * @param  Collection<int, Series>  $series
+     * @param  list<string>  $dimensions
+     * @return list<array<string, mixed>>
+     */
+    private function memoryTable(Collection $series, array $dimensions): array
+    {
+        return $this->table($series, $dimensions, function (Collection $group): array {
+            $recorded = $group->sum('count');
+
+            return [
+                'count' => $this->estimate($group, fn (array $one): float => $one['count']),
+                'averageMb' => $recorded > 0 ? round($group->sum(fn (array $one): float => (float) $one['metrics']['totalMb']) / $recorded, 1) : null,
+                'maxMb' => $group->isEmpty() ? null : round((float) $group->max(fn (array $one): float => (float) $one['metrics']['maxMb']), 1),
+            ];
+        });
+    }
+
+    /**
+     * Counted series (mail, notifications, deprecations): estimated count and failures.
+     *
+     * @param  Collection<int, Series>  $series
+     * @param  list<string>  $dimensions
+     * @return list<array<string, mixed>>
+     */
+    private function countTable(Collection $series, array $dimensions): array
+    {
+        return $this->table($series, $dimensions, fn (Collection $group): array => [
+            'count' => $this->estimate($group, fn (array $one): float => $one['count']),
+            'errors' => $this->estimate($group, fn (array $one): float => $one['errorCount']),
+        ]);
+    }
+
+    /**
+     * Cache events per store and key prefix with their hit rate (hits / (hits + misses), in %),
+     * and the hit rate of all of them.
+     *
+     * @param  Collection<int, Series>  $series
+     * @return array{hits: int, misses: int, hitRate: float|null, rows: list<array<string, mixed>>}
+     */
+    private function cache(Collection $series): array
+    {
+        $counters = fn (Collection $group): array => [
+            'hits' => $hits = $this->estimate($group, fn (array $one): ?float => $one['metrics']['hits']),
+            'misses' => $misses = $this->estimate($group, fn (array $one): ?float => $one['metrics']['misses']),
+            'hitRate' => $hits + $misses > 0 ? round($hits / ($hits + $misses) * 100, 1) : null,
+        ];
+
+        return [
+            ...$counters($series),
+            'rows' => $this->table($series, ['store', 'keyPrefix'], fn (Collection $group): array => [
+                'count' => $this->estimate($group, fn (array $one): float => $one['count']),
+                ...$counters($group),
+                'writes' => $this->estimate($group, fn (array $one): ?float => $one['metrics']['writes']),
+                'deletes' => $this->estimate($group, fn (array $one): ?float => $one['metrics']['deletes']),
+            ]),
+        ];
+    }
+
+    /**
+     * Log entries per level (most severe first), per level and channel (null for entries
+     * without one), and error-level entries per hour.
+     *
+     * @param  Collection<int, Series>  $series
+     * @return array{levels: list<array{level: string, count: int}>, rows: list<array<string, mixed>>, hourly: list<array{hour: string, count: int}>}
+     */
+    private function logLevels(Project $project, Collection $series, CarbonImmutable $from, CarbonImmutable $now): array
+    {
+        $byLevel = $series->groupBy(fn (array $one): string => $one['dimensions']['level'] ?? 'unknown');
+        $levels = [];
+
+        foreach (self::LOG_LEVELS as $level) {
+            $group = $byLevel->get($level);
+
+            if ($group !== null) {
+                $levels[] = ['level' => $level, 'count' => $this->estimate($group, fn (array $one): float => $one['count'])];
+            }
+        }
+
+        $hourly = $series->isEmpty() ? [] : $this->hourly(
+            $this->window($project, RuntimeTypeEnum::LogLevel, $from)->whereIn('dimensions->level', self::ERROR_LOG_LEVELS),
+            $from,
+            $now,
+        );
+
+        return [
+            'levels' => $levels,
+            'rows' => array_map(
+                fn (array $row): array => [...$row, 'channel' => $row['channel'] === '' ? null : $row['channel']],
+                $this->table($series, ['level', 'channel'], fn (Collection $group): array => [
+                    'count' => $this->estimate($group, fn (array $one): float => $one['count']),
+                ]),
+            ),
+            'hourly' => array_map(fn (array $point): array => ['hour' => $point['hour'], 'count' => $point['count']], $hourly),
+        ];
+    }
+
+    /**
+     * N+1 query shapes: estimated occurrences (requests or jobs where the shape repeated), the
+     * average and the largest number of repeats in one.
+     *
+     * @param  Collection<int, Series>  $series
+     * @return list<array<string, mixed>>
+     */
+    private function duplicateQueries(Collection $series): array
+    {
+        return $this->table($series, ['origin', 'name', 'sql', 'connection'], function (Collection $group): array {
+            $recorded = $group->sum('count');
+
+            return [
+                'count' => $this->estimate($group, fn (array $one): float => $one['count']),
+                'averageRepeats' => $recorded > 0 ? round($group->sum(fn (array $one): float => (float) $one['metrics']['totalRepeats']) / $recorded, 1) : null,
+                'maxRepeats' => (int) $group->max(fn (array $one): float => (float) $one['metrics']['maxRepeats']),
+            ];
+        });
+    }
+
+    /**
+     * The latest sample of each server: its gauges merged by MAX across the entries of that
+     * minute (never summed or scaled by sample rate), and whether it runs in a container.
+     *
+     * @param  Collection<int, Series>  $series
+     * @return list<array<string, mixed>>
+     */
+    private function servers(Project $project, Collection $series): array
+    {
+        if ($series->isEmpty()) {
+            return [];
+        }
+
+        $latest = $series->groupBy(fn (array $one): string => $one['dimensions']['server'] ?? '')
+            ->map(fn (Collection $group): CarbonImmutable => $group->max('lastAt'));
+        $samples = RuntimeAggregate::query()
+            ->where('project_id', $project->id)
+            ->where('type', RuntimeTypeEnum::Server->value)
+            ->whereIn('bucket', $latest->unique()->values()->all())
+            ->get();
+        $servers = [];
+
+        foreach ($latest->sortKeys() as $server => $lastAt) {
+            $gauges = $samples
+                ->filter(fn (RuntimeAggregate $sample): bool => ($sample->dimensions['server'] ?? '') === $server && $sample->bucket->equalTo($lastAt))
+                ->reduce(fn (array $merged, RuntimeAggregate $sample): array => RuntimeTypeEnum::Server->mergeMetrics($merged, $sample->metrics ?? []), []);
+
+            $servers[] = [
+                'server' => (string) $server,
+                ...RuntimeTypeEnum::Server->mergeMetrics($gauges, []),
+                'lastAt' => $lastAt->toIso8601ZuluString(),
+            ];
+        }
+
+        return $servers;
     }
 }

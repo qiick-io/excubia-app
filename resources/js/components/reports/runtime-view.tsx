@@ -1,9 +1,11 @@
-import { Gauge } from 'lucide-react';
+import { Gauge, Info } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PageEmptyState } from '@/components/admin/page-empty-state';
 import { StackedBarChart } from '@/components/reports/severity-chart';
 import { StatCard } from '@/components/stat-card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import {
     Card,
     CardContent,
@@ -20,15 +22,38 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
-import type { RuntimeRow, RuntimeSummary } from '@/types';
+import type {
+    RuntimeCountRow,
+    RuntimeRow,
+    RuntimeServer,
+    RuntimeSummary,
+} from '@/types';
 
 const RUNTIME_GUIDE_URL =
     'https://github.com/qiick-io/excubia-core/blob/main/docs/guides/runtime-monitoring.md';
 
+/** Log levels that count as errors, as in ProjectRuntimeService. */
+const ERROR_LOG_LEVELS = ['emergency', 'alert', 'critical', 'error'];
+
+/** One column of a runtime card: a header and a right-aligned numeric cell. */
+type Column<Row> = {
+    label: string;
+    cell: (row: Row) => ReactNode;
+    /** Marks the cell as a problem (failures, misses) with the destructive text colour. */
+    isProblem?: (row: Row) => boolean;
+};
+
+type Formatters = {
+    count: (value: number) => string;
+    ms: (value: number | null) => string;
+    number: (value: number | null, digits?: number) => string;
+};
+
 /**
- * The runtime of a project over the last 24 hours (#24), Pulse-style: key numbers, requests per
- * hour (successful vs 5xx), then tables per route, slow query, job, scheduled task and outgoing
- * host. Estimated counts carry a `~` when the project samples.
+ * The runtime of a project over the last 24 hours (#24, #107), Pulse-style: key numbers,
+ * requests per hour (successful vs 5xx), then one card per runtime type. A card without data
+ * names the `runtime.*` key of excubia.json that turns it on. Estimated counts carry a `~` when
+ * the project samples.
  */
 export function RuntimeView({ runtime }: { runtime: RuntimeSummary | null }) {
     const { t } = useTranslation();
@@ -46,21 +71,44 @@ export function RuntimeView({ runtime }: { runtime: RuntimeSummary | null }) {
     }
 
     const approx = runtime.isSampled ? '~' : '';
-    const count = (value: number): string =>
-        `${approx}${value.toLocaleString()}`;
-    const ms = (value: number | null): string =>
-        value === null ? '—' : `${Math.round(value).toLocaleString()} ms`;
+    const format: Formatters = {
+        count: (value) => `${approx}${value.toLocaleString()}`,
+        ms: (value) =>
+            value === null ? '—' : `${Math.round(value).toLocaleString()} ms`,
+        number: (value, digits = 1) =>
+            value === null
+                ? '—'
+                : value.toLocaleString(undefined, {
+                      maximumFractionDigits: digits,
+                  }),
+    };
     const { requests } = runtime;
     const errorRate =
         requests.count > 0 ? (requests.errors / requests.count) * 100 : 0;
+    const hourLabel = (hour: string): string =>
+        new Date(hour).toLocaleTimeString(undefined, {
+            hour: '2-digit',
+            minute: '2-digit',
+        });
 
     return (
         <div className="flex flex-col gap-4">
+            {runtime.skippedAggregates > 0 ? (
+                <Alert variant="info">
+                    <Info />
+                    <AlertDescription>
+                        {t('runtime.skipped', {
+                            count: runtime.skippedAggregates,
+                        })}
+                    </AlertDescription>
+                </Alert>
+            ) : null}
+
             <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-12">
                 <StatCard
                     className="xl:col-span-3"
                     label={t('runtime.requests')}
-                    value={count(requests.count)}
+                    value={format.count(requests.count)}
                     headline={t('runtime.lastHours', { count: runtime.hours })}
                     context={
                         runtime.isSampled ? t('runtime.sampled') : undefined
@@ -69,7 +117,7 @@ export function RuntimeView({ runtime }: { runtime: RuntimeSummary | null }) {
                 <StatCard
                     className="xl:col-span-3"
                     label={t('runtime.errors')}
-                    value={count(requests.errors)}
+                    value={format.count(requests.errors)}
                     headline={t('runtime.errorRate', {
                         rate: errorRate.toFixed(errorRate < 1 ? 2 : 1),
                     })}
@@ -77,13 +125,18 @@ export function RuntimeView({ runtime }: { runtime: RuntimeSummary | null }) {
                 <StatCard
                     className="xl:col-span-3"
                     label={t('runtime.averageResponse')}
-                    value={ms(requests.averageMs)}
+                    value={format.ms(requests.averageMs)}
                     headline={t('runtime.allRoutes')}
+                    context={
+                        requests.p50 === null
+                            ? undefined
+                            : `p50 ${format.ms(requests.p50)} · p95 ${format.ms(requests.p95)} · p99 ${format.ms(requests.p99)}`
+                    }
                 />
                 <StatCard
                     className="xl:col-span-3"
                     label={t('runtime.slowestResponse')}
-                    value={ms(requests.maxMs)}
+                    value={format.ms(requests.maxMs)}
                     headline={t('runtime.allRoutes')}
                 />
             </section>
@@ -98,10 +151,7 @@ export function RuntimeView({ runtime }: { runtime: RuntimeSummary | null }) {
                 <CardContent className="h-56">
                     <StackedBarChart
                         data={requests.hourly.map((point) => ({
-                            label: new Date(point.hour).toLocaleTimeString(
-                                undefined,
-                                { hour: '2-digit', minute: '2-digit' },
-                            ),
+                            label: hourLabel(point.hour),
                             ok: point.ok,
                             errors: point.errors,
                         }))}
@@ -126,114 +176,442 @@ export function RuntimeView({ runtime }: { runtime: RuntimeSummary | null }) {
             </Card>
 
             <section className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-                <RuntimeTable
+                <RuntimeCard
                     className="xl:col-span-7"
                     title={t('runtime.routes')}
+                    configKey="runtime.requests"
                     rows={requests.routes}
-                    first={(row) => (
-                        <>
-                            <div className="truncate font-medium">
-                                {String(row.route)}
-                            </div>
-                            <div className="font-mono text-xs text-muted-foreground">
-                                {String(row.method)}
-                            </div>
-                        </>
+                    name={(row) => (
+                        <Name
+                            primary={String(row.route)}
+                            secondary={String(row.method)}
+                            isSecondaryMono
+                        />
                     )}
-                    count={count}
-                    ms={ms}
-                    showErrors
+                    columns={timedColumns(requests.routes, format, t, {
+                        errors: t('runtime.serverErrors'),
+                    })}
                 />
-                <RuntimeTable
+                <RuntimeCard
                     className="xl:col-span-5"
                     title={t('runtime.outgoingHttp')}
+                    configKey="runtime.outgoingHttp"
                     rows={runtime.outgoingHttp}
-                    first={(row) => (
-                        <div className="truncate font-mono text-xs">
-                            {String(row.host)}
-                        </div>
-                    )}
-                    count={count}
-                    ms={ms}
-                    showErrors
+                    name={(row) => <Name primary={String(row.host)} isMono />}
+                    columns={timedColumns(runtime.outgoingHttp, format, t, {
+                        errors: t('runtime.serverErrors'),
+                    })}
                 />
             </section>
 
-            <RuntimeTable
+            <RuntimeCard
                 title={t('runtime.slowQueries')}
+                configKey="runtime.slowQueries"
                 rows={runtime.slowQueries}
-                first={(row) => (
-                    <>
-                        <div className="line-clamp-2 font-mono text-xs break-all whitespace-normal">
-                            {String(row.sql)}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                            {String(row.connection)}
-                        </div>
-                    </>
+                name={(row) => (
+                    <Name
+                        primary={String(row.sql)}
+                        secondary={String(row.connection)}
+                        isMono
+                        isWrapped
+                    />
                 )}
-                count={count}
-                ms={ms}
+                columns={timedColumns(runtime.slowQueries, format, t)}
+            />
+
+            <RuntimeCard
+                title={t('runtime.duplicateQueries')}
+                description={t('runtime.duplicateQueriesDescription')}
+                configKey="runtime.duplicateQueries"
+                rows={runtime.duplicateQueries}
+                name={(row) => (
+                    <Name
+                        primary={String(row.sql)}
+                        secondary={`${t(`runtime.origin.${String(row.origin)}`)} · ${String(row.name)} · ${String(row.connection)}`}
+                        isMono
+                        isWrapped
+                    />
+                )}
+                columns={[
+                    {
+                        label: t('runtime.occurrences'),
+                        cell: (row) => format.count(row.count),
+                    },
+                    {
+                        label: t('runtime.averageRepeats'),
+                        cell: (row) =>
+                            format.number(row.averageRepeats as number | null),
+                    },
+                    {
+                        label: t('runtime.maxRepeats'),
+                        cell: (row) =>
+                            format.number(row.maxRepeats as number | null),
+                    },
+                ]}
             />
 
             <section className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-                <RuntimeTable
+                <RuntimeCard
                     className="xl:col-span-6"
                     title={t('runtime.jobs')}
+                    configKey="runtime.jobs"
                     rows={runtime.jobs}
-                    first={(row) => (
-                        <>
-                            <div className="truncate font-mono text-xs">
-                                {String(row.job)}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                                {String(row.queue)}
-                            </div>
-                        </>
+                    name={(row) => (
+                        <Name
+                            primary={String(row.job)}
+                            secondary={String(row.queue)}
+                            isMono
+                        />
                     )}
-                    count={count}
-                    ms={ms}
-                    outcomes={['processed', 'failed']}
+                    columns={timedColumns(runtime.jobs, format, t, {
+                        outcomes: ['processed', 'failed'],
+                    })}
                 />
-                <RuntimeTable
+                <RuntimeCard
                     className="xl:col-span-6"
                     title={t('runtime.scheduledTasks')}
+                    configKey="runtime.scheduler"
                     rows={runtime.scheduledTasks}
-                    first={(row) => (
-                        <div className="truncate font-mono text-xs">
-                            {String(row.task)}
-                        </div>
-                    )}
-                    count={count}
-                    ms={ms}
-                    outcomes={['finished', 'failed', 'skipped']}
+                    name={(row) => <Name primary={String(row.task)} isMono />}
+                    columns={timedColumns(runtime.scheduledTasks, format, t, {
+                        outcomes: ['finished', 'failed', 'skipped'],
+                    })}
                 />
             </section>
+
+            <section className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+                <RuntimeCard
+                    className="xl:col-span-6"
+                    title={t('runtime.queueWait')}
+                    description={t('runtime.queueWaitDescription')}
+                    configKey="runtime.queueWait"
+                    rows={runtime.queueWait}
+                    name={(row) => (
+                        <Name
+                            primary={String(row.queue)}
+                            secondary={String(row.job)}
+                            isSecondaryMono
+                        />
+                    )}
+                    columns={timedColumns(runtime.queueWait, format, t)}
+                />
+                <RuntimeCard
+                    className="xl:col-span-6"
+                    title={t('runtime.commands')}
+                    configKey="runtime.commands"
+                    rows={runtime.commands}
+                    name={(row) => (
+                        <Name primary={String(row.command)} isMono />
+                    )}
+                    columns={timedColumns(runtime.commands, format, t, {
+                        errors: t('runtime.failed'),
+                    })}
+                />
+            </section>
+
+            <section className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+                <RuntimeCard
+                    className="xl:col-span-6"
+                    title={t('runtime.requestMemory')}
+                    configKey="runtime.requestMemory"
+                    rows={runtime.requestMemory}
+                    name={(row) => (
+                        <Name
+                            primary={String(row.route)}
+                            secondary={String(row.method)}
+                            isSecondaryMono
+                        />
+                    )}
+                    columns={memoryColumns(format, t)}
+                />
+                <RuntimeCard
+                    className="xl:col-span-6"
+                    title={t('runtime.jobMemory')}
+                    configKey="runtime.jobMemory"
+                    rows={runtime.jobMemory}
+                    name={(row) => (
+                        <Name
+                            primary={String(row.job)}
+                            secondary={String(row.queue)}
+                            isMono
+                        />
+                    )}
+                    columns={memoryColumns(format, t)}
+                />
+            </section>
+
+            <RuntimeCard
+                title={t('runtime.cache')}
+                description={
+                    runtime.cache.hitRate === null
+                        ? undefined
+                        : t('runtime.cacheDescription', {
+                              rate: format.number(runtime.cache.hitRate),
+                              hits: format.count(runtime.cache.hits),
+                              misses: format.count(runtime.cache.misses),
+                          })
+                }
+                configKey="runtime.cache"
+                rows={runtime.cache.rows}
+                name={(row) => (
+                    <Name
+                        primary={String(row.keyPrefix)}
+                        secondary={String(row.store)}
+                        isMono
+                    />
+                )}
+                columns={[
+                    {
+                        label: t('runtime.hitRate'),
+                        cell: (row) =>
+                            row.hitRate === null
+                                ? '—'
+                                : `${format.number(row.hitRate as number)}%`,
+                    },
+                    {
+                        label: t('runtime.hits'),
+                        cell: (row) => format.count(row.hits as number),
+                    },
+                    {
+                        label: t('runtime.misses'),
+                        cell: (row) => format.count(row.misses as number),
+                    },
+                    {
+                        label: t('runtime.writes'),
+                        cell: (row) => format.count(row.writes as number),
+                    },
+                    {
+                        label: t('runtime.deletes'),
+                        cell: (row) => format.count(row.deletes as number),
+                    },
+                ]}
+            />
+
+            <section className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+                <RuntimeCard
+                    className="xl:col-span-6"
+                    title={t('runtime.mail')}
+                    configKey="runtime.mail"
+                    rows={runtime.mail}
+                    name={(row) => (
+                        <Name
+                            primary={String(row.mailable)}
+                            secondary={String(row.mailer)}
+                            isMono
+                        />
+                    )}
+                    columns={sentColumns(format, t)}
+                />
+                <RuntimeCard
+                    className="xl:col-span-6"
+                    title={t('runtime.notifications')}
+                    configKey="runtime.notifications"
+                    rows={runtime.notifications}
+                    name={(row) => (
+                        <Name
+                            primary={String(row.notification)}
+                            secondary={String(row.channel)}
+                            isMono
+                        />
+                    )}
+                    columns={sentColumns(format, t)}
+                />
+            </section>
+
+            <LogLevelsCard
+                logLevels={runtime.logLevels}
+                format={format}
+                hourLabel={hourLabel}
+            />
+
+            <RuntimeCard
+                title={t('runtime.deprecations')}
+                description={t('runtime.deprecationsDescription')}
+                configKey="runtime.deprecations"
+                rows={runtime.deprecations}
+                name={(row) => (
+                    <Name
+                        primary={String(row.message)}
+                        secondary={`${String(row.source)} · PHP ${String(row.phpVersion)}`}
+                        isWrapped
+                    />
+                )}
+                columns={[
+                    {
+                        label: t('runtime.count'),
+                        cell: (row) => format.count(row.count),
+                    },
+                ]}
+            />
+
+            <ServersCard servers={runtime.servers} format={format} />
         </div>
     );
 }
 
 /**
- * One runtime table in a card: the series, its count (and errors or outcomes), average and
- * slowest duration.
+ * Count, errors or outcomes, average and slowest duration of timed rows, plus p50, p95 and p99
+ * when any row has a histogram.
  */
-function RuntimeTable({
+function timedColumns(
+    rows: RuntimeRow[],
+    format: Formatters,
+    t: (key: string) => string,
+    { errors, outcomes }: { errors?: string; outcomes?: string[] } = {},
+): Column<RuntimeRow>[] {
+    const counts: Column<RuntimeRow>[] = outcomes
+        ? outcomes.map((outcome) => ({
+              label: t(`runtime.outcome.${outcome}`),
+              cell: (row) => format.count(row.outcomes[outcome] ?? 0),
+              isProblem: (row) =>
+                  outcome === 'failed' && (row.outcomes[outcome] ?? 0) > 0,
+          }))
+        : [
+              {
+                  label: t('runtime.count'),
+                  cell: (row) => format.count(row.count),
+              },
+          ];
+
+    if (errors) {
+        counts.push({
+            label: errors,
+            cell: (row) => format.count(row.errors),
+            isProblem: (row) => row.errors > 0,
+        });
+    }
+
+    const percentiles: Column<RuntimeRow>[] = rows.some(
+        (row) => row.p50 !== null,
+    )
+        ? (['p50', 'p95', 'p99'] as const).map((key) => ({
+              label: key,
+              cell: (row) => format.ms(row[key]),
+          }))
+        : [];
+
+    return [
+        ...counts,
+        {
+            label: t('runtime.average'),
+            cell: (row) => format.ms(row.averageMs),
+        },
+        ...percentiles,
+        { label: t('runtime.max'), cell: (row) => format.ms(row.maxMs) },
+    ];
+}
+
+/** Runs, average and largest peak memory. */
+function memoryColumns(
+    format: Formatters,
+    t: (key: string) => string,
+): Column<RuntimeCountRow>[] {
+    return [
+        { label: t('runtime.count'), cell: (row) => format.count(row.count) },
+        {
+            label: t('runtime.averageMemory'),
+            cell: (row) =>
+                `${format.number(row.averageMb as number | null)} MB`,
+        },
+        {
+            label: t('runtime.peakMemory'),
+            cell: (row) => `${format.number(row.maxMb as number | null)} MB`,
+        },
+    ];
+}
+
+/** Sent and failed, for mail and notifications. */
+function sentColumns(
+    format: Formatters,
+    t: (key: string) => string,
+): Column<RuntimeCountRow>[] {
+    return [
+        { label: t('runtime.sent'), cell: (row) => format.count(row.count) },
+        {
+            label: t('runtime.failed'),
+            cell: (row) => format.count(row.errors as number),
+            isProblem: (row) => (row.errors as number) > 0,
+        },
+    ];
+}
+
+/**
+ * The name cell of a runtime row: the series name and, muted below it, what qualifies it.
+ */
+function Name({
+    primary,
+    secondary,
+    isMono = false,
+    isSecondaryMono = false,
+    isWrapped = false,
+}: {
+    primary: string;
+    secondary?: string;
+    isMono?: boolean;
+    isSecondaryMono?: boolean;
+    isWrapped?: boolean;
+}) {
+    return (
+        <>
+            <div
+                className={cn(
+                    isMono ? 'font-mono text-xs' : 'font-medium',
+                    isWrapped
+                        ? 'line-clamp-2 break-all whitespace-normal'
+                        : 'truncate',
+                )}
+            >
+                {primary}
+            </div>
+            {secondary ? (
+                <div
+                    className={cn(
+                        'truncate text-xs text-muted-foreground',
+                        isSecondaryMono && 'font-mono',
+                    )}
+                >
+                    {secondary}
+                </div>
+            ) : null}
+        </>
+    );
+}
+
+/**
+ * What a runtime card shows without data: none in the last 24 hours, and the excubia.json key
+ * that turns the type on.
+ */
+function NoData({ configKey }: { configKey: string }) {
+    const { t } = useTranslation();
+
+    return (
+        <p className="text-sm text-muted-foreground">
+            {t('runtime.noData')} {t('runtime.enableHint')}{' '}
+            <code className="font-mono text-xs">{configKey}.enabled</code>
+        </p>
+    );
+}
+
+/**
+ * One runtime card: a table of series with a name column and numeric columns, or the
+ * empty state naming its `runtime.*` key.
+ */
+function RuntimeCard<Row extends Record<string, unknown>>({
     title,
+    description,
+    configKey,
     rows,
-    first,
-    count,
-    ms,
-    showErrors = false,
-    outcomes,
+    name,
+    columns,
     className,
 }: {
     title: string;
-    rows: RuntimeRow[];
-    first: (row: RuntimeRow) => ReactNode;
-    count: (value: number) => string;
-    ms: (value: number | null) => string;
-    showErrors?: boolean;
-    outcomes?: string[];
+    description?: string;
+    /** The excubia.json key of the type, e.g. `runtime.cache`. */
+    configKey: string;
+    rows: Row[];
+    name: (row: Row) => ReactNode;
+    columns: Column<Row>[];
     className?: string;
 }) {
     const { t } = useTranslation();
@@ -242,96 +620,303 @@ function RuntimeTable({
         <Card className={className}>
             <CardHeader className="pb-3">
                 <CardTitle>{title}</CardTitle>
+                {description ? (
+                    <CardDescription>{description}</CardDescription>
+                ) : null}
             </CardHeader>
             <CardContent>
                 {rows.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">
-                        {t('runtime.noData')}
-                    </p>
+                    <NoData configKey={configKey} />
                 ) : (
                     <div className="max-h-80 overflow-auto">
                         <Table>
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>{t('runtime.name')}</TableHead>
-                                    {outcomes ? (
-                                        outcomes.map((outcome) => (
-                                            <TableHead
-                                                key={outcome}
-                                                className="text-right"
-                                            >
-                                                {t(
-                                                    `runtime.outcome.${outcome}`,
-                                                )}
-                                            </TableHead>
-                                        ))
-                                    ) : (
-                                        <TableHead className="text-right">
-                                            {t('runtime.count')}
+                                    {columns.map((column) => (
+                                        <TableHead
+                                            key={column.label}
+                                            className="text-right"
+                                        >
+                                            {column.label}
                                         </TableHead>
-                                    )}
-                                    {showErrors ? (
-                                        <TableHead className="text-right">
-                                            {t('runtime.serverErrors')}
-                                        </TableHead>
-                                    ) : null}
-                                    <TableHead className="text-right">
-                                        {t('runtime.average')}
-                                    </TableHead>
-                                    <TableHead className="text-right">
-                                        {t('runtime.max')}
-                                    </TableHead>
+                                    ))}
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {rows.map((row, index) => (
                                     <TableRow key={index}>
                                         <TableCell className="max-w-[28rem] min-w-0">
-                                            {first(row)}
+                                            {name(row)}
                                         </TableCell>
-                                        {outcomes ? (
-                                            outcomes.map((outcome) => (
-                                                <TableCell
-                                                    key={outcome}
-                                                    className={cn(
-                                                        'text-right tabular-nums',
-                                                        outcome === 'failed' &&
-                                                            (row.outcomes[
-                                                                outcome
-                                                            ] ?? 0) > 0 &&
-                                                            'text-destructive',
-                                                    )}
-                                                >
-                                                    {count(
-                                                        row.outcomes[outcome] ??
-                                                            0,
-                                                    )}
-                                                </TableCell>
-                                            ))
-                                        ) : (
-                                            <TableCell className="text-right tabular-nums">
-                                                {count(row.count)}
-                                            </TableCell>
-                                        )}
-                                        {showErrors ? (
+                                        {columns.map((column) => (
                                             <TableCell
+                                                key={column.label}
                                                 className={cn(
                                                     'text-right tabular-nums',
-                                                    row.errors > 0 &&
+                                                    column.isProblem?.(row) &&
                                                         'text-destructive',
                                                 )}
                                             >
-                                                {count(row.errors)}
+                                                {column.cell(row)}
                                             </TableCell>
-                                        ) : null}
-                                        <TableCell className="text-right tabular-nums">
-                                            {ms(row.averageMs)}
-                                        </TableCell>
-                                        <TableCell className="text-right tabular-nums">
-                                            {ms(row.maxMs)}
-                                        </TableCell>
+                                        ))}
                                     </TableRow>
                                 ))}
+                            </TableBody>
+                        </Table>
+                    </div>
+                )}
+            </CardContent>
+        </Card>
+    );
+}
+
+/**
+ * Log entries: totals per level as badges (error levels in the destructive tone), error-level
+ * entries per hour, and the table per level and channel.
+ */
+function LogLevelsCard({
+    logLevels,
+    format,
+    hourLabel,
+}: {
+    logLevels: RuntimeSummary['logLevels'];
+    format: Formatters;
+    hourLabel: (hour: string) => string;
+}) {
+    const { t } = useTranslation();
+    const errors = logLevels.hourly.reduce(
+        (sum, point) => sum + point.count,
+        0,
+    );
+
+    return (
+        <Card>
+            <CardHeader className="pb-3">
+                <CardTitle>{t('runtime.logLevels')}</CardTitle>
+                <CardDescription>
+                    {t('runtime.logLevelsDescription')}
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4">
+                {logLevels.levels.length === 0 ? (
+                    <NoData configKey="runtime.logLevels" />
+                ) : (
+                    <>
+                        <div className="flex flex-wrap gap-2">
+                            {logLevels.levels.map((level) => (
+                                <Badge
+                                    key={level.level}
+                                    variant={
+                                        ERROR_LOG_LEVELS.includes(level.level)
+                                            ? 'destructive'
+                                            : level.level === 'warning'
+                                              ? 'warning'
+                                              : 'muted'
+                                    }
+                                >
+                                    {level.level} {format.count(level.count)}
+                                </Badge>
+                            ))}
+                        </div>
+                        <div className="h-48">
+                            <StackedBarChart
+                                data={logLevels.hourly.map((point) => ({
+                                    label: hourLabel(point.hour),
+                                    errors: point.count,
+                                }))}
+                                series={[
+                                    {
+                                        key: 'errors',
+                                        label: t('runtime.errorLogs'),
+                                        color: 'var(--runtime-chart-error)',
+                                    },
+                                ]}
+                                label={t('runtime.logChartLabel', {
+                                    count: errors,
+                                })}
+                            />
+                        </div>
+                        <div className="max-h-80 overflow-auto">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>
+                                            {t('runtime.level')}
+                                        </TableHead>
+                                        <TableHead>
+                                            {t('runtime.channel')}
+                                        </TableHead>
+                                        <TableHead className="text-right">
+                                            {t('runtime.count')}
+                                        </TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {logLevels.rows.map((row, index) => (
+                                        <TableRow key={index}>
+                                            <TableCell className="font-medium">
+                                                {String(row.level)}
+                                            </TableCell>
+                                            <TableCell className="font-mono text-xs">
+                                                {row.channel === null
+                                                    ? t(
+                                                          'runtime.unknownChannel',
+                                                      )
+                                                    : (row.channel as string)}
+                                            </TableCell>
+                                            <TableCell className="text-right tabular-nums">
+                                                {format.count(row.count)}
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </div>
+                    </>
+                )}
+            </CardContent>
+        </Card>
+    );
+}
+
+/**
+ * The latest sample of each server: load against its CPU limit (or cores), memory and disk,
+ * and whether it runs in a container. A server name may be a hash: it is shown as is.
+ */
+function ServersCard({
+    servers,
+    format,
+}: {
+    servers: RuntimeServer[];
+    format: Formatters;
+}) {
+    const { t } = useTranslation();
+    const used = (
+        value: number | null,
+        total: number | null,
+        unit: string,
+    ): string =>
+        value === null
+            ? '—'
+            : total === null || total === 0
+              ? `${format.number(value, 0)} ${unit}`
+              : `${format.number(value, 0)} / ${format.number(total, 0)} ${unit} (${Math.round((value / total) * 100)}%)`;
+
+    return (
+        <Card>
+            <CardHeader className="pb-3">
+                <CardTitle>{t('runtime.servers')}</CardTitle>
+                <CardDescription>
+                    {t('runtime.serversDescription')}
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                {servers.length === 0 ? (
+                    <NoData configKey="runtime.server" />
+                ) : (
+                    <div className="overflow-auto">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>{t('runtime.server')}</TableHead>
+                                    <TableHead className="text-right">
+                                        {t('runtime.load')}
+                                    </TableHead>
+                                    <TableHead className="text-right">
+                                        {t('runtime.memory')}
+                                    </TableHead>
+                                    <TableHead className="text-right">
+                                        {t('runtime.disk')}
+                                    </TableHead>
+                                    <TableHead className="text-right">
+                                        {t('runtime.lastSample')}
+                                    </TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {servers.map((server) => {
+                                    const cpus =
+                                        server.cpuLimit ?? server.cpuCores;
+                                    const isOverloaded =
+                                        cpus !== null &&
+                                        server.loadAverage5 !== null &&
+                                        server.loadAverage5 > cpus;
+
+                                    return (
+                                        <TableRow key={server.server}>
+                                            <TableCell>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="truncate font-mono text-xs">
+                                                        {server.server}
+                                                    </span>
+                                                    {server.isContainer ? (
+                                                        <Badge variant="muted">
+                                                            {t(
+                                                                'runtime.container',
+                                                            )}
+                                                        </Badge>
+                                                    ) : null}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell
+                                                className={cn(
+                                                    'text-right tabular-nums',
+                                                    isOverloaded &&
+                                                        'text-destructive',
+                                                )}
+                                            >
+                                                <div>
+                                                    {[
+                                                        server.loadAverage1,
+                                                        server.loadAverage5,
+                                                        server.loadAverage15,
+                                                    ]
+                                                        .map((load) =>
+                                                            format.number(
+                                                                load,
+                                                                2,
+                                                            ),
+                                                        )
+                                                        .join(' / ')}
+                                                </div>
+                                                {cpus !== null ? (
+                                                    <div className="text-xs text-muted-foreground">
+                                                        {t(
+                                                            server.cpuLimit !==
+                                                                null
+                                                                ? 'runtime.cpuLimit'
+                                                                : 'runtime.cpuCores',
+                                                            {
+                                                                count: cpus,
+                                                            },
+                                                        )}
+                                                    </div>
+                                                ) : null}
+                                            </TableCell>
+                                            <TableCell className="text-right tabular-nums">
+                                                {used(
+                                                    server.memoryUsedMb,
+                                                    server.memoryTotalMb,
+                                                    'MB',
+                                                )}
+                                            </TableCell>
+                                            <TableCell className="text-right tabular-nums">
+                                                {used(
+                                                    server.diskUsedGb,
+                                                    server.diskTotalGb,
+                                                    'GB',
+                                                )}
+                                            </TableCell>
+                                            <TableCell className="text-right text-xs text-muted-foreground">
+                                                {new Date(
+                                                    server.lastAt,
+                                                ).toLocaleString()}
+                                            </TableCell>
+                                        </TableRow>
+                                    );
+                                })}
                             </TableBody>
                         </Table>
                     </div>
