@@ -29,8 +29,6 @@ use Illuminate\Support\Facades\Date;
  */
 class EvaluateScheduledTasksAction
 {
-    private const MAINTENANCE_CHECK = 'laravel-maintenance-mode';
-
     public function __construct(
         private ScheduledTaskEvaluationService $evaluation,
         private ReportFindingsService $findings,
@@ -78,8 +76,7 @@ class EvaluateScheduledTasksAction
     {
         $runs = ScheduledTaskRun::query()->where('project_id', $project->id);
         $oldest = (clone $runs)->min('bucket');
-        $report = $project->healthReports()->latest('received_at')->latest('id')->first();
-        $isInMaintenanceMode = $report !== null && collect($this->findings->issues($report))->contains('checkId', self::MAINTENANCE_CHECK);
+        $isInMaintenanceMode = $this->findings->isInMaintenanceMode($project);
 
         return new ScheduleContextData(
             now: CarbonImmutable::instance(Date::now()),
@@ -119,7 +116,7 @@ class EvaluateScheduledTasksAction
                 'expression' => $task->expression,
                 'timezone' => $task->timezone,
                 'dueAt' => $result->dueAt?->toIso8601ZuluString(),
-            ]);
+            ], subject: $task->task_id);
             $task->alerted_status = $result->status;
         } elseif ($result->status->isHealthy()) {
             $task->alerted_status = null;

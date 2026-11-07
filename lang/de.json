@@ -1,0 +1,16 @@
+{
+    ":app weekly digest": "Wöchentliche Zusammenfassung von :app",
+    "Your week in :app": "Deine Woche in :app",
+    "What changed in the last 7 days in the projects you follow.": "Was sich in den letzten 7 Tagen in deinen Projekten geändert hat.",
+    "New findings": "Neue Befunde",
+    "Regressions": "Regressionen",
+    "End of life approaching": "Supportende naht",
+    "Top exceptions": "Häufigste Exceptions",
+    "Schedule problems": "Schedule-Probleme",
+    ":count occurrence|:count occurrences": ":count Vorkommen|:count Vorkommen",
+    "Late": "Verspätet",
+    "Missed": "Verpasst",
+    "Failed": "Fehlgeschlagen",
+    "Scheduler down": "Scheduler ausgefallen",
+    "You get this email because the weekly digest is on in your profile settings.": "Du erhältst diese E-Mail, weil die wöchentliche Zusammenfassung in deinen Profileinstellungen aktiv ist."
+}

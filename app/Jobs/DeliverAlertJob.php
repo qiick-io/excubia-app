@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Jobs;
 
+use App\Actions\RecordAlertDeliveryAction;
 use App\Services\SettingsRepositoryService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -18,7 +19,8 @@ use Throwable;
  * - slack: an incoming-webhook message;
  * - telegram: a Bot API sendMessage.
  * HTTPS only, no redirects, and hosts that resolve to private or reserved addresses are refused.
- * Retried 3 times with backoff; the webhook's last success and last error are kept for Settings.
+ * Retried 3 times with backoff; the webhook's last success and last error are kept for Settings,
+ * and every channel's outcome goes on the alert's history row (#114).
  */
 class DeliverAlertJob implements ShouldQueue
 {
@@ -134,10 +136,13 @@ class DeliverAlertJob implements ShouldQueue
     }
 
     /**
-     * Keeps the webhook's last success and last error for the delivery status cards.
+     * Keeps the outcome on the alert's history row, and the webhook's last success and last
+     * error for the delivery status cards.
      */
     private function record(SettingsRepositoryService $settings, bool $isSuccess, string $message): void
     {
+        app(RecordAlertDeliveryAction::class)->execute((string) $this->payload['id'], $this->channel, $isSuccess);
+
         if ($this->channel !== self::WEBHOOK) {
             return;
         }

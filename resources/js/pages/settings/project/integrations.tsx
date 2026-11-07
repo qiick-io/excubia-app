@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import ProjectIntegrationsSettingsController from '@/actions/App/Http/Controllers/Settings/ProjectIntegrationsSettingsController';
 import Heading from '@/components/heading';
 import { SettingsFormActions } from '@/components/settings-form-actions';
+import BooleanField from '@/components/boolean-field';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -43,6 +44,9 @@ type IntegrationsSettings = {
     notifier_telegram_chat_id: string | null;
     notifier_event_types: string[];
     notifier_minimum_severity: string;
+    alert_cache_hit_ratio_below: number | null;
+    alert_delivery_failures_enabled: boolean;
+    alert_log_spike_per_hour: number | null;
     webhook_last_success: Delivery;
     webhook_last_error: Delivery;
 };
@@ -52,7 +56,8 @@ type Channel = 'webhook' | 'slack' | 'telegram';
 /**
  * Settings → Integrations (#22), copied from externa-core: the signed outbound webhook with
  * its delivery status, then the Slack and Telegram notifiers with the events they send and
- * their minimum severity. Secrets are write-only: an empty field keeps the stored one.
+ * their minimum severity, and the optional runtime alert rules (#114). Secrets are write-only:
+ * an empty field keeps the stored one.
  */
 export default function ProjectIntegrationsSettings({
     project,
@@ -72,6 +77,12 @@ export default function ProjectIntegrationsSettings({
         notifier_telegram_chat_id: project.notifier_telegram_chat_id ?? '',
         notifier_event_types: project.notifier_event_types,
         notifier_minimum_severity: project.notifier_minimum_severity,
+        alert_cache_hit_ratio_below: String(
+            project.alert_cache_hit_ratio_below ?? '',
+        ),
+        alert_log_spike_per_hour: String(
+            project.alert_log_spike_per_hour ?? '',
+        ),
     });
     const [testing, setTesting] = useState<Channel | null>(null);
 
@@ -501,6 +512,69 @@ export default function ProjectIntegrationsSettings({
                                 />
                             </div>
 
+                            <div className="space-y-6">
+                                <Heading
+                                    variant="small"
+                                    title={t(
+                                        'settings.integrations.runtimeRulesTitle',
+                                    )}
+                                    description={t(
+                                        'settings.integrations.runtimeRulesDescription',
+                                    )}
+                                />
+                                <FieldGroup className="gap-6">
+                                    <TextField
+                                        name="alert_cache_hit_ratio_below"
+                                        type="number"
+                                        label={t(
+                                            'settings.integrations.cacheHitRatio',
+                                        )}
+                                        hint={t(
+                                            'settings.integrations.cacheHitRatioHint',
+                                        )}
+                                        placeholder="80"
+                                        value={form.alert_cache_hit_ratio_below}
+                                        error={
+                                            errors.alert_cache_hit_ratio_below
+                                        }
+                                        onChange={(value) =>
+                                            setValue(
+                                                'alert_cache_hit_ratio_below',
+                                                value,
+                                            )
+                                        }
+                                    />
+                                    <TextField
+                                        name="alert_log_spike_per_hour"
+                                        type="number"
+                                        label={t(
+                                            'settings.integrations.logSpike',
+                                        )}
+                                        hint={t(
+                                            'settings.integrations.logSpikeHint',
+                                        )}
+                                        placeholder="50"
+                                        value={form.alert_log_spike_per_hour}
+                                        error={errors.alert_log_spike_per_hour}
+                                        onChange={(value) =>
+                                            setValue(
+                                                'alert_log_spike_per_hour',
+                                                value,
+                                            )
+                                        }
+                                    />
+                                    <BooleanField
+                                        name="alert_delivery_failures_enabled"
+                                        label={t(
+                                            'settings.integrations.deliveryFailures',
+                                        )}
+                                        defaultChecked={
+                                            project.alert_delivery_failures_enabled
+                                        }
+                                    />
+                                </FieldGroup>
+                            </div>
+
                             <SettingsFormActions
                                 processing={processing}
                                 recentlySuccessful={recentlySuccessful}
@@ -531,7 +605,7 @@ function TextField({
     value: string;
     error?: string;
     onChange: (value: string) => void;
-    type?: 'text' | 'url' | 'password';
+    type?: 'text' | 'url' | 'password' | 'number';
     placeholder?: string;
 }) {
     const id = name.replaceAll('_', '-');

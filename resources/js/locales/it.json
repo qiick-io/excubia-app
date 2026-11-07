@@ -193,7 +193,8 @@
             "description": "Aggiorna i dettagli del profilo e l'indirizzo email",
             "unverified": "Il tuo indirizzo email non è verificato.",
             "resend": "Clicca qui per reinviare l'email di verifica.",
-            "linkSent": "Un nuovo link di verifica è stato inviato al tuo indirizzo email."
+            "linkSent": "Un nuovo link di verifica è stato inviato al tuo indirizzo email.",
+            "weeklyDigest": "Inviami un riepilogo settimanale via email (nuovi problemi, regressioni, EOL, eccezioni principali, problemi di schedule)"
         },
         "security": {
             "breadcrumb": "Impostazioni sicurezza",
@@ -426,8 +427,18 @@
                 "project.token_changed": "Un token di push è stato rigenerato o revocato.",
                 "schedule.missed": "Un task pianificato non era ancora partito alla scadenza successiva.",
                 "schedule.failed": "Un'esecuzione di un task pianificato è fallita.",
-                "schedule.scheduler_down": "Lo scheduler si è fermato: excubia:heartbeat non è partito."
-            }
+                "schedule.scheduler_down": "Lo scheduler si è fermato: excubia:heartbeat non è partito.",
+                "runtime.cache_hit_ratio_low": "Uno store di cache ha un hit ratio sotto la soglia.",
+                "runtime.delivery_failed": "Un mailable o una notifica è fallito.",
+                "runtime.log_spike": "Un canale di log ha scritto più voci di errore della soglia."
+            },
+            "runtimeRulesTitle": "Regole di avviso runtime",
+            "runtimeRulesDescription": "Avvisi opzionali dai dati runtime inviati dai progetti, controllati ogni 15 minuti sull'ultima ora. Vuoto disattiva la regola.",
+            "cacheHitRatio": "Hit ratio della cache sotto (%)",
+            "cacheHitRatioHint": "Avvisa quando uno store di cache trova meno di questa quota su almeno 100 letture nell'ultima ora.",
+            "logSpike": "Voci di log di errore per canale e ora",
+            "logSpikeHint": "Avvisa quando un canale di log scrive almeno questo numero di voci error, critical, alert o emergency nell'ultima ora.",
+            "deliveryFailures": "Avvisa quando email o notifiche falliscono"
         }
     },
     "activityLog": {
@@ -668,7 +679,8 @@
             "history": "Storico",
             "runtime": "Runtime",
             "exceptions": "Eccezioni",
-            "schedule": "Pianificazione"
+            "schedule": "Pianificazione",
+            "alerts": "Avvisi"
         },
         "support": {
             "supported": "Supportato",
@@ -913,8 +925,8 @@
         "deployMarkersHint": "Le linee tratteggiate segnano i deploy.",
         "deploysLabel_one": "{{count}} deploy: {{releases}}.",
         "deploysLabel_other": "{{count}} deploy: {{releases}}.",
-        "requestsOverTime": "Richieste nel tempo",
-        "requestsOverTimeDescription": "Richieste riuscite ed errori server (5xx) {{bucket}} {{during}}."
+        "requestsOverTimeDescription": "Richieste riuscite ed errori server (5xx) {{bucket}} {{during}}.",
+        "requestsOverTime": "Richieste nel tempo"
     },
     "exceptions": {
         "emptyTitle": "Nessuna eccezione",
@@ -954,12 +966,12 @@
         "firstRelease": "Vista la prima volta nella release",
         "lastRelease": "Vista l'ultima volta nella release",
         "regressedIn": "Regressione in {{release}}",
-        "inRange": "Nell’intervallo",
         "occurrences": "Occorrenze",
         "occurrencesDescription": "Occorrenze {{bucket}} {{during}}, contate all'ultima occorrenza di ogni invio.",
+        "inRange": "Nell’intervallo",
+        "emptyRangeDescription": "Nessun gruppo di eccezioni visto {{during}}. Scegli un intervallo più lungo per vedere i gruppi più vecchi.",
         "occurrencesChartLabel": "Grafico a barre delle occorrenze {{bucket}}: {{count}} {{during}}.",
-        "emptyRangeTitle": "Nessuna eccezione in questo intervallo",
-        "emptyRangeDescription": "Nessun gruppo di eccezioni visto {{during}}. Scegli un intervallo più lungo per vedere i gruppi più vecchi."
+        "emptyRangeTitle": "Nessuna eccezione in questo intervallo"
     },
     "schedule": {
         "description": "I task pianificati dell'ultimo report, ognuno con l'ultima esecuzione, la prossima scadenza e lo stato. Controllati ogni minuto con le esecuzioni inviate dal monitoraggio runtime.",
@@ -990,11 +1002,11 @@
             "paused": "Manutenzione",
             "unknown": "Nessun dato"
         },
-        "runs": "Esecuzioni",
         "runsOverTime": "Esecuzioni nel tempo",
         "runsOverTimeDescription": "Esecuzioni di tutti i task pianificati per esito {{bucket}} {{during}}.",
+        "runsSummary": "{{finished}} completate · {{failed}} fallite · {{skipped}} saltate",
         "runsChartLabel": "Grafico a barre impilate delle esecuzioni dei task pianificati {{bucket}}: {{finished}} completate, {{failed}} fallite, {{skipped}} saltate {{during}}.",
-        "runsSummary": "{{finished}} completate · {{failed}} fallite · {{skipped}} saltate"
+        "runs": "Esecuzioni"
     },
     "ai": {
         "fabDescription": "Drawer rapido dell'assistente. Apri la pagina completa per la cronologia.",
@@ -1016,6 +1028,85 @@
         "connecting": "Connessione…",
         "disabled": "Realtime off",
         "offline": "Realtime offline"
+    },
+    "alerts": {
+        "description": "Gli avvisi di questo progetto: cosa è stato inviato, cosa è fallito e cosa è stato soppresso. Silenzia una regola o un problema, o pianifica finestre di manutenzione.",
+        "maintenanceModeTitle": "Avvisi in pausa",
+        "maintenanceModeDescription": "L'ultimo report dice che l'applicazione è in modalità manutenzione. Gli avvisi riprendono con il report successivo a php artisan up.",
+        "windowsTitle": "Finestre di manutenzione",
+        "windowsDescription": "Gli avvisi sono soppressi mentre una finestra è attiva.",
+        "addWindow": "Aggiungi finestra",
+        "removeWindow": "Rimuovi la finestra {{name}}",
+        "noWindows": "Nessuna finestra di manutenzione.",
+        "windowActive": "Attiva",
+        "windowFormDescription": "Un periodo singolo o uno che si ripete ogni settimana. Gli orari sono locali al fuso orario.",
+        "mutesTitle": "Silenziati",
+        "mutesDescription": "Regole e problemi silenziati dalla cronologia qui sotto.",
+        "noMutes": "Niente è silenziato.",
+        "wholeRule": "Intera regola",
+        "forever": "per sempre",
+        "until": "fino a {{time}}",
+        "unmute": "Riattiva",
+        "historyTitle": "Cronologia avvisi",
+        "historyDescription": "Gli ultimi 100 avvisi.",
+        "noHistory": "Ancora nessun avviso.",
+        "time": "Ora",
+        "alert": "Avviso",
+        "statusLabel": "Stato",
+        "actions": "Azioni",
+        "muteMenu": "Silenzia",
+        "status": {
+            "queued": "In coda",
+            "sent": "Inviato",
+            "failed": "Consegna fallita",
+            "suppressed": "Soppresso",
+            "skipped": "Nessun canale"
+        },
+        "reason": {
+            "muted": "Silenziato",
+            "maintenance_window": "Finestra di manutenzione",
+            "maintenance_mode": "Modalità manutenzione"
+        },
+        "channel": {
+            "webhook": "Webhook",
+            "slack": "Slack",
+            "telegram": "Telegram"
+        },
+        "delivery": {
+            "queued": "in coda",
+            "sent": "inviato",
+            "failed": "fallito"
+        },
+        "mute": {
+            "rule": "Silenzia questa regola",
+            "issue": "Silenzia questo problema"
+        },
+        "duration": {
+            "1h": "Per 1 ora",
+            "24h": "Per 24 ore",
+            "7d": "Per 7 giorni",
+            "forever": "Per sempre"
+        },
+        "recurrence": "Ripetizione",
+        "once": "Una volta",
+        "weekly": "Settimanale",
+        "startsAt": "Inizio",
+        "endsAt": "Fine",
+        "weekdaysLabel": "Giorni",
+        "startTime": "Ora di inizio",
+        "durationMinutes": "Durata (minuti)",
+        "timezone": "Fuso orario",
+        "minutes_one": "{{count}} minuto",
+        "minutes_other": "{{count}} minuti",
+        "weekdays": {
+            "1": "Lun",
+            "2": "Mar",
+            "3": "Mer",
+            "4": "Gio",
+            "5": "Ven",
+            "6": "Sab",
+            "7": "Dom"
+        }
     },
     "timeRange": {
         "label": "Intervallo di tempo",

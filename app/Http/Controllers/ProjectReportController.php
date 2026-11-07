@@ -15,6 +15,7 @@ use App\Jobs\RunSystemReportJob;
 use App\Models\ExceptionGroup;
 use App\Models\Project;
 use App\Services\FixSuggestionService;
+use App\Services\ProjectAlertsService;
 use App\Services\ProjectRuntimeService;
 use App\Services\ProjectTelemetryService;
 use App\Services\ReportFindingsService;
@@ -40,7 +41,7 @@ class ProjectReportController extends Controller
      *
      * @var list<string>
      */
-    public const VIEWS = ['findings', 'runtime', 'exceptions', 'schedule', 'plan', 'history'];
+    public const VIEWS = ['findings', 'runtime', 'exceptions', 'schedule', 'alerts', 'plan', 'history'];
 
     /** The tabs with a time range picker (#113). */
     public const RANGE_VIEWS = ['runtime', 'exceptions', 'schedule'];
@@ -86,6 +87,9 @@ class ProjectReportController extends Controller
             'scheduleTimeline' => $schedule['timeline'] ?? [],
             // Chart markers of the exceptions and schedule tabs; the runtime has its own.
             'deploys' => in_array($view, ['exceptions', 'schedule'], true) ? $timeSeries->deploys($project, $range, $now) : [],
+            // Alert history, mutes and maintenance windows (#114), only on its tab.
+            'alerts' => $view === 'alerts' ? app(ProjectAlertsService::class)->forPage($project) : null,
+            'canManageAlerts' => (bool) $request->user()?->can('update', $project),
             'canManageExceptions' => (bool) $request->user()?->can(PermissionEnum::CanManageExceptions->value),
             'reports' => HealthReportResource::collection(
                 $project->healthReports()->orderByDesc('received_at')->orderByDesc('id')->get(),

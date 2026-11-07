@@ -290,3 +290,58 @@ export type ScheduleTimelinePoint = {
     failed: number;
     skipped: number;
 };
+
+/** Status of an alert in the project's history (#114). */
+export type AlertStatus =
+    | 'queued'
+    | 'sent'
+    | 'failed'
+    | 'suppressed'
+    | 'skipped';
+
+/** One alert of the project's history (#114). */
+export type AlertHistoryRow = {
+    id: number;
+    event: string;
+    severity: Severity;
+    summary: string;
+    /** Whether the alert is about one issue, so the issue can be muted. */
+    has_subject: boolean;
+    status: AlertStatus;
+    reason: 'muted' | 'maintenance_window' | 'maintenance_mode' | null;
+    /** Channel → queued | sent | failed. */
+    deliveries: Record<string, 'queued' | 'sent' | 'failed'>;
+    created_at: string;
+};
+
+/** A mute in force (#114); `until` null mutes forever. */
+export type AlertMuteRow = {
+    id: number;
+    event: string;
+    is_issue: boolean;
+    label: string | null;
+    until: string | null;
+};
+
+/** A maintenance window of a project (#114). */
+export type MaintenanceWindowRow = {
+    id: number;
+    name: string;
+    recurrence: 'once' | 'weekly';
+    timezone: string;
+    starts_at: string | null;
+    ends_at: string | null;
+    /** ISO weekdays, 1 Monday … 7 Sunday. */
+    weekdays: number[];
+    start_time: string | null;
+    duration_minutes: number | null;
+    is_active: boolean;
+};
+
+/** The project's Alerts tab (#114). */
+export type ProjectAlerts = {
+    history: AlertHistoryRow[];
+    mutes: AlertMuteRow[];
+    windows: MaintenanceWindowRow[];
+    isInMaintenanceMode: boolean;
+};
