@@ -106,6 +106,10 @@ class SettingsRepositoryService
             'notifier_telegram_chat_id' => null,
             'notifier_event_types' => null,
             'notifier_minimum_severity' => SeverityEnum::High->value,
+            // Optional runtime alert rules (#107, #114): null / false is off.
+            'alert_cache_hit_ratio_below' => null,
+            'alert_delivery_failures_enabled' => false,
+            'alert_log_spike_per_hour' => null,
             'webhook_last_success' => null,
             'webhook_last_error' => null,
         ];
@@ -469,6 +473,31 @@ class SettingsRepositoryService
     public function notifierMinimumSeverity(): SeverityEnum
     {
         return SeverityEnum::tryFrom((string) $this->all()['notifier_minimum_severity']) ?? SeverityEnum::High;
+    }
+
+    /** Cache hit ratio (percent) under which a store alerts, or null when the rule is off. */
+    public function alertCacheHitRatioBelow(): ?int
+    {
+        return $this->positiveInteger('alert_cache_hit_ratio_below');
+    }
+
+    /** Whether failed mails and notifications alert. */
+    public function shouldAlertDeliveryFailures(): bool
+    {
+        return (bool) $this->all()['alert_delivery_failures_enabled'];
+    }
+
+    /** Error-level log entries per channel and hour from which a channel alerts, or null when off. */
+    public function alertLogSpikePerHour(): ?int
+    {
+        return $this->positiveInteger('alert_log_spike_per_hour');
+    }
+
+    private function positiveInteger(string $key): ?int
+    {
+        $value = $this->all()[$key];
+
+        return is_numeric($value) && (int) $value > 0 ? (int) $value : null;
     }
 
     /**

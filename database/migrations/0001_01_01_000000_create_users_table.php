@@ -19,6 +19,8 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->string('oidc_sub')->nullable()->unique();
             $table->string('locale')->default('en');
+            // Weekly email digest (#114), opt-in from Settings → Profile.
+            $table->boolean('has_weekly_digest')->default(false);
             $table->timestamp('email_verified_at')->nullable();
             // Null for accounts that only sign in through OIDC.
             $table->string('password')->nullable();

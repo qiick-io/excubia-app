@@ -66,7 +66,9 @@ The app runs scheduled tasks:
 - `excubia:system-telemetry` stores this install's own runtime and exceptions on the system project (every minute);
 - `excubia:prune-reports` keeps the newest reports of each project (30 by default, in **Settings → Project**);
 - `excubia:evaluate-schedules` flags late, missed and failed scheduled tasks of the projects (every minute);
-- `excubia:prune-telemetry` keeps 14 days of runtime aggregates and scheduled-task runs, and exception groups seen in the last 90 days (`EXCUBIA_RUNTIME_RETENTION_DAYS`, `EXCUBIA_EXCEPTIONS_RETENTION_DAYS`);
+- `excubia:prune-telemetry` keeps 14 days of runtime aggregates and scheduled-task runs, and exception groups seen in the last 90 days (`EXCUBIA_RUNTIME_RETENTION_DAYS`, `EXCUBIA_EXCEPTIONS_RETENTION_DAYS`), and the alert history for the longer of the two;
+- `excubia:evaluate-runtime-alerts` runs the optional runtime alert rules of **Settings → Integrations** (every 15 minutes);
+- `excubia:send-digests` mails the weekly digest to the users who turned it on in **Settings → Profile** (Mondays at 08:00; needs a mailer in `.env`);
 - `activitylog:clean` trims the activity log.
 
 Run the Laravel scheduler with a cron entry:
@@ -112,6 +114,8 @@ Run `php artisan excubia:push` once to send the first report. A project that has
 **Runtime and exceptions (optional).** With `runtime.enabled` or `exceptions.enabled` in the project's `excubia.json`, `excubia:push-runtime` runs every minute and sends per-minute aggregates (requests per route, slow queries, jobs, scheduled tasks, outgoing HTTP per host) to `/api/runtime` and masked exception groups to `/api/exceptions`, with the same URL and token. The core masks everything before it leaves the project; no request bodies, headers, users, IP addresses or query bindings are sent.
 
 **Scheduled tasks (optional).** `excubia:push` sends the project's schedule with each report, and the runtime `scheduledTask` aggregates carry the same `taskId`. The **Schedule** tab of the project lists each task with its last run, next due time and status: late (no run within `lateAfterMinutes`, default 5, after the due time), missed (still no run at the next due time), failed, or skipped. Tasks limited to other environments (read from the project's exceptions) and, in maintenance mode, tasks without `evenInMaintenanceMode()` are not expected to run. When `excubia:heartbeat` stops too, the tasks show "Scheduler down" and one `schedule.scheduler_down` alert is sent instead of one per task. Missed and failed runs send `schedule.missed` and `schedule.failed` alerts, except when runs are sampled (`sampleRate` below 1), where a missing run proves little.
+
+**Alert controls.** The **Alerts** tab of a project lists every alert: sent, failed delivery, suppressed (with the reason) or skipped (no channel takes it). From a row, mute the rule (the event on this project) or the issue (one finding, task, cache store…) for 1 hour, 24 hours, 7 days or forever. Maintenance windows, one-off or weekly in a timezone, suppress the project's alerts while in force, and so does the core `laravel-maintenance-mode` finding of the latest report (schedule alerts excepted: the Schedule tab already pauses the tasks that do not run in maintenance mode). `project.token_changed` is only silenced by an explicit mute.
 
 ### AI assistant (optional)
 

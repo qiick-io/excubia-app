@@ -17,6 +17,10 @@ class ProfileUpdateRequest extends FormRequest
      */
     public function rules(): array
     {
-        return $this->profileRules($this->user()->id);
+        return [
+            ...$this->profileRules($this->user()->id),
+            // Weekly email digest (#114).
+            'has_weekly_digest' => ['sometimes', 'boolean'],
+        ];
     }
 }

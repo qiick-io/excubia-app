@@ -37,11 +37,11 @@ class ReportAlertsService
         $changes = $this->findings->compare($previous, $report);
 
         foreach (array_slice($changes['new'], 0, self::FINDINGS_LIMIT) as $finding) {
-            $this->alerts->dispatch(AlertEventEnum::FindingNew, $project, $this->summary($finding), $this->details($finding), SeverityEnum::tryFrom((string) ($finding['severity'] ?? '')));
+            $this->alerts->dispatch(AlertEventEnum::FindingNew, $project, $this->summary($finding), $this->details($finding), SeverityEnum::tryFrom((string) ($finding['severity'] ?? '')), $this->findings->identity($finding));
         }
 
         foreach (array_slice($changes['resolved'], 0, self::FINDINGS_LIMIT) as $finding) {
-            $this->alerts->dispatch(AlertEventEnum::FindingResolved, $project, $this->summary($finding), $this->details($finding));
+            $this->alerts->dispatch(AlertEventEnum::FindingResolved, $project, $this->summary($finding), $this->details($finding), subject: $this->findings->identity($finding));
         }
 
         $before = $previous->worst_severity?->rank() ?? count(SeverityEnum::cases());

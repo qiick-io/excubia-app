@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\HealthReport;
+use App\Models\Project;
 
 /**
  * Reads the findings of a stored excubia-core report. A finding "is an issue" when it warns or
@@ -13,6 +14,20 @@ use App\Models\HealthReport;
  */
 class ReportFindingsService
 {
+    /** The core check that warns while the app is down (`php artisan down`). */
+    public const MAINTENANCE_CHECK = 'laravel-maintenance-mode';
+
+    /**
+     * Whether the project's latest report says the app is in maintenance mode (schedule
+     * evaluation #110, alert suppression #114).
+     */
+    public function isInMaintenanceMode(Project $project): bool
+    {
+        $report = $project->healthReports()->latest('received_at')->latest('id')->first();
+
+        return $report !== null && collect($this->issues($report))->contains('checkId', self::MAINTENANCE_CHECK);
+    }
+
     /**
      * Findings that warn or fail, each with the name of its check.
      *

@@ -1,6 +1,7 @@
 import { Head, Link, router } from '@inertiajs/react';
 import {
     Activity,
+    Bell,
     Bug,
     CalendarClock,
     CircleCheck,
@@ -22,6 +23,7 @@ import { PageEmptyState } from '@/components/admin/page-empty-state';
 import { EmptyStatus } from '@/components/empty-status';
 import { DataTableToolbar } from '@/components/admin/data-table-toolbar';
 import { PageLayout, TablePanel } from '@/components/layout/page-layout';
+import { AlertsView } from '@/components/reports/alerts-view';
 import { ExceptionsView } from '@/components/reports/exceptions-view';
 import type { FindingFix } from '@/components/reports/fix-actions';
 import {
@@ -86,6 +88,7 @@ import type {
     ExceptionGroupRow,
     HealthReportBody,
     HealthReportSummary,
+    ProjectAlerts,
     ProjectRow,
     ReportFinding,
     RuntimeSummary,
@@ -99,6 +102,7 @@ const VIEWS = [
     'runtime',
     'exceptions',
     'schedule',
+    'alerts',
     'plan',
     'history',
 ] as const;
@@ -122,9 +126,14 @@ export default function ProjectShow({
     runtime = null,
     exceptions = [],
     schedule = [],
+    alerts = null,
+    canManageAlerts = false,
     canManageExceptions = false,
     canRefreshReport = false,
 }: {
+    /** Alert history, mutes and maintenance windows (#114), on the Alerts tab only. */
+    alerts?: ProjectAlerts | null;
+    canManageAlerts?: boolean;
     runtime?: RuntimeSummary | null;
     exceptions?: ExceptionGroupRow[];
     /** Scheduled tasks and their status (#110), on the Schedule tab only. */
@@ -184,6 +193,12 @@ export default function ProjectShow({
                 <FindingsView report={report} fixes={findingFixes} />
             ) : view === 'schedule' ? (
                 <ScheduleView tasks={schedule} />
+            ) : view === 'alerts' && alerts !== null ? (
+                <AlertsView
+                    projectId={project.id}
+                    alerts={alerts}
+                    canManage={canManageAlerts}
+                />
             ) : view === 'exceptions' ? (
                 <ExceptionsView
                     projectId={project.id}
@@ -234,6 +249,7 @@ const VIEW_ICONS = {
     runtime: Gauge,
     exceptions: Bug,
     schedule: CalendarClock,
+    alerts: Bell,
     plan: ListOrdered,
     history: History,
 } as const;

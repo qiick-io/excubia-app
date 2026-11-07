@@ -20,6 +20,10 @@ enum AlertEventEnum: string
     case ScheduleMissed = 'schedule.missed';
     case ScheduleFailed = 'schedule.failed';
     case SchedulerDown = 'schedule.scheduler_down';
+    // Optional runtime rules (#107, #114), off until their threshold is set.
+    case CacheHitRatioLow = 'runtime.cache_hit_ratio_low';
+    case DeliveryFailed = 'runtime.delivery_failed';
+    case LogSpike = 'runtime.log_spike';
     case Ping = 'ping';
 
     /**
@@ -33,8 +37,8 @@ enum AlertEventEnum: string
     public function defaultSeverity(): SeverityEnum
     {
         return match ($this) {
-            self::ProjectStale, self::ScheduleMissed => SeverityEnum::Medium,
-            self::FindingNew, self::ProjectWorsened, self::ScheduleFailed, self::SchedulerDown => SeverityEnum::High,
+            self::ProjectStale, self::ScheduleMissed, self::CacheHitRatioLow => SeverityEnum::Medium,
+            self::FindingNew, self::ProjectWorsened, self::ScheduleFailed, self::SchedulerDown, self::DeliveryFailed, self::LogSpike => SeverityEnum::High,
             default => SeverityEnum::Info,
         };
     }

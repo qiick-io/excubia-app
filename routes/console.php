@@ -33,3 +33,9 @@ Schedule::command('excubia:alert-stale')->hourly();
 
 // Schedule monitoring (#110): late, missed and failed scheduled tasks of the projects.
 Schedule::command('excubia:evaluate-schedules')->everyMinute()->withoutOverlapping();
+
+// Optional runtime alert rules (#107, #114): cache hit ratio, failed mails and notifications, log spikes.
+Schedule::command('excubia:evaluate-runtime-alerts')->everyFifteenMinutes()->withoutOverlapping();
+
+// Weekly email digest (#114) for the users who turned it on.
+Schedule::command('excubia:send-digests')->weeklyOn(1, '08:00');
