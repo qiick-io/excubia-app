@@ -14,6 +14,7 @@ import {
     ListOrdered,
     RefreshCw,
     Rocket,
+    Scale,
     SearchX,
     Sparkles,
 } from 'lucide-react';
@@ -24,6 +25,12 @@ import { EmptyStatus } from '@/components/empty-status';
 import { DataTableToolbar } from '@/components/admin/data-table-toolbar';
 import { PageLayout, TablePanel } from '@/components/layout/page-layout';
 import { AlertsView } from '@/components/reports/alerts-view';
+import {
+    CHECK_CATEGORIES,
+    CHECK_STATUS_VARIANTS,
+    checkLabel,
+    FindingDrawer,
+} from '@/components/reports/check-details';
 import { ExceptionsView } from '@/components/reports/exceptions-view';
 import type { FindingFix } from '@/components/reports/fix-actions';
 import {
@@ -31,6 +38,11 @@ import {
     FixActions,
     useCopyWithToast,
 } from '@/components/reports/fix-actions';
+import {
+    DependenciesCard,
+    InfrastructureCard,
+} from '@/components/reports/health-cards';
+import { LicensesView } from '@/components/reports/licenses-view';
 import { ReleaseLabel, shortRelease } from '@/components/reports/release-label';
 import { RuntimeView } from '@/components/reports/runtime-view';
 import { ScheduleView } from '@/components/reports/schedule-view';
@@ -55,6 +67,7 @@ import { StatCard, trendOf } from '@/components/stat-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Drawer } from '@/components/ui/drawer';
 import {
     Card,
     CardAction,
@@ -84,17 +97,21 @@ import {
     TooltipContent,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { useDrawerDeepLink } from '@/hooks/use-drawer-deep-link';
 import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
 import projectsRoutes from '@/routes/projects';
 import type {
     BreadcrumbItem,
+    CheckCategory,
     ExceptionGroupRow,
     HealthReportBody,
     HealthReportSummary,
+    IssueRow,
     ProjectAlerts,
     ProjectRow,
     ReportFinding,
+    ReportHealth,
     RuntimeDeploy,
     RuntimeSummary,
     ScheduledTaskRow,
@@ -106,6 +123,7 @@ import type {
 const VIEWS = [
     'overview',
     'findings',
+    'licenses',
     'runtime',
     'exceptions',
     'schedule',
@@ -115,8 +133,6 @@ const VIEWS = [
 ] as const;
 
 type ProjectView = (typeof VIEWS)[number];
-
-type FindingRow = ReportFinding & { checkName: string };
 
 /**
  * Project page: an overview of the latest report (runtimes and their support, findings per
@@ -130,6 +146,8 @@ export default function ProjectShow({
     report,
     reports,
     findingFixes = {},
+    issues = [],
+    health = null,
     range = DEFAULT_TIME_RANGE,
     runtime = null,
     exceptions = [],
@@ -159,6 +177,10 @@ export default function ProjectShow({
     canRefreshReport?: boolean;
     /** Ready command and prompt per finding, keyed by `checkId|subject|advisoryId` (#78). */
     findingFixes?: Record<string, FindingFix>;
+    /** The findings that warn or fail, problems first, with their check group (#109). */
+    issues?: IssueRow[];
+    /** Health summary of the latest report (#108, #109). */
+    health?: ReportHealth | null;
     project: ProjectRow;
     /** The tab, from the URL (`/projects/{slug}` or `/projects/{slug}/{view}`). */
     view: ProjectView;
@@ -207,7 +229,7 @@ export default function ProjectShow({
             <Head title={project.name} />
             <ProjectTabs slug={project.slug} view={view} />
             {view === 'findings' && report !== null ? (
-                <FindingsView report={report} fixes={findingFixes} />
+                <FindingsView issues={issues} fixes={findingFixes} />
             ) : view === 'schedule' ? (
                 <ScheduleView
                     slug={project.slug}
@@ -261,6 +283,8 @@ export default function ProjectShow({
                         />
                     ) : view === 'plan' ? (
                         <PlanView report={report} />
+                    ) : view === 'licenses' ? (
+                        <LicensesView licenses={health?.licenses ?? null} />
                     ) : (
                         <OverviewView
                             project={project}
@@ -269,7 +293,8 @@ export default function ProjectShow({
                             deploys={reports.filter(
                                 (summary) => summary.deployed_at !== null,
                             )}
-                            report={report}
+                            issues={issues}
+                            health={health}
                             fixes={findingFixes}
                             runtime={runtime}
                             exceptions={exceptions}
@@ -284,6 +309,7 @@ export default function ProjectShow({
 const VIEW_ICONS = {
     overview: LayoutGrid,
     findings: ListChecks,
+    licenses: Scale,
     runtime: Gauge,
     exceptions: Bug,
     schedule: CalendarClock,
@@ -368,7 +394,7 @@ type AttentionItem =
     | {
           kind: 'finding';
           key: string;
-          finding: FindingRow;
+          finding: IssueRow;
           fix: FindingFix | null;
       }
     | { kind: 'exception'; key: string; group: ExceptionGroupRow };
@@ -387,7 +413,8 @@ function OverviewView({
     latest,
     previous,
     deploys,
-    report,
+    issues,
+    health,
     fixes,
     runtime,
     exceptions,
@@ -397,26 +424,16 @@ function OverviewView({
     previous: HealthReportSummary | null;
     /** Reports sent with `excubia push --deploy`, newest first (#106). */
     deploys: HealthReportSummary[];
-    report: HealthReportBody;
+    issues: IssueRow[];
+    health: ReportHealth | null;
     fixes: Record<string, FindingFix>;
     runtime: RuntimeSummary | null;
     exceptions: ExceptionGroupRow[];
 }) {
     const { t, i18n } = useTranslation();
 
-    const findings: FindingRow[] = report.checks
-        .flatMap((check) =>
-            check.findings
-                .filter(
-                    (finding) =>
-                        finding.status === 'warn' || finding.status === 'fail',
-                )
-                .map((finding) => ({ ...finding, checkName: check.name })),
-        )
-        .sort(
-            (a, b) =>
-                SEVERITIES.indexOf(a.severity) - SEVERITIES.indexOf(b.severity),
-        );
+    // Already problems-first: failing infrastructure, then by severity (#109).
+    const findings = issues;
     const openExceptions = exceptions.filter(
         (group) => group.status === 'open',
     );
@@ -652,9 +669,25 @@ function OverviewView({
                 total={findings.length + openExceptions.length}
             />
 
+            {health !== null ? (
+                <section className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+                    <InfrastructureCard
+                        health={health}
+                        className="xl:col-span-7"
+                    />
+                    <DependenciesCard
+                        slug={project.slug}
+                        health={health}
+                        className="xl:col-span-5"
+                    />
+                </section>
+            ) : null}
+
             <section className="grid grid-cols-1 gap-4 xl:grid-cols-12">
                 <RuntimesCard latest={latest} className="xl:col-span-5" />
-                <ChecksCard report={report} className="xl:col-span-7" />
+                {health !== null ? (
+                    <ChecksCard health={health} className="xl:col-span-7" />
+                ) : null}
             </section>
         </div>
     );
@@ -744,13 +777,17 @@ function NeedsAttentionCard({
                                         </TableCell>
                                         <TableCell className="max-w-[40rem] whitespace-normal">
                                             <Link
-                                                href={findingsUrl}
+                                                href={`${findingsUrl}?finding=${encodeURIComponent(item.key)}`}
                                                 className="font-medium underline-offset-4 hover:underline"
                                             >
                                                 {item.finding.subject}
                                             </Link>
                                             <div className="text-xs text-muted-foreground">
-                                                {item.finding.checkName}
+                                                {checkLabel(
+                                                    t,
+                                                    item.finding.checkId,
+                                                    item.finding.checkName,
+                                                )}
                                                 {item.finding.advisoryId ? (
                                                     <span className="font-mono">
                                                         {' · '}
@@ -898,12 +935,15 @@ function RuntimesCard({
     );
 }
 
-/** Every check of the latest report, its status and how many findings it raised. */
+/**
+ * Every check of the latest report by group (infrastructure, configuration, dependencies, then
+ * ids this app does not know), its status and how many findings it raised.
+ */
 function ChecksCard({
-    report,
+    health,
     className,
 }: {
-    report: HealthReportBody;
+    health: ReportHealth;
     className?: string;
 }) {
     const { t } = useTranslation();
@@ -927,44 +967,58 @@ function ChecksCard({
                             </TableHead>
                         </TableRow>
                     </TableHeader>
-                    <TableBody>
-                        {report.checks.map((check) => (
-                            <TableRow key={check.checkId}>
-                                <TableCell>
-                                    <div className="font-medium">
-                                        {check.name}
-                                    </div>
-                                    <div className="font-mono text-xs text-muted-foreground">
-                                        {check.checkId}
-                                    </div>
-                                </TableCell>
-                                <TableCell>
+                    {health.groups.map((group) => (
+                        <TableBody key={group.category}>
+                            <TableRow className="bg-muted/50 hover:bg-muted/50">
+                                <TableHead
+                                    scope="colgroup"
+                                    colSpan={2}
+                                    className="font-medium text-foreground"
+                                >
+                                    {t(`checks.category.${group.category}`)}
+                                </TableHead>
+                                <TableCell className="text-right">
                                     <Badge
                                         variant={
-                                            check.status === 'fail'
-                                                ? 'destructive'
-                                                : check.status === 'warn'
-                                                  ? 'warning'
-                                                  : check.status === 'pass'
-                                                    ? 'success'
-                                                    : 'muted'
+                                            CHECK_STATUS_VARIANTS[group.status]
                                         }
                                     >
-                                        {t(`report.status.${check.status}`)}
+                                        {t(`report.status.${group.status}`)}
                                     </Badge>
                                 </TableCell>
-                                <TableCell className="text-right tabular-nums">
-                                    {
-                                        check.findings.filter(
-                                            (finding) =>
-                                                finding.status === 'warn' ||
-                                                finding.status === 'fail',
-                                        ).length
-                                    }
-                                </TableCell>
                             </TableRow>
-                        ))}
-                    </TableBody>
+                            {group.checks.map((check) => (
+                                <TableRow key={check.checkId}>
+                                    <TableCell>
+                                        <div className="font-medium">
+                                            {checkLabel(
+                                                t,
+                                                check.checkId,
+                                                check.name,
+                                            )}
+                                        </div>
+                                        <div className="font-mono text-xs text-muted-foreground">
+                                            {check.checkId}
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Badge
+                                            variant={
+                                                CHECK_STATUS_VARIANTS[
+                                                    check.status
+                                                ]
+                                            }
+                                        >
+                                            {t(`report.status.${check.status}`)}
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell className="text-right tabular-nums">
+                                        {check.issues}
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    ))}
                 </Table>
             </CardContent>
         </Card>
@@ -993,15 +1047,16 @@ function relativeTime(iso: string, locale: string): string {
 }
 
 /**
- * The findings that warn or fail, as an admin list: search and filters on the left, the
- * table in a TablePanel (app-ui `docs/list-page.md`). Filtering happens in the browser: one
- * report is small.
+ * The findings that warn or fail, problems first, as an admin list: search and filters (severity,
+ * group, check) on the left, the table in a TablePanel (app-ui `docs/list-page.md`), and a
+ * detail drawer with the check's explanation and structured details (`?finding=<key>` opens it).
+ * Filtering happens in the browser: one report is small.
  */
 function FindingsView({
-    report,
+    issues: rows,
     fixes,
 }: {
-    report: HealthReportBody;
+    issues: IssueRow[];
     fixes: Record<string, FindingFix>;
 }) {
     const { t } = useTranslation();
@@ -1009,43 +1064,36 @@ function FindingsView({
     const [selected, setSelected] = useState<string[]>([]);
     const [search, setSearch] = useState('');
     const [severity, setSeverity] = useState<Severity | 'all'>('all');
+    const [category, setCategory] = useState<CheckCategory | 'all'>('all');
     const [checkId, setCheckId] = useState('all');
-
-    const rows = useMemo<FindingRow[]>(
-        () =>
-            report.checks
-                .flatMap((check) =>
-                    check.findings
-                        .filter(
-                            (finding) =>
-                                finding.status === 'warn' ||
-                                finding.status === 'fail',
-                        )
-                        .map((finding) => ({
-                            ...finding,
-                            checkName: check.name,
-                        })),
-                )
-                .sort(
-                    (first, second) =>
-                        SEVERITIES.indexOf(first.severity) -
-                        SEVERITIES.indexOf(second.severity),
-                ),
-        [report],
-    );
+    const [openKey, setOpenKey] = useState<string | null>(null);
+    const openFinding = rows.find((row) => findingKey(row) === openKey) ?? null;
+    const { syncEdit, syncClosed } = useDrawerDeepLink({
+        editParam: 'finding',
+        onEdit: setOpenKey,
+    });
 
     const checks = useMemo(
         () =>
-            [...new Map(rows.map((row) => [row.checkId, row.checkName]))].map(
-                ([id, name]) => ({ id, name }),
-            ),
-        [rows],
+            [
+                ...new Map(
+                    rows.map((row) => [
+                        row.checkId,
+                        checkLabel(t, row.checkId, row.checkName),
+                    ]),
+                ),
+            ].map(([id, name]) => ({ id, name })),
+        [rows, t],
+    );
+    const categories = CHECK_CATEGORIES.filter((item) =>
+        rows.some((row) => row.category === item),
     );
 
     const needle = search.trim().toLowerCase();
     const filtered = rows.filter(
         (row) =>
             (severity === 'all' || row.severity === severity) &&
+            (category === 'all' || row.category === category) &&
             (checkId === 'all' || row.checkId === checkId) &&
             (needle === '' ||
                 `${row.subject} ${row.message} ${row.advisoryId ?? ''}`
@@ -1053,242 +1101,304 @@ function FindingsView({
                     .includes(needle)),
     );
     const hasActiveFilters =
-        needle !== '' || severity !== 'all' || checkId !== 'all';
+        needle !== '' ||
+        severity !== 'all' ||
+        category !== 'all' ||
+        checkId !== 'all';
     const filteredKeys = filtered.map(findingKey);
     const selectedFixes = selected
         .map((key) => fixes[key])
         .filter((fix): fix is FindingFix => fix !== undefined);
 
     return (
-        <PageLayout
-            filters={
-                <DataTableToolbar
-                    search={search}
-                    onSearchChange={setSearch}
-                    searchPlaceholder={t('report.searchFindings')}
-                    selectedCount={selected.length}
-                    onClearSelection={() => setSelected([])}
-                    bulkActions={
-                        <Button
-                            type="button"
-                            variant="outline"
-                            className="text-ai-text"
-                            onClick={() =>
-                                void copyWithToast(
-                                    combinedPrompt(selectedFixes),
-                                )
-                            }
-                        >
-                            <Sparkles className="size-4" />
-                            {t('fix.copyPromptForSelected', {
-                                count: selectedFixes.length,
-                            })}
-                        </Button>
-                    }
-                />
-            }
-            filtersRight={
-                selected.length > 0 ? null : (
-                    <div className="flex items-center gap-1.5">
-                        <Select
-                            value={severity}
-                            onValueChange={(value) =>
-                                setSeverity(value as Severity | 'all')
-                            }
-                        >
-                            <SelectTrigger
-                                aria-label={t('report.severityLabel')}
-                                className="w-[8.5rem]"
-                            >
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent align="end">
-                                <SelectItem value="all">
-                                    {t('report.allSeverities')}
-                                </SelectItem>
-                                {SEVERITIES.map((item) => (
-                                    <SelectItem key={item} value={item}>
-                                        {t(`report.severity.${item}`)}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        <Select value={checkId} onValueChange={setCheckId}>
-                            <SelectTrigger
-                                aria-label={t('report.check')}
-                                className="w-[12rem]"
-                            >
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent align="end">
-                                <SelectItem value="all">
-                                    {t('report.allChecks')}
-                                </SelectItem>
-                                {checks.map((check) => (
-                                    <SelectItem key={check.id} value={check.id}>
-                                        {check.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                )
-            }
+        <Drawer
+            direction="right"
+            open={openFinding !== null}
+            onOpenChange={(open) => {
+                if (!open) {
+                    setOpenKey(null);
+                    syncClosed();
+                }
+            }}
         >
-            {filtered.length === 0 ? (
-                <PageEmptyState
-                    icon={hasActiveFilters ? SearchX : ListChecks}
-                    title={
-                        <EmptyStatus>
-                            {hasActiveFilters
-                                ? t('report.noMatchingFindings')
-                                : t('report.noIssues')}
-                        </EmptyStatus>
-                    }
-                    description={
-                        hasActiveFilters
-                            ? t('report.noMatchingFindingsDescription')
-                            : t('report.noIssuesDescription')
-                    }
-                    action={
-                        hasActiveFilters ? (
+            <PageLayout
+                filters={
+                    <DataTableToolbar
+                        search={search}
+                        onSearchChange={setSearch}
+                        searchPlaceholder={t('report.searchFindings')}
+                        selectedCount={selected.length}
+                        onClearSelection={() => setSelected([])}
+                        bulkActions={
                             <Button
                                 type="button"
-                                onClick={() => {
-                                    setSearch('');
-                                    setSeverity('all');
-                                    setCheckId('all');
-                                }}
+                                variant="outline"
+                                className="text-ai-text"
+                                onClick={() =>
+                                    void copyWithToast(
+                                        combinedPrompt(selectedFixes),
+                                    )
+                                }
                             >
-                                {t('common.clearFilters')}
+                                <Sparkles className="size-4" />
+                                {t('fix.copyPromptForSelected', {
+                                    count: selectedFixes.length,
+                                })}
                             </Button>
-                        ) : undefined
-                    }
-                />
-            ) : (
-                <TablePanel>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead className="w-10">
-                                    <Checkbox
-                                        checked={
-                                            filteredKeys.length > 0 &&
-                                            filteredKeys.every((key) =>
-                                                selected.includes(key),
-                                            )
-                                        }
-                                        onCheckedChange={(checked) =>
-                                            setSelected(
-                                                checked === true
-                                                    ? filteredKeys
-                                                    : [],
-                                            )
-                                        }
-                                        aria-label={t('a11y.selectAll')}
-                                    />
-                                </TableHead>
-                                <TableHead>
-                                    {t('report.severityLabel')}
-                                </TableHead>
-                                <TableHead>{t('report.subject')}</TableHead>
-                                <TableHead>{t('report.installed')}</TableHead>
-                                <TableHead>{t('report.fixedIn')}</TableHead>
-                                <TableHead>{t('report.message')}</TableHead>
-                                <TableHead>{t('report.fixHint')}</TableHead>
-                                <TableHead className="w-[1%] text-right">
-                                    {t('fix.actions')}
-                                </TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {filtered.map((row, index) => (
-                                <TableRow
-                                    key={
-                                        row.fingerprint ??
-                                        `${row.checkId}-${row.subject}-${row.advisoryId ?? index}`
-                                    }
+                        }
+                    />
+                }
+                filtersRight={
+                    selected.length > 0 ? null : (
+                        <div className="flex items-center gap-1.5">
+                            <Select
+                                value={severity}
+                                onValueChange={(value) =>
+                                    setSeverity(value as Severity | 'all')
+                                }
+                            >
+                                <SelectTrigger
+                                    aria-label={t('report.severityLabel')}
+                                    className="w-[8.5rem]"
                                 >
-                                    <TableCell>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent align="end">
+                                    <SelectItem value="all">
+                                        {t('report.allSeverities')}
+                                    </SelectItem>
+                                    {SEVERITIES.map((item) => (
+                                        <SelectItem key={item} value={item}>
+                                            {t(`report.severity.${item}`)}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <Select
+                                value={category}
+                                onValueChange={(value) =>
+                                    setCategory(value as CheckCategory | 'all')
+                                }
+                            >
+                                <SelectTrigger
+                                    aria-label={t('checks.categoryLabel')}
+                                    className="w-[10rem]"
+                                >
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent align="end">
+                                    <SelectItem value="all">
+                                        {t('checks.allCategories')}
+                                    </SelectItem>
+                                    {categories.map((item) => (
+                                        <SelectItem key={item} value={item}>
+                                            {t(`checks.category.${item}`)}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <Select value={checkId} onValueChange={setCheckId}>
+                                <SelectTrigger
+                                    aria-label={t('report.check')}
+                                    className="w-[12rem]"
+                                >
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent align="end">
+                                    <SelectItem value="all">
+                                        {t('report.allChecks')}
+                                    </SelectItem>
+                                    {checks.map((check) => (
+                                        <SelectItem
+                                            key={check.id}
+                                            value={check.id}
+                                        >
+                                            {check.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    )
+                }
+            >
+                {filtered.length === 0 ? (
+                    <PageEmptyState
+                        icon={hasActiveFilters ? SearchX : ListChecks}
+                        title={
+                            <EmptyStatus>
+                                {hasActiveFilters
+                                    ? t('report.noMatchingFindings')
+                                    : t('report.noIssues')}
+                            </EmptyStatus>
+                        }
+                        description={
+                            hasActiveFilters
+                                ? t('report.noMatchingFindingsDescription')
+                                : t('report.noIssuesDescription')
+                        }
+                        action={
+                            hasActiveFilters ? (
+                                <Button
+                                    type="button"
+                                    onClick={() => {
+                                        setSearch('');
+                                        setSeverity('all');
+                                        setCategory('all');
+                                        setCheckId('all');
+                                    }}
+                                >
+                                    {t('common.clearFilters')}
+                                </Button>
+                            ) : undefined
+                        }
+                    />
+                ) : (
+                    <TablePanel>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead className="w-10">
                                         <Checkbox
-                                            checked={selected.includes(
-                                                findingKey(row),
-                                            )}
+                                            checked={
+                                                filteredKeys.length > 0 &&
+                                                filteredKeys.every((key) =>
+                                                    selected.includes(key),
+                                                )
+                                            }
                                             onCheckedChange={(checked) =>
-                                                setSelected((current) =>
+                                                setSelected(
                                                     checked === true
-                                                        ? [
-                                                              ...current,
-                                                              findingKey(row),
-                                                          ]
-                                                        : current.filter(
-                                                              (key) =>
-                                                                  key !==
+                                                        ? filteredKeys
+                                                        : [],
+                                                )
+                                            }
+                                            aria-label={t('a11y.selectAll')}
+                                        />
+                                    </TableHead>
+                                    <TableHead>
+                                        {t('report.severityLabel')}
+                                    </TableHead>
+                                    <TableHead>{t('report.subject')}</TableHead>
+                                    <TableHead>
+                                        {t('report.installed')}
+                                    </TableHead>
+                                    <TableHead>{t('report.fixedIn')}</TableHead>
+                                    <TableHead>{t('report.message')}</TableHead>
+                                    <TableHead>{t('report.fixHint')}</TableHead>
+                                    <TableHead className="w-[1%] text-right">
+                                        {t('fix.actions')}
+                                    </TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {filtered.map((row, index) => (
+                                    <TableRow
+                                        key={
+                                            row.fingerprint ??
+                                            `${row.checkId}-${row.subject}-${row.advisoryId ?? index}`
+                                        }
+                                    >
+                                        <TableCell>
+                                            <Checkbox
+                                                checked={selected.includes(
+                                                    findingKey(row),
+                                                )}
+                                                onCheckedChange={(checked) =>
+                                                    setSelected((current) =>
+                                                        checked === true
+                                                            ? [
+                                                                  ...current,
                                                                   findingKey(
                                                                       row,
                                                                   ),
-                                                          ),
-                                                )
-                                            }
-                                            aria-label={t('fix.select', {
-                                                subject: row.subject,
-                                            })}
-                                        />
-                                    </TableCell>
-                                    <TableCell>
-                                        <SeverityBadge
-                                            severity={row.severity}
-                                        />
-                                    </TableCell>
-                                    <TableCell className="max-w-[16rem]">
-                                        <div className="truncate font-medium">
-                                            {detailText(row, 'package') ??
-                                                row.subject}
-                                        </div>
-                                        <div className="truncate font-mono text-xs text-muted-foreground">
-                                            {row.checkName}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="font-mono text-xs">
-                                        {detailText(row, 'lockedVersion') ??
-                                            '—'}
-                                    </TableCell>
-                                    <TableCell className="font-mono text-xs whitespace-normal">
-                                        {detailList(row, 'fixedVersions') ??
-                                            '—'}
-                                    </TableCell>
-                                    <TableCell className="min-w-[16rem] whitespace-normal">
-                                        {row.message}
-                                        {row.evidenceUrl ? (
-                                            <a
-                                                href={row.evidenceUrl}
-                                                target="_blank"
-                                                rel="noreferrer noopener"
-                                                className="ml-1 inline-flex items-center gap-0.5 text-primary underline-offset-4 hover:underline"
+                                                              ]
+                                                            : current.filter(
+                                                                  (key) =>
+                                                                      key !==
+                                                                      findingKey(
+                                                                          row,
+                                                                      ),
+                                                              ),
+                                                    )
+                                                }
+                                                aria-label={t('fix.select', {
+                                                    subject: row.subject,
+                                                })}
+                                            />
+                                        </TableCell>
+                                        <TableCell>
+                                            <SeverityBadge
+                                                severity={row.severity}
+                                            />
+                                        </TableCell>
+                                        <TableCell className="max-w-[16rem]">
+                                            <button
+                                                type="button"
+                                                className="block max-w-full truncate text-left font-medium underline-offset-4 hover:underline"
+                                                onClick={() => {
+                                                    setOpenKey(findingKey(row));
+                                                    syncEdit(findingKey(row));
+                                                }}
                                             >
-                                                {t('report.evidence')}
-                                                <ExternalLink
-                                                    className="size-3"
-                                                    aria-hidden
-                                                />
-                                            </a>
-                                        ) : null}
-                                    </TableCell>
-                                    <TableCell className="min-w-[14rem] font-mono text-xs whitespace-normal">
-                                        {row.fixHint}
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <FixActions
-                                            fix={fixes[findingKey(row)]}
-                                        />
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </TablePanel>
-            )}
-        </PageLayout>
+                                                {detailText(row, 'package') ??
+                                                    row.subject}
+                                            </button>
+                                            <div className="truncate text-xs text-muted-foreground">
+                                                {checkLabel(
+                                                    t,
+                                                    row.checkId,
+                                                    row.checkName,
+                                                )}
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="font-mono text-xs">
+                                            {detailText(row, 'lockedVersion') ??
+                                                '—'}
+                                        </TableCell>
+                                        <TableCell className="font-mono text-xs whitespace-normal">
+                                            {detailList(row, 'fixedVersions') ??
+                                                '—'}
+                                        </TableCell>
+                                        <TableCell className="min-w-[16rem] whitespace-normal">
+                                            {row.message}
+                                            {row.evidenceUrl ? (
+                                                <a
+                                                    href={row.evidenceUrl}
+                                                    target="_blank"
+                                                    rel="noreferrer noopener"
+                                                    className="ml-1 inline-flex items-center gap-0.5 text-primary underline underline-offset-4"
+                                                >
+                                                    {t('report.evidence')}
+                                                    <ExternalLink
+                                                        className="size-3"
+                                                        aria-hidden
+                                                    />
+                                                </a>
+                                            ) : null}
+                                        </TableCell>
+                                        <TableCell className="min-w-[14rem] font-mono text-xs whitespace-normal">
+                                            {row.fixHint}
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <FixActions
+                                                fix={fixes[findingKey(row)]}
+                                            />
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </TablePanel>
+                )}
+            </PageLayout>
+            {openFinding ? (
+                <FindingDrawer
+                    finding={openFinding}
+                    fix={fixes[findingKey(openFinding)]}
+                />
+            ) : null}
+        </Drawer>
     );
 }
 
@@ -1297,13 +1407,13 @@ function findingKey(row: ReportFinding): string {
     return `${row.checkId}|${row.subject}|${row.advisoryId ?? ''}`;
 }
 
-function detailText(row: FindingRow, key: string): string | null {
+function detailText(row: IssueRow, key: string): string | null {
     const value = row.details?.[key];
 
     return typeof value === 'string' && value !== '' ? value : null;
 }
 
-function detailList(row: FindingRow, key: string): string | null {
+function detailList(row: IssueRow, key: string): string | null {
     const value = row.details?.[key];
 
     return Array.isArray(value) && value.length > 0

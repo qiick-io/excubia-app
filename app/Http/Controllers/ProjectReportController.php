@@ -19,6 +19,7 @@ use App\Services\ProjectAlertsService;
 use App\Services\ProjectRuntimeService;
 use App\Services\ProjectTelemetryService;
 use App\Services\ReportFindingsService;
+use App\Services\ReportHealthService;
 use App\Services\TimeSeriesService;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
@@ -29,10 +30,10 @@ use Inertia\Inertia;
 use Inertia\Response;
 
 /**
- * Project page (`/projects/{slug}`): the findings and upgrade plan of the latest report, and
- * the summaries of the reports kept in the history. The system project (#70) can be refreshed
- * from here. The runtime, exceptions and schedule tabs cover the time range of `?range=` (#113);
- * the overview keeps the default range and every exception group.
+ * Project page (`/projects/{slug}`): the findings, health summary, licenses and upgrade plan of
+ * the latest report, and the summaries of the reports kept in the history. The system project
+ * (#70) can be refreshed from here. The runtime, exceptions and schedule tabs cover the time
+ * range of `?range=` (#113); the overview keeps the default range and every exception group.
  */
 class ProjectReportController extends Controller
 {
@@ -41,12 +42,12 @@ class ProjectReportController extends Controller
      *
      * @var list<string>
      */
-    public const VIEWS = ['findings', 'runtime', 'exceptions', 'schedule', 'alerts', 'plan', 'history'];
+    public const VIEWS = ['findings', 'licenses', 'runtime', 'exceptions', 'schedule', 'alerts', 'plan', 'history'];
 
     /** The tabs with a time range picker (#113). */
     public const RANGE_VIEWS = ['runtime', 'exceptions', 'schedule'];
 
-    public function show(Request $request, Project $project, ReportFindingsService $findings, FixSuggestionService $fixes, ProjectRuntimeService $runtime, ProjectTelemetryService $telemetry, TimeSeriesService $timeSeries, ?string $view = null): Response|RedirectResponse
+    public function show(Request $request, Project $project, ReportFindingsService $findings, FixSuggestionService $fixes, ProjectRuntimeService $runtime, ProjectTelemetryService $telemetry, TimeSeriesService $timeSeries, ReportHealthService $health, ?string $view = null): Response|RedirectResponse
     {
         Gate::authorize('view', $project);
 
@@ -77,6 +78,9 @@ class ProjectReportController extends Controller
             'canRefreshReport' => (bool) $request->user()?->can('refreshReport', $project),
             'report' => $project->latestReport?->report,
             'findingFixes' => (object) $findingFixes,
+            // The issues in page order with their check group, and the health summary (#108, #109).
+            'issues' => $project->latestReport === null ? [] : $findings->prioritized($project->latestReport),
+            'health' => $project->latestReport === null ? null : $health->summary($project->latestReport->report),
             'range' => $range->value,
             'runtime' => $runtime->summary($project, $range),
             'exceptions' => $telemetry->exceptions($project, $view === 'exceptions' ? $range : null, $now),

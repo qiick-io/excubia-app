@@ -5,15 +5,18 @@ import {
     CircleCheck,
     FolderKanban,
     Plus,
+    Scale,
     ShieldCheck,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PageEmptyState } from '@/components/admin/page-empty-state';
 import { PageLayout } from '@/components/layout/page-layout';
+import { CHECK_STATUS_VARIANTS } from '@/components/reports/check-details';
 import type { FindingFix } from '@/components/reports/fix-actions';
 import { StatCard, trendOf } from '@/components/stat-card';
 import { FixActions } from '@/components/reports/fix-actions';
+import { LICENSE_KIND_VARIANTS } from '@/components/reports/licenses-view';
 import {
     RuntimeSupportBadge,
     supportStatus,
@@ -57,7 +60,12 @@ import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
 import projectsRoutes from '@/routes/projects';
-import type { ProjectRow, RuntimeName, Severity } from '@/types';
+import type {
+    FlaggedLicense,
+    ProjectRow,
+    RuntimeName,
+    Severity,
+} from '@/types';
 
 const PERIODS = [7, 14, 30, 90] as const;
 const DEFAULT_PERIOD = 14;
@@ -102,6 +110,13 @@ type ConfigurationRow = {
     fix: FindingFix;
 };
 
+type LicenseRow = {
+    license: string;
+    kind: FlaggedLicense['kind'];
+    packages: string[];
+    projects: ProjectRef[];
+};
+
 type Overview = {
     kpis: {
         findings: {
@@ -117,6 +132,8 @@ type Overview = {
     topIssuesTotal: number;
     endOfSupport: EndOfSupportRow[];
     configuration: ConfigurationRow[];
+    /** Denied, copyleft and unknown licenses of the latest reports (#108). */
+    licenses: LicenseRow[];
     runtime: {
         requests: number;
         errors: number;
@@ -413,6 +430,8 @@ export default function Dashboard({
                         />
                         {selected ? null : <ProjectsCard projects={projects} />}
                     </section>
+
+                    <LicensesCard rows={overview.licenses} />
                 </div>
             </PageLayout>
         </>
@@ -792,6 +811,101 @@ function ConfigurationCard({
 }
 
 /**
+ * Fleet licenses (#108): which projects use a denied, strong copyleft or unknown license, and
+ * through which packages. Empty when no latest report flags one.
+ */
+function LicensesCard({ rows }: { rows: LicenseRow[] }) {
+    const { t } = useTranslation();
+
+    return (
+        <Card>
+            <CardHeader className="pb-3">
+                <CardTitle>{t('licenses.fleetTitle')}</CardTitle>
+                <CardDescription>
+                    {t('licenses.fleetDescription')}
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                {rows.length === 0 ? (
+                    <PageEmptyState
+                        icon={Scale}
+                        title={t('licenses.noneFlaggedTitle')}
+                        description={t('licenses.noneFlagged')}
+                        compact
+                        className="border-0"
+                    />
+                ) : (
+                    <div className="max-h-80 overflow-auto">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>
+                                        {t('licenses.license')}
+                                    </TableHead>
+                                    <TableHead>{t('licenses.kind')}</TableHead>
+                                    <TableHead>
+                                        {t('dashboard.projects.title')}
+                                    </TableHead>
+                                    <TableHead>
+                                        {t('details.package')}
+                                    </TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {rows.map((row) => (
+                                    <TableRow
+                                        key={`${row.kind}-${row.license}`}
+                                    >
+                                        <TableCell className="font-mono text-xs">
+                                            {row.license}
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge
+                                                variant={
+                                                    LICENSE_KIND_VARIANTS[
+                                                        row.kind
+                                                    ]
+                                                }
+                                            >
+                                                {t(
+                                                    `licenses.kinds.${row.kind}`,
+                                                )}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell className="whitespace-normal">
+                                            <div className="flex flex-wrap gap-x-2">
+                                                {row.projects.map((project) => (
+                                                    <Link
+                                                        key={project.slug}
+                                                        href={projectsRoutes.view.url(
+                                                            {
+                                                                project:
+                                                                    project.slug,
+                                                                view: 'licenses',
+                                                            },
+                                                        )}
+                                                        className="text-sm underline-offset-4 hover:underline"
+                                                    >
+                                                        {project.name}
+                                                    </Link>
+                                                ))}
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="font-mono text-xs whitespace-normal">
+                                            {row.packages.join(', ')}
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
+                )}
+            </CardContent>
+        </Card>
+    );
+}
+
+/**
  * Every project in one compact table, worst first, each linking to its page.
  */
 function ProjectsCard({ projects }: { projects: ProjectRow[] }) {
@@ -815,6 +929,9 @@ function ProjectsCard({ projects }: { projects: ProjectRow[] }) {
                             <TableRow>
                                 <TableHead>{t('common.name')}</TableHead>
                                 <TableHead>{t('report.findings')}</TableHead>
+                                <TableHead>
+                                    {t('checks.category.infrastructure')}
+                                </TableHead>
                                 <TableHead>{t('report.runtime.php')}</TableHead>
                                 <TableHead>
                                     {t('report.runtime.laravel')}
@@ -862,6 +979,26 @@ function ProjectsCard({ projects }: { projects: ProjectRow[] }) {
                                             ) : (
                                                 <span className="text-sm text-muted-foreground">
                                                     {t('dashboard.noReports')}
+                                                </span>
+                                            )}
+                                        </TableCell>
+                                        <TableCell>
+                                            {report?.infrastructure ? (
+                                                <Badge
+                                                    variant={
+                                                        CHECK_STATUS_VARIANTS[
+                                                            report
+                                                                .infrastructure
+                                                        ]
+                                                    }
+                                                >
+                                                    {t(
+                                                        `report.status.${report.infrastructure}`,
+                                                    )}
+                                                </Badge>
+                                            ) : (
+                                                <span className="text-sm text-muted-foreground">
+                                                    —
                                                 </span>
                                             )}
                                         </TableCell>

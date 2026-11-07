@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enums\CheckCategoryEnum;
 use App\Enums\ExceptionStatusEnum;
 use App\Enums\SeverityEnum;
 use App\Models\ExceptionGroup;
@@ -24,16 +25,6 @@ use Illuminate\Support\Facades\Date;
  */
 class DashboardOverviewService
 {
-    /** Configuration checks of excubia-core 1.0, shown apart from the dependency findings. */
-    public const POSTURE_CHECK_IDS = [
-        'laravel-debug-mode',
-        'laravel-production-caches',
-        'laravel-pending-migrations',
-        'laravel-failed-jobs',
-        'laravel-scheduler-heartbeat',
-        'laravel-maintenance-mode',
-    ];
-
     /** Most grouped issues returned, so the page stays light. */
     public const TOP_ISSUES_LIMIT = 25;
 
@@ -47,7 +38,54 @@ class DashboardOverviewService
         private ReportFindingsService $findings,
         private ProjectStalenessService $staleness,
         private FixSuggestionService $fixes,
+        private ReportHealthService $health,
     ) {}
+
+    /**
+     * Configuration and infrastructure checks (#109) have their own block, apart from the
+     * dependency findings.
+     */
+    private function isPosture(string $checkId): bool
+    {
+        return in_array(CheckCategoryEnum::forCheck($checkId), [CheckCategoryEnum::Configuration, CheckCategoryEnum::Infrastructure], true);
+    }
+
+    /**
+     * Fleet license view (#108): each denied, copyleft or unknown license of the latest reports
+     * with the projects and packages that use it, denied first, then by the number of projects.
+     *
+     * @param  Collection<int, Project>  $projects
+     * @return list<array{license: string, kind: string, packages: list<string>, projects: list<array{slug: string, name: string}>}>
+     */
+    private function licenses(Collection $projects): array
+    {
+        $rows = [];
+
+        foreach ($projects as $project) {
+            if ($project->latestReport === null) {
+                continue;
+            }
+
+            foreach ($this->health->flaggedLicenses($project->latestReport->report) as $flagged) {
+                foreach ($flagged['licenses'] === [] ? ['NOASSERTION'] : $flagged['licenses'] as $license) {
+                    $key = $flagged['kind'].'|'.$license;
+                    $rows[$key] ??= ['license' => $license, 'kind' => $flagged['kind'], 'packages' => [], 'projects' => []];
+                    $rows[$key]['packages'][$flagged['package']] = $flagged['package'];
+                    $rows[$key]['projects'][$project->slug] = ['slug' => $project->slug, 'name' => $project->name];
+                }
+            }
+        }
+
+        $kindRank = ['denied' => 0, 'copyleft' => 1, 'unknown' => 2];
+        $rows = array_values(array_map(fn (array $row): array => [
+            ...$row,
+            'packages' => array_values($row['packages']),
+            'projects' => array_values($row['projects']),
+        ], $rows));
+        usort($rows, fn (array $first, array $second): int => [$kindRank[$first['kind']], -count($first['projects']), $first['license']] <=> [$kindRank[$second['kind']], -count($second['projects']), $second['license']]);
+
+        return $rows;
+    }
 
     /**
      * @param  Collection<int, Project>  $projects  the scoped projects, with `latestReport` loaded
@@ -83,6 +121,7 @@ class DashboardOverviewService
             ...$this->topIssues($projects),
             'endOfSupport' => $this->endOfSupport($projects, $today),
             'configuration' => $this->configuration($projects),
+            'licenses' => $this->licenses($projects),
             ...$this->telemetry($projects, $today, $periodDays),
         ];
     }
@@ -154,7 +193,7 @@ class DashboardOverviewService
     /**
      * The findings that warn or fail in the latest reports, grouped by check, package (or
      * subject) and advisory, worst first and then by the number of projects affected.
-     * Configuration checks are left out: they have their own block.
+     * Configuration and infrastructure checks are left out: they have their own block.
      *
      * @param  Collection<int, Project>  $projects
      * @return array{topIssues: list<array<string, mixed>>, topIssuesTotal: int}
@@ -171,7 +210,7 @@ class DashboardOverviewService
             foreach ($this->findings->issues($project->latestReport) as $finding) {
                 $checkId = (string) ($finding['checkId'] ?? '');
 
-                if (in_array($checkId, self::POSTURE_CHECK_IDS, true)) {
+                if ($this->isPosture($checkId)) {
                     continue;
                 }
 
@@ -275,7 +314,7 @@ class DashboardOverviewService
             }
 
             foreach ($this->findings->issues($project->latestReport) as $finding) {
-                if (! in_array($finding['checkId'] ?? null, self::POSTURE_CHECK_IDS, true)) {
+                if (! $this->isPosture((string) ($finding['checkId'] ?? ''))) {
                     continue;
                 }
 

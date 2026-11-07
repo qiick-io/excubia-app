@@ -430,7 +430,8 @@
                 "schedule.scheduler_down": "The scheduler stopped: excubia:heartbeat did not run.",
                 "runtime.cache_hit_ratio_low": "A cache store hits less than the threshold.",
                 "runtime.delivery_failed": "A mailable or notification failed.",
-                "runtime.log_spike": "A log channel wrote more error entries than the threshold."
+                "runtime.log_spike": "A log channel wrote more error entries than the threshold.",
+                "infrastructure.failed": "A database, storage or disk check fails (new, or on the first report). Sent at once, critical."
             },
             "runtimeRulesTitle": "Runtime alert rules",
             "runtimeRulesDescription": "Optional alerts from the runtime data the projects push, checked every 15 minutes over the last hour. Empty turns a rule off.",
@@ -680,7 +681,8 @@
             "runtime": "Runtime",
             "exceptions": "Exceptions",
             "schedule": "Schedule",
-            "alerts": "Alerts"
+            "alerts": "Alerts",
+            "licenses": "Licenses"
         },
         "support": {
             "supported": "Supported",
@@ -1138,5 +1140,294 @@
             "7d": "per 6 hours",
             "14d": "per day"
         }
+    },
+    "checks": {
+        "category": {
+            "infrastructure": "Infrastructure",
+            "configuration": "Configuration",
+            "dependencies": "Dependencies",
+            "other": "Other checks"
+        },
+        "categoryLabel": "Group",
+        "allCategories": "All groups",
+        "docs": "How this check works",
+        "unknownDescription": "A check from a newer excubia-core. Its message and details are shown as sent.",
+        "php-eol": {
+            "label": "PHP end of life",
+            "description": "Whether the PHP version still gets security and bug fixes (endoflife.date)."
+        },
+        "laravel-eol": {
+            "label": "Laravel end of life",
+            "description": "Whether the Laravel major still gets security and bug fixes."
+        },
+        "node-eol": {
+            "label": "Node end of life",
+            "description": "Whether the declared Node version is still maintained."
+        },
+        "composer-advisories": {
+            "label": "Known vulnerabilities (Composer)",
+            "description": "Security advisories on Packagist that affect a locked Composer package."
+        },
+        "npm-advisories": {
+            "label": "Known vulnerabilities (npm)",
+            "description": "Vulnerabilities on OSV.dev that affect a package of the JavaScript lockfile."
+        },
+        "composer-abandoned": {
+            "label": "Abandoned packages",
+            "description": "Composer packages their maintainers marked as abandoned on Packagist."
+        },
+        "composer-stale": {
+            "label": "Stale packages",
+            "description": "Composer packages with an archived repository or no release for a long time."
+        },
+        "laravel-next-blocker": {
+            "label": "Next-major blockers",
+            "description": "Direct dependencies whose latest release does not allow the next Laravel major yet."
+        },
+        "laravel-debug-mode": {
+            "label": "Debug mode",
+            "description": "app.debug is on outside local and testing, so errors show internals."
+        },
+        "laravel-production-caches": {
+            "label": "Production caches",
+            "description": "The config, route and event caches that production should build at deploy."
+        },
+        "laravel-pending-migrations": {
+            "label": "Pending migrations",
+            "description": "Migrations that have not run against the database."
+        },
+        "laravel-failed-jobs": {
+            "label": "Failed jobs",
+            "description": "Jobs in the failed job store, and how long the oldest has been there."
+        },
+        "laravel-scheduler-heartbeat": {
+            "label": "Scheduler heartbeat",
+            "description": "Whether the scheduler ran excubia:heartbeat in the last minutes."
+        },
+        "laravel-maintenance-mode": {
+            "label": "Maintenance mode",
+            "description": "Whether the app is down for maintenance (php artisan down)."
+        },
+        "laravel-app-key": {
+            "label": "Application key",
+            "description": "Whether app.key is set: without it, encryption and sessions break."
+        },
+        "laravel-session-security": {
+            "label": "Session cookie security",
+            "description": "Secure and HTTP-only flags of the session cookie in production."
+        },
+        "laravel-cors-wildcard": {
+            "label": "CORS wildcard origin",
+            "description": "A * allowed origin, which fails together with credentials."
+        },
+        "laravel-production-drivers": {
+            "label": "Production drivers",
+            "description": "Queue, cache, session and mail drivers meant for local work, used in production."
+        },
+        "laravel-log-level": {
+            "label": "Log level",
+            "description": "Whether the default log channel logs debug entries in production."
+        },
+        "laravel-dev-packages": {
+            "label": "Development packages",
+            "description": "Development tools in require and enabled in production."
+        },
+        "dependency-licenses": {
+            "label": "Dependency licenses",
+            "description": "Licenses the lockfiles declare: denied, strong copyleft, missing or unknown."
+        },
+        "laravel-database": {
+            "label": "Database",
+            "description": "Whether each checked database connection answers."
+        },
+        "laravel-cache": {
+            "label": "Cache",
+            "description": "Whether the default cache store can write, read and delete a key."
+        },
+        "laravel-storage": {
+            "label": "Writable storage",
+            "description": "Whether storage and bootstrap/cache are writable."
+        },
+        "laravel-disk-space": {
+            "label": "Disk space",
+            "description": "How full the disk holding storage/ is."
+        },
+        "laravel-queue-backlog": {
+            "label": "Queue backlog",
+            "description": "Pending jobs per queue and how long the oldest has waited."
+        },
+        "php-platform-requirements": {
+            "label": "Platform requirements",
+            "description": "PHP version and extensions the locked packages require, as composer check-platform-reqs."
+        },
+        "env-example-sync": {
+            "label": ".env.example sync",
+            "description": "Keys the config reads that .env.example does not list, and unused keys. Names only."
+        },
+        "composer-outdated": {
+            "label": "Outdated packages",
+            "description": "Direct Composer dependencies with a newer patch, minor or major release."
+        },
+        "laravel-queue-workers": {
+            "label": "Queue workers",
+            "description": "Whether Horizon or a queue worker is running for the queues with pending jobs."
+        },
+        "npm-outdated": {
+            "label": "Outdated packages (npm)",
+            "description": "Direct npm dependencies with a newer patch, minor or major release."
+        },
+        "laravel-backups": {
+            "label": "Backups",
+            "description": "Age, size and count of the spatie/laravel-backup backups per destination."
+        },
+        "laravel-database-connections": {
+            "label": "Database connections",
+            "description": "Open connections on the default database server."
+        },
+        "laravel-database-size": {
+            "label": "Database size",
+            "description": "Size of the default database and its largest tables."
+        },
+        "laravel-redis-memory": {
+            "label": "Redis memory",
+            "description": "Memory used against maxmemory, and the eviction policy, per Redis connection."
+        },
+        "php-opcache": {
+            "label": "OPcache",
+            "description": "OPcache of the web PHP: enabled, hit rate, memory and timestamp validation."
+        },
+        "php-production-ini": {
+            "label": "Production php.ini",
+            "description": "display_errors, expose_php and log_errors of the web PHP in production."
+        }
+    },
+    "details": {
+        "title": "Details",
+        "yes": "Yes",
+        "no": "No",
+        "megabytes": "{{value}} MB",
+        "percent": "{{value}} %",
+        "minutes_one": "{{count}} minute",
+        "minutes_other": "{{count}} minutes",
+        "hours_one": "{{count}} hour",
+        "hours_other": "{{count}} hours",
+        "package": "Package",
+        "lockedVersion": "Installed",
+        "affectedVersions": "Affected versions",
+        "fixedVersions": "Fixed in",
+        "lockfile": "Lockfile",
+        "cycle": "Cycle",
+        "securitySupportEndsOn": "Security support until",
+        "activeSupportEndsOn": "Active support until",
+        "replacement": "Replacement",
+        "targetMajor": "Target major",
+        "count": "Count",
+        "oldestAgeHours": "Oldest",
+        "minutesSinceLastRun": "Since the last run",
+        "licenses": "Licenses",
+        "ecosystem": "Ecosystem",
+        "hasCredentials": "With credentials",
+        "component": "Component",
+        "driver": "Driver",
+        "connection": "Connection",
+        "store": "Store",
+        "directory": "Directory",
+        "usedPercent": "Used",
+        "queue": "Queue",
+        "pendingCount": "Pending jobs",
+        "oldestAgeMinutes": "Oldest waits",
+        "requirement": "Requirement",
+        "requiredBy": "Required by",
+        "checkedPhpVersion": "Checked PHP",
+        "isStandaloneCli": "Standalone CLI",
+        "key": "Key",
+        "configFiles": "Config files",
+        "keys": "Keys",
+        "latestPatch": "Latest patch",
+        "latestMinor": "Latest minor",
+        "latestMajor": "Latest major",
+        "isMajorBehind": "Major behind",
+        "minutesSinceLastSeen": "Last worker seen",
+        "status": "Status",
+        "processes": "Processes",
+        "supervisors": "Supervisors",
+        "disk": "Disk",
+        "ageHours": "Newest backup age",
+        "sizeMb": "Size",
+        "connectionCount": "Open connections",
+        "largestTables": "Largest tables",
+        "usedMb": "Used memory",
+        "maxMb": "Max memory",
+        "policy": "Eviction policy",
+        "sapi": "PHP SAPI",
+        "ageMinutes": "Snapshot age",
+        "isOpcacheEnabled": "OPcache enabled",
+        "hitRate": "Hit rate",
+        "memoryUsedPercent": "Memory used",
+        "cachedScripts": "Cached scripts",
+        "isValidateTimestampsEnabled": "Validates timestamps",
+        "directive": "Directive",
+        "isEnabled": "Enabled"
+    },
+    "health": {
+        "notChecked": "Not checked",
+        "withinLimits": "Within limits",
+        "infrastructure": {
+            "title": "Infrastructure",
+            "description": "Services the app needs, from the latest report.",
+            "disk": "Disk",
+            "databaseSize": "Database size",
+            "connections": "Database connections",
+            "queueBacklog": "Queue backlog",
+            "backlogValue_one": "{{count}} pending job on {{queues}} queue(s), the oldest waits {{minutes}} min",
+            "backlogValue_other": "{{count}} pending jobs on {{queues}} queue(s), the oldest waits {{minutes}} min",
+            "redis": "Redis memory",
+            "redisValue": "{{connection}}: {{used}} of {{max}} MB",
+            "backups": "Backups",
+            "backupValue": "{{disk}}: newest {{age}} old, {{count}} backups"
+        },
+        "dependencies": {
+            "title": "Dependencies",
+            "description": "Outdated direct dependencies and the license inventory.",
+            "allLicenses": "All licenses",
+            "outdated": "Outdated",
+            "patch": "Patch",
+            "minor": "Minor",
+            "major": "Major"
+        },
+        "ecosystem": {
+            "composer": "Composer",
+            "npm": "npm"
+        }
+    },
+    "licenses": {
+        "unavailable": "No license inventory: the dependency-licenses check did not run (excubia-core 1.0.0-beta.2 or later).",
+        "emptyTitle": "No license inventory",
+        "packages_one": "{{count}} package inspected",
+        "packages_other": "{{count}} packages inspected",
+        "kindCount": {
+            "denied_one": "{{count}} denied",
+            "denied_other": "{{count}} denied",
+            "copyleft_one": "{{count}} copyleft",
+            "copyleft_other": "{{count}} copyleft",
+            "unknown_one": "{{count}} unknown",
+            "unknown_other": "{{count}} unknown"
+        },
+        "kinds": {
+            "denied": "Denied",
+            "copyleft": "Strong copyleft",
+            "unknown": "Unknown"
+        },
+        "kind": "Kind",
+        "license": "License",
+        "total": "Total",
+        "none": "None declared",
+        "flaggedTitle": "Packages to review",
+        "flaggedDescription": "Denied licenses first, then strong copyleft, then missing or unknown ones.",
+        "noneFlagged": "No package uses a denied, strong copyleft or unknown license.",
+        "noneFlaggedTitle": "Licenses look fine",
+        "inventoryTitle": "Inventory",
+        "fleetTitle": "Licenses to review",
+        "fleetDescription": "Denied, strong copyleft and unknown licenses in the latest reports, with the projects that use them."
     }
 }

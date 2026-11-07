@@ -17,8 +17,8 @@ use Illuminate\Support\Str;
  *
  * `tests/Fixtures/core/runtime-schema.json` is a copy of excubia-core `develop` at
  * adcbc56832709d5caf79998ec943c6a941b039bd (2026-11-06). Refresh it when core adds a type.
- * The app has no JSON Schema validator, so coreSchemaErrors() checks the keywords the runtime
- * schema uses (required, additionalProperties, const, enum, type, pattern, min/max, lengths).
+ * The app has no JSON Schema validator, so coreSchemaErrors() (tests/Pest.php) checks the keywords
+ * the runtime schema uses (required, additionalProperties, const, enum, type, pattern, min/max, lengths).
  */
 beforeEach(function () {
     Http::preventStrayRequests();
@@ -62,88 +62,6 @@ function coreRuntimeAggregates(): array
         'server' => ['type' => 'server', ...$base, ...$quiet, 'count' => 1, 'server' => 'a1b2c3d4e5f6', 'loadAverage1' => 0.52, 'loadAverage5' => 0.4, 'loadAverage15' => 0.3, 'cpuCores' => 8, 'cpuLimit' => 1.5, 'memoryUsedMb' => 900, 'memoryTotalMb' => 2048, 'diskUsedGb' => 20.5, 'diskTotalGb' => 80, 'isContainer' => true],
         'command' => ['type' => 'command', ...$base, 'command' => 'migrate', 'exitCodeClass' => 'other', ...$timed],
     ];
-}
-
-/**
- * Errors of a value against a (sub)schema of the core runtime schema; [] when it matches.
- *
- * @param  array<string, mixed>  $schema
- * @param  array<string, mixed>  $root
- * @return list<string>
- */
-function coreSchemaErrors(mixed $value, array $schema, array $root, string $path = '$'): array
-{
-    if (isset($schema['$ref'])) {
-        $schema = [...$root['$defs'][substr($schema['$ref'], strlen('#/$defs/'))], ...array_diff_key($schema, ['$ref' => true])];
-    }
-
-    $errors = [];
-    $types = (array) ($schema['type'] ?? []);
-    $actual = match (true) {
-        is_array($value) && array_is_list($value) && $value !== [] => 'array',
-        is_array($value) => 'object',
-        is_int($value) => 'integer',
-        is_float($value) => 'number',
-        is_bool($value) => 'boolean',
-        is_null($value) => 'null',
-        default => 'string',
-    };
-
-    if ($types !== [] && ! in_array($actual, $types, true) && ! ($actual === 'integer' && in_array('number', $types, true))) {
-        return ["{$path}: {$actual} is not ".implode('|', $types)];
-    }
-
-    if (array_key_exists('const', $schema) && $value !== $schema['const']) {
-        $errors[] = "{$path}: not the const";
-    }
-
-    if (isset($schema['enum']) && ! in_array($value, $schema['enum'], true)) {
-        $errors[] = "{$path}: not in the enum";
-    }
-
-    if (is_string($value)) {
-        if (isset($schema['pattern']) && preg_match('/'.str_replace('/', '\/', $schema['pattern']).'/u', $value) !== 1) {
-            $errors[] = "{$path}: does not match {$schema['pattern']}";
-        }
-
-        if (mb_strlen($value) < ($schema['minLength'] ?? 0) || mb_strlen($value) > ($schema['maxLength'] ?? PHP_INT_MAX)) {
-            $errors[] = "{$path}: length out of range";
-        }
-    }
-
-    if ((is_int($value) || is_float($value)) && ($value < ($schema['minimum'] ?? -INF) || $value > ($schema['maximum'] ?? INF))) {
-        $errors[] = "{$path}: out of range";
-    }
-
-    if ($actual === 'array') {
-        if (count($value) < ($schema['minItems'] ?? 0) || count($value) > ($schema['maxItems'] ?? PHP_INT_MAX)) {
-            $errors[] = "{$path}: item count out of range";
-        }
-
-        foreach ($value as $index => $item) {
-            $errors = [...$errors, ...coreSchemaErrors($item, $schema['items'] ?? [], $root, "{$path}[{$index}]")];
-        }
-    }
-
-    if ($actual === 'object') {
-        foreach (array_diff($schema['required'] ?? [], array_keys($value)) as $missing) {
-            $errors[] = "{$path}: missing {$missing}";
-        }
-
-        foreach ($value as $key => $item) {
-            if (! isset($schema['properties'][$key])) {
-                if (($schema['additionalProperties'] ?? true) === false) {
-                    $errors[] = "{$path}: unexpected {$key}";
-                }
-
-                continue;
-            }
-
-            $errors = [...$errors, ...coreSchemaErrors($item, $schema['properties'][$key], $root, "{$path}.{$key}")];
-        }
-    }
-
-    return $errors;
 }
 
 /**

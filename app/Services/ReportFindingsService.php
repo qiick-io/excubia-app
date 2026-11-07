@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enums\CheckCategoryEnum;
+use App\Enums\SeverityEnum;
 use App\Models\HealthReport;
 use App\Models\Project;
 
@@ -44,6 +46,31 @@ class ReportFindingsService
                 }
             }
         }
+
+        return $issues;
+    }
+
+    /**
+     * The issues in the order the project page lists them (#109), each with its check group:
+     * failing infrastructure first (the app cannot run without it), then by severity, then by
+     * group (infrastructure, configuration, dependencies, other), keeping the report order.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function prioritized(HealthReport $report): array
+    {
+        $issues = array_map(fn (array $finding): array => [
+            ...$finding,
+            'category' => CheckCategoryEnum::forCheck((string) ($finding['checkId'] ?? ''))->value,
+        ], $this->issues($report));
+
+        $sortKey = fn (array $finding): array => [
+            $finding['category'] === CheckCategoryEnum::Infrastructure->value && ($finding['status'] ?? null) === 'fail' ? 0 : 1,
+            SeverityEnum::tryFrom((string) ($finding['severity'] ?? ''))?->rank() ?? count(SeverityEnum::cases()),
+            CheckCategoryEnum::from($finding['category'])->rank(),
+        ];
+
+        usort($issues, fn (array $first, array $second): int => $sortKey($first) <=> $sortKey($second));
 
         return $issues;
     }
