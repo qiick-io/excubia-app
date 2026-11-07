@@ -147,6 +147,37 @@ export type IssueRow = ReportFinding & {
     category: CheckCategory;
 };
 
+/** One step of a finding's history (#18). */
+export type FindingHistoryEvent = {
+    event: 'opened' | 'resolved' | 'reopened' | 'dismissed' | 'undismissed';
+    occurredAt: string;
+    release: string | null;
+    by: string | null;
+    reason: string | null;
+    until: string | null;
+};
+
+/** A finding across reports (`FindingLifecycleService::forPage`, #18). */
+export type FindingLifecycle = {
+    id: number;
+    status: 'open' | 'dismissed' | 'resolved';
+    firstSeenAt: string;
+    lastSeenAt: string;
+    resolvedAt: string | null;
+    reopenedCount: number;
+    /** The active dismissal; `until` is the last day (`YYYY-MM-DD`), null for good. */
+    dismissal: {
+        reason: string | null;
+        until: string | null;
+        by: string | null;
+        at: string | null;
+    } | null;
+    history: FindingHistoryEvent[];
+};
+
+/** A row of the Findings tab: the last report row of the finding and its lifecycle. */
+export type LifecycleRow = IssueRow & { lifecycle: FindingLifecycle };
+
 /** Counts of outdated direct dependencies, each at its furthest level. */
 export type OutdatedCounts = { patch: number; minor: number; major: number };
 

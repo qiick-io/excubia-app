@@ -49,6 +49,7 @@ it('maps the built-in roles to their default permissions', function (RoleEnum $r
         PermissionEnum::CanDeleteProjects,
         PermissionEnum::CanRunChecks,
         PermissionEnum::CanManageExceptions,
+        PermissionEnum::CanDismissFindings,
         PermissionEnum::CanShowUsers,
         PermissionEnum::CanCreateUsers,
         PermissionEnum::CanEditUsers,

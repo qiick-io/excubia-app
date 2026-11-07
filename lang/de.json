@@ -12,5 +12,7 @@
     "Missed": "Verpasst",
     "Failed": "Fehlgeschlagen",
     "Scheduler down": "Scheduler ausgefallen",
-    "You get this email because the weekly digest is on in your profile settings.": "Du erhältst diese E-Mail, weil die wöchentliche Zusammenfassung in deinen Profileinstellungen aktiv ist."
+    "You get this email because the weekly digest is on in your profile settings.": "Du erhältst diese E-Mail, weil die wöchentliche Zusammenfassung in deinen Profileinstellungen aktiv ist.",
+    "Finding dismissed.": "Befund ausgeblendet.",
+    "Dismissal removed.": "Ausblendung aufgehoben."
 }

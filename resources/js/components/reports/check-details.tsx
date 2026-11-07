@@ -2,6 +2,7 @@ import type { TFunction } from 'i18next';
 import { BookOpen, ExternalLink } from 'lucide-react';
 import { Fragment } from 'react';
 import { useTranslation } from 'react-i18next';
+import { FindingLifecycleSection } from '@/components/reports/finding-lifecycle';
 import type { FindingFix } from '@/components/reports/fix-actions';
 import { FixActions } from '@/components/reports/fix-actions';
 import { SeverityBadge } from '@/components/reports/severity-badge';
@@ -14,7 +15,12 @@ import {
     DrawerHeader,
     DrawerTitle,
 } from '@/components/ui/drawer';
-import type { CheckCategory, CheckStatus, IssueRow } from '@/types';
+import type {
+    CheckCategory,
+    CheckStatus,
+    FindingLifecycle,
+    IssueRow,
+} from '@/types';
 
 /** The checks table of the excubia-core README: what each check id looks at and when it warns. */
 export const CHECKS_DOCS_URL =
@@ -170,15 +176,21 @@ export function FindingDetails({
 
 /**
  * One finding in the right drawer (as the exceptions drawer): what the check looks at with a
- * docs link, the message and evidence, the structured details, the fix hint and the ready fix.
- * Render inside a `Drawer`.
+ * docs link, the message and evidence, the structured details, the fix hint, the lifecycle
+ * across reports (#18) when given, and the ready fix. Render inside a `Drawer`.
  */
 export function FindingDrawer({
     finding,
     fix,
+    lifecycle,
+    projectId,
+    canDismiss = false,
 }: {
     finding: IssueRow;
     fix: FindingFix | undefined;
+    lifecycle?: FindingLifecycle;
+    projectId?: number;
+    canDismiss?: boolean;
 }) {
     const { t } = useTranslation();
 
@@ -256,6 +268,14 @@ export function FindingDrawer({
                             {finding.fixHint}
                         </p>
                     </section>
+                ) : null}
+                {lifecycle !== undefined && projectId !== undefined ? (
+                    <FindingLifecycleSection
+                        finding={finding}
+                        lifecycle={lifecycle}
+                        projectId={projectId}
+                        canDismiss={canDismiss}
+                    />
                 ) : null}
             </DrawerBody>
             {fix ? (

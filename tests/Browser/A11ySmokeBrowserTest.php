@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Actions\SyncFindingLifecycleAction;
 use App\Enums\AlertEventEnum;
 use App\Enums\RoleEnum;
 use App\Enums\SeverityEnum;
@@ -53,7 +54,7 @@ function seededA11yProject(): Project
     $now = now();
     $coreReport = json_decode((string) file_get_contents(base_path('tests/Fixtures/core/report-every-check.json')), true, flags: JSON_THROW_ON_ERROR);
 
-    $project->healthReports()->create([
+    $report = $project->healthReports()->create([
         'batch_id' => (string) Str::uuid(),
         'received_at' => $now,
         'generated_at' => $now,
@@ -72,6 +73,8 @@ function seededA11yProject(): Project
         ],
     ]);
     $project->forceFill(['last_report_at' => $now])->save();
+    // The Findings tab lists the finding lifecycle (#18).
+    app(SyncFindingLifecycleAction::class)->execute($project, $report);
 
     RuntimeAggregate::query()->create([
         'project_id' => $project->id,

@@ -17,13 +17,15 @@ use Illuminate\Support\Facades\DB;
  * Stores a report pushed by a project and updates `projects.last_report_at`. A repeated
  * `batchId` returns the stored report (`wasRecentlyCreated` false) and stores nothing new.
  * The report's optional `release` and `deployedAt` (#106) are kept in their own columns: a
- * report with `deployed_at` is the project's deploy marker.
+ * report with `deployed_at` is the project's deploy marker. Each new report moves the project's
+ * finding lifecycle (#18) before the alerts read what changed.
  */
 class StorePushedReportAction
 {
     public function __construct(
         private ReportAlertsService $reportAlerts,
         private StoreScheduleInventoryAction $scheduleInventory,
+        private SyncFindingLifecycleAction $findingLifecycle,
     ) {}
 
     /**
@@ -64,7 +66,8 @@ class StorePushedReportAction
                 }
 
                 $project->forceFill(['last_report_at' => $receivedAt, 'stale_alerted_at' => null])->save();
-                $this->reportAlerts->afterReport($project, $healthReport, $previous, $wasStale);
+                $changes = $this->findingLifecycle->execute($project, $healthReport);
+                $this->reportAlerts->afterReport($project, $healthReport, $previous, $wasStale, $changes);
 
                 return $healthReport;
             });

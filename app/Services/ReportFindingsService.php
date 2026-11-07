@@ -11,8 +11,9 @@ use App\Models\Project;
 
 /**
  * Reads the findings of a stored excubia-core report. A finding "is an issue" when it warns or
- * fails; its identity across reports is `checkId` + `subject` + `advisoryId`. The comparison
- * here is also what alerts (#22) build on.
+ * fails; its identity across reports is `checkId` + `subject` + `advisoryId`, hashed by core into
+ * the `fingerprint` the finding lifecycle (#18) keys on. `compare()` is a plain report-to-report
+ * diff (the assistant's report comparison); alerts and the digest use the lifecycle instead.
  */
 class ReportFindingsService
 {
@@ -59,10 +60,22 @@ class ReportFindingsService
      */
     public function prioritized(HealthReport $report): array
     {
+        return $this->prioritize($this->issues($report));
+    }
+
+    /**
+     * Findings in page order (see prioritized()), each with its check group; also the rows of the
+     * finding lifecycle (#18).
+     *
+     * @param  list<array<string, mixed>>  $findings
+     * @return list<array<string, mixed>>
+     */
+    public function prioritize(array $findings): array
+    {
         $issues = array_map(fn (array $finding): array => [
             ...$finding,
             'category' => CheckCategoryEnum::forCheck((string) ($finding['checkId'] ?? ''))->value,
-        ], $this->issues($report));
+        ], $findings);
 
         $sortKey = fn (array $finding): array => [
             $finding['category'] === CheckCategoryEnum::Infrastructure->value && ($finding['status'] ?? null) === 'fail' ? 0 : 1,
@@ -97,6 +110,50 @@ class ReportFindingsService
     public function identity(array $finding): string
     {
         return implode('|', [$finding['checkId'] ?? '', $finding['subject'] ?? '', $finding['advisoryId'] ?? '']);
+    }
+
+    /**
+     * Core's stable `fingerprint` of a finding: `sha256(checkId NUL subject NUL advisoryId)`
+     * (excubia-core `docs/CONTRACTS.md`). Reports from cores before 1.0 have none; the same recipe
+     * stands in, so their findings match the ones of newer reports.
+     *
+     * @param  array<string, mixed>  $finding
+     */
+    public function fingerprint(array $finding): string
+    {
+        $fingerprint = $finding['fingerprint'] ?? null;
+
+        if (is_string($fingerprint) && preg_match('/^[0-9a-f]{64}$/', $fingerprint) === 1) {
+            return $fingerprint;
+        }
+
+        return hash('sha256', implode("\0", [(string) ($finding['checkId'] ?? ''), (string) ($finding['subject'] ?? ''), (string) ($finding['advisoryId'] ?? '')]));
+    }
+
+    /**
+     * The check ids that really ran in a report, so a finding missing from it is fixed rather than
+     * unchecked (#18). A check is left out when the report does not have it (`--only`, `--skip`,
+     * the standalone CLI with fewer checks), when it was skipped, or when one of its rows is a
+     * data-source failure (an advisory API that did not answer proves nothing).
+     *
+     * @return list<string>
+     */
+    public function ranCheckIds(HealthReport $report): array
+    {
+        $checkIds = [];
+
+        foreach ((array) ($report->report['checks'] ?? []) as $check) {
+            $findings = (array) ($check['findings'] ?? []);
+            $hasDataSourceFailure = collect($findings)->contains(fn (mixed $finding): bool => is_array($finding)
+                && ($finding['status'] ?? null) === 'skipped'
+                && ($finding['skipReason'] ?? null) === 'data-source-failure');
+
+            if (is_string($check['checkId'] ?? null) && ($check['status'] ?? null) !== 'skipped' && ! $hasDataSourceFailure) {
+                $checkIds[] = $check['checkId'];
+            }
+        }
+
+        return $checkIds;
     }
 
     /**
