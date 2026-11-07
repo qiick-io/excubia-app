@@ -181,6 +181,10 @@ it('has no critical or serious axe issues on the main authenticated pages in lig
         route('projects.view', [$project, 'exceptions'], false),
         route('projects.view', [$project, 'schedule'], false),
         route('projects.view', [$project, 'alerts'], false),
+        // Fleet views (#19, #20, #23) over the seeded report.
+        route('fleet.show', absolute: false),
+        route('fleet.view', 'advisories', false),
+        route('fleet.view', 'eol', false),
         route('project.integrations.edit', absolute: false),
         route('profile.edit', absolute: false),
         route('appearance.edit', absolute: false),

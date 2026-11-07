@@ -70,6 +70,7 @@
         "platform": "Piattaforma",
         "dashboard": "Dashboard",
         "projects": "Progetti",
+        "fleet": "Flotta",
         "assistant": "Assistente",
         "activityLog": "Activity Log",
         "users": "Utenti",
@@ -295,6 +296,7 @@
             "modules": {
                 "dashboard": "Dashboard",
                 "projects": "Progetti",
+                "fleet": "Flotta",
                 "assistant": "Assistente",
                 "files": "File",
                 "collections": "Collezioni",
@@ -1544,5 +1546,70 @@
         "inventoryTitle": "Inventario",
         "fleetTitle": "Licenze da rivedere",
         "fleetDescription": "Licenze vietate, copyleft forte e sconosciute negli ultimi report, con i progetti che le usano."
+    },
+    "fleet": {
+        "title": "Flotta",
+        "project": "Progetto",
+        "status": "Stato",
+        "views": {
+            "label": "Viste della flotta",
+            "readiness": "Prontezza upgrade",
+            "advisories": "Esposizione advisory",
+            "eol": "Calendario EOL"
+        },
+        "empty": {
+            "title": "Nessun progetto",
+            "description": "Registra un progetto e invia il primo report per vederlo qui."
+        },
+        "readiness": {
+            "description": "Dai blocchi alla prossima major dell'ultimo report di ogni progetto: un progetto può passare quando nessuna dipendenza diretta blocca la prossima major di Laravel.",
+            "target": "Laravel {{major}}",
+            "canMove": "{{ready}} progetti su {{total}} possono passare a Laravel {{major}} oggi",
+            "unknownDescription": "Nessun report, Laravel non bloccato nel lock o controllo dei blocchi non eseguito.",
+            "blockers": "Pacchetti bloccanti",
+            "preReleaseOnly": "Solo pre-release",
+            "uncheckedPackages_one": "{{count}} pacchetto privato non controllato",
+            "uncheckedPackages_other": "{{count}} pacchetti privati non controllati",
+            "planLink_one": "Piano di upgrade ({{count}} passo)",
+            "planLink_other": "Piano di upgrade ({{count}} passi)",
+            "status": {
+                "ready": "Pronto per Laravel {{major}}",
+                "blocked": "Bloccato per Laravel {{major}}",
+                "unknown": "Sconosciuto"
+            }
+        },
+        "advisories": {
+            "description": "Pacchetti con advisory note, abbandonati o non aggiornati, e i progetti che li usano, dall'ultimo report di ogni progetto.",
+            "search": "Pacchetto o id advisory",
+            "kindLabel": "Filtra per tipo",
+            "allKinds": "Tutti i tipi",
+            "kind": {
+                "advisory": "Advisory",
+                "abandoned": "Abbandonato",
+                "stale": "Non aggiornato"
+            },
+            "ecosystem": {
+                "composer": "Composer",
+                "npm": "npm"
+            },
+            "package": "Pacchetto",
+            "advisory": "Advisory",
+            "projects": "Progetti: installata → corretta",
+            "replacement": "Sostituisci con {{package}}",
+            "emptyTitle": "Nessun pacchetto esposto",
+            "emptyDescription": "Nessun ultimo report ha advisory note, pacchetti abbandonati o non aggiornati.",
+            "noMatchTitle": "Nessun pacchetto corrispondente",
+            "noMatchDescription": "Prova un altro nome di pacchetto o id advisory."
+        },
+        "eol": {
+            "description": "Finestre di supporto di PHP, Laravel e Node di ogni progetto, dalla scadenza più vicina.",
+            "active": "Supporto attivo",
+            "security": "Supporto di sicurezza",
+            "today": "Oggi",
+            "activeUntil": "Attivo fino al",
+            "timeline": "Linea temporale",
+            "emptyTitle": "Nessuna data di supporto",
+            "emptyDescription": "Nessun ultimo report ha ancora date di supporto per PHP, Laravel o Node."
+        }
     }
 }

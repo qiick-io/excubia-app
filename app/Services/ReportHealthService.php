@@ -22,6 +22,18 @@ class ReportHealthService
     private const STATUS_RANK = ['fail' => 0, 'warn' => 1, 'pass' => 2, 'skipped' => 3];
 
     /**
+     * The package checks of the advisory exposure (#20): check id => [kind, ecosystem].
+     *
+     * @var array<string, array{0: 'advisory'|'abandoned'|'stale', 1: 'composer'|'npm'}>
+     */
+    private const PACKAGE_RISK_CHECKS = [
+        'composer-advisories' => ['advisory', 'composer'],
+        'npm-advisories' => ['advisory', 'npm'],
+        'composer-abandoned' => ['abandoned', 'composer'],
+        'composer-stale' => ['stale', 'composer'],
+    ];
+
+    /**
      * @param  array<string, mixed>  $report
      * @return array{groups: list<array<string, mixed>>, infrastructure: array<string, mixed>, outdated: array<string, array{patch: int, minor: int, major: int}|null>, licenses: array<string, mixed>|null}
      */
@@ -93,6 +105,132 @@ class ReportHealthService
 
         $kindRank = ['denied' => 0, 'copyleft' => 1, 'unknown' => 2];
         usort($rows, fn (array $first, array $second): int => [$kindRank[$first['kind']], $first['package']] <=> [$kindRank[$second['kind']], $second['package']]);
+
+        return $rows;
+    }
+
+    /**
+     * The report's `project` block (excubia-core 1.0), per runtime, versions without a leading
+     * "v". Its support dates are the ones php-eol, laravel-eol and node-eol fetched (core #123),
+     * present also when those checks pass; a runtime the project does not declare is left out.
+     *
+     * @param  array<string, mixed>  $report
+     * @return array<string, array{version: string|null, cycle: string|null, securitySupportEndsOn: string|null, activeSupportEndsOn: string|null}>
+     */
+    public function runtimes(array $report): array
+    {
+        $project = $report['project'] ?? null;
+        $runtimes = [];
+
+        if (! is_array($project)) {
+            return $runtimes;
+        }
+
+        foreach (['php', 'laravel', 'node'] as $name) {
+            $entry = $project[$name] ?? null;
+
+            if (! is_array($entry)) {
+                continue;
+            }
+
+            $runtimes[$name] = [
+                'version' => is_string($entry['version'] ?? null) ? ltrim($entry['version'], 'vV') : null,
+                'cycle' => is_string($entry['cycle'] ?? null) ? $entry['cycle'] : null,
+                'securitySupportEndsOn' => is_string($entry['securitySupportEndsOn'] ?? null) ? $entry['securitySupportEndsOn'] : null,
+                'activeSupportEndsOn' => is_string($entry['activeSupportEndsOn'] ?? null) ? $entry['activeSupportEndsOn'] : null,
+            ];
+        }
+
+        return $runtimes;
+    }
+
+    /**
+     * Whether the project can move to the next Laravel major today (#19), from its
+     * `laravel-next-blocker` findings: ready when no direct dependency blocks the target major,
+     * blocked otherwise (a package whose only release allowing it is a pre-release warns and
+     * still blocks), unknown when the check did not run or was skipped (Laravel not locked,
+     * Packagist down). Private packages are never sent to Packagist: they are counted, not checked.
+     *
+     * @param  array<string, mixed>  $report
+     * @return array{laravelVersion: string|null, targetMajor: int|null, status: 'ready'|'blocked'|'unknown', blockers: list<array{package: string, lockedVersion: string, isPreReleaseOnly: bool}>, uncheckedPackages: int}
+     */
+    public function upgradeReadiness(array $report): array
+    {
+        $laravelVersion = $this->runtimes($report)['laravel']['version'] ?? null;
+        $targetMajor = $laravelVersion !== null && preg_match('/^(\d+)/', $laravelVersion, $matches) === 1 ? (int) $matches[1] + 1 : null;
+        $check = collect($this->checks($report))->firstWhere('checkId', 'laravel-next-blocker');
+        $isSkipped = $check === null;
+        $blockers = [];
+        $uncheckedPackages = 0;
+
+        foreach ($check['findings'] ?? [] as $finding) {
+            $details = $this->details($finding);
+            $status = $finding['status'] ?? null;
+
+            if ($status === 'skipped') {
+                // The private packages row carries a count; any other skipped row means the check did not run.
+                $isSkipped = $isSkipped || ! is_int($details['count'] ?? null);
+                $uncheckedPackages += (int) ($details['count'] ?? 0);
+
+                continue;
+            }
+
+            if (! in_array($status, ['warn', 'fail'], true)) {
+                continue;
+            }
+
+            $targetMajor = is_int($details['targetMajor'] ?? null) ? $details['targetMajor'] : $targetMajor;
+            $blockers[] = [
+                'package' => (string) ($details['package'] ?? $finding['subject'] ?? ''),
+                'lockedVersion' => (string) ($details['lockedVersion'] ?? ''),
+                'isPreReleaseOnly' => $status === 'warn',
+            ];
+        }
+
+        usort($blockers, fn (array $first, array $second): int => [$first['isPreReleaseOnly'], $first['package']] <=> [$second['isPreReleaseOnly'], $second['package']]);
+
+        return [
+            'laravelVersion' => $laravelVersion,
+            'targetMajor' => $targetMajor,
+            'status' => match (true) {
+                $isSkipped || $targetMajor === null => 'unknown',
+                $blockers === [] => 'ready',
+                default => 'blocked',
+            },
+            'blockers' => $blockers,
+            'uncheckedPackages' => $uncheckedPackages,
+        ];
+    }
+
+    /**
+     * The package findings that warn or fail (#20): known advisories (Composer and npm),
+     * abandoned and stale Composer packages, each with its locked and fixed versions.
+     *
+     * @param  array<string, mixed>  $report
+     * @return list<array{checkId: string, kind: 'advisory'|'abandoned'|'stale', ecosystem: 'composer'|'npm', package: string, advisoryId: string|null, lockedVersion: string, fixedVersions: list<string>, replacement: string|null, severity: string, evidenceUrl: string|null}>
+     */
+    public function packageRisks(array $report): array
+    {
+        $rows = [];
+
+        foreach (self::PACKAGE_RISK_CHECKS as $checkId => [$kind, $ecosystem]) {
+            foreach ($this->findings($report, $checkId) as $finding) {
+                $details = $this->details($finding);
+
+                $rows[] = [
+                    'checkId' => $checkId,
+                    'kind' => $kind,
+                    'ecosystem' => $ecosystem,
+                    'package' => (string) ($details['package'] ?? $finding['subject'] ?? ''),
+                    'advisoryId' => isset($finding['advisoryId']) ? (string) $finding['advisoryId'] : null,
+                    'lockedVersion' => ltrim((string) ($details['lockedVersion'] ?? ''), 'vV'),
+                    'fixedVersions' => array_values(array_filter((array) ($details['fixedVersions'] ?? []), 'is_string')),
+                    'replacement' => is_string($details['replacement'] ?? null) ? $details['replacement'] : null,
+                    'severity' => (SeverityEnum::tryFrom((string) ($finding['severity'] ?? '')) ?? SeverityEnum::Info)->value,
+                    'evidenceUrl' => is_string($finding['evidenceUrl'] ?? null) ? $finding['evidenceUrl'] : null,
+                ];
+            }
+        }
 
         return $rows;
     }
