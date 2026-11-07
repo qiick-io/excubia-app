@@ -32,7 +32,8 @@ Route::get('setup', [SetupController::class, 'show'])->name('setup.show');
 Route::post('setup/admin', [SetupController::class, 'storeAdmin'])->middleware('throttle:6,1')->name('setup.admin.store');
 Route::post('setup/project', [SetupController::class, 'storeProject'])->middleware(['auth', 'verified'])->name('setup.project.store');
 
-Route::middleware('guest')->group(function () {
+// Each callback makes token and userinfo calls to the IdP (#154).
+Route::middleware(['guest', 'throttle:10,1'])->group(function () {
     Route::get('auth/oidc/redirect', [OidcController::class, 'redirect'])->name('auth.oidc.redirect');
     Route::get('auth/oidc/callback', [OidcController::class, 'callback'])->name('auth.oidc.callback');
 });

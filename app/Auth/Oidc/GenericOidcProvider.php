@@ -13,6 +13,9 @@ use Laravel\Socialite\Two\User;
 /**
  * Generic OpenID Connect Socialite driver built from the issuer's discovery endpoints.
  * Copied from qiick-io/externa-core until Signaculum SSO exists.
+ *
+ * PKCE (S256) is always on (#154, OAuth 2.0 Security BCP): Socialite sends `code_challenge`
+ * with the authorization request and the session's `code_verifier` with the token exchange.
  */
 class GenericOidcProvider extends AbstractProvider implements ProviderInterface
 {
@@ -20,6 +23,8 @@ class GenericOidcProvider extends AbstractProvider implements ProviderInterface
 
     /** @var list<string> */
     protected $scopes = ['openid', 'profile', 'email'];
+
+    protected $usesPKCE = true;
 
     /**
      * @param  array<string, mixed>  $guzzle
