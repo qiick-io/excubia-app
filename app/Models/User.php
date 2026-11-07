@@ -30,6 +30,8 @@ use Spatie\Permission\Traits\HasRoles;
  * @property bool $is_active
  * @property string $locale
  * @property bool $has_weekly_digest weekly email digest (#114)
+ * @property bool $has_alert_emails alert emails (#22)
+ * @property array<string, mixed>|null $alert_email_filters see AlertFilterData
  * @property string|null $two_factor_secret
  * @property string|null $two_factor_recovery_codes
  * @property Carbon|null $two_factor_confirmed_at
@@ -90,6 +92,8 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
             'password' => 'hashed',
             'is_active' => 'boolean',
             'has_weekly_digest' => 'boolean',
+            'has_alert_emails' => 'boolean',
+            'alert_email_filters' => 'array',
             'two_factor_confirmed_at' => 'datetime',
         ];
     }

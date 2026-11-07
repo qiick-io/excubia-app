@@ -54,6 +54,9 @@ enum PermissionEnum: string
     // System health page (#117)
     case CanShowSystem = 'can-show-system';
 
+    // Alerts (#22): Settings → Integrations, default severities, mutes and maintenance windows
+    case CanManageAlerts = 'can-manage-alerts';
+
     // AI
     case CanUseAi = 'can-use-ai';
 

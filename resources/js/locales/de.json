@@ -226,7 +226,12 @@
             "unverified": "Ihre E-Mail-Adresse ist nicht bestätigt.",
             "resend": "Hier klicken, um die Bestätigungs-E-Mail erneut zu senden.",
             "linkSent": "Ein neuer Bestätigungslink wurde an Ihre E-Mail-Adresse gesendet.",
-            "weeklyDigest": "Wöchentliche E-Mail-Zusammenfassung senden (neue Befunde, Regressionen, EOL, häufigste Exceptions, Schedule-Probleme)"
+            "weeklyDigest": "Wöchentliche E-Mail-Zusammenfassung senden (neue Befunde, Regressionen, EOL, häufigste Exceptions, Schedule-Probleme)",
+            "alertsTitle": "Alarm-E-Mails",
+            "alertsDescription": "Erhalte eine E-Mail, wenn eine Warnung auslöst, die dich interessiert, für die Projekte, die du sehen darfst.",
+            "alertsEnabled": "Alarm-E-Mails an mich senden",
+            "alertsTest": "Test-E-Mail senden",
+            "alertsTestHint": "Zuerst speichern. Die Mail geht an deine Adresse und benötigt einen Queue-Worker."
         },
         "security": {
             "breadcrumb": "Sicherheitseinstellungen",
@@ -425,7 +430,7 @@
             "webhookTitle": "Ausgehende Webhooks",
             "webhookDescription": "Signierte Warnungen an deinen Endpunkt senden, wenn sich ein Projekt ändert",
             "webhookUrl": "Webhook-URL",
-            "webhookUrlHint": "Nur HTTPS. Leer lassen zum Deaktivieren. Erhält alle Ereignisse. Benötigt einen Queue-Worker.",
+            "webhookUrlHint": "Nur HTTPS. Leer lassen zum Deaktivieren. Benötigt einen Queue-Worker.",
             "webhookSecret": "Webhook-Geheimnis",
             "webhookSecretHint": "Für die HMAC-SHA256-Signatur (X-Excubia-Signature von \"timestamp.body\"). Leer lassen, um das aktuelle zu behalten.",
             "generateSecret": "Geheimnis erzeugen",
@@ -436,11 +441,11 @@
             "lastError": "Letzte fehlgeschlagene Zustellung",
             "deliveryNone": "Noch keine.",
             "notifiersTitle": "Ausgehende Benachrichtigungen (Slack & Telegram)",
-            "notifiersDescription": "Optionale lesbare Warnungen für die gewählten Ereignisse. Nur ausgehend.",
-            "eventTypes": "Bei diesen Ereignissen benachrichtigen",
-            "eventTypesHint": "Slack und Telegram senden nur diese Ereignisse; der Webhook erhält alle. Der Test funktioniert immer.",
+            "notifiersDescription": "Optionale lesbare Warnungen. Jeder Kanal hat seinen eigenen Mindestschweregrad, seine Ereignisse und Projekte. Nur ausgehend.",
+            "eventTypes": "Ereignisse",
+            "eventTypesHint": "Nur diese Ereignisse werden hierher gesendet. Der Test funktioniert immer.",
             "minimumSeverity": "Mindestschweregrad",
-            "minimumSeverityHint": "Slack und Telegram überspringen Warnungen unter diesem Schweregrad.",
+            "minimumSeverityHint": "Warnungen unter diesem Schweregrad werden hier nicht gesendet.",
             "slackUrl": "Slack-Incoming-Webhook-URL",
             "slackUrlHint": "https://hooks.slack.com/services/… Leer lassen zum Deaktivieren.",
             "sendTestSlack": "Slack-Test senden",
@@ -475,7 +480,14 @@
             "cacheHitRatioHint": "Alarm, wenn ein Cache-Store bei mindestens 100 Zugriffen in der letzten Stunde weniger als diesen Anteil trifft.",
             "logSpike": "Fehler-Logeinträge pro Kanal und Stunde",
             "logSpikeHint": "Alarm, wenn ein Log-Kanal in der letzten Stunde mindestens so viele Einträge der Stufen error, critical, alert oder emergency schreibt.",
-            "deliveryFailures": "Alarm bei fehlgeschlagenen Mails oder Benachrichtigungen"
+            "deliveryFailures": "Alarm bei fehlgeschlagenen Mails oder Benachrichtigungen",
+            "projects": "Projekte",
+            "projectsHint": "Alle Kästchen leer lassen, um die Warnungen aller Projekte zu senden.",
+            "emailTitle": "E-Mail",
+            "emailDescription": "Jede Person, die Projekte sehen darf, schaltet Alarm-E-Mails in ihrem Profil selbst ein, mit eigenem Mindestschweregrad, eigenen Ereignissen und Projekten. Die Mails nutzen die Mail-Einstellungen der App und benötigen einen Queue-Worker.",
+            "emailLink": "Profil öffnen",
+            "severitiesTitle": "Standard-Schweregrade",
+            "severitiesDescription": "Der Schweregrad jedes Ereignisses, das ihn nicht von einem Befund übernimmt. Der Mindestschweregrad jedes Kanals und Abos wird damit verglichen."
         }
     },
     "activityLog": {
@@ -1189,7 +1201,8 @@
         "channel": {
             "webhook": "Webhook",
             "slack": "Slack",
-            "telegram": "Telegram"
+            "telegram": "Telegram",
+            "email": "E-Mail"
         },
         "delivery": {
             "queued": "wartend",

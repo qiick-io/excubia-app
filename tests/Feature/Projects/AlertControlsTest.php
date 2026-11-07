@@ -257,8 +257,11 @@ it('shows the history, mutes and windows on the Alerts tab', function () {
 });
 
 it('saves the runtime alert rules in Settings → Integrations', function () {
+    $filter = ['minimum_severity' => 'high', 'event_types' => ['finding.new']];
+    $channels = ['channels' => ['webhook' => $filter, 'slack' => $filter, 'telegram' => $filter]];
+
     $this->actingAs(controlsAdmin())->put(route('project.integrations.update'), [
-        'notifier_minimum_severity' => 'high',
+        ...$channels,
         'alert_cache_hit_ratio_below' => '80',
         'alert_delivery_failures_enabled' => '1',
         'alert_log_spike_per_hour' => '',
@@ -274,7 +277,7 @@ it('saves the runtime alert rules in Settings → Integrations', function () {
             ->where('project.alert_cache_hit_ratio_below', 80)
             ->where('events', fn ($events): bool => collect($events)->contains('runtime.log_spike')));
 
-    $this->actingAs(controlsAdmin())->put(route('project.integrations.update'), ['notifier_minimum_severity' => 'high', 'alert_cache_hit_ratio_below' => '150'])
+    $this->actingAs(controlsAdmin())->put(route('project.integrations.update'), [...$channels, 'alert_cache_hit_ratio_below' => '150'])
         ->assertSessionHasErrors('alert_cache_hit_ratio_below');
 });
 

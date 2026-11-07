@@ -14,5 +14,17 @@
     "Scheduler down": "Scheduler ausgefallen",
     "You get this email because the weekly digest is on in your profile settings.": "Du erhältst diese E-Mail, weil die wöchentliche Zusammenfassung in deinen Profileinstellungen aktiv ist.",
     "Finding dismissed.": "Befund ausgeblendet.",
-    "Dismissal removed.": "Ausblendung aufgehoben."
+    "Dismissal removed.": "Ausblendung aufgehoben.",
+    "Event": "Ereignis",
+    "Severity": "Schweregrad",
+    "Critical": "Kritisch",
+    "High": "Hoch",
+    "Medium": "Mittel",
+    "Low": "Niedrig",
+    "Info": "Info",
+    "Open in :app": "In :app öffnen",
+    "You get this email because alert emails are on in your profile settings.": "Du erhältst diese E-Mail, weil Alarm-E-Mails in deinen Profileinstellungen aktiv sind.",
+    "Alert emails saved.": "Alarm-E-Mails gespeichert.",
+    "Test email queued. It needs a queue worker.": "Test-E-Mail eingereiht. Dafür braucht es einen Queue-Worker.",
+    "Verify your email address first.": "Bestätige zuerst deine E-Mail-Adresse."
 }

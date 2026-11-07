@@ -226,7 +226,12 @@
             "unverified": "Your email address is unverified.",
             "resend": "Click here to resend the verification email.",
             "linkSent": "A new verification link has been sent to your email address.",
-            "weeklyDigest": "Send me a weekly email digest (new findings, regressions, EOL, top exceptions, schedule problems)"
+            "weeklyDigest": "Send me a weekly email digest (new findings, regressions, EOL, top exceptions, schedule problems)",
+            "alertsTitle": "Alert emails",
+            "alertsDescription": "Get an email when an alert you care about fires, for the projects you can see.",
+            "alertsEnabled": "Send me alert emails",
+            "alertsTest": "Send test email",
+            "alertsTestHint": "Save first. The mail goes to your address and needs a queue worker."
         },
         "security": {
             "breadcrumb": "Security settings",
@@ -425,7 +430,7 @@
             "webhookTitle": "Outbound webhooks",
             "webhookDescription": "Send signed alerts to your endpoint when a project changes",
             "webhookUrl": "Webhook URL",
-            "webhookUrlHint": "HTTPS only. Leave empty to disable. Receives every event. Requires a queue worker.",
+            "webhookUrlHint": "HTTPS only. Leave empty to disable. Requires a queue worker.",
             "webhookSecret": "Webhook secret",
             "webhookSecretHint": "Used for the HMAC-SHA256 signature (X-Excubia-Signature of \"timestamp.body\"). Leave blank to keep the current secret.",
             "generateSecret": "Generate secret",
@@ -436,11 +441,11 @@
             "lastError": "Last failed delivery",
             "deliveryNone": "None yet.",
             "notifiersTitle": "Outbound notifiers (Slack & Telegram)",
-            "notifiersDescription": "Optional human-readable alerts for the chosen events. Outbound only.",
-            "eventTypes": "Notify on these events",
-            "eventTypesHint": "Slack and Telegram only send these events; the webhook gets every event. Send test always works.",
+            "notifiersDescription": "Optional human-readable alerts. Each channel has its own minimum severity, events and projects. Outbound only.",
+            "eventTypes": "Events",
+            "eventTypesHint": "Only these events are sent here. Send test always works.",
             "minimumSeverity": "Minimum severity",
-            "minimumSeverityHint": "Slack and Telegram skip alerts below this severity.",
+            "minimumSeverityHint": "Alerts below this severity are not sent here.",
             "slackUrl": "Slack incoming webhook URL",
             "slackUrlHint": "https://hooks.slack.com/services/… Leave empty to disable.",
             "sendTestSlack": "Send Slack test",
@@ -475,7 +480,14 @@
             "cacheHitRatioHint": "Alert when a cache store hits less than this share of at least 100 lookups in the last hour.",
             "logSpike": "Error-log entries per channel and hour",
             "logSpikeHint": "Alert when a log channel writes at least this many error, critical, alert or emergency entries in the last hour.",
-            "deliveryFailures": "Alert when mails or notifications fail"
+            "deliveryFailures": "Alert when mails or notifications fail",
+            "projects": "Projects",
+            "projectsHint": "Leave every box empty to send the alerts of every project.",
+            "emailTitle": "Email",
+            "emailDescription": "Every user who can see projects turns alert emails on for themselves in their profile, with their own minimum severity, events and projects. Mails use the app's mail settings and need a queue worker.",
+            "emailLink": "Open your profile",
+            "severitiesTitle": "Default severities",
+            "severitiesDescription": "The severity of each event that does not take one from a finding. The minimum severity of every channel and subscription is compared with it."
         }
     },
     "activityLog": {
@@ -1189,7 +1201,8 @@
         "channel": {
             "webhook": "Webhook",
             "slack": "Slack",
-            "telegram": "Telegram"
+            "telegram": "Telegram",
+            "email": "Email"
         },
         "delivery": {
             "queued": "queued",

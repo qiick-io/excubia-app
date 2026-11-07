@@ -21,6 +21,10 @@ return new class extends Migration
             $table->string('locale')->default('en');
             // Weekly email digest (#114), opt-in from Settings → Profile.
             $table->boolean('has_weekly_digest')->default(false);
+            // Alert emails (#22), opt-in from Settings → Profile, with the user's own filters
+            // (AlertFilterData: minimum severity, event types, projects).
+            $table->boolean('has_alert_emails')->default(false);
+            $table->json('alert_email_filters')->nullable();
             $table->timestamp('email_verified_at')->nullable();
             // Null for accounts that only sign in through OIDC.
             $table->string('password')->nullable();
