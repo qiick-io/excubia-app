@@ -86,6 +86,21 @@ function seededA11yProject(): Project
         'max_ms' => 800,
     ]);
 
+    // Live health strip of the overview (#115): a failing check and a stale server.
+    foreach ([['web-1', 'laravel-database', 'fail', 1], ['worker-1', 'laravel-database', 'pass', 20], ['web-1', 'laravel-cache', 'pass', 1]] as [$server, $checkId, $status, $minutesAgo]) {
+        RuntimeAggregate::query()->create([
+            'project_id' => $project->id,
+            'type' => 'health',
+            'bucket' => $now->copy()->subMinutes($minutesAgo)->startOfMinute(),
+            'sample_rate' => 1,
+            'dimension_key' => hash('sha256', $server.$checkId),
+            'dimensions' => ['server' => $server, 'checkId' => $checkId],
+            'count' => 1,
+            'error_count' => $status === 'fail' ? 1 : 0,
+            'metrics' => ['status' => $status, 'severity' => $status === 'fail' ? 'critical' : 'info', 'findingCount' => $status === 'fail' ? 1 : 0, 'fingerprints' => []],
+        ]);
+    }
+
     ExceptionGroup::query()->create([
         'project_id' => $project->id,
         'fingerprint' => str_repeat('a', 64),

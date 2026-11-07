@@ -15,6 +15,7 @@ use App\Jobs\RunSystemReportJob;
 use App\Models\ExceptionGroup;
 use App\Models\Project;
 use App\Services\FixSuggestionService;
+use App\Services\HealthStatusService;
 use App\Services\ProjectAlertsService;
 use App\Services\ProjectRuntimeService;
 use App\Services\ProjectTelemetryService;
@@ -81,6 +82,8 @@ class ProjectReportController extends Controller
             // The issues in page order with their check group, and the health summary (#108, #109).
             'issues' => $project->latestReport === null ? [] : $findings->prioritized($project->latestReport),
             'health' => $project->latestReport === null ? null : $health->summary($project->latestReport->report),
+            // Minute-level status per check and server (#115), on the overview, which polls it.
+            'liveHealth' => fn (): array => $view === null ? app(HealthStatusService::class)->forPage($project, $now) : [],
             'range' => $range->value,
             'runtime' => $runtime->summary($project, $range),
             'exceptions' => $telemetry->exceptions($project, $view === 'exceptions' ? $range : null, $now),

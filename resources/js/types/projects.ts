@@ -33,6 +33,25 @@ export type Severity = 'critical' | 'high' | 'medium' | 'low' | 'info';
 
 export type CheckStatus = 'pass' | 'warn' | 'fail' | 'skipped';
 
+/**
+ * One check of the minute-level health samples (#115, `HealthStatusService::forPage()`): the
+ * worst of its servers' latest readings, and each server with its last sample time.
+ */
+export type LiveHealthCheck = {
+    checkId: string;
+    status: CheckStatus;
+    severity: Severity;
+    findingCount: number;
+    lastSampleAt: string;
+    servers: {
+        server: string;
+        status: CheckStatus;
+        lastSampleAt: string;
+        /** No sample for five minutes: the scheduler or the push may be down. */
+        isStale: boolean;
+    }[];
+};
+
 /** One row of `App\Http\Resources\HealthReportResource`. */
 export type HealthReportSummary = {
     id: number;

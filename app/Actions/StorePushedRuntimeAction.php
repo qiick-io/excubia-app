@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\DB;
  * skipped and counted on the project (`skipped_runtime_aggregates`), so a newer core never loses
  * the rest of its batch. A repeated `batchId` stores nothing and returns false. The same
  * transaction adds the entries to their hourly rollups (#137), which the dashboard totals read.
+ * After a new batch with `health` samples (#115) the health alerts are evaluated.
  *
  * ponytail: one read and one write per aggregate inside the transaction; batch the upserts if
  * large fleets push thousands of series a minute.
@@ -31,6 +32,7 @@ class StorePushedRuntimeAction
     public function __construct(
         private StoreScheduledTaskRunsAction $scheduledTaskRuns,
         private StoreRuntimeRollupsAction $rollups,
+        private EvaluateHealthAlertsAction $healthAlerts,
     ) {}
 
     /**
@@ -41,7 +43,7 @@ class StorePushedRuntimeAction
     public function execute(Project $project, string $batchId, array $aggregates, ?string $release = null): bool
     {
         try {
-            return DB::transaction(function () use ($project, $batchId, $aggregates, $release): bool {
+            $isNew = DB::transaction(function () use ($project, $batchId, $aggregates, $release): bool {
                 PushedBatch::query()->create(['project_id' => $project->id, 'type' => 'runtime', 'batch_id' => $batchId, 'received_at' => Date::now()]);
                 $skipped = 0;
                 $minutes = [];
@@ -73,6 +75,13 @@ class StorePushedRuntimeAction
         } catch (UniqueConstraintViolationException) {
             return false;
         }
+
+        // Health samples (#115) move the project's live status and may alert, once committed.
+        if (in_array(RuntimeTypeEnum::Health->value, array_column($aggregates, 'type'), true)) {
+            $this->healthAlerts->execute($project);
+        }
+
+        return $isNew;
     }
 
     /**
@@ -150,10 +159,11 @@ class StorePushedRuntimeAction
 
     /**
      * The type-specific metrics of an entry: numbers or null, `isContainer` a boolean (missing
-     * is false). Null for a type without any.
+     * is false), the health `status` and `severity` strings and `fingerprints` a sorted list.
+     * Null for a type without any.
      *
      * @param  array<string, mixed>  $aggregate
-     * @return array<string, int|float|bool|null>|null
+     * @return array<string, mixed>|null
      */
     private function metrics(RuntimeTypeEnum $type, array $aggregate): ?array
     {
@@ -163,6 +173,8 @@ class StorePushedRuntimeAction
             $value = $aggregate[$metric] ?? null;
             $metrics[$metric] = match (true) {
                 $merge === 'or' => (bool) $value,
+                $merge === 'status', $merge === 'severity' => is_string($value) ? $value : null,
+                $merge === 'union' => $type->mergeMetrics([], [$metric => $value])[$metric],
                 is_int($value), is_float($value) => $value,
                 is_numeric($value) => (float) $value,
                 default => null,
