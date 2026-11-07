@@ -165,3 +165,38 @@ export type ExceptionGroupRow = {
     resolved_at: string | null;
     fix: { command: string | null; prompt: string };
 };
+
+/** Status of a scheduled task (#110), see `ScheduledTaskStatusEnum`. */
+export type ScheduledTaskStatus =
+    | 'pending'
+    | 'on_time'
+    | 'late'
+    | 'missed'
+    | 'failed'
+    | 'skipped'
+    | 'scheduler_down'
+    | 'not_expected'
+    | 'paused'
+    | 'unknown';
+
+/** A task of the project's schedule inventory with its status (#110). Times are ISO 8601 UTC. */
+export type ScheduledTaskRow = {
+    id: number;
+    task: string;
+    expression: string;
+    timezone: string;
+    environments: string[];
+    without_overlapping: boolean;
+    on_one_server: boolean;
+    runs_in_maintenance_mode: boolean;
+    late_after_minutes: number;
+    is_heartbeat: boolean;
+    status: ScheduledTaskStatus;
+    is_low_confidence: boolean;
+    last_due_at: string | null;
+    next_due_at: string | null;
+    last_run_at: string | null;
+    last_outcome: 'finished' | 'failed' | 'skipped' | null;
+    status_changed_at: string | null;
+    evaluated_at: string | null;
+};

@@ -11,6 +11,7 @@ use App\Http\Requests\UpdateExceptionStatusRequest;
 use App\Http\Resources\ExceptionGroupResource;
 use App\Http\Resources\HealthReportResource;
 use App\Http\Resources\ProjectResource;
+use App\Http\Resources\ScheduledTaskResource;
 use App\Jobs\RunSystemReportJob;
 use App\Models\ExceptionGroup;
 use App\Models\Project;
@@ -35,7 +36,7 @@ class ProjectReportController extends Controller
      *
      * @var list<string>
      */
-    public const VIEWS = ['findings', 'runtime', 'exceptions', 'plan', 'history'];
+    public const VIEWS = ['findings', 'runtime', 'exceptions', 'schedule', 'plan', 'history'];
 
     public function show(Request $request, Project $project, ReportFindingsService $findings, FixSuggestionService $fixes, ProjectRuntimeService $runtime, ?string $view = null): Response|RedirectResponse
     {
@@ -74,6 +75,8 @@ class ProjectReportController extends Controller
                     ->limit(100)
                     ->get(),
             )->resolve(),
+            // Schedule inventory and status (#110), only on its tab.
+            'schedule' => $view === 'schedule' ? ScheduledTaskResource::collection($project->scheduledTasks()->get())->resolve() : [],
             'canManageExceptions' => (bool) $request->user()?->can(PermissionEnum::CanManageExceptions->value),
             'reports' => HealthReportResource::collection(
                 $project->healthReports()->orderByDesc('received_at')->orderByDesc('id')->get(),

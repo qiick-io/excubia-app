@@ -7,6 +7,7 @@ use App\Enums\SeverityEnum;
 use App\Models\ExceptionGroup;
 use App\Models\Project;
 use App\Models\RuntimeAggregate;
+use App\Models\ScheduledTask;
 use App\Models\User;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Support\Str;
@@ -39,7 +40,8 @@ function visitA11y(string $path, string $mode): mixed
 }
 
 /**
- * A project with one report, runtime rows and an exception group, so every tab renders content.
+ * A project with one report, runtime rows, an exception group and scheduled tasks, so every tab
+ * renders content.
  */
 function seededA11yProject(): Project
 {
@@ -94,6 +96,19 @@ function seededA11yProject(): Project
         'status' => 'open',
     ]);
 
+    // The heartbeat missed shows the "scheduler down" alert on the Schedule tab (#110).
+    foreach ([[ScheduledTask::HEARTBEAT_TASK, '* * * * *', 'missed'], ['artisan reports:send', '0 3 * * *', 'scheduler_down']] as $position => [$task, $expression, $status]) {
+        ScheduledTask::query()->create([
+            'project_id' => $project->id,
+            'task_id' => hash('sha256', $task."\0".$expression),
+            'task' => $task,
+            'expression' => $expression,
+            'timezone' => 'Europe/Rome',
+            'environments' => ['production'],
+            'position' => $position,
+        ])->forceFill(['status' => $status, 'last_run_at' => $now->copy()->subHour(), 'last_outcome' => 'finished', 'next_due_at' => $now->copy()->addHour()])->save();
+    }
+
     return $project;
 }
 
@@ -116,6 +131,7 @@ it('has no critical or serious axe issues on the main authenticated pages in lig
         route('projects.show', $project, false),
         route('projects.view', [$project, 'runtime'], false),
         route('projects.view', [$project, 'exceptions'], false),
+        route('projects.view', [$project, 'schedule'], false),
         route('profile.edit', absolute: false),
         route('appearance.edit', absolute: false),
         route('project.edit', absolute: false),

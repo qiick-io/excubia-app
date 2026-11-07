@@ -423,7 +423,10 @@
                 "project.recovered": "The worst severity of the latest report is lower than before.",
                 "project.stale": "A project sent no report within the stale window.",
                 "project.reporting_again": "A stale project sends reports again.",
-                "project.token_changed": "A push token was rotated or revoked."
+                "project.token_changed": "A push token was rotated or revoked.",
+                "schedule.missed": "A scheduled task still had not run when its next due time came.",
+                "schedule.failed": "A run of a scheduled task failed.",
+                "schedule.scheduler_down": "The scheduler stopped: excubia:heartbeat did not run."
             }
         }
     },
@@ -664,7 +667,8 @@
             "plan": "Upgrade plan",
             "history": "History",
             "runtime": "Runtime",
-            "exceptions": "Exceptions"
+            "exceptions": "Exceptions",
+            "schedule": "Schedule"
         },
         "support": {
             "supported": "Supported",
@@ -886,6 +890,36 @@
         "resolve": "Resolve",
         "ignore": "Ignore",
         "reopen": "Reopen"
+    },
+    "schedule": {
+        "description": "The scheduled tasks of the latest report, each with its last run, next due time and status. Checked every minute against the runs pushed with runtime monitoring.",
+        "emptyTitle": "No scheduled tasks",
+        "emptyDescription": "Push with php artisan excubia:push to send the schedule, and turn on runtime monitoring to match each task with its runs.",
+        "guide": "Scheduled tasks guide",
+        "task": "Task",
+        "lastRun": "Last run",
+        "nextDue": "Next due",
+        "statusLabel": "Status",
+        "lowConfidence": "Low confidence: runs are sampled or the environment is unknown",
+        "schedulerDownTitle": "The scheduler is down",
+        "schedulerDownDescription": "excubia:heartbeat has not run since {{time}}, so no task runs.",
+        "outcome": {
+            "finished": "Finished",
+            "failed": "Failed",
+            "skipped": "Skipped"
+        },
+        "status": {
+            "pending": "Pending",
+            "on_time": "On time",
+            "late": "Late",
+            "missed": "Missed",
+            "failed": "Failed",
+            "skipped": "Skipped",
+            "scheduler_down": "Scheduler down",
+            "not_expected": "Other environment",
+            "paused": "Maintenance",
+            "unknown": "No run data"
+        }
     },
     "ai": {
         "fabDescription": "Quick assistant drawer. Open the full page for history.",

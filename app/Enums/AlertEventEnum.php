@@ -17,6 +17,9 @@ enum AlertEventEnum: string
     case ProjectStale = 'project.stale';
     case ProjectReportingAgain = 'project.reporting_again';
     case ProjectTokenChanged = 'project.token_changed';
+    case ScheduleMissed = 'schedule.missed';
+    case ScheduleFailed = 'schedule.failed';
+    case SchedulerDown = 'schedule.scheduler_down';
     case Ping = 'ping';
 
     /**
@@ -30,8 +33,8 @@ enum AlertEventEnum: string
     public function defaultSeverity(): SeverityEnum
     {
         return match ($this) {
-            self::ProjectStale => SeverityEnum::Medium,
-            self::FindingNew, self::ProjectWorsened => SeverityEnum::High,
+            self::ProjectStale, self::ScheduleMissed => SeverityEnum::Medium,
+            self::FindingNew, self::ProjectWorsened, self::ScheduleFailed, self::SchedulerDown => SeverityEnum::High,
             default => SeverityEnum::Info,
         };
     }
