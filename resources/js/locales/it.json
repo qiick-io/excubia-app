@@ -469,6 +469,8 @@
                 "runtime.cache_hit_ratio_low": "Uno store di cache ha un hit ratio sotto la soglia.",
                 "runtime.delivery_failed": "Un mailable o una notifica è fallito.",
                 "runtime.log_spike": "Un canale di log ha scritto più voci di errore della soglia.",
+                "eol.approaching": "Il supporto di sicurezza di PHP, Laravel o Node termina entro 90, 30 o 7 giorni (EXCUBIA_EOL_ALERT_DAYS). Una volta per soglia; alta a 7 giorni.",
+                "eol.reached": "Un progetto usa una versione di PHP, Laravel o Node il cui supporto di sicurezza è terminato.",
                 "infrastructure.failed": "Un controllo di database, storage o disco fallisce (nuovo, o al primo report). Inviato subito, critico.",
                 "health.failed": "Un controllo dei campioni di salute al minuto fallisce su un server per due letture di fila. Prende la gravità del finding; viene inviato di nuovo quando cambiano i finding falliti.",
                 "health.recovered": "Un controllo fallito dei campioni di salute non fallisce più su nessun server.",

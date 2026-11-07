@@ -469,6 +469,8 @@
                 "runtime.cache_hit_ratio_low": "Ein Cache-Store liegt unter der Trefferquote.",
                 "runtime.delivery_failed": "Ein Mailable oder eine Benachrichtigung ist fehlgeschlagen.",
                 "runtime.log_spike": "Ein Log-Kanal hat mehr Fehlereinträge als den Schwellwert geschrieben.",
+                "eol.approaching": "Der Sicherheitssupport von PHP, Laravel oder Node endet in 90, 30 oder 7 Tagen (EXCUBIA_EOL_ALERT_DAYS). Einmal pro Schwelle; hoch ab 7 Tagen.",
+                "eol.reached": "Ein Projekt nutzt eine PHP-, Laravel- oder Node-Version, deren Sicherheitssupport beendet ist.",
                 "infrastructure.failed": "Eine Datenbank-, Speicher- oder Festplattenprüfung schlägt fehl (neu oder im ersten Bericht). Sofort gesendet, kritisch.",
                 "health.failed": "Eine Prüfung der minütlichen Zustandsproben schlägt auf einem Server zweimal in Folge fehl. Übernimmt den Schweregrad des Befunds; erneut gesendet, wenn sich die fehlschlagenden Befunde ändern.",
                 "health.recovered": "Eine fehlschlagende Prüfung der Zustandsproben schlägt auf keinem Server mehr fehl.",

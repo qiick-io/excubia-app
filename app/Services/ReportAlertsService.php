@@ -23,6 +23,7 @@ use App\Models\Project;
  * the first report, alerts at once at critical, instead of as `finding.new`, unless a
  * `health.failed` of the same check and fingerprint just went out (#143). A check whose data
  * source failed in this report and not in the previous one raises `report.checks_skipped`.
+ * The end-of-life alerts of the report's runtimes (#157) follow, also on the first report.
  * All of a report's alerts go out as one message per Slack, Telegram and email channel.
  */
 class ReportAlertsService
@@ -33,11 +34,15 @@ class ReportAlertsService
     public function __construct(
         private AlertDispatcherService $alerts,
         private ReportFindingsService $findings,
+        private EolAlertsService $eol,
     ) {}
 
     public function afterReport(Project $project, HealthReport $report, ?HealthReport $previous, bool $wasStale, FindingChangesData $changes): void
     {
-        $this->alerts->grouped(fn () => $this->raise($project, $report, $previous, $wasStale, $changes));
+        $this->alerts->grouped(function () use ($project, $report, $previous, $wasStale, $changes): void {
+            $this->raise($project, $report, $previous, $wasStale, $changes);
+            $this->eol->evaluate($project, $report);
+        });
     }
 
     private function raise(Project $project, HealthReport $report, ?HealthReport $previous, bool $wasStale, FindingChangesData $changes): void

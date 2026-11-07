@@ -469,6 +469,8 @@
                 "runtime.cache_hit_ratio_low": "A cache store hits less than the threshold.",
                 "runtime.delivery_failed": "A mailable or notification failed.",
                 "runtime.log_spike": "A log channel wrote more error entries than the threshold.",
+                "eol.approaching": "PHP, Laravel or Node security support ends within 90, 30 or 7 days (EXCUBIA_EOL_ALERT_DAYS). Once per threshold; high at 7 days.",
+                "eol.reached": "A project runs a PHP, Laravel or Node version whose security support has ended.",
                 "infrastructure.failed": "A database, storage or disk check fails (new, or on the first report). Sent at once, critical.",
                 "health.failed": "A check of the minute-level health samples fails on a server for two readings in a row. Takes the finding's severity; sent again when the failing findings change.",
                 "health.recovered": "A failing check of the health samples no longer fails on any server.",
