@@ -10,7 +10,8 @@ use Illuminate\Support\Facades\Schema;
  * Runtime aggregates (#48) and exception groups (#49) pushed by excubia-core. `pushed_batches`
  * makes a repeated runtime or exceptions push idempotent. Aggregates are additive per type,
  * minute bucket, sample rate and dimensions; exception groups are additive per fingerprint
- * and environment.
+ * and environment, and `exception_occurrences` counts each group's occurrences per minute
+ * (#113) for its chart.
  */
 return new class extends Migration
 {
@@ -48,7 +49,9 @@ return new class extends Migration
             $table->timestamps();
 
             $table->unique(['project_id', 'type', 'bucket', 'sample_rate', 'dimension_key'], 'runtime_aggregates_identity');
-            $table->index(['project_id', 'type', 'bucket']);
+            // Covers the per-bucket sums of the charts and the dashboard (#113): MySQL and
+            // PostgreSQL read them from the index without visiting the rows.
+            $table->index(['project_id', 'type', 'bucket', 'sample_rate', 'count', 'error_count'], 'runtime_aggregates_buckets');
         });
 
         Schema::create('exception_groups', function (Blueprint $table): void {
@@ -77,10 +80,22 @@ return new class extends Migration
             $table->unique(['project_id', 'fingerprint', 'environment']);
             $table->index(['project_id', 'last_seen']);
         });
+
+        Schema::create('exception_occurrences', function (Blueprint $table): void {
+            $table->id();
+            $table->foreignId('project_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('exception_group_id')->constrained()->cascadeOnDelete();
+            $table->timestamp('bucket');
+            $table->unsignedBigInteger('count');
+
+            $table->unique(['exception_group_id', 'bucket']);
+            $table->index(['project_id', 'bucket']);
+        });
     }
 
     public function down(): void
     {
+        Schema::dropIfExists('exception_occurrences');
         Schema::dropIfExists('exception_groups');
         Schema::dropIfExists('runtime_aggregates');
         Schema::dropIfExists('pushed_batches');

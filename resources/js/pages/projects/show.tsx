@@ -47,6 +47,10 @@ import { ReleaseLabel, shortRelease } from '@/components/reports/release-label';
 import { RuntimeView } from '@/components/reports/runtime-view';
 import { ScheduleView } from '@/components/reports/schedule-view';
 import {
+    DEFAULT_TIME_RANGE,
+    TimeRangePicker,
+} from '@/components/reports/time-range-picker';
+import {
     RUNTIMES,
     runtimeLabel,
     RuntimeSupportBadge,
@@ -108,9 +112,12 @@ import type {
     ProjectRow,
     ReportFinding,
     ReportHealth,
+    RuntimeDeploy,
     RuntimeSummary,
     ScheduledTaskRow,
+    ScheduleTimelinePoint,
     Severity,
+    TimeRange,
 } from '@/types';
 
 const VIEWS = [
@@ -141,21 +148,31 @@ export default function ProjectShow({
     findingFixes = {},
     issues = [],
     health = null,
+    range = DEFAULT_TIME_RANGE,
     runtime = null,
     exceptions = [],
+    hasExceptions = false,
     schedule = [],
+    scheduleTimeline = [],
+    deploys = [],
     alerts = null,
     canManageAlerts = false,
     canManageExceptions = false,
     canRefreshReport = false,
 }: {
+    /** The time range of the runtime, exceptions and schedule tabs (#113). */
+    range?: TimeRange;
     /** Alert history, mutes and maintenance windows (#114), on the Alerts tab only. */
     alerts?: ProjectAlerts | null;
     canManageAlerts?: boolean;
     runtime?: RuntimeSummary | null;
     exceptions?: ExceptionGroupRow[];
+    hasExceptions?: boolean;
     /** Scheduled tasks and their status (#110), on the Schedule tab only. */
     schedule?: ScheduledTaskRow[];
+    scheduleTimeline?: ScheduleTimelinePoint[];
+    /** Deploys of the range, for the Exceptions and Schedule charts (#106). */
+    deploys?: RuntimeDeploy[];
     canManageExceptions?: boolean;
     canRefreshReport?: boolean;
     /** Ready command and prompt per finding, keyed by `checkId|subject|advisoryId` (#78). */
@@ -214,7 +231,13 @@ export default function ProjectShow({
             {view === 'findings' && report !== null ? (
                 <FindingsView issues={issues} fixes={findingFixes} />
             ) : view === 'schedule' ? (
-                <ScheduleView tasks={schedule} />
+                <ScheduleView
+                    slug={project.slug}
+                    tasks={schedule}
+                    timeline={scheduleTimeline}
+                    range={range}
+                    deploys={deploys}
+                />
             ) : view === 'alerts' && alerts !== null ? (
                 <AlertsView
                     projectId={project.id}
@@ -224,11 +247,26 @@ export default function ProjectShow({
             ) : view === 'exceptions' ? (
                 <ExceptionsView
                     projectId={project.id}
+                    slug={project.slug}
                     groups={exceptions}
+                    hasExceptions={hasExceptions}
+                    range={range}
+                    deploys={deploys}
                     canManage={canManageExceptions}
                 />
             ) : (
-                <PageLayout scrollContent>
+                <PageLayout
+                    scrollContent
+                    filtersRight={
+                        view === 'runtime' && runtime !== null ? (
+                            <TimeRangePicker
+                                slug={project.slug}
+                                view="runtime"
+                                range={range}
+                            />
+                        ) : undefined
+                    }
+                >
                     {view === 'history' ? (
                         <HistoryView reports={reports} />
                     ) : view === 'runtime' ? (

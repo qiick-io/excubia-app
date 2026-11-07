@@ -8,6 +8,7 @@ use App\Enums\ExceptionStatusEnum;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
@@ -33,6 +34,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $regressed_release release a resolved group came back in
  * @property ExceptionStatusEnum $status
  * @property Carbon|null $resolved_at
+ * @property int|null $range_count occurrences in the time range, when loaded (#113)
  */
 #[Fillable(['project_id', 'fingerprint', 'environment', 'class', 'message', 'frames', 'previous', 'context_kind', 'context_name', 'count', 'first_seen', 'last_seen', 'first_release', 'last_release', 'regressed_release', 'status', 'resolved_at'])]
 class ExceptionGroup extends Model
@@ -43,6 +45,16 @@ class ExceptionGroup extends Model
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
+    }
+
+    /**
+     * Occurrences per minute (#113).
+     *
+     * @return HasMany<ExceptionOccurrence, $this>
+     */
+    public function occurrences(): HasMany
+    {
+        return $this->hasMany(ExceptionOccurrence::class);
     }
 
     /**

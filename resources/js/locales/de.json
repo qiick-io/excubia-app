@@ -852,18 +852,15 @@
         "averageResponse": "Mittlere Antwortzeit",
         "slowestResponse": "Langsamste Antwort",
         "allRoutes": "Alle Routen",
-        "lastHours": "Letzte {{count}} Stunden",
-        "requestsPerHour": "Anfragen pro Stunde",
-        "requestsPerHourDescription": "Erfolgreiche Anfragen und Serverfehler (5xx), letzte 24 Stunden.",
         "successful": "Erfolgreich",
         "serverErrors": "5xx",
-        "chartLabel": "Gestapeltes Balkendiagramm der Anfragen pro Stunde: {{count}} Anfragen, {{errors}} Serverfehler in den letzten 24 Stunden.",
+        "chartLabel": "Gestapeltes Balkendiagramm der Anfragen {{bucket}}: {{count}} Anfragen, {{errors}} Serverfehler {{during}}.",
         "routes": "Routen",
         "outgoingHttp": "Ausgehendes HTTP",
         "slowQueries": "Langsame Abfragen",
         "jobs": "Jobs",
         "scheduledTasks": "Geplante Aufgaben",
-        "noData": "Keine Daten in den letzten 24 Stunden.",
+        "noData": "Keine Daten in diesem Zeitraum.",
         "name": "Name",
         "count": "Anzahl",
         "average": "Mittel",
@@ -906,9 +903,9 @@
         "notifications": "Benachrichtigungen",
         "sent": "Gesendet",
         "logLevels": "Logs",
-        "logLevelsDescription": "Log-Einträge pro Level und Kanal; das Diagramm zeigt Einträge ab Level error pro Stunde.",
+        "logLevelsDescription": "Log-Einträge pro Level und Kanal; das Diagramm zeigt Einträge ab Level error {{bucket}}.",
         "errorLogs": "Einträge ab Level error",
-        "logChartLabel": "Balkendiagramm der Log-Einträge ab Level error pro Stunde: {{count}} in den letzten 24 Stunden.",
+        "logChartLabel": "Balkendiagramm der Log-Einträge ab Level error {{bucket}}: {{count}} {{during}}.",
         "level": "Level",
         "channel": "Kanal",
         "unknownChannel": "unbekannt",
@@ -929,7 +926,9 @@
         "deploy": "Deploy",
         "deployMarkersHint": "Gestrichelte Linien markieren Deploys.",
         "deploysLabel_one": "{{count}} Deploy: {{releases}}.",
-        "deploysLabel_other": "{{count}} Deploys: {{releases}}."
+        "deploysLabel_other": "{{count}} Deploys: {{releases}}.",
+        "requestsOverTimeDescription": "Erfolgreiche Anfragen und Serverfehler (5xx) {{bucket}} {{during}}.",
+        "requestsOverTime": "Anfragen im Zeitverlauf"
     },
     "exceptions": {
         "emptyTitle": "Keine Exceptions",
@@ -968,7 +967,13 @@
         "reopen": "Wieder öffnen",
         "firstRelease": "Zuerst gesehen in Release",
         "lastRelease": "Zuletzt gesehen in Release",
-        "regressedIn": "Regression in {{release}}"
+        "regressedIn": "Regression in {{release}}",
+        "occurrences": "Vorkommen",
+        "occurrencesDescription": "Vorkommen {{bucket}} {{during}}, gezählt beim letzten Vorkommen jedes Pushs.",
+        "inRange": "Im Zeitraum",
+        "emptyRangeDescription": "Keine Exception-Gruppe wurde {{during}} gesehen. Wähle einen längeren Zeitraum für ältere Gruppen.",
+        "occurrencesChartLabel": "Balkendiagramm der Vorkommen {{bucket}}: {{count}} {{during}}.",
+        "emptyRangeTitle": "Keine Exceptions in diesem Zeitraum"
     },
     "schedule": {
         "description": "Die geplanten Aufgaben des letzten Berichts, jeweils mit letztem Lauf, nächster Fälligkeit und Status. Jede Minute mit den Läufen aus dem Runtime-Monitoring abgeglichen.",
@@ -998,7 +1003,12 @@
             "not_expected": "Andere Umgebung",
             "paused": "Wartung",
             "unknown": "Keine Laufdaten"
-        }
+        },
+        "runsOverTime": "Ausführungen im Zeitverlauf",
+        "runsOverTimeDescription": "Ausführungen aller geplanten Tasks pro Ergebnis {{bucket}} {{during}}.",
+        "runsSummary": "{{finished}} beendet · {{failed}} fehlgeschlagen · {{skipped}} übersprungen",
+        "runsChartLabel": "Gestapeltes Balkendiagramm der Task-Ausführungen {{bucket}}: {{finished}} beendet, {{failed}} fehlgeschlagen, {{skipped}} übersprungen {{during}}.",
+        "runs": "Ausführungen"
     },
     "ai": {
         "fabDescription": "Schnelle Assistenten-Schublade. Öffnen Sie die Vollseite für den Verlauf.",
@@ -1098,6 +1108,37 @@
             "5": "Fr",
             "6": "Sa",
             "7": "So"
+        }
+    },
+    "timeRange": {
+        "label": "Zeitraum",
+        "option": {
+            "1h": "1 Std.",
+            "6h": "6 Std.",
+            "24h": "24 Std.",
+            "7d": "7 T.",
+            "14d": "14 T."
+        },
+        "last": {
+            "1h": "Letzte Stunde",
+            "6h": "Letzte 6 Stunden",
+            "24h": "Letzte 24 Stunden",
+            "7d": "Letzte 7 Tage",
+            "14d": "Letzte 14 Tage"
+        },
+        "during": {
+            "1h": "in der letzten Stunde",
+            "6h": "in den letzten 6 Stunden",
+            "24h": "in den letzten 24 Stunden",
+            "7d": "in den letzten 7 Tagen",
+            "14d": "in den letzten 14 Tagen"
+        },
+        "bucket": {
+            "1h": "pro Minute",
+            "6h": "pro 10 Minuten",
+            "24h": "pro Stunde",
+            "7d": "pro 6 Stunden",
+            "14d": "pro Tag"
         }
     },
     "checks": {
