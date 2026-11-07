@@ -1539,5 +1539,48 @@
         "inventoryTitle": "Inventar",
         "fleetTitle": "Zu prüfende Lizenzen",
         "fleetDescription": "Verbotene, stark Copyleft- und unbekannte Lizenzen in den letzten Berichten, mit den Projekten, die sie nutzen."
+    },
+    "findings": {
+        "statusFilter": "Befundstatus",
+        "status": {
+            "open": "Offen",
+            "dismissed": "Ausgeblendet",
+            "resolved": "Behoben",
+            "all": "Alle"
+        },
+        "firstSeen": "Zuerst gesehen",
+        "lastSeen": "Zuletzt gesehen",
+        "fixedOn": "Behoben im Bericht vom {{date}}",
+        "reopened_one": "{{count}}-mal wieder aufgetreten",
+        "reopened_other": "{{count}}-mal wieder aufgetreten",
+        "notInLatest": "Seine Prüfung lief im letzten Bericht nicht",
+        "lifecycle": "Lebenszyklus",
+        "history": "Verlauf",
+        "event": {
+            "opened": "Zuerst gesehen",
+            "resolved": "Behoben",
+            "reopened": "Wieder aufgetreten",
+            "dismissed": "Ausgeblendet",
+            "undismissed": "Ausblendung aufgehoben"
+        },
+        "inRelease": "in {{release}}",
+        "byUser": "von {{name}}",
+        "untilDate": "bis {{date}}",
+        "dismissedUntil": "Ausgeblendet bis {{date}}",
+        "dismissedForGood": "Ohne Enddatum ausgeblendet",
+        "dismiss": "Ausblenden",
+        "dismissTitle": "Diesen Befund ausblenden",
+        "dismissDescription": "Ein ausgeblendeter Befund löst keine Benachrichtigungen aus und zählt weder zum höchsten Schweregrad noch zur Wochenübersicht. Er wird mit den Berichten trotzdem behoben und kann wieder auftreten.",
+        "reason": "Grund",
+        "reasonPlaceholder": "Warum dieser Befund keine Korrektur braucht",
+        "until": "Ausgeblendet bis (optional)",
+        "untilHint": "Der letzte Tag, an dem die Ausblendung gilt. Leer lassen, um ihn dauerhaft auszublenden.",
+        "confirmDismiss": "Befund ausblenden",
+        "cancel": "Abbrechen",
+        "undismiss": "Ausblendung aufheben",
+        "ignoreRule": "Ignore-Regel für excubia.json",
+        "ignoreRuleHint": "Füge sie der excubia.json des Projekts hinzu, um den Befund aus dem Bericht selbst herauszunehmen.",
+        "noResolved": "Noch keine behobenen Befunde",
+        "noResolvedDescription": "Befunde erscheinen hier, sobald ein späterer Bericht ihre Prüfung ohne sie ausführt."
     }
 }

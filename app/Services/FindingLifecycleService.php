@@ -73,10 +73,10 @@ class FindingLifecycleService
         $all = $open->concat($resolved);
         $all->load(['dismisser:id,first_name,last_name', 'events.healthReport:id,release', 'events.user:id,first_name,last_name']);
 
-        return $this->findings->prioritize($all->map(fn (Finding $finding): array => [
+        return $this->findings->prioritize(array_values($all->map(fn (Finding $finding): array => [
             ...$finding->finding,
             'lifecycle' => $this->lifecycle($finding),
-        ])->values()->all());
+        ])->all()));
     }
 
     /**
@@ -87,15 +87,14 @@ class FindingLifecycleService
      */
     public function newSince(Project $project, CarbonInterface $since): array
     {
-        return $project->findings()->active()
+        return array_values($project->findings()->active()
             ->where(fn ($query) => $query->where('first_seen_at', '>=', $since)
                 ->orWhereHas('events', fn ($events) => $events->where('event', FindingEventEnum::Reopened->value)->where('occurred_at', '>=', $since)))
             ->orderBy('first_seen_at')
             ->orderBy('id')
             ->get()
             ->map(fn (Finding $finding): array => $finding->finding)
-            ->values()
-            ->all();
+            ->all());
     }
 
     /**
