@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Actions\RotateProjectTokenAction;
+use App\Actions\SyncFindingLifecycleAction;
 use App\Enums\RoleEnum;
 use App\Jobs\DeliverAlertJob;
 use App\Models\AlertLog;
@@ -284,7 +285,7 @@ function reportDatabaseFailure(Project $project, string $fingerprint): void
         ]]],
     ]);
 
-    app(ReportAlertsService::class)->afterReport($project, $report, null, false);
+    app(ReportAlertsService::class)->afterReport($project, $report, null, false, app(SyncFindingLifecycleAction::class)->execute($project, $report));
 }
 
 /**

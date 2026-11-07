@@ -1544,5 +1544,48 @@
         "inventoryTitle": "Inventario",
         "fleetTitle": "Licenze da rivedere",
         "fleetDescription": "Licenze vietate, copyleft forte e sconosciute negli ultimi report, con i progetti che le usano."
+    },
+    "findings": {
+        "statusFilter": "Stato del problema",
+        "status": {
+            "open": "Aperti",
+            "dismissed": "Ignorati",
+            "resolved": "Risolti",
+            "all": "Tutti"
+        },
+        "firstSeen": "Visto la prima volta",
+        "lastSeen": "Visto l'ultima volta",
+        "fixedOn": "Risolto nel report del {{date}}",
+        "reopened_one": "Tornato {{count}} volta",
+        "reopened_other": "Tornato {{count}} volte",
+        "notInLatest": "Il suo controllo non è stato eseguito nell'ultimo report",
+        "lifecycle": "Ciclo di vita",
+        "history": "Cronologia",
+        "event": {
+            "opened": "Visto la prima volta",
+            "resolved": "Risolto",
+            "reopened": "Tornato",
+            "dismissed": "Ignorato",
+            "undismissed": "Ignora rimosso"
+        },
+        "inRelease": "in {{release}}",
+        "byUser": "da {{name}}",
+        "untilDate": "fino al {{date}}",
+        "dismissedUntil": "Ignorato fino al {{date}}",
+        "dismissedForGood": "Ignorato senza scadenza",
+        "dismiss": "Ignora",
+        "dismissTitle": "Ignora questo problema",
+        "dismissDescription": "Un problema ignorato non genera avvisi ed è escluso dalla gravità peggiore e dal riepilogo settimanale. Si risolve e torna comunque con i report.",
+        "reason": "Motivo",
+        "reasonPlaceholder": "Perché questo problema non va corretto",
+        "until": "Ignorato fino al (facoltativo)",
+        "untilHint": "L'ultimo giorno in cui vale. Lascialo vuoto per ignorarlo senza scadenza.",
+        "confirmDismiss": "Ignora problema",
+        "cancel": "Annulla",
+        "undismiss": "Rimuovi ignora",
+        "ignoreRule": "Regola ignore di excubia.json",
+        "ignoreRuleHint": "Aggiungila all'excubia.json del progetto per escludere il problema dal report stesso.",
+        "noResolved": "Ancora nessun problema risolto",
+        "noResolvedDescription": "I problemi compaiono qui quando un report successivo esegue il loro controllo senza trovarli."
     }
 }

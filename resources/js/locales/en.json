@@ -1544,5 +1544,48 @@
         "inventoryTitle": "Inventory",
         "fleetTitle": "Licenses to review",
         "fleetDescription": "Denied, strong copyleft and unknown licenses in the latest reports, with the projects that use them."
+    },
+    "findings": {
+        "statusFilter": "Finding status",
+        "status": {
+            "open": "Open",
+            "dismissed": "Dismissed",
+            "resolved": "Resolved",
+            "all": "All"
+        },
+        "firstSeen": "First seen",
+        "lastSeen": "Last seen",
+        "fixedOn": "Fixed in the report of {{date}}",
+        "reopened_one": "Came back {{count}} time",
+        "reopened_other": "Came back {{count}} times",
+        "notInLatest": "Its check did not run in the latest report",
+        "lifecycle": "Lifecycle",
+        "history": "History",
+        "event": {
+            "opened": "First seen",
+            "resolved": "Fixed",
+            "reopened": "Came back",
+            "dismissed": "Dismissed",
+            "undismissed": "Dismissal removed"
+        },
+        "inRelease": "in {{release}}",
+        "byUser": "by {{name}}",
+        "untilDate": "until {{date}}",
+        "dismissedUntil": "Dismissed until {{date}}",
+        "dismissedForGood": "Dismissed with no end date",
+        "dismiss": "Dismiss",
+        "dismissTitle": "Dismiss this finding",
+        "dismissDescription": "A dismissed finding raises no alerts and leaves the worst severity and the weekly digest. It still resolves and comes back with the reports.",
+        "reason": "Reason",
+        "reasonPlaceholder": "Why this finding does not need a fix",
+        "until": "Dismissed until (optional)",
+        "untilHint": "The last day the dismissal holds. Leave it empty to dismiss it for good.",
+        "confirmDismiss": "Dismiss finding",
+        "cancel": "Cancel",
+        "undismiss": "Remove dismissal",
+        "ignoreRule": "excubia.json ignore rule",
+        "ignoreRuleHint": "Add it to the project's excubia.json to leave the finding out of the report itself.",
+        "noResolved": "No resolved findings yet",
+        "noResolvedDescription": "Findings show up here once a later report runs their check without them."
     }
 }
