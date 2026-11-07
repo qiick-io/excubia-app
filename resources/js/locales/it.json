@@ -207,6 +207,7 @@
             "roles": "Ruoli",
             "permissions": "Permessi",
             "jobs": "Job",
+            "system": "Sistema",
             "reportBug": "Segnala un Bug",
             "general": "Generale",
             "localization": "Localizzazione",
@@ -861,6 +862,75 @@
             "failedAt": "Fallito il",
             "exception": "Eccezione",
             "actions": "Azioni"
+        }
+    },
+    "system": {
+        "description": "Stato di salute di questa installazione di Excubia. Ogni voce rimanda al suo suggerimento di correzione.",
+        "fixHint": "Come risolvere: {{item}}",
+        "never": "Mai",
+        "status": {
+            "ok": "OK",
+            "warning": "Attenzione",
+            "error": "Errore",
+            "unknown": "Sconosciuto"
+        },
+        "columns": {
+            "project": "Progetto",
+            "count": "Numero"
+        },
+        "scheduler": {
+            "title": "Scheduler",
+            "lastRun": "Ultimo heartbeat: {{time}}"
+        },
+        "queue": {
+            "title": "Worker della coda",
+            "connection": "Connessione",
+            "lastRun": "Ultimo heartbeat",
+            "pending": "Job in attesa",
+            "failed": "Job falliti"
+        },
+        "pushes": {
+            "title": "Ultimo invio per progetto",
+            "description": "I report sono obsoleti dopo {{hours}} ore, il runtime dopo 15 minuti.",
+            "reports": "Report",
+            "runtime": "Runtime",
+            "exceptions": "Eccezioni",
+            "stale": "Obsoleto",
+            "empty": "Nessun progetto attivo."
+        },
+        "rejections": {
+            "title": "Invii rifiutati (24 h)",
+            "endpoint": "Endpoint",
+            "status": "Stato",
+            "reason": "Motivo",
+            "empty": "Nessun invio rifiutato nelle ultime 24 ore."
+        },
+        "skippedRuntime": {
+            "title": "Tipi di runtime sconosciuti ignorati",
+            "empty": "Nessuna voce di runtime ignorata.",
+            "row_one": "{{project}}: {{count}} voce ignorata",
+            "row_other": "{{project}}: {{count}} voci ignorate"
+        },
+        "alertFailures": {
+            "title": "Consegne di avvisi fallite (24 h)",
+            "empty": "Nessuna consegna di avvisi fallita nelle ultime 24 ore.",
+            "total_one": "{{count}} avviso fallito",
+            "total_other": "{{count}} avvisi falliti",
+            "event": "Evento",
+            "channels": "Canali falliti",
+            "at": "Ora"
+        },
+        "rollups": {
+            "title": "Aggregazioni orarie del runtime",
+            "pending": "Il runtime salvato prima delle aggregazioni orarie manca dai totali della dashboard: esegui il backfill una volta.",
+            "done": "Le aggregazioni orarie coprono il runtime salvato."
+        },
+        "version": {
+            "title": "Versione e compatibilità",
+            "app": "Excubia App",
+            "core": "excubia-core nell’app",
+            "accepts": "Accetta excubia-core",
+            "protocol": "Versioni del protocollo"
         }
     },
     "fix": {

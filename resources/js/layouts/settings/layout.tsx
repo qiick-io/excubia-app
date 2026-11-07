@@ -28,6 +28,7 @@ import { edit as editLocalization } from '@/routes/project/localization';
 import { edit as editProjectSecurity } from '@/routes/project/security';
 import roles from '@/routes/roles';
 import { edit as editSecurity } from '@/routes/security';
+import systemRoutes from '@/routes/system';
 import type { NavItem } from '@/types';
 
 const DEFAULT_REPORT_BUG_URL =
@@ -129,6 +130,15 @@ export default function SettingsLayout({
                   {
                       title: t('settings.layout.jobs'),
                       href: jobs.index.url(),
+                      icon: null,
+                  },
+              ]
+            : []),
+        ...(can(PermissionEnum.CanShowSystem)
+            ? [
+                  {
+                      title: t('settings.layout.system'),
+                      href: systemRoutes.index.url(),
                       icon: null,
                   },
               ]

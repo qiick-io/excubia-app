@@ -207,6 +207,7 @@
             "roles": "Roles",
             "permissions": "Permissions",
             "jobs": "Jobs",
+            "system": "System",
             "reportBug": "Report a Bug",
             "general": "General",
             "localization": "Localization",
@@ -861,6 +862,75 @@
             "failedAt": "Failed at",
             "exception": "Exception",
             "actions": "Actions"
+        }
+    },
+    "system": {
+        "description": "Health of this Excubia install. Each item links to its fix hint.",
+        "fixHint": "How to fix: {{item}}",
+        "never": "Never",
+        "status": {
+            "ok": "OK",
+            "warning": "Warning",
+            "error": "Error",
+            "unknown": "Unknown"
+        },
+        "columns": {
+            "project": "Project",
+            "count": "Count"
+        },
+        "scheduler": {
+            "title": "Scheduler",
+            "lastRun": "Last heartbeat: {{time}}"
+        },
+        "queue": {
+            "title": "Queue worker",
+            "connection": "Connection",
+            "lastRun": "Last heartbeat",
+            "pending": "Pending jobs",
+            "failed": "Failed jobs"
+        },
+        "pushes": {
+            "title": "Last push per project",
+            "description": "Reports are stale after {{hours}} hours, runtime after 15 minutes.",
+            "reports": "Reports",
+            "runtime": "Runtime",
+            "exceptions": "Exceptions",
+            "stale": "Stale",
+            "empty": "No enabled projects."
+        },
+        "rejections": {
+            "title": "Ingest rejections (24 h)",
+            "endpoint": "Endpoint",
+            "status": "Status",
+            "reason": "Reason",
+            "empty": "No rejected pushes in the last 24 hours."
+        },
+        "skippedRuntime": {
+            "title": "Unknown runtime types skipped",
+            "empty": "No runtime entries skipped.",
+            "row_one": "{{project}}: {{count}} entry skipped",
+            "row_other": "{{project}}: {{count}} entries skipped"
+        },
+        "alertFailures": {
+            "title": "Alert delivery failures (24 h)",
+            "empty": "No failed alert deliveries in the last 24 hours.",
+            "total_one": "{{count}} failed alert",
+            "total_other": "{{count}} failed alerts",
+            "event": "Event",
+            "channels": "Failed channels",
+            "at": "Time"
+        },
+        "rollups": {
+            "title": "Runtime rollups",
+            "pending": "Runtime stored before the hourly rollups is missing from the dashboard totals: run the backfill once.",
+            "done": "The hourly rollups cover the stored runtime."
+        },
+        "version": {
+            "title": "Version and compatibility",
+            "app": "Excubia App",
+            "core": "excubia-core in the app",
+            "accepts": "Accepts excubia-core",
+            "protocol": "Protocol versions"
         }
     },
     "fix": {

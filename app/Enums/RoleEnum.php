@@ -23,7 +23,7 @@ enum RoleEnum: string
 
     /**
      * Default permissions of the role. Super-admin also passes every check through `Gate::before`.
-     * Admin gets everything except the system-level ones (roles, permissions, queue jobs, settings).
+     * Admin gets everything except the system-level ones (roles, permissions, queue jobs, system health, settings).
      *
      * @return list<PermissionEnum>
      */
@@ -33,7 +33,7 @@ enum RoleEnum: string
             self::SuperAdmin => PermissionEnum::cases(),
             self::Admin => array_values(array_filter(
                 PermissionEnum::cases(),
-                fn (PermissionEnum $permission): bool => ! in_array($permission->resource(), ['roles', 'permissions', 'jobs', 'project-settings'], true),
+                fn (PermissionEnum $permission): bool => ! in_array($permission->resource(), ['roles', 'permissions', 'jobs', 'system', 'project-settings'], true),
             )),
             self::Reader => [PermissionEnum::CanShowProjects],
         };

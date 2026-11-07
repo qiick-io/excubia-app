@@ -170,6 +170,7 @@ it('has no critical or serious axe issues on the main authenticated pages in lig
         route('profile.edit', absolute: false),
         route('appearance.edit', absolute: false),
         route('project.edit', absolute: false),
+        route('system.index', absolute: false),
     ];
 
     foreach ($paths as $path) {

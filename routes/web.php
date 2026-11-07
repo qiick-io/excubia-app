@@ -12,6 +12,7 @@ use App\Http\Controllers\ProjectAlertsController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ProjectReportController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\SystemHealthController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserGroupController;
 use App\Services\SettingsRepositoryService;
@@ -83,6 +84,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('jobs', [JobMonitorController::class, 'index'])->name('jobs.index');
         Route::post('jobs/{uuid}/retry', [JobMonitorController::class, 'retry'])->whereUuid('uuid')->name('jobs.retry');
         Route::delete('jobs/{uuid}', [JobMonitorController::class, 'destroy'])->whereUuid('uuid')->name('jobs.destroy');
+
+        // Health of this install (#117).
+        Route::get('system', [SystemHealthController::class, 'index'])->name('system.index');
     });
 });
 
