@@ -16,6 +16,25 @@ export type RoleMultiSelectProps = Omit<
 };
 
 /**
+ * The assignable roles plus the ones already selected, so a read-only or locked picker still
+ * shows roles the current user cannot grant (#151).
+ * @param {AdminRoleRef[]} roles - Roles the current user may assign.
+ * @param {AdminRoleRef[]} selected - Roles the edited record holds.
+ * @returns {AdminRoleRef[]}
+ */
+export function withSelectedRoles(
+    roles: AdminRoleRef[],
+    selected: AdminRoleRef[],
+): AdminRoleRef[] {
+    return [
+        ...roles,
+        ...selected.filter(
+            (role) => !roles.some((option) => option.id === role.id),
+        ),
+    ];
+}
+
+/**
  * Role picker over the assignable roles shared by the page; maps names to ids for the select.
  * @param {*} props - Component props.
  * @returns {JSX.Element}

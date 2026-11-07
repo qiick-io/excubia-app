@@ -5,14 +5,16 @@ declare(strict_types=1);
 namespace App\Http\Requests;
 
 use App\Models\User;
+use App\Services\EffectivePermissionResolverService;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\Validator;
 
 /**
- * Validates changes to a dashboard user. Users cannot deactivate themselves; UpdateUserAction
- * keeps the last active super-admin.
+ * Validates changes to a dashboard user. Users cannot deactivate themselves, and only a
+ * super-admin may change their own roles (#151); UpdateUserAction keeps the last active
+ * super-admin.
  */
 class UpdateUserRequest extends StoreUserRequest
 {
@@ -42,10 +44,29 @@ class UpdateUserRequest extends StoreUserRequest
     public function after(): array
     {
         return [function (Validator $validator): void {
-            if (! $this->boolean('is_active') && $this->target()->is($this->user())) {
+            $actor = $this->user();
+            $target = $this->target();
+
+            if (! $target->is($actor)) {
+                return;
+            }
+
+            if (! $this->boolean('is_active')) {
                 $validator->errors()->add('is_active', __('You cannot deactivate yourself.'));
             }
+
+            if ($this->hasChangedOwnRoles($target) && ! app(EffectivePermissionResolverService::class)->isSuperAdmin($target)) {
+                $validator->errors()->add('roles', __('You cannot change your own roles.'));
+            }
         }];
+    }
+
+    private function hasChangedOwnRoles(User $target): bool
+    {
+        $current = $target->getRoleNames()->sort()->values()->all();
+        $requested = collect($this->roles())->unique()->sort()->values()->all();
+
+        return $current !== $requested;
     }
 
     private function target(): User

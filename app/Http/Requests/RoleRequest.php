@@ -6,13 +6,16 @@ namespace App\Http\Requests;
 
 use App\Enums\PermissionEnum;
 use App\Enums\RoleEnum;
+use App\Models\User;
+use App\Services\EffectivePermissionResolverService;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Spatie\Permission\Models\Role;
 
 /**
- * Validates a custom role for both create and update (the route `role` is set on update).
+ * Validates a custom role for both create and update (the route `role` is set on update). The
+ * actor may only put permissions they hold into a role (#151).
  */
 class RoleRequest extends FormRequest
 {
@@ -31,6 +34,8 @@ class RoleRequest extends FormRequest
     public function rules(): array
     {
         $role = $this->route('role');
+        $actor = $this->user();
+        $heldPermissions = $actor instanceof User ? app(EffectivePermissionResolverService::class)->permissionsFor($actor) : [];
 
         return [
             'name' => [
@@ -41,7 +46,7 @@ class RoleRequest extends FormRequest
                 Rule::unique('roles', 'name')->ignore($role instanceof Role ? $role->id : null),
             ],
             'permissions' => ['array'],
-            'permissions.*' => ['string', 'distinct', Rule::enum(PermissionEnum::class)],
+            'permissions.*' => ['string', 'distinct', Rule::enum(PermissionEnum::class), Rule::in($heldPermissions)],
         ];
     }
 

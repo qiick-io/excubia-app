@@ -232,7 +232,9 @@ it('sends a password-reset email through Fortify', function () {
 
 it('splits user permissions per operation, as in externa-core', function () {
     Role::create(['name' => 'user-viewer'])->givePermissionTo(PermissionEnum::CanShowUsers->value);
-    Role::create(['name' => 'user-editor'])->givePermissionTo([PermissionEnum::CanShowUsers->value, PermissionEnum::CanEditUsers->value]);
+    // The editor also holds can-show-projects: it may only manage users whose roles (here
+    // reader) it could grant itself (#151).
+    Role::create(['name' => 'user-editor'])->givePermissionTo([PermissionEnum::CanShowUsers->value, PermissionEnum::CanEditUsers->value, PermissionEnum::CanShowProjects->value]);
     $viewer = User::factory()->create()->assignRole('user-viewer');
     $editor = User::factory()->create()->assignRole('user-editor');
     $target = managedUser();
