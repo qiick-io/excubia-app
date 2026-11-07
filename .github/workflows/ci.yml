@@ -127,3 +127,79 @@ jobs:
       # Serves this app, installs qiick/excubia-core in a throwaway Laravel app and pushes to it.
       - name: End-to-end contract test
         run: scripts/e2e/core-contract.sh '${{ matrix.core }}'
+
+  # Axe smoke (#112), as in externa-core: pull requests to `develop` run only the smoke test ("lite");
+  # pushes and pull requests to `main` run every browser test. Not part of `php artisan test`.
+  accessibility:
+    name: Accessibility
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php-version: '8.4'
+          extensions: pdo_sqlite, sqlite3, sockets
+          coverage: none
+          tools: composer:v2
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Composer packages
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ runner.os }}-php8.4-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-php8.4-
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Playwright version
+        id: playwright
+        run: echo "version=$(node -p "require('playwright/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}-chromium
+
+      - name: Install Playwright Chromium
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+
+      - name: Install Playwright system dependencies
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate --ansi
+
+      - name: Build
+        run: npm run build
+
+      - name: Axe smoke (PR → develop)
+        if: github.event_name == 'pull_request' && github.base_ref == 'develop'
+        run: vendor/bin/pest tests/Browser/A11ySmokeBrowserTest.php
+
+      - name: Browser tests
+        if: github.event_name != 'pull_request' || github.base_ref != 'develop'
+        run: vendor/bin/pest tests/Browser

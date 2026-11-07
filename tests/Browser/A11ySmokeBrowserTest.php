@@ -1,0 +1,142 @@
+<?php
+
+declare(strict_types=1);
+
+use App\Enums\RoleEnum;
+use App\Enums\SeverityEnum;
+use App\Models\ExceptionGroup;
+use App\Models\Project;
+use App\Models\RuntimeAggregate;
+use App\Models\User;
+use Database\Seeders\PermissionSeeder;
+use Illuminate\Support\Str;
+
+/**
+ * Axe smoke for the main pages (#112), as in externa-core: fails on critical or serious
+ * violations (`assertNoAccessibilityIssues(1)`) in light and dark, plus one high-contrast pass.
+ * Runs in the `Accessibility` CI job, not in `php artisan test`.
+ */
+beforeEach(function (): void {
+    $this->seed(PermissionSeeder::class);
+});
+
+/**
+ * Visits a page with the Playwright colour scheme of the mode, then forces the theme classes so
+ * the tokens of the mode apply whatever the stored appearance is.
+ *
+ * @param  'light'|'dark'|'high-contrast'  $mode
+ */
+function visitA11y(string $path, string $mode): mixed
+{
+    $page = $mode === 'dark' ? visit($path)->inDarkMode() : visit($path)->inLightMode();
+    $isDark = $mode === 'dark' ? 'true' : 'false';
+    $isHighContrast = $mode === 'high-contrast' ? 'true' : 'false';
+
+    return $page->assertScript(
+        "() => { const root = document.documentElement; root.classList.toggle('dark', {$isDark}); root.classList.toggle('high-contrast', {$isHighContrast}); root.style.colorScheme = {$isDark} ? 'dark' : 'light'; return true; }",
+        true,
+    );
+}
+
+/**
+ * A project with one report, runtime rows and an exception group, so every tab renders content.
+ */
+function seededA11yProject(): Project
+{
+    $project = Project::factory()->create(['name' => 'Shop', 'slug' => 'shop']);
+    $now = now();
+
+    $project->healthReports()->create([
+        'batch_id' => (string) Str::uuid(),
+        'received_at' => $now,
+        'generated_at' => $now,
+        'worst_severity' => SeverityEnum::High,
+        'high_count' => 1,
+        'report' => [
+            'schemaVersion' => 1,
+            'checks' => [[
+                'checkId' => 'composer-audit',
+                'name' => 'Composer audit',
+                'status' => 'fail',
+                'findings' => [['checkId' => 'composer-audit', 'severity' => 'high', 'status' => 'fail', 'subject' => 'guzzlehttp/guzzle', 'message' => 'Known vulnerability', 'fixHint' => 'composer update guzzlehttp/guzzle']],
+            ]],
+            'upgradePlan' => [['stepNumber' => 1, 'message' => 'composer update guzzlehttp/guzzle']],
+        ],
+    ]);
+    $project->forceFill(['last_report_at' => $now])->save();
+
+    RuntimeAggregate::query()->create([
+        'project_id' => $project->id,
+        'type' => 'request',
+        'bucket' => $now->copy()->subMinutes(5)->startOfMinute(),
+        'sample_rate' => 1,
+        'dimension_key' => str_repeat('b', 64),
+        'dimensions' => ['route' => 'checkout.store', 'method' => 'POST', 'statusClass' => '2xx'],
+        'count' => 90,
+        'error_count' => 2,
+        'total_ms' => 9000,
+        'max_ms' => 800,
+    ]);
+
+    ExceptionGroup::query()->create([
+        'project_id' => $project->id,
+        'fingerprint' => str_repeat('a', 64),
+        'environment' => 'production',
+        'class' => 'RuntimeException',
+        'message' => 'Payment failed',
+        'frames' => [['file' => 'app/Actions/PayAction.php', 'line' => 12, 'function' => 'App\\Actions\\PayAction::execute', 'inApp' => true]],
+        'previous' => [],
+        'context_kind' => 'request',
+        'context_name' => 'checkout.store',
+        'count' => 4,
+        'first_seen' => $now->copy()->subHour(),
+        'last_seen' => $now,
+        'status' => 'open',
+    ]);
+
+    return $project;
+}
+
+it('has no critical or serious axe issues on login in light, dark and high contrast', function () {
+    foreach (['light', 'dark', 'high-contrast'] as $mode) {
+        visitA11y('/login', $mode)
+            ->assertPresent('#main-content')
+            ->assertNoAccessibilityIssues(1)
+            ->assertNoJavaScriptErrors();
+    }
+});
+
+it('has no critical or serious axe issues on the main authenticated pages in light and dark', function () {
+    $this->actingAs(User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value));
+    $project = seededA11yProject();
+
+    $paths = [
+        route('dashboard', absolute: false),
+        route('projects.index', absolute: false),
+        route('projects.show', $project, false),
+        route('projects.view', [$project, 'runtime'], false),
+        route('projects.view', [$project, 'exceptions'], false),
+        route('profile.edit', absolute: false),
+        route('appearance.edit', absolute: false),
+        route('project.edit', absolute: false),
+    ];
+
+    foreach ($paths as $path) {
+        foreach (['light', 'dark'] as $mode) {
+            visitA11y($path, $mode)
+                ->assertPresent('#main-content')
+                ->assertNoAccessibilityIssues(1)
+                ->assertNoJavaScriptErrors();
+        }
+    }
+});
+
+it('has no critical or serious axe issues on the dashboard in high contrast', function () {
+    $this->actingAs(User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value));
+    seededA11yProject();
+
+    visitA11y(route('dashboard', absolute: false), 'high-contrast')
+        ->assertPresent('#main-content')
+        ->assertNoAccessibilityIssues(1)
+        ->assertNoJavaScriptErrors();
+});
