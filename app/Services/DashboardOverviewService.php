@@ -10,7 +10,9 @@ use App\Models\ExceptionGroup;
 use App\Models\HealthReport;
 use App\Models\Project;
 use App\Models\RuntimeAggregate;
+use App\Models\RuntimeHourlyRollup;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Date;
 
@@ -312,21 +314,21 @@ class DashboardOverviewService
     {
         $ids = $projects->pluck('id');
         $from = $today->subDays($periodDays);
-        // Summed in SQL (#113): a period holds a row per minute and series.
-        // ponytail: this scans every request row of the period (0.4 to 0.7 s on PostgreSQL and
-        // MySQL at 50 busy projects × 14 days, see TimeRangeBenchmarkTest); add an hourly
-        // rollup table filled at ingest if dashboards that large need it faster.
+        // The whole hours of a period from the hourly rollups (#137), the minutes of its partial
+        // first and last hour from the aggregates, so the totals stay exact to the minute.
         $requests = function (CarbonImmutable $start, CarbonImmutable $end) use ($ids): array {
-            $sum = RuntimeAggregate::query()
-                ->whereIn('project_id', $ids)
-                ->where('type', 'request')
-                ->where('bucket', '>=', $start)
-                ->where('bucket', '<', $end)
-                ->toBase()
-                ->selectRaw('sum(1.0 * count / sample_rate) as requests, sum(1.0 * error_count / sample_rate) as errors')
-                ->first();
+            $firstHour = $start->ceilHour();
+            $lastHour = $end->startOfHour();
 
-            return [(float) ($sum->requests ?? 0), (float) ($sum->errors ?? 0)];
+            if ($firstHour >= $lastHour) {
+                return $this->requestSums(RuntimeAggregate::query()->toBase(), $ids, $start, $end);
+            }
+
+            $hours = $this->requestSums(RuntimeHourlyRollup::query()->toBase(), $ids, $firstHour, $lastHour);
+            $head = $this->requestSums(RuntimeAggregate::query()->toBase(), $ids, $start, $firstHour);
+            $tail = $this->requestSums(RuntimeAggregate::query()->toBase(), $ids, $lastHour, $end);
+
+            return [$hours[0] + $head[0] + $tail[0], $hours[1] + $head[1] + $tail[1]];
         };
 
         $hasRuntime = RuntimeAggregate::query()->whereIn('project_id', $ids)->exists();
@@ -358,6 +360,26 @@ class DashboardOverviewService
                     ])->all()),
             ] : null,
         ];
+    }
+
+    /**
+     * Estimated requests and errors of the projects between two instants, summed in SQL from the
+     * minute aggregates or the hourly rollups (both have the same columns).
+     *
+     * @param  Collection<int, mixed>  $ids
+     * @return array{0: float, 1: float}
+     */
+    private function requestSums(Builder $query, Collection $ids, CarbonImmutable $from, CarbonImmutable $to): array
+    {
+        $sum = $query
+            ->whereIn('project_id', $ids)
+            ->where('type', 'request')
+            ->where('bucket', '>=', $from)
+            ->where('bucket', '<', $to)
+            ->selectRaw('sum(1.0 * count / sample_rate) as requests, sum(1.0 * error_count / sample_rate) as errors')
+            ->first();
+
+        return [(float) ($sum->requests ?? 0), (float) ($sum->errors ?? 0)];
     }
 
     /**

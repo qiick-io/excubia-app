@@ -20,14 +20,18 @@ use Illuminate\Support\Facades\DB;
  * `isContainer` is true when any entry is, and histograms add up element by element (none when
  * only one side has one), also across batches. Entries of a type this app does not know are
  * skipped and counted on the project (`skipped_runtime_aggregates`), so a newer core never loses
- * the rest of its batch. A repeated `batchId` stores nothing and returns false.
+ * the rest of its batch. A repeated `batchId` stores nothing and returns false. The same
+ * transaction adds the entries to their hourly rollups (#137), which the dashboard totals read.
  *
  * ponytail: one read and one write per aggregate inside the transaction; batch the upserts if
  * large fleets push thousands of series a minute.
  */
 class StorePushedRuntimeAction
 {
-    public function __construct(private StoreScheduledTaskRunsAction $scheduledTaskRuns) {}
+    public function __construct(
+        private StoreScheduledTaskRunsAction $scheduledTaskRuns,
+        private StoreRuntimeRollupsAction $rollups,
+    ) {}
 
     /**
      * @param  list<array<string, mixed>>  $aggregates  validated by StorePushedRuntimeRequest
@@ -40,6 +44,7 @@ class StorePushedRuntimeAction
             return DB::transaction(function () use ($project, $batchId, $aggregates, $release): bool {
                 PushedBatch::query()->create(['project_id' => $project->id, 'type' => 'runtime', 'batch_id' => $batchId, 'received_at' => Date::now()]);
                 $skipped = 0;
+                $minutes = [];
 
                 foreach ($aggregates as $aggregate) {
                     $type = RuntimeTypeEnum::tryFrom((string) ($aggregate['type'] ?? ''));
@@ -50,8 +55,10 @@ class StorePushedRuntimeAction
                         continue;
                     }
 
-                    $this->add($project, $type, $aggregate, $release);
+                    $minutes[] = $this->add($project, $type, $aggregate, $release);
                 }
+
+                $this->rollups->execute($minutes);
 
                 // Runs per scheduled task for schedule monitoring (#110).
                 $this->scheduledTaskRuns->execute($project, $aggregates);
@@ -69,9 +76,12 @@ class StorePushedRuntimeAction
     }
 
     /**
+     * Merges one entry into its minute aggregate.
+     *
      * @param  array<string, mixed>  $aggregate
+     * @return array{project_id: int, type: string, bucket: CarbonImmutable, sample_rate: float, count: int, error_count: int, total_ms: float|null} the entry, for its hourly rollup
      */
-    private function add(Project $project, RuntimeTypeEnum $type, array $aggregate, ?string $release): void
+    private function add(Project $project, RuntimeTypeEnum $type, array $aggregate, ?string $release): array
     {
         $dimensions = [];
 
@@ -96,6 +106,16 @@ class StorePushedRuntimeAction
             'dimension_key' => hash('sha256', $identityJson),
         ];
 
+        $minute = [
+            'project_id' => $project->id,
+            'type' => $type->value,
+            'bucket' => $identity['bucket'],
+            'sample_rate' => $identity['sample_rate'],
+            'count' => (int) $aggregate['count'],
+            'error_count' => (int) $aggregate['errorCount'],
+            'total_ms' => $type->isTimed() ? (float) $aggregate['totalMs'] : null,
+        ];
+
         $metrics = $this->metrics($type, $aggregate);
         $histogram = $this->histogram($type, $aggregate);
         $existing = RuntimeAggregate::query()->where($identity)->lockForUpdate()->first();
@@ -105,15 +125,15 @@ class StorePushedRuntimeAction
                 ...$identity,
                 'dimensions' => $dimensions,
                 'release' => $release,
-                'count' => (int) $aggregate['count'],
-                'error_count' => (int) $aggregate['errorCount'],
-                'total_ms' => $type->isTimed() ? (float) $aggregate['totalMs'] : null,
+                'count' => $minute['count'],
+                'error_count' => $minute['error_count'],
+                'total_ms' => $minute['total_ms'],
                 'max_ms' => $type->isTimed() ? (float) $aggregate['maxMs'] : null,
                 'metrics' => $metrics,
                 'histogram' => $histogram,
             ]);
 
-            return;
+            return $minute;
         }
 
         $existing->forceFill([
@@ -124,6 +144,8 @@ class StorePushedRuntimeAction
             'metrics' => $metrics === null ? null : $type->mergeMetrics($existing->metrics ?? [], $metrics),
             'histogram' => $this->mergeHistograms($existing->histogram, $histogram),
         ])->save();
+
+        return $minute;
     }
 
     /**
