@@ -21,12 +21,15 @@ class ReportHealthService
 {
     private const STATUS_RANK = ['fail' => 0, 'warn' => 1, 'pass' => 2, 'skipped' => 3];
 
+    /** The check whose findings block the next Laravel major (#19). */
+    public const UPGRADE_BLOCKER_CHECK = 'laravel-next-blocker';
+
     /**
      * The package checks of the advisory exposure (#20): check id => [kind, ecosystem].
      *
      * @var array<string, array{0: 'advisory'|'abandoned'|'stale', 1: 'composer'|'npm'}>
      */
-    private const PACKAGE_RISK_CHECKS = [
+    public const PACKAGE_RISK_CHECKS = [
         'composer-advisories' => ['advisory', 'composer'],
         'npm-advisories' => ['advisory', 'npm'],
         'composer-abandoned' => ['abandoned', 'composer'],
@@ -150,41 +153,40 @@ class ReportHealthService
      * blocked otherwise (a package whose only release allowing it is a pre-release warns and
      * still blocks), unknown when the check did not run or was skipped (Laravel not locked,
      * Packagist down). Private packages are never sent to Packagist: they are counted, not checked.
+     * The Fleet page passes `$blockerFindings`, the open and not dismissed blockers of the finding
+     * lifecycle (#148), in place of the ones of the report.
      *
      * @param  array<string, mixed>  $report
+     * @param  list<array<string, mixed>>|null  $blockerFindings
      * @return array{laravelVersion: string|null, targetMajor: int|null, status: 'ready'|'blocked'|'unknown', blockers: list<array{package: string, lockedVersion: string, isPreReleaseOnly: bool}>, uncheckedPackages: int}
      */
-    public function upgradeReadiness(array $report): array
+    public function upgradeReadiness(array $report, ?array $blockerFindings = null): array
     {
         $laravelVersion = $this->runtimes($report)['laravel']['version'] ?? null;
         $targetMajor = $laravelVersion !== null && preg_match('/^(\d+)/', $laravelVersion, $matches) === 1 ? (int) $matches[1] + 1 : null;
-        $check = collect($this->checks($report))->firstWhere('checkId', 'laravel-next-blocker');
+        $check = collect($this->checks($report))->firstWhere('checkId', self::UPGRADE_BLOCKER_CHECK);
         $isSkipped = $check === null;
         $blockers = [];
         $uncheckedPackages = 0;
 
         foreach ($check['findings'] ?? [] as $finding) {
             $details = $this->details($finding);
-            $status = $finding['status'] ?? null;
 
-            if ($status === 'skipped') {
+            if (($finding['status'] ?? null) === 'skipped') {
                 // The private packages row carries a count; any other skipped row means the check did not run.
                 $isSkipped = $isSkipped || ! is_int($details['count'] ?? null);
                 $uncheckedPackages += (int) ($details['count'] ?? 0);
+            }
+        }
 
+        foreach ($blockerFindings ?? $check['findings'] ?? [] as $finding) {
+            if (! in_array($finding['status'] ?? null, ['warn', 'fail'], true)) {
                 continue;
             }
 
-            if (! in_array($status, ['warn', 'fail'], true)) {
-                continue;
-            }
-
+            $details = $this->details($finding);
             $targetMajor = is_int($details['targetMajor'] ?? null) ? $details['targetMajor'] : $targetMajor;
-            $blockers[] = [
-                'package' => (string) ($details['package'] ?? $finding['subject'] ?? ''),
-                'lockedVersion' => (string) ($details['lockedVersion'] ?? ''),
-                'isPreReleaseOnly' => $status === 'warn',
-            ];
+            $blockers[] = $this->upgradeBlocker($finding);
         }
 
         usort($blockers, fn (array $first, array $second): int => [$first['isPreReleaseOnly'], $first['package']] <=> [$second['isPreReleaseOnly'], $second['package']]);
@@ -203,36 +205,53 @@ class ReportHealthService
     }
 
     /**
-     * The package findings that warn or fail (#20): known advisories (Composer and npm),
-     * abandoned and stale Composer packages, each with its locked and fixed versions.
+     * One `laravel-next-blocker` finding that warns or fails as a blocking package (#19).
      *
-     * @param  array<string, mixed>  $report
-     * @return list<array{checkId: string, kind: 'advisory'|'abandoned'|'stale', ecosystem: 'composer'|'npm', package: string, advisoryId: string|null, lockedVersion: string, fixedVersions: list<string>, replacement: string|null, severity: string, evidenceUrl: string|null}>
+     * @param  array<string, mixed>  $finding
+     * @return array{package: string, lockedVersion: string, isPreReleaseOnly: bool}
      */
-    public function packageRisks(array $report): array
+    public function upgradeBlocker(array $finding): array
     {
-        $rows = [];
+        $details = $this->details($finding);
 
-        foreach (self::PACKAGE_RISK_CHECKS as $checkId => [$kind, $ecosystem]) {
-            foreach ($this->findings($report, $checkId) as $finding) {
-                $details = $this->details($finding);
+        return [
+            'package' => (string) ($details['package'] ?? $finding['subject'] ?? ''),
+            'lockedVersion' => (string) ($details['lockedVersion'] ?? ''),
+            'isPreReleaseOnly' => ($finding['status'] ?? null) === 'warn',
+        ];
+    }
 
-                $rows[] = [
-                    'checkId' => $checkId,
-                    'kind' => $kind,
-                    'ecosystem' => $ecosystem,
-                    'package' => (string) ($details['package'] ?? $finding['subject'] ?? ''),
-                    'advisoryId' => isset($finding['advisoryId']) ? (string) $finding['advisoryId'] : null,
-                    'lockedVersion' => ltrim((string) ($details['lockedVersion'] ?? ''), 'vV'),
-                    'fixedVersions' => array_values(array_filter((array) ($details['fixedVersions'] ?? []), 'is_string')),
-                    'replacement' => is_string($details['replacement'] ?? null) ? $details['replacement'] : null,
-                    'severity' => (SeverityEnum::tryFrom((string) ($finding['severity'] ?? '')) ?? SeverityEnum::Info)->value,
-                    'evidenceUrl' => is_string($finding['evidenceUrl'] ?? null) ? $finding['evidenceUrl'] : null,
-                ];
-            }
+    /**
+     * One finding of a package check (#20) that warns or fails: a known advisory (Composer or
+     * npm), an abandoned or a stale Composer package, with its locked and fixed versions. Null for
+     * a finding of another check.
+     *
+     * @param  array<string, mixed>  $finding
+     * @return array{checkId: string, kind: 'advisory'|'abandoned'|'stale', ecosystem: 'composer'|'npm', package: string, advisoryId: string|null, lockedVersion: string, fixedVersions: list<string>, replacement: string|null, severity: string, evidenceUrl: string|null}|null
+     */
+    public function packageRisk(array $finding): ?array
+    {
+        $checkId = (string) ($finding['checkId'] ?? '');
+
+        if (! isset(self::PACKAGE_RISK_CHECKS[$checkId])) {
+            return null;
         }
 
-        return $rows;
+        [$kind, $ecosystem] = self::PACKAGE_RISK_CHECKS[$checkId];
+        $details = $this->details($finding);
+
+        return [
+            'checkId' => $checkId,
+            'kind' => $kind,
+            'ecosystem' => $ecosystem,
+            'package' => (string) ($details['package'] ?? $finding['subject'] ?? ''),
+            'advisoryId' => isset($finding['advisoryId']) ? (string) $finding['advisoryId'] : null,
+            'lockedVersion' => ltrim((string) ($details['lockedVersion'] ?? ''), 'vV'),
+            'fixedVersions' => array_values(array_filter((array) ($details['fixedVersions'] ?? []), 'is_string')),
+            'replacement' => is_string($details['replacement'] ?? null) ? $details['replacement'] : null,
+            'severity' => (SeverityEnum::tryFrom((string) ($finding['severity'] ?? '')) ?? SeverityEnum::Info)->value,
+            'evidenceUrl' => is_string($finding['evidenceUrl'] ?? null) ? $finding['evidenceUrl'] : null,
+        ];
     }
 
     /**

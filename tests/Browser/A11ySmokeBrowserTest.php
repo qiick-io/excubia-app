@@ -75,6 +75,12 @@ function seededA11yProject(): Project
     $project->forceFill(['last_report_at' => $now])->save();
     // The Findings tab lists the finding lifecycle (#18).
     app(SyncFindingLifecycleAction::class)->execute($project, $report);
+    // A dismissed advisory and blocker, so the Fleet pages list them apart (#148).
+    $project->findings()->whereIn('check_id', ['npm-advisories', 'laravel-next-blocker'])->update([
+        'dismissed_at' => $now,
+        'dismissed_until' => $now->copy()->addMonth()->toDateString(),
+        'dismissed_reason' => 'Not reachable from user input',
+    ]);
 
     RuntimeAggregate::query()->create([
         'project_id' => $project->id,
