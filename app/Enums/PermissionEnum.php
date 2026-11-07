@@ -20,6 +20,7 @@ enum PermissionEnum: string
     // Project data
     case CanRunChecks = 'can-run-checks';
     case CanManageExceptions = 'can-manage-exceptions';
+    case CanDismissFindings = 'can-dismiss-findings';
 
     // Users
     case CanShowUsers = 'can-show-users';

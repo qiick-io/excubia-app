@@ -12,5 +12,7 @@
     "Missed": "Saltato",
     "Failed": "Fallito",
     "Scheduler down": "Scheduler fermo",
-    "You get this email because the weekly digest is on in your profile settings.": "Ricevi questa email perché il riepilogo settimanale è attivo nelle impostazioni del profilo."
+    "You get this email because the weekly digest is on in your profile settings.": "Ricevi questa email perché il riepilogo settimanale è attivo nelle impostazioni del profilo.",
+    "Finding dismissed.": "Problema ignorato.",
+    "Dismissal removed.": "Ignora rimosso."
 }

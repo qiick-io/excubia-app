@@ -88,6 +88,16 @@ class Project extends Model
     }
 
     /**
+     * Findings across reports (#18).
+     *
+     * @return HasMany<Finding, $this>
+     */
+    public function findings(): HasMany
+    {
+        return $this->hasMany(Finding::class);
+    }
+
+    /**
      * Schedule inventory (#110), in schedule order.
      *
      * @return HasMany<ScheduledTask, $this>

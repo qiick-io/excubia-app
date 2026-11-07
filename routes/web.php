@@ -51,6 +51,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('projects/{project}/token', [ProjectController::class, 'revokeToken'])->name('projects.token.revoke');
     Route::post('projects/{project}/system-report', [ProjectReportController::class, 'refresh'])->name('projects.system-report');
     Route::patch('projects/{project}/exceptions/{exceptionGroup}', [ProjectReportController::class, 'updateException'])->name('projects.exceptions.update');
+    Route::patch('projects/{project}/findings/{finding}', [ProjectReportController::class, 'updateFinding'])->name('projects.findings.update');
     // Alert controls on the project's Alerts tab (#114).
     Route::post('projects/{project}/alert-mutes', [ProjectAlertsController::class, 'storeMute'])->name('projects.alert-mutes.store');
     Route::delete('projects/{project}/alert-mutes/{alertMute}', [ProjectAlertsController::class, 'destroyMute'])->name('projects.alert-mutes.destroy');

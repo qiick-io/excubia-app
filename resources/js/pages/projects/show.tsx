@@ -32,6 +32,10 @@ import {
     FindingDrawer,
 } from '@/components/reports/check-details';
 import { ExceptionsView } from '@/components/reports/exceptions-view';
+import {
+    formatDateTime,
+    LifecycleBadges,
+} from '@/components/reports/finding-lifecycle';
 import type { FindingFix } from '@/components/reports/fix-actions';
 import {
     combinedPrompt,
@@ -92,6 +96,7 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import {
     Tooltip,
     TooltipContent,
@@ -108,6 +113,7 @@ import type {
     HealthReportBody,
     HealthReportSummary,
     IssueRow,
+    LifecycleRow,
     LiveHealthCheck,
     ProjectAlerts,
     ProjectRow,
@@ -148,6 +154,8 @@ export default function ProjectShow({
     reports,
     findingFixes = {},
     issues = [],
+    findings = [],
+    canDismissFindings = false,
     health = null,
     liveHealth = [],
     range = DEFAULT_TIME_RANGE,
@@ -181,6 +189,9 @@ export default function ProjectShow({
     findingFixes?: Record<string, FindingFix>;
     /** The findings that warn or fail, problems first, with their check group (#109). */
     issues?: IssueRow[];
+    /** The finding lifecycle (#18), on the Findings tab only. */
+    findings?: LifecycleRow[];
+    canDismissFindings?: boolean;
     /** Health summary of the latest report (#108, #109). */
     health?: ReportHealth | null;
     /** Minute-level health per check and server (#115), on the overview only. */
@@ -233,7 +244,13 @@ export default function ProjectShow({
             <Head title={project.name} />
             <ProjectTabs slug={project.slug} view={view} />
             {view === 'findings' && report !== null ? (
-                <FindingsView issues={issues} fixes={findingFixes} />
+                <FindingsView
+                    rows={findings}
+                    fixes={findingFixes}
+                    projectId={project.id}
+                    latestReceivedAt={latest?.received_at ?? null}
+                    canDismiss={canDismissFindings}
+                />
             ) : view === 'schedule' ? (
                 <ScheduleView
                     slug={project.slug}
@@ -1164,20 +1181,30 @@ function relativeTime(iso: string, locale: string): string {
     return format.format(0, 'minute');
 }
 
+type FindingStatusFilter = LifecycleRow['lifecycle']['status'] | 'all';
+
 /**
- * The findings that warn or fail, problems first, as an admin list: search and filters (severity,
- * group, check) on the left, the table in a TablePanel (app-ui `docs/list-page.md`), and a
- * detail drawer with the check's explanation and structured details (`?finding=<key>` opens it).
- * Filtering happens in the browser: one report is small.
+ * The findings across reports (#18), problems first, as an admin list: search and filters
+ * (lifecycle status, severity, group, check) on the left, the table in a TablePanel (app-ui
+ * `docs/list-page.md`), and a detail drawer with the check's explanation, structured details,
+ * lifecycle and history (`?finding=<key>` opens it). Open findings include those whose check did
+ * not run in the latest report. Filtering happens in the browser: the list is small.
  */
 function FindingsView({
-    issues: rows,
+    rows,
     fixes,
+    projectId,
+    latestReceivedAt,
+    canDismiss,
 }: {
-    issues: IssueRow[];
+    rows: LifecycleRow[];
     fixes: Record<string, FindingFix>;
+    projectId: number;
+    latestReceivedAt: string | null;
+    canDismiss: boolean;
 }) {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
+    const [status, setStatus] = useState<FindingStatusFilter>('open');
     const copyWithToast = useCopyWithToast();
     const [selected, setSelected] = useState<string[]>([]);
     const [search, setSearch] = useState('');
@@ -1210,6 +1237,7 @@ function FindingsView({
     const needle = search.trim().toLowerCase();
     const filtered = rows.filter(
         (row) =>
+            (status === 'all' || row.lifecycle.status === status) &&
             (severity === 'all' || row.severity === severity) &&
             (category === 'all' || row.category === category) &&
             (checkId === 'all' || row.checkId === checkId) &&
@@ -1220,6 +1248,7 @@ function FindingsView({
     );
     const hasActiveFilters =
         needle !== '' ||
+        (status !== 'open' && status !== 'resolved') ||
         severity !== 'all' ||
         category !== 'all' ||
         checkId !== 'all';
@@ -1268,7 +1297,35 @@ function FindingsView({
                 }
                 filtersRight={
                     selected.length > 0 ? null : (
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                            <ToggleGroup
+                                type="single"
+                                variant="outline"
+                                value={status}
+                                onValueChange={(value) => {
+                                    if (value) {
+                                        setStatus(value as FindingStatusFilter);
+                                    }
+                                }}
+                                aria-label={t('findings.statusFilter')}
+                            >
+                                {(
+                                    [
+                                        'open',
+                                        'dismissed',
+                                        'resolved',
+                                        'all',
+                                    ] as const
+                                ).map((item) => (
+                                    <ToggleGroupItem
+                                        key={item}
+                                        value={item}
+                                        className="px-2.5"
+                                    >
+                                        {t(`findings.status.${item}`)}
+                                    </ToggleGroupItem>
+                                ))}
+                            </ToggleGroup>
                             <Select
                                 value={severity}
                                 onValueChange={(value) =>
@@ -1347,13 +1404,17 @@ function FindingsView({
                             <EmptyStatus>
                                 {hasActiveFilters
                                     ? t('report.noMatchingFindings')
-                                    : t('report.noIssues')}
+                                    : status === 'resolved'
+                                      ? t('findings.noResolved')
+                                      : t('report.noIssues')}
                             </EmptyStatus>
                         }
                         description={
                             hasActiveFilters
                                 ? t('report.noMatchingFindingsDescription')
-                                : t('report.noIssuesDescription')
+                                : status === 'resolved'
+                                  ? t('findings.noResolvedDescription')
+                                  : t('report.noIssuesDescription')
                         }
                         action={
                             hasActiveFilters ? (
@@ -1361,6 +1422,7 @@ function FindingsView({
                                     type="button"
                                     onClick={() => {
                                         setSearch('');
+                                        setStatus('open');
                                         setSeverity('all');
                                         setCategory('all');
                                         setCheckId('all');
@@ -1404,6 +1466,9 @@ function FindingsView({
                                     <TableHead>{t('report.fixedIn')}</TableHead>
                                     <TableHead>{t('report.message')}</TableHead>
                                     <TableHead>{t('report.fixHint')}</TableHead>
+                                    <TableHead>
+                                        {t('findings.firstSeen')}
+                                    </TableHead>
                                     <TableHead className="w-[1%] text-right">
                                         {t('fix.actions')}
                                     </TableHead>
@@ -1498,6 +1563,50 @@ function FindingsView({
                                         <TableCell className="min-w-[14rem] font-mono text-xs whitespace-normal">
                                             {row.fixHint}
                                         </TableCell>
+                                        <TableCell className="min-w-[10rem] whitespace-normal">
+                                            <time
+                                                dateTime={
+                                                    row.lifecycle.firstSeenAt
+                                                }
+                                                title={formatDateTime(
+                                                    row.lifecycle.firstSeenAt,
+                                                    i18n.language,
+                                                )}
+                                                className="text-sm"
+                                            >
+                                                {relativeTime(
+                                                    row.lifecycle.firstSeenAt,
+                                                    i18n.language,
+                                                )}
+                                            </time>
+                                            <div className="mt-1 flex flex-wrap gap-1">
+                                                {row.lifecycle.resolvedAt !==
+                                                null ? (
+                                                    <Badge variant="success">
+                                                        {t('findings.fixedOn', {
+                                                            date: formatDateTime(
+                                                                row.lifecycle
+                                                                    .resolvedAt,
+                                                                i18n.language,
+                                                            ),
+                                                        })}
+                                                    </Badge>
+                                                ) : null}
+                                                <LifecycleBadges
+                                                    lifecycle={row.lifecycle}
+                                                />
+                                            </div>
+                                            {row.lifecycle.status !==
+                                                'resolved' &&
+                                            latestReceivedAt !== null &&
+                                            Date.parse(
+                                                row.lifecycle.lastSeenAt,
+                                            ) < Date.parse(latestReceivedAt) ? (
+                                                <div className="mt-1 text-xs text-muted-foreground">
+                                                    {t('findings.notInLatest')}
+                                                </div>
+                                            ) : null}
+                                        </TableCell>
                                         <TableCell className="text-right">
                                             <FixActions
                                                 fix={fixes[findingKey(row)]}
@@ -1514,6 +1623,9 @@ function FindingsView({
                 <FindingDrawer
                     finding={openFinding}
                     fix={fixes[findingKey(openFinding)]}
+                    lifecycle={openFinding.lifecycle}
+                    projectId={projectId}
+                    canDismiss={canDismiss}
                 />
             ) : null}
         </Drawer>
