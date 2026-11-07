@@ -35,6 +35,7 @@ import { useInitials } from '@/hooks/use-initials';
 import { cn, toUrl } from '@/lib/utils';
 import { dashboard } from '@/routes';
 import type { BreadcrumbItem, NavItem } from '@/types';
+import { avatarToneClass } from '@/lib/avatar-tone';
 
 type Props = {
     breadcrumbs?: BreadcrumbItem[];
@@ -236,15 +237,17 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                     variant="ghost"
                                     className="size-10 rounded-full p-1"
                                 >
-                                    <Avatar
-                                        userId={user.id}
-                                        className="size-8 overflow-hidden rounded-full"
-                                    >
+                                    <Avatar className="size-8 overflow-hidden rounded-full">
                                         <AvatarImage
                                             src={user.avatar}
                                             alt={displayName}
                                         />
-                                        <AvatarFallback className="rounded-lg text-xs font-medium">
+                                        <AvatarFallback
+                                            className={cn(
+                                                'rounded-lg text-xs font-medium',
+                                                avatarToneClass(user.id),
+                                            )}
+                                        >
                                             {getInitials(user.name)}
                                         </AvatarFallback>
                                     </Avatar>

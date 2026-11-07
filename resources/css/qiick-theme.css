@@ -199,7 +199,7 @@
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-ring: var(--sidebar-ring);
 
-    /* Per-user avatar swatches (avatar item: `userId`), same in every mode */
+    /* Per-user avatar swatches (`avatarToneClass()` from the avatar-tone item), same in every mode */
     --color-avatar-1: var(--avatar-1);
     --color-avatar-2: var(--avatar-2);
     --color-avatar-3: var(--avatar-3);

@@ -1,21 +1,26 @@
 import { useTranslation } from 'react-i18next';
+import { AvatarBadge } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 
 /** State of the app's realtime (WebSocket) connection. */
 export type ConnectionState =
     'connected' | 'connecting' | 'disabled' | 'offline';
 
+/**
+ * Green when connected, amber while connecting, grey when realtime is off, red
+ * only when the connection is lost (an error, unlike a user being offline).
+ */
 const TONES: Record<ConnectionState, string> = {
     connected: 'bg-success',
     connecting: 'bg-warning animate-pulse',
-    disabled: 'bg-muted-foreground/40',
+    disabled: 'bg-muted-foreground',
     offline: 'bg-destructive',
 };
 
 /**
- * Presence-style dot for the realtime connection, on the avatar's top-right
- * (the parent must be `relative`). The app passes its connection state (in
- * externa-core, `useEchoConnection()` for Reverb).
+ * The realtime connection as an `AvatarBadge`: render it inside `<Avatar>`, so
+ * it sits bottom-right like every presence dot. The app passes its connection
+ * state (in externa-core, `useEchoConnection()` for Reverb).
  */
 export function ConnectionDot({
     state,
@@ -28,12 +33,8 @@ export function ConnectionDot({
     const label = t(`realtime.${state}`);
 
     return (
-        <span
-            className={cn(
-                'pointer-events-none absolute -top-0.5 -right-0.5 size-2.5 rounded-full ring-2 ring-sidebar',
-                TONES[state],
-                className,
-            )}
+        <AvatarBadge
+            className={cn('pointer-events-none', TONES[state], className)}
             title={label}
             aria-label={label}
             role="status"
