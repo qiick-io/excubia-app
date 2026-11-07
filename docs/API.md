@@ -68,7 +68,7 @@ Success bodies are JSON objects; excubia-core decodes them and fails a push whos
 | `429`  | rate limit                                | `{"message": "Too Many Attempts."}` with `Retry-After`                                             |
 | `5xx`  | server error                              | `{"message": "Server Error"}` (with `APP_DEBUG` off); excubia-core keeps batches and retries       |
 
-Every error body has a `message` string. A `422` also has `errors`: the keys are field paths of the envelope with list indexes as numbers (`runtime.aggregates.0.count`), the values lists of messages. An unsupported protocol version answers:
+Every error body has a `message` string. With `APP_DEBUG=true` (never in production) framework errors such as `405`, `429` and `5xx` also carry `exception`, `file`, `line` and `trace`. A `422` also has `errors`: the keys are field paths of the envelope with list indexes as numbers (`runtime.aggregates.0.count`), the values lists of messages. An unsupported protocol version answers:
 
 ```json
 {

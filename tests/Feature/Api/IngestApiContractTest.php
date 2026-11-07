@@ -19,7 +19,8 @@ use Illuminate\Testing\TestResponse;
  */
 beforeEach(function () {
     Http::preventStrayRequests();
-    config(['excubia.push_max_kilobytes' => 2, 'excubia.push_requests_per_minute' => 30]);
+    // Production answers: with APP_DEBUG on, framework errors (405, 429) add exception and trace keys.
+    config(['app.debug' => false, 'excubia.push_max_kilobytes' => 2, 'excubia.push_requests_per_minute' => 30]);
 });
 
 /**
