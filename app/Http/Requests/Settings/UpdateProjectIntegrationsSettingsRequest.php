@@ -13,7 +13,8 @@ use Illuminate\Validation\Rule;
 
 /**
  * Settings → Integrations (#22), as externa-core's: the signed outbound webhook and the Slack /
- * Telegram notifiers. Empty secrets keep the stored ones.
+ * Telegram notifiers, and the optional runtime alert rules (#114). Empty secrets keep the stored
+ * ones.
  */
 class UpdateProjectIntegrationsSettingsRequest extends FormRequest
 {
@@ -35,6 +36,10 @@ class UpdateProjectIntegrationsSettingsRequest extends FormRequest
             'notifier_event_types' => ['nullable', 'array'],
             'notifier_event_types.*' => ['string', 'distinct', Rule::in(AlertEventEnum::selectableValues())],
             'notifier_minimum_severity' => ['required', Rule::enum(SeverityEnum::class)],
+            // Optional runtime alert rules (#107, #114); empty turns a rule off.
+            'alert_cache_hit_ratio_below' => ['nullable', 'integer', 'min:1', 'max:100'],
+            'alert_delivery_failures_enabled' => ['sometimes', 'boolean'],
+            'alert_log_spike_per_hour' => ['nullable', 'integer', 'min:1', 'max:1000000'],
         ];
     }
 
@@ -53,6 +58,9 @@ class UpdateProjectIntegrationsSettingsRequest extends FormRequest
             'notifier_telegram_chat_id' => $text('notifier_telegram_chat_id'),
             'notifier_event_types' => array_values(array_map('strval', (array) $this->input('notifier_event_types', []))),
             'notifier_minimum_severity' => $this->string('notifier_minimum_severity')->toString(),
+            'alert_cache_hit_ratio_below' => $this->filled('alert_cache_hit_ratio_below') ? $this->integer('alert_cache_hit_ratio_below') : null,
+            'alert_delivery_failures_enabled' => $this->boolean('alert_delivery_failures_enabled'),
+            'alert_log_spike_per_hour' => $this->filled('alert_log_spike_per_hour') ? $this->integer('alert_log_spike_per_hour') : null,
         ];
     }
 }

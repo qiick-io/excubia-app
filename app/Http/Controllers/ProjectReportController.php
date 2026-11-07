@@ -16,6 +16,7 @@ use App\Jobs\RunSystemReportJob;
 use App\Models\ExceptionGroup;
 use App\Models\Project;
 use App\Services\FixSuggestionService;
+use App\Services\ProjectAlertsService;
 use App\Services\ProjectRuntimeService;
 use App\Services\ReportFindingsService;
 use Illuminate\Http\RedirectResponse;
@@ -36,7 +37,7 @@ class ProjectReportController extends Controller
      *
      * @var list<string>
      */
-    public const VIEWS = ['findings', 'runtime', 'exceptions', 'schedule', 'plan', 'history'];
+    public const VIEWS = ['findings', 'runtime', 'exceptions', 'schedule', 'alerts', 'plan', 'history'];
 
     public function show(Request $request, Project $project, ReportFindingsService $findings, FixSuggestionService $fixes, ProjectRuntimeService $runtime, ?string $view = null): Response|RedirectResponse
     {
@@ -77,6 +78,9 @@ class ProjectReportController extends Controller
             )->resolve(),
             // Schedule inventory and status (#110), only on its tab.
             'schedule' => $view === 'schedule' ? ScheduledTaskResource::collection($project->scheduledTasks()->get())->resolve() : [],
+            // Alert history, mutes and maintenance windows (#114), only on its tab.
+            'alerts' => $view === 'alerts' ? app(ProjectAlertsService::class)->forPage($project) : null,
+            'canManageAlerts' => (bool) $request->user()?->can('update', $project),
             'canManageExceptions' => (bool) $request->user()?->can(PermissionEnum::CanManageExceptions->value),
             'reports' => HealthReportResource::collection(
                 $project->healthReports()->orderByDesc('received_at')->orderByDesc('id')->get(),

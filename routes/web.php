@@ -7,6 +7,7 @@ use App\Http\Controllers\BrandingController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\JobMonitorController;
 use App\Http\Controllers\PermissionController;
+use App\Http\Controllers\ProjectAlertsController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ProjectReportController;
 use App\Http\Controllers\RoleController;
@@ -42,6 +43,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('projects/{project}/token', [ProjectController::class, 'revokeToken'])->name('projects.token.revoke');
     Route::post('projects/{project}/system-report', [ProjectReportController::class, 'refresh'])->name('projects.system-report');
     Route::patch('projects/{project}/exceptions/{exceptionGroup}', [ProjectReportController::class, 'updateException'])->name('projects.exceptions.update');
+    // Alert controls on the project's Alerts tab (#114).
+    Route::post('projects/{project}/alert-mutes', [ProjectAlertsController::class, 'storeMute'])->name('projects.alert-mutes.store');
+    Route::delete('projects/{project}/alert-mutes/{alertMute}', [ProjectAlertsController::class, 'destroyMute'])->name('projects.alert-mutes.destroy');
+    Route::post('projects/{project}/maintenance-windows', [ProjectAlertsController::class, 'storeWindow'])->name('projects.maintenance-windows.store');
+    Route::delete('projects/{project}/maintenance-windows/{maintenanceWindow}', [ProjectAlertsController::class, 'destroyWindow'])->name('projects.maintenance-windows.destroy');
 
     // AI assistant (#17) at /ai, as in externa-core: 404 while `excubia.ai_enabled` is off.
     Route::get('ai', [AssistantController::class, 'index'])->name('ai.index');

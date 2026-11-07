@@ -193,7 +193,8 @@
             "description": "Aktualisieren Sie Ihre Profildaten und E-Mail-Adresse",
             "unverified": "Ihre E-Mail-Adresse ist nicht bestätigt.",
             "resend": "Hier klicken, um die Bestätigungs-E-Mail erneut zu senden.",
-            "linkSent": "Ein neuer Bestätigungslink wurde an Ihre E-Mail-Adresse gesendet."
+            "linkSent": "Ein neuer Bestätigungslink wurde an Ihre E-Mail-Adresse gesendet.",
+            "weeklyDigest": "Wöchentliche E-Mail-Zusammenfassung senden (neue Befunde, Regressionen, EOL, häufigste Exceptions, Schedule-Probleme)"
         },
         "security": {
             "breadcrumb": "Sicherheitseinstellungen",
@@ -426,8 +427,18 @@
                 "project.token_changed": "Ein Push-Token wurde erneuert oder widerrufen.",
                 "schedule.missed": "Eine geplante Aufgabe lief bis zum nächsten Fälligkeitszeitpunkt nicht.",
                 "schedule.failed": "Ein Lauf einer geplanten Aufgabe ist fehlgeschlagen.",
-                "schedule.scheduler_down": "Der Scheduler steht: excubia:heartbeat lief nicht."
-            }
+                "schedule.scheduler_down": "Der Scheduler steht: excubia:heartbeat lief nicht.",
+                "runtime.cache_hit_ratio_low": "Ein Cache-Store liegt unter der Trefferquote.",
+                "runtime.delivery_failed": "Ein Mailable oder eine Benachrichtigung ist fehlgeschlagen.",
+                "runtime.log_spike": "Ein Log-Kanal hat mehr Fehlereinträge als den Schwellwert geschrieben."
+            },
+            "runtimeRulesTitle": "Runtime-Alarmregeln",
+            "runtimeRulesDescription": "Optionale Alarme aus den Runtime-Daten der Projekte, alle 15 Minuten über die letzte Stunde geprüft. Leer schaltet eine Regel ab.",
+            "cacheHitRatio": "Cache-Trefferquote unter (%)",
+            "cacheHitRatioHint": "Alarm, wenn ein Cache-Store bei mindestens 100 Zugriffen in der letzten Stunde weniger als diesen Anteil trifft.",
+            "logSpike": "Fehler-Logeinträge pro Kanal und Stunde",
+            "logSpikeHint": "Alarm, wenn ein Log-Kanal in der letzten Stunde mindestens so viele Einträge der Stufen error, critical, alert oder emergency schreibt.",
+            "deliveryFailures": "Alarm bei fehlgeschlagenen Mails oder Benachrichtigungen"
         }
     },
     "activityLog": {
@@ -668,7 +679,8 @@
             "history": "Verlauf",
             "runtime": "Laufzeit",
             "exceptions": "Exceptions",
-            "schedule": "Zeitplan"
+            "schedule": "Zeitplan",
+            "alerts": "Alarme"
         },
         "support": {
             "supported": "Unterstützt",
@@ -992,5 +1004,84 @@
         "connecting": "Verbinde…",
         "disabled": "Realtime aus",
         "offline": "Realtime offline"
+    },
+    "alerts": {
+        "description": "Die Alarme dieses Projekts: was gesendet wurde, was fehlschlug und was unterdrückt wurde. Regel oder Problem stummschalten oder Wartungsfenster planen.",
+        "maintenanceModeTitle": "Alarme pausiert",
+        "maintenanceModeDescription": "Laut dem letzten Bericht ist die Anwendung im Wartungsmodus. Alarme laufen mit dem nächsten Bericht nach php artisan up weiter.",
+        "windowsTitle": "Wartungsfenster",
+        "windowsDescription": "Während eines aktiven Fensters werden Alarme unterdrückt.",
+        "addWindow": "Fenster hinzufügen",
+        "removeWindow": "Fenster {{name}} entfernen",
+        "noWindows": "Keine Wartungsfenster.",
+        "windowActive": "Aktiv",
+        "windowFormDescription": "Ein einmaliger Zeitraum oder einer, der sich jede Woche wiederholt. Zeiten gelten in der Zeitzone.",
+        "mutesTitle": "Stummgeschaltet",
+        "mutesDescription": "Regeln und Probleme, die im Verlauf unten stummgeschaltet wurden.",
+        "noMutes": "Nichts ist stummgeschaltet.",
+        "wholeRule": "Ganze Regel",
+        "forever": "dauerhaft",
+        "until": "bis {{time}}",
+        "unmute": "Wieder aktivieren",
+        "historyTitle": "Alarmverlauf",
+        "historyDescription": "Die letzten 100 Alarme.",
+        "noHistory": "Noch keine Alarme.",
+        "time": "Zeit",
+        "alert": "Alarm",
+        "statusLabel": "Status",
+        "actions": "Aktionen",
+        "muteMenu": "Stummschalten",
+        "status": {
+            "queued": "In Warteschlange",
+            "sent": "Gesendet",
+            "failed": "Zustellung fehlgeschlagen",
+            "suppressed": "Unterdrückt",
+            "skipped": "Kein Kanal"
+        },
+        "reason": {
+            "muted": "Stummgeschaltet",
+            "maintenance_window": "Wartungsfenster",
+            "maintenance_mode": "Wartungsmodus"
+        },
+        "channel": {
+            "webhook": "Webhook",
+            "slack": "Slack",
+            "telegram": "Telegram"
+        },
+        "delivery": {
+            "queued": "wartend",
+            "sent": "gesendet",
+            "failed": "fehlgeschlagen"
+        },
+        "mute": {
+            "rule": "Diese Regel stummschalten",
+            "issue": "Dieses Problem stummschalten"
+        },
+        "duration": {
+            "1h": "Für 1 Stunde",
+            "24h": "Für 24 Stunden",
+            "7d": "Für 7 Tage",
+            "forever": "Dauerhaft"
+        },
+        "recurrence": "Wiederholung",
+        "once": "Einmalig",
+        "weekly": "Wöchentlich",
+        "startsAt": "Beginn",
+        "endsAt": "Ende",
+        "weekdaysLabel": "Tage",
+        "startTime": "Startzeit",
+        "durationMinutes": "Dauer (Minuten)",
+        "timezone": "Zeitzone",
+        "minutes_one": "{{count}} Minute",
+        "minutes_other": "{{count}} Minuten",
+        "weekdays": {
+            "1": "Mo",
+            "2": "Di",
+            "3": "Mi",
+            "4": "Do",
+            "5": "Fr",
+            "6": "Sa",
+            "7": "So"
+        }
     }
 }

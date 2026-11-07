@@ -19,7 +19,7 @@ use Inertia\Response;
 /**
  * Settings → Integrations (#22), copied from externa-core: the signed outbound webhook with its
  * delivery status, the Slack and Telegram notifiers, the events they send and a test per
- * channel. Secrets are write-only. The routes require `can-manage-project-settings`.
+ * channel, and the optional runtime alert rules (#114). Secrets are write-only. The routes require `can-manage-project-settings`.
  */
 class ProjectIntegrationsSettingsController extends Controller
 {
@@ -39,6 +39,9 @@ class ProjectIntegrationsSettingsController extends Controller
                 ...$values,
                 'notifier_event_types' => $this->settings->notifierEventTypes(),
                 'notifier_minimum_severity' => $this->settings->notifierMinimumSeverity()->value,
+                'alert_cache_hit_ratio_below' => $this->settings->alertCacheHitRatioBelow(),
+                'alert_delivery_failures_enabled' => $this->settings->shouldAlertDeliveryFailures(),
+                'alert_log_spike_per_hour' => $this->settings->alertLogSpikePerHour(),
             ],
             'events' => AlertEventEnum::selectableValues(),
             'severities' => SeverityEnum::values(),

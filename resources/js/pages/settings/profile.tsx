@@ -1,6 +1,7 @@
 import { Form, Head, Link, usePage } from '@inertiajs/react';
 import { useTranslation } from 'react-i18next';
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
+import BooleanField from '@/components/boolean-field';
 import DeleteUser from '@/components/delete-user';
 import Heading from '@/components/heading';
 import { SettingsFormActions } from '@/components/settings-form-actions';
@@ -182,6 +183,16 @@ export default function Profile({
                                                 {errors.email}
                                             </FieldError>
                                         </Field>
+
+                                        <BooleanField
+                                            name="has_weekly_digest"
+                                            label={t(
+                                                'settings.profile.weeklyDigest',
+                                            )}
+                                            defaultChecked={Boolean(
+                                                user.has_weekly_digest,
+                                            )}
+                                        />
                                     </FieldGroup>
 
                                     {mustVerifyEmail &&

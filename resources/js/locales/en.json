@@ -193,7 +193,8 @@
             "description": "Update your profile details and email address",
             "unverified": "Your email address is unverified.",
             "resend": "Click here to resend the verification email.",
-            "linkSent": "A new verification link has been sent to your email address."
+            "linkSent": "A new verification link has been sent to your email address.",
+            "weeklyDigest": "Send me a weekly email digest (new findings, regressions, EOL, top exceptions, schedule problems)"
         },
         "security": {
             "breadcrumb": "Security settings",
@@ -426,8 +427,18 @@
                 "project.token_changed": "A push token was rotated or revoked.",
                 "schedule.missed": "A scheduled task still had not run when its next due time came.",
                 "schedule.failed": "A run of a scheduled task failed.",
-                "schedule.scheduler_down": "The scheduler stopped: excubia:heartbeat did not run."
-            }
+                "schedule.scheduler_down": "The scheduler stopped: excubia:heartbeat did not run.",
+                "runtime.cache_hit_ratio_low": "A cache store hits less than the threshold.",
+                "runtime.delivery_failed": "A mailable or notification failed.",
+                "runtime.log_spike": "A log channel wrote more error entries than the threshold."
+            },
+            "runtimeRulesTitle": "Runtime alert rules",
+            "runtimeRulesDescription": "Optional alerts from the runtime data the projects push, checked every 15 minutes over the last hour. Empty turns a rule off.",
+            "cacheHitRatio": "Cache hit ratio below (%)",
+            "cacheHitRatioHint": "Alert when a cache store hits less than this share of at least 100 lookups in the last hour.",
+            "logSpike": "Error-log entries per channel and hour",
+            "logSpikeHint": "Alert when a log channel writes at least this many error, critical, alert or emergency entries in the last hour.",
+            "deliveryFailures": "Alert when mails or notifications fail"
         }
     },
     "activityLog": {
@@ -668,7 +679,8 @@
             "history": "History",
             "runtime": "Runtime",
             "exceptions": "Exceptions",
-            "schedule": "Schedule"
+            "schedule": "Schedule",
+            "alerts": "Alerts"
         },
         "support": {
             "supported": "Supported",
@@ -992,5 +1004,84 @@
         "connecting": "Connecting…",
         "disabled": "Realtime off",
         "offline": "Realtime offline"
+    },
+    "alerts": {
+        "description": "The alerts of this project: what was sent, what failed and what was suppressed. Mute a rule or an issue, or plan maintenance windows.",
+        "maintenanceModeTitle": "Alerts are paused",
+        "maintenanceModeDescription": "The latest report says the application is in maintenance mode. Alerts resume with the next report after php artisan up.",
+        "windowsTitle": "Maintenance windows",
+        "windowsDescription": "Alerts are suppressed while a window is in force.",
+        "addWindow": "Add window",
+        "removeWindow": "Remove window {{name}}",
+        "noWindows": "No maintenance windows.",
+        "windowActive": "In force",
+        "windowFormDescription": "A one-off period, or one that repeats every week. Times are local to the timezone.",
+        "mutesTitle": "Muted",
+        "mutesDescription": "Rules and issues muted from the history below.",
+        "noMutes": "Nothing is muted.",
+        "wholeRule": "Whole rule",
+        "forever": "forever",
+        "until": "until {{time}}",
+        "unmute": "Unmute",
+        "historyTitle": "Alert history",
+        "historyDescription": "The latest 100 alerts.",
+        "noHistory": "No alerts yet.",
+        "time": "Time",
+        "alert": "Alert",
+        "statusLabel": "Status",
+        "actions": "Actions",
+        "muteMenu": "Mute",
+        "status": {
+            "queued": "Queued",
+            "sent": "Sent",
+            "failed": "Delivery failed",
+            "suppressed": "Suppressed",
+            "skipped": "No channel"
+        },
+        "reason": {
+            "muted": "Muted",
+            "maintenance_window": "Maintenance window",
+            "maintenance_mode": "Maintenance mode"
+        },
+        "channel": {
+            "webhook": "Webhook",
+            "slack": "Slack",
+            "telegram": "Telegram"
+        },
+        "delivery": {
+            "queued": "queued",
+            "sent": "sent",
+            "failed": "failed"
+        },
+        "mute": {
+            "rule": "Mute this rule",
+            "issue": "Mute this issue"
+        },
+        "duration": {
+            "1h": "For 1 hour",
+            "24h": "For 24 hours",
+            "7d": "For 7 days",
+            "forever": "Forever"
+        },
+        "recurrence": "Repeats",
+        "once": "Once",
+        "weekly": "Weekly",
+        "startsAt": "Starts at",
+        "endsAt": "Ends at",
+        "weekdaysLabel": "Days",
+        "startTime": "Start time",
+        "durationMinutes": "Length (minutes)",
+        "timezone": "Timezone",
+        "minutes_one": "{{count}} minute",
+        "minutes_other": "{{count}} minutes",
+        "weekdays": {
+            "1": "Mon",
+            "2": "Tue",
+            "3": "Wed",
+            "4": "Thu",
+            "5": "Fri",
+            "6": "Sat",
+            "7": "Sun"
+        }
     }
 }
