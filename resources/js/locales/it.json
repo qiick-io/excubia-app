@@ -430,7 +430,8 @@
                 "schedule.scheduler_down": "Lo scheduler si è fermato: excubia:heartbeat non è partito.",
                 "runtime.cache_hit_ratio_low": "Uno store di cache ha un hit ratio sotto la soglia.",
                 "runtime.delivery_failed": "Un mailable o una notifica è fallito.",
-                "runtime.log_spike": "Un canale di log ha scritto più voci di errore della soglia."
+                "runtime.log_spike": "Un canale di log ha scritto più voci di errore della soglia.",
+                "infrastructure.failed": "Un controllo di database, storage o disco fallisce (nuovo, o al primo report). Inviato subito, critico."
             },
             "runtimeRulesTitle": "Regole di avviso runtime",
             "runtimeRulesDescription": "Avvisi opzionali dai dati runtime inviati dai progetti, controllati ogni 15 minuti sull'ultima ora. Vuoto disattiva la regola.",
@@ -680,7 +681,8 @@
             "runtime": "Runtime",
             "exceptions": "Eccezioni",
             "schedule": "Pianificazione",
-            "alerts": "Avvisi"
+            "alerts": "Avvisi",
+            "licenses": "Licenze"
         },
         "support": {
             "supported": "Supportato",
@@ -1097,5 +1099,294 @@
             "6": "Sab",
             "7": "Dom"
         }
+    },
+    "checks": {
+        "category": {
+            "infrastructure": "Infrastruttura",
+            "configuration": "Configurazione",
+            "dependencies": "Dipendenze",
+            "other": "Altri controlli"
+        },
+        "categoryLabel": "Gruppo",
+        "allCategories": "Tutti i gruppi",
+        "docs": "Come funziona questo controllo",
+        "unknownDescription": "Un controllo di un excubia-core più recente. Messaggio e dettagli sono mostrati come inviati.",
+        "php-eol": {
+            "label": "Fine vita di PHP",
+            "description": "Se la versione di PHP riceve ancora correzioni di sicurezza e bug (endoflife.date)."
+        },
+        "laravel-eol": {
+            "label": "Fine vita di Laravel",
+            "description": "Se la major di Laravel riceve ancora correzioni di sicurezza e bug."
+        },
+        "node-eol": {
+            "label": "Fine vita di Node",
+            "description": "Se la versione di Node dichiarata è ancora mantenuta."
+        },
+        "composer-advisories": {
+            "label": "Vulnerabilità note (Composer)",
+            "description": "Avvisi di sicurezza su Packagist che riguardano un pacchetto Composer bloccato."
+        },
+        "npm-advisories": {
+            "label": "Vulnerabilità note (npm)",
+            "description": "Vulnerabilità su OSV.dev che riguardano un pacchetto del lockfile JavaScript."
+        },
+        "composer-abandoned": {
+            "label": "Pacchetti abbandonati",
+            "description": "Pacchetti Composer segnati come abbandonati su Packagist dai loro maintainer."
+        },
+        "composer-stale": {
+            "label": "Pacchetti fermi",
+            "description": "Pacchetti Composer con repository archiviato o senza release da molto tempo."
+        },
+        "laravel-next-blocker": {
+            "label": "Blocchi per la prossima major",
+            "description": "Dipendenze dirette la cui ultima release non consente ancora la prossima major di Laravel."
+        },
+        "laravel-debug-mode": {
+            "label": "Modalità debug",
+            "description": "app.debug è attivo fuori da local e testing, quindi gli errori mostrano dettagli interni."
+        },
+        "laravel-production-caches": {
+            "label": "Cache di produzione",
+            "description": "Le cache di config, route ed eventi che la produzione dovrebbe creare al deploy."
+        },
+        "laravel-pending-migrations": {
+            "label": "Migrazioni in sospeso",
+            "description": "Migrazioni non ancora eseguite sul database."
+        },
+        "laravel-failed-jobs": {
+            "label": "Job falliti",
+            "description": "Job nell’archivio dei job falliti e da quanto c’è il più vecchio."
+        },
+        "laravel-scheduler-heartbeat": {
+            "label": "Heartbeat dello scheduler",
+            "description": "Se lo scheduler ha eseguito excubia:heartbeat negli ultimi minuti."
+        },
+        "laravel-maintenance-mode": {
+            "label": "Modalità manutenzione",
+            "description": "Se l’app è in manutenzione (php artisan down)."
+        },
+        "laravel-app-key": {
+            "label": "Chiave dell’applicazione",
+            "description": "Se app.key è impostata: senza, crittografia e sessioni non funzionano."
+        },
+        "laravel-session-security": {
+            "label": "Sicurezza del cookie di sessione",
+            "description": "Flag secure e HTTP-only del cookie di sessione in produzione."
+        },
+        "laravel-cors-wildcard": {
+            "label": "Origine CORS jolly",
+            "description": "Un’origine consentita *, che fallisce insieme alle credenziali."
+        },
+        "laravel-production-drivers": {
+            "label": "Driver di produzione",
+            "description": "Driver di coda, cache, sessione e mail pensati per lo sviluppo, usati in produzione."
+        },
+        "laravel-log-level": {
+            "label": "Livello di log",
+            "description": "Se il canale di log predefinito registra voci debug in produzione."
+        },
+        "laravel-dev-packages": {
+            "label": "Pacchetti di sviluppo",
+            "description": "Strumenti di sviluppo in require e attivi in produzione."
+        },
+        "dependency-licenses": {
+            "label": "Licenze delle dipendenze",
+            "description": "Licenze dichiarate nei lockfile: vietate, copyleft forte, mancanti o sconosciute."
+        },
+        "laravel-database": {
+            "label": "Database",
+            "description": "Se ogni connessione al database controllata risponde."
+        },
+        "laravel-cache": {
+            "label": "Cache",
+            "description": "Se lo store di cache predefinito può scrivere, leggere ed eliminare una chiave."
+        },
+        "laravel-storage": {
+            "label": "Storage scrivibile",
+            "description": "Se storage e bootstrap/cache sono scrivibili."
+        },
+        "laravel-disk-space": {
+            "label": "Spazio su disco",
+            "description": "Quanto è pieno il disco che contiene storage/."
+        },
+        "laravel-queue-backlog": {
+            "label": "Arretrato delle code",
+            "description": "Job in attesa per coda e da quanto aspetta il più vecchio."
+        },
+        "php-platform-requirements": {
+            "label": "Requisiti di piattaforma",
+            "description": "Versione di PHP ed estensioni richieste dai pacchetti bloccati, come composer check-platform-reqs."
+        },
+        "env-example-sync": {
+            "label": "Allineamento di .env.example",
+            "description": "Chiavi lette dalla config ma assenti da .env.example, e chiavi inutilizzate. Solo i nomi."
+        },
+        "composer-outdated": {
+            "label": "Pacchetti non aggiornati",
+            "description": "Dipendenze Composer dirette con una release patch, minor o major più recente."
+        },
+        "laravel-queue-workers": {
+            "label": "Worker delle code",
+            "description": "Se Horizon o un worker è attivo per le code con job in attesa."
+        },
+        "npm-outdated": {
+            "label": "Pacchetti non aggiornati (npm)",
+            "description": "Dipendenze npm dirette con una release patch, minor o major più recente."
+        },
+        "laravel-backups": {
+            "label": "Backup",
+            "description": "Età, dimensione e numero dei backup di spatie/laravel-backup per destinazione."
+        },
+        "laravel-database-connections": {
+            "label": "Connessioni al database",
+            "description": "Connessioni aperte sul server del database predefinito."
+        },
+        "laravel-database-size": {
+            "label": "Dimensione del database",
+            "description": "Dimensione del database predefinito e delle sue tabelle più grandi."
+        },
+        "laravel-redis-memory": {
+            "label": "Memoria Redis",
+            "description": "Memoria usata rispetto a maxmemory e politica di eviction per connessione Redis."
+        },
+        "php-opcache": {
+            "label": "OPcache",
+            "description": "OPcache del PHP web: attivazione, hit rate, memoria e validazione dei timestamp."
+        },
+        "php-production-ini": {
+            "label": "php.ini di produzione",
+            "description": "display_errors, expose_php e log_errors del PHP web in produzione."
+        }
+    },
+    "details": {
+        "title": "Dettagli",
+        "yes": "Sì",
+        "no": "No",
+        "megabytes": "{{value}} MB",
+        "percent": "{{value}} %",
+        "minutes_one": "{{count}} minuto",
+        "minutes_other": "{{count}} minuti",
+        "hours_one": "{{count}} ora",
+        "hours_other": "{{count}} ore",
+        "package": "Pacchetto",
+        "lockedVersion": "Installata",
+        "affectedVersions": "Versioni interessate",
+        "fixedVersions": "Corretta in",
+        "lockfile": "Lockfile",
+        "cycle": "Ciclo",
+        "securitySupportEndsOn": "Supporto di sicurezza fino al",
+        "activeSupportEndsOn": "Supporto attivo fino al",
+        "replacement": "Sostituto",
+        "targetMajor": "Major di destinazione",
+        "count": "Numero",
+        "oldestAgeHours": "Il più vecchio",
+        "minutesSinceLastRun": "Dall’ultima esecuzione",
+        "licenses": "Licenze",
+        "ecosystem": "Ecosistema",
+        "hasCredentials": "Con credenziali",
+        "component": "Componente",
+        "driver": "Driver",
+        "connection": "Connessione",
+        "store": "Store",
+        "directory": "Cartella",
+        "usedPercent": "Usato",
+        "queue": "Coda",
+        "pendingCount": "Job in attesa",
+        "oldestAgeMinutes": "Il più vecchio aspetta",
+        "requirement": "Requisito",
+        "requiredBy": "Richiesto da",
+        "checkedPhpVersion": "PHP controllato",
+        "isStandaloneCli": "CLI standalone",
+        "key": "Chiave",
+        "configFiles": "File di config",
+        "keys": "Chiavi",
+        "latestPatch": "Ultima patch",
+        "latestMinor": "Ultima minor",
+        "latestMajor": "Ultima major",
+        "isMajorBehind": "Indietro di una major",
+        "minutesSinceLastSeen": "Ultimo worker visto",
+        "status": "Stato",
+        "processes": "Processi",
+        "supervisors": "Supervisor",
+        "disk": "Disco",
+        "ageHours": "Età dell’ultimo backup",
+        "sizeMb": "Dimensione",
+        "connectionCount": "Connessioni aperte",
+        "largestTables": "Tabelle più grandi",
+        "usedMb": "Memoria usata",
+        "maxMb": "Memoria massima",
+        "policy": "Politica di eviction",
+        "sapi": "SAPI di PHP",
+        "ageMinutes": "Età dello snapshot",
+        "isOpcacheEnabled": "OPcache attivo",
+        "hitRate": "Hit rate",
+        "memoryUsedPercent": "Memoria usata",
+        "cachedScripts": "Script in cache",
+        "isValidateTimestampsEnabled": "Valida i timestamp",
+        "directive": "Direttiva",
+        "isEnabled": "Attivo"
+    },
+    "health": {
+        "notChecked": "Non controllato",
+        "withinLimits": "Nei limiti",
+        "infrastructure": {
+            "title": "Infrastruttura",
+            "description": "I servizi di cui l’app ha bisogno, dall’ultimo report.",
+            "disk": "Disco",
+            "databaseSize": "Dimensione del database",
+            "connections": "Connessioni al database",
+            "queueBacklog": "Arretrato delle code",
+            "backlogValue_one": "{{count}} job in attesa su {{queues}} coda/e, il più vecchio aspetta da {{minutes}} min",
+            "backlogValue_other": "{{count}} job in attesa su {{queues}} coda/e, il più vecchio aspetta da {{minutes}} min",
+            "redis": "Memoria Redis",
+            "redisValue": "{{connection}}: {{used}} di {{max}} MB",
+            "backups": "Backup",
+            "backupValue": "{{disk}}: il più recente ha {{age}}, {{count}} backup"
+        },
+        "dependencies": {
+            "title": "Dipendenze",
+            "description": "Dipendenze dirette non aggiornate e inventario delle licenze.",
+            "allLicenses": "Tutte le licenze",
+            "outdated": "Non aggiornate",
+            "patch": "Patch",
+            "minor": "Minor",
+            "major": "Major"
+        },
+        "ecosystem": {
+            "composer": "Composer",
+            "npm": "npm"
+        }
+    },
+    "licenses": {
+        "unavailable": "Nessun inventario delle licenze: il controllo dependency-licenses non è stato eseguito (excubia-core 1.0.0-beta.2 o successivo).",
+        "emptyTitle": "Nessun inventario delle licenze",
+        "packages_one": "{{count}} pacchetto esaminato",
+        "packages_other": "{{count}} pacchetti esaminati",
+        "kindCount": {
+            "denied_one": "{{count}} vietata",
+            "denied_other": "{{count}} vietate",
+            "copyleft_one": "{{count}} copyleft",
+            "copyleft_other": "{{count}} copyleft",
+            "unknown_one": "{{count}} sconosciuta",
+            "unknown_other": "{{count}} sconosciute"
+        },
+        "kinds": {
+            "denied": "Vietata",
+            "copyleft": "Copyleft forte",
+            "unknown": "Sconosciuta"
+        },
+        "kind": "Tipo",
+        "license": "Licenza",
+        "total": "Totale",
+        "none": "Nessuna dichiarata",
+        "flaggedTitle": "Pacchetti da rivedere",
+        "flaggedDescription": "Prima le licenze vietate, poi il copyleft forte, poi quelle mancanti o sconosciute.",
+        "noneFlagged": "Nessun pacchetto usa una licenza vietata, copyleft forte o sconosciuta.",
+        "noneFlaggedTitle": "Licenze a posto",
+        "inventoryTitle": "Inventario",
+        "fleetTitle": "Licenze da rivedere",
+        "fleetDescription": "Licenze vietate, copyleft forte e sconosciute negli ultimi report, con i progetti che le usano."
     }
 }

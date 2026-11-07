@@ -56,6 +56,8 @@ export type HealthReportSummary = {
         message: string;
         check_name: string | null;
     } | null;
+    /** Worst status of the infrastructure checks (#109); null when none ran. */
+    infrastructure: Exclude<CheckStatus, 'skipped'> | null;
 };
 
 export type RuntimeName = 'php' | 'laravel' | 'node';
@@ -99,6 +101,87 @@ export type HealthReportBody = {
     excubiaVersion?: string;
     checks: ReportCheck[];
     upgradePlan: { stepNumber: number; message: string }[];
+};
+
+/** Group of a check id (`CheckCategoryEnum`); `other` for ids this app does not know yet. */
+export type CheckCategory =
+    | 'infrastructure'
+    | 'configuration'
+    | 'dependencies'
+    | 'other';
+
+/** A finding that warns or fails, in page order (`ReportFindingsService::prioritized`). */
+export type IssueRow = ReportFinding & {
+    checkName: string | null;
+    category: CheckCategory;
+};
+
+/** Counts of outdated direct dependencies, each at its furthest level. */
+export type OutdatedCounts = { patch: number; minor: number; major: number };
+
+/** A denied, strong copyleft or unknown license of a package (`dependency-licenses`). */
+export type FlaggedLicense = {
+    package: string;
+    lockedVersion: string;
+    licenses: string[];
+    ecosystem: string;
+    kind: 'denied' | 'copyleft' | 'unknown';
+    severity: Severity;
+};
+
+/** Health summary of the latest report (`ReportHealthService::summary`, #108, #109). */
+export type ReportHealth = {
+    groups: {
+        category: CheckCategory;
+        status: CheckStatus;
+        checks: {
+            checkId: string;
+            name: string;
+            status: CheckStatus;
+            issues: number;
+        }[];
+    }[];
+    infrastructure: {
+        status: Exclude<CheckStatus, 'skipped'> | null;
+        diskUsedPercent: number | null;
+        database: {
+            connection: string;
+            sizeMb: number;
+            largestTables: { table: string; sizeMb: number }[];
+        } | null;
+        databaseConnections: number | null;
+        queueBacklog: {
+            queues: number;
+            pendingCount: number;
+            oldestAgeMinutes: number | null;
+        } | null;
+        redis: {
+            connection: string;
+            usedMb: number;
+            maxMb: number | null;
+            policy: string | null;
+        }[];
+        backups: {
+            disk: string;
+            ageHours: number | null;
+            sizeMb: number | null;
+            count: number | null;
+        }[];
+    };
+    outdated: {
+        composer: OutdatedCounts | null;
+        npm: OutdatedCounts | null;
+    };
+    licenses: {
+        packageCount: number;
+        byLicense: {
+            license: string;
+            composer: number;
+            npm: number;
+            total: number;
+        }[];
+        flagged: FlaggedLicense[];
+    } | null;
 };
 
 /** One of the user's assistant conversations (`AssistantConversationService`). */
