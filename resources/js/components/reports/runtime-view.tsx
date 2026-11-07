@@ -2,9 +2,12 @@ import { Gauge, Info } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PageEmptyState } from '@/components/admin/page-empty-state';
-import { shortRelease } from '@/components/reports/release-label';
 import { StackedBarChart } from '@/components/reports/severity-chart';
 import type { ChartMarker } from '@/components/reports/severity-chart';
+import {
+    bucketLabel,
+    deployMarkers,
+} from '@/components/reports/time-range-picker';
 import { StatCard } from '@/components/stat-card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -26,7 +29,6 @@ import {
 import { cn } from '@/lib/utils';
 import type {
     RuntimeCountRow,
-    RuntimeDeploy,
     RuntimeRow,
     RuntimeServer,
     RuntimeSummary,
@@ -53,10 +55,10 @@ type Formatters = {
 };
 
 /**
- * The runtime of a project over the last 24 hours (#24, #107), Pulse-style: key numbers,
- * requests per hour (successful vs 5xx), then one card per runtime type. A card without data
- * names the `runtime.*` key of excubia.json that turns it on. Estimated counts carry a `~` when
- * the project samples. Deploys of the window (#106) are dashed markers on the hourly charts.
+ * The runtime of a project over a time range (#24, #107, #113), Pulse-style: key numbers,
+ * requests per chart bucket (successful vs 5xx), then one card per runtime type. A card without
+ * data names the `runtime.*` key of excubia.json that turns it on. Estimated counts carry a `~`
+ * when the project samples. Deploys of the range (#106) are dashed markers on the charts.
  */
 export function RuntimeView({ runtime }: { runtime: RuntimeSummary | null }) {
     const { t } = useTranslation();
@@ -88,15 +90,15 @@ export function RuntimeView({ runtime }: { runtime: RuntimeSummary | null }) {
     const { requests } = runtime;
     const errorRate =
         requests.count > 0 ? (requests.errors / requests.count) * 100 : 0;
-    const hourLabel = (hour: string): string =>
-        new Date(hour).toLocaleTimeString(undefined, {
-            hour: '2-digit',
-            minute: '2-digit',
-        });
+    const bucketText = bucketLabel(runtime.range);
+    const range = {
+        bucket: t(`timeRange.bucket.${runtime.range}`),
+        during: t(`timeRange.during.${runtime.range}`),
+    };
     const markers = deployMarkers(runtime.deploys, t('runtime.deploy'));
     const deploysLabel =
         markers.length > 0
-            ? ` ${t('runtime.deploysLabel', { count: runtime.deploys.length, releases: markers.map((marker) => `${marker.name} (${hourLabel(marker.at)})`).join(', ') })}`
+            ? ` ${t('runtime.deploysLabel', { count: runtime.deploys.length, releases: markers.map((marker) => `${marker.name} (${bucketText(marker.at)})`).join(', ') })}`
             : '';
 
     return (
@@ -117,7 +119,7 @@ export function RuntimeView({ runtime }: { runtime: RuntimeSummary | null }) {
                     className="xl:col-span-3"
                     label={t('runtime.requests')}
                     value={format.count(requests.count)}
-                    headline={t('runtime.lastHours', { count: runtime.hours })}
+                    headline={t(`timeRange.last.${runtime.range}`)}
                     context={
                         runtime.isSampled ? t('runtime.sampled') : undefined
                     }
@@ -151,9 +153,9 @@ export function RuntimeView({ runtime }: { runtime: RuntimeSummary | null }) {
 
             <Card>
                 <CardHeader className="pb-3">
-                    <CardTitle>{t('runtime.requestsPerHour')}</CardTitle>
+                    <CardTitle>{t('runtime.requestsOverTime')}</CardTitle>
                     <CardDescription>
-                        {t('runtime.requestsPerHourDescription')}
+                        {t('runtime.requestsOverTimeDescription', range)}
                         {markers.length > 0
                             ? ` ${t('runtime.deployMarkersHint')}`
                             : null}
@@ -161,12 +163,12 @@ export function RuntimeView({ runtime }: { runtime: RuntimeSummary | null }) {
                 </CardHeader>
                 <CardContent className="h-56">
                     <StackedBarChart
-                        data={requests.hourly.map((point) => ({
-                            label: point.hour,
+                        data={requests.timeline.map((point) => ({
+                            label: point.at,
                             ok: point.ok,
                             errors: point.errors,
                         }))}
-                        formatLabel={hourLabel}
+                        formatLabel={bucketText}
                         markers={markers}
                         series={[
                             {
@@ -184,6 +186,7 @@ export function RuntimeView({ runtime }: { runtime: RuntimeSummary | null }) {
                             t('runtime.chartLabel', {
                                 count: requests.count,
                                 errors: requests.errors,
+                                ...range,
                             }) + deploysLabel
                         }
                     />
@@ -436,8 +439,9 @@ export function RuntimeView({ runtime }: { runtime: RuntimeSummary | null }) {
             <LogLevelsCard
                 logLevels={runtime.logLevels}
                 format={format}
-                hourLabel={hourLabel}
+                bucketText={bucketText}
                 markers={markers}
+                range={range}
             />
 
             <RuntimeCard
@@ -594,7 +598,7 @@ function Name({
 }
 
 /**
- * What a runtime card shows without data: none in the last 24 hours, and the excubia.json key
+ * What a runtime card shows without data: none in the range, and the excubia.json key
  * that turns the type on.
  */
 function NoData({ configKey }: { configKey: string }) {
@@ -695,16 +699,19 @@ function RuntimeCard<Row extends Record<string, unknown>>({
 function LogLevelsCard({
     logLevels,
     format,
-    hourLabel,
+    bucketText,
     markers,
+    range,
 }: {
     logLevels: RuntimeSummary['logLevels'];
     format: Formatters;
-    hourLabel: (hour: string) => string;
+    bucketText: (hour: string) => string;
+    /** The bucket and range phrases of the chart texts. */
+    range: { bucket: string; during: string };
     markers: ChartMarker[];
 }) {
     const { t } = useTranslation();
-    const errors = logLevels.hourly.reduce(
+    const errors = logLevels.timeline.reduce(
         (sum, point) => sum + point.count,
         0,
     );
@@ -714,7 +721,7 @@ function LogLevelsCard({
             <CardHeader className="pb-3">
                 <CardTitle>{t('runtime.logLevels')}</CardTitle>
                 <CardDescription>
-                    {t('runtime.logLevelsDescription')}
+                    {t('runtime.logLevelsDescription', range)}
                 </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
@@ -740,11 +747,11 @@ function LogLevelsCard({
                         </div>
                         <div className="h-48">
                             <StackedBarChart
-                                data={logLevels.hourly.map((point) => ({
-                                    label: point.hour,
+                                data={logLevels.timeline.map((point) => ({
+                                    label: point.at,
                                     errors: point.count,
                                 }))}
-                                formatLabel={hourLabel}
+                                formatLabel={bucketText}
                                 markers={markers}
                                 series={[
                                     {
@@ -755,6 +762,7 @@ function LogLevelsCard({
                                 ]}
                                 label={t('runtime.logChartLabel', {
                                     count: errors,
+                                    ...range,
                                 })}
                             />
                         </div>
@@ -799,30 +807,6 @@ function LogLevelsCard({
             </CardContent>
         </Card>
     );
-}
-
-/**
- * One chart marker per hour with deploys, named after their releases (shortened), oldest first.
- * A deploy without a release is named `unnamed`.
- */
-function deployMarkers(
-    deploys: RuntimeDeploy[],
-    unnamed: string,
-): ChartMarker[] {
-    const byHour = new Map<string, string[]>();
-
-    for (const deploy of deploys) {
-        const names = byHour.get(deploy.hour) ?? [];
-        names.push(
-            deploy.release === null ? unnamed : shortRelease(deploy.release),
-        );
-        byHour.set(deploy.hour, names);
-    }
-
-    return [...byHour].map(([hour, names]) => ({
-        at: hour,
-        name: [...new Set(names)].join(', '),
-    }));
 }
 
 /**

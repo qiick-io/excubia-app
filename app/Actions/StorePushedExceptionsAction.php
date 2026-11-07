@@ -6,6 +6,7 @@ namespace App\Actions;
 
 use App\Enums\ExceptionStatusEnum;
 use App\Models\ExceptionGroup;
+use App\Models\ExceptionOccurrence;
 use App\Models\Project;
 use App\Models\PushedBatch;
 use Carbon\CarbonImmutable;
@@ -24,6 +25,9 @@ use Illuminate\Support\Facades\DB;
  * resolved group that comes back in another release than the one it was last seen in is a
  * regression in that release (the fix shipped and did not hold); coming back in the same
  * release only reopens it, as the fix may not be deployed yet.
+ *
+ * Each group's count is also added to the minute of its last occurrence (#113), for the group's
+ * chart: the payload has no time per occurrence.
  */
 class StorePushedExceptionsAction
 {
@@ -66,7 +70,7 @@ class StorePushedExceptionsAction
             ->first();
 
         if ($existing === null) {
-            ExceptionGroup::query()->create([
+            $created = ExceptionGroup::query()->create([
                 'project_id' => $project->id,
                 'fingerprint' => (string) $group['fingerprint'],
                 'environment' => (string) $group['environment'],
@@ -83,6 +87,7 @@ class StorePushedExceptionsAction
                 'last_release' => $release,
                 'status' => ExceptionStatusEnum::Open,
             ]);
+            $this->addOccurrences($created, $lastSeen, (int) $group['count']);
 
             return;
         }
@@ -107,5 +112,24 @@ class StorePushedExceptionsAction
                 'regressed_release' => $isRegression ? $release : null,
             ] : []),
         ])->save();
+        $this->addOccurrences($existing, $lastSeen, (int) $group['count']);
+    }
+
+    /**
+     * Adds a batch's count to the group's minute. The group row is locked, so this read and
+     * write cannot race another batch of the same group.
+     */
+    private function addOccurrences(ExceptionGroup $group, CarbonImmutable $lastSeen, int $count): void
+    {
+        $bucket = $lastSeen->startOfMinute();
+        $occurrence = ExceptionOccurrence::query()->where('exception_group_id', $group->id)->where('bucket', $bucket)->first();
+
+        if ($occurrence === null) {
+            ExceptionOccurrence::query()->create(['project_id' => $group->project_id, 'exception_group_id' => $group->id, 'bucket' => $bucket, 'count' => $count]);
+
+            return;
+        }
+
+        $occurrence->forceFill(['count' => $occurrence->count + $count])->save();
     }
 }

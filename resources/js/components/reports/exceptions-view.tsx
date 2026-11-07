@@ -8,6 +8,12 @@ import { EmptyStatus } from '@/components/empty-status';
 import { PageLayout, TablePanel } from '@/components/layout/page-layout';
 import { useCopyWithToast } from '@/components/reports/fix-actions';
 import { ReleaseLabel, shortRelease } from '@/components/reports/release-label';
+import { StackedBarChart } from '@/components/reports/severity-chart';
+import {
+    bucketLabel,
+    deployMarkers,
+    TimeRangePicker,
+} from '@/components/reports/time-range-picker';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -30,7 +36,7 @@ import {
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { cn } from '@/lib/utils';
 import projectsRoutes from '@/routes/projects';
-import type { ExceptionGroupRow } from '@/types';
+import type { ExceptionGroupRow, RuntimeDeploy, TimeRange } from '@/types';
 
 const EXCEPTIONS_GUIDE_URL =
     'https://github.com/qiick-io/excubia-core/blob/main/docs/guides/exception-capture.md';
@@ -45,16 +51,26 @@ const STATUS_VARIANTS = {
 
 /**
  * Exceptions of a project grouped into issues (#26), as an admin list (app-ui
- * `docs/list-page.md`): search on the left, status segmented control on the right, a table, and
- * a detail drawer with the stack and the actions (resolve, ignore, reopen, copy a fix prompt).
+ * `docs/list-page.md`): search on the left, status and time range (#113) segmented controls on
+ * the right, a table of the groups seen in the range, and a detail drawer with the occurrences
+ * over the range, the stack and the actions (resolve, ignore, reopen, copy a fix prompt).
  */
 export function ExceptionsView({
     projectId,
+    slug,
     groups,
+    hasExceptions,
+    range,
+    deploys,
     canManage,
 }: {
     projectId: number;
+    slug: string;
     groups: ExceptionGroupRow[];
+    /** Whether the project has groups at all, also outside the range. */
+    hasExceptions: boolean;
+    range: TimeRange;
+    deploys: RuntimeDeploy[];
     canManage: boolean;
 }) {
     const { t } = useTranslation();
@@ -76,16 +92,30 @@ export function ExceptionsView({
         );
     }, [groups, search, status]);
 
+    const picker = (
+        <TimeRangePicker slug={slug} view="exceptions" range={range} />
+    );
+
     if (groups.length === 0) {
         return (
-            <PageLayout>
-                <PageEmptyState
-                    icon={Bug}
-                    title={t('exceptions.emptyTitle')}
-                    description={t('exceptions.emptyDescription')}
-                    docsHref={EXCEPTIONS_GUIDE_URL}
-                    docsLabel={t('exceptions.guide')}
-                />
+            <PageLayout filtersRight={hasExceptions ? picker : undefined}>
+                {hasExceptions ? (
+                    <PageEmptyState
+                        icon={SearchX}
+                        title={t('exceptions.emptyRangeTitle')}
+                        description={t('exceptions.emptyRangeDescription', {
+                            during: t(`timeRange.during.${range}`),
+                        })}
+                    />
+                ) : (
+                    <PageEmptyState
+                        icon={Bug}
+                        title={t('exceptions.emptyTitle')}
+                        description={t('exceptions.emptyDescription')}
+                        docsHref={EXCEPTIONS_GUIDE_URL}
+                        docsLabel={t('exceptions.guide')}
+                    />
+                )}
             </PageLayout>
         );
     }
@@ -111,19 +141,21 @@ export function ExceptionsView({
                     />
                 }
                 filtersRight={
-                    <ToggleGroup
-                        type="single"
-                        variant="outline"
-                        value={status}
-                        onValueChange={(value) => {
-                            if (value) {
-                                setStatus(value as StatusFilter);
-                            }
-                        }}
-                        aria-label={t('exceptions.statusFilter')}
-                    >
-                        {(['open', 'resolved', 'ignored', 'all'] as const).map(
-                            (item) => (
+                    <div className="flex flex-wrap items-center gap-1.5">
+                        <ToggleGroup
+                            type="single"
+                            variant="outline"
+                            value={status}
+                            onValueChange={(value) => {
+                                if (value) {
+                                    setStatus(value as StatusFilter);
+                                }
+                            }}
+                            aria-label={t('exceptions.statusFilter')}
+                        >
+                            {(
+                                ['open', 'resolved', 'ignored', 'all'] as const
+                            ).map((item) => (
                                 <ToggleGroupItem
                                     key={item}
                                     value={item}
@@ -131,9 +163,10 @@ export function ExceptionsView({
                                 >
                                     {t(`exceptions.status.${item}`)}
                                 </ToggleGroupItem>
-                            ),
-                        )}
-                    </ToggleGroup>
+                            ))}
+                        </ToggleGroup>
+                        {picker}
+                    </div>
                 }
             >
                 {filtered.length === 0 ? (
@@ -172,6 +205,9 @@ export function ExceptionsView({
                                     </TableHead>
                                     <TableHead>
                                         {t('exceptions.environment')}
+                                    </TableHead>
+                                    <TableHead className="text-right">
+                                        {t('exceptions.inRange')}
                                     </TableHead>
                                     <TableHead className="text-right">
                                         {t('exceptions.count')}
@@ -213,6 +249,11 @@ export function ExceptionsView({
                                             <Badge variant="outline">
                                                 {group.environment}
                                             </Badge>
+                                        </TableCell>
+                                        <TableCell className="text-right tabular-nums">
+                                            {(
+                                                group.range_count ?? 0
+                                            ).toLocaleString()}
                                         </TableCell>
                                         <TableCell className="text-right tabular-nums">
                                             {group.count.toLocaleString()}
@@ -268,6 +309,8 @@ export function ExceptionsView({
                 <ExceptionDrawer
                     projectId={projectId}
                     group={selected}
+                    range={range}
+                    deploys={deploys}
                     canManage={canManage}
                 />
             ) : null}
@@ -276,19 +319,27 @@ export function ExceptionsView({
 }
 
 /**
- * One exception group: masked message, chain, stack (project frames emphasised), timing, and
- * the actions.
+ * One exception group: masked message, occurrences over the range with the deploy markers,
+ * chain, stack (project frames emphasised), timing, and the actions.
  */
 function ExceptionDrawer({
     projectId,
     group,
+    range,
+    deploys,
     canManage,
 }: {
     projectId: number;
     group: ExceptionGroupRow;
+    range: TimeRange;
+    deploys: RuntimeDeploy[];
     canManage: boolean;
 }) {
     const { t } = useTranslation();
+    const phrases = {
+        bucket: t(`timeRange.bucket.${range}`),
+        during: t(`timeRange.during.${range}`),
+    };
     const copyWithToast = useCopyWithToast();
 
     const setStatus = (status: ExceptionGroupRow['status']): void => {
@@ -318,6 +369,38 @@ function ExceptionDrawer({
                 </DrawerDescription>
             </DrawerHeader>
             <DrawerBody className="gap-4">
+                <section className="flex flex-col gap-1">
+                    <h3 className="text-sm font-medium">
+                        {t('exceptions.occurrences')}
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                        {t('exceptions.occurrencesDescription', phrases)}
+                    </p>
+                    <div className="h-40">
+                        <StackedBarChart
+                            data={(group.timeline ?? []).map((point) => ({
+                                label: point.at,
+                                count: point.count,
+                            }))}
+                            formatLabel={bucketLabel(range)}
+                            markers={deployMarkers(
+                                deploys,
+                                t('runtime.deploy'),
+                            )}
+                            series={[
+                                {
+                                    key: 'count',
+                                    label: t('exceptions.occurrences'),
+                                    color: 'var(--runtime-chart-error)',
+                                },
+                            ]}
+                            label={t('exceptions.occurrencesChartLabel', {
+                                count: group.range_count ?? 0,
+                                ...phrases,
+                            })}
+                        />
+                    </div>
+                </section>
                 <section className="flex flex-col gap-1">
                     <h3 className="text-sm font-medium">
                         {t('exceptions.message')}

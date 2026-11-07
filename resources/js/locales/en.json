@@ -850,18 +850,15 @@
         "averageResponse": "Average response",
         "slowestResponse": "Slowest response",
         "allRoutes": "All routes",
-        "lastHours": "Last {{count}} hours",
-        "requestsPerHour": "Requests per hour",
-        "requestsPerHourDescription": "Successful requests and server errors (5xx), last 24 hours.",
         "successful": "Successful",
         "serverErrors": "5xx",
-        "chartLabel": "Stacked bar chart of requests per hour: {{count}} requests, {{errors}} server errors in the last 24 hours.",
+        "chartLabel": "Stacked bar chart of requests {{bucket}}: {{count}} requests, {{errors}} server errors {{during}}.",
         "routes": "Routes",
         "outgoingHttp": "Outgoing HTTP",
         "slowQueries": "Slow queries",
         "jobs": "Jobs",
         "scheduledTasks": "Scheduled tasks",
-        "noData": "No data in the last 24 hours.",
+        "noData": "No data in this range.",
         "name": "Name",
         "count": "Count",
         "average": "Average",
@@ -904,9 +901,9 @@
         "notifications": "Notifications",
         "sent": "Sent",
         "logLevels": "Logs",
-        "logLevelsDescription": "Log entries per level and channel; the chart shows error level and above per hour.",
+        "logLevelsDescription": "Log entries per level and channel; the chart shows error level and above {{bucket}}.",
         "errorLogs": "Error-level entries",
-        "logChartLabel": "Bar chart of error-level log entries per hour: {{count}} in the last 24 hours.",
+        "logChartLabel": "Bar chart of error-level log entries {{bucket}}: {{count}} {{during}}.",
         "level": "Level",
         "channel": "Channel",
         "unknownChannel": "unknown",
@@ -927,7 +924,9 @@
         "deploy": "Deploy",
         "deployMarkersHint": "Dashed lines mark deploys.",
         "deploysLabel_one": "{{count}} deploy: {{releases}}.",
-        "deploysLabel_other": "{{count}} deploys: {{releases}}."
+        "deploysLabel_other": "{{count}} deploys: {{releases}}.",
+        "requestsOverTimeDescription": "Successful requests and server errors (5xx) {{bucket}} {{during}}.",
+        "requestsOverTime": "Requests over time"
     },
     "exceptions": {
         "emptyTitle": "No exceptions",
@@ -966,7 +965,13 @@
         "reopen": "Reopen",
         "firstRelease": "First seen in release",
         "lastRelease": "Last seen in release",
-        "regressedIn": "Regressed in {{release}}"
+        "regressedIn": "Regressed in {{release}}",
+        "occurrences": "Occurrences",
+        "occurrencesDescription": "Occurrences {{bucket}} {{during}}, counted at the last occurrence of each push.",
+        "inRange": "In range",
+        "emptyRangeDescription": "No exception group was seen {{during}}. Pick a longer range to see older groups.",
+        "occurrencesChartLabel": "Bar chart of occurrences {{bucket}}: {{count}} {{during}}.",
+        "emptyRangeTitle": "No exceptions in this range"
     },
     "schedule": {
         "description": "The scheduled tasks of the latest report, each with its last run, next due time and status. Checked every minute against the runs pushed with runtime monitoring.",
@@ -996,7 +1001,12 @@
             "not_expected": "Other environment",
             "paused": "Maintenance",
             "unknown": "No run data"
-        }
+        },
+        "runsOverTime": "Runs over time",
+        "runsOverTimeDescription": "Runs of all scheduled tasks per outcome {{bucket}} {{during}}.",
+        "runsSummary": "{{finished}} finished · {{failed}} failed · {{skipped}} skipped",
+        "runsChartLabel": "Stacked bar chart of scheduled task runs {{bucket}}: {{finished}} finished, {{failed}} failed, {{skipped}} skipped {{during}}.",
+        "runs": "Runs"
     },
     "ai": {
         "fabDescription": "Quick assistant drawer. Open the full page for history.",
@@ -1096,6 +1106,37 @@
             "5": "Fri",
             "6": "Sat",
             "7": "Sun"
+        }
+    },
+    "timeRange": {
+        "label": "Time range",
+        "option": {
+            "1h": "1h",
+            "6h": "6h",
+            "24h": "24h",
+            "7d": "7d",
+            "14d": "14d"
+        },
+        "last": {
+            "1h": "Last hour",
+            "6h": "Last 6 hours",
+            "24h": "Last 24 hours",
+            "7d": "Last 7 days",
+            "14d": "Last 14 days"
+        },
+        "during": {
+            "1h": "in the last hour",
+            "6h": "in the last 6 hours",
+            "24h": "in the last 24 hours",
+            "7d": "in the last 7 days",
+            "14d": "in the last 14 days"
+        },
+        "bucket": {
+            "1h": "per minute",
+            "6h": "per 10 minutes",
+            "24h": "per hour",
+            "7d": "per 6 hours",
+            "14d": "per day"
         }
     }
 }

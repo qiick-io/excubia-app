@@ -312,16 +312,22 @@ class DashboardOverviewService
     {
         $ids = $projects->pluck('id');
         $from = $today->subDays($periodDays);
-        $requests = fn (CarbonImmutable $start, CarbonImmutable $end): array => RuntimeAggregate::query()
-            ->whereIn('project_id', $ids)
-            ->where('type', 'request')
-            ->where('bucket', '>=', $start)
-            ->where('bucket', '<', $end)
-            ->get(['count', 'error_count', 'sample_rate'])
-            ->reduce(fn (array $sum, RuntimeAggregate $row): array => [
-                $sum[0] + $row->count / $row->sample_rate,
-                $sum[1] + $row->error_count / $row->sample_rate,
-            ], [0.0, 0.0]);
+        // Summed in SQL (#113): a period holds a row per minute and series.
+        // ponytail: this scans every request row of the period (0.4 to 0.7 s on PostgreSQL and
+        // MySQL at 50 busy projects × 14 days, see TimeRangeBenchmarkTest); add an hourly
+        // rollup table filled at ingest if dashboards that large need it faster.
+        $requests = function (CarbonImmutable $start, CarbonImmutable $end) use ($ids): array {
+            $sum = RuntimeAggregate::query()
+                ->whereIn('project_id', $ids)
+                ->where('type', 'request')
+                ->where('bucket', '>=', $start)
+                ->where('bucket', '<', $end)
+                ->toBase()
+                ->selectRaw('sum(1.0 * count / sample_rate) as requests, sum(1.0 * error_count / sample_rate) as errors')
+                ->first();
+
+            return [(float) ($sum->requests ?? 0), (float) ($sum->errors ?? 0)];
+        };
 
         $hasRuntime = RuntimeAggregate::query()->whereIn('project_id', $ids)->exists();
         $hasExceptions = ExceptionGroup::query()->whereIn('project_id', $ids)->exists();

@@ -15,6 +15,12 @@
             <directory>tests/Feature</directory>
         </testsuite>
     </testsuites>
+    <!-- The seeded benchmark of #113 runs on demand with the benchmark group. -->
+    <groups>
+        <exclude>
+            <group>benchmark</group>
+        </exclude>
+    </groups>
     <source>
         <include>
             <directory>app</directory>

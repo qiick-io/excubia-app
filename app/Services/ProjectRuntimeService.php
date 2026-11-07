@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Enums\RuntimeTypeEnum;
-use App\Models\HealthReport;
+use App\Enums\TimeRangeEnum;
 use App\Models\Project;
 use App\Models\RuntimeAggregate;
 use Carbon\CarbonImmutable;
@@ -15,7 +15,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Date;
 
 /**
- * The runtime of a project over the last hours (#24, #107), from the aggregates excubia-core
+ * The runtime of a project over a time range (#24, #107, #113), from the aggregates excubia-core
  * pushes: one card per runtime type. Counts are estimated real counts (`count / sample_rate`);
  * `isSampled` tells the page to show them as approximate. Durations, memory and repeats are the
  * recorded ones; p50, p95 and p99 come from the optional latency histograms (core
@@ -23,8 +23,9 @@ use Illuminate\Support\Facades\Date;
  *
  * SQL sums each series (type, dimensions with release, sample rate) over the window, histogram
  * buckets and summed metrics included, so PHP only folds series that differ by release or sample
- * rate. Server gauges are readings: the card shows each server's latest sample. The deploys of the
- * window (#106) come along for the chart markers.
+ * rate. The charts are summed per bucket of the range in SQL (TimeSeriesService). Server gauges
+ * are readings: the card shows each server's latest sample. The deploys of the range (#106) come
+ * along for the chart markers.
  *
  * @phpstan-type Series array{type: string, sampleRate: float, dimensions: array<string, string>, count: int, errorCount: int, totalMs: float|null, maxMs: float|null, lastAt: CarbonImmutable, histogram: list<float>|null, metrics: array<string, float|null>}
  */
@@ -51,31 +52,34 @@ class ProjectRuntimeService
     /** The levels the error-log chart counts. */
     private const ERROR_LOG_LEVELS = ['emergency', 'alert', 'critical', 'error'];
 
+    public function __construct(private readonly TimeSeriesService $timeSeries) {}
+
     /**
      * @return array<string, mixed>|null null when the project never pushed runtime data
      */
-    public function summary(Project $project, int $hours = 24): ?array
+    public function summary(Project $project, TimeRangeEnum $range = TimeRangeEnum::DEFAULT): ?array
     {
         if ($project->skipped_runtime_aggregates === 0 && ! $project->runtimeAggregates()->exists()) {
             return null;
         }
 
         $now = CarbonImmutable::instance(Date::now());
-        $from = $now->subHours($hours)->startOfHour();
+        $from = $range->start($now);
         $series = $this->series($project, $from);
         $byType = $series->groupBy('type');
         $of = fn (RuntimeTypeEnum $type): Collection => $byType->get($type->value, collect());
         $requests = $of(RuntimeTypeEnum::Request);
 
         return [
-            'hours' => $hours,
+            'range' => $range->value,
+            'hours' => intdiv($range->seconds(), 3600),
             'isSampled' => $series->contains(fn (array $one): bool => $one['sampleRate'] < 1),
             'skippedAggregates' => $project->skipped_runtime_aggregates,
             'requests' => [
                 ...$this->totals($requests),
-                'hourly' => array_map(
-                    fn (array $point): array => ['hour' => $point['hour'], 'ok' => $point['count'] - $point['errors'], 'errors' => $point['errors']],
-                    $this->hourly($this->window($project, RuntimeTypeEnum::Request, $from), $from, $now),
+                'timeline' => array_map(
+                    fn (array $point): array => ['at' => $point['at'], 'ok' => (int) $point['count'] - (int) $point['errors'], 'errors' => $point['errors']],
+                    $this->timeline($this->window($project, RuntimeTypeEnum::Request, $from), $range, $now),
                 ),
                 'routes' => $this->timedTable($requests, ['route', 'method']),
             ],
@@ -90,38 +94,12 @@ class ProjectRuntimeService
             'cache' => $this->cache($of(RuntimeTypeEnum::Cache)),
             'mail' => $this->countTable($of(RuntimeTypeEnum::Mail), ['mailable', 'mailer']),
             'notifications' => $this->countTable($of(RuntimeTypeEnum::Notification), ['notification', 'channel']),
-            'logLevels' => $this->logLevels($project, $of(RuntimeTypeEnum::LogLevel), $from, $now),
+            'logLevels' => $this->logLevels($project, $of(RuntimeTypeEnum::LogLevel), $range, $now),
             'deprecations' => $this->countTable($of(RuntimeTypeEnum::Deprecation), ['source', 'message', 'phpVersion']),
             'duplicateQueries' => $this->duplicateQueries($of(RuntimeTypeEnum::DuplicateQuery)),
             'servers' => $this->servers($project, $of(RuntimeTypeEnum::Server)),
-            'deploys' => $this->deploys($project, $from),
+            'deploys' => $this->timeSeries->deploys($project, $range, $now),
         ];
-    }
-
-    /**
-     * The deploys (#106) of the window, oldest first, for the markers on the hourly charts:
-     * `hour` is the start of the hour bucket the deploy falls in, as in hourly().
-     *
-     * @return list<array{release: string|null, deployedAt: string, hour: string}>
-     */
-    private function deploys(Project $project, CarbonImmutable $from): array
-    {
-        return array_values($project->healthReports()
-            ->deploys()
-            ->where('deployed_at', '>=', $from)
-            ->orderBy('deployed_at')
-            ->get(['release', 'deployed_at'])
-            ->map(function (HealthReport $report) use ($from): array {
-                // Never null here (deploys() scope); the fallback only satisfies the type.
-                $deployedAt = CarbonImmutable::instance($report->deployed_at ?? $from)->utc();
-
-                return [
-                    'release' => $report->release,
-                    'deployedAt' => $deployedAt->toIso8601ZuluString(),
-                    'hour' => $deployedAt->startOfHour()->toIso8601ZuluString(),
-                ];
-            })
-            ->all());
     }
 
     /**
@@ -134,6 +112,17 @@ class ProjectRuntimeService
             ->when($type !== null, fn ($query) => $query->where('type', $type?->value))
             ->where('bucket', '>=', $from)
             ->toBase();
+    }
+
+    /**
+     * Estimated events and errors per bucket of the range, from the given query of minutes.
+     *
+     * @return list<array{at: string, count: int, errors: int}>
+     */
+    private function timeline(Builder $query, TimeRangeEnum $range, CarbonImmutable $now): array
+    {
+        /** @var list<array{at: string, count: int, errors: int}> */
+        return $this->timeSeries->points($query, 'bucket', ['count' => '1.0 * count / sample_rate', 'errors' => '1.0 * error_count / sample_rate'], $range, $now);
     }
 
     /**
@@ -235,36 +224,6 @@ class ProjectRuntimeService
         };
 
         return "cast({$value} as decimal(20, 4))";
-    }
-
-    /**
-     * Estimated events and errors per hour of the window, one point per hour, from the given
-     * query of minutes (summed per minute and sample rate in SQL).
-     *
-     * @return list<array{hour: string, count: int, errors: int}>
-     */
-    private function hourly(Builder $query, CarbonImmutable $from, CarbonImmutable $now): array
-    {
-        $byHour = [];
-        $minutes = $query->select(['bucket', 'sample_rate'])
-            ->selectRaw('sum(count) as count, sum(error_count) as error_count')
-            ->groupBy('bucket', 'sample_rate')
-            ->get();
-
-        foreach ($minutes as $minute) {
-            $hour = CarbonImmutable::parse((string) $minute->bucket, 'UTC')->startOfHour()->toIso8601ZuluString();
-            $byHour[$hour]['count'] = ($byHour[$hour]['count'] ?? 0) + $minute->count / $minute->sample_rate;
-            $byHour[$hour]['errors'] = ($byHour[$hour]['errors'] ?? 0) + $minute->error_count / $minute->sample_rate;
-        }
-
-        $series = [];
-
-        for ($hour = $from; $hour->lte($now); $hour = $hour->addHour()) {
-            $key = $hour->toIso8601ZuluString();
-            $series[] = ['hour' => $key, 'count' => (int) round($byHour[$key]['count'] ?? 0), 'errors' => (int) round($byHour[$key]['errors'] ?? 0)];
-        }
-
-        return $series;
     }
 
     /**
@@ -458,12 +417,12 @@ class ProjectRuntimeService
 
     /**
      * Log entries per level (most severe first), per level and channel (null for entries
-     * without one), and error-level entries per hour.
+     * without one), and error-level entries per bucket of the range.
      *
      * @param  Collection<int, Series>  $series
-     * @return array{levels: list<array{level: string, count: int}>, rows: list<array<string, mixed>>, hourly: list<array{hour: string, count: int}>}
+     * @return array{levels: list<array{level: string, count: int}>, rows: list<array<string, mixed>>, timeline: list<array{at: string, count: int}>}
      */
-    private function logLevels(Project $project, Collection $series, CarbonImmutable $from, CarbonImmutable $now): array
+    private function logLevels(Project $project, Collection $series, TimeRangeEnum $range, CarbonImmutable $now): array
     {
         $byLevel = $series->groupBy(fn (array $one): string => $one['dimensions']['level'] ?? 'unknown');
         $levels = [];
@@ -476,9 +435,9 @@ class ProjectRuntimeService
             }
         }
 
-        $hourly = $series->isEmpty() ? [] : $this->hourly(
-            $this->window($project, RuntimeTypeEnum::LogLevel, $from)->whereIn('dimensions->level', self::ERROR_LOG_LEVELS),
-            $from,
+        $timeline = $series->isEmpty() ? [] : $this->timeline(
+            $this->window($project, RuntimeTypeEnum::LogLevel, $range->start($now))->whereIn('dimensions->level', self::ERROR_LOG_LEVELS),
+            $range,
             $now,
         );
 
@@ -490,7 +449,7 @@ class ProjectRuntimeService
                     'count' => $this->estimate($group, fn (array $one): float => $one['count']),
                 ]),
             ),
-            'hourly' => array_map(fn (array $point): array => ['hour' => $point['hour'], 'count' => $point['count']], $hourly),
+            'timeline' => array_map(fn (array $point): array => ['at' => $point['at'], 'count' => $point['count']], $timeline),
         ];
     }
 

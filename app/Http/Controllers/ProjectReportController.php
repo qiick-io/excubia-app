@@ -7,20 +7,23 @@ namespace App\Http\Controllers;
 use App\Actions\UpdateExceptionStatusAction;
 use App\Enums\ExceptionStatusEnum;
 use App\Enums\PermissionEnum;
+use App\Enums\TimeRangeEnum;
 use App\Http\Requests\UpdateExceptionStatusRequest;
-use App\Http\Resources\ExceptionGroupResource;
 use App\Http\Resources\HealthReportResource;
 use App\Http\Resources\ProjectResource;
-use App\Http\Resources\ScheduledTaskResource;
 use App\Jobs\RunSystemReportJob;
 use App\Models\ExceptionGroup;
 use App\Models\Project;
 use App\Services\FixSuggestionService;
 use App\Services\ProjectAlertsService;
 use App\Services\ProjectRuntimeService;
+use App\Services\ProjectTelemetryService;
 use App\Services\ReportFindingsService;
+use App\Services\TimeSeriesService;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -28,7 +31,8 @@ use Inertia\Response;
 /**
  * Project page (`/projects/{slug}`): the findings and upgrade plan of the latest report, and
  * the summaries of the reports kept in the history. The system project (#70) can be refreshed
- * from here.
+ * from here. The runtime, exceptions and schedule tabs cover the time range of `?range=` (#113);
+ * the overview keeps the default range and every exception group.
  */
 class ProjectReportController extends Controller
 {
@@ -39,7 +43,10 @@ class ProjectReportController extends Controller
      */
     public const VIEWS = ['findings', 'runtime', 'exceptions', 'schedule', 'alerts', 'plan', 'history'];
 
-    public function show(Request $request, Project $project, ReportFindingsService $findings, FixSuggestionService $fixes, ProjectRuntimeService $runtime, ?string $view = null): Response|RedirectResponse
+    /** The tabs with a time range picker (#113). */
+    public const RANGE_VIEWS = ['runtime', 'exceptions', 'schedule'];
+
+    public function show(Request $request, Project $project, ReportFindingsService $findings, FixSuggestionService $fixes, ProjectRuntimeService $runtime, ProjectTelemetryService $telemetry, TimeSeriesService $timeSeries, ?string $view = null): Response|RedirectResponse
     {
         Gate::authorize('view', $project);
 
@@ -49,6 +56,10 @@ class ProjectReportController extends Controller
         }
 
         $project->load('latestReport');
+        $hasRange = in_array($view, self::RANGE_VIEWS, true);
+        $range = $hasRange ? ($request->enum('range', TimeRangeEnum::class) ?? TimeRangeEnum::DEFAULT) : TimeRangeEnum::DEFAULT;
+        $now = CarbonImmutable::instance(Date::now());
+        $schedule = $view === 'schedule' ? $telemetry->schedule($project, $range, $now) : null;
 
         // A ready command and prompt per finding that warns or fails (#78), keyed like
         // ReportFindingsService::identity() so the page can match its rows.
@@ -66,18 +77,16 @@ class ProjectReportController extends Controller
             'canRefreshReport' => (bool) $request->user()?->can('refreshReport', $project),
             'report' => $project->latestReport?->report,
             'findingFixes' => (object) $findingFixes,
-            'runtime' => $runtime->summary($project),
-            // ponytail: the 100 most relevant groups (open first, then the latest); paginate if
-            // a project keeps more.
-            'exceptions' => ExceptionGroupResource::collection(
-                $project->exceptionGroups()
-                    ->orderByRaw('case status when ? then 0 when ? then 1 else 2 end', [ExceptionStatusEnum::Open->value, ExceptionStatusEnum::Resolved->value])
-                    ->orderByDesc('last_seen')
-                    ->limit(100)
-                    ->get(),
-            )->resolve(),
-            // Schedule inventory and status (#110), only on its tab.
-            'schedule' => $view === 'schedule' ? ScheduledTaskResource::collection($project->scheduledTasks()->get())->resolve() : [],
+            'range' => $range->value,
+            'runtime' => $runtime->summary($project, $range),
+            'exceptions' => $telemetry->exceptions($project, $view === 'exceptions' ? $range : null, $now),
+            // Tells "none in this range" from "none yet" on the Exceptions tab.
+            'hasExceptions' => $view === 'exceptions' && $project->exceptionGroups()->exists(),
+            // Schedule inventory, status and runs (#110), only on its tab.
+            'schedule' => $schedule['tasks'] ?? [],
+            'scheduleTimeline' => $schedule['timeline'] ?? [],
+            // Chart markers of the exceptions and schedule tabs; the runtime has its own.
+            'deploys' => in_array($view, ['exceptions', 'schedule'], true) ? $timeSeries->deploys($project, $range, $now) : [],
             // Alert history, mutes and maintenance windows (#114), only on its tab.
             'alerts' => $view === 'alerts' ? app(ProjectAlertsService::class)->forPage($project) : null,
             'canManageAlerts' => (bool) $request->user()?->can('update', $project),

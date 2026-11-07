@@ -71,7 +71,7 @@ it('sends every card, empty, to a project whose core sends only the default type
         ->where('runtime.cache', ['hits' => 0, 'misses' => 0, 'hitRate' => null, 'rows' => []])
         ->where('runtime.mail', [])
         ->where('runtime.notifications', [])
-        ->where('runtime.logLevels', ['levels' => [], 'rows' => [], 'hourly' => []])
+        ->where('runtime.logLevels', ['levels' => [], 'rows' => [], 'timeline' => []])
         ->where('runtime.deprecations', [])
         ->where('runtime.duplicateQueries', [])
         ->where('runtime.servers', []));
@@ -102,8 +102,8 @@ it('computes p50, p95 and p99 from histograms across sample rates and releases',
         ->where('runtime.requests.p99', 900)
         ->has('runtime.requests.routes', 1)
         ->where('runtime.requests.routes.0.p95', 750)
-        ->where('runtime.requests.hourly.22.ok', 5)
-        ->where('runtime.requests.hourly.23.ok', 200));
+        ->where('runtime.requests.timeline.22.ok', 5)
+        ->where('runtime.requests.timeline.23.ok', 200));
 });
 
 it('leaves skipped scheduled tasks out of their percentiles', function () {
@@ -186,9 +186,9 @@ it('shows log entries per level and channel and error-level entries per hour', f
         ->where('runtime.logLevels.rows.0.channel', 'daily')
         ->where('runtime.logLevels.rows.2.level', 'error')
         ->where('runtime.logLevels.rows.2.channel', null)
-        ->has('runtime.logLevels.hourly', 25)
-        ->where('runtime.logLevels.hourly.22.count', 2)
-        ->where('runtime.logLevels.hourly.23.count', 6));
+        ->has('runtime.logLevels.timeline', 25)
+        ->where('runtime.logLevels.timeline.22.count', 2)
+        ->where('runtime.logLevels.timeline.23.count', 6));
 });
 
 it('shows deprecations and N+1 query shapes', function () {
