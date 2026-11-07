@@ -22,6 +22,7 @@ use Illuminate\Auth\Events\Logout;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Http\Request;
+use Illuminate\Mail\Markdown;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
@@ -179,5 +180,9 @@ class AppServiceProvider extends ServiceProvider
         );
 
         Password::defaults(fn (): Password => app(SettingsRepositoryService::class)->passwordRule());
+
+        // Values echoed into Markdown mails (the weekly digest) come from pushed reports: escape
+        // their `[` and `<`, so a package or task name cannot plant a link in the email (#51).
+        Markdown::withSecuredEncoding();
     }
 }
