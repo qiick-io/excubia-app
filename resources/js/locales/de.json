@@ -472,7 +472,12 @@
                 "infrastructure.failed": "Eine Datenbank-, Speicher- oder Festplattenprüfung schlägt fehl (neu oder im ersten Bericht). Sofort gesendet, kritisch.",
                 "health.failed": "Eine Prüfung der minütlichen Zustandsproben schlägt auf einem Server zweimal in Folge fehl. Übernimmt den Schweregrad des Befunds; erneut gesendet, wenn sich die fehlschlagenden Befunde ändern.",
                 "health.recovered": "Eine fehlschlagende Prüfung der Zustandsproben schlägt auf keinem Server mehr fehl.",
-                "health.stale": "Ein Server, der Zustandsproben sendete, hat seit fünf Minuten keine gesendet. Die Zustandsalarme ignorieren ihn, bis er wieder sendet."
+                "health.stale": "Ein Server, der Zustandsproben sendete, hat seit fünf Minuten keine gesendet. Die Zustandsalarme ignorieren ihn, bis er wieder sendet.",
+                "report.checks_skipped": "Eine Prüfung wurde übersprungen, weil eine Datenquelle ausfiel: Der Bericht ist unvollständig.",
+                "push.rejected": "Pushes wurden innerhalb einer Stunde wiederholt wegen eines fehlenden, unbekannten, widerrufenen oder deaktivierten Tokens abgelehnt. Ein geleaktes oder vergessenes Token?",
+                "project.created": "Ein Projekt wurde angelegt.",
+                "project.deleted": "Ein Projekt wurde gelöscht.",
+                "project.disabled": "Ein Projekt wurde deaktiviert."
             },
             "runtimeRulesTitle": "Runtime-Alarmregeln",
             "runtimeRulesDescription": "Optionale Alarme aus den Runtime-Daten der Projekte, alle 15 Minuten über die letzte Stunde geprüft. Leer schaltet eine Regel ab.",
@@ -1196,7 +1201,8 @@
             "muted": "Stummgeschaltet",
             "maintenance_window": "Wartungsfenster",
             "maintenance_mode": "Wartungsmodus",
-            "duplicate": "Duplikat"
+            "duplicate": "Duplikat",
+            "throttled": "Gedrosselt"
         },
         "channel": {
             "webhook": "Webhook",

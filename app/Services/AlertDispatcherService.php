@@ -13,6 +13,7 @@ use App\Models\Project;
 use App\Models\User;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Str;
+use Throwable;
 
 /**
  * Sends an alert (#22) to the configured channels, as queued jobs: the signed webhook, Slack and
@@ -25,9 +26,24 @@ use Illuminate\Support\Str;
  * mode suppress it (AlertSuppressionService) and where the alert history row is written (#114).
  * The finding fingerprints of the alert are kept on that row, for the duplicate check and the
  * health re-alert (#143).
+ *
+ * Inside grouped(), the alerts raised together (one report push) go out as one Slack, Telegram
+ * and email message per channel instead of one per alert; the webhook still gets one signed
+ * request per alert, so its payload and event ids stay as they are. Every alert keeps its own
+ * history row.
  */
 class AlertDispatcherService
 {
+    /** Lines listed in one grouped Slack or Telegram message; Telegram caps a message at 4096 characters. */
+    public const GROUPED_LINES = 15;
+
+    /**
+     * The messages held back by grouped(), per channel.
+     *
+     * @var array<string, non-empty-list<array{payload: array<string, mixed>, summary: string}>>|null
+     */
+    private ?array $group = null;
+
     public function __construct(
         private SettingsRepositoryService $settings,
         private AlertSuppressionService $suppression,
@@ -48,12 +64,14 @@ class AlertDispatcherService
             'severity' => $severity->value,
             'project' => ['name' => $project->name, 'slug' => $project->slug],
             'occurredAt' => Date::now()->toIso8601ZuluString(),
-            'url' => route('projects.show', $project->slug),
+            // A deleted project has no page any more.
+            'url' => $event === AlertEventEnum::ProjectDeleted ? route('dashboard') : route('projects.show', $project->slug),
             'data' => (object) $data,
         ];
 
         $reason = $this->suppression->reason($project, $event, $subject)
-            ?? ($this->suppression->isDuplicate($project, $event, $subject, $fingerprints) ? AlertSuppressionService::DUPLICATE : null);
+            ?? ($this->suppression->isDuplicate($project, $event, $subject, $fingerprints) ? AlertSuppressionService::DUPLICATE : null)
+            ?? ($this->suppression->isThrottled($project, $event, $subject, $severity, $fingerprints) ? AlertSuppressionService::THROTTLED : null);
         $channels = $reason === null ? $this->channels($event, $severity, $project) : [];
 
         AlertLog::query()->create([
@@ -73,17 +91,119 @@ class AlertDispatcherService
             'deliveries' => array_fill_keys($channels, AlertLog::QUEUED),
         ]);
 
-        $text = sprintf('[%s] %s · %s: %s%s%s', Str::upper($severity->value), $event->value, $project->name, $summary, PHP_EOL, $payload['url']);
-
         foreach ($channels as $channel) {
+            if ($this->group !== null && $channel !== DeliverAlertJob::WEBHOOK) {
+                $this->group[$channel][] = ['payload' => $payload, 'summary' => $summary];
+
+                continue;
+            }
+
+            $this->queue($channel, [['payload' => $payload, 'summary' => $summary]]);
+        }
+    }
+
+    /**
+     * Runs `$callback` and sends the alerts it dispatches together: one message per Slack,
+     * Telegram and email channel. Nested calls join the outer group. Nothing is sent when the
+     * callback throws (its history rows roll back with the caller's transaction).
+     *
+     * @param  callable(): void  $callback
+     */
+    public function grouped(callable $callback): void
+    {
+        if ($this->group !== null) {
+            $callback();
+
+            return;
+        }
+
+        $this->group = [];
+
+        try {
+            $callback();
+        } catch (Throwable $exception) {
+            $this->takeGroup();
+
+            throw $exception;
+        }
+
+        foreach ($this->takeGroup() as $channel => $alerts) {
+            $this->queue($channel, $alerts);
+        }
+    }
+
+    /**
+     * Ends grouping and returns the messages it held back.
+     *
+     * @return array<string, non-empty-list<array{payload: array<string, mixed>, summary: string}>>
+     */
+    private function takeGroup(): array
+    {
+        $group = $this->group ?? [];
+        $this->group = null;
+
+        return $group;
+    }
+
+    /**
+     * Queues one message to one channel. A single alert keeps its own text; several alerts are
+     * listed worst first, under the worst one's payload, and the job records the outcome on
+     * every alert's history row.
+     *
+     * @param  non-empty-list<array{payload: array<string, mixed>, summary: string}>  $alerts
+     */
+    private function queue(string $channel, array $alerts): void
+    {
+        $isEmail = DeliverAlertJob::emailUserId($channel) !== null;
+
+        if (count($alerts) === 1) {
+            ['payload' => $payload, 'summary' => $summary] = $alerts[0];
             $body = match (true) {
                 $channel === DeliverAlertJob::WEBHOOK => '',
-                DeliverAlertJob::emailUserId($channel) !== null => $summary,
-                default => $text,
+                $isEmail => $summary,
+                default => $this->line($payload, $summary, true).PHP_EOL.$payload['url'],
             };
 
             DeliverAlertJob::dispatch($channel, $payload, $body)->afterCommit();
+
+            return;
         }
+
+        usort($alerts, fn (array $first, array $second): int => SeverityEnum::from($first['payload']['severity'])->rank() <=> SeverityEnum::from($second['payload']['severity'])->rank());
+        $lead = $alerts[0]['payload'];
+        $items = array_map(fn (array $alert): array => [
+            'id' => (string) $alert['payload']['id'],
+            'event' => (string) $alert['payload']['event'],
+            'severity' => (string) $alert['payload']['severity'],
+            'summary' => $alert['summary'],
+        ], $alerts);
+
+        $text = '';
+
+        if (! $isEmail) {
+            $lines = array_map(fn (array $alert): string => $this->line($alert['payload'], Str::limit($alert['summary'], 200), false), array_slice($alerts, 0, self::GROUPED_LINES));
+            $hidden = count($alerts) - count($lines);
+            $text = implode(PHP_EOL, [
+                sprintf('[%s] %s: %d alerts', Str::upper((string) $lead['severity']), $lead['project']['name'], count($alerts)),
+                ...$lines,
+                ...($hidden > 0 ? ["… and {$hidden} more"] : []),
+                (string) $lead['url'],
+            ]);
+        }
+
+        DeliverAlertJob::dispatch($channel, $lead, $text, $items)->afterCommit();
+    }
+
+    /**
+     * `[HIGH] finding.new · Shop: summary`, or without the project inside a grouped message.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    private function line(array $payload, string $summary, bool $hasProject): string
+    {
+        $project = $hasProject ? ' · '.$payload['project']['name'] : '';
+
+        return sprintf('[%s] %s%s: %s', Str::upper((string) $payload['severity']), $payload['event'], $project, $summary);
     }
 
     /**

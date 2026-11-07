@@ -24,6 +24,13 @@ enum AlertEventEnum: string
     case ProjectStale = 'project.stale';
     case ProjectReportingAgain = 'project.reporting_again';
     case ProjectTokenChanged = 'project.token_changed';
+    // A report whose checks were skipped because a data source failed (incomplete report).
+    case ReportChecksSkipped = 'report.checks_skipped';
+    // Pushes rejected for a missing, unknown, revoked or disabled token, N times in an hour.
+    case PushRejected = 'push.rejected';
+    case ProjectCreated = 'project.created';
+    case ProjectDeleted = 'project.deleted';
+    case ProjectDisabled = 'project.disabled';
     case ScheduleMissed = 'schedule.missed';
     case ScheduleFailed = 'schedule.failed';
     case SchedulerDown = 'schedule.scheduler_down';
@@ -58,7 +65,8 @@ enum AlertEventEnum: string
         return match ($this) {
             self::InfrastructureFailed => SeverityEnum::Critical,
             self::ProjectStale, self::HealthStale, self::ScheduleMissed, self::CacheHitRatioLow => SeverityEnum::Medium,
-            self::FindingNew, self::HealthFailed, self::ProjectWorsened, self::ScheduleFailed, self::SchedulerDown, self::DeliveryFailed, self::LogSpike => SeverityEnum::High,
+            self::FindingNew, self::HealthFailed, self::ProjectWorsened, self::ScheduleFailed, self::SchedulerDown, self::DeliveryFailed, self::LogSpike, self::PushRejected => SeverityEnum::High,
+            self::ReportChecksSkipped => SeverityEnum::Low,
             default => SeverityEnum::Info,
         };
     }

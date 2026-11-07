@@ -32,6 +32,22 @@ return [
 
     'push_requests_per_minute' => (int) env('EXCUBIA_PUSH_REQUESTS_PER_MINUTE', 30),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Alerts
+    |--------------------------------------------------------------------------
+    |
+    | The same event, project and subject alerts at most once in this many
+    | minutes (0 turns the throttle off); a worse severity still goes out.
+    | `push.rejected` is raised after this many pushes rejected for their
+    | token within an hour, per project (disabled) or per client (unknown).
+    |
+    */
+
+    'alert_throttle_minutes' => (int) env('EXCUBIA_ALERT_THROTTLE_MINUTES', 60),
+
+    'push_rejected_alert_after' => (int) env('EXCUBIA_PUSH_REJECTED_ALERT_AFTER', 10),
+
     // Days of runtime aggregates (#48) and of exception groups not seen since (#49) kept;
     // older ones are pruned daily by excubia:prune-telemetry.
     'runtime_retention_days' => (int) env('EXCUBIA_RUNTIME_RETENTION_DAYS', 14),

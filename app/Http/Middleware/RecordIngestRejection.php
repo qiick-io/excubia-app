@@ -5,9 +5,13 @@ declare(strict_types=1);
 namespace App\Http\Middleware;
 
 use App\Actions\RecordIngestRejectionAction;
+use App\Enums\AlertEventEnum;
+use App\Models\Project;
+use App\Services\AlertDispatcherService;
 use Closure;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Symfony\Component\HttpFoundation\Response;
 use Throwable;
 
@@ -17,6 +21,11 @@ use Throwable;
  * or, for a 422, the first invalid field with list indexes as `*`
  * (`runtime.aggregates.*.count`): field names come from the push schema, never values, the body
  * or the token. Recording never changes the answer.
+ *
+ * Token rejections also raise `push.rejected` (#22) once `excubia.push_rejected_alert_after`
+ * of them come within an hour: per project for a disabled one (403), per client for a missing,
+ * unknown or revoked token (401), which has no project and so alerts on the system project
+ * (#70). The client is only a hashed cache key that expires with the hour: no IP is stored.
  */
 class RecordIngestRejection
 {
@@ -35,12 +44,52 @@ class RecordIngestRejection
                     $status,
                     $this->reason($response),
                 );
+                $this->alertTokenRejections($request, $status);
             } catch (Throwable $exception) {
                 report($exception);
             }
         }
 
         return $response;
+    }
+
+    /**
+     * Counts a 401 or 403 in its hour and raises `push.rejected` when the count reaches the
+     * threshold, so one burst alerts once (the hourly alert throttle covers several clients).
+     */
+    private function alertTokenRejections(Request $request, int $status): void
+    {
+        $isDisabled = $status === Response::HTTP_FORBIDDEN;
+
+        if (! $isDisabled && $status !== Response::HTTP_UNAUTHORIZED) {
+            return;
+        }
+
+        $token = $request->bearerToken();
+        $project = $isDisabled
+            ? ($token === null ? null : Project::query()->where('push_token_hash', hash('sha256', $token))->first())
+            : Project::query()->where('is_system', true)->first();
+
+        if ($project === null) {
+            return;
+        }
+
+        $threshold = max(1, (int) config('excubia.push_rejected_alert_after'));
+        $key = 'push-rejected:'.($isDisabled ? 'project:'.$project->id : 'client:'.hash('sha256', (string) $request->ip()));
+
+        if (RateLimiter::hit($key, 3600) !== $threshold) {
+            return;
+        }
+
+        $summary = $isDisabled
+            ? "{$threshold} pushes to this disabled project within an hour"
+            : "{$threshold} pushes with a missing, unknown or revoked token from one client within an hour";
+
+        app(AlertDispatcherService::class)->dispatch(AlertEventEnum::PushRejected, $project, $summary, [
+            'reason' => $isDisabled ? 'disabled' : 'token',
+            'count' => $threshold,
+            'endpoint' => (string) $request->segment(2),
+        ], subject: $isDisabled ? 'disabled' : 'token');
     }
 
     private function reason(Response $response): string

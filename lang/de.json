@@ -26,5 +26,7 @@
     "You get this email because alert emails are on in your profile settings.": "Du erhältst diese E-Mail, weil Alarm-E-Mails in deinen Profileinstellungen aktiv sind.",
     "Alert emails saved.": "Alarm-E-Mails gespeichert.",
     "Test email queued. It needs a queue worker.": "Test-E-Mail eingereiht. Dafür braucht es einen Queue-Worker.",
-    "Verify your email address first.": "Bestätige zuerst deine E-Mail-Adresse."
+    "Verify your email address first.": "Bestätige zuerst deine E-Mail-Adresse.",
+    ":count alerts": ":count Alarme",
+    "This report raised :count alerts.": "Dieser Bericht hat :count Alarme ausgelöst."
 }

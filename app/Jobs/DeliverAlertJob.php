@@ -26,7 +26,9 @@ use Throwable;
  * HTTPS only, no redirects, and hosts that resolve to private or reserved addresses are refused;
  * the connection goes to the checked address, and transport errors never quote the URL.
  * Retried 3 times with backoff; the webhook's last success and last error are kept for Settings,
- * and every channel's outcome goes on the alert's history row (#114).
+ * and every channel's outcome goes on the alert's history row (#114). A grouped message (one
+ * report push, #22) carries the worst alert's payload and lists every alert in `alerts`, whose
+ * history rows all get the outcome.
  */
 class DeliverAlertJob implements ShouldQueue
 {
@@ -47,11 +49,13 @@ class DeliverAlertJob implements ShouldQueue
 
     /**
      * @param  array<string, mixed>  $payload  see AlertDispatcherService
+     * @param  list<array{id: string, event: string, severity: string, summary: string}>  $alerts  every alert of a grouped message, worst first; empty for one alert
      */
     public function __construct(
         public readonly string $channel,
         public readonly array $payload,
         public readonly string $text = '',
+        public readonly array $alerts = [],
     ) {}
 
     /**
@@ -139,7 +143,7 @@ class DeliverAlertJob implements ShouldQueue
             return;
         }
 
-        Mail::to($user)->locale($user->locale)->send(new AlertMail($this->payload, $this->text));
+        Mail::to($user)->locale($user->locale)->send(new AlertMail($this->payload, $this->text, $this->alerts));
         $this->record($settings, true, 'sent');
     }
 
@@ -211,7 +215,11 @@ class DeliverAlertJob implements ShouldQueue
      */
     private function record(SettingsRepositoryService $settings, bool $isSuccess, string $message): void
     {
-        app(RecordAlertDeliveryAction::class)->execute((string) $this->payload['id'], $this->channel, $isSuccess);
+        $alertIds = $this->alerts === [] ? [(string) $this->payload['id']] : array_column($this->alerts, 'id');
+
+        foreach ($alertIds as $alertId) {
+            app(RecordAlertDeliveryAction::class)->execute($alertId, $this->channel, $isSuccess);
+        }
 
         if ($this->channel !== self::WEBHOOK) {
             return;

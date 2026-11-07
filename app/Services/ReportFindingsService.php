@@ -140,20 +140,39 @@ class ReportFindingsService
      */
     public function ranCheckIds(HealthReport $report): array
     {
+        $failed = array_keys($this->dataSourceFailures($report));
         $checkIds = [];
 
         foreach ((array) ($report->report['checks'] ?? []) as $check) {
-            $findings = (array) ($check['findings'] ?? []);
-            $hasDataSourceFailure = collect($findings)->contains(fn (mixed $finding): bool => is_array($finding)
-                && ($finding['status'] ?? null) === 'skipped'
-                && ($finding['skipReason'] ?? null) === 'data-source-failure');
-
-            if (is_string($check['checkId'] ?? null) && ($check['status'] ?? null) !== 'skipped' && ! $hasDataSourceFailure) {
+            if (is_string($check['checkId'] ?? null) && ($check['status'] ?? null) !== 'skipped' && ! in_array($check['checkId'], $failed, true)) {
                 $checkIds[] = $check['checkId'];
             }
         }
 
         return $checkIds;
+    }
+
+    /**
+     * The checks of a report with a row skipped because a data source failed
+     * (`skipReason: data-source-failure`), so the report is incomplete.
+     *
+     * @return array<string, string> check id → check name
+     */
+    public function dataSourceFailures(HealthReport $report): array
+    {
+        $checks = [];
+
+        foreach ((array) ($report->report['checks'] ?? []) as $check) {
+            $hasDataSourceFailure = collect((array) ($check['findings'] ?? []))->contains(fn (mixed $finding): bool => is_array($finding)
+                && ($finding['status'] ?? null) === 'skipped'
+                && ($finding['skipReason'] ?? null) === 'data-source-failure');
+
+            if ($hasDataSourceFailure && is_string($check['checkId'] ?? null)) {
+                $checks[$check['checkId']] = is_string($check['name'] ?? null) ? $check['name'] : $check['checkId'];
+            }
+        }
+
+        return $checks;
     }
 
     /**

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Enums\AlertEventEnum;
+use App\Enums\SeverityEnum;
 use App\Models\AlertLog;
 use App\Models\AlertMute;
 use App\Models\MaintenanceWindow;
@@ -21,8 +22,11 @@ use Illuminate\Support\Str;
  * - `maintenance_window`: a one-off or weekly maintenance window of the project is in force;
  * - `maintenance_mode`: the latest report has the core `laravel-maintenance-mode` finding;
  * - `duplicate` (#143): an `infrastructure.failed` and a `health.failed` of the same check and
- *   fingerprint within DUPLICATE_MINUTES: the first one goes out, the other is kept as history.
- * `project.token_changed` is a security event: only an explicit mute silences it. Schedule
+ *   fingerprint within DUPLICATE_MINUTES: the first one goes out, the other is kept as history;
+ * - `throttled` (#22): the same event, project and subject already went to a channel within
+ *   `excubia.alert_throttle_minutes` (an hour by default) at the same or a worse severity, so an
+ *   escalation still goes out.
+ * `project.token_changed` is a security event: only an explicit mute silences it, never a throttle. Schedule
  * events ignore maintenance mode: the schedule evaluation (#110) already pauses the tasks that
  * do not run then, so a task that runs in maintenance mode and misses still alerts.
  */
@@ -35,6 +39,8 @@ class AlertSuppressionService
     public const MAINTENANCE_MODE = 'maintenance_mode';
 
     public const DUPLICATE = 'duplicate';
+
+    public const THROTTLED = 'throttled';
 
     /** How far back a report failure and a health failure of one check count as one alert. */
     public const DUPLICATE_MINUTES = 15;
@@ -105,6 +111,33 @@ class AlertSuppressionService
             ->get(['subject', 'fingerprints'])
             ->contains(fn (AlertLog $alert): bool => Str::before((string) $alert->subject, '|') === $checkId
                 && array_intersect($alert->fingerprints ?? [], $fingerprints) !== []);
+    }
+
+    /**
+     * Whether the same event, project and subject (both null, or equal) reached a channel within
+     * the throttle window at the same or a worse severity, and, for an alert about finding
+     * fingerprints, about all of them: a new failing finding of a check is a new issue (#143).
+     * Only alerts that were queued to a channel count: a suppressed or skipped one reached no one.
+     *
+     * @param  list<string>  $fingerprints
+     */
+    public function isThrottled(Project $project, AlertEventEnum $event, ?string $subject, SeverityEnum $severity, array $fingerprints = []): bool
+    {
+        $minutes = (int) config('excubia.alert_throttle_minutes');
+
+        if ($minutes <= 0 || $event === AlertEventEnum::ProjectTokenChanged) {
+            return false;
+        }
+
+        return AlertLog::query()
+            ->where('project_id', $project->id)
+            ->where('event', $event->value)
+            ->when($subject === null, fn ($query) => $query->whereNull('subject'), fn ($query) => $query->where('subject', mb_substr($subject, 0, 255)))
+            ->whereIn('status', [AlertLog::QUEUED, AlertLog::SENT, AlertLog::FAILED])
+            ->where('created_at', '>=', Date::now()->subMinutes($minutes))
+            ->get(['severity', 'fingerprints'])
+            ->contains(fn (AlertLog $sent): bool => (SeverityEnum::tryFrom($sent->severity)?->rank() ?? PHP_INT_MAX) <= $severity->rank()
+                && array_diff($fingerprints, $sent->fingerprints ?? []) === []);
     }
 
     public function isInMaintenanceWindow(Project $project, ?CarbonInterface $at = null): bool

@@ -472,7 +472,12 @@
                 "infrastructure.failed": "Un controllo di database, storage o disco fallisce (nuovo, o al primo report). Inviato subito, critico.",
                 "health.failed": "Un controllo dei campioni di salute al minuto fallisce su un server per due letture di fila. Prende la gravità del finding; viene inviato di nuovo quando cambiano i finding falliti.",
                 "health.recovered": "Un controllo fallito dei campioni di salute non fallisce più su nessun server.",
-                "health.stale": "Un server che inviava campioni di salute non ne invia da cinque minuti. Gli avvisi di salute lo ignorano finché non riprende."
+                "health.stale": "Un server che inviava campioni di salute non ne invia da cinque minuti. Gli avvisi di salute lo ignorano finché non riprende.",
+                "report.checks_skipped": "Un controllo è stato saltato perché una fonte dati non ha risposto: il report è incompleto.",
+                "push.rejected": "Push rifiutati più volte in un'ora per un token mancante, sconosciuto, revocato o di un progetto disattivato. Un token trapelato o dimenticato?",
+                "project.created": "È stato creato un progetto.",
+                "project.deleted": "È stato eliminato un progetto.",
+                "project.disabled": "È stato disattivato un progetto."
             },
             "runtimeRulesTitle": "Regole di avviso runtime",
             "runtimeRulesDescription": "Avvisi opzionali dai dati runtime inviati dai progetti, controllati ogni 15 minuti sull'ultima ora. Vuoto disattiva la regola.",
@@ -1196,7 +1201,8 @@
             "muted": "Silenziato",
             "maintenance_window": "Finestra di manutenzione",
             "maintenance_mode": "Modalità manutenzione",
-            "duplicate": "Duplicato"
+            "duplicate": "Duplicato",
+            "throttled": "Già inviato nell'ultima ora"
         },
         "channel": {
             "webhook": "Webhook",

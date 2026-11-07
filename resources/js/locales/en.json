@@ -472,7 +472,12 @@
                 "infrastructure.failed": "A database, storage or disk check fails (new, or on the first report). Sent at once, critical.",
                 "health.failed": "A check of the minute-level health samples fails on a server for two readings in a row. Takes the finding's severity; sent again when the failing findings change.",
                 "health.recovered": "A failing check of the health samples no longer fails on any server.",
-                "health.stale": "A server that was sending health samples sent none for five minutes. The health alerts ignore it until it sends again."
+                "health.stale": "A server that was sending health samples sent none for five minutes. The health alerts ignore it until it sends again.",
+                "report.checks_skipped": "A check was skipped because a data source failed, so the report is incomplete.",
+                "push.rejected": "Pushes were rejected for a missing, unknown, revoked or disabled token, again and again within an hour. A leaked or forgotten token?",
+                "project.created": "A project was created.",
+                "project.deleted": "A project was deleted.",
+                "project.disabled": "A project was disabled."
             },
             "runtimeRulesTitle": "Runtime alert rules",
             "runtimeRulesDescription": "Optional alerts from the runtime data the projects push, checked every 15 minutes over the last hour. Empty turns a rule off.",
@@ -1196,7 +1201,8 @@
             "muted": "Muted",
             "maintenance_window": "Maintenance window",
             "maintenance_mode": "Maintenance mode",
-            "duplicate": "Duplicate"
+            "duplicate": "Duplicate",
+            "throttled": "Throttled"
         },
         "channel": {
             "webhook": "Webhook",

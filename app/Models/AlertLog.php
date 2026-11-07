@@ -12,7 +12,7 @@ use Illuminate\Support\Carbon;
 /**
  * One alert the dispatcher handled (#114), for the project's alert history: `queued` until
  * every channel answered, then `sent` or `failed` (one channel failed); `suppressed` with the
- * `reason` (muted, maintenance_window, maintenance_mode, duplicate); `skipped` when no channel takes it.
+ * `reason` (muted, maintenance_window, maintenance_mode, duplicate, throttled); `skipped` when no channel takes it.
  * `uuid` is the payload id the webhook receives. `deliveries` maps each channel to queued,
  * sent or failed. `fingerprints` are the core finding fingerprints of a finding or health alert
  * (#143).
