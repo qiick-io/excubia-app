@@ -70,6 +70,7 @@
         "platform": "Platform",
         "dashboard": "Dashboard",
         "projects": "Projects",
+        "fleet": "Fleet",
         "assistant": "Assistant",
         "activityLog": "Activity Log",
         "users": "Users",
@@ -295,6 +296,7 @@
             "modules": {
                 "dashboard": "Dashboard",
                 "projects": "Projects",
+                "fleet": "Fleet",
                 "assistant": "Assistant",
                 "files": "Files",
                 "collections": "Collections",
@@ -1544,6 +1546,71 @@
         "inventoryTitle": "Inventory",
         "fleetTitle": "Licenses to review",
         "fleetDescription": "Denied, strong copyleft and unknown licenses in the latest reports, with the projects that use them."
+    },
+    "fleet": {
+        "title": "Fleet",
+        "project": "Project",
+        "status": "Status",
+        "views": {
+            "label": "Fleet views",
+            "readiness": "Upgrade readiness",
+            "advisories": "Advisory exposure",
+            "eol": "EOL calendar"
+        },
+        "empty": {
+            "title": "No projects yet",
+            "description": "Register a project and push its first report to see it here."
+        },
+        "readiness": {
+            "description": "From the next-major blockers of the latest report of each project: a project can move when none of its direct dependencies blocks the next Laravel major.",
+            "target": "Laravel {{major}}",
+            "canMove": "{{ready}} of {{total}} projects can move to Laravel {{major}} today",
+            "unknownDescription": "No report, Laravel not locked or the blocker check did not run.",
+            "blockers": "Blocking packages",
+            "preReleaseOnly": "Pre-release only",
+            "uncheckedPackages_one": "{{count}} private package not checked",
+            "uncheckedPackages_other": "{{count}} private packages not checked",
+            "planLink_one": "Upgrade plan ({{count}} step)",
+            "planLink_other": "Upgrade plan ({{count}} steps)",
+            "status": {
+                "ready": "Ready for Laravel {{major}}",
+                "blocked": "Blocked for Laravel {{major}}",
+                "unknown": "Unknown"
+            }
+        },
+        "advisories": {
+            "description": "Packages with known advisories, abandoned or stale, and the projects that lock them, from the latest report of each project.",
+            "search": "Package or advisory id",
+            "kindLabel": "Filter by kind",
+            "allKinds": "All kinds",
+            "kind": {
+                "advisory": "Advisory",
+                "abandoned": "Abandoned",
+                "stale": "Stale"
+            },
+            "ecosystem": {
+                "composer": "Composer",
+                "npm": "npm"
+            },
+            "package": "Package",
+            "advisory": "Advisory",
+            "projects": "Projects: locked → fixed",
+            "replacement": "Replace with {{package}}",
+            "emptyTitle": "No exposed packages",
+            "emptyDescription": "No latest report has a known advisory, an abandoned or a stale package.",
+            "noMatchTitle": "No matching packages",
+            "noMatchDescription": "Try another package name or advisory id."
+        },
+        "eol": {
+            "description": "PHP, Laravel and Node support windows of every project, soonest end first.",
+            "active": "Active support",
+            "security": "Security support",
+            "today": "Today",
+            "activeUntil": "Active until",
+            "timeline": "Timeline",
+            "emptyTitle": "No support dates",
+            "emptyDescription": "No latest report has support dates for PHP, Laravel or Node yet."
+        }
     },
     "findings": {
         "statusFilter": "Finding status",

@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\OidcController;
 use App\Http\Controllers\Auth\SetupController;
 use App\Http\Controllers\BrandingController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\FleetController;
 use App\Http\Controllers\JobMonitorController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\ProjectAlertsController;
@@ -56,6 +57,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('projects/{project}/alert-mutes/{alertMute}', [ProjectAlertsController::class, 'destroyMute'])->name('projects.alert-mutes.destroy');
     Route::post('projects/{project}/maintenance-windows', [ProjectAlertsController::class, 'storeWindow'])->name('projects.maintenance-windows.store');
     Route::delete('projects/{project}/maintenance-windows/{maintenanceWindow}', [ProjectAlertsController::class, 'destroyWindow'])->name('projects.maintenance-windows.destroy');
+
+    // Fleet views across the visible projects (#19, #20, #23).
+    Route::get('fleet', [FleetController::class, 'show'])->name('fleet.show');
+    Route::get('fleet/{view}', [FleetController::class, 'show'])
+        ->whereIn('view', FleetController::VIEWS)
+        ->name('fleet.view');
 
     // AI assistant (#17) at /ai, as in externa-core: 404 while `excubia.ai_enabled` is off.
     Route::get('ai', [AssistantController::class, 'index'])->name('ai.index');
