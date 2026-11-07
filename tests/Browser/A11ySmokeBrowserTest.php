@@ -2,13 +2,17 @@
 
 declare(strict_types=1);
 
+use App\Enums\AlertEventEnum;
 use App\Enums\RoleEnum;
 use App\Enums\SeverityEnum;
+use App\Models\AlertMute;
 use App\Models\ExceptionGroup;
+use App\Models\MaintenanceWindow;
 use App\Models\Project;
 use App\Models\RuntimeAggregate;
 use App\Models\ScheduledTask;
 use App\Models\User;
+use App\Services\AlertDispatcherService;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Support\Str;
 
@@ -40,8 +44,8 @@ function visitA11y(string $path, string $mode): mixed
 }
 
 /**
- * A project with one report, runtime rows, an exception group and scheduled tasks, so every tab
- * renders content.
+ * A project with one report, runtime rows, an exception group, scheduled tasks and alerts with
+ * a mute and a maintenance window, so every tab renders content.
  */
 function seededA11yProject(): Project
 {
@@ -109,6 +113,11 @@ function seededA11yProject(): Project
         ])->forceFill(['status' => $status, 'last_run_at' => $now->copy()->subHour(), 'last_outcome' => 'finished', 'next_due_at' => $now->copy()->addHour()])->save();
     }
 
+    // Alerts tab (#114): one alert in the history, a muted issue and a weekly window.
+    app(AlertDispatcherService::class)->dispatch(AlertEventEnum::ScheduleFailed, $project, 'artisan reports:send (0 3 * * *): failed', subject: 'task');
+    AlertMute::query()->create(['project_id' => $project->id, 'event' => 'schedule.failed', 'subject' => 'task', 'label' => 'artisan reports:send', 'until' => $now->copy()->addDay()]);
+    MaintenanceWindow::query()->create(['project_id' => $project->id, 'name' => 'Nightly deploy', 'recurrence' => 'weekly', 'weekdays' => [1, 3], 'start_time' => '02:00', 'duration_minutes' => 30, 'timezone' => 'Europe/Rome']);
+
     return $project;
 }
 
@@ -132,6 +141,8 @@ it('has no critical or serious axe issues on the main authenticated pages in lig
         route('projects.view', [$project, 'runtime'], false),
         route('projects.view', [$project, 'exceptions'], false),
         route('projects.view', [$project, 'schedule'], false),
+        route('projects.view', [$project, 'alerts'], false),
+        route('project.integrations.edit', absolute: false),
         route('profile.edit', absolute: false),
         route('appearance.edit', absolute: false),
         route('project.edit', absolute: false),
