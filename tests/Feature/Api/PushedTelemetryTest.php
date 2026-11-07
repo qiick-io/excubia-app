@@ -95,7 +95,7 @@ it('stores a runtime batch per type and series', function () {
 
     $failedJob = $project->runtimeAggregates()->where('type', RuntimeTypeEnum::Job->value)->sole();
     expect($failedJob->sample_rate)->toBe(0.5)
-        ->and($failedJob->dimensions)->toBe(['job' => 'App\\Jobs\\SendReport', 'queue' => 'default', 'connection' => 'redis', 'outcome' => 'failed'])
+        ->and($failedJob->dimensions)->toBeSameJson(['job' => 'App\\Jobs\\SendReport', 'queue' => 'default', 'connection' => 'redis', 'outcome' => 'failed'])
         ->and($failedJob->bucket->toIso8601ZuluString())->toBe('2026-11-05T11:58:00Z');
 });
 

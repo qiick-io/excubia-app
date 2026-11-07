@@ -88,6 +88,98 @@ jobs:
       - name: Types
         run: npm run types
 
+  # The full suite on the other supported databases (#136); the `tests` job covers SQLite.
+  databases:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: MySQL
+            image: mysql:8.0
+            connection: mysql
+            port: 3306
+            health: mysqladmin ping -h 127.0.0.1
+          - name: PostgreSQL
+            image: postgres:17
+            connection: pgsql
+            port: 5432
+            health: pg_isready -U excubia
+    services:
+      database:
+        image: ${{ matrix.image }}
+        env:
+          MYSQL_DATABASE: excubia
+          MYSQL_USER: excubia
+          MYSQL_PASSWORD: excubia
+          MYSQL_ROOT_PASSWORD: excubia
+          POSTGRES_DB: excubia
+          POSTGRES_USER: excubia
+          POSTGRES_PASSWORD: excubia
+        ports:
+          - ${{ matrix.port }}:${{ matrix.port }}
+        options: >-
+          --health-cmd "${{ matrix.health }}"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      DB_CONNECTION: ${{ matrix.connection }}
+      DB_HOST: 127.0.0.1
+      DB_PORT: ${{ matrix.port }}
+      DB_DATABASE: excubia
+      DB_USERNAME: excubia
+      DB_PASSWORD: excubia
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php-version: '8.4'
+          extensions: pdo_mysql, pdo_pgsql
+          coverage: none
+          tools: composer:v2
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Composer packages
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ runner.os }}-php8.4-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-php8.4-
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate --ansi
+
+      # The tests need the Vite manifest.
+      - name: Build
+        run: npm run build
+
+      # The DB_* job variables override the SQLite defaults of phpunit.xml.
+      - name: Pest
+        run: php artisan test
+
   contract:
     name: Core contract (${{ matrix.core }})
     runs-on: ubuntu-latest

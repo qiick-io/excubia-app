@@ -98,7 +98,7 @@ it('stores a valid push with its summary and updates last_report_at', function (
         ->and($report->generated_at->toIso8601ZuluString())->toBe('2026-11-05T08:00:00Z')
         ->and($report->worst_severity)->toBe(SeverityEnum::High)
         ->and([$report->critical_count, $report->high_count, $report->medium_count, $report->low_count, $report->info_count])->toBe([0, 1, 0, 1, 0])
-        ->and($report->report)->toBe($envelope['report'])
+        ->and($report->report)->toBeSameJson($envelope['report'])
         ->and($project->fresh()->last_report_at)->not->toBeNull();
 });
 
