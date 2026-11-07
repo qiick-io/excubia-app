@@ -66,10 +66,12 @@ The app runs scheduled tasks:
 - `excubia:system-telemetry` stores this install's own runtime and exceptions on the system project (every minute);
 - `excubia:prune-reports` keeps the newest reports of each project (30 by default, in **Settings → Project**);
 - `excubia:evaluate-schedules` flags late, missed and failed scheduled tasks of the projects (every minute);
-- `excubia:prune-telemetry` keeps 14 days of runtime aggregates and scheduled-task runs, and exception groups seen in the last 90 days (`EXCUBIA_RUNTIME_RETENTION_DAYS`, `EXCUBIA_EXCEPTIONS_RETENTION_DAYS`), and the alert history for the longer of the two;
+- `excubia:prune-telemetry` keeps 14 days of runtime aggregates, their hourly rollups and scheduled-task runs, and exception groups seen in the last 90 days (`EXCUBIA_RUNTIME_RETENTION_DAYS`, `EXCUBIA_EXCEPTIONS_RETENTION_DAYS`), and the alert history for the longer of the two;
 - `excubia:evaluate-runtime-alerts` runs the optional runtime alert rules of **Settings → Integrations** (every 15 minutes);
 - `excubia:send-digests` mails the weekly digest to the users who turned it on in **Settings → Profile** (Mondays at 08:00; needs a mailer in `.env`);
 - `activitylog:clean` trims the activity log.
+
+Upgrading from a version without the hourly runtime rollups of the dashboard? Run `php artisan excubia:backfill-runtime-rollups` once after `migrate`, so the dashboard totals include the runtime pushed before.
 
 Run the Laravel scheduler with a cron entry:
 

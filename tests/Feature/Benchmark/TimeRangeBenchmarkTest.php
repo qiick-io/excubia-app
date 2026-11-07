@@ -13,13 +13,12 @@ use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Performance target of #113: the dashboard queries under 300 ms at 50 projects × 14 days.
+ * Performance target of #113 and #137: the dashboard queries under 300 ms at 50 projects × 14 days.
  * Seeds 50 projects with a sample every 5 minutes for 14 days (4 request series, 2 with
  * histograms, 2 job series, 1 log series, 10 exception groups with hourly occurrences, 1
- * scheduled task), about 1.8 million rows, then times the project tabs at every range, which
- * must stay under the target, and reports the home dashboard over 14 days (its request totals
- * scan every request row of all projects: see the ponytail in DashboardOverviewService). Slow
- * to seed, so outside the default run:
+ * scheduled task), about 1.8 million rows, backfills their hourly rollups (#137), then times the
+ * project tabs at every range and the home dashboard over 14 days, which must all stay under the
+ * target. Slow to seed, so outside the default run:
  * `php artisan test --group=benchmark` (set DB_CONNECTION and DB_DATABASE for MySQL or PostgreSQL).
  */
 const BENCHMARK_PROJECTS = 50;
@@ -117,12 +116,17 @@ function benchmarkTime(callable $read): float
     return round(max(array_slice($times, 1)), 1);
 }
 
-it('serves the runtime, exceptions and schedule tabs under 300 ms at 50 projects × 14 days', function () {
+it('serves the dashboard and the runtime, exceptions and schedule tabs under 300 ms at 50 projects × 14 days', function () {
     Date::setTestNow('2026-11-05 12:30:00');
     $now = CarbonImmutable::instance(Date::now());
     benchmarkSeed($now);
+    // The rows are inserted directly, so the hourly rollups come from the one-off backfill.
+    $started = hrtime(true);
+    test()->artisan('excubia:backfill-runtime-rollups')->assertSuccessful();
+    $backfill = (hrtime(true) - $started) / 1e9;
     $project = Project::query()->where('slug', 'project-25')->sole();
     $results = [];
+    $results['home dashboard 14d'] = benchmarkTime(fn () => app(DashboardOverviewService::class)->overview(Project::query()->with('latestReport')->get(), 14));
 
     foreach (TimeRangeEnum::cases() as $range) {
         $results["runtime {$range->value}"] = benchmarkTime(fn () => app(ProjectRuntimeService::class)->summary($project, $range));
@@ -131,15 +135,12 @@ it('serves the runtime, exceptions and schedule tabs under 300 ms at 50 projects
         $results["deploys {$range->value}"] = benchmarkTime(fn () => app(TimeSeriesService::class)->deploys($project, $range, $now));
     }
 
-    $home = benchmarkTime(fn () => app(DashboardOverviewService::class)->overview(Project::query()->with('latestReport')->get(), 14));
-
-    $lines = ['', 'Benchmark #113 ('.DB::connection()->getDriverName().', '.DB::table('runtime_aggregates')->count().' runtime rows):'];
+    $lines = ['', 'Benchmark #113 ('.DB::connection()->getDriverName().', '.DB::table('runtime_aggregates')->count().' runtime rows, '.DB::table('runtime_hourly_rollups')->count().' hourly rollups backfilled in '.round($backfill, 1).' s):'];
 
     foreach ($results as $read => $milliseconds) {
         $lines[] = sprintf('  %-22s %8.1f ms', $read, $milliseconds);
     }
 
-    $lines[] = sprintf('  %-22s %8.1f ms (reported, not asserted)', 'home dashboard 14d', $home);
     fwrite(STDOUT, implode(PHP_EOL, $lines).PHP_EOL);
 
     expect(max($results))->toBeLessThan(BENCHMARK_TARGET_MS);
