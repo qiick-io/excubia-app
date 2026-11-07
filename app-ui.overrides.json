@@ -1,0 +1,3 @@
+{
+    "resources/js/components/admin/paginated-multi-select.tsx": "The registry version (app-ui #28) is a Popover + Command picker that needs the new npm dependency cmdk, which waits for Luca's approval. Until then Excubia keeps its picker, only moved to avatarToneClass."
+}

@@ -14,6 +14,7 @@ import {
 import { useInitials } from '@/hooks/use-initials';
 import { cn } from '@/lib/utils';
 import type { AdminSelectOption, Paginated } from '@/types/admin';
+import { avatarToneClass } from '@/lib/avatar-tone';
 
 export type PaginatedMultiSelectProps = {
     value?: number[];
@@ -326,11 +327,13 @@ export function PaginatedMultiSelect({
                                 />
                                 {showUserDetails ? (
                                     <>
-                                        <Avatar
-                                            userId={option.id}
-                                            className="size-8"
-                                        >
-                                            <AvatarFallback className="text-xs font-medium">
+                                        <Avatar className="size-8">
+                                            <AvatarFallback
+                                                className={cn(
+                                                    'text-xs font-medium',
+                                                    avatarToneClass(option.id),
+                                                )}
+                                            >
                                                 {initials || '?'}
                                             </AvatarFallback>
                                         </Avatar>

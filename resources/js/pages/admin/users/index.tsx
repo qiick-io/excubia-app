@@ -59,6 +59,8 @@ import type {
     BreadcrumbItem,
     Paginated,
 } from '@/types';
+import { avatarToneClass } from '@/lib/avatar-tone';
+import { cn } from '@/lib/utils';
 
 type UserSortField = 'name' | 'email' | 'created_at' | 'updated_at';
 type UserSortDirection = 'asc' | 'desc';
@@ -369,11 +371,15 @@ export default function AdminUsersIndex({
                                         >
                                             <TableCell className="max-w-[14rem] font-medium">
                                                 <span className="inline-flex min-w-0 items-center gap-2">
-                                                    <Avatar
-                                                        userId={user.id}
-                                                        className="size-7 shrink-0"
-                                                    >
-                                                        <AvatarFallback className="text-xs font-medium">
+                                                    <Avatar className="size-7 shrink-0">
+                                                        <AvatarFallback
+                                                            className={cn(
+                                                                'text-xs font-medium',
+                                                                avatarToneClass(
+                                                                    user.id,
+                                                                ),
+                                                            )}
+                                                        >
                                                             {getInitials(
                                                                 user.name,
                                                             ) ||
