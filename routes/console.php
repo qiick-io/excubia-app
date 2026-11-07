@@ -32,7 +32,8 @@ Schedule::command('excubia:system-telemetry')->everyMinute()->when(fn (): bool =
 // Alerts (#22): one project.stale per project that stopped reporting.
 Schedule::command('excubia:alert-stale')->hourly();
 
-// Schedule monitoring (#110): late, missed and failed scheduled tasks of the projects.
+// Schedule monitoring (#110): late, missed and failed scheduled tasks of the projects; and the
+// health alerts (#143) that need a clock: servers that stopped sending health samples.
 Schedule::command('excubia:evaluate-schedules')->everyMinute()->withoutOverlapping();
 
 // Optional runtime alert rules (#107, #114): cache hit ratio, failed mails and notifications, log spikes.

@@ -1,4 +1,4 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, usePoll } from '@inertiajs/react';
 import {
     ArrowUpRight,
     CalendarClock,
@@ -62,6 +62,7 @@ import { dashboard } from '@/routes';
 import projectsRoutes from '@/routes/projects';
 import type {
     FlaggedLicense,
+    LiveHealthSummary,
     ProjectRow,
     RuntimeName,
     Severity,
@@ -70,6 +71,7 @@ import type {
 const PERIODS = [7, 14, 30, 90] as const;
 const DEFAULT_PERIOD = 14;
 const ALL_PROJECTS = '__all__';
+const LIVE_HEALTH_POLL_MS = 60_000;
 
 type TrendPoint = { date: string } & Record<Severity, number>;
 type ProjectRef = { slug: string; name: string };
@@ -167,12 +169,15 @@ export default function Dashboard({
     scope,
     overview,
     trend,
+    liveHealth,
 }: {
     canViewProjects: boolean;
     projects: ProjectRow[];
     scope: { project: string | null; period: number };
     overview: Overview | null;
     trend: TrendPoint[];
+    /** Project slug → live health, for the projects that send health samples (#143). */
+    liveHealth: Record<string, LiveHealthSummary>;
 }) {
     const { t } = useTranslation();
     const { can } = useCan();
@@ -428,7 +433,12 @@ export default function Dashboard({
                             rows={overview.configuration}
                             className={selected ? 'xl:col-span-12' : undefined}
                         />
-                        {selected ? null : <ProjectsCard projects={projects} />}
+                        {selected ? null : (
+                            <ProjectsCard
+                                projects={projects}
+                                liveHealth={liveHealth}
+                            />
+                        )}
                     </section>
 
                     <LicensesCard rows={overview.licenses} />
@@ -906,10 +916,20 @@ function LicensesCard({ rows }: { rows: LicenseRow[] }) {
 }
 
 /**
- * Every project in one compact table, worst first, each linking to its page.
+ * Every project in one compact table, worst first, each linking to its page, with its live
+ * health (#143) when it sends health samples. Reloads only `liveHealth` every minute.
  */
-function ProjectsCard({ projects }: { projects: ProjectRow[] }) {
+function ProjectsCard({
+    projects,
+    liveHealth,
+}: {
+    projects: ProjectRow[];
+    liveHealth: Record<string, LiveHealthSummary>;
+}) {
     const { t } = useTranslation();
+
+    usePoll(LIVE_HEALTH_POLL_MS, { only: ['liveHealth'] });
+
     const rows = [...projects].sort(
         (first, second) => severityRank(first) - severityRank(second),
     );
@@ -932,6 +952,9 @@ function ProjectsCard({ projects }: { projects: ProjectRow[] }) {
                                 <TableHead>
                                     {t('checks.category.infrastructure')}
                                 </TableHead>
+                                <TableHead>
+                                    {t('report.liveHealth.title')}
+                                </TableHead>
                                 <TableHead>{t('report.runtime.php')}</TableHead>
                                 <TableHead>
                                     {t('report.runtime.laravel')}
@@ -944,6 +967,7 @@ function ProjectsCard({ projects }: { projects: ProjectRow[] }) {
                         <TableBody>
                             {rows.map((project) => {
                                 const report = project.latest_report ?? null;
+                                const health = liveHealth[project.slug] ?? null;
 
                                 return (
                                     <TableRow key={project.id}>
@@ -996,6 +1020,42 @@ function ProjectsCard({ projects }: { projects: ProjectRow[] }) {
                                                         `report.status.${report.infrastructure}`,
                                                     )}
                                                 </Badge>
+                                            ) : (
+                                                <span className="text-sm text-muted-foreground">
+                                                    —
+                                                </span>
+                                            )}
+                                        </TableCell>
+                                        <TableCell data-test="live-health-summary">
+                                            {health ? (
+                                                <div className="flex items-center gap-1">
+                                                    <Badge
+                                                        variant={
+                                                            CHECK_STATUS_VARIANTS[
+                                                                health.status
+                                                            ]
+                                                        }
+                                                    >
+                                                        {health.failingChecks >
+                                                        0
+                                                            ? t(
+                                                                  'dashboard.liveHealthFailing',
+                                                                  {
+                                                                      count: health.failingChecks,
+                                                                  },
+                                                              )
+                                                            : t(
+                                                                  `report.status.${health.status}`,
+                                                              )}
+                                                    </Badge>
+                                                    {health.hasStaleServers ? (
+                                                        <Badge variant="muted">
+                                                            {t(
+                                                                'dashboard.liveHealthStale',
+                                                            )}
+                                                        </Badge>
+                                                    ) : null}
+                                                </div>
                                             ) : (
                                                 <span className="text-sm text-muted-foreground">
                                                     —
