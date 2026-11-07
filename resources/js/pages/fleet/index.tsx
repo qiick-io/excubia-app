@@ -42,6 +42,15 @@ type FleetView = 'readiness' | 'advisories' | 'eol';
 
 type ProjectRef = { slug: string; name: string };
 
+/** A dismissal of the finding lifecycle (#18): `until` is the last day, null for good. */
+type Dismissal = { reason: string | null; until: string | null };
+
+type Blocker = {
+    package: string;
+    lockedVersion: string;
+    isPreReleaseOnly: boolean;
+};
+
 /** `FleetService::upgradeReadiness()` (#19). */
 type Readiness = {
     targets: { targetMajor: number; ready: number; total: number }[];
@@ -51,11 +60,8 @@ type Readiness = {
         laravelVersion: string | null;
         targetMajor: number | null;
         status: 'ready' | 'blocked' | 'unknown';
-        blockers: {
-            package: string;
-            lockedVersion: string;
-            isPreReleaseOnly: boolean;
-        }[];
+        blockers: Blocker[];
+        dismissedBlockers: (Blocker & { dismissal: Dismissal })[];
         uncheckedPackages: number;
         hasReport: boolean;
         planSteps: number;
@@ -79,6 +85,19 @@ type Exposure = {
         fixedVersions: string[];
         severity: Severity;
     })[];
+};
+
+/** `FleetService::dismissedAdvisories()` (#148): one dismissed package finding of a project. */
+type DismissedExposure = {
+    key: string;
+    project: ProjectRef;
+    kind: ExposureKind;
+    ecosystem: 'composer' | 'npm';
+    package: string;
+    advisoryId: string | null;
+    lockedVersion: string;
+    severity: Severity;
+    dismissal: Dismissal;
 };
 
 type CalendarRuntime = {
@@ -114,18 +133,21 @@ const EXPOSURE_KINDS: ExposureKind[] = ['advisory', 'abandoned', 'stale'];
 
 /**
  * Fleet (`/fleet/{view}`): upgrade readiness (#19), advisory exposure (#20) and the end-of-life
- * calendar (#23) across the projects the user may see, from the latest report of each.
+ * calendar (#23) across the projects the user may see: blockers and package risks from the open
+ * findings of each (dismissed ones apart, #148), support dates from the latest report.
  */
 export default function FleetIndex({
     view,
     readiness,
     advisories,
+    dismissedAdvisories,
     search,
     calendar,
 }: {
     view: FleetView;
     readiness: Readiness | null;
     advisories: Exposure[] | null;
+    dismissedAdvisories: DismissedExposure[] | null;
     search: string;
     calendar: CalendarRow[] | null;
 }) {
@@ -146,7 +168,11 @@ export default function FleetIndex({
             <Head title={`${t('fleet.title')}: ${t(`fleet.views.${view}`)}`} />
             <FleetTabs view={view} />
             {view === 'advisories' && advisories !== null ? (
-                <AdvisoriesView rows={advisories} initialSearch={search} />
+                <AdvisoriesView
+                    rows={advisories}
+                    dismissedRows={dismissedAdvisories ?? []}
+                    initialSearch={search}
+                />
             ) : (
                 <PageLayout scrollContent>
                     {view === 'readiness' && readiness !== null ? (
@@ -199,6 +225,20 @@ function FleetTabs({ view }: { view: FleetView }) {
                 })}
             </TabsList>
         </Tabs>
+    );
+}
+
+/** "Dismissed until 2026-12-31: reason", the reason only when given. */
+function DismissalText({ dismissal }: { dismissal: Dismissal }) {
+    const { t } = useTranslation();
+
+    return (
+        <>
+            {dismissal.until !== null
+                ? t('findings.dismissedUntil', { date: dismissal.until })
+                : t('findings.dismissedForGood')}
+            {dismissal.reason !== null ? `: ${dismissal.reason}` : ''}
+        </>
     );
 }
 
@@ -326,6 +366,34 @@ function ReadinessView({ readiness }: { readiness: Readiness }) {
                                             ))}
                                         </ul>
                                     )}
+                                    {row.dismissedBlockers.length > 0 ? (
+                                        <ul className="mt-1 space-y-1 text-xs text-muted-foreground">
+                                            {row.dismissedBlockers.map(
+                                                (blocker) => (
+                                                    <li
+                                                        key={blocker.package}
+                                                        className="flex flex-wrap items-center gap-1"
+                                                    >
+                                                        <Badge variant="muted">
+                                                            {t(
+                                                                'findings.status.dismissed',
+                                                            )}
+                                                        </Badge>
+                                                        <span className="font-mono">
+                                                            {blocker.package}
+                                                        </span>
+                                                        <span>
+                                                            <DismissalText
+                                                                dismissal={
+                                                                    blocker.dismissal
+                                                                }
+                                                            />
+                                                        </span>
+                                                    </li>
+                                                ),
+                                            )}
+                                        </ul>
+                                    ) : null}
                                     {row.uncheckedPackages > 0 ? (
                                         <p className="mt-1 text-xs text-muted-foreground">
                                             {t(
@@ -365,30 +433,155 @@ function ReadinessView({ readiness }: { readiness: Readiness }) {
 
 /**
  * Advisory exposure (#20): package or advisory → projects with locked and fixed versions,
- * searchable by package or advisory id and filtered by kind, in the browser.
+ * searchable by package or advisory id and filtered by kind, in the browser. The dismissed
+ * findings (#148) follow in their own table, with the same filters.
  */
 function AdvisoriesView({
     rows,
+    dismissedRows,
     initialSearch,
 }: {
     rows: Exposure[];
+    dismissedRows: DismissedExposure[];
     initialSearch: string;
 }) {
     const { t } = useTranslation();
     const [search, setSearch] = useState(initialSearch);
     const [kind, setKind] = useState<ExposureKind | ''>('');
     const needle = search.trim().toLowerCase();
-    const filtered = rows.filter(
-        (row) =>
-            (kind === '' || row.kind === kind) &&
-            (needle === '' ||
-                row.package.toLowerCase().includes(needle) ||
-                (row.advisoryId ?? '').toLowerCase().includes(needle)),
-    );
+    const isMatch = (row: Exposure | DismissedExposure): boolean =>
+        (kind === '' || row.kind === kind) &&
+        (needle === '' ||
+            row.package.toLowerCase().includes(needle) ||
+            (row.advisoryId ?? '').toLowerCase().includes(needle));
+    const filtered = rows.filter(isMatch);
+    const dismissed = dismissedRows.filter(isMatch);
+    const exposure =
+        filtered.length === 0 ? (
+            <PageEmptyState
+                icon={PackageSearch}
+                title={
+                    rows.length === 0
+                        ? t('fleet.advisories.emptyTitle')
+                        : t('fleet.advisories.noMatchTitle')
+                }
+                description={
+                    rows.length === 0
+                        ? t('fleet.advisories.emptyDescription')
+                        : t('fleet.advisories.noMatchDescription')
+                }
+            />
+        ) : (
+            <TablePanel>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>
+                                {t('fleet.advisories.package')}
+                            </TableHead>
+                            <TableHead>
+                                {t('fleet.advisories.advisory')}
+                            </TableHead>
+                            <TableHead>{t('report.severityLabel')}</TableHead>
+                            <TableHead>
+                                {t('fleet.advisories.projects')}
+                            </TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {filtered.map((row) => (
+                            <TableRow key={row.key}>
+                                <TableCell className="align-top">
+                                    <div className="font-mono text-xs">
+                                        {row.package}
+                                    </div>
+                                    <div className="text-xs text-muted-foreground">
+                                        {t(
+                                            `fleet.advisories.ecosystem.${row.ecosystem}`,
+                                        )}
+                                    </div>
+                                </TableCell>
+                                <TableCell className="align-top whitespace-normal">
+                                    <div className="flex flex-wrap items-center gap-1">
+                                        <Badge variant="outline">
+                                            {t(
+                                                `fleet.advisories.kind.${row.kind}`,
+                                            )}
+                                        </Badge>
+                                        {row.advisoryId !== null ? (
+                                            row.evidenceUrl !== null ? (
+                                                <a
+                                                    href={row.evidenceUrl}
+                                                    target="_blank"
+                                                    rel="noreferrer noopener"
+                                                    className="inline-flex items-center gap-0.5 font-mono text-xs text-primary underline underline-offset-4"
+                                                >
+                                                    {row.advisoryId}
+                                                    <ExternalLink
+                                                        className="size-3"
+                                                        aria-hidden
+                                                    />
+                                                </a>
+                                            ) : (
+                                                <span className="font-mono text-xs">
+                                                    {row.advisoryId}
+                                                </span>
+                                            )
+                                        ) : null}
+                                    </div>
+                                    {row.replacement !== null ? (
+                                        <p className="mt-1 text-xs text-muted-foreground">
+                                            {t('fleet.advisories.replacement', {
+                                                package: row.replacement,
+                                            })}
+                                        </p>
+                                    ) : null}
+                                </TableCell>
+                                <TableCell className="align-top">
+                                    <SeverityBadge severity={row.severity} />
+                                </TableCell>
+                                <TableCell className="align-top whitespace-normal">
+                                    <ul className="space-y-1 text-sm">
+                                        {row.projects.map((project) => (
+                                            <li
+                                                key={project.slug}
+                                                className="flex flex-wrap items-center gap-x-2"
+                                            >
+                                                <ProjectLink
+                                                    project={project}
+                                                />
+                                                <span className="font-mono text-xs">
+                                                    {project.lockedVersion ||
+                                                        '—'}
+                                                    {project.fixedVersions
+                                                        .length > 0
+                                                        ? ` → ${project.fixedVersions.join(', ')}`
+                                                        : ''}
+                                                </span>
+                                                {project.severity !==
+                                                row.severity ? (
+                                                    <SeverityBadge
+                                                        severity={
+                                                            project.severity
+                                                        }
+                                                    />
+                                                ) : null}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </TablePanel>
+        );
 
     return (
         <PageLayout
             description={t('fleet.advisories.description')}
+            // Two tables: the page scrolls instead of the first table.
+            scrollContent={dismissed.length > 0}
             filters={
                 <>
                     <FilterSearch
@@ -419,132 +612,92 @@ function AdvisoriesView({
                 </>
             }
         >
-            {filtered.length === 0 ? (
-                <PageEmptyState
-                    icon={PackageSearch}
-                    title={
-                        rows.length === 0
-                            ? t('fleet.advisories.emptyTitle')
-                            : t('fleet.advisories.noMatchTitle')
-                    }
-                    description={
-                        rows.length === 0
-                            ? t('fleet.advisories.emptyDescription')
-                            : t('fleet.advisories.noMatchDescription')
-                    }
-                />
-            ) : (
-                <TablePanel>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>
-                                    {t('fleet.advisories.package')}
-                                </TableHead>
-                                <TableHead>
-                                    {t('fleet.advisories.advisory')}
-                                </TableHead>
-                                <TableHead>
-                                    {t('report.severityLabel')}
-                                </TableHead>
-                                <TableHead>
-                                    {t('fleet.advisories.projects')}
-                                </TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {filtered.map((row) => (
-                                <TableRow key={row.key}>
-                                    <TableCell className="align-top">
-                                        <div className="font-mono text-xs">
-                                            {row.package}
-                                        </div>
-                                        <div className="text-xs text-muted-foreground">
-                                            {t(
-                                                `fleet.advisories.ecosystem.${row.ecosystem}`,
-                                            )}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="align-top whitespace-normal">
-                                        <div className="flex flex-wrap items-center gap-1">
-                                            <Badge variant="outline">
-                                                {t(
-                                                    `fleet.advisories.kind.${row.kind}`,
-                                                )}
-                                            </Badge>
-                                            {row.advisoryId !== null ? (
-                                                row.evidenceUrl !== null ? (
-                                                    <a
-                                                        href={row.evidenceUrl}
-                                                        target="_blank"
-                                                        rel="noreferrer noopener"
-                                                        className="inline-flex items-center gap-0.5 font-mono text-xs text-primary underline underline-offset-4"
-                                                    >
-                                                        {row.advisoryId}
-                                                        <ExternalLink
-                                                            className="size-3"
-                                                            aria-hidden
-                                                        />
-                                                    </a>
-                                                ) : (
-                                                    <span className="font-mono text-xs">
-                                                        {row.advisoryId}
-                                                    </span>
-                                                )
-                                            ) : null}
-                                        </div>
-                                        {row.replacement !== null ? (
-                                            <p className="mt-1 text-xs text-muted-foreground">
-                                                {t(
-                                                    'fleet.advisories.replacement',
-                                                    {
-                                                        package:
-                                                            row.replacement,
-                                                    },
-                                                )}
-                                            </p>
-                                        ) : null}
-                                    </TableCell>
-                                    <TableCell className="align-top">
-                                        <SeverityBadge
-                                            severity={row.severity}
-                                        />
-                                    </TableCell>
-                                    <TableCell className="align-top whitespace-normal">
-                                        <ul className="space-y-1 text-sm">
-                                            {row.projects.map((project) => (
-                                                <li
-                                                    key={project.slug}
-                                                    className="flex flex-wrap items-center gap-x-2"
-                                                >
-                                                    <ProjectLink
-                                                        project={project}
-                                                    />
-                                                    <span className="font-mono text-xs">
-                                                        {project.lockedVersion ||
-                                                            '—'}
-                                                        {project.fixedVersions
-                                                            .length > 0
-                                                            ? ` → ${project.fixedVersions.join(', ')}`
-                                                            : ''}
-                                                    </span>
-                                                    {project.severity !==
-                                                    row.severity ? (
-                                                        <SeverityBadge
-                                                            severity={
-                                                                project.severity
-                                                            }
-                                                        />
+            {dismissed.length > 0 ? (
+                <div className="flex flex-col gap-6">
+                    {exposure}
+                    <section
+                        aria-labelledby="fleet-dismissed-title"
+                        className="space-y-3"
+                    >
+                        <h2
+                            id="fleet-dismissed-title"
+                            className="text-lg font-medium"
+                        >
+                            {t('fleet.advisories.dismissedTitle')}
+                        </h2>
+                        <p className="text-sm text-muted-foreground">
+                            {t('fleet.advisories.dismissedDescription')}
+                        </p>
+                        <TablePanel>
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>
+                                            {t('fleet.advisories.package')}
+                                        </TableHead>
+                                        <TableHead>
+                                            {t('fleet.advisories.advisory')}
+                                        </TableHead>
+                                        <TableHead>
+                                            {t('report.severityLabel')}
+                                        </TableHead>
+                                        <TableHead>
+                                            {t('fleet.project')}
+                                        </TableHead>
+                                        <TableHead>
+                                            {t('findings.reason')}
+                                        </TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {dismissed.map((row) => (
+                                        <TableRow key={row.key}>
+                                            <TableCell className="align-top">
+                                                <div className="font-mono text-xs">
+                                                    {row.package}
+                                                </div>
+                                                <div className="font-mono text-xs text-muted-foreground">
+                                                    {row.lockedVersion || '—'}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="align-top whitespace-normal">
+                                                <div className="flex flex-wrap items-center gap-1">
+                                                    <Badge variant="outline">
+                                                        {t(
+                                                            `fleet.advisories.kind.${row.kind}`,
+                                                        )}
+                                                    </Badge>
+                                                    {row.advisoryId !== null ? (
+                                                        <span className="font-mono text-xs">
+                                                            {row.advisoryId}
+                                                        </span>
                                                     ) : null}
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </TablePanel>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="align-top">
+                                                <SeverityBadge
+                                                    severity={row.severity}
+                                                />
+                                            </TableCell>
+                                            <TableCell className="align-top">
+                                                <ProjectLink
+                                                    project={row.project}
+                                                />
+                                            </TableCell>
+                                            <TableCell className="align-top text-sm whitespace-normal text-muted-foreground">
+                                                <DismissalText
+                                                    dismissal={row.dismissal}
+                                                />
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </TablePanel>
+                    </section>
+                </div>
+            ) : (
+                exposure
             )}
         </PageLayout>
     );

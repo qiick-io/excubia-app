@@ -1562,7 +1562,7 @@
             "description": "Registra un progetto e invia il primo report per vederlo qui."
         },
         "readiness": {
-            "description": "Dai blocchi alla prossima major dell'ultimo report di ogni progetto: un progetto può passare quando nessuna dipendenza diretta blocca la prossima major di Laravel.",
+            "description": "Dai blocchi aperti alla prossima major di ogni progetto: un progetto può passare quando nessuna dipendenza diretta blocca la prossima major di Laravel. Un blocco ignorato non blocca.",
             "target": "Laravel {{major}}",
             "canMove": "{{ready}} progetti su {{total}} possono passare a Laravel {{major}} oggi",
             "unknownDescription": "Nessun report, Laravel non bloccato nel lock o controllo dei blocchi non eseguito.",
@@ -1579,7 +1579,7 @@
             }
         },
         "advisories": {
-            "description": "Pacchetti con advisory note, abbandonati o non aggiornati, e i progetti che li usano, dall'ultimo report di ogni progetto.",
+            "description": "Pacchetti con advisory note, abbandonati o non aggiornati, e i progetti che li usano, dai problemi aperti di ogni progetto. I problemi ignorati sono elencati a parte.",
             "search": "Pacchetto o id advisory",
             "kindLabel": "Filtra per tipo",
             "allKinds": "Tutti i tipi",
@@ -1599,7 +1599,9 @@
             "emptyTitle": "Nessun pacchetto esposto",
             "emptyDescription": "Nessun ultimo report ha advisory note, pacchetti abbandonati o non aggiornati.",
             "noMatchTitle": "Nessun pacchetto corrispondente",
-            "noMatchDescription": "Prova un altro nome di pacchetto o id advisory."
+            "noMatchDescription": "Prova un altro nome di pacchetto o id advisory.",
+            "dismissedTitle": "Problemi ignorati",
+            "dismissedDescription": "Problemi aperti che un utente ha ignorato, con il motivo e l'ultimo giorno in cui vale."
         },
         "eol": {
             "description": "Finestre di supporto di PHP, Laravel e Node di ogni progetto, dalla scadenza più vicina.",

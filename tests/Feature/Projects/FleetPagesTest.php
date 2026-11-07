@@ -2,8 +2,11 @@
 
 declare(strict_types=1);
 
+use App\Actions\SyncFindingLifecycleAction;
+use App\Actions\UpdateFindingDismissalAction;
 use App\Enums\ProjectVisibilityEnum;
 use App\Enums\RoleEnum;
+use App\Models\Finding;
 use App\Models\Project;
 use App\Models\User;
 use Database\Seeders\PermissionSeeder;
@@ -13,7 +16,8 @@ use Inertia\Testing\AssertableInertia as Assert;
 
 /**
  * Fleet pages (#19, #20, #23): upgrade readiness, advisory exposure and the end-of-life calendar
- * across the projects the user may see, from the latest report of each.
+ * across the projects the user may see: blockers and package risks from the open findings of the
+ * lifecycle (#148), dismissed ones apart, the rest from the latest report of each.
  */
 beforeEach(function () {
     $this->seed(PermissionSeeder::class);
@@ -42,7 +46,8 @@ function fleetFinding(string $checkId, string $status, string $severity, string 
 }
 
 /**
- * Stores a report for the project with the given checks (id => findings) and runtimes.
+ * Stores a report for the project with the given checks (id => findings) and runtimes, and moves
+ * the finding lifecycle with it, as a push does.
  *
  * @param  array<string, list<array<string, mixed>>>  $checks
  * @param  array<string, mixed>  $runtimes
@@ -55,7 +60,7 @@ function fleetReport(Project $project, array $checks, array $runtimes = [], stri
         return in_array('fail', $statuses, true) ? 'fail' : (in_array('warn', $statuses, true) ? 'warn' : 'pass');
     };
 
-    $project->healthReports()->create([
+    $report = $project->healthReports()->create([
         'batch_id' => (string) Str::uuid(),
         'received_at' => $receivedAt,
         'generated_at' => $receivedAt,
@@ -71,6 +76,16 @@ function fleetReport(Project $project, array $checks, array $runtimes = [], stri
             'upgradePlan' => $planSteps === 0 ? [] : array_map(fn (int $step): array => ['stepNumber' => $step, 'message' => 'Step '.$step], range(1, $planSteps)),
         ],
     ]);
+    app(SyncFindingLifecycleAction::class)->execute($project, $report);
+}
+
+/**
+ * Dismisses the project's open finding of the subject, as a user does on the Findings tab.
+ */
+function fleetDismiss(Project $project, string $subject, string $reason, ?string $until = null): void
+{
+    $finding = Finding::query()->whereBelongsTo($project)->get()->firstWhere(fn (Finding $finding): bool => $finding->finding['subject'] === $subject);
+    app(UpdateFindingDismissalAction::class)->execute($finding, fleetAdmin(), $reason, $until === null ? null : Date::parse($until));
 }
 
 /**
@@ -154,9 +169,9 @@ it('lists the projects exposed to each advisory or package with locked and fixed
         'composer-abandoned' => [fleetFinding('composer-abandoned', 'warn', 'high', 'swiftmailer/swiftmailer', ['package' => 'swiftmailer/swiftmailer', 'lockedVersion' => '6.3.0', 'replacement' => 'symfony/mailer'])],
     ]);
     $blog = Project::factory()->create(['name' => 'Blog', 'slug' => 'blog']);
-    // An older report of Blog does not count: only the latest one does.
+    // A finding of an older report of Blog that the latest one resolved does not count.
     fleetReport($blog, ['composer-stale' => [fleetFinding('composer-stale', 'warn', 'low', 'jenssegers/agent', ['package' => 'jenssegers/agent', 'lockedVersion' => '2.6.4'])]], receivedAt: '2026-11-01 08:00:00');
-    fleetReport($blog, ['composer-advisories' => [fleetFinding('composer-advisories', 'fail', 'high', 'guzzlehttp/guzzle', [...$guzzle, 'lockedVersion' => 'v7.2.0'], 'PKSA-1234')]]);
+    fleetReport($blog, ['composer-stale' => [], 'composer-advisories' => [fleetFinding('composer-advisories', 'fail', 'high', 'guzzlehttp/guzzle', [...$guzzle, 'lockedVersion' => 'v7.2.0'], 'PKSA-1234')]]);
 
     $this->actingAs(fleetReader())->get(route('fleet.view', ['view' => 'advisories', 'search' => 'PKSA']))
         ->assertInertia(fn (Assert $page) => $page
@@ -182,7 +197,84 @@ it('lists the projects exposed to each advisory or package with locked and fixed
             ->where('advisories.1.kind', 'abandoned')
             ->where('advisories.1.replacement', 'symfony/mailer')
             ->where('advisories.2.ecosystem', 'npm')
-            ->where('advisories.2.advisoryId', 'GHSA-wf5p-g6vw-rhxx'));
+            ->where('advisories.2.advisoryId', 'GHSA-wf5p-g6vw-rhxx')
+            ->where('dismissedAdvisories', []));
+});
+
+it('keeps a dismissed blocker from blocking and lists it apart with its dismissal', function () {
+    $blocker = fn (string $package, string $status): array => fleetFinding('laravel-next-blocker', $status, 'medium', $package, ['package' => $package, 'lockedVersion' => '1.0.0', 'targetMajor' => 14]);
+    $laravel = ['laravel' => fleetRuntime('13.1.0', '13', '2028-03-17')];
+    $shop = Project::factory()->create(['name' => 'Shop', 'slug' => 'shop']);
+    fleetReport($shop, ['laravel-next-blocker' => [$blocker('spatie/laravel-ray', 'fail')]], $laravel);
+    fleetDismiss($shop, 'spatie/laravel-ray', 'Dev only, removed before the upgrade', '2026-12-31');
+    $blog = Project::factory()->create(['name' => 'Blog', 'slug' => 'blog']);
+    fleetReport($blog, ['laravel-next-blocker' => [$blocker('livewire/livewire', 'fail'), $blocker('filament/filament', 'fail')]], $laravel);
+    fleetDismiss($blog, 'filament/filament', 'Upgrading with the next release');
+    // An expired dismissal holds no more: the blocker blocks again.
+    $legacy = Project::factory()->create(['name' => 'Legacy', 'slug' => 'legacy']);
+    fleetReport($legacy, ['laravel-next-blocker' => [$blocker('laravel/ui', 'fail')]], $laravel);
+    fleetDismiss($legacy, 'laravel/ui', 'Expired', '2026-11-06');
+
+    $this->actingAs(fleetReader())->get(route('fleet.show'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('readiness.targets', [['targetMajor' => 14, 'ready' => 1, 'total' => 3]])
+            ->where('readiness.projects.0.project.slug', 'blog')
+            ->where('readiness.projects.0.status', 'blocked')
+            ->where('readiness.projects.0.blockers', [['package' => 'livewire/livewire', 'lockedVersion' => '1.0.0', 'isPreReleaseOnly' => false]])
+            ->where('readiness.projects.0.dismissedBlockers', [[
+                'package' => 'filament/filament',
+                'lockedVersion' => '1.0.0',
+                'isPreReleaseOnly' => false,
+                'dismissal' => ['reason' => 'Upgrading with the next release', 'until' => null],
+            ]])
+            ->where('readiness.projects.1.project.slug', 'legacy')
+            ->where('readiness.projects.1.status', 'blocked')
+            ->where('readiness.projects.1.dismissedBlockers', [])
+            ->where('readiness.projects.2.project.slug', 'shop')
+            ->where('readiness.projects.2.status', 'ready')
+            ->where('readiness.projects.2.blockers', [])
+            ->where('readiness.projects.2.dismissedBlockers.0.package', 'spatie/laravel-ray')
+            ->where('readiness.projects.2.dismissedBlockers.0.dismissal', ['reason' => 'Dev only, removed before the upgrade', 'until' => '2026-12-31']));
+});
+
+it('leaves dismissed findings out of the advisory exposure and lists them apart', function () {
+    $guzzle = fn (string $locked): array => fleetFinding('composer-advisories', 'fail', 'critical', 'guzzlehttp/guzzle', ['package' => 'guzzlehttp/guzzle', 'lockedVersion' => $locked, 'fixedVersions' => ['7.4.5']], 'PKSA-1234');
+    $abandoned = fleetFinding('composer-abandoned', 'warn', 'high', 'swiftmailer/swiftmailer', ['package' => 'swiftmailer/swiftmailer', 'lockedVersion' => '6.3.0', 'replacement' => 'symfony/mailer']);
+    $shop = Project::factory()->create(['name' => 'Shop', 'slug' => 'shop']);
+    fleetReport($shop, ['composer-advisories' => [$guzzle('7.4.0')], 'composer-abandoned' => [$abandoned]]);
+    fleetDismiss($shop, 'guzzlehttp/guzzle', 'Not reachable: no user input reaches the client', '2027-01-31');
+    fleetDismiss($shop, 'swiftmailer/swiftmailer', 'Replaced next sprint');
+    $blog = Project::factory()->create(['name' => 'Blog', 'slug' => 'blog']);
+    fleetReport($blog, ['composer-advisories' => [$guzzle('7.2.0')]]);
+
+    $this->actingAs(fleetReader())->get(route('fleet.view', 'advisories'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('advisories', 1)
+            ->where('advisories.0.key', 'composer-advisories|guzzlehttp/guzzle|PKSA-1234')
+            ->where('advisories.0.projects', [['slug' => 'blog', 'name' => 'Blog', 'lockedVersion' => '7.2.0', 'fixedVersions' => ['7.4.5'], 'severity' => 'critical']])
+            ->has('dismissedAdvisories', 2)
+            ->where('dismissedAdvisories.0', [
+                'key' => 'shop|'.Finding::query()->whereBelongsTo($shop)->where('check_id', 'composer-advisories')->value('fingerprint'),
+                'project' => ['slug' => 'shop', 'name' => 'Shop'],
+                'kind' => 'advisory',
+                'ecosystem' => 'composer',
+                'package' => 'guzzlehttp/guzzle',
+                'advisoryId' => 'PKSA-1234',
+                'lockedVersion' => '7.4.0',
+                'severity' => 'critical',
+                'dismissal' => ['reason' => 'Not reachable: no user input reaches the client', 'until' => '2027-01-31'],
+            ])
+            ->where('dismissedAdvisories.1.package', 'swiftmailer/swiftmailer')
+            ->where('dismissedAdvisories.1.dismissal', ['reason' => 'Replaced next sprint', 'until' => null]));
+
+    // A resolved finding leaves both lists, dismissed or not.
+    fleetReport($shop, ['composer-advisories' => [], 'composer-abandoned' => [$abandoned]]);
+
+    $this->actingAs(fleetReader())->get(route('fleet.view', 'advisories'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('advisories', 1)
+            ->has('dismissedAdvisories', 1)
+            ->where('dismissedAdvisories.0.package', 'swiftmailer/swiftmailer'));
 });
 
 it('shows the PHP, Laravel and Node support windows per project, soonest end first', function () {
