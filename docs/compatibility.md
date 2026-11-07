@@ -4,7 +4,7 @@ Each monitored project installs [`qiick/excubia-core`](https://github.com/qiick-
 
 ## Rules
 
-- **Protocol version 1.** The app accepts every report, runtime and exception push of protocol version 1, which every excubia-core 1.x sends (`/api/reports`, `/api/runtime`, `/api/exceptions`; frozen in the core's `docs/CONTRACTS.md`). Breaking changes would need protocol version 2 and a new major of both.
+- **Protocol version 1.** The app accepts every report, runtime and exception push of protocol version 1, which every excubia-core 1.x sends (`/api/reports`, `/api/runtime`, `/api/exceptions`; frozen in the core's `docs/CONTRACTS.md`). Breaking changes would need protocol version 2 and a new major of both. Endpoints, status codes, error bodies and limits: [API.md](./API.md).
 - **Every runtime type is accepted.** An aggregate of a type the app does not know yet (sent by a newer core) is skipped on store, never rejected, so the push of the known types succeeds. Newer optional fields are ignored the same way. Older cores simply send less: the matching tab or column stays empty.
 - **Every check id is shown.** Findings of a check id the app has no label for render under the id itself.
 - **Pushing needs excubia-core 1.0.0-beta.1 or later**, the first version with `excubia push`. 0.x has no push.
