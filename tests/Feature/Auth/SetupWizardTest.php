@@ -5,8 +5,10 @@ declare(strict_types=1);
 use App\Enums\RoleEnum;
 use App\Models\Project;
 use App\Models\User;
+use App\Providers\AppServiceProvider;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\SystemProjectSeeder;
+use Illuminate\Http\Middleware\TrustProxies;
 use Inertia\Testing\AssertableInertia as Assert;
 
 /**
@@ -109,4 +111,22 @@ it('keeps the project step from users who cannot create projects and from guests
 
     $this->post(route('setup.project.store'), ['name' => 'Shop'])->assertRedirect(route('login'));
     expect(Project::query()->exists())->toBeFalse();
+});
+
+it('uses the forwarded scheme only behind a trusted proxy', function () {
+    $headers = ['X-Forwarded-Proto' => 'https', 'X-Forwarded-Host' => 'excubia.example.com'];
+
+    $this->get(route('setup.show'), $headers)
+        ->assertInertia(fn (Assert $page) => $page->where('step', 'admin'));
+    expect(url('/'))->toStartWith('http://');
+
+    config(['excubia.trusted_proxies' => '*']);
+    (fn () => $this->configureTrustedProxies())->call(new AppServiceProvider(app()));
+
+    try {
+        $this->get(route('setup.show'), $headers);
+        expect(url('/'))->toBe('https://excubia.example.com');
+    } finally {
+        TrustProxies::flushState();
+    }
 });

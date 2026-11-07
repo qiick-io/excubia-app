@@ -17,6 +17,7 @@ use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -54,8 +55,24 @@ class AppServiceProvider extends ServiceProvider
         $this->configureActivityLogging();
         $this->registerAuthActivityListeners();
         $this->configureRateLimiting();
+        $this->configureTrustedProxies();
         // Excubia's own runtime and exceptions for the system project (#84).
         app(SelfMonitoringService::class)->register($this->app);
+    }
+
+    /**
+     * Trusts the reverse proxies of `excubia.trusted_proxies` (`TRUSTED_PROXIES`): `*` or a
+     * comma-separated list. Nothing is trusted by default.
+     */
+    protected function configureTrustedProxies(): void
+    {
+        $proxies = trim((string) config('excubia.trusted_proxies'));
+
+        if ($proxies === '') {
+            return;
+        }
+
+        TrustProxies::at($proxies === '*' ? '*' : array_map(trim(...), explode(',', $proxies)));
     }
 
     /**
