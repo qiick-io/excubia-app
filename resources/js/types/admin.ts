@@ -16,13 +16,6 @@ export type PermissionGroup = {
 };
 
 /** Generic id/label pair for admin select components. */
-export type AdminSelectOption = {
-    id: number;
-    label: string;
-    name?: string;
-    email?: string;
-};
-
 export type AdminRoleRef = {
     id: number;
     name: string;

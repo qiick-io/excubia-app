@@ -77,6 +77,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index');
 
     // Users and groups are created and edited in drawers on their list pages.
+    // The roles the current user may grant, for the role picker of the user and group drawers.
+    Route::get('users/assignable-roles', [UserController::class, 'assignableRoles'])->name('users.assignable-roles');
     Route::resource('users', UserController::class)->only(['index', 'store', 'update', 'destroy']);
     Route::resource('groups', UserGroupController::class)->only(['index', 'store', 'update', 'destroy']);
     Route::post('users/{user}/password-reset', [UserController::class, 'sendPasswordReset'])
