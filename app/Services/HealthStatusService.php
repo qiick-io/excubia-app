@@ -69,12 +69,13 @@ class HealthStatusService
 
             foreach ($servers as $server => $buckets) {
                 $readings = array_values(array_filter($buckets, fn (array $metrics): bool => ($metrics['status'] ?? 'skipped') !== 'skipped'));
+                // Buckets are newest first, from the query order; a server row always has one.
+                $newestBucket = (string) array_key_first($buckets);
                 $rows[] = [
                     'server' => (string) $server,
-                    ...$this->reading($readings[0] ?? $buckets[array_key_first($buckets)] ?? []),
-                    // Buckets are newest first, from the query order.
-                    'lastSampleAt' => (string) array_key_first($buckets),
-                    'isStale' => CarbonImmutable::parse((string) array_key_first($buckets))->lessThan($now->subMinutes(self::STALE_MINUTES)),
+                    ...$this->reading($readings[0] ?? $buckets[$newestBucket] ?? []),
+                    'lastSampleAt' => $newestBucket,
+                    'isStale' => CarbonImmutable::parse($newestBucket)->lessThan($now->subMinutes(self::STALE_MINUTES)),
                     'readings' => array_map(fn (array $metrics): string => (string) $metrics['status'], $readings),
                 ];
             }
