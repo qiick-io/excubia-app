@@ -250,7 +250,9 @@ it('stores a classification entry of the Laravel AI SDK (core #212)', function (
 
     $this->postJson(route('api.runtime.store'), coreRuntimeEnvelope([$classification]), $headers)->assertCreated();
 
-    expect($project->runtimeAggregates()->sole()->dimensions)->toBe(['operation' => 'classification', 'provider' => 'openai', 'model' => 'gpt-5-mini']);
+    // MySQL's JSON column reorders keys: compare them, not their order.
+    expect($project->runtimeAggregates()->sole()->dimensions)->toEqualCanonicalizing(['operation' => 'classification', 'provider' => 'openai', 'model' => 'gpt-5-mini'])
+        ->toHaveKeys(['operation', 'provider', 'model'])->toHaveCount(3);
 });
 
 it('stores a value core may add to an enumerated dimension instead of rejecting the batch', function (string $type, string $dimension) {
