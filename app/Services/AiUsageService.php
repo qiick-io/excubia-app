@@ -99,7 +99,10 @@ class AiUsageService
         foreach ($series->groupBy(fn (array $one): string => ($one['dimensions']['provider'] ?? '')."\0".($one['dimensions']['model'] ?? '')) as $group) {
             /** @var Series $first */
             $first = $group->first();
-            $groupCost = $this->prices->cost($first['dimensions']['provider'] ?? '', $first['dimensions']['model'] ?? '', $this->usage($group));
+            // ponytail: a series is priced as of its last minute, so a range across a ROUTES day
+            // prices its earlier days at the new price too (the timeline and the month split at the
+            // day). Upgrade: split the series query at the route days if that matters.
+            $groupCost = $this->prices->cost($first['dimensions']['provider'] ?? '', $first['dimensions']['model'] ?? '', $this->usage($group), $first['lastAt']);
             $cost += $groupCost ?? 0.0;
             $hasUnpriced = $hasUnpriced || $groupCost === null;
         }
@@ -204,7 +207,7 @@ class AiUsageService
                 }
 
                 /** @var Usage $usage */
-                $cost = $this->prices->cost($dimensions[$dimensionKey]['provider'] ?? '', $dimensions[$dimensionKey]['model'] ?? '', $usage) ?? 0.0;
+                $cost = $this->prices->cost($dimensions[$dimensionKey]['provider'] ?? '', $dimensions[$dimensionKey]['model'] ?? '', $usage, CarbonImmutable::parse((string) $point['at'])) ?? 0.0;
                 $points[$index] ??= ['at' => (string) $point['at'], 'cost' => 0.0, 'count' => 0];
                 $points[$index]['cost'] += $cost;
                 $points[$index]['count'] += (int) $point['count'];
