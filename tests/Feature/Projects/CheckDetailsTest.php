@@ -21,7 +21,7 @@ use Inertia\Testing\AssertableInertia as Assert;
  * dashboard, the license inventory, and the immediate infrastructure alerts.
  *
  * `tests/Fixtures/core/report-schema.json` is a copy of excubia-core `develop` at
- * 5e67a99d4bf70fa8fb50b1277f2a225e904f0eed (2026-11-08, core #214: `laravel-octane-config`). `report-every-check.json` holds one
+ * 5e67a99d4bf70fa8fb50b1277f2a225e904f0eed (2026-11-08, core #216: `laravel-reverb`). `report-every-check.json` holds one
  * check per contract id, and one finding per `details` shape of the schema. Refresh both when
  * core adds a check id.
  */
@@ -40,7 +40,7 @@ const CONTRACT_CHECK_IDS = [
     'laravel-storage', 'laravel-disk-space', 'laravel-queue-backlog', 'php-platform-requirements', 'env-example-sync',
     'composer-outdated', 'laravel-queue-workers', 'npm-outdated', 'laravel-backups', 'laravel-database-connections',
     'laravel-database-size', 'laravel-redis-memory', 'php-opcache', 'php-production-ini',
-    'laravel-octane-config',
+    'laravel-octane-config', 'laravel-reverb',
 ];
 
 /**
@@ -124,14 +124,16 @@ it('lists the issues problems-first with their group, and summarises the details
             ->where('issues.0.category', 'infrastructure')
             ->where('issues.0.details', ['connection' => 'mysql'])
             ->where('issues.1.checkId', 'laravel-cache')
-            ->where('issues.7.checkId', 'composer-advisories')
-            ->where('issues.7.category', 'dependencies')
+            ->where('issues.7.checkId', 'laravel-reverb')
+            ->where('issues.7.details', ['isReachable' => false, 'latencyMs' => null])
+            ->where('issues.8.checkId', 'composer-advisories')
+            ->where('issues.8.category', 'dependencies')
             ->where('health.groups.0.category', 'infrastructure')
             ->where('health.groups.0.status', 'fail')
             ->where('health.groups.1.category', 'configuration')
             ->where('health.groups.2.category', 'dependencies')
             ->has('health.groups', 3)
-            ->has('health.groups.0.checks', 14)
+            ->has('health.groups.0.checks', 15)
             ->where('health.infrastructure.status', 'fail')
             ->where('health.infrastructure.diskUsedPercent', 93)
             ->where('health.infrastructure.database', ['connection' => 'mysql', 'sizeMb' => 2048.5, 'largestTables' => [['table' => 'activity_log', 'sizeMb' => 1024.25], ['table' => 'jobs', 'sizeMb' => 300]]])
@@ -190,10 +192,10 @@ it('renders a check id this app does not know under its own name, in the other g
     $this->actingAs(User::factory()->create()->assignRole(RoleEnum::Reader->value))
         ->get(route('projects.show', 'shop'))
         ->assertInertia(fn (Assert $page) => $page
-            ->where('issues.8.checkId', 'laravel-octane-workers')
-            ->where('issues.8.checkName', 'Octane workers')
-            ->where('issues.8.category', 'other')
-            ->where('issues.8.details', ['workerCount' => 0])
+            ->where('issues.9.checkId', 'laravel-octane-workers')
+            ->where('issues.9.checkName', 'Octane workers')
+            ->where('issues.9.category', 'other')
+            ->where('issues.9.details', ['workerCount' => 0])
             ->where('health.groups.3.category', 'other')
             ->where('health.groups.3.checks.0.issues', 1));
 });

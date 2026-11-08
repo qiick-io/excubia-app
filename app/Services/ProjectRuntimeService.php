@@ -54,6 +54,10 @@ class ProjectRuntimeService
         'reasoningTokens' => 'sum', 'imageInputTokens' => 'sum', 'imageOutputTokens' => 'sum', 'audioSeconds' => 'sum', 'searchUnits' => 'sum',
         // `octane` (#168); its `maxMb` is the one above.
         'workerStarts' => 'sum', 'workerStops' => 'sum', 'requests' => 'sum', 'tasks' => 'sum', 'ticks' => 'sum', 'totalRequestsAtStop' => 'sum', 'maxRequestsAtStop' => 'max', 'maxGrowthMb' => 'max',
+        // `reverb` (#175).
+        'connectionsOpened' => 'sum', 'connectionsRejected' => 'sum', 'connectionsPruned' => 'sum', 'messagesReceived' => 'sum', 'messagesSent' => 'sum',
+        'publicChannelsCreated' => 'sum', 'privateChannelsCreated' => 'sum', 'presenceChannelsCreated' => 'sum',
+        'publicChannelsRemoved' => 'sum', 'privateChannelsRemoved' => 'sum', 'presenceChannelsRemoved' => 'sum', 'maxConnections' => 'max',
     ];
 
     /**
@@ -67,6 +71,12 @@ class ProjectRuntimeService
 
     /** The check whose `details` carry `octane.server` and `octane.max_requests` (core #213). */
     private const OCTANE_CONFIG_CHECK = 'laravel-octane-config';
+
+    /** The check whose `details` carry the Reverb server's `isReachable` and `latencyMs` (core #215). */
+    private const REVERB_CHECK = 'laravel-reverb';
+
+    /** Channel prefixes of the `reverb` counters (`publicChannelsCreated` …). */
+    private const REVERB_CHANNEL_PREFIXES = ['public', 'private', 'presence'];
 
     /** The types of the Runtime tab; the AI usage types (#129) have their own tab (AiUsageService). */
     private const AI_TYPES = [RuntimeTypeEnum::Ai, RuntimeTypeEnum::AiTool];
@@ -121,6 +131,7 @@ class ProjectRuntimeService
             'duplicateQueries' => $this->duplicateQueries($of(RuntimeTypeEnum::DuplicateQuery)),
             'servers' => $this->servers($project, $of(RuntimeTypeEnum::Server)),
             'octane' => $this->octane($project, $of(RuntimeTypeEnum::Octane)),
+            'reverb' => $this->reverb($project, $of(RuntimeTypeEnum::Reverb)),
             'deploys' => $this->timeSeries->deploys($project, $range, $now),
         ];
     }
@@ -590,19 +601,74 @@ class ProjectRuntimeService
      */
     private function octaneConfig(Project $project): ?array
     {
+        $details = $this->latestDetails($project, self::OCTANE_CONFIG_CHECK, 'maxRequests');
+
+        return $details === null ? null : [
+            'server' => is_string($details['server'] ?? null) ? $details['server'] : null,
+            'maxRequests' => is_int($details['maxRequests']) ? $details['maxRequests'] : null,
+        ];
+    }
+
+    /**
+     * Reverb servers (#175) per server and Reverb app id: estimated messages received and sent,
+     * connections opened, rejected and pruned, errors, and channels created and removed by name
+     * prefix; the peak of the `maxConnections` gauge (not scaled by sample rate). `check` is
+     * the latest report's laravel-reverb reading, null when that report has none. It does not
+     * depend on the runtime type, which is off by default in the core.
+     *
+     * @param  Collection<int, Series>  $series
+     * @return array{check: array{isReachable: bool, latencyMs: float|null}|null, rows: list<array<string, mixed>>}
+     */
+    private function reverb(Project $project, Collection $series): array
+    {
+        $rows = $this->table($series, ['server', 'appId'], function (Collection $group): array {
+            $counter = fn (string $name): int => $this->estimate($group, fn (array $one): ?float => $one['metrics'][$name]);
+            $channels = fn (string $event): array => array_combine(
+                self::REVERB_CHANNEL_PREFIXES,
+                array_map(fn (string $prefix): int => $counter($prefix.'Channels'.$event), self::REVERB_CHANNEL_PREFIXES),
+            );
+
+            return [
+                'messagesReceived' => $counter('messagesReceived'),
+                'messagesSent' => $counter('messagesSent'),
+                'connectionsOpened' => $counter('connectionsOpened'),
+                'connectionsRejected' => $counter('connectionsRejected'),
+                'connectionsPruned' => $counter('connectionsPruned'),
+                'errors' => $this->estimate($group, fn (array $one): float => $one['errorCount']),
+                'channelsCreated' => $channels('Created'),
+                'channelsRemoved' => $channels('Removed'),
+                'peakConnections' => (int) $group->max(fn (array $one): float => (float) $one['metrics']['maxConnections']),
+            ];
+        }, 'messagesSent');
+        $details = $this->latestDetails($project, self::REVERB_CHECK, 'isReachable');
+
+        return [
+            'check' => $details === null ? null : [
+                'isReachable' => $details['isReachable'] === true,
+                'latencyMs' => is_int($details['latencyMs'] ?? null) || is_float($details['latencyMs'] ?? null) ? (float) $details['latencyMs'] : null,
+            ],
+            'rows' => $rows,
+        ];
+    }
+
+    /**
+     * The `details` of the first finding of a check in the latest report that carry the given
+     * key, or null when that report has none.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function latestDetails(Project $project, string $checkId, string $key): ?array
+    {
         foreach ((array) ($project->latestReport?->report['checks'] ?? []) as $check) {
-            if (! is_array($check) || ($check['checkId'] ?? null) !== self::OCTANE_CONFIG_CHECK) {
+            if (! is_array($check) || ($check['checkId'] ?? null) !== $checkId) {
                 continue;
             }
 
             foreach ((array) ($check['findings'] ?? []) as $finding) {
                 $details = is_array($finding) ? ($finding['details'] ?? null) : null;
 
-                if (is_array($details) && array_key_exists('maxRequests', $details)) {
-                    return [
-                        'server' => is_string($details['server'] ?? null) ? $details['server'] : null,
-                        'maxRequests' => is_int($details['maxRequests']) ? $details['maxRequests'] : null,
-                    ];
+                if (is_array($details) && array_key_exists($key, $details)) {
+                    return $details;
                 }
             }
         }

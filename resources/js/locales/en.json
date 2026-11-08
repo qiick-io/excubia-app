@@ -1132,7 +1132,19 @@
         "workerStartsStops": "Starts / stops",
         "workerErrors": "Worker errors",
         "memoryGrowth": "Max growth",
-        "requestsAtStop": "Requests at stop (avg / max)"
+        "requestsAtStop": "Requests at stop (avg / max)",
+        "reverb": "Reverb",
+        "reverbDescription": "Per server and Reverb app. Peak connections is the most connections subscribed to a channel in one minute; channels are public / private / presence.",
+        "reverbReachable": "The Reverb server answered in {{latency}} ms in the latest report.",
+        "reverbUnreachable": "The Reverb server did not answer in the latest report.",
+        "messagesInOut": "Messages in / out",
+        "connectionsOpened": "Opened",
+        "connectionsRejected": "Rejected",
+        "connectionsPruned": "Pruned",
+        "reverbErrors": "Errors",
+        "channelsCreated": "Channels created",
+        "channelsRemoved": "Channels removed",
+        "peakConnections": "Peak connections"
     },
     "exceptions": {
         "emptyTitle": "No exceptions",
@@ -1561,6 +1573,10 @@
         "laravel-octane-config": {
             "label": "Octane configuration",
             "description": "Octane server and, in production, whether max_requests restarts workers before leaks build up."
+        },
+        "laravel-reverb": {
+            "label": "Reverb server",
+            "description": "Whether the Reverb server of the broadcast connection answers a TCP connect within 2 s, and how fast."
         }
     },
     "details": {
