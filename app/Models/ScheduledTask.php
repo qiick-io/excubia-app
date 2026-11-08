@@ -22,9 +22,9 @@ use Illuminate\Support\Carbon;
  * @property string $task
  * @property string $expression
  * @property string $timezone
- * @property bool $without_overlapping
- * @property bool $on_one_server
- * @property bool $runs_in_maintenance_mode
+ * @property bool $is_without_overlapping
+ * @property bool $is_on_one_server
+ * @property bool $can_run_in_maintenance_mode
  * @property list<string> $environments
  * @property int $late_after_minutes
  * @property int $position
@@ -40,7 +40,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['project_id', 'task_id', 'task', 'expression', 'timezone', 'without_overlapping', 'on_one_server', 'runs_in_maintenance_mode', 'environments', 'late_after_minutes', 'position'])]
+#[Fillable(['project_id', 'task_id', 'task', 'expression', 'timezone', 'is_without_overlapping', 'is_on_one_server', 'can_run_in_maintenance_mode', 'environments', 'late_after_minutes', 'position'])]
 class ScheduledTask extends Model
 {
     /** The task excubia-core schedules every minute: the "scheduler alive" signal. */
@@ -70,9 +70,9 @@ class ScheduledTask extends Model
     protected function casts(): array
     {
         return [
-            'without_overlapping' => 'boolean',
-            'on_one_server' => 'boolean',
-            'runs_in_maintenance_mode' => 'boolean',
+            'is_without_overlapping' => 'boolean',
+            'is_on_one_server' => 'boolean',
+            'can_run_in_maintenance_mode' => 'boolean',
             'environments' => 'array',
             'late_after_minutes' => 'integer',
             'position' => 'integer',

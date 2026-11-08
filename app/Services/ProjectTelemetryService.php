@@ -40,10 +40,10 @@ class ProjectTelemetryService
         $from = $range?->start($now);
         $groups = $project->exceptionGroups()
             ->when($from !== null, fn ($query) => $query
-                ->where('last_seen', '>=', $from)
+                ->where('last_seen_at', '>=', $from)
                 ->withSum(['occurrences as range_count' => fn ($occurrences) => $occurrences->where('bucket', '>=', $from)], 'count'))
             ->orderByRaw('case status when ? then 0 when ? then 1 else 2 end', [ExceptionStatusEnum::Open->value, ExceptionStatusEnum::Resolved->value])
-            ->orderByDesc('last_seen')
+            ->orderByDesc('last_seen_at')
             ->limit(100)
             ->get();
         if ($range === null || $from === null) {

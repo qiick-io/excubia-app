@@ -144,7 +144,7 @@ it('dismisses a finding with a reason and a last day, mutes its alerts and remov
 
     expect($finding->fresh())->dismissed_reason->toBe('Not reachable from user input')
         ->dismissed_until->toDateString()->toBe('2026-12-31')
-        ->dismissed_by->toBe($admin->id);
+        ->dismissed_by_user_id->toBe($admin->id);
 
     // Gone and back while dismissed: no finding alerts, no severity change.
     pushLifecycleReport($token, ['composer-audit' => [['b/b', 'low']]]);
