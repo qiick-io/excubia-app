@@ -345,3 +345,19 @@ it('keeps the daily AI usage for two months even with a shorter runtime retentio
 
     expect(AiUsageDay::query()->pluck('day')->map->toDateString()->all())->toBe(['2026-09-25']);
 });
+
+it('lists classification and operations it does not know on the AI tab by operation (#169)', function () {
+    $other = ['histogram' => null, 'provider' => 'openai', 'model' => 'gpt-5-mini', 'count' => 2, 'errorCount' => 0, 'failoverCount' => 0];
+    pushAiRuntime([
+        array_diff_key(aiEntry([...$other, 'operation' => 'classification']), ['agent' => true]),
+        array_diff_key(aiEntry([...$other, 'operation' => 'futureOperation']), ['agent' => true]),
+    ]);
+
+    $this->actingAs(aiUser(RoleEnum::Reader))
+        ->get(route('projects.view', ['project' => 'shop', 'view' => 'ai']))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('ai.totals.count', 4)
+            ->where('ai.agents', fn ($agents): bool => collect($agents)->map(fn (array $row): array => [$row['agent'], $row['operation']])->sortBy(1)->values()->all()
+                === [[null, 'classification'], [null, 'futureOperation']]));
+});

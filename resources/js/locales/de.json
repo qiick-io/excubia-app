@@ -1238,7 +1238,8 @@
             "embeddings": "Embeddings",
             "transcription": "Transkription",
             "reranking": "Reranking",
-            "audio": "Sprachausgabe"
+            "audio": "Sprachausgabe",
+            "classification": "Klassifizierung"
         }
     },
     "files": {

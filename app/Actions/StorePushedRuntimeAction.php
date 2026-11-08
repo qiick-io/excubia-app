@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Actions;
 
 use App\Enums\RuntimeTypeEnum;
+use App\Enums\SeverityEnum;
 use App\Models\Project;
 use App\Models\PushedBatch;
 use App\Models\RuntimeAggregate;
@@ -20,7 +21,9 @@ use Illuminate\Support\Facades\DB;
  * `isContainer` is true when any entry is, and histograms add up element by element (none when
  * only one side has one), also across batches. Entries of a type this app does not know are
  * skipped and counted on the project (`skipped_runtime_aggregates`), so a newer core never loses
- * the rest of its batch. A repeated `batchId` stores nothing and returns false. The same
+ * the rest of its batch; so are `health` samples with a `status` or `severity` the app does not
+ * know, which it cannot rank (#169). Other enumerated values this app does not know (an `ai`
+ * `operation`, a log `level`, an `outcome`…) are stored as any other dimension. A repeated `batchId` stores nothing and returns false. The same
  * transaction adds the entries to their hourly rollups (#137), which the dashboard totals read,
  * and the `ai` entries to the daily AI usage (#129).
  * After a new batch with `health` samples (#115) the health alerts are evaluated.
@@ -60,7 +63,7 @@ class StorePushedRuntimeAction
                 foreach ($aggregates as $aggregate) {
                     $type = RuntimeTypeEnum::tryFrom((string) ($aggregate['type'] ?? ''));
 
-                    if ($type === null) {
+                    if ($type === null || $this->isUnreadable($type, $aggregate)) {
                         $skipped++;
 
                         continue;
@@ -74,7 +77,7 @@ class StorePushedRuntimeAction
                 // Daily AI usage per provider and model (#129), for the monthly budget and the digest.
                 $this->aiUsageDays->execute($project, array_values(array_filter($aggregates, fn (array $aggregate): bool => ($aggregate['type'] ?? null) === RuntimeTypeEnum::Ai->value)));
 
-                // Runs per scheduled task for schedule monitoring (#110).
+                // Runs per scheduled task for schedule monitoring (#110), known outcomes only.
                 $this->scheduledTaskRuns->execute($project, $aggregates);
 
                 if ($skipped > 0) {
@@ -94,6 +97,19 @@ class StorePushedRuntimeAction
         }
 
         return $isNew;
+    }
+
+    /**
+     * True for a `health` sample whose `status` or `severity` this app does not know: it cannot
+     * be ranked against the others, so it is skipped and counted instead of stored (#169).
+     *
+     * @param  array<string, mixed>  $aggregate
+     */
+    private function isUnreadable(RuntimeTypeEnum $type, array $aggregate): bool
+    {
+        return $type === RuntimeTypeEnum::Health
+            && (! in_array($aggregate['status'] ?? null, RuntimeTypeEnum::HEALTH_STATUSES, true)
+                || ! in_array($aggregate['severity'] ?? null, SeverityEnum::values(), true));
     }
 
     /**

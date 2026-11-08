@@ -13,7 +13,8 @@ use Carbon\CarbonImmutable;
  * Records the runs of scheduled tasks (#110) from the `scheduledTask` aggregates of a runtime
  * batch, per `taskId`, minute bucket and outcome: counts add up across batches, the sample rate
  * keeps the lowest. Aggregates without a `taskId` (cores before #146) cannot be matched with the
- * schedule and are left out. Called inside the runtime batch transaction, so a repeated batch
+ * schedule and are left out, and so are outcomes the schedule monitoring does not know (#169;
+ * the runtime aggregate keeps them). Called inside the runtime batch transaction, so a repeated batch
  * records nothing.
  */
 class StoreScheduledTaskRunsAction
@@ -24,7 +25,9 @@ class StoreScheduledTaskRunsAction
     public function execute(Project $project, array $aggregates): void
     {
         foreach ($aggregates as $aggregate) {
-            if (($aggregate['type'] ?? null) !== RuntimeTypeEnum::ScheduledTask->value || ! is_string($aggregate['taskId'] ?? null)) {
+            if (($aggregate['type'] ?? null) !== RuntimeTypeEnum::ScheduledTask->value
+                || ! is_string($aggregate['taskId'] ?? null)
+                || ! in_array($aggregate['outcome'] ?? null, ScheduledTaskRun::OUTCOMES, true)) {
                 continue;
             }
 

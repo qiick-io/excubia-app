@@ -25,6 +25,9 @@ use Illuminate\Support\Carbon;
 #[Fillable(['project_id', 'task_id', 'bucket', 'outcome', 'count', 'sample_rate'])]
 class ScheduledTaskRun extends Model
 {
+    /** Outcomes of a scheduled-task run that the schedule monitoring reads, as excubia-core sends them. */
+    public const OUTCOMES = ['finished', 'failed', 'skipped'];
+
     /**
      * @return array<string, string>
      */
