@@ -304,6 +304,28 @@ export type RuntimeServer = {
     lastAt: string;
 };
 
+/**
+ * Octane workers of one server, Octane server and worker type (#168). Counts are estimated;
+ * the requests at stop are the stopped workers' own counts, null without a stop.
+ */
+export type RuntimeOctaneRow = {
+    server: string;
+    octaneServer: string;
+    workerType: string;
+    requests: number;
+    tasks: number;
+    ticks: number;
+    workerStarts: number;
+    workerStops: number;
+    errors: number;
+    maxMb: number;
+    maxGrowthMb: number;
+    isPossibleLeak: boolean;
+    averageRequestsAtStop: number | null;
+    maxRequestsAtStop: number | null;
+    lastAt: string | null;
+};
+
 /** A time range of the runtime, exceptions and schedule tabs (#113), `TimeRangeEnum`. */
 export type TimeRange = '1h' | '6h' | '24h' | '7d' | '14d';
 
@@ -349,6 +371,15 @@ export type RuntimeSummary = {
     deprecations: RuntimeCountRow[];
     duplicateQueries: RuntimeCountRow[];
     servers: RuntimeServer[];
+    /**
+     * Octane workers (#168); `config` is the latest laravel-octane-config reading, null when
+     * there are no rows or the report has none. `leakGrowthMb` is the possible-leak threshold.
+     */
+    octane: {
+        config: { server: string | null; maxRequests: number | null } | null;
+        leakGrowthMb: number;
+        rows: RuntimeOctaneRow[];
+    };
     /** Deploys of the range, oldest first (#106); `bucket` matches a `timeline` point. */
     deploys: RuntimeDeploy[];
 };

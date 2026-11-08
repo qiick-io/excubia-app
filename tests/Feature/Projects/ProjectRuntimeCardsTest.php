@@ -74,7 +74,8 @@ it('sends every card, empty, to a project whose core sends only the default type
         ->where('runtime.logLevels', ['levels' => [], 'rows' => [], 'timeline' => []])
         ->where('runtime.deprecations', [])
         ->where('runtime.duplicateQueries', [])
-        ->where('runtime.servers', []));
+        ->where('runtime.servers', [])
+        ->where('runtime.octane', ['config' => null, 'leakGrowthMb' => ProjectRuntimeService::OCTANE_LEAK_GROWTH_MB, 'rows' => []]));
 });
 
 it('shows the skipped aggregates of unknown types, even before any known type arrives', function () {
@@ -239,4 +240,55 @@ it('reads every summed and maxed metric but the server gauges and health reading
     ksort($sqlMetrics);
 
     expect($sqlMetrics)->toBe($metrics);
+});
+
+it('shows Octane workers per server and worker type with the leak hint and max_requests (#168)', function () {
+    $octane = fn (array $metrics): array => ['metrics' => [
+        'workerStarts' => 0, 'workerStops' => 0, 'requests' => 0, 'tasks' => 0, 'ticks' => 0,
+        'totalRequestsAtStop' => 0, 'maxRequestsAtStop' => 0, 'maxMb' => 0, 'maxGrowthMb' => 0, ...$metrics,
+    ]];
+    $http = ['server' => 'web-1', 'octaneServer' => 'swoole', 'workerType' => 'http'];
+
+    cardRow($this->project, 'octane', $http, ['count' => 300, 'error_count' => 1, ...$octane(['workerStarts' => 2, 'workerStops' => 2, 'requests' => 290, 'totalRequestsAtStop' => 900, 'maxRequestsAtStop' => 500, 'maxMb' => 48.211, 'maxGrowthMb' => 12.004])]);
+    cardRow($this->project, 'octane', $http, ['bucket' => '2026-11-05 11:59:00', 'count' => 100, ...$octane(['requests' => 100, 'maxMb' => 90.5, 'maxGrowthMb' => 40.25])]);
+    // Sampled at 50 %: the counts are estimated, the requests at stop are each worker's own.
+    cardRow($this->project, 'octane', [...$http, 'workerType' => 'task'], ['sample_rate' => 0.5, 'count' => 20, ...$octane(['workerStarts' => 1, 'workerStops' => 1, 'tasks' => 5, 'ticks' => 14, 'totalRequestsAtStop' => 0])]);
+    // A server this app does not know yet (#169) is shown as sent.
+    cardRow($this->project, 'octane', [...$http, 'octaneServer' => 'futureServer'], ['count' => 5, ...$octane(['requests' => 5, 'maxMb' => 20])]);
+    $this->project->healthReports()->create([
+        'batch_id' => 'b1', 'received_at' => now(), 'generated_at' => now(),
+        'report' => ['checks' => [['checkId' => 'laravel-octane-config', 'status' => 'pass', 'findings' => [
+            ['checkId' => 'laravel-octane-config', 'subject' => 'octane.server', 'status' => 'pass', 'severity' => 'info', 'details' => ['server' => 'swoole', 'maxRequests' => 500]],
+        ]]]],
+    ]);
+
+    runtimePage($this->viewer, $this->project)->assertInertia(fn (Assert $page) => $page
+        ->where('runtime.octane.config', ['server' => 'swoole', 'maxRequests' => 500])
+        ->has('runtime.octane.rows', 3)
+        ->where('runtime.octane.rows.0', [
+            'server' => 'web-1', 'octaneServer' => 'swoole', 'workerType' => 'http',
+            'requests' => 390, 'tasks' => 0, 'ticks' => 0, 'workerStarts' => 2, 'workerStops' => 2, 'errors' => 1,
+            'maxMb' => 90.5, 'maxGrowthMb' => 40.25, 'isPossibleLeak' => true,
+            'averageRequestsAtStop' => 450, 'maxRequestsAtStop' => 500, 'lastAt' => '2026-11-05T11:59:00Z',
+        ])
+        ->where('runtime.octane.rows.1.octaneServer', 'futureServer')
+        ->where('runtime.octane.rows.1.isPossibleLeak', false)
+        ->where('runtime.octane.rows.1.averageRequestsAtStop', null)
+        ->where('runtime.octane.rows.2.workerType', 'task')
+        ->where('runtime.octane.rows.2.tasks', 10)
+        ->where('runtime.octane.rows.2.ticks', 28)
+        ->where('runtime.octane.rows.2.workerStops', 2)
+        ->where('runtime.octane.rows.2.averageRequestsAtStop', 0)
+        ->where('runtime.octane.rows.2.maxRequestsAtStop', 0));
+});
+
+it('leaves max_requests out when the latest report has no laravel-octane-config details', function () {
+    cardRow($this->project, 'octane', ['server' => 'web-1', 'octaneServer' => 'frankenphp', 'workerType' => 'http'], ['count' => 3, 'metrics' => [
+        'workerStarts' => 1, 'workerStops' => 0, 'requests' => 2, 'tasks' => 0, 'ticks' => 0, 'totalRequestsAtStop' => 0, 'maxRequestsAtStop' => 0, 'maxMb' => 30, 'maxGrowthMb' => 0,
+    ]]);
+
+    runtimePage($this->viewer, $this->project)->assertInertia(fn (Assert $page) => $page
+        ->where('runtime.octane.config', null)
+        ->where('runtime.octane.rows.0.requests', 2)
+        ->where('runtime.octane.rows.0.maxRequestsAtStop', null));
 });
