@@ -15,7 +15,7 @@ use Symfony\Component\HttpFoundation\Response;
  * Answers 401 for a missing, unknown or revoked token, 403 for a disabled project and 413 for a
  * body above `excubia.push_max_kilobytes`.
  */
-class AuthenticateProjectToken
+class AuthenticateProjectTokenMiddleware
 {
     /**
      * @param  Closure(Request): (Response)  $next

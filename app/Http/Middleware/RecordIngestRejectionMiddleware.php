@@ -27,7 +27,7 @@ use Throwable;
  * unknown or revoked token (401), which has no project and so alerts on the system project
  * (#70). The client is only a hashed cache key that expires with the hour: no IP is stored.
  */
-class RecordIngestRejection
+class RecordIngestRejectionMiddleware
 {
     /**
      * @param  Closure(Request): (Response)  $next

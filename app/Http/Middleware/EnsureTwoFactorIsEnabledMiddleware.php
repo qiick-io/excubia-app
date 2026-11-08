@@ -15,7 +15,7 @@ use Symfony\Component\HttpFoundation\Response;
  * When the settings require 2FA, sends users without it to their security page.
  * A confirmed TOTP or at least one passkey satisfies the requirement, as in externa-core.
  */
-class EnsureTwoFactorIsEnabled
+class EnsureTwoFactorIsEnabledMiddleware
 {
     /**
      * Routes needed to enroll (or leave) without a redirect loop.

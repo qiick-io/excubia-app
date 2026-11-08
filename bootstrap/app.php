@@ -1,7 +1,7 @@
 <?php
 
-use App\Http\Middleware\EnsureTwoFactorIsEnabled;
-use App\Http\Middleware\EnsureUserIsActive;
+use App\Http\Middleware\EnsureTwoFactorIsEnabledMiddleware;
+use App\Http\Middleware\EnsureUserIsActiveMiddleware;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\SecurityHeadersMiddleware;
@@ -31,9 +31,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state', 'locale', 'accessibility_high_contrast', 'accessibility_reduce_motion']);
 
         $middleware->web(prepend: [SecurityHeadersMiddleware::class], append: [
-            EnsureUserIsActive::class,
+            EnsureUserIsActiveMiddleware::class,
             SetLocaleMiddleware::class,
-            EnsureTwoFactorIsEnabled::class,
+            EnsureTwoFactorIsEnabledMiddleware::class,
             HandleAppearance::class,
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,

@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
 
-export type ResolvedAppearance = 'light' | 'dark';
+type ResolvedAppearance = 'light' | 'dark';
 export type Appearance = ResolvedAppearance | 'system';
 
 export type UseAppearanceReturn = {
@@ -102,20 +102,6 @@ export function initializeTheme(projectDefault: Appearance = 'system'): void {
         mediaQuery()?.addEventListener('change', handleSystemThemeChange);
         isSystemThemeListenerBound = true;
     }
-}
-
-/**
- * Removes the prefers-color-scheme listener bound by {@link initializeTheme}.
- *
- * @returns {void}
- */
-export function teardownTheme(): void {
-    if (!isSystemThemeListenerBound) {
-        return;
-    }
-
-    mediaQuery()?.removeEventListener('change', handleSystemThemeChange);
-    isSystemThemeListenerBound = false;
 }
 
 /**

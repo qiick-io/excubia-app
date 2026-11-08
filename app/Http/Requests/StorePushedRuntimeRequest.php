@@ -19,7 +19,7 @@ use Illuminate\Validation\Rule;
  * `workerType`, the billing `provider` and `eventType`, the auth `guard`, the health `status` and `severity`) is only checked as a string: core adds values
  * additively, and a value this app does not know must never reject the batch (#169). StorePushedRuntimeAction stores it, or
  * skips and counts the entry when the app cannot read it. The token was checked by
- * AuthenticateProjectToken.
+ * AuthenticateProjectTokenMiddleware.
  */
 class StorePushedRuntimeRequest extends FormRequest
 {

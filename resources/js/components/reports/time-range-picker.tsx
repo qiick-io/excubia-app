@@ -7,7 +7,7 @@ import projectsRoutes from '@/routes/projects';
 import type { RuntimeDeploy, TimeRange } from '@/types';
 
 /** The ranges of `TimeRangeEnum`, shortest first. */
-export const TIME_RANGES: TimeRange[] = ['1h', '6h', '24h', '7d', '14d'];
+const TIME_RANGES: TimeRange[] = ['1h', '6h', '24h', '7d', '14d'];
 
 export const DEFAULT_TIME_RANGE: TimeRange = '24h';
 

@@ -37,7 +37,7 @@ export type ProjectAppearance = {
 } & BrandingUrls;
 
 /** Uploaded logo, dark logo and favicon (SettingsRepositoryService::brandingUrls()). */
-export type BrandingUrls = {
+type BrandingUrls = {
     logoUrl: string | null;
     logoDarkUrl: string | null;
     faviconUrl: string | null;
