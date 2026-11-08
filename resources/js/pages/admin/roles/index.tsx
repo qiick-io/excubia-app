@@ -1,24 +1,15 @@
+import type { ColumnDef } from '@tanstack/react-table';
 import { Head, Link, router } from '@inertiajs/react';
 import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { DataTable } from '@/components/admin/data-table';
+import { Badge } from '@/components/ui/badge';
+import { ButtonGroup } from '@/components/ui/button-group';
 import { HeaderIconButton } from '@/components/admin/header-icon-button';
 import { ConfirmDestructiveDialog } from '@/components/confirm-destructive-dialog';
-import {
-    hasTablePaginationFooter,
-    PageLayout,
-    TablePaginationFooter,
-    TablePanel,
-} from '@/components/layout/page-layout';
+import { PageLayout } from '@/components/layout/page-layout';
 import { Button } from '@/components/ui/button';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
 import { PermissionEnum } from '@/enums/permission-enum';
 import { useCan } from '@/hooks/use-can';
 import AppLayout from '@/layouts/app-layout';
@@ -61,6 +52,69 @@ export default function AdminRolesIndex({
         [t],
     );
 
+    const columns: ColumnDef<(typeof rows)[number]>[] = [
+        {
+            id: 'name',
+            header: t('roles.columns.name'),
+            meta: { cellClassName: 'font-medium' },
+            cell: ({ row }) => (
+                <span className="inline-flex items-center gap-2">
+                    {row.original.name}
+                    {row.original.is_built_in ? (
+                        <Badge variant="muted">{t('roles.systemBadge')}</Badge>
+                    ) : null}
+                </span>
+            ),
+        },
+        {
+            id: 'permissions',
+            header: t('roles.columns.permissions'),
+            meta: {
+                headerClassName: 'text-right',
+                cellClassName: 'text-right text-muted-foreground tabular-nums',
+            },
+            cell: ({ row }) => row.original.permissions_count ?? '—',
+        },
+        {
+            id: 'actions',
+            header: t('roles.columns.actions'),
+            meta: {
+                headerClassName: 'w-[1%] text-right',
+                cellClassName: 'text-right',
+                isRowClickIgnored: true,
+            },
+            cell: ({ row }) => (
+                <ButtonGroup
+                    aria-label={t('roles.columns.actions')}
+                    className="ml-auto"
+                >
+                    <HeaderIconButton
+                        variant="outline"
+                        size="icon-sm"
+                        label={t('roles.actions.edit')}
+                        asChild
+                    >
+                        <Link href={rolesRoutes.edit.url(row.original.id)}>
+                            <Pencil className="size-3.5" />
+                        </Link>
+                    </HeaderIconButton>
+                    {row.original.can_edit ? (
+                        <HeaderIconButton
+                            type="button"
+                            variant="outline"
+                            size="icon-sm"
+                            className="text-destructive hover:text-destructive"
+                            label={t('roles.actions.delete')}
+                            onClick={() => setPendingRoleId(row.original.id)}
+                        >
+                            <Trash2 className="size-3.5" />
+                        </HeaderIconButton>
+                    ) : null}
+                </ButtonGroup>
+            ),
+        },
+    ];
+
     return (
         <AppLayout
             breadcrumbs={breadcrumbs}
@@ -79,98 +133,21 @@ export default function AdminRolesIndex({
 
             <SettingsLayout wide>
                 <PageLayout className="p-0">
-                    <TablePanel
-                        footer={
-                            hasTablePaginationFooter(roles) ? (
-                                <TablePaginationFooter pagination={roles} />
-                            ) : undefined
+                    <DataTable
+                        columns={columns}
+                        data={rows}
+                        getRowId={(role) => String(role.id)}
+                        pagination={roles}
+                        onRowClick={(role) =>
+                            router.visit(rolesRoutes.edit.url(role.id))
                         }
-                    >
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>
-                                        {t('roles.columns.name')}
-                                    </TableHead>
-                                    <TableHead className="text-right">
-                                        {t('roles.columns.permissions')}
-                                    </TableHead>
-                                    <TableHead className="text-right">
-                                        {t('roles.columns.actions')}
-                                    </TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {rows.length === 0 ? (
-                                    <TableRow>
-                                        <TableCell
-                                            colSpan={3}
-                                            className="text-muted-foreground"
-                                        >
-                                            {t('roles.empty')}
-                                        </TableCell>
-                                    </TableRow>
-                                ) : (
-                                    rows.map((role) => (
-                                        <TableRow key={role.id}>
-                                            <TableCell className="font-medium">
-                                                <span className="inline-flex items-center gap-2">
-                                                    {role.name}
-                                                    {role.is_built_in && (
-                                                        <span className="rounded bg-muted px-2 py-0.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                                                            {t(
-                                                                'roles.systemBadge',
-                                                            )}
-                                                        </span>
-                                                    )}
-                                                </span>
-                                            </TableCell>
-                                            <TableCell className="text-right text-muted-foreground tabular-nums">
-                                                {role.permissions_count ?? '—'}
-                                            </TableCell>
-                                            <TableCell className="text-right">
-                                                <div className="inline-flex items-center justify-end gap-1">
-                                                    <HeaderIconButton
-                                                        variant="outline"
-                                                        size="icon-sm"
-                                                        label={t(
-                                                            'roles.actions.edit',
-                                                        )}
-                                                        asChild
-                                                    >
-                                                        <Link
-                                                            href={rolesRoutes.edit.url(
-                                                                role.id,
-                                                            )}
-                                                        >
-                                                            <Pencil className="size-3.5" />
-                                                        </Link>
-                                                    </HeaderIconButton>
-                                                    {role.can_edit && (
-                                                        <HeaderIconButton
-                                                            type="button"
-                                                            variant="destructive-ghost"
-                                                            size="icon-sm"
-                                                            label={t(
-                                                                'roles.actions.delete',
-                                                            )}
-                                                            onClick={() =>
-                                                                setPendingRoleId(
-                                                                    role.id,
-                                                                )
-                                                            }
-                                                        >
-                                                            <Trash2 className="size-3.5" />
-                                                        </HeaderIconButton>
-                                                    )}
-                                                </div>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))
-                                )}
-                            </TableBody>
-                        </Table>
-                    </TablePanel>
+                        getRowProps={() => ({ className: 'cursor-pointer' })}
+                        emptyState={
+                            <span className="text-muted-foreground">
+                                {t('roles.empty')}
+                            </span>
+                        }
+                    />
                 </PageLayout>
             </SettingsLayout>
 

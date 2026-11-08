@@ -607,11 +607,21 @@
         "sortBy": "Sortieren nach",
         "columns": {
             "created": "Erstellt",
-            "updated": "Aktualisiert"
+            "updated": "Aktualisiert",
+            "name": "Name",
+            "email": "E-Mail",
+            "roles": "Rollen",
+            "groups": "Gruppen",
+            "status": "Status",
+            "actions": "Aktionen"
         },
         "ssoBadge": "SSO",
         "actions": {
             "sendResetEmail": "Reset-E-Mail senden"
+        },
+        "status": {
+            "active": "Aktiv",
+            "inactive": "Inaktiv"
         }
     },
     "groups": {
@@ -622,7 +632,14 @@
         "title": "Gruppen",
         "newGroup": "Neue Gruppe",
         "searchPlaceholder": "Gruppen suchen…",
-        "sortBy": "Sortieren nach"
+        "sortBy": "Sortieren nach",
+        "columns": {
+            "name": "Name",
+            "roles": "Rollen",
+            "members": "Mitglieder",
+            "actions": "Aktionen"
+        },
+        "empty": "Noch keine Gruppen."
     },
     "projects": {
         "title": "Projekte",

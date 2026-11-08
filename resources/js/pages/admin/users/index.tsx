@@ -1,3 +1,4 @@
+import type { ColumnDef } from '@tanstack/react-table';
 import { Head, router } from '@inertiajs/react';
 import {
     ArrowDownAZ,
@@ -10,22 +11,21 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { DataTable } from '@/components/admin/data-table';
+import type { DataTableSort } from '@/components/admin/data-table';
+import { DataTableColumnHeader } from '@/components/admin/data-table-column-header';
 import { DataTableToolbar } from '@/components/admin/data-table-toolbar';
 import { HeaderIconButton } from '@/components/admin/header-icon-button';
 import { PageEmptyState } from '@/components/admin/page-empty-state';
 import { TruncatedText } from '@/components/admin/truncated-text';
+import { UserAvatar } from '@/components/admin/user-avatar';
 import { UserFormDrawer } from '@/components/admin/user-form-drawer';
 import { ConfirmDestructiveDialog } from '@/components/confirm-destructive-dialog';
 import { EmptyStatus } from '@/components/empty-status';
-import {
-    hasTablePaginationFooter,
-    PageLayout,
-    TablePaginationFooter,
-    TablePanel,
-} from '@/components/layout/page-layout';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { PageLayout } from '@/components/layout/page-layout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { ButtonGroup } from '@/components/ui/button-group';
 import { Drawer } from '@/components/ui/drawer';
 import {
     Select,
@@ -34,19 +34,10 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
 import { PermissionEnum } from '@/enums/permission-enum';
 import { useCan } from '@/hooks/use-can';
 import { useDebouncedServerSearch } from '@/hooks/use-debounced-server-search';
 import { useDrawerDeepLink } from '@/hooks/use-drawer-deep-link';
-import { useInitials } from '@/hooks/use-initials';
 import AppLayout from '@/layouts/app-layout';
 import { listPerPageQuery } from '@/lib/list-per-page';
 import { normalizePaginated } from '@/lib/pagination';
@@ -59,11 +50,20 @@ import type {
     BreadcrumbItem,
     Paginated,
 } from '@/types';
-import { avatarToneClass } from '@/lib/avatar-tone';
-import { cn } from '@/lib/utils';
 
 type UserSortField = 'name' | 'email' | 'created_at' | 'updated_at';
 type UserSortDirection = 'asc' | 'desc';
+
+const USER_SORT_FIELDS: UserSortField[] = [
+    'name',
+    'email',
+    'created_at',
+    'updated_at',
+];
+
+function isUserSortField(value: string): value is UserSortField {
+    return (USER_SORT_FIELDS as string[]).includes(value);
+}
 
 type Filters = {
     search?: string;
@@ -86,7 +86,6 @@ export default function AdminUsersIndex({
 }) {
     const users = normalizePaginated(usersProp);
     const { t } = useTranslation();
-    const getInitials = useInitials();
 
     const userSortFields: { value: UserSortField; label: string }[] = [
         { value: 'name', label: t('common.name') },
@@ -211,6 +210,143 @@ export default function AdminUsersIndex({
             { preserveScroll: true },
         );
     };
+
+    const changeSort = (nextSort: DataTableSort): void => {
+        if (!isUserSortField(nextSort.id)) {
+            return;
+        }
+
+        setSort(nextSort.id);
+        setDirection(nextSort.direction);
+        visit({ sort: nextSort.id, direction: nextSort.direction });
+    };
+
+    const columns: ColumnDef<AdminUserRow>[] = [
+        {
+            accessorKey: 'name',
+            enableSorting: true,
+            meta: { cellClassName: 'max-w-[14rem] font-medium' },
+            header: ({ column }) => (
+                <DataTableColumnHeader
+                    column={column}
+                    title={t('users.columns.name')}
+                />
+            ),
+            cell: ({ row }) => (
+                <span className="inline-flex min-w-0 items-center gap-2">
+                    <UserAvatar
+                        userId={row.original.id}
+                        name={row.original.name}
+                        email={row.original.email}
+                        size="sm"
+                    />
+                    <TruncatedText text={row.original.name} />
+                    {row.original.is_sso_linked ? (
+                        <Badge variant="outline">{t('users.ssoBadge')}</Badge>
+                    ) : null}
+                </span>
+            ),
+        },
+        {
+            accessorKey: 'email',
+            enableSorting: true,
+            meta: { cellClassName: 'max-w-[12rem] text-muted-foreground' },
+            header: ({ column }) => (
+                <DataTableColumnHeader
+                    column={column}
+                    title={t('users.columns.email')}
+                />
+            ),
+            cell: ({ row }) => <TruncatedText text={row.original.email} />,
+        },
+        {
+            id: 'roles',
+            header: t('users.columns.roles'),
+            cell: ({ row }) => (
+                <div className="flex flex-wrap gap-1">
+                    {row.original.roles.map((role) => (
+                        <Badge key={role.id} variant="secondary">
+                            {role.name}
+                        </Badge>
+                    ))}
+                </div>
+            ),
+        },
+        {
+            id: 'groups',
+            header: t('users.columns.groups'),
+            cell: ({ row }) => (
+                <div className="flex flex-wrap gap-1">
+                    {row.original.groups.map((group) => (
+                        <Badge key={group.id} variant="outline">
+                            {group.name}
+                        </Badge>
+                    ))}
+                </div>
+            ),
+        },
+        {
+            id: 'status',
+            header: t('users.columns.status'),
+            cell: ({ row }) =>
+                row.original.is_active ? (
+                    <Badge variant="success" className="gap-1.5">
+                        <span
+                            className="size-1.5 rounded-full bg-success"
+                            aria-hidden
+                        />
+                        {t('users.status.active')}
+                    </Badge>
+                ) : (
+                    <Badge variant="muted" className="gap-1.5">
+                        <span
+                            className="size-1.5 rounded-full bg-muted-foreground"
+                            aria-hidden
+                        />
+                        {t('users.status.inactive')}
+                    </Badge>
+                ),
+        },
+        {
+            id: 'actions',
+            header: t('users.columns.actions'),
+            meta: {
+                headerClassName: 'w-[1%] text-right',
+                cellClassName: 'text-right',
+                isRowClickIgnored: true,
+            },
+            cell: ({ row }) => (
+                <ButtonGroup
+                    aria-label={t('users.columns.actions')}
+                    className="ml-auto"
+                >
+                    {row.original.can_update ? (
+                        <HeaderIconButton
+                            type="button"
+                            variant="outline"
+                            size="icon-sm"
+                            label={t('users.actions.sendResetEmail')}
+                            onClick={() => sendPasswordReset(row.original)}
+                        >
+                            <KeyRound className="size-3.5" />
+                        </HeaderIconButton>
+                    ) : null}
+                    {row.original.can_delete ? (
+                        <HeaderIconButton
+                            type="button"
+                            variant="outline"
+                            size="icon-sm"
+                            className="text-destructive hover:text-destructive"
+                            label={t('common.delete')}
+                            onClick={() => setPendingDeleteUser(row.original)}
+                        >
+                            <Trash2 className="size-3.5" />
+                        </HeaderIconButton>
+                    ) : null}
+                </ButtonGroup>
+            ),
+        },
+    ];
 
     return (
         <AppLayout
@@ -338,170 +474,20 @@ export default function AdminUsersIndex({
                             }
                         />
                     ) : (
-                        <TablePanel
-                            footer={
-                                hasTablePaginationFooter(users) ? (
-                                    <TablePaginationFooter pagination={users} />
-                                ) : undefined
-                            }
-                        >
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Name</TableHead>
-                                        <TableHead>Email</TableHead>
-                                        <TableHead>Roles</TableHead>
-                                        <TableHead>Groups</TableHead>
-                                        <TableHead>Status</TableHead>
-                                        <TableHead className="w-[1%] text-right">
-                                            Actions
-                                        </TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {users.data.map((user) => (
-                                        <TableRow
-                                            key={user.id}
-                                            className={
-                                                user.can_update
-                                                    ? 'cursor-pointer'
-                                                    : undefined
-                                            }
-                                            onClick={() => openEdit(user)}
-                                        >
-                                            <TableCell className="max-w-[14rem] font-medium">
-                                                <span className="inline-flex min-w-0 items-center gap-2">
-                                                    <Avatar className="size-7 shrink-0">
-                                                        <AvatarFallback
-                                                            className={cn(
-                                                                'text-xs font-medium',
-                                                                avatarToneClass(
-                                                                    user.id,
-                                                                ),
-                                                            )}
-                                                        >
-                                                            {getInitials(
-                                                                user.name,
-                                                            ) ||
-                                                                user.email
-                                                                    .charAt(0)
-                                                                    .toUpperCase()}
-                                                        </AvatarFallback>
-                                                    </Avatar>
-                                                    <TruncatedText
-                                                        text={user.name}
-                                                    />
-                                                    {user.is_sso_linked && (
-                                                        <Badge variant="outline">
-                                                            {t(
-                                                                'users.ssoBadge',
-                                                            )}
-                                                        </Badge>
-                                                    )}
-                                                </span>
-                                            </TableCell>
-                                            <TableCell className="max-w-[12rem] text-muted-foreground">
-                                                <TruncatedText
-                                                    text={user.email}
-                                                />
-                                            </TableCell>
-                                            <TableCell>
-                                                <div className="flex flex-wrap gap-1">
-                                                    {user.roles.map((r) => (
-                                                        <Badge
-                                                            key={r.id}
-                                                            variant="secondary"
-                                                        >
-                                                            {r.name}
-                                                        </Badge>
-                                                    ))}
-                                                </div>
-                                            </TableCell>
-                                            <TableCell>
-                                                <div className="flex flex-wrap gap-1">
-                                                    {user.groups.map((g) => (
-                                                        <Badge
-                                                            key={g.id}
-                                                            variant="outline"
-                                                        >
-                                                            {g.name}
-                                                        </Badge>
-                                                    ))}
-                                                </div>
-                                            </TableCell>
-                                            <TableCell>
-                                                {user.is_active ? (
-                                                    <Badge
-                                                        variant="success"
-                                                        className="gap-1.5"
-                                                    >
-                                                        <span
-                                                            className="size-1.5 rounded-full bg-success"
-                                                            aria-hidden
-                                                        />
-                                                        Active
-                                                    </Badge>
-                                                ) : (
-                                                    <Badge
-                                                        variant="muted"
-                                                        className="gap-1.5"
-                                                    >
-                                                        <span
-                                                            className="size-1.5 rounded-full bg-muted-foreground"
-                                                            aria-hidden
-                                                        />
-                                                        Inactive
-                                                    </Badge>
-                                                )}
-                                            </TableCell>
-                                            <TableCell
-                                                className="text-right"
-                                                onClick={(e) =>
-                                                    e.stopPropagation()
-                                                }
-                                            >
-                                                <div className="inline-flex items-center justify-end gap-1">
-                                                    {user.can_update && (
-                                                        <HeaderIconButton
-                                                            type="button"
-                                                            variant="ghost"
-                                                            size="icon-sm"
-                                                            label={t(
-                                                                'users.actions.sendResetEmail',
-                                                            )}
-                                                            onClick={() =>
-                                                                sendPasswordReset(
-                                                                    user,
-                                                                )
-                                                            }
-                                                        >
-                                                            <KeyRound className="size-3.5" />
-                                                        </HeaderIconButton>
-                                                    )}
-                                                    {user.can_delete && (
-                                                        <HeaderIconButton
-                                                            type="button"
-                                                            variant="destructive-ghost"
-                                                            size="icon-sm"
-                                                            label={t(
-                                                                'common.delete',
-                                                            )}
-                                                            onClick={() =>
-                                                                setPendingDeleteUser(
-                                                                    user,
-                                                                )
-                                                            }
-                                                        >
-                                                            <Trash2 className="size-3.5" />
-                                                        </HeaderIconButton>
-                                                    )}
-                                                </div>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </TablePanel>
+                        <DataTable
+                            columns={columns}
+                            data={users.data}
+                            getRowId={(user) => String(user.id)}
+                            sort={{ id: sort, direction }}
+                            onSortChange={changeSort}
+                            pagination={users}
+                            onRowClick={openEdit}
+                            getRowProps={(user) => ({
+                                className: user.can_update
+                                    ? 'cursor-pointer'
+                                    : undefined,
+                            })}
+                        />
                     )}
                 </PageLayout>
 
