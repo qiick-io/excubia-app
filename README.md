@@ -26,7 +26,22 @@ The checks run inside each project through [`qiick/excubia-core`](https://github
 - **Access:** users, groups, roles and permissions, two-factor and passkeys, optional OIDC single sign-on.
 - **Self-hosted, no telemetry.** Excubia also watches its own install. Optional read-only AI assistant with a local model.
 
-## Quick start (Docker)
+## Quick start
+
+**On a server (Composer):** create a new site from Packagist, no git clone:
+
+```bash
+composer create-project qiick/excubia-app my-excubia
+cd my-excubia
+nvm use   # Node 24
+php artisan excubia:install
+```
+
+`create-project` only copies `.env` (if missing) and runs `key:generate`: no migrate, no seed, no SQLite assumption. `excubia:install` asks for the app name and URL and the database (SQLite, PostgreSQL, MySQL or MariaDB), writes `.env`, migrates, seeds the permissions and the system project, and builds the frontend. Then open `/setup` to create the admin and the first project. For CI, the same command runs without questions: `php artisan excubia:install -n --db=pgsql --db-host=… --url=https://…` (every answer has an option).
+
+> **Install only, not the update channel.** `composer create-project` copies the app once. Once that tree is in **your** git remote, Composer does not pull newer Excubia releases into it. To stay current, track the Git tags (or add `upstream` and merge `vX.Y.Z`), then run `php artisan excubia:upgrade` (migrate, permissions, system project, caches, queue restart). Optional code sync, dry run first: `php artisan excubia:upgrade --sync-upstream=vX.Y.Z --dry-run`. Docker: pull a newer image tag. Details: **[docs/self-hosting.md](./docs/self-hosting.md#upgrades)**.
+
+**With Docker:**
 
 ```bash
 git clone https://github.com/qiick-io/excubia-app.git
