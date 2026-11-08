@@ -51,7 +51,7 @@ This app follows the shared qiick app UI: https://github.com/qiick-io/app-ui. **
 - English PHPDoc / JSDoc on classes, components, hooks and non-trivial methods: why, array shapes, side effects, `@throws`.
 - Frontend files are `kebab-case` on disk; components and types `PascalCase`; hooks and functions `camelCase`.
 - No `dd`, `dump`, `var_dump`, `console.log` left behind, no `env()` outside `config/`.
-- Migrations: until 1.0.0 is released, keep one clean `create_*` migration per table and change it in place (no `add_*` / `remove_*` / alter migrations; local databases run `migrate:fresh --seed`). After the 1.0.0 release they become forward-only: never edit or delete a merged migration; add a new one.
+- Migrations: until the **first release** of this app (any version, betas included, because customers install them), keep one clean `create_*` migration per table and change it in place (no `add_*` / `remove_*` / alter migrations; local databases need a fresh database and `migrate --seed`). From the first release on they are forward-only: never edit or delete a released migration, add a new one, and every update must apply with `php artisan migrate` on a customer database. Check for a release first: `gh release list` and `git tag`.
 - Tests: Pest feature tests for every behavior; no real network (fake HTTP). Never delete or weaken a test.
 - Privacy: no telemetry. Only package names and versions leave the server, through `qiick/excubia-core`. The AI assistant (#17) is off by default, and its tools are read-only. A tool never returns push tokens, user data or file paths (covered by a test). Tests fake the provider: no real AI call.
 
