@@ -14,15 +14,15 @@ use Illuminate\Support\Facades\DB;
 /**
  * Stores a runtime or exceptions batch once per `batchId` (#48), safe under concurrent pushes
  * (#195). The batch id and the batch's rows go in one transaction, which runs again when the
- * database reports a deadlock (MySQL's gap locks between concurrent pushes) or, past the busy
- * timeout, a locked SQLite file. A unique violation means a duplicate only when the batch id is
- * already stored; otherwise a concurrent batch of the same project created one of the same
- * series first, and the transaction runs again to add to it.
+ * database reports a deadlock (MySQL's gap and upsert locks between concurrent pushes) or, past
+ * the busy timeout, a locked SQLite file. A unique violation means a duplicate only when the
+ * batch id is already stored; otherwise a concurrent batch of the same project created one of
+ * the same series first, and the transaction runs again to add to it.
  */
 trait StoresPushedBatchOnceTrait
 {
     /** Tries of the store transaction, for deadlocks and for series created concurrently. */
-    private const STORE_ATTEMPTS = 3;
+    private const STORE_ATTEMPTS = 5;
 
     /**
      * @param  'runtime'|'exceptions'  $type
