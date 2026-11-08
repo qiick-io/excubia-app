@@ -14,7 +14,7 @@ use Symfony\Component\HttpFoundation\Response;
  * Logs out a user who was deactivated while signed in (open session or remember-me cookie).
  * Login itself refuses inactive users in FortifyServiceProvider.
  */
-class EnsureUserIsActive
+class EnsureUserIsActiveMiddleware
 {
     /**
      * @param  Closure(Request): (Response)  $next

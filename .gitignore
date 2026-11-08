@@ -44,7 +44,6 @@ yarn-error.log
 /.kiro
 /.pi
 /.mcp.json
-/AGENTS.md
 /boost.json
 /opencode.json
 /opencode.jsonc

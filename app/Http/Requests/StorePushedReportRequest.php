@@ -13,7 +13,7 @@ use Illuminate\Validation\Rule;
 /**
  * Validates the push envelope of excubia-core (`docs/push-schema.json`, protocol version 1) and
  * the report inside it (`docs/report-schema.json`, schema version 1). Unknown keys are allowed,
- * so additive core changes keep working. The token was checked by AuthenticateProjectToken.
+ * so additive core changes keep working. The token was checked by AuthenticateProjectTokenMiddleware.
  */
 class StorePushedReportRequest extends FormRequest
 {

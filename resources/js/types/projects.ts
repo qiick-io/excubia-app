@@ -120,7 +120,7 @@ export type ReportFinding = {
     details?: Record<string, unknown>;
 };
 
-export type ReportCheck = {
+type ReportCheck = {
     checkId: string;
     name: string;
     status: CheckStatus;
@@ -150,7 +150,7 @@ export type IssueRow = ReportFinding & {
 };
 
 /** One step of a finding's history (#18). */
-export type FindingHistoryEvent = {
+type FindingHistoryEvent = {
     event: 'opened' | 'resolved' | 'reopened' | 'dismissed' | 'undismissed';
     occurredAt: string;
     release: string | null;
@@ -181,7 +181,7 @@ export type FindingLifecycle = {
 export type LifecycleRow = IssueRow & { lifecycle: FindingLifecycle };
 
 /** Counts of outdated direct dependencies, each at its furthest level. */
-export type OutdatedCounts = { patch: number; minor: number; major: number };
+type OutdatedCounts = { patch: number; minor: number; major: number };
 
 /** A denied, strong copyleft or unknown license of a package (`dependency-licenses`). */
 export type FlaggedLicense = {
@@ -265,7 +265,7 @@ export type AssistantMessage = {
 };
 
 /** p50, p95 and p99 in ms from the latency histograms; null without histograms. */
-export type RuntimePercentiles = {
+type RuntimePercentiles = {
     p50: number | null;
     p95: number | null;
     p99: number | null;
@@ -469,7 +469,7 @@ export type RuntimeDeploy = {
     bucket: string;
 };
 
-export type ExceptionFrame = {
+type ExceptionFrame = {
     file: string | null;
     line: number | null;
     function: string | null;
@@ -577,7 +577,7 @@ export type AlertHistoryRow = {
 };
 
 /** A mute in force (#114); `until` null mutes forever. */
-export type AlertMuteRow = {
+type AlertMuteRow = {
     id: number;
     event: string;
     is_issue: boolean;

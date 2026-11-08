@@ -52,7 +52,7 @@ export function checkLabel(
 }
 
 /** What the check looks at, in one sentence; a generic line for unknown check ids. */
-export function checkDescription(t: TFunction, checkId: string): string {
+function checkDescription(t: TFunction, checkId: string): string {
     return t(`checks.${checkId}.description`, {
         defaultValue: t('checks.unknownDescription'),
     });
@@ -116,11 +116,7 @@ function formatValue(t: TFunction, key: string, value: unknown): string {
  * labelled (`details.<key>`, else the key in words) and formatted by its naming, so a detail
  * core adds later still reads well. A list of rows (`largestTables`) becomes a small table.
  */
-export function FindingDetails({
-    details,
-}: {
-    details: Record<string, unknown>;
-}) {
+function FindingDetails({ details }: { details: Record<string, unknown> }) {
     const { t } = useTranslation();
     const entries = Object.entries(details);
 

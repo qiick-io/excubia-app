@@ -31,6 +31,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The Larastan ratchet compares the baseline with the base branch.
+          fetch-depth: 0
 
       - name: Setup PHP
         uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
@@ -79,6 +82,9 @@ jobs:
       - name: PHPStan
         run: vendor/bin/phpstan analyse --memory-limit=1G --no-progress
 
+      - name: Larastan baseline only shrinks
+        run: node scripts/qiick-ratchet.mjs phpstan
+
       - name: Pest
         run: php artisan test
 
@@ -87,6 +93,12 @@ jobs:
 
       - name: Types
         run: npm run types
+
+      - name: Dead code (knip)
+        run: npm run knip
+
+      - name: Hard-coded UI strings (ratchet)
+        run: npm run lint:i18n
 
   # The full suite on the other supported databases (#136); the `tests` job covers SQLite.
   databases:
@@ -295,3 +307,13 @@ jobs:
       - name: Browser tests
         if: github.event_name != 'pull_request' || github.base_ref != 'develop'
         run: vendor/bin/pest tests/Browser
+
+  # The @qiick UI registry copies and the qiick standards pack (agent files,
+  # architecture test, kebab-case file names) must match app-ui.
+  app-ui-drift:
+    uses: qiick-io/app-ui/.github/workflows/drift-check.yml@develop
+    with:
+      standards: true
+      # ponytail: the registry drift is already red on develop (data-table and
+      # data-table-column-header moved upstream); re-pull them, then drop this line.
+      registry: false

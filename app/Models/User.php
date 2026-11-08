@@ -54,6 +54,21 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
     protected $appends = ['name'];
 
     /**
+     * The column defaults a freshly created user does not read back from the
+     * database (same values as the users migration): strict models throw on a
+     * missing attribute.
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'is_active' => true,
+        'locale' => 'en',
+        'has_weekly_digest' => false,
+        'has_alert_emails' => false,
+        'alert_email_filters' => null,
+    ];
+
+    /**
      * Activity log options excluding sensitive credential fields.
      */
     public function getActivitylogOptions(): LogOptions

@@ -13,7 +13,7 @@ use Illuminate\Validation\Rule;
  * Validates an exceptions push of excubia-core (`docs/push-schema.json`
  * `$defs.exceptionsEnvelope`, payload `docs/exception-schema.json`, protocol version 1). The
  * core masks every group before it leaves the project; the app stores it as received. The
- * token was checked by AuthenticateProjectToken.
+ * token was checked by AuthenticateProjectTokenMiddleware.
  */
 class StorePushedExceptionsRequest extends FormRequest
 {

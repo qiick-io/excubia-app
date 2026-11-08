@@ -21,7 +21,7 @@ export type AdminRoleRef = {
     name: string;
 };
 
-export type AdminGroupRef = {
+type AdminGroupRef = {
     id: number;
     name: string;
 };
@@ -92,13 +92,13 @@ export type AdminPermissionRow = {
     updated_at: string;
 };
 
-export type AdminActivityLogCauser = {
+type AdminActivityLogCauser = {
     id: number;
     name: string;
     email: string;
 };
 
-export type AdminActivityLogSubject = {
+type AdminActivityLogSubject = {
     type: string;
     id: number;
     label: string;

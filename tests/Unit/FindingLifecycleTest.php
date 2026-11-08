@@ -114,7 +114,7 @@ it('resolves a finding gone from a report whose check ran, and reopens it when i
     $resolving = pushLifecycle($project, ['composer-audit' => [['b/b', 'low']]]);
     $reopening = pushLifecycle($project, ['composer-audit' => [['a/a', 'high'], ['b/b', 'low']]]);
 
-    $finding = findingFor($project, 'a/a');
+    $finding = findingFor($project, 'a/a')->load('events');
 
     expect(subjects($resolving->resolved))->toBe(['a/a'])
         ->and($resolving->worstBefore)->toBe(SeverityEnum::High)

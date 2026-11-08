@@ -16,7 +16,7 @@ import type { User } from '@/types';
  * and logout. The registry components are generic; this wires them to Excubia's routes, hooks
  * and shared props.
  */
-export function AppUserMenuContent({ user }: { user: User }) {
+function AppUserMenuContent({ user }: { user: User }) {
     const cleanup = useMobileNavigation();
     const { locale, availableLocales } = usePage().props;
     const { appearance, updateAppearance } = useAppearance();
