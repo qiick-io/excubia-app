@@ -274,19 +274,28 @@ Measured with `scripts/load/ingest-load.php --fold` (50 busy projects, 120 minut
 | Held with the defaults       | 75 MB  | 88 MB         | 108 MB    |
 | Held before #212 (14 days)   | 473 MB | 553 MB        | 605 MB    |
 
-"Held with the defaults" is 2 days of minutes and 12 days of hours, the size once the retention is reached; it then stays flat, as the daily prune frees as much as a day adds and the databases reuse the freed pages (`VACUUM` gives SQLite's free pages back to the disk). Next to it come the batch ids of the last 14 days (about 0.4 MB a day per project, 6 MB in all), exception occurrences for the exceptions retention (about 0.25 MB a day at the test's one to three groups a minute, 20 MB over 90 days) and the latest 30 reports per project (about 1 MB). So plan for:
+"Held with the defaults" is 2 days of minutes and 12 days of hours, the size once the retention is reached; it then stays flat, as the daily prune frees as much as a day adds and the databases reuse the freed pages (`VACUUM` gives SQLite's free pages back to the disk). Next to it come the batch ids of the last 14 days (about 0.4 MB a day per project, 6 MB in all), exception occurrences (below, 1 to 2 MB) and the latest 30 reports per project (about 1 MB). So plan for:
 
 | Projects (busy, 55 series) | SQLite | PostgreSQL | MySQL  |
 | -------------------------- | ------ | ---------- | ------ |
-| 10                         | 1 GB   | 1.2 GB     | 1.4 GB |
-| 50                         | 5 GB   | 6 GB       | 7 GB   |
-| 200                        | 20 GB  | 23 GB      | 27 GB  |
+| 10                         | 0.9 GB | 1 GB       | 1.2 GB |
+| 50                         | 4.2 GB | 4.8 GB     | 5.9 GB |
+| 200                        | 17 GB  | 19 GB      | 24 GB  |
+
+Exception occurrences (the per-minute counts behind the Exceptions tab's "In range" column and each group's chart) follow the runtime minutes (#214): the same hourly run folds those older than `EXCUBIA_RUNTIME_MINUTE_HOURS` into one row per group and hour, and the daily prune deletes them after `EXCUBIA_EXCEPTION_OCCURRENCE_DAYS` (14 by default, at least 14, the longest range; never longer than the exceptions retention). The exception groups themselves stay for `EXCUBIA_EXCEPTIONS_RETENTION_DAYS` (90) with their totals, first and last seen and releases, which the overview, the digest and the 90-day list read. Measured the same way (`exception_occurrences` with its indexes, the test's one to three of 15 groups a minute; MySQL over 480 minutes, as InnoDB grows a small table's file in large steps):
+
+| Per busy project (15 groups) | SQLite  | PostgreSQL 17 | MySQL 8.0 |
+| ---------------------------- | ------- | ------------- | --------- |
+| One day in minutes           | 0.24 MB | 0.32 MB       | 0.78 MB   |
+| One day in hours             | 0.04 MB | 0.06 MB       | 0.05 MB   |
+| Held with the defaults       | 1 MB    | 1.4 MB        | 2.2 MB    |
+| Held before #214 (90 days)   | 22 MB   | 29 MB         | 70 MB     |
 
 Scale by your series: an app with 10 series a minute needs a fifth of the runtime part. The per-minute window costs the most: 24 hours instead of 48 saves a day of minutes per project, at the price of 1 h and 6 h ranges that cannot look back further than a day. A longer `EXCUBIA_RUNTIME_RETENTION_DAYS` adds one day of hours per day (and lets the Pennant stale flags look back further).
 
 ### Run the load test
 
-`scripts/load/ingest-load.php` (PHP and curl only; manual, not part of CI) creates N projects with push tokens in the app's database and pushes from them every simulated minute against a running app. It prints p50 / p95 / p99 per endpoint, the error rate, the burst (when each push got its answer after second 0, and the share above 5 s), the queue backlog and the database growth per simulated day; with `--fold`, on a fresh database, it then folds the minutes into hours and prints the runtime table's size per project and day in minutes and in hours. Run it against a test install, never production: it adds projects and data (`--cleanup` deletes the projects again).
+`scripts/load/ingest-load.php` (PHP and curl only; manual, not part of CI) creates N projects with push tokens in the app's database and pushes from them every simulated minute against a running app. It prints p50 / p95 / p99 per endpoint, the error rate, the burst (when each push got its answer after second 0, and the share above 5 s), the queue backlog and the database growth per simulated day; with `--fold`, on a fresh database, it then folds the minutes into hours and prints the size of the runtime and exception occurrence tables per project and day in minutes and in hours. Run it against a test install, never production: it adds projects and data (`--cleanup` deletes the projects again).
 
 ```bash
 # In the app directory, with the same .env as the server, and a queue worker running.

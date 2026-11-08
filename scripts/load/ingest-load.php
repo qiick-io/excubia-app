@@ -27,9 +27,10 @@ declare(strict_types=1);
  * real seconds per simulated minute; 0 plays the minutes back to back to find the ceiling),
  * --concurrency (64), --report-every (60), --report (the report JSON pushed, default the core
  * fixture), --json (print the summary as JSON), --fold (after the run, fold the minutes into
- * hourly rows as excubia:downsample-runtime does and print the runtime table's size per project
- * and day at both resolutions, #212; use a fresh database, the table is measured whole and
- * compacted first), --cleanup (delete the load projects and stop).
+ * hourly rows as excubia:downsample-runtime does and print the size of the runtime and exception
+ * occurrence tables per project and day at both resolutions, #212 and #214; use a fresh database,
+ * the tables are measured whole and compacted first), --cleanup (delete the load projects and
+ * stop).
  *
  * Run it from the repository root with the same environment (`.env` or variables) as the server,
  * so it creates the projects and reads the sizes in the same database. Back-to-back minutes
@@ -39,6 +40,7 @@ declare(strict_types=1);
  */
 
 use App\Actions\DeleteProjectAction;
+use App\Actions\DownsampleExceptionOccurrencesAction;
 use App\Actions\DownsampleRuntimeAction;
 use App\Actions\RotateProjectTokenAction;
 use App\Models\Project;
@@ -133,49 +135,57 @@ if (isset($options['fold'])) {
 fwrite(STDOUT, isset($options['json']) ? json_encode($summary, JSON_PRETTY_PRINT)."\n" : formatSummary($summary));
 
 /**
- * Folds every pushed minute into hourly rows (#212) and measures `runtime_aggregates` (indexes
- * included) before and after, per project and simulated day: the minutes for the per-minute
- * window, the hours for the rest of the retention.
+ * Folds every pushed minute into hourly rows (#212, #214) and measures `runtime_aggregates` and
+ * `exception_occurrences` (indexes included) before and after, per project and simulated day:
+ * the minutes for the per-minute window, the hours for the rest of the retention.
  *
- * @return array{minute_bytes_per_project_day: int, hour_bytes_per_project_day: int, rows_folded: int}
+ * @return array{minute_bytes_per_project_day: int, hour_bytes_per_project_day: int, rows_folded: int, occurrence_minute_bytes_per_project_day: int, occurrence_hour_bytes_per_project_day: int, occurrence_rows_folded: int}
  */
 function foldRuntime(int $firstMinute, int $minutes, int $projects): array
 {
-    $minuteBytes = runtimeTableSize();
+    $minuteBytes = tableSize('runtime_aggregates');
+    $occurrenceMinuteBytes = tableSize('exception_occurrences');
     $lastMinute = $firstMinute + ($minutes - 1) * 60;
 
     // From the oldest minute, through the hour of the last one.
+    $before = CarbonImmutable::createFromTimestampUTC($lastMinute)->addHour();
     Cache::forget(DownsampleRuntimeAction::FOLDED_UNTIL_KEY);
-    $folded = app(DownsampleRuntimeAction::class)->execute(CarbonImmutable::createFromTimestampUTC($lastMinute)->addHour());
+    Cache::forget(DownsampleExceptionOccurrencesAction::FOLDED_UNTIL_KEY);
+    $folded = app(DownsampleRuntimeAction::class)->execute($before);
+    $occurrencesFolded = app(DownsampleExceptionOccurrencesAction::class)->execute($before);
     $hours = intdiv($lastMinute, 3600) - intdiv($firstMinute, 3600) + 1;
+    $perProjectDay = fn (int $bytes, int $units, int $unitsPerDay): int => (int) round($bytes / $units * $unitsPerDay / $projects);
 
     return [
-        'minute_bytes_per_project_day' => (int) round($minuteBytes / $minutes * 1440 / $projects),
-        'hour_bytes_per_project_day' => (int) round(runtimeTableSize() / $hours * 24 / $projects),
+        'minute_bytes_per_project_day' => $perProjectDay($minuteBytes, $minutes, 1440),
+        'hour_bytes_per_project_day' => $perProjectDay(tableSize('runtime_aggregates'), $hours, 24),
         'rows_folded' => $folded,
+        'occurrence_minute_bytes_per_project_day' => $perProjectDay($occurrenceMinuteBytes, $minutes, 1440),
+        'occurrence_hour_bytes_per_project_day' => $perProjectDay(tableSize('exception_occurrences'), $hours, 24),
+        'occurrence_rows_folded' => $occurrencesFolded,
     ];
 }
 
-/** Bytes of `runtime_aggregates` and its indexes, compacted first so freed pages do not count. */
-function runtimeTableSize(): int
+/** Bytes of a table and its indexes, compacted first so freed pages do not count. */
+function tableSize(string $table): int
 {
     $connection = DB::connection();
 
     return (int) match ($connection->getDriverName()) {
-        'sqlite' => (function () use ($connection): int {
+        'sqlite' => (function () use ($connection, $table): int {
             $connection->statement('vacuum');
 
-            return (int) $connection->scalar("select sum(pgsize) from dbstat where name in (select name from sqlite_master where tbl_name = 'runtime_aggregates')");
+            return (int) $connection->scalar('select sum(pgsize) from dbstat where name in (select name from sqlite_master where tbl_name = ?)', [$table]);
         })(),
-        'pgsql' => (function () use ($connection): int {
-            $connection->statement('vacuum full runtime_aggregates');
+        'pgsql' => (function () use ($connection, $table): int {
+            $connection->statement("vacuum full {$table}");
 
-            return (int) $connection->scalar("select pg_total_relation_size('runtime_aggregates')");
+            return (int) $connection->scalar('select pg_total_relation_size(?)', [$table]);
         })(),
-        default => (function () use ($connection): int {
-            $connection->statement('optimize table runtime_aggregates');
+        default => (function () use ($connection, $table): int {
+            $connection->statement("optimize table {$table}");
 
-            return (int) $connection->scalar("select file_size from information_schema.innodb_tablespaces where name = concat(database(), '/runtime_aggregates')");
+            return (int) $connection->scalar("select file_size from information_schema.innodb_tablespaces where name = concat(database(), '/', ?)", [$table]);
         })(),
     };
 }
@@ -505,6 +515,10 @@ function formatSummary(array $summary): string
         $lines[] = sprintf(
             '  fold       runtime_aggregates per project and day: %.2f MB in minutes, %.3f MB in hours (%d rows folded)',
             $summary['fold']['minute_bytes_per_project_day'] / 1_048_576, $summary['fold']['hour_bytes_per_project_day'] / 1_048_576, $summary['fold']['rows_folded'],
+        );
+        $lines[] = sprintf(
+            '             exception_occurrences per project and day: %.3f MB in minutes, %.3f MB in hours (%d rows folded)',
+            $summary['fold']['occurrence_minute_bytes_per_project_day'] / 1_048_576, $summary['fold']['occurrence_hour_bytes_per_project_day'] / 1_048_576, $summary['fold']['occurrence_rows_folded'],
         );
     }
 

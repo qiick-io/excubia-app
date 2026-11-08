@@ -40,7 +40,7 @@ class DownsampleRuntimeAction
     public const FOLDED_UNTIL_KEY = 'excubia.runtime_folded_until';
 
     /** Hours before the last run's end that a run folds again, for late pushes and missed runs. */
-    private const LOOKBACK_HOURS = 24;
+    public const LOOKBACK_HOURS = 24;
 
     /**
      * @param  CarbonImmutable  $before  minutes before this moment are folded (whole hours only)

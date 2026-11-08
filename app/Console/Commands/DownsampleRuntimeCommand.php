@@ -4,14 +4,16 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use App\Actions\DownsampleExceptionOccurrencesAction;
 use App\Actions\DownsampleRuntimeAction;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Date;
 
 /**
- * Folds the runtime minutes older than `excubia.runtime_minute_hours` into hourly rows (#212).
- * Scheduled hourly; re-running it folds nothing new.
+ * Folds the runtime minutes (#212) and the exception occurrences (#214) older than
+ * `excubia.runtime_minute_hours` into hourly rows. Scheduled hourly; re-running it folds nothing
+ * new.
  */
 class DownsampleRuntimeCommand extends Command
 {
@@ -23,14 +25,17 @@ class DownsampleRuntimeCommand extends Command
 
     protected $signature = 'excubia:downsample-runtime';
 
-    protected $description = 'Fold runtime minutes older than the per-minute window into hourly rows';
+    protected $description = 'Fold runtime minutes and exception occurrences older than the per-minute window into hourly rows';
 
-    public function handle(DownsampleRuntimeAction $downsampleRuntime): int
+    public function handle(DownsampleRuntimeAction $downsampleRuntime, DownsampleExceptionOccurrencesAction $downsampleOccurrences): int
     {
         $hours = max(self::MINIMUM_MINUTE_HOURS, (int) config('excubia.runtime_minute_hours'));
-        $folded = $downsampleRuntime->execute(CarbonImmutable::instance(Date::now())->subHours($hours));
+        $cutoff = CarbonImmutable::instance(Date::now())->subHours($hours);
+        $folded = $downsampleRuntime->execute($cutoff);
+        $foldedOccurrences = $downsampleOccurrences->execute($cutoff);
 
         $this->components->info("Folded {$folded} runtime minutes older than {$hours} hours into hourly rows.");
+        $this->components->info("Folded {$foldedOccurrences} exception occurrence minutes older than {$hours} hours into hourly rows.");
 
         return self::SUCCESS;
     }
