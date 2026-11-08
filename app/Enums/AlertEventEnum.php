@@ -44,6 +44,10 @@ enum AlertEventEnum: string
     case AiBudgetExceeded = 'ai.budget_exceeded';
     case AiSpendSpike = 'ai.spend_spike';
     case AiErrorRate = 'ai.error_rate';
+    // Laravel Cashier webhooks (#178): failed webhooks of the last hour at a threshold, and
+    // failed payments reported by the provider; off by default.
+    case BillingWebhookFailures = 'billing.webhook_failures';
+    case BillingPaymentFailed = 'billing.payment_failed';
     // PHP, Laravel or Node security support ends within a lead time, or has ended (#157).
     case EolApproaching = 'eol.approaching';
     case EolReached = 'eol.reached';
@@ -73,8 +77,8 @@ enum AlertEventEnum: string
     {
         return match ($this) {
             self::InfrastructureFailed => SeverityEnum::Critical,
-            self::ProjectStale, self::HealthStale, self::ScheduleMissed, self::CacheHitRatioLow, self::EolApproaching, self::AiBudgetWarning, self::AiSpendSpike => SeverityEnum::Medium,
-            self::FindingNew, self::HealthFailed, self::ProjectWorsened, self::ScheduleFailed, self::SchedulerDown, self::DeliveryFailed, self::LogSpike, self::PushRejected, self::EolReached, self::AiBudgetExceeded, self::AiErrorRate => SeverityEnum::High,
+            self::ProjectStale, self::HealthStale, self::ScheduleMissed, self::CacheHitRatioLow, self::EolApproaching, self::AiBudgetWarning, self::AiSpendSpike, self::BillingPaymentFailed => SeverityEnum::Medium,
+            self::FindingNew, self::HealthFailed, self::ProjectWorsened, self::ScheduleFailed, self::SchedulerDown, self::DeliveryFailed, self::LogSpike, self::PushRejected, self::EolReached, self::AiBudgetExceeded, self::AiErrorRate, self::BillingWebhookFailures => SeverityEnum::High,
             self::ReportChecksSkipped => SeverityEnum::Low,
             default => SeverityEnum::Info,
         };

@@ -484,7 +484,9 @@
                 "ai.budget_warning": "A project's estimated AI spend this month reached 80 % of its budget (set on its AI tab).",
                 "ai.budget_exceeded": "A project's estimated AI spend this month reached its budget.",
                 "ai.spend_spike": "Today's estimated AI spend is above the threshold share of the 7-day average.",
-                "ai.error_rate": "The share of failed AI calls in the last hour is above the threshold."
+                "ai.error_rate": "The share of failed AI calls in the last hour is above the threshold.",
+                "billing.webhook_failures": "Billing webhooks of a provider failed (5xx, retried by the provider) at least the threshold of times in the last hour.",
+                "billing.payment_failed": "A billing provider reported failed payments in the last hour."
             },
             "runtimeRulesTitle": "Runtime alert rules",
             "runtimeRulesDescription": "Optional alerts from the runtime data the projects push, checked every 15 minutes over the last hour. Empty turns a rule off.",
@@ -493,6 +495,9 @@
             "logSpike": "Error-log entries per channel and hour",
             "logSpikeHint": "Alert when a log channel writes at least this many error, critical, alert or emergency entries in the last hour.",
             "deliveryFailures": "Alert when mails or notifications fail",
+            "billingWebhookFailures": "Failed billing webhooks per provider and hour",
+            "billingWebhookFailuresHint": "Alert when the Laravel Cashier webhooks of a provider fail at least this many times in the last hour (the provider retries them).",
+            "billingPaymentFailures": "Alert when a billing provider reports failed payments",
             "projects": "Projects",
             "projectsHint": "Leave every box empty to send the alerts of every project.",
             "emailTitle": "Email",
@@ -1144,7 +1149,16 @@
         "reverbErrors": "Errors",
         "channelsCreated": "Channels created",
         "channelsRemoved": "Channels removed",
-        "peakConnections": "Peak connections"
+        "peakConnections": "Peak connections",
+        "billing": "Billing webhooks",
+        "billingDescription": "Laravel Cashier webhooks per provider and event type. Failed ones ended with a server error (5xx) and the provider retries them; event types Cashier has no handler for are neither handled nor failed. Only the event type is received: never amounts, customers or other payload data.",
+        "billingTotals": "Payment signals in this range",
+        "received": "Received",
+        "handled": "Handled",
+        "failedRate": "Failed (rate)",
+        "paymentFailed": "Failed payments",
+        "paymentActionRequired": "Payments needing action",
+        "subscriptionCanceled": "Canceled subscriptions"
     },
     "exceptions": {
         "emptyTitle": "No exceptions",
@@ -1577,6 +1591,10 @@
         "laravel-reverb": {
             "label": "Reverb server",
             "description": "Whether the Reverb server of the broadcast connection answers a TCP connect within 2 s, and how fast."
+        },
+        "laravel-cashier": {
+            "label": "Laravel Cashier",
+            "description": "Per Cashier package (Stripe, Paddle): the webhook secret, test keys in production and the route to the webhook controller."
         }
     },
     "details": {

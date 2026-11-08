@@ -24,8 +24,9 @@ enum CheckCategoryEnum: string
     public const IMMEDIATE_ALERT_CHECK_IDS = ['laravel-database', 'laravel-storage', 'laravel-disk-space'];
 
     /**
-     * The 39 check ids of excubia-core `docs/CONTRACTS.md` (1.0.0-beta.3, then
-     * `laravel-octane-config` of core #213 and `laravel-reverb` of core #215) by group.
+     * The 40 check ids of excubia-core `docs/CONTRACTS.md` (1.0.0-beta.3, then
+     * `laravel-octane-config` of core #213, `laravel-reverb` of core #215 and `laravel-cashier`
+     * of core #217) by group.
      *
      * @var array<string, list<string>>
      */
@@ -61,6 +62,7 @@ enum CheckCategoryEnum: string
             'php-opcache',
             'php-production-ini',
             'laravel-octane-config',
+            'laravel-cashier',
         ],
         'dependencies' => [
             'php-eol',

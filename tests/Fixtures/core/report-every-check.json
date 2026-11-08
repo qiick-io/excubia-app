@@ -996,6 +996,45 @@
           }
         }
       ]
+    },
+    {
+      "checkId": "laravel-cashier",
+      "name": "Laravel Cashier",
+      "status": "warn",
+      "findings": [
+        {
+          "checkId": "laravel-cashier",
+          "severity": "info",
+          "status": "pass",
+          "subject": "stripe",
+          "message": "Cashier (Stripe) verifies webhook signatures and receives webhooks on its route.",
+          "fixHint": "No action needed.",
+          "evidenceUrl": null,
+          "fingerprint": "21ed5b5ebbe1d72d0896c949d3e9e7000fca089286a2d0cbe6ac35301e8e9394",
+          "details": {
+            "provider": "stripe",
+            "isWebhookSecretConfigured": true,
+            "isWebhookRouteRegistered": true,
+            "hasTestKeys": false
+          }
+        },
+        {
+          "checkId": "laravel-cashier",
+          "severity": "medium",
+          "status": "warn",
+          "subject": "paddle.webhook-route",
+          "message": "No route uses Cashier Paddle's webhook controller: Paddle webhooks are not handled.",
+          "fixHint": "Keep the route Cashier registers (cashier.webhook), or point your own route at Cashier's WebhookController or a subclass.",
+          "evidenceUrl": "https://laravel.com/docs/cashier-paddle#handling-paddle-webhooks",
+          "fingerprint": "670cc018a48f5a7ebfa681da57a89577dff9b894fdca2803c192c5946b72f18b",
+          "details": {
+            "provider": "paddle",
+            "isWebhookSecretConfigured": true,
+            "isWebhookRouteRegistered": false,
+            "hasTestKeys": false
+          }
+        }
+      ]
     }
   ],
   "upgradePlan": [

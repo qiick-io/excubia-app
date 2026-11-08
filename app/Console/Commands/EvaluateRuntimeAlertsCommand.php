@@ -10,14 +10,14 @@ use App\Services\RuntimeAlertsService;
 use Illuminate\Console\Command;
 
 /**
- * Runs the optional runtime alert rules (#107, #114) and the AI usage rules (#129) on every
+ * Runs the optional runtime alert rules (#107, #114, billing webhooks #178) and the AI usage rules (#129) on every
  * enabled project. Does nothing while no rule is on. Scheduled every fifteen minutes.
  */
 class EvaluateRuntimeAlertsCommand extends Command
 {
     protected $signature = 'excubia:evaluate-runtime-alerts';
 
-    protected $description = 'Alert on low cache hit ratios, failed mails and notifications, error-log spikes and AI usage';
+    protected $description = 'Alert on low cache hit ratios, failed mails and notifications, error-log spikes, billing webhooks and AI usage';
 
     public function handle(RuntimeAlertsService $rules, AiAlertsService $aiRules): int
     {

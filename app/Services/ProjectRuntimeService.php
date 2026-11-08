@@ -58,6 +58,8 @@ class ProjectRuntimeService
         'connectionsOpened' => 'sum', 'connectionsRejected' => 'sum', 'connectionsPruned' => 'sum', 'messagesReceived' => 'sum', 'messagesSent' => 'sum',
         'publicChannelsCreated' => 'sum', 'privateChannelsCreated' => 'sum', 'presenceChannelsCreated' => 'sum',
         'publicChannelsRemoved' => 'sum', 'privateChannelsRemoved' => 'sum', 'presenceChannelsRemoved' => 'sum', 'maxConnections' => 'max',
+        // `billingWebhook` (#178).
+        'handledCount' => 'sum', 'paymentFailedCount' => 'sum', 'paymentActionRequiredCount' => 'sum', 'subscriptionCanceledCount' => 'sum',
     ];
 
     /**
@@ -132,6 +134,7 @@ class ProjectRuntimeService
             'servers' => $this->servers($project, $of(RuntimeTypeEnum::Server)),
             'octane' => $this->octane($project, $of(RuntimeTypeEnum::Octane)),
             'reverb' => $this->reverb($project, $of(RuntimeTypeEnum::Reverb)),
+            'billing' => $this->billing($of(RuntimeTypeEnum::BillingWebhook)),
             'deploys' => $this->timeSeries->deploys($project, $range, $now),
         ];
     }
@@ -674,5 +677,38 @@ class ProjectRuntimeService
         }
 
         return null;
+    }
+
+    /**
+     * Laravel Cashier webhooks (#178) per provider and event type: estimated received, handled
+     * and failed webhooks with the failure rate (%), durations with p95, and the payment signals
+     * (failed payments, payments needing action, canceled subscriptions), with their totals over
+     * the range. Webhooks of an event type Cashier has no handler for are neither handled nor
+     * failed.
+     *
+     * @param  Collection<int, Series>  $series
+     * @return array{totals: array{paymentFailed: int, paymentActionRequired: int, subscriptionCanceled: int}, rows: list<array<string, mixed>>}
+     */
+    private function billing(Collection $series): array
+    {
+        $signals = fn (Collection $group): array => [
+            'paymentFailed' => $this->estimate($group, fn (array $one): ?float => $one['metrics']['paymentFailedCount']),
+            'paymentActionRequired' => $this->estimate($group, fn (array $one): ?float => $one['metrics']['paymentActionRequiredCount']),
+            'subscriptionCanceled' => $this->estimate($group, fn (array $one): ?float => $one['metrics']['subscriptionCanceledCount']),
+        ];
+
+        return [
+            'totals' => $signals($series),
+            'rows' => $this->table($series, ['provider', 'eventType'], function (Collection $group) use ($signals): array {
+                $totals = $this->totals($group);
+
+                return [
+                    ...$totals,
+                    'handled' => $this->estimate($group, fn (array $one): ?float => $one['metrics']['handledCount']),
+                    'errorRate' => $totals['count'] > 0 ? round($totals['errors'] / $totals['count'] * 100, 1) : null,
+                    ...$signals($group),
+                ];
+            }),
+        ];
     }
 }

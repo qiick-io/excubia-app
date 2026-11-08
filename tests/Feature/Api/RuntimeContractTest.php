@@ -18,7 +18,7 @@ use Illuminate\Support\Str;
  * value core may add to an enumerated field (#169).
  *
  * `tests/Fixtures/core/runtime-schema.json` is a copy of excubia-core `develop` at
- * 5e67a99d4bf70fa8fb50b1277f2a225e904f0eed (2026-11-08, core #216: the `reverb` type). Refresh it when core adds a type or a value.
+ * 9ad5e3805f689b296a72bf382fe472c298668368 (2026-11-08, core #218: the `billingWebhook` type). Refresh it when core adds a type or a value.
  * The app has no JSON Schema validator, so coreSchemaErrors() (tests/Pest.php) checks the keywords
  * the runtime schema uses (required, additionalProperties, const, enum, type, pattern, min/max, lengths).
  */
@@ -78,6 +78,10 @@ function coreRuntimeAggregates(): array
             'type' => 'reverb', ...$base, 'server' => 'ws-1', 'appId' => 'my-app', 'count' => 120, 'errorCount' => 1, 'connectionsOpened' => 10, 'connectionsRejected' => 1,
             'connectionsPruned' => 2, 'maxConnections' => 8, 'messagesReceived' => 40, 'messagesSent' => 60, 'publicChannelsCreated' => 3, 'privateChannelsCreated' => 2,
             'presenceChannelsCreated' => 1, 'publicChannelsRemoved' => 1, 'privateChannelsRemoved' => 0, 'presenceChannelsRemoved' => 0,
+        ],
+        'billingWebhook' => [
+            'type' => 'billingWebhook', ...$base, 'provider' => 'stripe', 'eventType' => 'invoice.payment_failed', ...$timed,
+            'handledCount' => 3, 'paymentFailedCount' => 4, 'paymentActionRequiredCount' => 0, 'subscriptionCanceledCount' => 0,
         ],
     ];
 }
@@ -172,6 +176,7 @@ it('merges entries of the same series across batches by each metric rule', funct
         array_diff_key($aggregates['logLevel'], ['channel' => true]),
         [...$aggregates['octane'], 'count' => 50, 'errorCount' => 2, 'workerStarts' => 1, 'workerStops' => 1, 'requests' => 40, 'tasks' => 3, 'ticks' => 6, 'totalRequestsAtStop' => 480, 'maxRequestsAtStop' => 480, 'maxMb' => 60.5, 'maxGrowthMb' => 2.25],
         [...$aggregates['reverb'], 'count' => 30, 'errorCount' => 0, 'connectionsOpened' => 4, 'connectionsRejected' => 0, 'connectionsPruned' => 1, 'maxConnections' => 12, 'messagesReceived' => 5, 'messagesSent' => 9, 'publicChannelsCreated' => 1, 'privateChannelsRemoved' => 2],
+        [...$aggregates['billingWebhook'], 'count' => 2, 'errorCount' => 0, 'handledCount' => 2, 'paymentFailedCount' => 2, 'paymentActionRequiredCount' => 1, 'subscriptionCanceledCount' => 1],
     ];
 
     $this->postJson(route('api.runtime.store'), coreRuntimeEnvelope(array_values($aggregates)), $headers)->assertCreated();
@@ -202,6 +207,10 @@ it('merges entries of the same series across batches by each metric rule', funct
             'connectionsOpened' => 14, 'connectionsRejected' => 1, 'connectionsPruned' => 3, 'messagesReceived' => 45, 'messagesSent' => 69,
             'publicChannelsCreated' => 4, 'privateChannelsCreated' => 4, 'presenceChannelsCreated' => 2,
             'publicChannelsRemoved' => 2, 'privateChannelsRemoved' => 2, 'presenceChannelsRemoved' => 0, 'maxConnections' => 12,
+        ])
+        ->and([$row('billingWebhook')->count, $row('billingWebhook')->error_count])->toBe([6, 1])
+        ->and($row('billingWebhook')->metrics)->toEqual([
+            'handledCount' => 5, 'paymentFailedCount' => 6, 'paymentActionRequiredCount' => 1, 'subscriptionCanceledCount' => 1,
         ]);
 
     // A log entry without channel is its own series, never merged with one that has it.
@@ -265,6 +274,8 @@ it('still rejects a known type that breaks its own contract', function (string $
     'Octane growth below zero' => ['octane', 'maxGrowthMb', -0.5],
     'Reverb without messages sent' => ['reverb', 'messagesSent', null],
     'Reverb connections below zero' => ['reverb', 'maxConnections', -1],
+    'billing webhook without handled count' => ['billingWebhook', 'handledCount', null],
+    'billing payment signal below zero' => ['billingWebhook', 'paymentFailedCount', -1],
 ]);
 
 it('stores a classification entry of the Laravel AI SDK (core #212)', function () {
@@ -304,6 +315,8 @@ it('stores a value core may add to an enumerated dimension instead of rejecting 
     'Octane server' => ['octane', 'octaneServer'],
     'Octane worker type' => ['octane', 'workerType'],
     'Reverb app id' => ['reverb', 'appId'],
+    'billing provider' => ['billingWebhook', 'provider'],
+    'billing event type' => ['billingWebhook', 'eventType'],
 ]);
 
 it('keeps a scheduled task outcome it does not know out of the schedule monitoring', function () {
