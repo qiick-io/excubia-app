@@ -124,6 +124,8 @@ class SettingsRepositoryService
             'alert_billing_payment_failed_enabled' => false,
             // Failed-login alert rule (#180): null is off.
             'alert_auth_failed_logins_per_hour' => null,
+            // Scout index failure alert rule (#184): null is off.
+            'alert_scout_index_failures_per_hour' => null,
             // AI price table (#129): null uses AiPriceService::defaults().
             'ai_prices' => null,
             'ai_prices_updated_on' => null,
@@ -567,6 +569,12 @@ class SettingsRepositoryService
     public function alertAuthFailedLoginsPerHour(): ?int
     {
         return $this->positiveInteger('alert_auth_failed_logins_per_hour');
+    }
+
+    /** Failed Scout index jobs per model and hour from which a project alerts (#184); null when off. */
+    public function alertScoutIndexFailuresPerHour(): ?int
+    {
+        return $this->positiveInteger('alert_scout_index_failures_per_hour');
     }
 
     private function positiveInteger(string $key): ?int

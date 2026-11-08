@@ -143,6 +143,9 @@ class StorePushedRuntimeAction
             'dimension_key' => hash('sha256', $identityJson),
         ];
 
+        // A Scout search (#184) has no duration: only entries with both totals are timed.
+        $isTimed = $type->isTimed() && isset($aggregate['totalMs'], $aggregate['maxMs']);
+
         $minute = [
             'project_id' => $project->id,
             'type' => $type->value,
@@ -150,11 +153,11 @@ class StorePushedRuntimeAction
             'sample_rate' => $identity['sample_rate'],
             'count' => (int) $aggregate['count'],
             'error_count' => (int) $aggregate['errorCount'],
-            'total_ms' => $type->isTimed() ? (float) $aggregate['totalMs'] : null,
+            'total_ms' => $isTimed ? (float) $aggregate['totalMs'] : null,
         ];
 
         $metrics = $this->metrics($type, $aggregate);
-        $histogram = $this->histogram($type, $aggregate);
+        $histogram = $isTimed ? $this->histogram($aggregate) : null;
         $existing = RuntimeAggregate::query()->where($identity)->lockForUpdate()->first();
 
         if ($existing === null) {
@@ -165,7 +168,7 @@ class StorePushedRuntimeAction
                 'count' => $minute['count'],
                 'error_count' => $minute['error_count'],
                 'total_ms' => $minute['total_ms'],
-                'max_ms' => $type->isTimed() ? (float) $aggregate['maxMs'] : null,
+                'max_ms' => $isTimed ? (float) $aggregate['maxMs'] : null,
                 'metrics' => $metrics,
                 'histogram' => $histogram,
             ]);
@@ -176,8 +179,8 @@ class StorePushedRuntimeAction
         $existing->forceFill([
             'count' => $existing->count + (int) $aggregate['count'],
             'error_count' => $existing->error_count + (int) $aggregate['errorCount'],
-            'total_ms' => $type->isTimed() ? (float) $existing->total_ms + (float) $aggregate['totalMs'] : null,
-            'max_ms' => $type->isTimed() ? max((float) $existing->max_ms, (float) $aggregate['maxMs']) : null,
+            'total_ms' => $isTimed ? (float) $existing->total_ms + (float) $aggregate['totalMs'] : $existing->total_ms,
+            'max_ms' => $isTimed ? max((float) $existing->max_ms, (float) $aggregate['maxMs']) : $existing->max_ms,
             'metrics' => $metrics === null ? null : $type->mergeMetrics($existing->metrics ?? [], $metrics),
             'histogram' => $this->mergeHistograms($existing->histogram, $histogram),
         ])->save();
@@ -213,16 +216,16 @@ class StorePushedRuntimeAction
     }
 
     /**
-     * The entry's latency histogram as integers, or null when it has none or not 12 buckets.
+     * A timed entry's latency histogram as integers, or null when it has none or not 12 buckets.
      *
      * @param  array<string, mixed>  $aggregate
      * @return list<int>|null
      */
-    private function histogram(RuntimeTypeEnum $type, array $aggregate): ?array
+    private function histogram(array $aggregate): ?array
     {
         $histogram = $aggregate['histogram'] ?? null;
 
-        if (! $type->isTimed() || ! is_array($histogram) || count($histogram) !== RuntimeTypeEnum::HISTOGRAM_LENGTH) {
+        if (! is_array($histogram) || count($histogram) !== RuntimeTypeEnum::HISTOGRAM_LENGTH) {
             return null;
         }
 

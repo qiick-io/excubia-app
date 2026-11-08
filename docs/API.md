@@ -116,7 +116,7 @@ Content-Type: application/json
 
 ## `POST /api/runtime`
 
-Envelope (`$defs.runtimeEnvelope`): `protocolVersion`, `type: "runtime"`, `batchId`, `sentAt`, `runtime` with `bucketSeconds` (`60`), `aggregates` (a list, may be empty), an optional `release` and an optional `environment` (excubia-core 1.0.0-beta.4, the same pattern and rules as the report's). Payload: [`runtime-schema.json`](https://github.com/qiick-io/excubia-core/blob/develop/docs/runtime-schema.json). Each aggregate of a known type must carry `bucket`, `sampleRate`, `count`, `errorCount`, the dimensions and metrics of its type, and, for timed types, `totalMs`, `maxMs` and an optional 12-bucket `histogram`. Aggregates are additive: the app sums entries with the same type, bucket, sample rate and dimensions, also across batches.
+Envelope (`$defs.runtimeEnvelope`): `protocolVersion`, `type: "runtime"`, `batchId`, `sentAt`, `runtime` with `bucketSeconds` (`60`), `aggregates` (a list, may be empty), an optional `release` and an optional `environment` (excubia-core 1.0.0-beta.4, the same pattern and rules as the report's). Payload: [`runtime-schema.json`](https://github.com/qiick-io/excubia-core/blob/develop/docs/runtime-schema.json). Each aggregate of a known type must carry `bucket`, `sampleRate`, `count`, `errorCount`, the dimensions and metrics of its type, and, for timed types, `totalMs`, `maxMs` and an optional 12-bucket `histogram` (a `scout` `search` entry has no duration, so for `scout` they are optional; an entry without them is stored untimed). Aggregates are additive: the app sums entries with the same type, bucket, sample rate and dimensions, also across batches.
 
 ```json
 {

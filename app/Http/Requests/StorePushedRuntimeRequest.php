@@ -16,7 +16,7 @@ use Illuminate\Validation\Rule;
  * carry the dimensions and metrics of its type; an aggregate of a type this app does not know
  * only needs a `type` and is skipped on store, never rejected (#111). A value core enumerates
  * (`statusClass`, `outcome`, `level`, `origin`, `exitCodeClass`, `operation`, `octaneServer`,
- * `workerType`, the billing `provider` and `eventType`, the auth `guard`, the health `status` and `severity`) is only checked as a string: core adds values
+ * `workerType`, the billing `provider` and `eventType`, the auth `guard`, the Scout `engine` and `operation`, the health `status` and `severity`) is only checked as a string: core adds values
  * additively, and a value this app does not know must never reject the batch (#169). StorePushedRuntimeAction stores it, or
  * skips and counts the entry when the app cannot read it. The token was checked by
  * AuthenticateProjectToken.
@@ -96,6 +96,8 @@ class StorePushedRuntimeRequest extends FormRequest
         'loginCount' => ['required', 'integer', 'min:0'],
         'lockoutCount' => ['required', 'integer', 'min:0'],
         'tokenAuthenticationCount' => ['required', 'integer', 'min:0'],
+        // `scout` (#184): always present, 0 for searches.
+        'modelCount' => ['required', 'integer', 'min:0'],
     ];
 
     public function authorize(): bool
@@ -181,8 +183,10 @@ class StorePushedRuntimeRequest extends FormRequest
         }
 
         if ($type->isTimed()) {
-            $rules['totalMs'] = ['required', 'numeric', 'min:0'];
-            $rules['maxMs'] = ['required', 'numeric', 'min:0'];
+            // A Scout search has no duration (#184); unknown operations must not reject the batch.
+            $presence = $type->hasOptionalTiming() ? 'sometimes' : 'required';
+            $rules['totalMs'] = [$presence, 'numeric', 'min:0'];
+            $rules['maxMs'] = [$presence, 'numeric', 'min:0'];
             $rules['histogram'] = ['sometimes', 'list', 'size:'.RuntimeTypeEnum::HISTOGRAM_LENGTH];
             $rules['histogram.*'] = ['integer', 'min:0'];
         }

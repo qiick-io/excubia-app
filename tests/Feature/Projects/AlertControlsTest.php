@@ -426,6 +426,53 @@ it('raises the failed-login rule per guard once per hour, only when it is on (#1
         ->and(AlertEventEnum::AuthFailedLoginSpike->defaultSeverity()->value)->toBe('high');
 });
 
+it('saves the Scout index failure rule in Settings → Integrations, off by default (#184)', function () {
+    $filter = ['minimum_severity' => 'high', 'event_types' => ['finding.new']];
+    $channels = ['channels' => ['webhook' => $filter, 'slack' => $filter, 'telegram' => $filter]];
+    $settings = app(SettingsRepositoryService::class);
+
+    expect($settings->alertScoutIndexFailuresPerHour())->toBeNull();
+
+    $this->actingAs(controlsAdmin())->put(route('project.integrations.update'), [...$channels, 'alert_scout_index_failures_per_hour' => '3'])
+        ->assertSessionHasNoErrors();
+
+    expect($settings->alertScoutIndexFailuresPerHour())->toBe(3);
+
+    $this->actingAs(controlsAdmin())->get(route('project.integrations.edit'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('project.alert_scout_index_failures_per_hour', 3)
+            ->where('events', fn ($events): bool => collect($events)->contains('scout.index_failures')));
+
+    $this->actingAs(controlsAdmin())->put(route('project.integrations.update'), [...$channels, 'alert_scout_index_failures_per_hour' => '0'])
+        ->assertSessionHasErrors('alert_scout_index_failures_per_hour');
+
+    $this->actingAs(controlsAdmin())->put(route('project.integrations.update'), [...$channels, 'alert_scout_index_failures_per_hour' => ''])
+        ->assertSessionHasNoErrors();
+
+    expect($settings->alertScoutIndexFailuresPerHour())->toBeNull();
+});
+
+it('raises the Scout index failure rule per model once per hour, only when it is on (#184)', function () {
+    $project = Project::factory()->create();
+    $records = ['modelCount' => 10];
+    // Post: 2 failed index jobs on one engine and 1 failed remove job on another add up to 3.
+    alertRuntimeRow($project, 'scout', ['model' => 'App\\Models\\Post', 'engine' => 'meilisearch', 'operation' => 'index'], 20, 2, $records);
+    alertRuntimeRow($project, 'scout', ['model' => 'App\\Models\\Post', 'engine' => 'algolia', 'operation' => 'remove'], 5, 1, $records);
+    alertRuntimeRow($project, 'scout', ['model' => 'App\\Models\\User', 'engine' => 'meilisearch', 'operation' => 'index'], 20, 2, $records);
+    alertRuntimeRow($project, 'scout', ['model' => 'App\\Models\\Tag', 'engine' => 'meilisearch', 'operation' => 'search'], 900, 0, ['modelCount' => 0]);
+
+    $this->artisan('excubia:evaluate-runtime-alerts')->expectsOutputToContain('No runtime alert rule is on')->assertSuccessful();
+
+    app(SettingsRepositoryService::class)->save(['alert_scout_index_failures_per_hour' => 3]);
+    $this->artisan('excubia:evaluate-runtime-alerts')->assertSuccessful();
+    $this->artisan('excubia:evaluate-runtime-alerts')->assertSuccessful();
+
+    // Post reached 3 failed jobs; User (2) stays under the threshold; Tag only searched.
+    expect(AlertLog::query()->get()->map(fn (AlertLog $log): string => "{$log->event}|{$log->subject}")->all())->toBe(['scout.index_failures|scout:App\\Models\\Post'])
+        ->and(AlertLog::query()->sole()->summary)->toBe('App\\Models\\Post: 3 failed Scout index jobs in the last hour')
+        ->and(AlertEventEnum::ScoutIndexFailures->defaultSeverity()->value)->toBe('high');
+});
+
 it('saves the weekly digest choice on the profile', function () {
     $user = controlsAdmin();
 

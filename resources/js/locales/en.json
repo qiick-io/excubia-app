@@ -487,7 +487,8 @@
                 "ai.error_rate": "The share of failed AI calls in the last hour is above the threshold.",
                 "billing.webhook_failures": "Billing webhooks of a provider failed (5xx, retried by the provider) at least the threshold of times in the last hour.",
                 "billing.payment_failed": "A billing provider reported failed payments in the last hour.",
-                "auth.failed_login_spike": "An auth guard saw at least the threshold of failed logins in the last hour (brute force or credential stuffing)."
+                "auth.failed_login_spike": "An auth guard saw at least the threshold of failed logins in the last hour (brute force or credential stuffing).",
+                "scout.index_failures": "A searchable model's Laravel Scout index jobs failed at least the threshold of times in the last hour (the search index drifts from the database)."
             },
             "runtimeRulesTitle": "Runtime alert rules",
             "runtimeRulesDescription": "Optional alerts from the runtime data the projects push, checked every 15 minutes over the last hour. Empty turns a rule off.",
@@ -501,6 +502,8 @@
             "billingPaymentFailures": "Alert when a billing provider reports failed payments",
             "authFailedLogins": "Failed logins per guard and hour",
             "authFailedLoginsHint": "Alert when an auth guard records at least this many failed logins in the last hour.",
+            "scoutIndexFailures": "Failed Scout index jobs per model and hour",
+            "scoutIndexFailuresHint": "Alert when the queued Laravel Scout index or remove jobs of a model fail at least this many times in the last hour.",
             "projects": "Projects",
             "projectsHint": "Leave every box empty to send the alerts of every project.",
             "emailTitle": "Email",
@@ -1166,7 +1169,10 @@
         "authDescription": "Laravel logins per auth guard: successful and failed logins with the failure rate, lockouts by the login rate limiter, and requests authenticated by a Sanctum personal access token. Passport token requests are not counted. Never users, emails, credentials, tokens or IP addresses.",
         "logins": "Logins",
         "lockouts": "Lockouts",
-        "tokenAuthentications": "Token auths"
+        "tokenAuthentications": "Token auths",
+        "scout": "Search (Scout)",
+        "scoutDescription": "Laravel Scout per model, engine and operation: queued index and remove jobs with failures, the records they synced and their duration, and the searches started (without duration). Index updates with scout.queue off (Scout's default) run inline and are not recorded. Never search queries, record ids or record data.",
+        "scoutRecords": "Records"
     },
     "exceptions": {
         "emptyTitle": "No exceptions",

@@ -40,6 +40,8 @@ enum RuntimeTypeEnum: string
     case BillingWebhook = 'billingWebhook';
     // Laravel authentication per guard (#180, core #219).
     case Auth = 'auth';
+    // Laravel Scout index jobs and searches (#184, core #222).
+    case Scout = 'scout';
 
     /** Counts per latency bucket of the optional `histogram` (core `$defs.histogram`). */
     public const HISTOGRAM_LENGTH = 12;
@@ -128,6 +130,7 @@ enum RuntimeTypeEnum: string
             self::Reverb => ['server', 'appId'],
             self::BillingWebhook => ['provider', 'eventType'],
             self::Auth => ['guard'],
+            self::Scout => ['model', 'engine', 'operation'],
         };
     }
 
@@ -149,11 +152,22 @@ enum RuntimeTypeEnum: string
     }
 
     /**
-     * Whether entries carry `totalMs` and `maxMs` and may carry a latency `histogram`.
+     * Whether entries carry `totalMs` and `maxMs` and may carry a latency `histogram`. For
+     * hasOptionalTiming() types only some entries do.
      */
     public function isTimed(): bool
     {
-        return in_array($this, [self::Request, self::SlowQuery, self::Job, self::ScheduledTask, self::OutgoingHttp, self::QueueWait, self::Command, self::Ai, self::AiTool, self::BillingWebhook], true);
+        return in_array($this, [self::Request, self::SlowQuery, self::Job, self::ScheduledTask, self::OutgoingHttp, self::QueueWait, self::Command, self::Ai, self::AiTool, self::BillingWebhook, self::Scout], true);
+    }
+
+    /**
+     * Whether a timed type also has entries without durations: a Scout `search` (#184) has no
+     * `totalMs`, `maxMs` or histogram, its `index` and `remove` jobs do. Such an entry is timed
+     * when it carries both `totalMs` and `maxMs`.
+     */
+    public function hasOptionalTiming(): bool
+    {
+        return $this === self::Scout;
     }
 
     /**
@@ -179,6 +193,7 @@ enum RuntimeTypeEnum: string
             self::Reverb => [...array_fill_keys(self::REVERB_COUNTERS, 'sum'), 'maxConnections' => 'max'],
             self::BillingWebhook => array_fill_keys(self::BILLING_COUNTERS, 'sum'),
             self::Auth => array_fill_keys(self::AUTH_COUNTERS, 'sum'),
+            self::Scout => ['modelCount' => 'sum'],
             default => [],
         };
     }
