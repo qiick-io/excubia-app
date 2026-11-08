@@ -44,6 +44,6 @@ USER www-data
 EXPOSE 8080
 VOLUME ["/app/storage"]
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
-    CMD curl -fsS http://127.0.0.1:8080/up > /dev/null || exit 1
+    CMD curl -fsS http://127.0.0.1:8080/health/ready > /dev/null || exit 1
 ENTRYPOINT ["excubia-entrypoint"]
 CMD ["frankenphp", "run", "--config", "/etc/frankenphp/Caddyfile", "--adapter", "caddyfile"]
