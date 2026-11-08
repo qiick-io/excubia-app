@@ -30,6 +30,8 @@ import { cn } from '@/lib/utils';
 import type {
     RuntimeCountRow,
     RuntimeOctaneRow,
+    RuntimeReverbChannels,
+    RuntimeReverbRow,
     RuntimeRow,
     RuntimeServer,
     RuntimeSummary,
@@ -468,6 +470,8 @@ export function RuntimeView({ runtime }: { runtime: RuntimeSummary | null }) {
             <ServersCard servers={runtime.servers} format={format} />
 
             <OctaneCard octane={runtime.octane} format={format} />
+
+            <ReverbCard reverb={runtime.reverb} format={format} />
         </div>
     );
 }
@@ -547,6 +551,77 @@ function OctaneCard({
                     label: t('runtime.requestsAtStop'),
                     cell: (row) =>
                         `${format.number(row.averageRequestsAtStop, 0)} / ${format.number(row.maxRequestsAtStop, 0)}`,
+                },
+            ]}
+        />
+    );
+}
+
+/**
+ * Reverb servers (#175) per server and app: messages in and out, connections opened, rejected
+ * and pruned, errors, channels created and removed by type, and the peak of connections. The
+ * description adds the reachability and connect time from the laravel-reverb check.
+ */
+function ReverbCard({
+    reverb,
+    format,
+}: {
+    reverb: RuntimeSummary['reverb'];
+    format: Formatters;
+}) {
+    const { t } = useTranslation();
+    const reachability = reverb.check
+        ? reverb.check.isReachable
+            ? ` ${t('runtime.reverbReachable', { latency: format.number(reverb.check.latencyMs) })}`
+            : ` ${t('runtime.reverbUnreachable')}`
+        : '';
+    const channels = (counts: RuntimeReverbChannels) =>
+        `${format.count(counts.public)} / ${format.count(counts.private)} / ${format.count(counts.presence)}`;
+
+    return (
+        <RuntimeCard<RuntimeReverbRow>
+            title={t('runtime.reverb')}
+            description={`${t('runtime.reverbDescription')}${reachability}`}
+            configKey="runtime.reverb"
+            rows={reverb.rows}
+            name={(row) => (
+                <Name primary={row.appId} secondary={row.server} isMono />
+            )}
+            columns={[
+                {
+                    label: t('runtime.messagesInOut'),
+                    cell: (row) =>
+                        `${format.count(row.messagesReceived)} / ${format.count(row.messagesSent)}`,
+                },
+                {
+                    label: t('runtime.connectionsOpened'),
+                    cell: (row) => format.count(row.connectionsOpened),
+                },
+                {
+                    label: t('runtime.connectionsRejected'),
+                    cell: (row) => format.count(row.connectionsRejected),
+                    isProblem: (row) => row.connectionsRejected > 0,
+                },
+                {
+                    label: t('runtime.connectionsPruned'),
+                    cell: (row) => format.count(row.connectionsPruned),
+                },
+                {
+                    label: t('runtime.reverbErrors'),
+                    cell: (row) => format.count(row.errors),
+                    isProblem: (row) => row.errors > 0,
+                },
+                {
+                    label: t('runtime.channelsCreated'),
+                    cell: (row) => channels(row.channelsCreated),
+                },
+                {
+                    label: t('runtime.channelsRemoved'),
+                    cell: (row) => channels(row.channelsRemoved),
+                },
+                {
+                    label: t('runtime.peakConnections'),
+                    cell: (row) => format.number(row.peakConnections, 0),
                 },
             ]}
         />
