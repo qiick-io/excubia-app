@@ -332,6 +332,55 @@ it('raises the runtime alert rules once per hour and subject, only when they are
     expect(AlertLog::query()->where('event', 'runtime.log_spike')->count())->toBe(2);
 });
 
+it('saves the billing webhook rules in Settings → Integrations, off by default (#178)', function () {
+    $filter = ['minimum_severity' => 'high', 'event_types' => ['finding.new']];
+    $channels = ['channels' => ['webhook' => $filter, 'slack' => $filter, 'telegram' => $filter]];
+    $settings = app(SettingsRepositoryService::class);
+
+    expect($settings->alertBillingWebhookFailuresPerHour())->toBeNull()
+        ->and($settings->shouldAlertBillingPaymentFailures())->toBeFalse();
+
+    $this->actingAs(controlsAdmin())->put(route('project.integrations.update'), [
+        ...$channels,
+        'alert_billing_webhook_failures_per_hour' => '5',
+        'alert_billing_payment_failed_enabled' => '1',
+    ])->assertSessionHasNoErrors();
+
+    expect($settings->alertBillingWebhookFailuresPerHour())->toBe(5)
+        ->and($settings->shouldAlertBillingPaymentFailures())->toBeTrue();
+
+    $this->actingAs(controlsAdmin())->get(route('project.integrations.edit'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('project.alert_billing_webhook_failures_per_hour', 5)
+            ->where('project.alert_billing_payment_failed_enabled', true)
+            ->where('events', fn ($events): bool => collect($events)->contains('billing.webhook_failures') && collect($events)->contains('billing.payment_failed')));
+
+    $this->actingAs(controlsAdmin())->put(route('project.integrations.update'), [...$channels, 'alert_billing_webhook_failures_per_hour' => '0'])
+        ->assertSessionHasErrors('alert_billing_webhook_failures_per_hour');
+});
+
+it('raises the billing webhook rules per provider once per hour, only when they are on (#178)', function () {
+    $project = Project::factory()->create();
+    $billing = fn (int $paymentFailed = 0): array => ['handledCount' => 0, 'paymentFailedCount' => $paymentFailed, 'paymentActionRequiredCount' => 0, 'subscriptionCanceledCount' => 0];
+    alertRuntimeRow($project, 'billingWebhook', ['provider' => 'stripe', 'eventType' => 'invoice.paid'], 10, 4, $billing());
+    alertRuntimeRow($project, 'billingWebhook', ['provider' => 'stripe', 'eventType' => 'invoice.payment_failed'], 3, 1, $billing(3));
+    alertRuntimeRow($project, 'billingWebhook', ['provider' => 'paddle', 'eventType' => 'transaction.completed'], 8, 2, $billing());
+
+    $this->artisan('excubia:evaluate-runtime-alerts')->expectsOutputToContain('No runtime alert rule is on')->assertSuccessful();
+
+    app(SettingsRepositoryService::class)->save(['alert_billing_webhook_failures_per_hour' => 5, 'alert_billing_payment_failed_enabled' => true]);
+    $this->artisan('excubia:evaluate-runtime-alerts')->assertSuccessful();
+    $this->artisan('excubia:evaluate-runtime-alerts')->assertSuccessful();
+
+    // Paddle failed twice, under the threshold of 5; Stripe failed 5 times and reported 3 failed payments.
+    expect(AlertLog::query()->orderBy('id')->get()->map(fn (AlertLog $log): string => "{$log->event}|{$log->subject}")->all())->toBe([
+        'billing.webhook_failures|billing-webhooks:stripe',
+        'billing.payment_failed|billing-payments:stripe',
+    ])
+        ->and(AlertLog::query()->where('event', 'billing.payment_failed')->sole()->summary)->toBe('stripe: 3 failed payments in the last hour')
+        ->and(AlertEventEnum::BillingWebhookFailures->defaultSeverity()->value)->toBe('high');
+});
+
 it('saves the weekly digest choice on the profile', function () {
     $user = controlsAdmin();
 

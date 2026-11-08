@@ -18,7 +18,10 @@ use Illuminate\Support\Facades\Date;
  * - `runtime.cache_hit_ratio_low`: a cache store's hit ratio is under the threshold, with at
  *   least MIN_CACHE_LOOKUPS lookups;
  * - `runtime.delivery_failed`: a mailable or notification failed;
- * - `runtime.log_spike`: a log channel wrote at least the threshold of error-level entries.
+ * - `runtime.log_spike`: a log channel wrote at least the threshold of error-level entries;
+ * - `billing.webhook_failures` (#178): a billing provider's webhooks failed (5xx, the provider
+ *   retries them) at least the threshold of times;
+ * - `billing.payment_failed` (#178): a billing provider reported failed payments.
  * Counts are estimated (`count / sample_rate`). Each subject alerts at most once per hour: the
  * alert history is the cooldown.
  *
@@ -43,7 +46,9 @@ class RuntimeAlertsService
     {
         return $this->settings->alertCacheHitRatioBelow() !== null
             || $this->settings->shouldAlertDeliveryFailures()
-            || $this->settings->alertLogSpikePerHour() !== null;
+            || $this->settings->alertLogSpikePerHour() !== null
+            || $this->settings->alertBillingWebhookFailuresPerHour() !== null
+            || $this->settings->shouldAlertBillingPaymentFailures();
     }
 
     /**
@@ -53,7 +58,7 @@ class RuntimeAlertsService
     {
         $series = RuntimeAggregate::query()
             ->where('project_id', $project->id)
-            ->whereIn('type', [RuntimeTypeEnum::Cache->value, RuntimeTypeEnum::Mail->value, RuntimeTypeEnum::Notification->value, RuntimeTypeEnum::LogLevel->value])
+            ->whereIn('type', [RuntimeTypeEnum::Cache->value, RuntimeTypeEnum::Mail->value, RuntimeTypeEnum::Notification->value, RuntimeTypeEnum::LogLevel->value, RuntimeTypeEnum::BillingWebhook->value])
             ->where('bucket', '>=', Date::now()->subHour())
             ->get()
             ->groupBy(fn (RuntimeAggregate $aggregate): string => $aggregate->type->value);
@@ -97,6 +102,33 @@ class RuntimeAlertsService
                 if ($count >= $spike) {
                     $sent += $this->send($project, AlertEventEnum::LogSpike, "log:{$channel}", "log channel {$channel}: {$count} error entries in the last hour", ['channel' => $channel, 'count' => $count]);
                 }
+            }
+        }
+
+        return $sent + $this->billing($project, $series->get(RuntimeTypeEnum::BillingWebhook->value, collect()));
+    }
+
+    /**
+     * The billing webhook rules (#178), per provider over the last hour.
+     *
+     * @param  Collection<int, RuntimeAggregate>  $series
+     */
+    private function billing(Project $project, Collection $series): int
+    {
+        $threshold = $this->settings->alertBillingWebhookFailuresPerHour();
+        $shouldAlertPayments = $this->settings->shouldAlertBillingPaymentFailures();
+        $sent = 0;
+
+        foreach ($series->groupBy(fn (RuntimeAggregate $aggregate): string => (string) ($aggregate->dimensions['provider'] ?? '')) as $provider => $rows) {
+            $failed = $this->estimate($rows, fn (RuntimeAggregate $aggregate): float => $aggregate->error_count);
+            $payments = $this->estimate($rows, fn (RuntimeAggregate $aggregate): float => (float) ($aggregate->metrics['paymentFailedCount'] ?? 0));
+
+            if ($threshold !== null && $failed >= $threshold) {
+                $sent += $this->send($project, AlertEventEnum::BillingWebhookFailures, "billing-webhooks:{$provider}", "{$provider} webhooks: {$failed} failed in the last hour", ['provider' => $provider, 'failed' => $failed]);
+            }
+
+            if ($shouldAlertPayments && $payments > 0) {
+                $sent += $this->send($project, AlertEventEnum::BillingPaymentFailed, "billing-payments:{$provider}", "{$provider}: {$payments} failed payments in the last hour", ['provider' => $provider, 'failedPayments' => $payments]);
             }
         }
 

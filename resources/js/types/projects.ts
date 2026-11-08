@@ -326,6 +326,30 @@ export type RuntimeOctaneRow = {
     lastAt: string | null;
 };
 
+/** The payment signals of Laravel Cashier webhooks (#178), estimated. */
+export type RuntimeBillingSignals = {
+    paymentFailed: number;
+    paymentActionRequired: number;
+    subscriptionCanceled: number;
+};
+
+/**
+ * Laravel Cashier webhooks of one provider and event type (#178). Counts are estimated;
+ * `errorRate` is the failed share in %, null without webhooks.
+ */
+export type RuntimeBillingRow = {
+    provider: string;
+    eventType: string;
+    count: number;
+    handled: number;
+    errors: number;
+    errorRate: number | null;
+    averageMs: number | null;
+    maxMs: number | null;
+    lastAt: string | null;
+} & RuntimePercentiles &
+    RuntimeBillingSignals;
+
 /** A time range of the runtime, exceptions and schedule tabs (#113), `TimeRangeEnum`. */
 export type TimeRange = '1h' | '6h' | '24h' | '7d' | '14d';
 
@@ -379,6 +403,11 @@ export type RuntimeSummary = {
         config: { server: string | null; maxRequests: number | null } | null;
         leakGrowthMb: number;
         rows: RuntimeOctaneRow[];
+    };
+    /** Laravel Cashier webhooks (#178) and the payment signals of the whole range. */
+    billing: {
+        totals: RuntimeBillingSignals;
+        rows: RuntimeBillingRow[];
     };
     /** Deploys of the range, oldest first (#106); `bucket` matches a `timeline` point. */
     deploys: RuntimeDeploy[];

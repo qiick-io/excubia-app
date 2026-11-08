@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 import type {
+    RuntimeBillingRow,
     RuntimeCountRow,
     RuntimeOctaneRow,
     RuntimeRow,
@@ -468,6 +469,8 @@ export function RuntimeView({ runtime }: { runtime: RuntimeSummary | null }) {
             <ServersCard servers={runtime.servers} format={format} />
 
             <OctaneCard octane={runtime.octane} format={format} />
+
+            <BillingCard billing={runtime.billing} format={format} />
         </div>
     );
 }
@@ -548,6 +551,86 @@ function OctaneCard({
                     cell: (row) =>
                         `${format.number(row.averageRequestsAtStop, 0)} / ${format.number(row.maxRequestsAtStop, 0)}`,
                 },
+            ]}
+        />
+    );
+}
+
+/**
+ * Laravel Cashier webhooks (#178) per provider and event type: received, handled, failed with
+ * the failure rate, p95 and slowest handling time, and the payment signals, whose totals over
+ * the range lead the card as badges (in the warning or destructive tone when not zero).
+ */
+function BillingCard({
+    billing,
+    format,
+}: {
+    billing: RuntimeSummary['billing'];
+    format: Formatters;
+}) {
+    const { t } = useTranslation();
+    const signals = [
+        { key: 'paymentFailed', variant: 'destructive' },
+        { key: 'paymentActionRequired', variant: 'warning' },
+        { key: 'subscriptionCanceled', variant: 'warning' },
+    ] as const;
+
+    return (
+        <RuntimeCard<RuntimeBillingRow>
+            title={t('runtime.billing')}
+            description={t('runtime.billingDescription')}
+            configKey="runtime.billing"
+            rows={billing.rows}
+            summary={
+                <div
+                    className="flex flex-wrap gap-2"
+                    aria-label={t('runtime.billingTotals')}
+                >
+                    {signals.map((signal) => (
+                        <Badge
+                            key={signal.key}
+                            variant={
+                                billing.totals[signal.key] > 0
+                                    ? signal.variant
+                                    : 'muted'
+                            }
+                        >
+                            {t(`runtime.${signal.key}`)}{' '}
+                            {format.count(billing.totals[signal.key])}
+                        </Badge>
+                    ))}
+                </div>
+            }
+            name={(row) => (
+                <Name primary={row.eventType} secondary={row.provider} isMono />
+            )}
+            columns={[
+                {
+                    label: t('runtime.received'),
+                    cell: (row) => format.count(row.count),
+                },
+                {
+                    label: t('runtime.handled'),
+                    cell: (row) => format.count(row.handled),
+                },
+                {
+                    label: t('runtime.failedRate'),
+                    cell: (row) =>
+                        `${format.count(row.errors)} (${format.number(row.errorRate)}%)`,
+                    isProblem: (row) => row.errors > 0,
+                },
+                { label: 'p95', cell: (row) => format.ms(row.p95) },
+                {
+                    label: t('runtime.max'),
+                    cell: (row) => format.ms(row.maxMs),
+                },
+                ...signals.map((signal) => ({
+                    label: t(`runtime.${signal.key}`),
+                    cell: (row: RuntimeBillingRow) =>
+                        format.count(row[signal.key]),
+                    isProblem: (row: RuntimeBillingRow) =>
+                        signal.key === 'paymentFailed' && row[signal.key] > 0,
+                })),
             ]}
         />
     );
@@ -697,8 +780,8 @@ function NoData({ configKey }: { configKey: string }) {
 }
 
 /**
- * One runtime card: a table of series with a name column and numeric columns, or the
- * empty state naming its `runtime.*` key.
+ * One runtime card: a table of series with a name column and numeric columns (after an
+ * optional summary), or the empty state naming its `runtime.*` key.
  */
 function RuntimeCard<Row extends Record<string, unknown>>({
     title,
@@ -707,10 +790,13 @@ function RuntimeCard<Row extends Record<string, unknown>>({
     rows,
     name,
     columns,
+    summary,
     className,
 }: {
     title: string;
     description?: string;
+    /** Shown above the table when there are rows, e.g. the totals of the card. */
+    summary?: ReactNode;
     /** The excubia.json key of the type, e.g. `runtime.cache`. */
     configKey: string;
     rows: Row[];
@@ -728,48 +814,54 @@ function RuntimeCard<Row extends Record<string, unknown>>({
                     <CardDescription>{description}</CardDescription>
                 ) : null}
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex flex-col gap-4">
                 {rows.length === 0 ? (
                     <NoData configKey={configKey} />
                 ) : (
-                    <div className="max-h-80 overflow-auto">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>{t('runtime.name')}</TableHead>
-                                    {columns.map((column) => (
-                                        <TableHead
-                                            key={column.label}
-                                            className="text-right"
-                                        >
-                                            {column.label}
+                    <>
+                        {summary}
+                        <div className="max-h-80 overflow-auto">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>
+                                            {t('runtime.name')}
                                         </TableHead>
-                                    ))}
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {rows.map((row, index) => (
-                                    <TableRow key={index}>
-                                        <TableCell className="max-w-[28rem] min-w-0">
-                                            {name(row)}
-                                        </TableCell>
                                         {columns.map((column) => (
-                                            <TableCell
+                                            <TableHead
                                                 key={column.label}
-                                                className={cn(
-                                                    'text-right tabular-nums',
-                                                    column.isProblem?.(row) &&
-                                                        'text-destructive',
-                                                )}
+                                                className="text-right"
                                             >
-                                                {column.cell(row)}
-                                            </TableCell>
+                                                {column.label}
+                                            </TableHead>
                                         ))}
                                     </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </div>
+                                </TableHeader>
+                                <TableBody>
+                                    {rows.map((row, index) => (
+                                        <TableRow key={index}>
+                                            <TableCell className="max-w-[28rem] min-w-0">
+                                                {name(row)}
+                                            </TableCell>
+                                            {columns.map((column) => (
+                                                <TableCell
+                                                    key={column.label}
+                                                    className={cn(
+                                                        'text-right tabular-nums',
+                                                        column.isProblem?.(
+                                                            row,
+                                                        ) && 'text-destructive',
+                                                    )}
+                                                >
+                                                    {column.cell(row)}
+                                                </TableCell>
+                                            ))}
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </div>
+                    </>
                 )}
             </CardContent>
         </Card>

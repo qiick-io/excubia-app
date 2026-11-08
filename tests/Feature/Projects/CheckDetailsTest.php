@@ -21,7 +21,7 @@ use Inertia\Testing\AssertableInertia as Assert;
  * dashboard, the license inventory, and the immediate infrastructure alerts.
  *
  * `tests/Fixtures/core/report-schema.json` is a copy of excubia-core `develop` at
- * 5e67a99d4bf70fa8fb50b1277f2a225e904f0eed (2026-11-08, core #214: `laravel-octane-config`). `report-every-check.json` holds one
+ * 9ad5e3805f689b296a72bf382fe472c298668368 (2026-11-08, core #218: `laravel-cashier`). `report-every-check.json` holds one
  * check per contract id, and one finding per `details` shape of the schema. Refresh both when
  * core adds a check id.
  */
@@ -40,7 +40,7 @@ const CONTRACT_CHECK_IDS = [
     'laravel-storage', 'laravel-disk-space', 'laravel-queue-backlog', 'php-platform-requirements', 'env-example-sync',
     'composer-outdated', 'laravel-queue-workers', 'npm-outdated', 'laravel-backups', 'laravel-database-connections',
     'laravel-database-size', 'laravel-redis-memory', 'php-opcache', 'php-production-ini',
-    'laravel-octane-config',
+    'laravel-octane-config', 'laravel-cashier',
 ];
 
 /**
