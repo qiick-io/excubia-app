@@ -65,23 +65,16 @@ class UpdateProjectIntegrationsSettingsRequest extends FormRequest
     }
 
     /**
+     * The validated values to save, keyed by setting: the channel filters go in `alert_channels`
+     * and the event severities in `alert_event_severities`, never as their rule keys.
+     *
      * @return array<string, mixed>
      */
     public function settings(): array
     {
         $text = fn (string $key): ?string => $this->string($key)->trim()->toString() ?: null;
 
-        $projectIds = Project::query()->visibleTo($this->user())->pluck('id')->all();
-        $filterRules = array_merge(...array_map(
-            fn (string $channel): array => $this->alertFilterRules("channels.{$channel}", $projectIds),
-            self::CHANNELS,
-        ));
-
         return [
-            ...$filterRules,
-            // Keyed by event; events that take a finding's severity are dropped in settings().
-            'event_severities' => ['nullable', 'array'],
-            'event_severities.*' => [Rule::enum(SeverityEnum::class)],
             'webhook_url' => $text('webhook_url'),
             'webhook_secret' => $text('webhook_secret'),
             'notifier_slack_webhook_url' => $text('notifier_slack_webhook_url'),
@@ -98,5 +91,16 @@ class UpdateProjectIntegrationsSettingsRequest extends FormRequest
             'alert_ai_spend_spike_percent' => $this->filled('alert_ai_spend_spike_percent') ? $this->integer('alert_ai_spend_spike_percent') : null,
             'alert_ai_error_rate_above' => $this->filled('alert_ai_error_rate_above') ? $this->integer('alert_ai_error_rate_above') : null,
         ];
+    }
+
+    /**
+     * The rule keys that are not settings (`channels.slack.minimum_severity`, `event_severities`).
+     * Before #166, settings() saved them with their rule arrays as values; nothing reads them.
+     *
+     * @return list<string>
+     */
+    public function staleSettingKeys(): array
+    {
+        return array_values(array_diff(array_keys($this->rules()), array_keys($this->settings())));
     }
 }

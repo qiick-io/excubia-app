@@ -95,6 +95,30 @@ function integrationChannels(array $overrides = []): array
     ]];
 }
 
+it('saves only validated values from the integrations settings and drops the rule rows saved before #166', function () {
+    // What settings() saved before #166: its rule keys with the rule arrays as values.
+    app(SettingsRepositoryService::class)->setMany([
+        'channels.slack.minimum_severity' => ['required', 'in:"info","low"'],
+        'event_severities' => ['nullable', 'array'],
+        'event_severities.*' => [[]],
+    ]);
+
+    $this->actingAs(alertsManager())->put(route('project.integrations.update'), [
+        'webhook_url' => 'https://hooks.example.com/excubia',
+        'event_severities' => ['project.stale' => 'low'],
+        'alert_log_spike_per_hour' => '50',
+        ...integrationChannels(),
+    ])->assertSessionHasNoErrors();
+
+    $stored = Setting::query()->pluck('value', 'key');
+
+    expect($stored->keys()->filter(fn (string $key): bool => str_starts_with($key, 'channels.') || str_starts_with($key, 'event_severities')))->toBeEmpty()
+        ->and(json_encode($stored->all()))->not->toContain('nullable')->not->toContain('required')->not->toContain('distinct')
+        ->and($stored['alert_channels']['slack'])->toMatchArray(['minimum_severity' => 'high', 'event_types' => ['finding.new']])
+        ->and($stored['alert_log_spike_per_hour'])->toBe(50)
+        ->and(app(SettingsRepositoryService::class)->alertChannelFilter('slack')->eventTypes)->toBe(['finding.new']);
+});
+
 it('saves the integrations settings, keeps secrets write-only and validates them', function () {
     $manager = alertsManager();
 

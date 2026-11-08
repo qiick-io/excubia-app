@@ -64,6 +64,8 @@ class ProjectIntegrationsSettingsController extends Controller
     {
         $values = $request->settings();
         $this->settings->save($values);
+        // ponytail: removes the rule rows saved before #166 on the next save; drop at 1.0.0.
+        $this->settings->forget($request->staleSettingKeys());
         $this->logProjectSettingsUpdate($request, 'integrations', $values);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Settings saved.')]);
