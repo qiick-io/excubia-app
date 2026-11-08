@@ -39,3 +39,15 @@ it('expands an activity log row with its details', function () {
         ->assertSee('No field changes recorded.')
         ->assertNoJavaScriptErrors();
 });
+
+it('selects findings with the registry select column and the toolbar counts them', function () {
+    $this->actingAs(User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value));
+    $project = seededA11yProject();
+
+    visit(route('projects.view', [$project, 'findings'], false))
+        ->click('tbody tr:first-child [role="checkbox"]')
+        ->assertSee('1 selected')
+        ->click('thead [role="checkbox"]')
+        ->assertDontSee('1 selected')
+        ->assertNoJavaScriptErrors();
+});

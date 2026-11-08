@@ -1,11 +1,13 @@
+import type { ColumnDef } from '@tanstack/react-table';
 import { router } from '@inertiajs/react';
 import { Bug, SearchX, Sparkles } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { DataTable } from '@/components/admin/data-table';
 import { DataTableToolbar } from '@/components/admin/data-table-toolbar';
 import { PageEmptyState } from '@/components/admin/page-empty-state';
 import { EmptyStatus } from '@/components/empty-status';
-import { PageLayout, TablePanel } from '@/components/layout/page-layout';
+import { PageLayout } from '@/components/layout/page-layout';
 import { useCopyWithToast } from '@/components/reports/fix-actions';
 import { ReleaseLabel, shortRelease } from '@/components/reports/release-label';
 import { StackedBarChart } from '@/components/reports/severity-chart';
@@ -25,14 +27,6 @@ import {
     DrawerHeader,
     DrawerTitle,
 } from '@/components/ui/drawer';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { cn } from '@/lib/utils';
 import projectsRoutes from '@/routes/projects';
@@ -122,6 +116,129 @@ export function ExceptionsView({
 
     const hasActiveFilters = search.trim() !== '' || status !== 'open';
 
+    const exceptionColumns: ColumnDef<ExceptionGroupRow>[] = [
+        {
+            id: 'exception',
+            header: t('exceptions.exception'),
+            meta: { cellClassName: 'max-w-[32rem]' },
+            cell: ({ row }) => {
+                const group = row.original;
+
+                return (
+                    <>
+                        <div className="truncate font-mono text-xs font-medium">
+                            {group.class}
+                        </div>
+                        <div className="truncate text-sm text-muted-foreground">
+                            {group.message}
+                        </div>
+                    </>
+                );
+            },
+        },
+        {
+            id: 'context',
+            header: t('exceptions.context'),
+            meta: { cellClassName: 'max-w-[14rem]' },
+            cell: ({ row }) => {
+                const group = row.original;
+
+                return (
+                    <>
+                        <div className="truncate text-sm">
+                            {group.context.name}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                            {t(`exceptions.kind.${group.context.kind}`)}
+                        </div>
+                    </>
+                );
+            },
+        },
+        {
+            id: 'environment',
+            header: t('exceptions.environment'),
+            cell: ({ row }) => {
+                const group = row.original;
+
+                return (
+                    <>
+                        <Badge variant="outline">{group.environment}</Badge>
+                    </>
+                );
+            },
+        },
+        {
+            id: 'inRange',
+            header: t('exceptions.inRange'),
+            meta: {
+                headerClassName: 'text-right',
+                cellClassName: 'text-right tabular-nums',
+            },
+            cell: ({ row }) => {
+                const group = row.original;
+
+                return <>{(group.range_count ?? 0).toLocaleString()}</>;
+            },
+        },
+        {
+            id: 'count',
+            header: t('exceptions.count'),
+            meta: {
+                headerClassName: 'text-right',
+                cellClassName: 'text-right tabular-nums',
+            },
+            cell: ({ row }) => {
+                const group = row.original;
+
+                return <>{group.count.toLocaleString()}</>;
+            },
+        },
+        {
+            id: 'lastSeen',
+            header: t('exceptions.lastSeen'),
+            meta: {
+                headerClassName: 'text-right',
+                cellClassName:
+                    'text-right text-xs text-muted-foreground tabular-nums',
+            },
+            cell: ({ row }) => {
+                const group = row.original;
+
+                return <>{new Date(group.last_seen).toLocaleString()}</>;
+            },
+        },
+        {
+            id: 'statusLabel',
+            header: t('exceptions.statusLabel'),
+            cell: ({ row }) => {
+                const group = row.original;
+
+                return (
+                    <>
+                        <div className="flex flex-wrap gap-1">
+                            <Badge variant={STATUS_VARIANTS[group.status]}>
+                                {t(`exceptions.status.${group.status}`)}
+                            </Badge>
+                            {group.regressed_release !== null ? (
+                                <Badge
+                                    variant="warning"
+                                    title={group.regressed_release}
+                                >
+                                    {t('exceptions.regressedIn', {
+                                        release: shortRelease(
+                                            group.regressed_release,
+                                        ),
+                                    })}
+                                </Badge>
+                            ) : null}
+                        </div>
+                    </>
+                );
+            },
+        },
+    ];
+
     return (
         <Drawer
             direction="right"
@@ -193,115 +310,13 @@ export function ExceptionsView({
                         }
                     />
                 ) : (
-                    <TablePanel>
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>
-                                        {t('exceptions.exception')}
-                                    </TableHead>
-                                    <TableHead>
-                                        {t('exceptions.context')}
-                                    </TableHead>
-                                    <TableHead>
-                                        {t('exceptions.environment')}
-                                    </TableHead>
-                                    <TableHead className="text-right">
-                                        {t('exceptions.inRange')}
-                                    </TableHead>
-                                    <TableHead className="text-right">
-                                        {t('exceptions.count')}
-                                    </TableHead>
-                                    <TableHead className="text-right">
-                                        {t('exceptions.lastSeen')}
-                                    </TableHead>
-                                    <TableHead>
-                                        {t('exceptions.statusLabel')}
-                                    </TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {filtered.map((group) => (
-                                    <TableRow
-                                        key={group.id}
-                                        className="cursor-pointer"
-                                        onClick={() => setSelectedId(group.id)}
-                                    >
-                                        <TableCell className="max-w-[32rem]">
-                                            <div className="truncate font-mono text-xs font-medium">
-                                                {group.class}
-                                            </div>
-                                            <div className="truncate text-sm text-muted-foreground">
-                                                {group.message}
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="max-w-[14rem]">
-                                            <div className="truncate text-sm">
-                                                {group.context.name}
-                                            </div>
-                                            <div className="text-xs text-muted-foreground">
-                                                {t(
-                                                    `exceptions.kind.${group.context.kind}`,
-                                                )}
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Badge variant="outline">
-                                                {group.environment}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell className="text-right tabular-nums">
-                                            {(
-                                                group.range_count ?? 0
-                                            ).toLocaleString()}
-                                        </TableCell>
-                                        <TableCell className="text-right tabular-nums">
-                                            {group.count.toLocaleString()}
-                                        </TableCell>
-                                        <TableCell className="text-right text-xs text-muted-foreground tabular-nums">
-                                            {new Date(
-                                                group.last_seen,
-                                            ).toLocaleString()}
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="flex flex-wrap gap-1">
-                                                <Badge
-                                                    variant={
-                                                        STATUS_VARIANTS[
-                                                            group.status
-                                                        ]
-                                                    }
-                                                >
-                                                    {t(
-                                                        `exceptions.status.${group.status}`,
-                                                    )}
-                                                </Badge>
-                                                {group.regressed_release !==
-                                                null ? (
-                                                    <Badge
-                                                        variant="warning"
-                                                        title={
-                                                            group.regressed_release
-                                                        }
-                                                    >
-                                                        {t(
-                                                            'exceptions.regressedIn',
-                                                            {
-                                                                release:
-                                                                    shortRelease(
-                                                                        group.regressed_release,
-                                                                    ),
-                                                            },
-                                                        )}
-                                                    </Badge>
-                                                ) : null}
-                                            </div>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </TablePanel>
+                    <DataTable
+                        columns={exceptionColumns}
+                        data={filtered}
+                        getRowId={(group) => String(group.id)}
+                        onRowClick={(group) => setSelectedId(group.id)}
+                        getRowProps={() => ({ className: 'cursor-pointer' })}
+                    />
                 )}
             </PageLayout>
 

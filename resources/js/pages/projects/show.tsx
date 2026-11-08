@@ -1,3 +1,4 @@
+import type { ColumnDef } from '@tanstack/react-table';
 import { Head, Link, router, usePoll } from '@inertiajs/react';
 import {
     Activity,
@@ -20,10 +21,14 @@ import {
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import {
+    DataTable,
+    dataTableSelectColumn,
+} from '@/components/admin/data-table';
 import { PageEmptyState } from '@/components/admin/page-empty-state';
 import { EmptyStatus } from '@/components/empty-status';
 import { DataTableToolbar } from '@/components/admin/data-table-toolbar';
-import { PageLayout, TablePanel } from '@/components/layout/page-layout';
+import { PageLayout } from '@/components/layout/page-layout';
 import { AiUsageView } from '@/components/reports/ai-usage-view';
 import { AlertsView } from '@/components/reports/alerts-view';
 import {
@@ -71,7 +76,6 @@ import { SeverityStackedBarChart } from '@/components/reports/severity-chart';
 import { StatCard, trendOf } from '@/components/stat-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Drawer } from '@/components/ui/drawer';
 import {
     Card,
@@ -1275,10 +1279,177 @@ function FindingsView({
         severity !== 'all' ||
         category !== 'all' ||
         checkId !== 'all';
-    const filteredKeys = filtered.map(findingKey);
     const selectedFixes = selected
         .map((key) => fixes[key])
         .filter((fix): fix is FindingFix => fix !== undefined);
+
+    const findingColumns: ColumnDef<LifecycleRow>[] = [
+        dataTableSelectColumn<LifecycleRow>({
+            selectAllLabel: t('a11y.selectAll'),
+            getRowLabel: (row) => t('fix.select', { subject: row.subject }),
+        }),
+        {
+            id: 'severityLabel',
+            header: t('report.severityLabel'),
+            cell: ({ row: tableRow }) => {
+                const row = tableRow.original;
+
+                return (
+                    <>
+                        <SeverityBadge severity={row.severity} />
+                    </>
+                );
+            },
+        },
+        {
+            id: 'subject',
+            header: t('report.subject'),
+            meta: { cellClassName: 'max-w-[16rem]' },
+            cell: ({ row: tableRow }) => {
+                const row = tableRow.original;
+
+                return (
+                    <>
+                        <button
+                            type="button"
+                            className="block max-w-full truncate text-left font-medium underline-offset-4 hover:underline"
+                            onClick={() => {
+                                setOpenKey(findingKey(row));
+                                syncEdit(findingKey(row));
+                            }}
+                        >
+                            {detailText(row, 'package') ?? row.subject}
+                        </button>
+                        <div className="truncate text-xs text-muted-foreground">
+                            {checkLabel(t, row.checkId, row.checkName)}
+                        </div>
+                    </>
+                );
+            },
+        },
+        {
+            id: 'installed',
+            header: t('report.installed'),
+            meta: { cellClassName: 'font-mono text-xs' },
+            cell: ({ row: tableRow }) => {
+                const row = tableRow.original;
+
+                return <>{detailText(row, 'lockedVersion') ?? '—'}</>;
+            },
+        },
+        {
+            id: 'fixedIn',
+            header: t('report.fixedIn'),
+            meta: { cellClassName: 'font-mono text-xs whitespace-normal' },
+            cell: ({ row: tableRow }) => {
+                const row = tableRow.original;
+
+                return <>{detailList(row, 'fixedVersions') ?? '—'}</>;
+            },
+        },
+        {
+            id: 'message',
+            header: t('report.message'),
+            meta: { cellClassName: 'min-w-[16rem] whitespace-normal' },
+            cell: ({ row: tableRow }) => {
+                const row = tableRow.original;
+
+                return (
+                    <>
+                        {row.message}
+                        {row.evidenceUrl ? (
+                            <a
+                                href={row.evidenceUrl}
+                                target="_blank"
+                                rel="noreferrer noopener"
+                                className="ml-1 inline-flex items-center gap-0.5 text-primary underline underline-offset-4"
+                            >
+                                {t('report.evidence')}
+                                <ExternalLink className="size-3" aria-hidden />
+                            </a>
+                        ) : null}
+                    </>
+                );
+            },
+        },
+        {
+            id: 'fixHint',
+            header: t('report.fixHint'),
+            meta: {
+                cellClassName:
+                    'min-w-[14rem] font-mono text-xs whitespace-normal',
+            },
+            cell: ({ row: tableRow }) => {
+                const row = tableRow.original;
+
+                return <>{row.fixHint}</>;
+            },
+        },
+        {
+            id: 'firstSeen',
+            header: t('findings.firstSeen'),
+            meta: { cellClassName: 'min-w-[10rem] whitespace-normal' },
+            cell: ({ row: tableRow }) => {
+                const row = tableRow.original;
+
+                return (
+                    <>
+                        <time
+                            dateTime={row.lifecycle.firstSeenAt}
+                            title={formatDateTime(
+                                row.lifecycle.firstSeenAt,
+                                i18n.language,
+                            )}
+                            className="text-sm"
+                        >
+                            {relativeTime(
+                                row.lifecycle.firstSeenAt,
+                                i18n.language,
+                            )}
+                        </time>
+                        <div className="mt-1 flex flex-wrap gap-1">
+                            {row.lifecycle.resolvedAt !== null ? (
+                                <Badge variant="success">
+                                    {t('findings.fixedOn', {
+                                        date: formatDateTime(
+                                            row.lifecycle.resolvedAt,
+                                            i18n.language,
+                                        ),
+                                    })}
+                                </Badge>
+                            ) : null}
+                            <LifecycleBadges lifecycle={row.lifecycle} />
+                        </div>
+                        {row.lifecycle.status !== 'resolved' &&
+                        latestReceivedAt !== null &&
+                        Date.parse(row.lifecycle.lastSeenAt) <
+                            Date.parse(latestReceivedAt) ? (
+                            <div className="mt-1 text-xs text-muted-foreground">
+                                {t('findings.notInLatest')}
+                            </div>
+                        ) : null}
+                    </>
+                );
+            },
+        },
+        {
+            id: 'actions',
+            header: t('fix.actions'),
+            meta: {
+                headerClassName: 'w-[1%] text-right',
+                cellClassName: 'text-right',
+            },
+            cell: ({ row: tableRow }) => {
+                const row = tableRow.original;
+
+                return (
+                    <>
+                        <FixActions fix={fixes[findingKey(row)]} />
+                    </>
+                );
+            },
+        },
+    ];
 
     return (
         <Drawer
@@ -1457,189 +1628,26 @@ function FindingsView({
                         }
                     />
                 ) : (
-                    <TablePanel>
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead className="w-10">
-                                        <Checkbox
-                                            checked={
-                                                filteredKeys.length > 0 &&
-                                                filteredKeys.every((key) =>
-                                                    selected.includes(key),
-                                                )
-                                            }
-                                            onCheckedChange={(checked) =>
-                                                setSelected(
-                                                    checked === true
-                                                        ? filteredKeys
-                                                        : [],
-                                                )
-                                            }
-                                            aria-label={t('a11y.selectAll')}
-                                        />
-                                    </TableHead>
-                                    <TableHead>
-                                        {t('report.severityLabel')}
-                                    </TableHead>
-                                    <TableHead>{t('report.subject')}</TableHead>
-                                    <TableHead>
-                                        {t('report.installed')}
-                                    </TableHead>
-                                    <TableHead>{t('report.fixedIn')}</TableHead>
-                                    <TableHead>{t('report.message')}</TableHead>
-                                    <TableHead>{t('report.fixHint')}</TableHead>
-                                    <TableHead>
-                                        {t('findings.firstSeen')}
-                                    </TableHead>
-                                    <TableHead className="w-[1%] text-right">
-                                        {t('fix.actions')}
-                                    </TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {filtered.map((row, index) => (
-                                    <TableRow
-                                        key={
-                                            row.fingerprint ??
-                                            `${row.checkId}-${row.subject}-${row.advisoryId ?? index}`
-                                        }
-                                    >
-                                        <TableCell>
-                                            <Checkbox
-                                                checked={selected.includes(
-                                                    findingKey(row),
-                                                )}
-                                                onCheckedChange={(checked) =>
-                                                    setSelected((current) =>
-                                                        checked === true
-                                                            ? [
-                                                                  ...current,
-                                                                  findingKey(
-                                                                      row,
-                                                                  ),
-                                                              ]
-                                                            : current.filter(
-                                                                  (key) =>
-                                                                      key !==
-                                                                      findingKey(
-                                                                          row,
-                                                                      ),
-                                                              ),
-                                                    )
-                                                }
-                                                aria-label={t('fix.select', {
-                                                    subject: row.subject,
-                                                })}
-                                            />
-                                        </TableCell>
-                                        <TableCell>
-                                            <SeverityBadge
-                                                severity={row.severity}
-                                            />
-                                        </TableCell>
-                                        <TableCell className="max-w-[16rem]">
-                                            <button
-                                                type="button"
-                                                className="block max-w-full truncate text-left font-medium underline-offset-4 hover:underline"
-                                                onClick={() => {
-                                                    setOpenKey(findingKey(row));
-                                                    syncEdit(findingKey(row));
-                                                }}
-                                            >
-                                                {detailText(row, 'package') ??
-                                                    row.subject}
-                                            </button>
-                                            <div className="truncate text-xs text-muted-foreground">
-                                                {checkLabel(
-                                                    t,
-                                                    row.checkId,
-                                                    row.checkName,
-                                                )}
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="font-mono text-xs">
-                                            {detailText(row, 'lockedVersion') ??
-                                                '—'}
-                                        </TableCell>
-                                        <TableCell className="font-mono text-xs whitespace-normal">
-                                            {detailList(row, 'fixedVersions') ??
-                                                '—'}
-                                        </TableCell>
-                                        <TableCell className="min-w-[16rem] whitespace-normal">
-                                            {row.message}
-                                            {row.evidenceUrl ? (
-                                                <a
-                                                    href={row.evidenceUrl}
-                                                    target="_blank"
-                                                    rel="noreferrer noopener"
-                                                    className="ml-1 inline-flex items-center gap-0.5 text-primary underline underline-offset-4"
-                                                >
-                                                    {t('report.evidence')}
-                                                    <ExternalLink
-                                                        className="size-3"
-                                                        aria-hidden
-                                                    />
-                                                </a>
-                                            ) : null}
-                                        </TableCell>
-                                        <TableCell className="min-w-[14rem] font-mono text-xs whitespace-normal">
-                                            {row.fixHint}
-                                        </TableCell>
-                                        <TableCell className="min-w-[10rem] whitespace-normal">
-                                            <time
-                                                dateTime={
-                                                    row.lifecycle.firstSeenAt
-                                                }
-                                                title={formatDateTime(
-                                                    row.lifecycle.firstSeenAt,
-                                                    i18n.language,
-                                                )}
-                                                className="text-sm"
-                                            >
-                                                {relativeTime(
-                                                    row.lifecycle.firstSeenAt,
-                                                    i18n.language,
-                                                )}
-                                            </time>
-                                            <div className="mt-1 flex flex-wrap gap-1">
-                                                {row.lifecycle.resolvedAt !==
-                                                null ? (
-                                                    <Badge variant="success">
-                                                        {t('findings.fixedOn', {
-                                                            date: formatDateTime(
-                                                                row.lifecycle
-                                                                    .resolvedAt,
-                                                                i18n.language,
-                                                            ),
-                                                        })}
-                                                    </Badge>
-                                                ) : null}
-                                                <LifecycleBadges
-                                                    lifecycle={row.lifecycle}
-                                                />
-                                            </div>
-                                            {row.lifecycle.status !==
-                                                'resolved' &&
-                                            latestReceivedAt !== null &&
-                                            Date.parse(
-                                                row.lifecycle.lastSeenAt,
-                                            ) < Date.parse(latestReceivedAt) ? (
-                                                <div className="mt-1 text-xs text-muted-foreground">
-                                                    {t('findings.notInLatest')}
-                                                </div>
-                                            ) : null}
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <FixActions
-                                                fix={fixes[findingKey(row)]}
-                                            />
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </TablePanel>
+                    <DataTable
+                        columns={findingColumns}
+                        data={filtered}
+                        getRowId={findingKey}
+                        rowSelection={Object.fromEntries(
+                            selected.map((key) => [key, true]),
+                        )}
+                        onRowSelectionChange={(updater) => {
+                            const current = Object.fromEntries(
+                                selected.map((key) => [key, true]),
+                            );
+                            const next =
+                                typeof updater === 'function'
+                                    ? updater(current)
+                                    : updater;
+                            setSelected(
+                                Object.keys(next).filter((key) => next[key]),
+                            );
+                        }}
+                    />
                 )}
             </PageLayout>
             {openFinding ? (
@@ -1728,6 +1736,84 @@ function HistoryView({ reports }: { reports: HealthReportSummary[] }) {
         0,
     );
 
+    const reportColumns: ColumnDef<HealthReportSummary>[] = [
+        {
+            id: 'receivedAt',
+            header: t('report.receivedAt'),
+            meta: { cellClassName: 'tabular-nums' },
+            cell: ({ row }) => {
+                const summary = row.original;
+
+                return <>{new Date(summary.received_at).toLocaleString()}</>;
+            },
+        },
+        {
+            id: 'worstSeverity',
+            header: t('report.worstSeverity'),
+            cell: ({ row }) => {
+                const summary = row.original;
+
+                return (
+                    <>
+                        <SeverityBadge severity={summary.worst_severity} />
+                    </>
+                );
+            },
+        },
+        {
+            id: 'findings',
+            header: t('report.findings'),
+            cell: ({ row }) => {
+                const summary = row.original;
+
+                return (
+                    <>
+                        <SeverityCounts counts={summary.counts} />
+                    </>
+                );
+            },
+        },
+        {
+            id: 'release',
+            header: t('report.release'),
+            cell: ({ row }) => {
+                const summary = row.original;
+
+                return (
+                    <>
+                        <div className="flex items-center gap-2 text-xs">
+                            {summary.release === null ? (
+                                <span className="text-muted-foreground">—</span>
+                            ) : (
+                                <ReleaseLabel release={summary.release} />
+                            )}
+                            {summary.deployed_at !== null ? (
+                                <Badge variant="info">
+                                    <Rocket />
+                                    {t('report.deploy')}
+                                </Badge>
+                            ) : null}
+                        </div>
+                    </>
+                );
+            },
+        },
+        {
+            id: 'coreVersionShort',
+            header: t('report.coreVersionShort'),
+            meta: {
+                headerClassName: 'text-right',
+                cellClassName:
+                    'text-right font-mono text-xs text-muted-foreground',
+            },
+            cell: ({ row }) => {
+                const summary = row.original;
+
+                return <>{summary.excubia_version ?? '—'}</>;
+            },
+        },
+    ];
+
     return (
         <div className="flex flex-col gap-4">
             <Card>
@@ -1747,62 +1833,11 @@ function HistoryView({ reports }: { reports: HealthReportSummary[] }) {
                     />
                 </CardContent>
             </Card>
-            <TablePanel>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>{t('report.receivedAt')}</TableHead>
-                            <TableHead>{t('report.worstSeverity')}</TableHead>
-                            <TableHead>{t('report.findings')}</TableHead>
-                            <TableHead>{t('report.release')}</TableHead>
-                            <TableHead className="text-right">
-                                {t('report.coreVersionShort')}
-                            </TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {reports.map((summary) => (
-                            <TableRow key={summary.id}>
-                                <TableCell className="tabular-nums">
-                                    {new Date(
-                                        summary.received_at,
-                                    ).toLocaleString()}
-                                </TableCell>
-                                <TableCell>
-                                    <SeverityBadge
-                                        severity={summary.worst_severity}
-                                    />
-                                </TableCell>
-                                <TableCell>
-                                    <SeverityCounts counts={summary.counts} />
-                                </TableCell>
-                                <TableCell>
-                                    <div className="flex items-center gap-2 text-xs">
-                                        {summary.release === null ? (
-                                            <span className="text-muted-foreground">
-                                                —
-                                            </span>
-                                        ) : (
-                                            <ReleaseLabel
-                                                release={summary.release}
-                                            />
-                                        )}
-                                        {summary.deployed_at !== null ? (
-                                            <Badge variant="info">
-                                                <Rocket />
-                                                {t('report.deploy')}
-                                            </Badge>
-                                        ) : null}
-                                    </div>
-                                </TableCell>
-                                <TableCell className="text-right font-mono text-xs text-muted-foreground">
-                                    {summary.excubia_version ?? '—'}
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </TablePanel>
+            <DataTable
+                columns={reportColumns}
+                data={reports}
+                getRowId={(summary) => String(summary.id)}
+            />
         </div>
     );
 }
