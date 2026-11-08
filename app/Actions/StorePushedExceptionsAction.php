@@ -83,8 +83,8 @@ class StorePushedExceptionsAction
                 'context_kind' => $kind,
                 'context_name' => (string) $context['name'],
                 'count' => (int) $group['count'],
-                'first_seen' => $firstSeen,
-                'last_seen' => $lastSeen,
+                'first_seen_at' => $firstSeen,
+                'last_seen_at' => $lastSeen,
                 'first_release' => $release,
                 'last_release' => $release,
                 'status' => ExceptionStatusEnum::Open,
@@ -94,7 +94,7 @@ class StorePushedExceptionsAction
             return;
         }
 
-        $isNewer = $lastSeen->gt($existing->last_seen);
+        $isNewer = $lastSeen->gt($existing->last_seen_at);
         $isRegression = $existing->status === ExceptionStatusEnum::Resolved
             && $release !== null
             && $existing->last_release !== null
@@ -102,8 +102,8 @@ class StorePushedExceptionsAction
 
         $existing->forceFill([
             'count' => $existing->count + (int) $group['count'],
-            'first_seen' => $firstSeen->lt($existing->first_seen) ? $firstSeen : $existing->first_seen,
-            'last_seen' => $isNewer ? $lastSeen : $existing->last_seen,
+            'first_seen_at' => $firstSeen->lt($existing->first_seen_at) ? $firstSeen : $existing->first_seen_at,
+            'last_seen_at' => $isNewer ? $lastSeen : $existing->last_seen_at,
             'context_kind' => $isNewer ? $kind : $existing->context_kind,
             'context_name' => $isNewer ? (string) $context['name'] : $existing->context_name,
             'first_release' => $existing->first_release ?? $release,

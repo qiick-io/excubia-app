@@ -205,7 +205,7 @@ export function ExceptionsView({
             cell: ({ row }) => {
                 const group = row.original;
 
-                return <>{new Date(group.last_seen).toLocaleString()}</>;
+                return <>{new Date(group.last_seen_at).toLocaleString()}</>;
             },
         },
         {
@@ -378,8 +378,8 @@ function ExceptionDrawer({
                     {t('exceptions.summary', {
                         count: group.count,
                         environment: group.environment,
-                        first: new Date(group.first_seen).toLocaleString(),
-                        last: new Date(group.last_seen).toLocaleString(),
+                        first: new Date(group.first_seen_at).toLocaleString(),
+                        last: new Date(group.last_seen_at).toLocaleString(),
                     })}
                 </DrawerDescription>
             </DrawerHeader>

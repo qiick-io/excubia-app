@@ -58,8 +58,8 @@ function exceptionRow(Project $project, array $values = []): ExceptionGroup
         'context_kind' => 'request',
         'context_name' => 'checkout.store',
         'count' => 4,
-        'first_seen' => '2026-11-05 10:00:00',
-        'last_seen' => $values['last_seen'] ?? '2026-11-05 12:00:00',
+        'first_seen_at' => '2026-11-05 10:00:00',
+        'last_seen_at' => $values['last_seen_at'] ?? '2026-11-05 12:00:00',
         'first_release' => $values['first_release'] ?? null,
         'last_release' => $values['last_release'] ?? null,
         'regressed_release' => $values['regressed_release'] ?? null,
@@ -98,7 +98,7 @@ it('shows no runtime block before the first runtime push', function () {
 
 it('lists exception groups open first with a fix prompt', function () {
     $project = Project::factory()->create(['slug' => 'shop']);
-    exceptionRow($project, ['fingerprint' => str_repeat('b', 64), 'status' => 'resolved', 'last_seen' => '2026-11-05 12:20:00']);
+    exceptionRow($project, ['fingerprint' => str_repeat('b', 64), 'status' => 'resolved', 'last_seen_at' => '2026-11-05 12:20:00']);
     exceptionRow($project);
 
     $this->actingAs(telemetryViewer(RoleEnum::Admin))->get(route('projects.show', 'shop'))

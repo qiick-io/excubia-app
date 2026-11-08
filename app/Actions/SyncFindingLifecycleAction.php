@@ -58,7 +58,8 @@ class SyncFindingLifecycleAction
             if ($finding === null) {
                 $finding = $project->findings()->create([
                     'fingerprint' => $fingerprint,
-                    'check_id' => (string) $issue['checkId'],
+                    // The core schema sets no length: cut to the column (100) so a long id never fails the push.
+                    'check_id' => mb_substr((string) $issue['checkId'], 0, 100),
                     'severity' => (string) $issue['severity'],
                     'status' => FindingStatusEnum::Open,
                     'finding' => $issue,

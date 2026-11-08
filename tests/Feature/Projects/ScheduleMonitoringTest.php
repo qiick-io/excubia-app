@@ -196,7 +196,7 @@ it('stores the schedule inventory, replaces it on each push and keeps it when a 
     expect($tasks->pluck('task')->all())->toBe([ScheduledTask::HEARTBEAT_TASK, 'artisan reports:send', 'Closure'])
         ->and($tasks[2]->timezone)->toBe('Europe/Rome')
         ->and($tasks[2]->environments)->toBe(['production'])
-        ->and($tasks[2]->on_one_server)->toBeTrue()
+        ->and($tasks[2]->is_on_one_server)->toBeTrue()
         ->and($tasks[2]->late_after_minutes)->toBe(5);
 
     pushSchedule($project, $token, defaultSchedule())->assertCreated();
@@ -289,7 +289,7 @@ it('expects no runs of a task limited to another environment', function () {
     ExceptionGroup::query()->create([
         'project_id' => $project->id, 'fingerprint' => str_repeat('a', 64), 'environment' => 'staging', 'class' => 'RuntimeException',
         'message' => 'x', 'frames' => [], 'previous' => [], 'context_kind' => 'request', 'context_name' => 'home', 'count' => 1,
-        'first_seen' => Date::now(), 'last_seen' => Date::now(), 'status' => 'open',
+        'first_seen_at' => Date::now(), 'last_seen_at' => Date::now(), 'status' => 'open',
     ]);
     $token = app(RotateProjectTokenAction::class)->execute($project);
     pushSchedule($project, $token, $schedule)->assertCreated();
@@ -307,7 +307,7 @@ it('reads the reported environment over the one of the exception groups (core #2
     ExceptionGroup::query()->create([
         'project_id' => $project->id, 'fingerprint' => str_repeat('a', 64), 'environment' => 'staging', 'class' => 'RuntimeException',
         'message' => 'x', 'frames' => [], 'previous' => [], 'context_kind' => 'request', 'context_name' => 'home', 'count' => 1,
-        'first_seen' => Date::now(), 'last_seen' => Date::now(), 'status' => 'open',
+        'first_seen_at' => Date::now(), 'last_seen_at' => Date::now(), 'status' => 'open',
     ]);
     $token = app(RotateProjectTokenAction::class)->execute($project);
     pushSchedule($project, $token, $schedule, environment: 'production')->assertCreated();

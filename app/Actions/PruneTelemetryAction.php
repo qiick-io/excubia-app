@@ -39,7 +39,7 @@ class PruneTelemetryAction
         RuntimeHourlyRollup::query()->where('bucket', '<', Date::now()->subDays($runtimeDays))->delete();
         ScheduledTaskRun::query()->where('bucket', '<', Date::now()->subDays($runtimeDays))->delete();
         ExceptionOccurrence::query()->where('bucket', '<', Date::now()->subDays($exceptionDays))->delete();
-        $exceptions = ExceptionGroup::query()->where('last_seen', '<', Date::now()->subDays($exceptionDays))->delete();
+        $exceptions = ExceptionGroup::query()->where('last_seen_at', '<', Date::now()->subDays($exceptionDays))->delete();
         PushedBatch::query()->where('received_at', '<', Date::now()->subDays(max($runtimeDays, $exceptionDays)))->delete();
         AlertLog::query()->where('created_at', '<', Date::now()->subDays(max($runtimeDays, $exceptionDays)))->delete();
         AlertMute::query()->where('until', '<=', Date::now())->delete();

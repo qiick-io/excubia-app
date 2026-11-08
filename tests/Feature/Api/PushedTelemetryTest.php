@@ -154,8 +154,8 @@ it('stores exception groups by fingerprint and environment, additive across batc
 
     $production = $project->exceptionGroups()->where('environment', 'production')->sole();
     expect($production->count)->toBe(5)
-        ->and($production->first_seen->toIso8601ZuluString())->toBe('2026-11-05T10:00:00Z')
-        ->and($production->last_seen->toIso8601ZuluString())->toBe('2026-11-05T11:50:00Z')
+        ->and($production->first_seen_at->toIso8601ZuluString())->toBe('2026-11-05T10:00:00Z')
+        ->and($production->last_seen_at->toIso8601ZuluString())->toBe('2026-11-05T11:50:00Z')
         ->and($production->context_kind)->toBe('job')
         ->and($production->message)->toBe('SQLSTATE[23505]: duplicate key value for [email]')
         ->and($production->frames[0]['file'])->toBe('app/Actions/CreateUserAction.php')

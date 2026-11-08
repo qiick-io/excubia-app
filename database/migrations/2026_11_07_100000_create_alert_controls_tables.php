@@ -32,6 +32,7 @@ return new class extends Migration
             $table->timestamps();
 
             $table->index(['project_id', 'event']);
+            $table->index('user_id');
         });
 
         Schema::create('maintenance_windows', function (Blueprint $table): void {
@@ -39,13 +40,16 @@ return new class extends Migration
             $table->foreignId('project_id')->constrained()->cascadeOnDelete();
             $table->string('name', 100);
             $table->string('recurrence', 16);
-            $table->timestamp('starts_at')->nullable();
-            $table->timestamp('ends_at')->nullable();
+            // Typed by a user, so possibly past 2038: dateTime, not MySQL's TIMESTAMP range.
+            $table->dateTime('starts_at')->nullable();
+            $table->dateTime('ends_at')->nullable();
             $table->json('weekdays')->nullable();
             $table->string('start_time', 5)->nullable();
             $table->unsignedInteger('duration_minutes')->nullable();
             $table->string('timezone', 64);
             $table->timestamps();
+
+            $table->index('project_id');
         });
 
         Schema::create('alert_logs', function (Blueprint $table): void {
@@ -66,6 +70,8 @@ return new class extends Migration
 
             $table->index(['project_id', 'created_at']);
             $table->index(['project_id', 'event', 'subject', 'created_at']);
+            // The retention prune and the System page's failed deliveries of the last day.
+            $table->index('created_at');
         });
     }
 

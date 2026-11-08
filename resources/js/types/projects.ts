@@ -590,8 +590,8 @@ export type ExceptionGroupRow = {
     previous: string[];
     context: { kind: 'request' | 'job' | 'command' | 'unknown'; name: string };
     count: number;
-    first_seen: string;
-    last_seen: string;
+    first_seen_at: string;
+    last_seen_at: string;
     /** Releases of the first and latest occurrence; null when the core sent none (#106). */
     first_release: string | null;
     last_release: string | null;
@@ -625,9 +625,9 @@ export type ScheduledTaskRow = {
     expression: string;
     timezone: string;
     environments: string[];
-    without_overlapping: boolean;
-    on_one_server: boolean;
-    runs_in_maintenance_mode: boolean;
+    is_without_overlapping: boolean;
+    is_on_one_server: boolean;
+    can_run_in_maintenance_mode: boolean;
     late_after_minutes: number;
     is_heartbeat: boolean;
     status: ScheduledTaskStatus;

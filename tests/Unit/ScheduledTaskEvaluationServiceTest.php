@@ -28,7 +28,7 @@ function scheduledTask(string $expression, array $attributes = []): ScheduledTas
         'expression' => $expression,
         'timezone' => 'UTC',
         'environments' => [],
-        'runs_in_maintenance_mode' => false,
+        'can_run_in_maintenance_mode' => false,
         'late_after_minutes' => 5,
         ...$attributes,
     ]);
@@ -141,7 +141,7 @@ it('expects no run in another environment, and is low confidence when the enviro
 
 it('pauses in maintenance mode unless the task runs then', function () {
     expect(evaluateTask(scheduledTask('0 * * * *'), '2026-11-05 12:30:00', context: ['isInMaintenanceMode' => true])->status)->toBe(ScheduledTaskStatusEnum::Paused)
-        ->and(evaluateTask(scheduledTask('0 * * * *', ['runs_in_maintenance_mode' => true]), '2026-11-05 12:30:00', context: ['isInMaintenanceMode' => true])->status)->toBe(ScheduledTaskStatusEnum::Late);
+        ->and(evaluateTask(scheduledTask('0 * * * *', ['can_run_in_maintenance_mode' => true]), '2026-11-05 12:30:00', context: ['isInMaintenanceMode' => true])->status)->toBe(ScheduledTaskStatusEnum::Late);
 });
 
 it('marks a missing run low confidence when runs are sampled, never a seen failure', function () {
