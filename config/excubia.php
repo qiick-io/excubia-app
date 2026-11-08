@@ -63,6 +63,11 @@ return [
 
     'exceptions_retention_days' => (int) env('EXCUBIA_EXCEPTIONS_RETENTION_DAYS', 90),
 
+    // Days of exception occurrences kept for the charts and "In range" counts (#214, at least 14,
+    // the longest range; never longer than the exceptions retention). Older than the per-minute
+    // window they are hourly rows; the groups keep their totals for the exceptions retention.
+    'exception_occurrence_days' => (int) env('EXCUBIA_EXCEPTION_OCCURRENCE_DAYS', 14),
+
     // Days of checks with always the same value after which a Laravel Pennant feature counts as a
     // stale flag on the Runtime tab (#189); judged over the runtime retention when that is shorter.
     'pennant_stale_after_days' => (int) env('EXCUBIA_PENNANT_STALE_AFTER_DAYS', 30),
