@@ -216,7 +216,8 @@
             "sidebar": "Seitenleiste",
             "sectionAi": "KI",
             "aiTools": "Werkzeuge",
-            "integrations": "Integrationen"
+            "integrations": "Integrationen",
+            "aiPrices": "Preise"
         },
         "profile": {
             "breadcrumb": "Profileinstellungen",
@@ -479,7 +480,11 @@
                 "push.rejected": "Pushes wurden innerhalb einer Stunde wiederholt wegen eines fehlenden, unbekannten, widerrufenen oder deaktivierten Tokens abgelehnt. Ein geleaktes oder vergessenes Token?",
                 "project.created": "Ein Projekt wurde angelegt.",
                 "project.deleted": "Ein Projekt wurde gelöscht.",
-                "project.disabled": "Ein Projekt wurde deaktiviert."
+                "project.disabled": "Ein Projekt wurde deaktiviert.",
+                "ai.budget_warning": "Die geschätzten KI-Kosten eines Projekts in diesem Monat haben 80 % seines Budgets erreicht (im KI-Tab festgelegt).",
+                "ai.budget_exceeded": "Die geschätzten KI-Kosten eines Projekts in diesem Monat haben sein Budget erreicht.",
+                "ai.spend_spike": "Die geschätzten KI-Kosten von heute liegen über dem Schwellenwert des 7-Tage-Durchschnitts.",
+                "ai.error_rate": "Der Anteil fehlgeschlagener KI-Aufrufe in der letzten Stunde liegt über dem Schwellenwert."
             },
             "runtimeRulesTitle": "Runtime-Alarmregeln",
             "runtimeRulesDescription": "Optionale Alarme aus den Runtime-Daten der Projekte, alle 15 Minuten über die letzte Stunde geprüft. Leer schaltet eine Regel ab.",
@@ -494,7 +499,41 @@
             "emailDescription": "Jede Person, die Projekte sehen darf, schaltet Alarm-E-Mails in ihrem Profil selbst ein, mit eigenem Mindestschweregrad, eigenen Ereignissen und Projekten. Die Mails nutzen die Mail-Einstellungen der App und benötigen einen Queue-Worker.",
             "emailLink": "Profil öffnen",
             "severitiesTitle": "Standard-Schweregrade",
-            "severitiesDescription": "Der Schweregrad jedes Ereignisses, das ihn nicht von einem Befund übernimmt. Der Mindestschweregrad jedes Kanals und Abos wird damit verglichen."
+            "severitiesDescription": "Der Schweregrad jedes Ereignisses, das ihn nicht von einem Befund übernimmt. Der Mindestschweregrad jedes Kanals und Abos wird damit verglichen.",
+            "aiRulesTitle": "Alarmregeln für KI-Nutzung",
+            "aiRulesDescription": "Optionale Alarme aus der KI-Nutzung, die die Projekte senden (Laravel AI SDK), mit Kosten geschätzt aus Einstellungen → KI-Preise. Monatsbudgets werden pro Projekt in seinem KI-Tab festgelegt. Leer schaltet eine Regel aus.",
+            "aiSpendSpike": "KI-Kosten heute über (% des 7-Tage-Durchschnitts)",
+            "aiSpendSpikeHint": "Einmal am Tag alarmieren, wenn die geschätzten KI-Kosten eines Projekts heute diesen Anteil seines Durchschnittstags der 7 Tage davor erreichen, ab 1 $. 300 bedeutet das Dreifache.",
+            "aiErrorRate": "KI-Fehlerrate über (%)",
+            "aiErrorRateHint": "Alarmieren, wenn mehr als dieser Anteil der KI-Aufrufe der letzten Stunde fehlschlug, bei mindestens 20 Aufrufen."
+        },
+        "aiPrices": {
+            "breadcrumb": "KI-Preise",
+            "head": "KI-Preise",
+            "title": "KI-Preise",
+            "description": "Preise pro Anbieter und Modell, die die KI-Nutzung deiner Projekte in geschätzte Kosten umrechnen. Der Anbieter ist der Name in der config/ai.php des Projekts. Ein Modellname mit Datum (gpt-4o-2024-08-06) nutzt die Zeile seines Modells (gpt-4o). Modelle ohne Zeile zeigen Tokens ohne Kosten.",
+            "estimates": "Das sind Schätzungen, nicht deine Rechnung: prüfe sie bei deinem Anbieter. Tabelle vom {{date}}; die Standardwerte wurden zuletzt am {{defaultsDate}} geprüft.",
+            "add": "Modell hinzufügen",
+            "restore": "Standardwerte wiederherstellen",
+            "provider": "Anbieter",
+            "model": "Modell",
+            "providerOf": "Anbieter der Zeile {{row}}",
+            "modelOf": "Modell der Zeile {{row}}",
+            "priceOf": "{{field}} für {{model}}",
+            "remove": "Entfernen",
+            "removeRow": "{{model}} entfernen",
+            "units": "USD. Tokens pro 1 Mio.; Audio pro Sekunde; Sucheinheiten pro Einheit. Ohne Cache-Preis gilt der Input-Preis; ohne Reasoning-Preis zählt Reasoning zum Output (wie OpenAI und Anthropic es melden).",
+            "fields": {
+                "input": "Input",
+                "cache_read": "Cache lesen",
+                "cache_write": "Cache schreiben",
+                "output": "Output",
+                "reasoning": "Reasoning",
+                "image_input": "Bild ein",
+                "image_output": "Bild aus",
+                "audio_second": "Audio / s",
+                "search_unit": "Sucheinheit"
+            }
         }
     },
     "activityLog": {
@@ -740,7 +779,8 @@
             "exceptions": "Exceptions",
             "schedule": "Zeitplan",
             "alerts": "Alarme",
-            "licenses": "Lizenzen"
+            "licenses": "Lizenzen",
+            "ai": "KI"
         },
         "support": {
             "supported": "Unterstützt",
@@ -1148,7 +1188,57 @@
     "ai": {
         "fabDescription": "Schnelle Assistenten-Schublade. Öffnen Sie die Vollseite für den Verlauf.",
         "fabTitle": "Neuer Chat",
-        "openFullPage": "Ganze Seite öffnen"
+        "openFullPage": "Ganze Seite öffnen",
+        "emptyTitle": "Noch keine KI-Nutzung",
+        "emptyDescription": "Projekte mit laravel/ai und excubia-core 1.0.0-beta.4 oder neuer senden ihre KI-Aufrufe, wenn runtime.ai.enabled (und runtime.aiTools.enabled für Tool-Aufrufe) in excubia.json aktiv ist.",
+        "privacy": "Excubia erhält nie Prompts, Anweisungen, Anhänge, Antworten, Reasoning, Tool-Argumente oder -Ergebnisse: nur Anzahlen, Token-Nutzung, Dauern und Namen von Agents, Tools, Anbietern und Modellen.",
+        "spend": "Geschätzte Kosten",
+        "estimate": "Schätzung aus der Preistabelle",
+        "calls": "Aufrufe",
+        "errors": "Fehler",
+        "failures": "Fehlschläge",
+        "errorRate": "{{rate}}% fehlgeschlagen",
+        "failovers": "Failover",
+        "failoversHint": "Fehlgeschlagene Versuche, die zum nächsten Anbieter wechselten",
+        "p95": "p95-Latenz",
+        "allCalls": "Alle Aufrufe",
+        "slowest": "Langsamster",
+        "spendOverTime": "Kosten im Zeitverlauf",
+        "spendOverTimeDescription": "Geschätzte Kosten pro {{bucket}} {{during}}.",
+        "chartLabel": "Balkendiagramm: geschätzte KI-Kosten pro {{bucket}} {{during}}, insgesamt {{cost}}.",
+        "month": "Dieser Monat",
+        "monthDescription": "Geschätzte Kosten seit dem 1. (UTC) gegenüber dem Monatsbudget, das bei 80 % und 100 % alarmiert.",
+        "noBudget": "Kein Budget",
+        "ofBudget": "von {{budget}}",
+        "budgetUsed": "{{percent}}% des Budgets verbraucht",
+        "budget": "Monatsbudget (USD)",
+        "budgetHint": "Leer schaltet die Budget-Alarme aus.",
+        "tokens": "Tokens",
+        "tokensDescription": "Input ohne den gecachten Teil, Cache-Lese- und Schreibzugriffe, Output und Reasoning.",
+        "inputTokens": "Input",
+        "cachedTokens": "Gecacht",
+        "cacheReadTokens": "Cache lesen",
+        "cacheWriteTokens": "Cache schreiben",
+        "outputTokens": "Output",
+        "reasoningTokens": "Reasoning",
+        "cost": "Kosten",
+        "noPrice": "Kein Preis",
+        "unpricedHint": "Einige Modelle haben keinen Preis, ihre Kosten sind nicht mitgezählt.",
+        "byModel": "Nach Modell",
+        "byProvider": "Nach Anbieter",
+        "byAgent": "Nach Agent",
+        "pricesNote": "Geschätzt mit der Preistabelle vom {{date}}.",
+        "pricesLink": "KI-Preise bearbeiten",
+        "tools": "Tool-Aufrufe",
+        "toolsDescription": "Aufrufe pro Agent-Tool und ihre Fehlschläge, im Tool-Handler gemessen.",
+        "operation": {
+            "agent": "Agent",
+            "image": "Bilder",
+            "embeddings": "Embeddings",
+            "transcription": "Transkription",
+            "reranking": "Reranking",
+            "audio": "Sprachausgabe"
+        }
     },
     "files": {
         "card": {

@@ -17,7 +17,7 @@ use Illuminate\Validation\Rule;
 /**
  * Settings → Integrations (#22), as externa-core's: the signed outbound webhook and the Slack /
  * Telegram notifiers with their own filters (`channels.<channel>`), the default severity per
- * event (`event_severities`) and the optional runtime alert rules (#114). Empty secrets keep the
+ * event (`event_severities`), the optional runtime alert rules (#114) and AI usage rules (#129). Empty secrets keep the
  * stored ones. Needs `can-manage-alerts`.
  */
 class UpdateProjectIntegrationsSettingsRequest extends FormRequest
@@ -58,6 +58,9 @@ class UpdateProjectIntegrationsSettingsRequest extends FormRequest
             'alert_cache_hit_ratio_below' => ['nullable', 'integer', 'min:1', 'max:100'],
             'alert_delivery_failures_enabled' => ['sometimes', 'boolean'],
             'alert_log_spike_per_hour' => ['nullable', 'integer', 'min:1', 'max:1000000'],
+            // AI usage rules (#129); empty turns a rule off.
+            'alert_ai_spend_spike_percent' => ['nullable', 'integer', 'min:101', 'max:100000'],
+            'alert_ai_error_rate_above' => ['nullable', 'integer', 'min:1', 'max:99'],
         ];
     }
 
@@ -92,6 +95,8 @@ class UpdateProjectIntegrationsSettingsRequest extends FormRequest
             'alert_cache_hit_ratio_below' => $this->filled('alert_cache_hit_ratio_below') ? $this->integer('alert_cache_hit_ratio_below') : null,
             'alert_delivery_failures_enabled' => $this->boolean('alert_delivery_failures_enabled'),
             'alert_log_spike_per_hour' => $this->filled('alert_log_spike_per_hour') ? $this->integer('alert_log_spike_per_hour') : null,
+            'alert_ai_spend_spike_percent' => $this->filled('alert_ai_spend_spike_percent') ? $this->integer('alert_ai_spend_spike_percent') : null,
+            'alert_ai_error_rate_above' => $this->filled('alert_ai_error_rate_above') ? $this->integer('alert_ai_error_rate_above') : null,
         ];
     }
 }

@@ -47,7 +47,15 @@ class ProjectRuntimeService
      * The summed and maxed metrics of RuntimeTypeEnum::metrics(), server gauges aside (they are
      * readings, see servers()), read in SQL. A test keeps the two lists in step.
      */
-    public const SQL_METRICS = ['totalMb' => 'sum', 'maxMb' => 'max', 'hits' => 'sum', 'misses' => 'sum', 'writes' => 'sum', 'deletes' => 'sum', 'totalRepeats' => 'sum', 'maxRepeats' => 'max'];
+    public const SQL_METRICS = [
+        'totalMb' => 'sum', 'maxMb' => 'max', 'hits' => 'sum', 'misses' => 'sum', 'writes' => 'sum', 'deletes' => 'sum', 'totalRepeats' => 'sum', 'maxRepeats' => 'max',
+        // `ai` (#129), read only by AiUsageService.
+        'failoverCount' => 'sum', 'inputTokens' => 'sum', 'outputTokens' => 'sum', 'cacheReadInputTokens' => 'sum', 'cacheWriteInputTokens' => 'sum',
+        'reasoningTokens' => 'sum', 'imageInputTokens' => 'sum', 'imageOutputTokens' => 'sum', 'audioSeconds' => 'sum', 'searchUnits' => 'sum',
+    ];
+
+    /** The types of the Runtime tab; the AI usage types (#129) have their own tab (AiUsageService). */
+    private const AI_TYPES = [RuntimeTypeEnum::Ai, RuntimeTypeEnum::AiTool];
 
     /** The levels the error-log chart counts. */
     private const ERROR_LOG_LEVELS = ['emergency', 'alert', 'critical', 'error'];
@@ -65,7 +73,7 @@ class ProjectRuntimeService
 
         $now = CarbonImmutable::instance(Date::now());
         $from = $range->start($now);
-        $series = $this->series($project, $from);
+        $series = $this->series($project, $from, array_values(array_filter(RuntimeTypeEnum::cases(), fn (RuntimeTypeEnum $type): bool => ! in_array($type, self::AI_TYPES, true))));
         $byType = $series->groupBy('type');
         $of = fn (RuntimeTypeEnum $type): Collection => $byType->get($type->value, collect());
         $requests = $of(RuntimeTypeEnum::Request);
@@ -126,24 +134,27 @@ class ProjectRuntimeService
     }
 
     /**
-     * Every series of the window, summed in SQL: counts, durations, histogram buckets and the
-     * summed or maxed type metrics (server gauges excluded, see servers()). A JSON number is cast
-     * to decimal so MySQL and PostgreSQL add it like SQLite does. A series' histogram sums only
-     * the minutes that have one, and is null when none has.
+     * Every series of the given types in the window, summed in SQL: counts, durations, histogram
+     * buckets and the summed or maxed metrics of those types (server gauges excluded, see
+     * servers()). A JSON number is cast to decimal so MySQL and PostgreSQL add it like SQLite
+     * does. A series' histogram sums only the minutes that have one, and is null when none has.
+     * Metrics of other types are null.
      *
+     * @param  list<RuntimeTypeEnum>  $types
      * @return Collection<int, Series>
      */
-    private function series(Project $project, CarbonImmutable $from): Collection
+    public function series(Project $project, CarbonImmutable $from, array $types): Collection
     {
-        $query = $this->window($project, null, $from);
+        $query = $this->window($project, null, $from)->whereIn('type', array_map(fn (RuntimeTypeEnum $type): string => $type->value, $types));
         $driver = (new RuntimeAggregate)->getConnection()->getDriverName();
+        $metrics = array_intersect_key(self::SQL_METRICS, array_merge(...array_map(fn (RuntimeTypeEnum $type): array => $type->metrics(), $types)));
         $selects = ['min(id) as id', 'sum(count) as count', 'sum(error_count) as error_count', 'sum(total_ms) as total_ms', 'max(max_ms) as max_ms', 'max(bucket) as last_at', 'count(histogram) as histogram_rows'];
 
         foreach (self::HISTOGRAM_INDEXES as $i) {
             $selects[] = 'sum('.$this->jsonNumber($driver, 'histogram', $i).') as histogram_'.$i;
         }
 
-        foreach (self::SQL_METRICS as $metric => $merge) {
+        foreach ($metrics as $metric => $merge) {
             $selects[] = $merge.'('.$this->jsonNumber($driver, 'metrics', $metric).') as metric_'.$metric;
         }
 
@@ -189,7 +200,7 @@ class ProjectRuntimeService
         $metrics = [];
 
         foreach (array_keys(self::SQL_METRICS) as $metric) {
-            $value = $values['metric_'.strtolower($metric)];
+            $value = $values['metric_'.strtolower($metric)] ?? null;
             $metrics[$metric] = $value === null ? null : (float) $value;
         }
 
@@ -215,7 +226,7 @@ class ProjectRuntimeService
      * @param  key-of<self::SQL_METRICS>|value-of<self::HISTOGRAM_INDEXES>  $key  a metric name or a histogram index
      * @return literal-string
      */
-    private function jsonNumber(string $driver, string $column, string|int $key): string
+    public function jsonNumber(string $driver, string $column, string|int $key): string
     {
         $value = match ($driver) {
             'mysql', 'mariadb' => is_int($key) ? "json_unquote(json_extract({$column}, '$[{$key}]'))" : "json_unquote(json_extract({$column}, '$.\"{$key}\"'))",
@@ -254,7 +265,7 @@ class ProjectRuntimeService
      * @param  Collection<int, Series>  $series
      * @return array{p50: float|null, p95: float|null, p99: float|null}
      */
-    private function percentiles(Collection $series): array
+    public function percentiles(Collection $series): array
     {
         $withHistogram = $series->filter(fn (array $one): bool => $one['histogram'] !== null);
         $buckets = array_fill(0, RuntimeTypeEnum::HISTOGRAM_LENGTH, 0.0);
@@ -343,7 +354,7 @@ class ProjectRuntimeService
      * @param  list<string>  $dimensions
      * @return list<array<string, mixed>>
      */
-    private function timedTable(Collection $series, array $dimensions): array
+    public function timedTable(Collection $series, array $dimensions): array
     {
         return $this->table($series, $dimensions, fn (Collection $group): array => [
             ...$this->totals($group),

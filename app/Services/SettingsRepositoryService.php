@@ -116,6 +116,12 @@ class SettingsRepositoryService
             'alert_cache_hit_ratio_below' => null,
             'alert_delivery_failures_enabled' => false,
             'alert_log_spike_per_hour' => null,
+            // AI usage alert rules (#129): null is off.
+            'alert_ai_spend_spike_percent' => null,
+            'alert_ai_error_rate_above' => null,
+            // AI price table (#129): null uses AiPriceService::defaults().
+            'ai_prices' => null,
+            'ai_prices_updated_on' => null,
             'webhook_last_success' => null,
             'webhook_last_error' => null,
         ];
@@ -512,6 +518,21 @@ class SettingsRepositoryService
     public function alertLogSpikePerHour(): ?int
     {
         return $this->positiveInteger('alert_log_spike_per_hour');
+    }
+
+    /**
+     * Today's estimated AI spend of a project, as a percentage of its average day of the 7 days
+     * before, from which it alerts (#129); null when off.
+     */
+    public function alertAiSpendSpikePercent(): ?int
+    {
+        return $this->positiveInteger('alert_ai_spend_spike_percent');
+    }
+
+    /** AI error rate (percent of calls in the last hour) above which a project alerts (#129); null when off. */
+    public function alertAiErrorRateAbove(): ?int
+    {
+        return $this->positiveInteger('alert_ai_error_rate_above');
     }
 
     private function positiveInteger(string $key): ?int

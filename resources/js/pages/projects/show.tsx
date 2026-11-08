@@ -24,6 +24,7 @@ import { PageEmptyState } from '@/components/admin/page-empty-state';
 import { EmptyStatus } from '@/components/empty-status';
 import { DataTableToolbar } from '@/components/admin/data-table-toolbar';
 import { PageLayout, TablePanel } from '@/components/layout/page-layout';
+import { AiUsageView } from '@/components/reports/ai-usage-view';
 import { AlertsView } from '@/components/reports/alerts-view';
 import {
     CHECK_CATEGORIES,
@@ -107,6 +108,7 @@ import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
 import projectsRoutes from '@/routes/projects';
 import type {
+    AiUsageSummary,
     BreadcrumbItem,
     CheckCategory,
     ExceptionGroupRow,
@@ -132,6 +134,7 @@ const VIEWS = [
     'findings',
     'licenses',
     'runtime',
+    'ai',
     'exceptions',
     'schedule',
     'alerts',
@@ -160,6 +163,7 @@ export default function ProjectShow({
     liveHealth = [],
     range = DEFAULT_TIME_RANGE,
     runtime = null,
+    ai = null,
     exceptions = [],
     hasExceptions = false,
     schedule = [],
@@ -176,6 +180,8 @@ export default function ProjectShow({
     alerts?: ProjectAlerts | null;
     canManageAlerts?: boolean;
     runtime?: RuntimeSummary | null;
+    /** AI usage and estimated cost (#129), on the AI tab only. */
+    ai?: AiUsageSummary | null;
     exceptions?: ExceptionGroupRow[];
     hasExceptions?: boolean;
     /** Scheduled tasks and their status (#110), on the Schedule tab only. */
@@ -279,10 +285,11 @@ export default function ProjectShow({
                 <PageLayout
                     scrollContent
                     filtersRight={
-                        view === 'runtime' && runtime !== null ? (
+                        (view === 'runtime' && runtime !== null) ||
+                        (view === 'ai' && ai !== null) ? (
                             <TimeRangePicker
                                 slug={project.slug}
-                                view="runtime"
+                                view={view}
                                 range={range}
                             />
                         ) : undefined
@@ -292,6 +299,12 @@ export default function ProjectShow({
                         <HistoryView reports={reports} />
                     ) : view === 'runtime' ? (
                         <RuntimeView runtime={runtime} />
+                    ) : view === 'ai' ? (
+                        <AiUsageView
+                            projectId={project.id}
+                            ai={ai}
+                            canManage={canManageAlerts}
+                        />
                     ) : report === null || latest === null ? (
                         <PageEmptyState
                             icon={Activity}
@@ -333,6 +346,7 @@ const VIEW_ICONS = {
     findings: ListChecks,
     licenses: Scale,
     runtime: Gauge,
+    ai: Sparkles,
     exceptions: Bug,
     schedule: CalendarClock,
     alerts: Bell,

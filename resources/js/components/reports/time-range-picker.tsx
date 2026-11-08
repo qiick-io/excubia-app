@@ -12,7 +12,7 @@ export const TIME_RANGES: TimeRange[] = ['1h', '6h', '24h', '7d', '14d'];
 export const DEFAULT_TIME_RANGE: TimeRange = '24h';
 
 /**
- * The time range of the runtime, exceptions and schedule tabs (#113) as a segmented control,
+ * The time range of the runtime, AI, exceptions and schedule tabs (#113, #129) as a segmented control,
  * like the dashboard period. A change reloads the tab with `?range=` (left out for the default),
  * so the range survives reloads, links and back.
  */
@@ -22,7 +22,7 @@ export function TimeRangePicker({
     range,
 }: {
     slug: string;
-    view: 'runtime' | 'exceptions' | 'schedule';
+    view: 'runtime' | 'ai' | 'exceptions' | 'schedule';
     range: TimeRange;
 }) {
     const { t } = useTranslation();

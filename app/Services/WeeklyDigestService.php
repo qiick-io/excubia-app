@@ -13,6 +13,7 @@ use App\Models\HealthReport;
 use App\Models\Project;
 use App\Models\ScheduledTask;
 use App\Models\User;
+use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\Date;
 
@@ -21,7 +22,11 @@ use Illuminate\Support\Facades\Date;
  * days: new findings (opened or back this week and still open, not dismissed: the finding
  * lifecycle, #18), regressions (the week's `project.worsened` alerts, which follow the lifecycle), EOL findings of the latest report, the most frequent open
  * exceptions seen this week (class, where and count, never the message) and scheduled tasks
- * with a problem (#110). Projects with nothing to say are left out; null when none has.
+ * with a problem (#110), and the estimated AI spend of the 7 days against the 7 before (#129,
+ * from the daily usage and the price table). Projects with nothing to say are left out; null
+ * when none has.
+ *
+ * @phpstan-type AiCost array{week: float, previousWeek: float, change: int|null, hasUnpriced: bool}
  */
 class WeeklyDigestService
 {
@@ -35,10 +40,11 @@ class WeeklyDigestService
     public function __construct(
         private ReportFindingsService $findings,
         private FindingLifecycleService $lifecycle,
+        private AiPriceService $prices,
     ) {}
 
     /**
-     * @return list<array{name: string, url: string, newFindings: list<array{severity: string, text: string}>, newFindingsCount: int, regressions: list<string>, eol: list<string>, exceptions: list<array{class: string, where: string, count: int}>, schedule: list<array{task: string, status: string}>}>|null
+     * @return list<array{name: string, url: string, newFindings: list<array{severity: string, text: string}>, newFindingsCount: int, regressions: list<string>, eol: list<string>, exceptions: list<array{class: string, where: string, count: int}>, schedule: list<array{task: string, status: string}>, aiCost: AiCost|null}>|null
      */
     public function forUser(User $user, ?CarbonInterface $now = null): ?array
     {
@@ -46,11 +52,12 @@ class WeeklyDigestService
             return null;
         }
 
-        $since = ($now ?? Date::now())->copy()->subDays(7);
+        $now = ($now ?? Date::now())->copy();
+        $since = $now->copy()->subDays(7);
         $projects = [];
 
         foreach (Project::query()->visibleTo($user)->where('is_enabled', true)->orderBy('name')->get() as $project) {
-            $digest = $this->forProject($project, $since);
+            $digest = $this->forProject($project, $since, $now);
 
             if ($digest !== null) {
                 $projects[] = $digest;
@@ -61,9 +68,9 @@ class WeeklyDigestService
     }
 
     /**
-     * @return array{name: string, url: string, newFindings: list<array{severity: string, text: string}>, newFindingsCount: int, regressions: list<string>, eol: list<string>, exceptions: list<array{class: string, where: string, count: int}>, schedule: list<array{task: string, status: string}>}|null
+     * @return array{name: string, url: string, newFindings: list<array{severity: string, text: string}>, newFindingsCount: int, regressions: list<string>, eol: list<string>, exceptions: list<array{class: string, where: string, count: int}>, schedule: list<array{task: string, status: string}>, aiCost: AiCost|null}|null
      */
-    private function forProject(Project $project, CarbonInterface $since): ?array
+    private function forProject(Project $project, CarbonInterface $since, CarbonInterface $now): ?array
     {
         $latest = $this->latestReport($project, null);
         // The first report of a project brings everything at once: as alerts, it is no news.
@@ -108,11 +115,37 @@ class WeeklyDigestService
                 ->get()
                 ->map(fn (ScheduledTask $task): array => ['task' => $task->task, 'status' => $task->status->value])
                 ->all()),
+            'aiCost' => $this->aiCost($project, $now),
         ];
 
-        $hasContent = $digest['newFindingsCount'] > 0 || $digest['regressions'] !== [] || $digest['eol'] !== [] || $digest['exceptions'] !== [] || $digest['schedule'] !== [];
+        $hasContent = $digest['newFindingsCount'] > 0 || $digest['regressions'] !== [] || $digest['eol'] !== [] || $digest['exceptions'] !== [] || $digest['schedule'] !== [] || $digest['aiCost'] !== null;
 
         return $hasContent ? $digest : null;
+    }
+
+    /**
+     * The estimated AI spend of the 7 whole days before today and of the 7 before those (UTC);
+     * null when the project made no AI call in either. `change` is the percent change.
+     *
+     * @return AiCost|null
+     */
+    private function aiCost(Project $project, CarbonInterface $now): ?array
+    {
+        $today = CarbonImmutable::instance($now)->utc()->startOfDay();
+        $week = $this->prices->costOfDays($project, $today->subDays(7), $today->subDay());
+        $previous = $this->prices->costOfDays($project, $today->subDays(14), $today->subDays(8));
+
+        if ($week['calls'] <= 0 && $previous['calls'] <= 0) {
+            return null;
+        }
+
+        return [
+            'week' => round($week['cost'], 2),
+            'previousWeek' => round($previous['cost'], 2),
+            // Percent change against the week before; null without spend that week.
+            'change' => $previous['cost'] > 0 ? (int) round(($week['cost'] - $previous['cost']) * 100 / $previous['cost']) : null,
+            'hasUnpriced' => $week['hasUnpriced'] || $previous['hasUnpriced'],
+        ];
     }
 
     /**

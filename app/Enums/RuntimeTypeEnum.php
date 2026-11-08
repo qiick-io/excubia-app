@@ -29,6 +29,9 @@ enum RuntimeTypeEnum: string
     case Server = 'server';
     case Command = 'command';
     case Health = 'health';
+    // Laravel AI SDK operations and agent tool calls (#129, core #198).
+    case Ai = 'ai';
+    case AiTool = 'aiTool';
 
     /** Counts per latency bucket of the optional `histogram` (core `$defs.histogram`). */
     public const HISTOGRAM_LENGTH = 12;
@@ -41,6 +44,12 @@ enum RuntimeTypeEnum: string
 
     /** Fingerprints a health entry keeps after a merge (core `$defs.health`). */
     public const HEALTH_FINGERPRINTS = 20;
+
+    /**
+     * Usage counts of `ai` (#129) as the provider reports them: null when it does not, and a
+     * null-safe sum on merge. `inputTokens` includes the cached input.
+     */
+    public const AI_USAGE = ['inputTokens', 'outputTokens', 'cacheReadInputTokens', 'cacheWriteInputTokens', 'reasoningTokens', 'imageInputTokens', 'imageOutputTokens', 'audioSeconds', 'searchUnits'];
 
     /** Server gauges: readings that keep the larger value on merge (null only when all are null). */
     private const SERVER_GAUGES = ['loadAverage1', 'loadAverage5', 'loadAverage15', 'cpuCores', 'cpuLimit', 'memoryUsedMb', 'memoryTotalMb', 'diskUsedGb', 'diskTotalGb'];
@@ -77,12 +86,15 @@ enum RuntimeTypeEnum: string
             self::Server => ['server'],
             self::Command => ['command', 'exitCodeClass'],
             self::Health => ['server', 'checkId'],
+            self::Ai => ['operation', 'provider', 'model'],
+            self::AiTool => ['agent', 'tool'],
         };
     }
 
     /**
-     * Additive dimensions older cores do not send (`taskId` #146, log `channel` #174). They join
-     * the series identity only when present, so an entry without one is its own series.
+     * Additive dimensions older cores do not send (`taskId` #146, log `channel` #174), and the
+     * `agent` of an `ai` entry, sent only for `operation` = agent (#129). They join the series
+     * identity only when present, so an entry without one is its own series.
      *
      * @return list<string>
      */
@@ -91,6 +103,7 @@ enum RuntimeTypeEnum: string
         return match ($this) {
             self::ScheduledTask => ['taskId'],
             self::LogLevel => ['channel'],
+            self::Ai => ['agent'],
             default => [],
         };
     }
@@ -100,12 +113,13 @@ enum RuntimeTypeEnum: string
      */
     public function isTimed(): bool
     {
-        return in_array($this, [self::Request, self::SlowQuery, self::Job, self::ScheduledTask, self::OutgoingHttp, self::QueueWait, self::Command], true);
+        return in_array($this, [self::Request, self::SlowQuery, self::Job, self::ScheduledTask, self::OutgoingHttp, self::QueueWait, self::Command, self::Ai, self::AiTool], true);
     }
 
     /**
      * Type-specific metrics beyond count, errorCount, totalMs and maxMs, with how two entries of
-     * the same series merge: `sum` adds up, `max` keeps the larger value (null only when both are
+     * the same series merge: `sum` adds up (null only when both are null, so the `ai` usage
+     * counts stay null when no entry reported them), `max` keeps the larger value (null only when both are
      * null), `or` is true when either is true (missing counts as false); for health (#115)
      * `status` keeps the worst of HEALTH_STATUSES, `severity` the most serious and `union` the
      * sorted union of both lists, cut to HEALTH_FINGERPRINTS.
@@ -120,6 +134,7 @@ enum RuntimeTypeEnum: string
             self::DuplicateQuery => ['totalRepeats' => 'sum', 'maxRepeats' => 'max'],
             self::Server => [...array_fill_keys(self::SERVER_GAUGES, 'max'), 'isContainer' => 'or'],
             self::Health => ['status' => 'status', 'severity' => 'severity', 'findingCount' => 'max', 'fingerprints' => 'union'],
+            self::Ai => ['failoverCount' => 'sum', ...array_fill_keys(self::AI_USAGE, 'sum')],
             default => [],
         };
     }

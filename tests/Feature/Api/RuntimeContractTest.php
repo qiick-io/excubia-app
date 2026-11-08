@@ -16,7 +16,7 @@ use Illuminate\Support\Str;
  * stored; a type the app does not know is skipped and counted, never rejected.
  *
  * `tests/Fixtures/core/runtime-schema.json` is a copy of excubia-core `develop` at
- * f92f50b490ed381d2fa5431ae5c169a621c64b1c (2026-11-07). Refresh it when core adds a type.
+ * 9fd10fea1546e8d09ea6a623153583d7dc73f458 (2026-11-07, core #200: `ai` and `aiTool`). Refresh it when core adds a type.
  * The app has no JSON Schema validator, so coreSchemaErrors() (tests/Pest.php) checks the keywords
  * the runtime schema uses (required, additionalProperties, const, enum, type, pattern, min/max, lengths).
  */
@@ -62,6 +62,12 @@ function coreRuntimeAggregates(): array
         'server' => ['type' => 'server', ...$base, ...$quiet, 'count' => 1, 'server' => 'a1b2c3d4e5f6', 'loadAverage1' => 0.52, 'loadAverage5' => 0.4, 'loadAverage15' => 0.3, 'cpuCores' => 8, 'cpuLimit' => 1.5, 'memoryUsedMb' => 900, 'memoryTotalMb' => 2048, 'diskUsedGb' => 20.5, 'diskTotalGb' => 80, 'isContainer' => true],
         'command' => ['type' => 'command', ...$base, 'command' => 'migrate', 'exitCodeClass' => 'other', ...$timed],
         'health' => ['type' => 'health', ...$base, 'count' => 1, 'server' => 'web-1', 'checkId' => 'laravel-database', 'status' => 'fail', 'severity' => 'critical', 'findingCount' => 1, 'fingerprints' => [str_repeat('c', 64)]],
+        'ai' => [
+            'type' => 'ai', ...$base, 'operation' => 'agent', 'agent' => 'App\\Ai\\SupportAgent', 'provider' => 'anthropic', 'model' => 'claude-sonnet-4-5-20250929',
+            'failoverCount' => 1, ...$timed, 'inputTokens' => 12000, 'outputTokens' => 800, 'cacheReadInputTokens' => 9000, 'cacheWriteInputTokens' => 1000,
+            'reasoningTokens' => null, 'imageInputTokens' => null, 'imageOutputTokens' => null, 'audioSeconds' => null, 'searchUnits' => null,
+        ],
+        'aiTool' => ['type' => 'aiTool', ...$base, 'agent' => 'App\\Ai\\SupportAgent', 'tool' => 'App\\Ai\\Tools\\LookupOrderTool', ...$timed],
     ];
 }
 
@@ -230,4 +236,8 @@ it('still rejects a known type that breaks its own contract', function (string $
     'short histogram' => ['queueWait', 'histogram', [1, 2, 1]],
     'server gauge as text' => ['server', 'loadAverage1', 'high'],
     'container flag as text' => ['server', 'isContainer', 'maybe'],
+    'unknown AI operation' => ['ai', 'operation', 'chat'],
+    'AI tokens as text' => ['ai', 'inputTokens', 'many'],
+    'AI without failovers' => ['ai', 'failoverCount', null],
+    'AI tool without a tool' => ['aiTool', 'tool', null],
 ]);

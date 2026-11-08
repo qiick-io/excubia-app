@@ -5,22 +5,26 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use App\Models\Project;
+use App\Services\AiAlertsService;
 use App\Services\RuntimeAlertsService;
 use Illuminate\Console\Command;
 
 /**
- * Runs the optional runtime alert rules (#107, #114) on every enabled project. Does nothing
- * while no rule is on. Scheduled every fifteen minutes.
+ * Runs the optional runtime alert rules (#107, #114) and the AI usage rules (#129) on every
+ * enabled project. Does nothing while no rule is on. Scheduled every fifteen minutes.
  */
 class EvaluateRuntimeAlertsCommand extends Command
 {
     protected $signature = 'excubia:evaluate-runtime-alerts';
 
-    protected $description = 'Alert on low cache hit ratios, failed mails and notifications, and error-log spikes';
+    protected $description = 'Alert on low cache hit ratios, failed mails and notifications, error-log spikes and AI usage';
 
-    public function handle(RuntimeAlertsService $rules): int
+    public function handle(RuntimeAlertsService $rules, AiAlertsService $aiRules): int
     {
-        if (! $rules->hasRules()) {
+        $hasRuntimeRules = $rules->hasRules();
+        $hasAiRules = $aiRules->hasRules();
+
+        if (! $hasRuntimeRules && ! $hasAiRules) {
             $this->components->info('No runtime alert rule is on.');
 
             return self::SUCCESS;
@@ -28,8 +32,8 @@ class EvaluateRuntimeAlertsCommand extends Command
 
         $count = 0;
 
-        Project::query()->where('is_enabled', true)->each(function (Project $project) use ($rules, &$count): void {
-            $count += $rules->evaluate($project);
+        Project::query()->where('is_enabled', true)->each(function (Project $project) use ($rules, $aiRules, $hasRuntimeRules, $hasAiRules, &$count): void {
+            $count += ($hasRuntimeRules ? $rules->evaluate($project) : 0) + ($hasAiRules ? $aiRules->evaluate($project) : 0);
         });
 
         $this->components->info("Raised {$count} runtime alerts.");

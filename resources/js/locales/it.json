@@ -216,7 +216,8 @@
             "sidebar": "Barra laterale",
             "sectionAi": "AI",
             "aiTools": "Strumenti",
-            "integrations": "Integrazioni"
+            "integrations": "Integrazioni",
+            "aiPrices": "Prezzi"
         },
         "profile": {
             "breadcrumb": "Impostazioni profilo",
@@ -479,7 +480,11 @@
                 "push.rejected": "Push rifiutati più volte in un'ora per un token mancante, sconosciuto, revocato o di un progetto disattivato. Un token trapelato o dimenticato?",
                 "project.created": "È stato creato un progetto.",
                 "project.deleted": "È stato eliminato un progetto.",
-                "project.disabled": "È stato disattivato un progetto."
+                "project.disabled": "È stato disattivato un progetto.",
+                "ai.budget_warning": "La spesa AI stimata del mese di un progetto ha raggiunto l'80 % del budget (impostato nella scheda AI).",
+                "ai.budget_exceeded": "La spesa AI stimata del mese di un progetto ha raggiunto il budget.",
+                "ai.spend_spike": "La spesa AI stimata di oggi supera la soglia rispetto alla media di 7 giorni.",
+                "ai.error_rate": "La quota di chiamate AI fallite nell'ultima ora supera la soglia."
             },
             "runtimeRulesTitle": "Regole di avviso runtime",
             "runtimeRulesDescription": "Avvisi opzionali dai dati runtime inviati dai progetti, controllati ogni 15 minuti sull'ultima ora. Vuoto disattiva la regola.",
@@ -494,7 +499,41 @@
             "emailDescription": "Ogni utente che vede i progetti attiva gli avvisi via email per sé nel proprio profilo, con la sua gravità minima, i suoi eventi e i suoi progetti. Le email usano le impostazioni mail dell'app e servono un queue worker.",
             "emailLink": "Apri il tuo profilo",
             "severitiesTitle": "Gravità predefinite",
-            "severitiesDescription": "La gravità di ogni evento che non la prende da un problema. La gravità minima di ogni canale e iscrizione si confronta con questa."
+            "severitiesDescription": "La gravità di ogni evento che non la prende da un problema. La gravità minima di ogni canale e iscrizione si confronta con questa.",
+            "aiRulesTitle": "Regole di avviso sull'uso dell'AI",
+            "aiRulesDescription": "Avvisi facoltativi dall'uso dell'AI inviato dai progetti (Laravel AI SDK), con costi stimati da Impostazioni → Prezzi AI. I budget mensili si impostano per progetto nella sua scheda AI. Vuoto disattiva la regola.",
+            "aiSpendSpike": "Spesa AI di oggi oltre (% della media di 7 giorni)",
+            "aiSpendSpikeHint": "Avvisa una volta al giorno quando la spesa AI stimata di oggi di un progetto raggiunge questa quota della sua giornata media dei 7 giorni precedenti, da 1 $. 300 significa tre volte la media.",
+            "aiErrorRate": "Tasso di errore AI oltre (%)",
+            "aiErrorRateHint": "Avvisa quando è fallita più di questa quota delle chiamate AI dell'ultima ora, con almeno 20 chiamate."
+        },
+        "aiPrices": {
+            "breadcrumb": "Prezzi AI",
+            "head": "Prezzi AI",
+            "title": "Prezzi AI",
+            "description": "Prezzi per provider e modello che trasformano l'uso dell'AI dei progetti in costi stimati. Il provider è il nome nel config/ai.php del progetto. Un modello con data (gpt-4o-2024-08-06) usa la riga del suo modello (gpt-4o). I modelli senza riga mostrano i token senza costo.",
+            "estimates": "Sono stime, non la tua fattura: verificale con il provider. Tabella del {{date}}; i valori predefiniti sono stati verificati il {{defaultsDate}}.",
+            "add": "Aggiungi modello",
+            "restore": "Ripristina predefiniti",
+            "provider": "Provider",
+            "model": "Modello",
+            "providerOf": "Provider della riga {{row}}",
+            "modelOf": "Modello della riga {{row}}",
+            "priceOf": "{{field}} per {{model}}",
+            "remove": "Rimuovi",
+            "removeRow": "Rimuovi {{model}}",
+            "units": "USD. Token per 1M; audio al secondo; unità di ricerca per unità. Senza prezzo di cache vale il prezzo di input; senza prezzo di reasoning il reasoning conta come output (come lo riportano OpenAI e Anthropic).",
+            "fields": {
+                "input": "Input",
+                "cache_read": "Lettura cache",
+                "cache_write": "Scrittura cache",
+                "output": "Output",
+                "reasoning": "Reasoning",
+                "image_input": "Immagini in",
+                "image_output": "Immagini out",
+                "audio_second": "Audio / s",
+                "search_unit": "Unità ricerca"
+            }
         }
     },
     "activityLog": {
@@ -740,7 +779,8 @@
             "exceptions": "Eccezioni",
             "schedule": "Pianificazione",
             "alerts": "Avvisi",
-            "licenses": "Licenze"
+            "licenses": "Licenze",
+            "ai": "AI"
         },
         "support": {
             "supported": "Supportato",
@@ -1148,7 +1188,57 @@
     "ai": {
         "fabDescription": "Drawer rapido dell'assistente. Apri la pagina completa per la cronologia.",
         "fabTitle": "Nuova chat",
-        "openFullPage": "Apri a schermo intero"
+        "openFullPage": "Apri a schermo intero",
+        "emptyTitle": "Nessun uso dell'AI",
+        "emptyDescription": "I progetti con laravel/ai ed excubia-core 1.0.0-beta.4 o successivo inviano le chiamate AI quando runtime.ai.enabled (e runtime.aiTools.enabled per le chiamate ai tool) è attivo in excubia.json.",
+        "privacy": "Excubia non riceve mai prompt, istruzioni, allegati, risposte, reasoning, argomenti o risultati dei tool: solo conteggi, uso dei token, durate e nomi di agent, tool, provider e modelli.",
+        "spend": "Spesa stimata",
+        "estimate": "Stima dalla tabella prezzi",
+        "calls": "Chiamate",
+        "errors": "Errori",
+        "failures": "Fallimenti",
+        "errorRate": "{{rate}}% fallite",
+        "failovers": "Failover",
+        "failoversHint": "Tentativi falliti passati al provider successivo",
+        "p95": "Latenza p95",
+        "allCalls": "Tutte le chiamate",
+        "slowest": "Più lenta",
+        "spendOverTime": "Spesa nel tempo",
+        "spendOverTimeDescription": "Spesa stimata per {{bucket}} {{during}}.",
+        "chartLabel": "Grafico a barre: spesa AI stimata per {{bucket}} {{during}}, {{cost}} in totale.",
+        "month": "Questo mese",
+        "monthDescription": "Spesa stimata dal 1° (UTC) rispetto al budget mensile, che avvisa all'80 % e al 100 %.",
+        "noBudget": "Nessun budget",
+        "ofBudget": "di {{budget}}",
+        "budgetUsed": "{{percent}}% del budget usato",
+        "budget": "Budget mensile (USD)",
+        "budgetHint": "Vuoto disattiva gli avvisi sul budget.",
+        "tokens": "Token",
+        "tokensDescription": "Input senza la parte in cache, letture e scritture di cache, output e reasoning.",
+        "inputTokens": "Input",
+        "cachedTokens": "In cache",
+        "cacheReadTokens": "Lettura cache",
+        "cacheWriteTokens": "Scrittura cache",
+        "outputTokens": "Output",
+        "reasoningTokens": "Reasoning",
+        "cost": "Costo",
+        "noPrice": "Senza prezzo",
+        "unpricedHint": "Alcuni modelli non hanno un prezzo, quindi il loro costo non è conteggiato.",
+        "byModel": "Per modello",
+        "byProvider": "Per provider",
+        "byAgent": "Per agent",
+        "pricesNote": "Stimato con la tabella prezzi del {{date}}.",
+        "pricesLink": "Modifica i prezzi AI",
+        "tools": "Chiamate ai tool",
+        "toolsDescription": "Chiamate per tool degli agent e i loro fallimenti, misurate nell'handler del tool.",
+        "operation": {
+            "agent": "Agent",
+            "image": "Immagini",
+            "embeddings": "Embedding",
+            "transcription": "Trascrizione",
+            "reranking": "Reranking",
+            "audio": "Sintesi vocale"
+        }
     },
     "files": {
         "card": {
