@@ -1,20 +1,23 @@
 import users from '@/routes/users';
-import type { AdminSelectOption, AdminUserRef } from '@/types/admin';
+import type { AdminUserRef } from '@/types/admin';
 import { PaginatedMultiSelect } from './paginated-multi-select';
-import type { PaginatedMultiSelectProps } from './paginated-multi-select';
+import type {
+    PaginatedMultiSelectProps,
+    PickerOption,
+} from './paginated-multi-select';
 
-function userOption(user: AdminUserRef): AdminSelectOption {
+function userOption(user: AdminUserRef): PickerOption {
     return {
         id: user.id,
         label: user.name ? `${user.name} (${user.email})` : user.email,
-        name: user.name,
+        first_name: user.name,
         email: user.email,
     };
 }
 
 export type UserMultiSelectProps = Omit<
     PaginatedMultiSelectProps,
-    'fetchUrl' | 'options' | 'placeholder' | 'showUserDetails'
+    'fetchUrl' | 'placeholder' | 'showUserDetails'
 > & {
     placeholder?: string;
     initialUsers?: AdminUserRef[] | null;
@@ -31,7 +34,7 @@ export function UserMultiSelect({
     initialOptions,
     ...props
 }: UserMultiSelectProps) {
-    const resolvedInitial: AdminSelectOption[] =
+    const resolvedInitial: PickerOption[] =
         initialOptions ?? initialUsers?.map(userOption) ?? [];
 
     return (

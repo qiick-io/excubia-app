@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Actions;
 
 use App\Enums\RuntimeTypeEnum;
+use App\Enums\SeverityEnum;
 use App\Models\Project;
 use App\Models\PushedBatch;
 use App\Models\RuntimeAggregate;
@@ -20,36 +21,64 @@ use Illuminate\Support\Facades\DB;
  * `isContainer` is true when any entry is, and histograms add up element by element (none when
  * only one side has one), also across batches. Entries of a type this app does not know are
  * skipped and counted on the project (`skipped_runtime_aggregates`), so a newer core never loses
- * the rest of its batch. A repeated `batchId` stores nothing and returns false.
+ * the rest of its batch; so are `health` samples with a `status` or `severity` the app does not
+ * know, which it cannot rank (#169). Other enumerated values this app does not know (an `ai`
+ * `operation`, a log `level`, an `outcome`…) are stored as any other dimension. A repeated `batchId` stores nothing and returns false. The same
+ * transaction adds the entries to their hourly rollups (#137), which the dashboard totals read,
+ * and the `ai` entries to the daily AI usage (#129).
+ * After a new batch with `health` samples (#115) the health alerts are evaluated.
  *
  * ponytail: one read and one write per aggregate inside the transaction; batch the upserts if
  * large fleets push thousands of series a minute.
  */
 class StorePushedRuntimeAction
 {
+    public function __construct(
+        private StoreScheduledTaskRunsAction $scheduledTaskRuns,
+        private StoreRuntimeRollupsAction $rollups,
+        private EvaluateHealthAlertsAction $healthAlerts,
+        private StoreAiUsageDaysAction $aiUsageDays,
+    ) {}
+
     /**
      * @param  list<array<string, mixed>>  $aggregates  validated by StorePushedRuntimeRequest
      * @param  string|null  $release  the batch's `runtime.release`, an extra dimension
+     * @param  string|null  $environment  the batch's `runtime.environment` (core #203): kept on the project when it matches `Project::ENVIRONMENT_PATTERN`, dropped otherwise
      * @return bool true when the batch was new
      */
-    public function execute(Project $project, string $batchId, array $aggregates, ?string $release = null): bool
+    public function execute(Project $project, string $batchId, array $aggregates, ?string $release = null, ?string $environment = null): bool
     {
         try {
-            return DB::transaction(function () use ($project, $batchId, $aggregates, $release): bool {
+            $isNew = DB::transaction(function () use ($project, $batchId, $aggregates, $release, $environment): bool {
                 PushedBatch::query()->create(['project_id' => $project->id, 'type' => 'runtime', 'batch_id' => $batchId, 'received_at' => Date::now()]);
+
+                if ($environment !== null && $environment !== $project->environment && preg_match(Project::ENVIRONMENT_PATTERN, $environment) === 1) {
+                    // A query update: no model event, so no activity log entry per push.
+                    Project::query()->whereKey($project->id)->update(['environment' => $environment]);
+                }
+
                 $skipped = 0;
+                $minutes = [];
 
                 foreach ($aggregates as $aggregate) {
                     $type = RuntimeTypeEnum::tryFrom((string) ($aggregate['type'] ?? ''));
 
-                    if ($type === null) {
+                    if ($type === null || $this->isUnreadable($type, $aggregate)) {
                         $skipped++;
 
                         continue;
                     }
 
-                    $this->add($project, $type, $aggregate, $release);
+                    $minutes[] = $this->add($project, $type, $aggregate, $release);
                 }
+
+                $this->rollups->execute($minutes);
+
+                // Daily AI usage per provider and model (#129), for the monthly budget and the digest.
+                $this->aiUsageDays->execute($project, array_values(array_filter($aggregates, fn (array $aggregate): bool => ($aggregate['type'] ?? null) === RuntimeTypeEnum::Ai->value)));
+
+                // Runs per scheduled task for schedule monitoring (#110), known outcomes only.
+                $this->scheduledTaskRuns->execute($project, $aggregates);
 
                 if ($skipped > 0) {
                     // A query increment: no model event, so no activity log entry per push.
@@ -61,12 +90,35 @@ class StorePushedRuntimeAction
         } catch (UniqueConstraintViolationException) {
             return false;
         }
+
+        // Health samples (#115) move the project's live status and may alert, once committed.
+        if (in_array(RuntimeTypeEnum::Health->value, array_column($aggregates, 'type'), true)) {
+            $this->healthAlerts->execute($project);
+        }
+
+        return $isNew;
     }
 
     /**
+     * True for a `health` sample whose `status` or `severity` this app does not know: it cannot
+     * be ranked against the others, so it is skipped and counted instead of stored (#169).
+     *
      * @param  array<string, mixed>  $aggregate
      */
-    private function add(Project $project, RuntimeTypeEnum $type, array $aggregate, ?string $release): void
+    private function isUnreadable(RuntimeTypeEnum $type, array $aggregate): bool
+    {
+        return $type === RuntimeTypeEnum::Health
+            && (! in_array($aggregate['status'] ?? null, RuntimeTypeEnum::HEALTH_STATUSES, true)
+                || ! in_array($aggregate['severity'] ?? null, SeverityEnum::values(), true));
+    }
+
+    /**
+     * Merges one entry into its minute aggregate.
+     *
+     * @param  array<string, mixed>  $aggregate
+     * @return array{project_id: int, type: string, bucket: CarbonImmutable, sample_rate: float, count: int, error_count: int, total_ms: float|null} the entry, for its hourly rollup
+     */
+    private function add(Project $project, RuntimeTypeEnum $type, array $aggregate, ?string $release): array
     {
         $dimensions = [];
 
@@ -91,8 +143,21 @@ class StorePushedRuntimeAction
             'dimension_key' => hash('sha256', $identityJson),
         ];
 
+        // A Scout search (#184) has no duration: only entries with both totals are timed.
+        $isTimed = $type->isTimed() && isset($aggregate['totalMs'], $aggregate['maxMs']);
+
+        $minute = [
+            'project_id' => $project->id,
+            'type' => $type->value,
+            'bucket' => $identity['bucket'],
+            'sample_rate' => $identity['sample_rate'],
+            'count' => (int) $aggregate['count'],
+            'error_count' => (int) $aggregate['errorCount'],
+            'total_ms' => $isTimed ? (float) $aggregate['totalMs'] : null,
+        ];
+
         $metrics = $this->metrics($type, $aggregate);
-        $histogram = $this->histogram($type, $aggregate);
+        $histogram = $isTimed ? $this->histogram($aggregate) : null;
         $existing = RuntimeAggregate::query()->where($identity)->lockForUpdate()->first();
 
         if ($existing === null) {
@@ -100,33 +165,36 @@ class StorePushedRuntimeAction
                 ...$identity,
                 'dimensions' => $dimensions,
                 'release' => $release,
-                'count' => (int) $aggregate['count'],
-                'error_count' => (int) $aggregate['errorCount'],
-                'total_ms' => $type->isTimed() ? (float) $aggregate['totalMs'] : null,
-                'max_ms' => $type->isTimed() ? (float) $aggregate['maxMs'] : null,
+                'count' => $minute['count'],
+                'error_count' => $minute['error_count'],
+                'total_ms' => $minute['total_ms'],
+                'max_ms' => $isTimed ? (float) $aggregate['maxMs'] : null,
                 'metrics' => $metrics,
                 'histogram' => $histogram,
             ]);
 
-            return;
+            return $minute;
         }
 
         $existing->forceFill([
             'count' => $existing->count + (int) $aggregate['count'],
             'error_count' => $existing->error_count + (int) $aggregate['errorCount'],
-            'total_ms' => $type->isTimed() ? (float) $existing->total_ms + (float) $aggregate['totalMs'] : null,
-            'max_ms' => $type->isTimed() ? max((float) $existing->max_ms, (float) $aggregate['maxMs']) : null,
-            'metrics' => $metrics === null ? null : $this->mergeMetrics($type, $existing->metrics ?? [], $metrics),
+            'total_ms' => $isTimed ? (float) $existing->total_ms + (float) $aggregate['totalMs'] : $existing->total_ms,
+            'max_ms' => $isTimed ? max((float) $existing->max_ms, (float) $aggregate['maxMs']) : $existing->max_ms,
+            'metrics' => $metrics === null ? null : $type->mergeMetrics($existing->metrics ?? [], $metrics),
             'histogram' => $this->mergeHistograms($existing->histogram, $histogram),
         ])->save();
+
+        return $minute;
     }
 
     /**
      * The type-specific metrics of an entry: numbers or null, `isContainer` a boolean (missing
-     * is false). Null for a type without any.
+     * is false), the health `status` and `severity` strings and `fingerprints` a sorted list.
+     * Null for a type without any.
      *
      * @param  array<string, mixed>  $aggregate
-     * @return array<string, int|float|bool|null>|null
+     * @return array<string, mixed>|null
      */
     private function metrics(RuntimeTypeEnum $type, array $aggregate): ?array
     {
@@ -136,6 +204,8 @@ class StorePushedRuntimeAction
             $value = $aggregate[$metric] ?? null;
             $metrics[$metric] = match (true) {
                 $merge === 'or' => (bool) $value,
+                $merge === 'status', $merge === 'severity' => is_string($value) ? $value : null,
+                $merge === 'union' => $type->mergeMetrics([], [$metric => $value])[$metric],
                 is_int($value), is_float($value) => $value,
                 is_numeric($value) => (float) $value,
                 default => null,
@@ -146,41 +216,16 @@ class StorePushedRuntimeAction
     }
 
     /**
-     * @param  array<string, int|float|bool|null>  $existing
-     * @param  array<string, int|float|bool|null>  $incoming
-     * @return array<string, int|float|bool|null>
-     */
-    private function mergeMetrics(RuntimeTypeEnum $type, array $existing, array $incoming): array
-    {
-        $merged = [];
-
-        foreach ($type->metrics() as $metric => $merge) {
-            $left = $existing[$metric] ?? null;
-            $right = $incoming[$metric] ?? null;
-            $numbers = array_values(array_filter([$left, $right], fn (mixed $value): bool => is_int($value) || is_float($value)));
-
-            $merged[$metric] = match (true) {
-                $merge === 'or' => (bool) $left || (bool) $right,
-                $numbers === [] => null,
-                $merge === 'sum' => array_sum($numbers),
-                default => max($numbers),
-            };
-        }
-
-        return $merged;
-    }
-
-    /**
-     * The entry's latency histogram as integers, or null when it has none or not 12 buckets.
+     * A timed entry's latency histogram as integers, or null when it has none or not 12 buckets.
      *
      * @param  array<string, mixed>  $aggregate
      * @return list<int>|null
      */
-    private function histogram(RuntimeTypeEnum $type, array $aggregate): ?array
+    private function histogram(array $aggregate): ?array
     {
         $histogram = $aggregate['histogram'] ?? null;
 
-        if (! $type->isTimed() || ! is_array($histogram) || count($histogram) !== RuntimeTypeEnum::HISTOGRAM_LENGTH) {
+        if (! is_array($histogram) || count($histogram) !== RuntimeTypeEnum::HISTOGRAM_LENGTH) {
             return null;
         }
 

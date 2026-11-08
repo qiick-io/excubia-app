@@ -98,7 +98,7 @@ it('stores a valid push with its summary and updates last_report_at', function (
         ->and($report->generated_at->toIso8601ZuluString())->toBe('2026-11-05T08:00:00Z')
         ->and($report->worst_severity)->toBe(SeverityEnum::High)
         ->and([$report->critical_count, $report->high_count, $report->medium_count, $report->low_count, $report->info_count])->toBe([0, 1, 0, 1, 0])
-        ->and($report->report)->toBe($envelope['report'])
+        ->and($report->report)->toBeSameJson($envelope['report'])
         ->and($project->fresh()->last_report_at)->not->toBeNull();
 });
 
@@ -198,4 +198,76 @@ it('rate limits pushes per token', function () {
     pushReport($token, pushEnvelope())->assertCreated();
     pushReport($token, pushEnvelope())->assertCreated();
     pushReport($token, pushEnvelope())->assertTooManyRequests();
+});
+
+it('drops evidence URLs that are not http(s), so a push cannot plant a script link (#51)', function () {
+    [$project, $token] = pushingProject();
+    $envelope = pushEnvelope();
+    $envelope['report']['checks'][0]['findings'][0]['evidenceUrl'] = 'javascript:alert(document.cookie)';
+
+    pushReport($token, $envelope)->assertCreated();
+
+    expect(HealthReport::query()->sole()->report['checks'][0]['findings'][0]['evidenceUrl'])->toBeNull()
+        ->and(json_encode($project->findings()->pluck('finding')->all()))->not->toContain('javascript:');
+});
+
+it('rate limits unknown tokens per IP, so a new made-up token per request does not bypass the limit (#51)', function () {
+    config(['excubia.push_requests_per_minute' => 2]);
+
+    pushReport('excubia_'.Str::random(40), pushEnvelope())->assertUnauthorized();
+    pushReport('excubia_'.Str::random(40), pushEnvelope())->assertUnauthorized();
+    pushReport('excubia_'.Str::random(40), pushEnvelope())->assertTooManyRequests();
+});
+
+it('stores the release and the deploy time of a report (#106), and reports without them as before', function () {
+    [$project, $token] = pushingProject();
+    $deploy = pushEnvelope();
+    $deploy['report']['release'] = 'v1.4.0+build.7';
+    $deploy['report']['deployedAt'] = '2026-11-05T07:59:00Z';
+
+    pushReport($token, $deploy)->assertCreated();
+    pushReport($token, pushEnvelope())->assertCreated();
+
+    [$deployed, $plain] = $project->healthReports()->orderBy('id')->get()->all();
+
+    expect($deployed->release)->toBe('v1.4.0+build.7')
+        ->and($deployed->deployed_at?->toIso8601ZuluString())->toBe('2026-11-05T07:59:00Z')
+        ->and($plain->release)->toBeNull()
+        ->and($plain->deployed_at)->toBeNull()
+        ->and($project->healthReports()->deploys()->pluck('id')->all())->toBe([$deployed->id]);
+
+    $tooLong = pushEnvelope();
+    $tooLong['report']['release'] = str_repeat('a', 101);
+    $tooLong['report']['deployedAt'] = 'after lunch';
+
+    pushReport($token, $tooLong)
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['report.release', 'report.deployedAt']);
+});
+
+it('keeps the reported environment on the project (core #203), keeps it on a report without one and drops an invalid one', function () {
+    [$project, $token] = pushingProject();
+    $staging = pushEnvelope();
+    $staging['report']['environment'] = 'staging';
+
+    pushReport($token, $staging)->assertCreated();
+
+    expect($project->fresh()?->environment)->toBe('staging')
+        ->and(HealthReport::query()->sole()->report['environment'])->toBe('staging');
+
+    // The standalone CLI and cores before 1.0.0-beta.4 send none: the last known value stays.
+    pushReport($token, pushEnvelope())->assertCreated();
+
+    expect($project->fresh()?->environment)->toBe('staging');
+
+    // Never a hostname or anything outside the pattern: dropped, not rejected, nothing stored.
+    foreach (['shop.example.com', str_repeat('a', 65), '', ['production']] as $invalid) {
+        $envelope = pushEnvelope();
+        $envelope['report']['environment'] = $invalid;
+
+        pushReport($token, $envelope)->assertCreated();
+
+        expect($project->fresh()?->environment)->toBe('staging')
+            ->and($project->healthReports()->latest('id')->firstOrFail()->report)->not->toHaveKey('environment');
+    }
 });

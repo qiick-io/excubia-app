@@ -16,19 +16,12 @@ export type PermissionGroup = {
 };
 
 /** Generic id/label pair for admin select components. */
-export type AdminSelectOption = {
-    id: number;
-    label: string;
-    name?: string;
-    email?: string;
-};
-
 export type AdminRoleRef = {
     id: number;
     name: string;
 };
 
-export type AdminGroupRef = {
+type AdminGroupRef = {
     id: number;
     name: string;
 };
@@ -53,6 +46,8 @@ export type AdminUserRow = {
     roles: AdminRoleRef[];
     groups: AdminGroupRef[];
     can_update: boolean;
+    /** False on your own account unless you are a super-admin (#151). */
+    can_change_roles: boolean;
     can_delete: boolean;
     created_at: string;
     updated_at: string;
@@ -68,6 +63,8 @@ export type AdminGroupRow = {
     roles: AdminRoleRef[];
     users?: AdminUserRef[];
     can_update: boolean;
+    /** False on a group you belong to unless you are a super-admin (#151). */
+    can_change_roles: boolean;
     created_at: string;
     updated_at: string;
 };
@@ -95,13 +92,13 @@ export type AdminPermissionRow = {
     updated_at: string;
 };
 
-export type AdminActivityLogCauser = {
+type AdminActivityLogCauser = {
     id: number;
     name: string;
     email: string;
 };
 
-export type AdminActivityLogSubject = {
+type AdminActivityLogSubject = {
     type: string;
     id: number;
     label: string;

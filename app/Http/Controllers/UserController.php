@@ -73,6 +73,24 @@ class UserController extends Controller
         ]);
     }
 
+    /**
+     * The roles the user may grant, as the paginator JSON the registry picker reads
+     * (`paginated-multi-select`), filtered by `search`. One page: roles are few.
+     */
+    public function assignableRoles(ListQueryRequest $request): JsonResponse
+    {
+        abort_unless(Gate::any(['pick', 'create'], User::class), 403);
+
+        $actor = $request->user();
+        $search = mb_strtolower(trim($request->string('search')->toString()));
+        $roles = array_values(array_filter(
+            StoreUserRequest::assignableRoleOptionsFor($actor instanceof User ? $actor : null),
+            fn (array $role): bool => $search === '' || str_contains(mb_strtolower($role['name']), $search),
+        ));
+
+        return response()->json(['data' => $roles, 'current_page' => 1, 'last_page' => 1]);
+    }
+
     public function store(StoreUserRequest $request, CreateUserAction $createUser): RedirectResponse
     {
         $createUser->execute(

@@ -24,10 +24,14 @@ return new class extends Migration
             $table->string('visibility', 16)->default('everyone');
             $table->string('push_token_hash', 64)->nullable()->unique();
             $table->timestamp('last_report_at')->nullable();
+            // Laravel app.env last reported by a report or runtime batch (core #203); null when never sent.
+            $table->string('environment', 64)->nullable();
             // When the project.stale alert was sent; cleared by the next report (#22).
             $table->timestamp('stale_alerted_at')->nullable();
             // Runtime entries of unknown types skipped on ingest (#111).
             $table->unsignedBigInteger('skipped_runtime_aggregates')->default(0);
+            // Estimated AI spend per calendar month (USD) that alerts at 80 % and 100 % (#129); null is off.
+            $table->decimal('ai_monthly_budget', 12, 2)->nullable();
             $table->timestamps();
         });
     }

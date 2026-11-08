@@ -1,17 +1,12 @@
+import type { ColumnDef } from '@tanstack/react-table';
 import { Head, router } from '@inertiajs/react';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { DataTable } from '@/components/admin/data-table';
+import { ButtonGroup } from '@/components/ui/button-group';
 import { TruncatedText } from '@/components/admin/truncated-text';
-import { PageLayout, TablePanel } from '@/components/layout/page-layout';
+import { PageLayout } from '@/components/layout/page-layout';
 import { Button } from '@/components/ui/button';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 import jobsRoutes from '@/routes/jobs';
@@ -61,6 +56,113 @@ export default function JobsIndex({
         [t],
     );
 
+    const pendingColumns: ColumnDef<PendingJob>[] = [
+        {
+            id: 'id',
+            header: t('jobs.columns.id'),
+            meta: {
+                headerClassName: 'text-right',
+                cellClassName: 'text-right tabular-nums',
+            },
+            cell: ({ row }) => row.original.id,
+        },
+        {
+            id: 'job',
+            header: t('jobs.columns.job'),
+            meta: { cellClassName: 'max-w-[14rem] font-mono text-xs' },
+            cell: ({ row }) => (
+                <TruncatedText text={row.original.display_name} />
+            ),
+        },
+        {
+            id: 'queue',
+            header: t('jobs.columns.queue'),
+            cell: ({ row }) => row.original.queue,
+        },
+        {
+            id: 'attempts',
+            header: t('jobs.columns.attempts'),
+            meta: {
+                headerClassName: 'text-right',
+                cellClassName: 'text-right tabular-nums',
+            },
+            cell: ({ row }) => row.original.attempts,
+        },
+    ];
+
+    const failedColumns: ColumnDef<FailedJob>[] = [
+        {
+            id: 'job',
+            header: t('jobs.columns.job'),
+            meta: { cellClassName: 'max-w-[14rem] font-mono text-xs' },
+            cell: ({ row }) => (
+                <TruncatedText text={row.original.display_name} />
+            ),
+        },
+        {
+            id: 'queue',
+            header: t('jobs.columns.queue'),
+            cell: ({ row }) => row.original.queue,
+        },
+        {
+            id: 'failed_at',
+            header: t('jobs.columns.failedAt'),
+            meta: {
+                headerClassName: 'text-right',
+                cellClassName: 'text-right whitespace-nowrap tabular-nums',
+            },
+            cell: ({ row }) => row.original.failed_at,
+        },
+        {
+            id: 'exception',
+            header: t('jobs.columns.exception'),
+            meta: {
+                cellClassName:
+                    'max-w-md font-mono text-xs text-muted-foreground',
+            },
+            cell: ({ row }) => <TruncatedText text={row.original.exception} />,
+        },
+        {
+            id: 'actions',
+            header: t('jobs.columns.actions'),
+            meta: {
+                headerClassName: 'w-[1%] text-right',
+                cellClassName: 'text-right',
+                isRowClickIgnored: true,
+            },
+            cell: ({ row }) => (
+                <ButtonGroup
+                    aria-label={t('jobs.columns.actions')}
+                    className="ml-auto"
+                >
+                    <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() =>
+                            router.post(jobsRoutes.retry.url(row.original.uuid))
+                        }
+                    >
+                        {t('jobs.retry')}
+                    </Button>
+                    <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() =>
+                            router.delete(
+                                jobsRoutes.destroy.url(row.original.uuid),
+                            )
+                        }
+                    >
+                        {t('jobs.delete')}
+                    </Button>
+                </ButtonGroup>
+            ),
+        },
+    ];
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={t('settings.layout.jobs')} />
@@ -74,152 +176,33 @@ export default function JobsIndex({
                         <h2 className="text-lg font-medium">
                             {t('jobs.pendingTitle')}
                         </h2>
-                        <TablePanel>
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead className="text-right">
-                                            {t('jobs.columns.id')}
-                                        </TableHead>
-                                        <TableHead>
-                                            {t('jobs.columns.job')}
-                                        </TableHead>
-                                        <TableHead>
-                                            {t('jobs.columns.queue')}
-                                        </TableHead>
-                                        <TableHead className="text-right">
-                                            {t('jobs.columns.attempts')}
-                                        </TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {pending.length === 0 ? (
-                                        <TableRow>
-                                            <TableCell
-                                                colSpan={4}
-                                                className="text-muted-foreground"
-                                            >
-                                                {t('jobs.pendingEmpty')}
-                                            </TableCell>
-                                        </TableRow>
-                                    ) : (
-                                        pending.map((job) => (
-                                            <TableRow key={job.id}>
-                                                <TableCell className="text-right tabular-nums">
-                                                    {job.id}
-                                                </TableCell>
-                                                <TableCell className="max-w-[14rem] font-mono text-xs">
-                                                    <TruncatedText
-                                                        text={job.display_name}
-                                                    />
-                                                </TableCell>
-                                                <TableCell>
-                                                    {job.queue}
-                                                </TableCell>
-                                                <TableCell className="text-right tabular-nums">
-                                                    {job.attempts}
-                                                </TableCell>
-                                            </TableRow>
-                                        ))
-                                    )}
-                                </TableBody>
-                            </Table>
-                        </TablePanel>
+                        <DataTable
+                            columns={pendingColumns}
+                            data={pending}
+                            getRowId={(job) => String(job.id)}
+                            emptyState={
+                                <span className="text-muted-foreground">
+                                    {t('jobs.pendingEmpty')}
+                                </span>
+                            }
+                        />
                     </div>
 
                     <div className="space-y-3">
                         <h2 className="text-lg font-medium">
                             {t('jobs.failedTitle')}
                         </h2>
-                        <TablePanel>
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>
-                                            {t('jobs.columns.job')}
-                                        </TableHead>
-                                        <TableHead>
-                                            {t('jobs.columns.queue')}
-                                        </TableHead>
-                                        <TableHead className="text-right">
-                                            {t('jobs.columns.failedAt')}
-                                        </TableHead>
-                                        <TableHead>
-                                            {t('jobs.columns.exception')}
-                                        </TableHead>
-                                        <TableHead className="text-right">
-                                            {t('jobs.columns.actions')}
-                                        </TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {failed.length === 0 ? (
-                                        <TableRow>
-                                            <TableCell
-                                                colSpan={5}
-                                                className="text-muted-foreground"
-                                            >
-                                                {t('jobs.failedEmpty')}
-                                            </TableCell>
-                                        </TableRow>
-                                    ) : (
-                                        failed.map((job) => (
-                                            <TableRow
-                                                key={job.uuid}
-                                                className="align-top"
-                                            >
-                                                <TableCell className="max-w-[14rem] font-mono text-xs">
-                                                    <TruncatedText
-                                                        text={job.display_name}
-                                                    />
-                                                </TableCell>
-                                                <TableCell>
-                                                    {job.queue}
-                                                </TableCell>
-                                                <TableCell className="text-right whitespace-nowrap tabular-nums">
-                                                    {job.failed_at}
-                                                </TableCell>
-                                                <TableCell className="max-w-md font-mono text-xs text-muted-foreground">
-                                                    <TruncatedText
-                                                        text={job.exception}
-                                                    />
-                                                </TableCell>
-                                                <TableCell className="space-x-2 text-right whitespace-nowrap">
-                                                    <Button
-                                                        type="button"
-                                                        size="sm"
-                                                        variant="outline"
-                                                        onClick={() =>
-                                                            router.post(
-                                                                jobsRoutes.retry.url(
-                                                                    job.uuid,
-                                                                ),
-                                                            )
-                                                        }
-                                                    >
-                                                        {t('jobs.retry')}
-                                                    </Button>
-                                                    <Button
-                                                        type="button"
-                                                        size="sm"
-                                                        variant="destructive"
-                                                        onClick={() =>
-                                                            router.delete(
-                                                                jobsRoutes.destroy.url(
-                                                                    job.uuid,
-                                                                ),
-                                                            )
-                                                        }
-                                                    >
-                                                        {t('jobs.delete')}
-                                                    </Button>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))
-                                    )}
-                                </TableBody>
-                            </Table>
-                        </TablePanel>
+                        <DataTable
+                            columns={failedColumns}
+                            data={failed}
+                            getRowId={(job) => job.uuid}
+                            getRowProps={() => ({ className: 'align-top' })}
+                            emptyState={
+                                <span className="text-muted-foreground">
+                                    {t('jobs.failedEmpty')}
+                                </span>
+                            }
+                        />
                         <p className="text-xs text-muted-foreground">
                             {t('jobs.footnote')}
                         </p>

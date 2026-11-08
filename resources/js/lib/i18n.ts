@@ -11,7 +11,7 @@ let documentLangBound = false;
 /**
  * Keep `<html lang>` aligned with the active UI locale (BCP 47).
  */
-export function syncDocumentLanguage(locale: string): void {
+function syncDocumentLanguage(locale: string): void {
     if (typeof document === 'undefined') {
         return;
     }

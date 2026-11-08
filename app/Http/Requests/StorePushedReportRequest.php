@@ -13,7 +13,7 @@ use Illuminate\Validation\Rule;
 /**
  * Validates the push envelope of excubia-core (`docs/push-schema.json`, protocol version 1) and
  * the report inside it (`docs/report-schema.json`, schema version 1). Unknown keys are allowed,
- * so additive core changes keep working. The token was checked by AuthenticateProjectToken.
+ * so additive core changes keep working. The token was checked by AuthenticateProjectTokenMiddleware.
  */
 class StorePushedReportRequest extends FormRequest
 {
@@ -38,6 +38,9 @@ class StorePushedReportRequest extends FormRequest
             'report' => ['required', 'array'],
             'report.schemaVersion' => ['required', 'integer', Rule::in([1])],
             'report.generatedAt' => ['sometimes', 'nullable', 'date'],
+            // Optional since excubia-core 1.0.0-beta.2 (#106): release and, with --deploy, deployedAt.
+            'report.release' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'report.deployedAt' => ['sometimes', 'nullable', 'date'],
             'report.checks' => ['present', 'list'],
             'report.checks.*' => ['array'],
             'report.checks.*.checkId' => ['required', 'string'],
@@ -56,6 +59,19 @@ class StorePushedReportRequest extends FormRequest
             'report.upgradePlan' => ['present', 'list'],
             'report.upgradePlan.*.stepNumber' => ['required', 'integer', 'min:1'],
             'report.upgradePlan.*.message' => ['required', 'string'],
+            // Schedule inventory (#110), optional: older cores and the standalone CLI omit it.
+            'report.schedule' => ['sometimes', 'list', 'max:500'],
+            'report.schedule.*' => ['array'],
+            'report.schedule.*.taskId' => ['required', 'string', 'regex:/^[0-9a-f]{64}$/', 'distinct'],
+            'report.schedule.*.task' => ['required', 'string'],
+            'report.schedule.*.expression' => ['required', 'string', 'max:100'],
+            'report.schedule.*.timezone' => ['required', 'string', 'max:64'],
+            'report.schedule.*.withoutOverlapping' => ['required', 'boolean'],
+            'report.schedule.*.onOneServer' => ['required', 'boolean'],
+            'report.schedule.*.runsInMaintenanceMode' => ['required', 'boolean'],
+            'report.schedule.*.environments' => ['present', 'list'],
+            'report.schedule.*.environments.*' => ['string', 'max:64'],
+            'report.schedule.*.lateAfterMinutes' => ['sometimes', 'integer', 'min:1'],
         ];
     }
 

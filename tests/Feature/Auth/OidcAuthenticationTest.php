@@ -2,12 +2,19 @@
 
 declare(strict_types=1);
 
+use App\Auth\Oidc\GenericOidcProvider;
 use App\Enums\RoleEnum;
 use App\Models\Setting;
 use App\Models\User;
 use App\Services\OidcSocialiteFactoryService;
 use App\Services\SettingsRepositoryService;
 use Database\Seeders\PermissionSeeder;
+use GuzzleHttp\Client;
+use GuzzleHttp\Handler\MockHandler;
+use GuzzleHttp\HandlerStack;
+use GuzzleHttp\Middleware;
+use GuzzleHttp\Psr7\Response as GuzzleResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Socialite\Two\AbstractProvider;
@@ -208,3 +215,58 @@ it('shows SSO-linked users in the user list', function () {
             ->where('users.data.0.is_sso_linked', true)
             ->where('users.data.1.is_sso_linked', false));
 });
+
+it('sends a PKCE S256 challenge with the authorization request', function () {
+    Http::preventStrayRequests();
+    Http::fake([
+        'https://idp.example.com/realms/excubia/.well-known/openid-configuration' => Http::response([
+            'authorization_endpoint' => 'https://idp.example.com/realms/excubia/auth',
+            'token_endpoint' => 'https://idp.example.com/realms/excubia/token',
+            'userinfo_endpoint' => 'https://idp.example.com/realms/excubia/userinfo',
+        ]),
+    ]);
+    enableOidc();
+
+    $location = (string) $this->get(route('auth.oidc.redirect'))->assertRedirect()->headers->get('Location');
+    parse_str((string) parse_url($location, PHP_URL_QUERY), $query);
+    $verifier = (string) session('code_verifier');
+
+    expect($verifier)->toHaveLength(96)
+        ->and($query['code_challenge_method'] ?? null)->toBe('S256')
+        ->and($query['code_challenge'] ?? null)->toBe(rtrim(strtr(base64_encode(hash('sha256', $verifier, true)), '+/', '-_'), '='));
+});
+
+it('sends the PKCE verifier from the session with the token exchange', function () {
+    $session = app('session')->driver();
+    $session->put('state', 'the-state');
+    $session->put('code_verifier', 'the-verifier');
+    $request = Request::create('/auth/oidc/callback', 'GET', ['state' => 'the-state', 'code' => 'the-code']);
+    $request->setLaravelSession($session);
+    $history = [];
+    $stack = HandlerStack::create(new MockHandler([
+        new GuzzleResponse(200, [], (string) json_encode(['access_token' => 'access-token'])),
+        new GuzzleResponse(200, [], (string) json_encode(['sub' => 'sub-abc', 'email' => 'sso@example.com'])),
+    ]));
+    $stack->push(Middleware::history($history));
+
+    $provider = new GenericOidcProvider($request, 'excubia-app', 'super-secret', 'https://excubia.test/auth/oidc/callback', [],
+        'https://idp.example.com/auth', 'https://idp.example.com/token', 'https://idp.example.com/userinfo');
+    $provider->setHttpClient(new Client(['handler' => $stack]));
+
+    expect($provider->user()->getId())->toBe('sub-abc');
+
+    parse_str((string) $history[0]['request']->getBody(), $fields);
+
+    expect((string) $history[0]['request']->getUri())->toBe('https://idp.example.com/token')
+        ->and($fields['code'] ?? null)->toBe('the-code')
+        ->and($fields['code_verifier'] ?? null)->toBe('the-verifier')
+        ->and($session->has('code_verifier'))->toBeFalse();
+});
+
+it('throttles the redirect and callback routes', function (string $routeName) {
+    foreach (range(1, 10) as $attempt) {
+        $this->get(route($routeName))->assertNotFound();
+    }
+
+    $this->get(route($routeName))->assertTooManyRequests();
+})->with(['auth.oidc.redirect', 'auth.oidc.callback']);

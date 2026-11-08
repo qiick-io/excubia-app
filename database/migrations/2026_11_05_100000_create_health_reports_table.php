@@ -8,7 +8,8 @@ use Illuminate\Support\Facades\Schema;
 
 /**
  * Reports pushed by excubia-core. The summary columns let the overview list projects without
- * decoding every report; `batch_id` makes a repeated push idempotent.
+ * decoding every report; `batch_id` makes a repeated push idempotent. `release` and
+ * `deployed_at` come from the report (#106): a report with `deployed_at` is a deploy marker.
  */
 return new class extends Migration
 {
@@ -20,6 +21,8 @@ return new class extends Migration
             $table->uuid('batch_id');
             $table->timestamp('received_at');
             $table->timestamp('generated_at');
+            $table->string('release', 100)->nullable();
+            $table->timestamp('deployed_at')->nullable();
             $table->string('worst_severity', 16)->nullable();
             $table->unsignedInteger('critical_count')->default(0);
             $table->unsignedInteger('high_count')->default(0);
@@ -31,6 +34,7 @@ return new class extends Migration
 
             $table->unique(['project_id', 'batch_id']);
             $table->index(['project_id', 'received_at']);
+            $table->index(['project_id', 'deployed_at']);
         });
     }
 

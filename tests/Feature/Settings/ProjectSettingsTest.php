@@ -37,6 +37,7 @@ function generalSettingsPayload(array $overrides = []): array
         'report_error_url' => 'https://example.com/errors/new',
         'reports_kept_per_project' => 10,
         'stale_after_hours' => 12,
+        'pennant_stale_after_days' => 45,
         'runtime_retention_days' => 7,
         'exceptions_retention_days' => 30,
         'activity_retention_days' => 180,
@@ -100,6 +101,7 @@ it('shows defaults from config until a value is saved', function () {
     config([
         'excubia.reports_kept_per_project' => 30,
         'excubia.stale_after_hours' => 36,
+        'excubia.pennant_stale_after_days' => 30,
         'excubia.runtime_retention_days' => 14,
         'excubia.exceptions_retention_days' => 90,
         'activitylog.clean_after_days' => 365,
@@ -114,6 +116,7 @@ it('shows defaults from config until a value is saved', function () {
             ->where('project.report_issue_url', null)
             ->where('project.reports_kept_per_project', 30)
             ->where('project.stale_after_hours', 36)
+            ->where('project.pennant_stale_after_days', 30)
             ->where('project.runtime_retention_days', 14)
             ->where('project.exceptions_retention_days', 90)
             ->where('project.activity_retention_days', 365));
@@ -139,6 +142,7 @@ it('saves the general settings and the app uses them', function () {
         ->and($settings->reportBugUrl())->toBe('https://example.com/bugs/new')
         ->and($settings->reportsKeptPerProject())->toBe(10)
         ->and($settings->staleAfterHours())->toBe(12)
+        ->and($settings->pennantStaleAfterDays())->toBe(45)
         ->and($settings->runtimeRetentionDays())->toBe(7)
         ->and($settings->exceptionsRetentionDays())->toBe(30)
         ->and($settings->activityRetentionDays())->toBe(180)
@@ -172,10 +176,11 @@ it('validates the general settings', function () {
             'report_error_url' => 'not a url',
             'reports_kept_per_project' => 'many',
             'stale_after_hours' => 9999,
+            'pennant_stale_after_days' => 0,
             'runtime_retention_days' => 0,
             'activity_retention_days' => 4000,
         ]))
-        ->assertSessionHasErrors(['app_name', 'description', 'url', 'report_bug_url', 'report_error_url', 'reports_kept_per_project', 'stale_after_hours', 'runtime_retention_days', 'activity_retention_days']);
+        ->assertSessionHasErrors(['app_name', 'description', 'url', 'report_bug_url', 'report_error_url', 'reports_kept_per_project', 'stale_after_hours', 'pennant_stale_after_days', 'runtime_retention_days', 'activity_retention_days']);
 });
 
 it('saves the authentication and security settings and the app uses them', function () {
@@ -299,6 +304,7 @@ it('shares the default sidebar modules with every page', function () {
         ->assertInertia(fn (Assert $page) => $page->where('projectSettings.sidebarModules', [
             ['id' => 'dashboard', 'enabled' => true, 'locked' => true],
             ['id' => 'projects', 'enabled' => true, 'locked' => false],
+            ['id' => 'fleet', 'enabled' => true, 'locked' => false],
             ['id' => 'assistant', 'enabled' => true, 'locked' => false],
             ['id' => 'activity', 'enabled' => true, 'locked' => false],
             ['id' => 'users', 'enabled' => true, 'locked' => false],
@@ -326,6 +332,7 @@ it('saves the sidebar order and visibility, keeping locked modules on', function
         ['id' => 'users', 'enabled' => false, 'locked' => false],
         ['id' => 'dashboard', 'enabled' => true, 'locked' => true],
         ['id' => 'projects', 'enabled' => true, 'locked' => false],
+        ['id' => 'fleet', 'enabled' => true, 'locked' => false],
         ['id' => 'assistant', 'enabled' => true, 'locked' => false],
         ['id' => 'activity', 'enabled' => true, 'locked' => false],
     ];
@@ -358,6 +365,7 @@ it('inserts modules missing from the stored order next to their default neighbou
     expect(app(SettingsRepositoryService::class)->sidebarModules())->toBe([
         ['id' => 'dashboard', 'enabled' => true, 'locked' => true],
         ['id' => 'projects', 'enabled' => true, 'locked' => false],
+        ['id' => 'fleet', 'enabled' => true, 'locked' => false],
         ['id' => 'assistant', 'enabled' => true, 'locked' => false],
         ['id' => 'activity', 'enabled' => true, 'locked' => false],
         ['id' => 'settings', 'enabled' => true, 'locked' => true],

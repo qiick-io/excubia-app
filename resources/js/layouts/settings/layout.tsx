@@ -12,6 +12,7 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { PermissionEnum } from '@/enums/permission-enum';
+import aiPricesRoutes from '@/routes/ai-prices';
 import aiSettings from '@/routes/ai-settings';
 import integrationsRoutes from '@/routes/project/integrations';
 import { useCan } from '@/hooks/use-can';
@@ -28,6 +29,7 @@ import { edit as editLocalization } from '@/routes/project/localization';
 import { edit as editProjectSecurity } from '@/routes/project/security';
 import roles from '@/routes/roles';
 import { edit as editSecurity } from '@/routes/security';
+import systemRoutes from '@/routes/system';
 import type { NavItem } from '@/types';
 
 const DEFAULT_REPORT_BUG_URL =
@@ -63,6 +65,17 @@ export default function SettingsLayout({
         },
     ];
 
+    // Integrations needs `can-manage-alerts` (#22), the other project pages `can-manage-project-settings`.
+    const integrationsNavItem: NavItem[] = can(PermissionEnum.CanManageAlerts)
+        ? [
+              {
+                  title: t('settings.layout.integrations'),
+                  href: integrationsRoutes.edit.url(),
+                  icon: null,
+              },
+          ]
+        : [];
+
     const projectNavItems: NavItem[] = can(
         PermissionEnum.CanManageProjectSettings,
     )
@@ -82,11 +95,7 @@ export default function SettingsLayout({
                   href: editProjectSecurity(),
                   icon: null,
               },
-              {
-                  title: t('settings.layout.integrations'),
-                  href: integrationsRoutes.edit.url(),
-                  icon: null,
-              },
+              ...integrationsNavItem,
               {
                   title: t('settings.layout.appearance'),
                   href: editAppearance(),
@@ -103,7 +112,7 @@ export default function SettingsLayout({
                   icon: null,
               },
           ]
-        : [];
+        : integrationsNavItem;
 
     const accessNavItems: NavItem[] = [
         ...(can(PermissionEnum.CanShowRoles)
@@ -133,18 +142,39 @@ export default function SettingsLayout({
                   },
               ]
             : []),
+        ...(can(PermissionEnum.CanShowSystem)
+            ? [
+                  {
+                      title: t('settings.layout.system'),
+                      href: systemRoutes.index.url(),
+                      icon: null,
+                  },
+              ]
+            : []),
     ];
 
     // AI group, as externa-core's (Settings → AI tools).
-    const aiNavItems: NavItem[] = can(PermissionEnum.CanManageProjectSettings)
-        ? [
-              {
-                  title: t('settings.layout.aiTools'),
-                  href: aiSettings.edit.url(),
-                  icon: null,
-              },
-          ]
-        : [];
+    // The AI price table (#129) feeds the budgets and alerts, so it needs `can-manage-alerts`.
+    const aiNavItems: NavItem[] = [
+        ...(can(PermissionEnum.CanManageProjectSettings)
+            ? [
+                  {
+                      title: t('settings.layout.aiTools'),
+                      href: aiSettings.edit.url(),
+                      icon: null,
+                  },
+              ]
+            : []),
+        ...(can(PermissionEnum.CanManageAlerts)
+            ? [
+                  {
+                      title: t('settings.layout.aiPrices'),
+                      href: aiPricesRoutes.edit.url(),
+                      icon: null,
+                  },
+              ]
+            : []),
+    ];
 
     const reportBugUrl =
         projectSettings.reportBugUrl?.trim() || DEFAULT_REPORT_BUG_URL;

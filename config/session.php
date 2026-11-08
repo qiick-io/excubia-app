@@ -169,7 +169,9 @@ return [
     |
     */
 
-    'secure' => env('SESSION_SECURE_COOKIE'),
+    // Excubia (#51): Secure by default when APP_URL is https, so a TLS install does not send the
+    // session cookie over plain HTTP; SESSION_SECURE_COOKIE still wins.
+    'secure' => env('SESSION_SECURE_COOKIE', str_starts_with((string) env('APP_URL', ''), 'https://')),
 
     /*
     |--------------------------------------------------------------------------
