@@ -4,6 +4,8 @@ All notable changes to **Excubia App** (`qiick-io/excubia-app`) are documented i
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+Each version ends with **Upgrade notes**: breaking changes, new settings and the steps to
+upgrade from the version before (see [docs/self-hosting.md](docs/self-hosting.md#upgrades)).
 
 ## [Unreleased]
 
@@ -31,3 +33,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Baseline security headers on every web response (#153): `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin` and a minimal `Permissions-Policy`; `Strict-Transport-Security` on https requests when `EXCUBIA_HSTS_MAX_AGE` is set (off by default).
 - Role escalation (#151): you can only grant what you hold. Assigning roles to a user or a group, and putting permissions into a custom role, accept only roles and permissions the acting user holds (a role counts as held when its permissions are all held; `admin` needs the `admin` role, `super-admin` a super-admin). Users, groups and custom roles that carry something the actor could not grant are read-only for them, so nobody strips, resets or takes over a stronger account. Only a super-admin may change their own roles, join or leave a group that carries roles, or change the roles of a group they belong to. The user and group drawers offer only grantable roles and lock the role picker on your own account and groups.
 - OIDC sign-in uses PKCE (`S256`) on the authorization request and the token exchange, and the redirect and callback routes are throttled to 10 requests per minute (#154).
+
+### Upgrade notes
+
+- **First release:** there is nothing to upgrade from. Install with `composer create-project qiick/excubia-app` and `php artisan excubia:install`, or the Docker image (`ghcr.io/qiick-io/excubia-app`); see [docs/self-hosting.md](docs/self-hosting.md).
+- **Upgrade steps from here on (source):** check out or merge the new tag, then `composer install --no-dev -o`, `npm ci && npm run build`, `php artisan excubia:upgrade --force` and `php artisan optimize`. **Docker:** pull `ghcr.io/qiick-io/excubia-app:<version>` and recreate the containers; the `app` container migrates on start.
