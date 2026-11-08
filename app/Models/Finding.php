@@ -33,11 +33,11 @@ use Illuminate\Support\Facades\Date;
  * @property Carbon|null $dismissed_at
  * @property Carbon|null $dismissed_until
  * @property string|null $dismissed_reason
- * @property int|null $dismissed_by
+ * @property int|null $dismissed_by_user_id
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['fingerprint', 'check_id', 'severity', 'status', 'finding', 'first_seen_at', 'last_seen_at', 'resolved_at', 'reopened_count', 'dismissed_at', 'dismissed_until', 'dismissed_reason', 'dismissed_by'])]
+#[Fillable(['fingerprint', 'check_id', 'severity', 'status', 'finding', 'first_seen_at', 'last_seen_at', 'resolved_at', 'reopened_count', 'dismissed_at', 'dismissed_until', 'dismissed_reason', 'dismissed_by_user_id'])]
 class Finding extends Model
 {
     /**
@@ -87,7 +87,7 @@ class Finding extends Model
      */
     public function dismisser(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'dismissed_by');
+        return $this->belongsTo(User::class, 'dismissed_by_user_id');
     }
 
     /**

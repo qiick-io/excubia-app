@@ -26,6 +26,7 @@ return new class extends Migration
             $table->timestamps();
 
             $table->unique(['user_group_id', 'user_id']);
+            $table->index('user_id');
         });
 
         Schema::create('user_group_role', function (Blueprint $table): void {
@@ -34,6 +35,7 @@ return new class extends Migration
             $table->timestamps();
 
             $table->unique(['user_group_id', 'role_id']);
+            $table->index('role_id');
         });
     }
 

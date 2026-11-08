@@ -21,6 +21,7 @@ import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 import { edit as editLocalization } from '@/routes/project/localization';
 import type { BreadcrumbItem, ProjectSettingsForm } from '@/types';
+import { edit as editProfile } from '@/routes/profile';
 
 type LocalizationProjectSettings = Pick<
     ProjectSettingsForm,
@@ -45,8 +46,9 @@ export default function ProjectLocalizationSettingsPage({
     );
 
     const breadcrumbs: BreadcrumbItem[] = [
+        { title: t('settings.layout.title'), href: editProfile() },
         {
-            title: t('settings.project.localization.breadcrumb'),
+            title: t('settings.layout.localization'),
             href: editLocalization(),
         },
     ];

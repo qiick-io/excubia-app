@@ -74,7 +74,7 @@ beforeEach(function () {
         'exceptionGroup' => ExceptionGroup::query()->create([
             'project_id' => $this->hidden->id, 'fingerprint' => str_repeat('a', 64), 'environment' => 'production', 'class' => 'RuntimeException',
             'message' => 'vault failure', 'frames' => [], 'previous' => [], 'context_kind' => 'request', 'context_name' => 'vault.open',
-            'count' => 1, 'first_seen' => Date::now(), 'last_seen' => Date::now(), 'status' => 'open',
+            'count' => 1, 'first_seen_at' => Date::now(), 'last_seen_at' => Date::now(), 'status' => 'open',
         ]),
         'alertMute' => AlertMute::query()->create(['project_id' => $this->hidden->id, 'event' => 'project.stale']),
         'maintenanceWindow' => MaintenanceWindow::query()->create([

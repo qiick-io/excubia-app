@@ -67,7 +67,7 @@ function benchmarkSeed(CarbonImmutable $now): void
             $groups[] = DB::table('exception_groups')->insertGetId([
                 'project_id' => $project->id, 'fingerprint' => hash('sha256', "{$p}-{$g}"), 'environment' => 'production', 'class' => 'RuntimeException',
                 'message' => 'Failed', 'frames' => '[]', 'previous' => '[]', 'context_kind' => 'request', 'context_name' => 'home', 'count' => 336,
-                'first_seen' => $from, 'last_seen' => $now, 'status' => 'open',
+                'first_seen_at' => $from, 'last_seen_at' => $now, 'status' => 'open',
             ]);
         }
 

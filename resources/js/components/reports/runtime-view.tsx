@@ -200,9 +200,10 @@ export function RuntimeView({ runtime }: { runtime: RuntimeSummary | null }) {
                 </CardContent>
             </Card>
 
-            <section className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+            {/* Timed tables (count, errors, average, p50 to p99, max) need the full width: side
+                by side, their percentiles scroll out of sight even at 1440px (#194). */}
+            <section className="grid grid-cols-1 gap-4">
                 <RuntimeCard
-                    className="xl:col-span-7"
                     title={t('runtime.routes')}
                     configKey="runtime.requests"
                     rows={requests.routes}
@@ -218,7 +219,6 @@ export function RuntimeView({ runtime }: { runtime: RuntimeSummary | null }) {
                     })}
                 />
                 <RuntimeCard
-                    className="xl:col-span-5"
                     title={t('runtime.outgoingHttp')}
                     configKey="runtime.outgoingHttp"
                     rows={runtime.outgoingHttp}
@@ -275,9 +275,8 @@ export function RuntimeView({ runtime }: { runtime: RuntimeSummary | null }) {
                 ]}
             />
 
-            <section className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+            <section className="grid grid-cols-1 gap-4">
                 <RuntimeCard
-                    className="xl:col-span-6"
                     title={t('runtime.jobs')}
                     configKey="runtime.jobs"
                     rows={runtime.jobs}
@@ -293,7 +292,6 @@ export function RuntimeView({ runtime }: { runtime: RuntimeSummary | null }) {
                     })}
                 />
                 <RuntimeCard
-                    className="xl:col-span-6"
                     title={t('runtime.scheduledTasks')}
                     configKey="runtime.scheduler"
                     rows={runtime.scheduledTasks}
@@ -304,9 +302,8 @@ export function RuntimeView({ runtime }: { runtime: RuntimeSummary | null }) {
                 />
             </section>
 
-            <section className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+            <section className="grid grid-cols-1 gap-4">
                 <RuntimeCard
-                    className="xl:col-span-6"
                     title={t('runtime.queueWait')}
                     description={t('runtime.queueWaitDescription')}
                     configKey="runtime.queueWait"
@@ -321,7 +318,6 @@ export function RuntimeView({ runtime }: { runtime: RuntimeSummary | null }) {
                     columns={timedColumns(runtime.queueWait, format, t)}
                 />
                 <RuntimeCard
-                    className="xl:col-span-6"
                     title={t('runtime.commands')}
                     configKey="runtime.commands"
                     rows={runtime.commands}
@@ -1071,8 +1067,10 @@ function Name({
             <div
                 className={cn(
                     isMono ? 'font-mono text-xs' : 'font-medium',
+                    // A wrapped name (SQL, a deprecation) keeps a readable width on phones,
+                    // where the table scrolls instead, and breaks inside a word only when it must.
                     isWrapped
-                        ? 'line-clamp-2 break-all whitespace-normal'
+                        ? 'line-clamp-2 min-w-48 wrap-anywhere whitespace-normal'
                         : 'truncate',
                 )}
             >

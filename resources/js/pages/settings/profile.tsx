@@ -53,8 +53,9 @@ export default function Profile({
     const user = auth.user;
 
     const breadcrumbs: BreadcrumbItem[] = [
+        { title: t('settings.layout.title'), href: edit() },
         {
-            title: t('settings.profile.breadcrumb'),
+            title: t('settings.layout.profile'),
             href: edit(),
         },
     ];

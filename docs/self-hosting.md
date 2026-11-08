@@ -283,7 +283,15 @@ Read the [changelog](../CHANGELOG.md) first: every version has **Upgrade notes**
 | `php artisan excubia:upgrade` | Runs after the code is on the new release: `migrate --force`, the permission and system project sync, `optimize:clear`, `queue:restart`. It runs no `composer` or `npm`. Opt-in: `--sync-upstream=vX.Y.Z` merges the official tag first. |
 | Docker                        | Pull a newer GHCR image tag and keep the volume (Path C). The container migrates on start.                                                                                                                                               |
 
-Migrations are forward-only once released: every release upgrades from the one before with `php artisan migrate`. Upgrading one release at a time, in order, is the safest path.
+### Database migrations
+
+From `1.0.0-beta.1` on, migrations are **forward-only**: a released migration is never edited, renamed or deleted, and every schema change ships as a new migration. Every release therefore upgrades the database of the one before in place, with your data:
+
+1. **Back up first** ([Backups](#backups)): the database and the `APP_KEY`. A migration cannot be rolled back on a production database without that backup.
+2. Run the migrations: `php artisan excubia:upgrade --force` runs `php artisan migrate --force` for you (`--force` because `APP_ENV` is `production`). Docker runs them when the `app` container starts. Never `migrate:fresh` or `migrate:refresh` on an install you keep: they drop every table.
+3. Check that nothing is left: `php artisan migrate:status` lists no `Pending` migration.
+
+Upgrading one release at a time, in order, is the safest path. CI fails a pull request that changes a released migration (the `Migrations frozen` check), and the `Install and upgrade` job upgrades the previous release's database to the new code.
 
 ### Path A: Git tag (recommended)
 

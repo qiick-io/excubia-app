@@ -386,14 +386,14 @@ class DashboardOverviewService
             ] : null,
             'exceptions' => $hasExceptions ? [
                 'open' => (clone $open)->count(),
-                'new' => (clone $open)->where('first_seen', '>=', $from)->count(),
-                'top' => array_values((clone $open)->orderByDesc('last_seen')->limit(self::TOP_EXCEPTIONS_LIMIT)->get()
+                'new' => (clone $open)->where('first_seen_at', '>=', $from)->count(),
+                'top' => array_values((clone $open)->orderByDesc('last_seen_at')->limit(self::TOP_EXCEPTIONS_LIMIT)->get()
                     ->map(fn (ExceptionGroup $group): array => [
                         'id' => $group->id,
                         'class' => $group->class,
                         'message' => $group->message,
                         'count' => $group->count,
-                        'lastSeen' => $group->last_seen->toIso8601String(),
+                        'lastSeen' => $group->last_seen_at->toIso8601String(),
                         'context' => $group->context_name,
                         'project' => ['slug' => $slugs[$group->project_id], 'name' => $names[$group->project_id]],
                     ])->all()),

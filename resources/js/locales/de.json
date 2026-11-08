@@ -220,7 +220,6 @@
             "aiPrices": "Preise"
         },
         "profile": {
-            "breadcrumb": "Profileinstellungen",
             "head": "Profileinstellungen",
             "title": "Profilinformationen",
             "description": "Aktualisieren Sie Ihre Profildaten und E-Mail-Adresse",
@@ -235,7 +234,6 @@
             "alertsTestHint": "Zuerst speichern. Die Mail geht an deine Adresse und benötigt einen Queue-Worker."
         },
         "security": {
-            "breadcrumb": "Sicherheitseinstellungen",
             "head": "Sicherheitseinstellungen",
             "passwordTitle": "Passwort aktualisieren",
             "passwordDescription": "Verwenden Sie ein langes, zufälliges Passwort, um Ihr Konto zu schützen",
@@ -254,7 +252,6 @@
             "passkeysNeedHttps": "Passkeys benötigen HTTPS."
         },
         "project": {
-            "breadcrumb": "Projekteinstellungen",
             "head": "Projekteinstellungen",
             "generalTitle": "Allgemein",
             "generalDescription": "Projektidentität und Support-Links",
@@ -316,13 +313,11 @@
                 "settings": "Einstellungen"
             },
             "localization": {
-                "breadcrumb": "Lokalisierungseinstellungen",
                 "head": "Lokalisierungseinstellungen",
                 "title": "Admin-Sprache",
                 "description": "Standardsprache der Admin-Oberfläche"
             },
             "securityNav": {
-                "breadcrumb": "Authentifizierung & Sicherheit",
                 "head": "Authentifizierung & Sicherheit"
             },
             "checksTitle": "Prüfungen",
@@ -347,7 +342,6 @@
             "activityRetentionDaysHint": "Ältere Einträge im Aktivitätsprotokoll werden gelöscht."
         },
         "appearance": {
-            "breadcrumb": "Darstellungseinstellungen",
             "head": "Darstellungseinstellungen",
             "title": "Darstellungseinstellungen",
             "description": "Projekt-Branding und Standard-Theme aktualisieren",
@@ -369,7 +363,6 @@
             "dark": "Dunkel",
             "system": "System",
             "sidebar": {
-                "breadcrumb": "Seitenleisten-Einstellungen",
                 "head": "Seitenleisten-Einstellungen"
             },
             "themePresetTitle": "Theme-Preset",
@@ -392,7 +385,6 @@
             "appEnv": "APP_ENV",
             "bootstrapDescription": "Status der Laravel-Bootstrap-Caches (config, routes, events, packages).",
             "bootstrapTitle": "Bootstrap-Caches",
-            "breadcrumb": "Leistung",
             "cacheStore": "Cache-Store",
             "configCached": "Config gecacht",
             "eventsCached": "Events gecacht",
@@ -428,7 +420,6 @@
             "readOnly": "schreibgeschützt"
         },
         "integrations": {
-            "breadcrumb": "Integrationen",
             "head": "Integrationen",
             "webhookTitle": "Ausgehende Webhooks",
             "webhookDescription": "Signierte Warnungen an deinen Endpunkt senden, wenn sich ein Projekt ändert",
