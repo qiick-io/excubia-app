@@ -199,6 +199,13 @@ it('has no critical or serious axe issues on the main authenticated pages in lig
         route('appearance.edit', absolute: false),
         route('project.edit', absolute: false),
         route('system.index', absolute: false),
+        // Admin lists on the registry DataTable (app-ui wave 2).
+        route('users.index', absolute: false),
+        route('groups.index', absolute: false),
+        route('roles.index', absolute: false),
+        route('permissions.index', absolute: false),
+        route('jobs.index', absolute: false),
+        route('activity-logs.index', absolute: false),
     ];
 
     foreach ($paths as $path) {

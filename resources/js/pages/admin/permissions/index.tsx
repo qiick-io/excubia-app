@@ -1,23 +1,12 @@
+import type { ColumnDef } from '@tanstack/react-table';
 import { Head, router } from '@inertiajs/react';
 import { RefreshCw } from 'lucide-react';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { DataTable } from '@/components/admin/data-table';
 import { HeaderIconButton } from '@/components/admin/header-icon-button';
-import {
-    hasTablePaginationFooter,
-    PageLayout,
-    TablePaginationFooter,
-    TablePanel,
-} from '@/components/layout/page-layout';
+import { PageLayout } from '@/components/layout/page-layout';
 import { Badge } from '@/components/ui/badge';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
 import { PermissionEnum } from '@/enums/permission-enum';
 import { useCan } from '@/hooks/use-can';
 import AppLayout from '@/layouts/app-layout';
@@ -63,6 +52,34 @@ export default function AdminPermissionsIndex({
         router.post(permissionsRoutes.sync.url(), {}, { preserveScroll: true });
     };
 
+    const columns: ColumnDef<(typeof permissions.data)[number]>[] = [
+        {
+            id: 'name',
+            header: t('permissions.columns.name'),
+            meta: { cellClassName: 'font-mono text-sm' },
+            cell: ({ row }) => row.original.name,
+        },
+        {
+            id: 'roles',
+            header: t('permissions.columns.roles'),
+            cell: ({ row }) => (
+                <div className="flex flex-wrap gap-1">
+                    {row.original.roles.map((role) => (
+                        <Badge key={role} variant="secondary">
+                            {t(`roles.names.${role}`, role)}
+                        </Badge>
+                    ))}
+                </div>
+            ),
+        },
+        {
+            id: 'guard',
+            header: t('permissions.columns.guard'),
+            meta: { cellClassName: 'text-muted-foreground' },
+            cell: ({ row }) => row.original.guard_name,
+        },
+    ];
+
     return (
         <AppLayout
             breadcrumbs={breadcrumbs}
@@ -86,69 +103,17 @@ export default function AdminPermissionsIndex({
                     className="p-0"
                     description={t('permissions.description')}
                 >
-                    <TablePanel
-                        footer={
-                            hasTablePaginationFooter(permissions) ? (
-                                <TablePaginationFooter
-                                    pagination={permissions}
-                                />
-                            ) : undefined
+                    <DataTable
+                        columns={columns}
+                        data={permissions.data ?? []}
+                        getRowId={(permission) => String(permission.id)}
+                        pagination={permissions}
+                        emptyState={
+                            <span className="text-muted-foreground">
+                                {t('permissions.empty')}
+                            </span>
                         }
-                    >
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>
-                                        {t('permissions.columns.name')}
-                                    </TableHead>
-                                    <TableHead>
-                                        {t('permissions.columns.roles')}
-                                    </TableHead>
-                                    <TableHead>
-                                        {t('permissions.columns.guard')}
-                                    </TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {(permissions.data ?? []).length === 0 ? (
-                                    <TableRow>
-                                        <TableCell
-                                            colSpan={3}
-                                            className="text-muted-foreground"
-                                        >
-                                            {t('permissions.empty')}
-                                        </TableCell>
-                                    </TableRow>
-                                ) : (
-                                    (permissions.data ?? []).map((perm) => (
-                                        <TableRow key={perm.id}>
-                                            <TableCell className="font-mono text-sm">
-                                                {perm.name}
-                                            </TableCell>
-                                            <TableCell>
-                                                <div className="flex flex-wrap gap-1">
-                                                    {perm.roles.map((role) => (
-                                                        <Badge
-                                                            key={role}
-                                                            variant="secondary"
-                                                        >
-                                                            {t(
-                                                                `roles.names.${role}`,
-                                                                role,
-                                                            )}
-                                                        </Badge>
-                                                    ))}
-                                                </div>
-                                            </TableCell>
-                                            <TableCell className="text-muted-foreground">
-                                                {perm.guard_name}
-                                            </TableCell>
-                                        </TableRow>
-                                    ))
-                                )}
-                            </TableBody>
-                        </Table>
-                    </TablePanel>
+                    />
                 </PageLayout>
             </SettingsLayout>
         </AppLayout>
