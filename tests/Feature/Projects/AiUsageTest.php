@@ -93,7 +93,7 @@ it('stores and merges AI entries with null-safe usage sums, keeps agent runs apa
 
     $agent = RuntimeAggregate::query()->where('type', 'ai')->where('dimensions->operation', 'agent')->sole();
 
-    expect($agent->dimensions)->toBe(['operation' => 'agent', 'provider' => 'anthropic', 'model' => 'claude-sonnet-4-6', 'agent' => 'App\\Ai\\SupportAgent'])
+    expect($agent->dimensions)->toEqual(['operation' => 'agent', 'provider' => 'anthropic', 'model' => 'claude-sonnet-4-6', 'agent' => 'App\\Ai\\SupportAgent'])
         ->and([$agent->count, $agent->error_count, $agent->total_ms, $agent->max_ms])->toBe([12, 3, 10000.0, 3000.0])
         ->and($agent->histogram)->toBeNull()
         ->and($agent->metrics)->toMatchArray([
@@ -101,7 +101,7 @@ it('stores and merges AI entries with null-safe usage sums, keeps agent runs apa
             'imageInputTokens' => null, 'audioSeconds' => null,
         ])
         ->and(RuntimeAggregate::query()->where('type', 'ai')->where('dimensions->operation', 'embeddings')->sole()->dimensions)->not->toHaveKey('agent')
-        ->and(RuntimeAggregate::query()->where('type', 'aiTool')->sole()->dimensions)->toBe(['agent' => 'App\\Ai\\SupportAgent', 'tool' => 'App\\Ai\\Tools\\OrderTool']);
+        ->and(RuntimeAggregate::query()->where('type', 'aiTool')->sole()->dimensions)->toEqual(['agent' => 'App\\Ai\\SupportAgent', 'tool' => 'App\\Ai\\Tools\\OrderTool']);
 
     // Hourly rollups (#137) hold the AI types like every other type.
     expect(RuntimeHourlyRollup::query()->where('type', 'ai')->sole()->only(['count', 'error_count', 'total_ms']))->toBe(['count' => 13, 'error_count' => 3, 'total_ms' => 15000.0]);
