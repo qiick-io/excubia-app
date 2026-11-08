@@ -199,6 +199,8 @@ it('screenshots every authenticated page and project tab', function () {
     $project = seededVisualProject();
 
     $openFirstRow = fn (string $text): Closure => fn (mixed $page): mixed => $page->click($text)->wait(0.4);
+    // A DOM click: below `lg` the settings content pane is collapsed, so a pointer click cannot reach the radio.
+    $openSlackEventPicker = fn (mixed $page): mixed => $page->assertScript("() => { document.querySelector('#channels-slack--events-selected').click(); return true; }", true)->wait(0.4);
 
     $pages = [
         'dashboard' => [route('dashboard', absolute: false)],
@@ -229,7 +231,7 @@ it('screenshots every authenticated page and project tab', function () {
         'settings-ai-prices' => [route('ai-prices.edit', absolute: false)],
         'settings-project' => [route('project.edit', absolute: false)],
         'settings-integrations' => [route('project.integrations.edit', absolute: false)],
-        'settings-integrations-events' => [route('project.integrations.edit', absolute: false), fn (mixed $page): mixed => $page->click('#channels-slack--events-selected')->wait(0.4)],
+        'settings-integrations-events' => [route('project.integrations.edit', absolute: false), $openSlackEventPicker],
         'settings-localization' => [route('project.localization.edit', absolute: false)],
         'settings-project-security' => [route('project.security.edit', absolute: false)],
         'settings-system' => [route('system.index', absolute: false)],
