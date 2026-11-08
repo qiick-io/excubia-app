@@ -513,6 +513,7 @@
             "title": "Prezzi AI",
             "description": "Prezzi per provider e modello che trasformano l'uso dell'AI dei progetti in costi stimati. Il provider è il nome nel config/ai.php del progetto. Un modello con data (gpt-4o-2024-08-06) usa la riga del suo modello (gpt-4o). I modelli senza riga mostrano i token senza costo.",
             "estimates": "Sono stime, non la tua fattura: verificale con il provider. Tabella del {{date}}; i valori predefiniti sono stati verificati il {{defaultsDate}}.",
+            "sources": "Valori predefiniti dalle pagine prezzi ufficiali, livello standard, prezzi base dei modelli a fasce (verificati il {{date}}):",
             "add": "Aggiungi modello",
             "restore": "Ripristina predefiniti",
             "provider": "Provider",

@@ -513,6 +513,7 @@
             "title": "KI-Preise",
             "description": "Preise pro Anbieter und Modell, die die KI-Nutzung deiner Projekte in geschätzte Kosten umrechnen. Der Anbieter ist der Name in der config/ai.php des Projekts. Ein Modellname mit Datum (gpt-4o-2024-08-06) nutzt die Zeile seines Modells (gpt-4o). Modelle ohne Zeile zeigen Tokens ohne Kosten.",
             "estimates": "Das sind Schätzungen, nicht deine Rechnung: prüfe sie bei deinem Anbieter. Tabelle vom {{date}}; die Standardwerte wurden zuletzt am {{defaultsDate}} geprüft.",
+            "sources": "Standardwerte von den offiziellen Preisseiten, Standard-Tarif, Basispreise gestaffelter Modelle (geprüft am {{date}}):",
             "add": "Modell hinzufügen",
             "restore": "Standardwerte wiederherstellen",
             "provider": "Anbieter",

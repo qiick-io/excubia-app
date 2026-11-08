@@ -11,8 +11,8 @@ use Carbon\CarbonInterface;
 /**
  * The AI price table (#129) and the cost of AI usage. excubia-core sends no prices: the app
  * prices the tokens with this table, editable in Settings → AI prices (`ai_prices`), seeded with
- * DEFAULTS, which are estimates of public list prices on DEFAULTS_UPDATED_ON to verify against
- * each provider. Prices are in USD: tokens per 1M, audio per second, search units per unit.
+ * DEFAULTS, the public list prices of each provider's official pricing page (SOURCES) as checked
+ * on DEFAULTS_UPDATED_ON. Prices are in USD: tokens per 1M, audio per second, search units per unit.
  *
  * A model is priced by the row of its provider (as named in the project's `config/ai.php`) with
  * the same model name, or the row whose model the reported one extends by a date or version
@@ -31,21 +31,38 @@ use Carbon\CarbonInterface;
  */
 class AiPriceService
 {
-    /** When DEFAULTS were checked against the providers' public price pages. */
+    /** When DEFAULTS were checked against SOURCES. */
     public const DEFAULTS_UPDATED_ON = '2026-11-08';
+
+    /**
+     * The official pricing page each provider's DEFAULTS come from, checked on DEFAULTS_UPDATED_ON.
+     *
+     * @var array<string, string>
+     */
+    public const SOURCES = [
+        'anthropic' => 'https://platform.claude.com/docs/en/about-claude/pricing',
+        'openai' => 'https://developers.openai.com/api/docs/pricing',
+        'gemini' => 'https://aistudio.google.com/docs/pricing',
+    ];
 
     /** The price fields of a row, after provider and model. */
     public const PRICE_FIELDS = ['input', 'cache_read', 'cache_write', 'output', 'reasoning', 'image_input', 'image_output', 'audio_second', 'search_unit'];
 
     /**
-     * Estimated list prices (USD) to verify: input, cache read, cache write, output per 1M tokens,
-     * then reasoning, image input and image output per 1M tokens, audio per second, search unit.
+     * Standard-tier list prices (USD) from SOURCES: input, cache read, cache write, output per 1M
+     * tokens, then reasoning, image input and image output per 1M tokens, audio per second (no
+     * search unit: no reranker default). Only models an official page prices are here: better no default than a wrong
+     * one. One row per model, so tiered prices use the base tier: Anthropic's cache write is the
+     * 5-minute write (the 1-hour write costs more), Claude Haiku 5.5 is priced for prompts up to
+     * 100k tokens and Gemini 2.5 Pro for prompts up to 200k tokens (both cost more above), and
+     * Gemini is priced for text, image and video input (audio input costs more). Gemini's output
+     * price includes thinking tokens.
      *
-     * @var list<array{0: string, 1: string, 2: float, 3: float|null, 4: float|null, 5: float, 6?: float|null, 7?: float|null, 8?: float|null, 9?: float|null, 10?: float|null}>
+     * @var list<array{0: string, 1: string, 2: float, 3: float|null, 4: float|null, 5: float, 6?: float|null, 7?: float|null, 8?: float|null, 9?: float|null}>
      */
     private const DEFAULTS = [
         ['anthropic', 'claude-opus-5-5', 4.0, 0.2, 5.0, 20.0],
-        ['anthropic', 'claude-sonnet-5-5', 2.0, 0.2, 2.5, 10.0],
+        ['anthropic', 'claude-sonnet-5-5', 2.0, 0.1, 2.5, 10.0],
         ['anthropic', 'claude-haiku-5-5', 0.1, 0.01, 0.125, 0.5],
         ['anthropic', 'claude-opus-4-8', 5.0, 0.5, 6.25, 25.0],
         ['anthropic', 'claude-sonnet-4-6', 3.0, 0.3, 3.75, 15.0],
@@ -57,13 +74,12 @@ class AiPriceService
         ['openai', 'gpt-4.1-mini', 0.4, 0.1, null, 1.6],
         ['openai', 'gpt-4o', 2.5, 1.25, null, 10.0],
         ['openai', 'gpt-4o-mini', 0.15, 0.075, null, 0.6],
-        ['openai', 'gpt-image-1', 5.0, 1.25, null, 0.0, null, 10.0, 40.0],
         ['openai', 'text-embedding-3-small', 0.02, null, null, 0.0],
         ['openai', 'text-embedding-3-large', 0.13, null, null, 0.0],
+        // $0.006 per minute.
         ['openai', 'whisper-1', 0.0, null, null, 0.0, null, null, null, 0.0001],
-        ['gemini', 'gemini-2.5-pro', 1.25, 0.31, null, 10.0],
-        ['gemini', 'gemini-2.5-flash', 0.3, 0.075, null, 2.5],
-        ['cohere', 'rerank-v3.5', 0.0, null, null, 0.0, null, null, null, null, 0.002],
+        ['gemini', 'gemini-2.5-pro', 1.25, 0.125, null, 10.0],
+        ['gemini', 'gemini-2.5-flash', 0.3, 0.03, null, 2.5],
     ];
 
     /** @var list<Price>|null */
@@ -89,7 +105,8 @@ class AiPriceService
             'image_input' => $row[7] ?? null,
             'image_output' => $row[8] ?? null,
             'audio_second' => $row[9] ?? null,
-            'search_unit' => $row[10] ?? null,
+            // No official page prices a reranker the defaults could hold (#165).
+            'search_unit' => null,
         ], self::DEFAULTS));
     }
 
