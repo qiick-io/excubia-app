@@ -125,12 +125,12 @@ it('prices uncached input, cache reads, cache writes and output at their own rat
     $usage = ['inputTokens' => 1_000_000.0, 'outputTokens' => 100_000.0, 'cacheReadInputTokens' => 600_000.0, 'cacheWriteInputTokens' => 100_000.0, 'reasoningTokens' => 0.0, 'imageInputTokens' => 0.0, 'imageOutputTokens' => 0.0, 'audioSeconds' => 0.0, 'searchUnits' => 0.0];
 
     // claude-sonnet-4-6: 300k uncached × $3 + 600k × $0.30 + 100k × $3.75 + 100k × $15 per 1M.
-    expect($prices->cost('anthropic', 'claude-sonnet-4-6', $usage))->toEqualWithDelta(0.9 + 0.18 + 0.375 + 1.5, 0.000001)
+    expect($prices->cost('anthropic', 'claude-sonnet-4-6', $usage, Date::now()))->toEqualWithDelta(0.9 + 0.18 + 0.375 + 1.5, 0.000001)
         // A dated snapshot takes its model's row, case aside; another provider or model has no price.
-        ->and($prices->cost('Anthropic', 'claude-sonnet-4-6-20260101', $usage))->toEqualWithDelta(2.955, 0.000001)
-        ->and($prices->cost('openai', 'claude-sonnet-4-6', $usage))->toBeNull()
-        ->and($prices->cost('anthropic', 'claude-sonnet-4-6-custom', $usage))->toBeNull()
-        ->and($prices->cost('anthropic', 'unknown', array_map(fn (): float => 0.0, $usage)))->toBe(0.0);
+        ->and($prices->cost('Anthropic', 'claude-sonnet-4-6-20260101', $usage, Date::now()))->toEqualWithDelta(2.955, 0.000001)
+        ->and($prices->cost('openai', 'claude-sonnet-4-6', $usage, Date::now()))->toBeNull()
+        ->and($prices->cost('anthropic', 'claude-sonnet-4-6-custom', $usage, Date::now()))->toBeNull()
+        ->and($prices->cost('anthropic', 'unknown', array_map(fn (): float => 0.0, $usage), Date::now()))->toBe(0.0);
 
     // Without cache prices the input price applies; audio and search units by their unit.
     app(SettingsRepositoryService::class)->save(['ai_prices' => [
@@ -139,9 +139,57 @@ it('prices uncached input, cache reads, cache writes and output at their own rat
     ]]);
     $prices = app(AiPriceService::class);
 
-    expect($prices->cost('openai', 'gpt-test', [...$usage, 'reasoningTokens' => 1_000_000.0]))->toEqualWithDelta(2.0 + 0.8 + 8.0, 0.000001)
-        ->and($prices->cost('openai', 'whisper-1', [...array_map(fn (): float => 0.0, $usage), 'audioSeconds' => 600.0]))->toEqualWithDelta(0.06, 0.000001)
-        ->and($prices->cost('anthropic', 'claude-sonnet-4-6', $usage))->toBeNull();
+    expect($prices->cost('openai', 'gpt-test', [...$usage, 'reasoningTokens' => 1_000_000.0], Date::now()))->toEqualWithDelta(2.0 + 0.8 + 8.0, 0.000001)
+        ->and($prices->cost('openai', 'whisper-1', [...array_map(fn (): float => 0.0, $usage), 'audioSeconds' => 600.0], Date::now()))->toEqualWithDelta(0.06, 0.000001)
+        ->and($prices->cost('anthropic', 'claude-sonnet-4-6', $usage, Date::now()))->toBeNull();
+});
+
+it('prices Gemini 2.5 Pro and Flash as the models Google bills them as from 2026-12-01, earlier days at their own price', function () {
+    $prices = app(AiPriceService::class);
+    $usage = ['inputTokens' => 1_000_000.0, 'outputTokens' => 1_000_000.0, 'cacheReadInputTokens' => 0.0, 'cacheWriteInputTokens' => 0.0, 'reasoningTokens' => 0.0, 'imageInputTokens' => 0.0, 'imageOutputTokens' => 0.0, 'audioSeconds' => 0.0, 'searchUnits' => 0.0];
+    $before = Date::parse('2026-11-30 23:59:59');
+    $from = Date::parse('2026-12-01 00:00:00');
+
+    // 2.5 Pro: $1.25 + $10 until 2026-11-30, then Gemini 3.8 Flash $0.75 + $3.75; 2.5 Flash: $0.30 + $2.50 either way (3.5 Flash-Lite).
+    expect($prices->cost('gemini', 'gemini-2.5-pro', $usage, $before))->toEqualWithDelta(11.25, 0.000001)
+        ->and($prices->cost('Gemini', 'Gemini-2.5-Pro', $usage, $from))->toEqualWithDelta(4.5, 0.000001)
+        ->and($prices->billedModel('gemini', 'gemini-2.5-flash', $before))->toBe('gemini-2.5-flash')
+        ->and($prices->billedModel('gemini', 'gemini-2.5-flash', $from))->toBe('gemini-3.5-flash-lite')
+        ->and($prices->cost('gemini', 'gemini-2.5-flash', $usage, $from))->toEqualWithDelta(2.8, 0.000001)
+        ->and($prices->billedModel('gemini', 'gemini-2.5-flash-lite', $from))->toBe('gemini-2.5-flash-lite')
+        ->and($prices->billedModel('openai', 'gemini-2.5-pro', $from))->toBe('gemini-2.5-pro');
+
+    // The daily usage splits at the day: Nov 30 at 2.5 Pro, Dec 1 at 3.8 Flash.
+    foreach (['2026-11-30', '2026-12-01'] as $day) {
+        AiUsageDay::query()->forceCreate([
+            'project_id' => $this->project->id, 'day' => $day, 'usage_key' => hash('sha256', "gemini\0gemini-2.5-pro"), 'provider' => 'gemini', 'model' => 'gemini-2.5-pro',
+            'calls' => 10, 'input_tokens' => 1_000_000, 'output_tokens' => 1_000_000,
+        ]);
+    }
+
+    expect($prices->costOfDays($this->project, Date::parse('2026-11-30'), Date::parse('2026-11-30'))['cost'])->toEqualWithDelta(11.25, 0.000001)
+        ->and($prices->costOfDays($this->project, Date::parse('2026-11-30'), Date::parse('2026-12-01')))->toMatchArray(['calls' => 20.0, 'hasUnpriced' => false])
+        ->and($prices->costOfDays($this->project, Date::parse('2026-11-30'), Date::parse('2026-12-01'))['cost'])->toEqualWithDelta(15.75, 0.000001);
+
+    // A saved table without the replacement row leaves the routed days unpriced, not at the old price.
+    app(SettingsRepositoryService::class)->save(['ai_prices' => [['provider' => 'gemini', 'model' => 'gemini-2.5-pro', 'input' => 1.25, 'output' => 10]]]);
+
+    expect(app(AiPriceService::class)->cost('gemini', 'gemini-2.5-pro', $usage, $from))->toBeNull()
+        ->and(app(AiPriceService::class)->cost('gemini', 'gemini-2.5-pro', $usage, $before))->toEqualWithDelta(11.25, 0.000001);
+});
+
+it('splits the AI tab timeline of Gemini 2.5 Pro at 2026-12-01', function () {
+    Date::setTestNow('2026-12-01 12:30:00');
+    $gemini = ['provider' => 'gemini', 'model' => 'gemini-2.5-pro', 'count' => 1, 'errorCount' => 0, 'failoverCount' => 0, 'histogram' => null,
+        'inputTokens' => 1_000_000, 'outputTokens' => 1_000_000, 'cacheReadInputTokens' => 0, 'cacheWriteInputTokens' => 0];
+    pushAiRuntime([aiEntry([...$gemini, 'bucket' => '2026-11-30T12:28:00Z']), aiEntry([...$gemini, 'bucket' => '2026-12-01T12:28:00Z'])]);
+
+    $this->actingAs(aiUser(RoleEnum::Reader))
+        ->get(route('projects.view', ['project' => 'shop', 'view' => 'ai', 'range' => '7d']))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('ai.timeline', fn ($points): bool => abs(collect($points)->sum('cost') - 15.75) < 0.0001)
+            ->where('ai.month.cost', 4.5));
 });
 
 it('shows the AI tab with spend, calls, failovers, p95, token split, breakdowns and tools to readers', function () {
