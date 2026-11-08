@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Services\ProjectRuntimeService;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Support\Facades\Date;
+use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -256,7 +257,7 @@ it('shows Octane workers per server and worker type with the leak hint and max_r
     // A server this app does not know yet (#169) is shown as sent.
     cardRow($this->project, 'octane', [...$http, 'octaneServer' => 'futureServer'], ['count' => 5, ...$octane(['requests' => 5, 'maxMb' => 20])]);
     $this->project->healthReports()->create([
-        'batch_id' => 'b1', 'received_at' => now(), 'generated_at' => now(),
+        'batch_id' => (string) Str::uuid(), 'received_at' => now(), 'generated_at' => now(),
         'report' => ['checks' => [['checkId' => 'laravel-octane-config', 'status' => 'pass', 'findings' => [
             ['checkId' => 'laravel-octane-config', 'subject' => 'octane.server', 'status' => 'pass', 'severity' => 'info', 'details' => ['server' => 'swoole', 'maxRequests' => 500]],
         ]]]],
