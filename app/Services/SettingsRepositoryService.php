@@ -93,6 +93,7 @@ class SettingsRepositoryService
             'two_factor_required' => false,
             'reports_kept_per_project' => config('excubia.reports_kept_per_project'),
             'stale_after_hours' => config('excubia.stale_after_hours'),
+            'pennant_stale_after_days' => config('excubia.pennant_stale_after_days'),
             'runtime_retention_days' => config('excubia.runtime_retention_days'),
             'exceptions_retention_days' => config('excubia.exceptions_retention_days'),
             'activity_retention_days' => config('activitylog.clean_after_days'),
@@ -414,6 +415,15 @@ class SettingsRepositoryService
     public function runtimeRetentionDays(): int
     {
         return $this->integer('runtime_retention_days', 1, 3650);
+    }
+
+    /**
+     * Days a Laravel Pennant feature must be checked with always the same value before the
+     * Runtime tab lists it as a stale flag (#189, Checks).
+     */
+    public function pennantStaleAfterDays(): int
+    {
+        return $this->integer('pennant_stale_after_days', 1, 3650);
     }
 
     /** Days exception groups are kept after they were last seen (Data retention). */

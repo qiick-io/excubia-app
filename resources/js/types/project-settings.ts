@@ -29,6 +29,7 @@ export type ProjectSettingsForm = {
     report_bug_url: string | null;
     report_error_url: string | null;
     stale_after_hours: number;
+    pennant_stale_after_days: number;
     reports_kept_per_project: number;
     runtime_retention_days: number;
     exceptions_retention_days: number;

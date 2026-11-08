@@ -19,7 +19,7 @@ use Illuminate\Support\Str;
  * value core may add to an enumerated field (#169).
  *
  * `tests/Fixtures/core/runtime-schema.json` is a copy of excubia-core `develop` at
- * c63b0bf6be120e9b4dc9b84e5bfda5b273bb2b92 (2026-11-08, core #222: the `scout` type). Refresh it when core adds a type or a value.
+ * b6d8be8106bb1848332538d2434b06286ded2f49 (2026-11-08, core #226: the `pennant` type). Refresh it when core adds a type or a value.
  * The app has no JSON Schema validator, so coreSchemaErrors() (tests/Pest.php) checks the keywords
  * the runtime schema uses (required, additionalProperties, const, enum, type, pattern, min/max, lengths).
  */
@@ -90,6 +90,10 @@ function coreRuntimeAggregates(): array
         // An index job; a `search` entry has no duration (see the Scout search test).
         'scout' => [
             'type' => 'scout', ...$base, 'model' => 'App\\Models\\Post', 'engine' => 'meilisearch', 'operation' => 'index', 'modelCount' => 250, ...$timed,
+        ],
+        // `count` is the sum of the four counters; `errorCount` is always 0.
+        'pennant' => [
+            'type' => 'pennant', ...$base, ...$quiet, 'feature' => 'App\\Features\\NewCheckout', 'activeCount' => 2, 'inactiveCount' => 1, 'resolvedCount' => 1, 'unknownCount' => 0,
         ],
     ];
 }
@@ -187,6 +191,7 @@ it('merges entries of the same series across batches by each metric rule', funct
         [...$aggregates['billingWebhook'], 'count' => 2, 'errorCount' => 0, 'handledCount' => 2, 'paymentFailedCount' => 2, 'paymentActionRequiredCount' => 1, 'subscriptionCanceledCount' => 1],
         [...$aggregates['auth'], 'count' => 5, 'errorCount' => 4, 'loginCount' => 1, 'lockoutCount' => 0, 'tokenAuthenticationCount' => 0],
         [...$aggregates['scout'], 'count' => 2, 'errorCount' => 0, 'modelCount' => 50, 'totalMs' => 99.5, 'maxMs' => 60],
+        [...$aggregates['pennant'], 'count' => 3, 'activeCount' => 0, 'inactiveCount' => 1, 'resolvedCount' => 0, 'unknownCount' => 2],
     ];
 
     $this->postJson(route('api.runtime.store'), coreRuntimeEnvelope(array_values($aggregates)), $headers)->assertCreated();
@@ -226,7 +231,9 @@ it('merges entries of the same series across batches by each metric rule', funct
         ->and($row('auth')->metrics)->toEqual(['loginCount' => 8, 'lockoutCount' => 1, 'tokenAuthenticationCount' => 1])
         ->and([$row('scout')->count, $row('scout')->error_count, $row('scout')->total_ms, $row('scout')->max_ms])->toBe([6, 1, 500.0, 250.25])
         ->and($row('scout')->metrics)->toEqual(['modelCount' => 300])
-        ->and($row('scout')->histogram)->toBe([0, 0, 2, 0, 2, 2, 2, 0, 0, 0, 0, 0]);
+        ->and($row('scout')->histogram)->toBe([0, 0, 2, 0, 2, 2, 2, 0, 0, 0, 0, 0])
+        ->and([$row('pennant')->count, $row('pennant')->error_count, $row('pennant')->total_ms, $row('pennant')->histogram])->toBe([7, 0, null, null])
+        ->and($row('pennant')->metrics)->toEqual(['activeCount' => 2, 'inactiveCount' => 2, 'resolvedCount' => 1, 'unknownCount' => 2]);
 
     // A log entry without channel is its own series, never merged with one that has it.
     expect($project->runtimeAggregates()->where('type', 'logLevel')->count())->toBe(2);
@@ -298,6 +305,9 @@ it('still rejects a known type that breaks its own contract', function (string $
     'Scout records below zero' => ['scout', 'modelCount', -1],
     'Scout without a model' => ['scout', 'model', null],
     'Scout duration as text' => ['scout', 'totalMs', 'slow'],
+    'Pennant without active checks' => ['pennant', 'activeCount', null],
+    'Pennant undefined checks below zero' => ['pennant', 'unknownCount', -1],
+    'Pennant without a feature' => ['pennant', 'feature', null],
 ]);
 
 it('stores a Scout search entry without durations and keeps it apart from the index jobs (#184)', function () {
@@ -366,6 +376,8 @@ it('stores a value core may add to an enumerated dimension instead of rejecting 
     'auth guard' => ['auth', 'guard'],
     'Scout engine' => ['scout', 'engine'],
     'Scout operation' => ['scout', 'operation'],
+    // Any feature name is stored, a hashed one included (#189).
+    'Pennant feature' => ['pennant', 'feature'],
 ]);
 
 it('keeps a scheduled task outcome it does not know out of the schedule monitoring', function () {

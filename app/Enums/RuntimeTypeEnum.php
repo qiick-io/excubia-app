@@ -42,6 +42,8 @@ enum RuntimeTypeEnum: string
     case Auth = 'auth';
     // Laravel Scout index jobs and searches (#184, core #222).
     case Scout = 'scout';
+    // Laravel Pennant feature checks (#189, core #226).
+    case Pennant = 'pennant';
 
     /** Counts per latency bucket of the optional `histogram` (core `$defs.histogram`). */
     public const HISTOGRAM_LENGTH = 12;
@@ -89,6 +91,13 @@ enum RuntimeTypeEnum: string
      */
     public const AUTH_COUNTERS = ['loginCount', 'lockoutCount', 'tokenAuthenticationCount'];
 
+    /**
+     * Counters of `pennant` (#189): checks that found the feature active or inactive, first
+     * resolutions for a scope and checks of an undefined feature; they add up and `count` is
+     * their sum (core `$defs.pennant`).
+     */
+    public const PENNANT_COUNTERS = ['activeCount', 'inactiveCount', 'resolvedCount', 'unknownCount'];
+
     /** Server gauges: readings that keep the larger value on merge (null only when all are null). */
     private const SERVER_GAUGES = ['loadAverage1', 'loadAverage5', 'loadAverage15', 'cpuCores', 'cpuLimit', 'memoryUsedMb', 'memoryTotalMb', 'diskUsedGb', 'diskTotalGb'];
 
@@ -131,6 +140,7 @@ enum RuntimeTypeEnum: string
             self::BillingWebhook => ['provider', 'eventType'],
             self::Auth => ['guard'],
             self::Scout => ['model', 'engine', 'operation'],
+            self::Pennant => ['feature'],
         };
     }
 
@@ -194,6 +204,7 @@ enum RuntimeTypeEnum: string
             self::BillingWebhook => array_fill_keys(self::BILLING_COUNTERS, 'sum'),
             self::Auth => array_fill_keys(self::AUTH_COUNTERS, 'sum'),
             self::Scout => ['modelCount' => 'sum'],
+            self::Pennant => array_fill_keys(self::PENNANT_COUNTERS, 'sum'),
             default => [],
         };
     }
