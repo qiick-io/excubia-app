@@ -786,6 +786,7 @@
             "findings": "Offene Befunde",
             "lastReport": "Letzter Bericht {{time}}",
             "lastReportStale": "Veraltet · letzter Bericht {{time}}",
+            "environment": "Umgebung {{environment}}",
             "checks": "Bestandene Prüfungen",
             "allChecksPass": "Alle Prüfungen bestanden",
             "checkCount": {

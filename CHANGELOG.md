@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Axe accessibility smoke test for the main pages (`tests/Browser`, Pest browser plugin with Playwright) and an `Accessibility` CI job that fails on serious or critical violations (#112).
 - Every excubia-core check id (37) has a label, an explanation and a docs link, grouped as Infrastructure, Configuration and Dependencies; unknown ids render under their own name. Findings open a drawer with their structured details, the overview lists failing infrastructure first and summarises disk, database size and largest tables, connections, queue backlog, Redis memory, backups and outdated packages by patch / minor / major; the dashboard has an infrastructure column. Database, storage and disk failures alert at once as `infrastructure.failed` (#109).
 - License inventory per project (Licenses tab) and the denied, strong copyleft and unknown licenses across the fleet on the dashboard (#108).
+- The app environment reported by excubia-core 1.0.0-beta.4 (`report.environment`, `runtime.environment`, core #203) is kept on the project, shown on the overview, and used by schedule monitoring to skip tasks limited to other environments; with an older core or the standalone CLI the environment of the latest exception group stands in as before (#110). Licenses read the finding's `details.kind` (core #204) and infer it from status and severity only for older cores (#108). Ingest API: both `environment` fields are optional and an invalid value is dropped, not rejected.
 
 ### Security
 

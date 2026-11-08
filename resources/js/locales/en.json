@@ -786,6 +786,7 @@
             "findings": "Open findings",
             "lastReport": "Last report {{time}}",
             "lastReportStale": "Stale · last report {{time}}",
+            "environment": "Environment {{environment}}",
             "checks": "Checks passing",
             "allChecksPass": "All checks pass",
             "checkCount": {

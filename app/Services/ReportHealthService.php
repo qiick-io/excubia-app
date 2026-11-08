@@ -21,6 +21,9 @@ class ReportHealthService
 {
     private const STATUS_RANK = ['fail' => 0, 'warn' => 1, 'pass' => 2, 'skipped' => 3];
 
+    /** `details.kind` of a `dependency-licenses` finding (core #204). */
+    private const LICENSE_KINDS = ['denied', 'copyleft', 'unknown'];
+
     /** The check whose findings block the next Laravel major (#19). */
     public const UPGRADE_BLOCKER_CHECK = 'laravel-next-blocker';
 
@@ -76,10 +79,10 @@ class ReportHealthService
 
     /**
      * The `dependency-licenses` findings that warn or fail: a denied license fails, a strong
-     * copyleft one warns at medium, a missing or unknown one at low (core #134).
-     *
-     * ponytail: the kind is read from status and severity because the details carry none; if
-     * core adds a `kind` detail, read it instead.
+     * copyleft one warns at medium, a missing or unknown one at low (core #134). The kind is the
+     * finding's `details.kind` (core #204, from 1.0.0-beta.4); reports from older cores carry
+     * none, nor does a value outside the enum count, so the kind is then read from status and
+     * severity.
      *
      * @param  array<string, mixed>  $report
      * @return list<FlaggedLicense>
@@ -98,6 +101,7 @@ class ReportHealthService
                 'licenses' => array_values(array_filter((array) ($details['licenses'] ?? []), 'is_string')),
                 'ecosystem' => (string) ($details['ecosystem'] ?? ''),
                 'kind' => match (true) {
+                    in_array($details['kind'] ?? null, self::LICENSE_KINDS, true) => $details['kind'],
                     ($finding['status'] ?? null) === 'fail' => 'denied',
                     $severity->rank() <= SeverityEnum::Medium->rank() => 'copyleft',
                     default => 'unknown',

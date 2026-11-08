@@ -80,7 +80,9 @@ class EvaluateScheduledTasksAction
 
         return new ScheduleContextData(
             now: CarbonImmutable::instance(Date::now()),
-            environment: $project->exceptionGroups()->orderByDesc('last_seen')->value('environment'),
+            // The reported environment (core #203); older cores and the standalone CLI send none,
+            // so the environment of the latest exception group stands in, else it stays unknown.
+            environment: $project->environment ?? $project->exceptionGroups()->orderByDesc('last_seen')->value('environment'),
             isInMaintenanceMode: $isInMaintenanceMode,
             sampleRate: ($rate = (clone $runs)->orderByDesc('bucket')->value('sample_rate')) === null ? null : (float) $rate,
             runsSince: $oldest === null ? null : CarbonImmutable::parse((string) $oldest, 'UTC'),

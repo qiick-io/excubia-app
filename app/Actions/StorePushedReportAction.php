@@ -17,8 +17,11 @@ use Illuminate\Support\Facades\DB;
  * Stores a report pushed by a project and updates `projects.last_report_at`. A repeated
  * `batchId` returns the stored report (`wasRecentlyCreated` false) and stores nothing new.
  * The report's optional `release` and `deployedAt` (#106) are kept in their own columns: a
- * report with `deployed_at` is the project's deploy marker. Each new report moves the project's
- * finding lifecycle (#18) before the alerts read what changed.
+ * report with `deployed_at` is the project's deploy marker. The optional `environment` (core
+ * #203) becomes the project's environment; a report without one (standalone CLI, older cores)
+ * keeps the last known value, and a value that does not match `Project::ENVIRONMENT_PATTERN` is
+ * dropped, never stored. Each new report moves the project's finding lifecycle (#18) before the
+ * alerts read what changed.
  */
 class StorePushedReportAction
 {
@@ -40,6 +43,10 @@ class StorePushedReportAction
         }
 
         $report = $this->withSafeEvidenceUrls($report);
+
+        if (isset($report['environment']) && ! (is_string($report['environment']) && preg_match(Project::ENVIRONMENT_PATTERN, $report['environment']) === 1)) {
+            unset($report['environment']);
+        }
 
         try {
             return DB::transaction(function () use ($project, $batchId, $sentAt, $report): HealthReport {
@@ -67,7 +74,11 @@ class StorePushedReportAction
                     $this->scheduleInventory->execute($project, $report['schedule']);
                 }
 
-                $project->forceFill(['last_report_at' => $receivedAt, 'stale_alerted_at' => null])->save();
+                $project->forceFill([
+                    'last_report_at' => $receivedAt,
+                    'stale_alerted_at' => null,
+                    'environment' => $report['environment'] ?? $project->environment,
+                ])->save();
                 $changes = $this->findingLifecycle->execute($project, $healthReport);
                 $this->reportAlerts->afterReport($project, $healthReport, $previous, $wasStale, $changes);
 

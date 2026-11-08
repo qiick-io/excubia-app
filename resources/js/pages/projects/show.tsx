@@ -552,17 +552,26 @@ function OverviewView({
                     value={total.toLocaleString()}
                     trend={trendOf(total, previousTotal)}
                     headline={severitySummary(latest.counts, t)}
-                    context={t(
-                        project.is_stale
-                            ? 'report.overview.lastReportStale'
-                            : 'report.overview.lastReport',
-                        {
-                            time: relativeTime(
-                                latest.received_at,
-                                i18n.language,
-                            ),
-                        },
-                    )}
+                    context={[
+                        t(
+                            project.is_stale
+                                ? 'report.overview.lastReportStale'
+                                : 'report.overview.lastReport',
+                            {
+                                time: relativeTime(
+                                    latest.received_at,
+                                    i18n.language,
+                                ),
+                            },
+                        ),
+                        project.environment === null
+                            ? null
+                            : t('report.overview.environment', {
+                                  environment: project.environment,
+                              }),
+                    ]
+                        .filter(Boolean)
+                        .join(' · ')}
                 />
                 <StatCard
                     label={t('report.overview.checks')}

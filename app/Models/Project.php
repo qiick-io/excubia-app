@@ -32,6 +32,7 @@ use Spatie\Activitylog\Support\LogOptions;
  * @property ProjectVisibilityEnum $visibility
  * @property string|null $push_token_hash
  * @property Carbon|null $last_report_at
+ * @property string|null $environment Laravel `app.env` last reported by a report or runtime batch (core #203)
  * @property Carbon|null $stale_alerted_at
  * @property int $skipped_runtime_aggregates runtime entries of unknown types skipped on ingest (#111)
  * @property Carbon|null $created_at
@@ -41,6 +42,9 @@ use Spatie\Activitylog\Support\LogOptions;
 #[Hidden(['push_token_hash'])]
 class Project extends Model
 {
+    /** The pattern of a reported `environment` (core #203): a short name, never a hostname. */
+    public const ENVIRONMENT_PATTERN = '/^[A-Za-z0-9_-]{1,64}$/';
+
     /** @use HasFactory<ProjectFactory> */
     use HasFactory, LogsApplicationActivityTrait;
 
@@ -56,11 +60,11 @@ class Project extends Model
 
     /**
      * Token changes are logged as `token_rotated` / `token_revoked` events, never the hash.
-     * `last_report_at` changes on every push and is not an admin change.
+     * `last_report_at` and `environment` change on pushes and are not admin changes.
      */
     public function getActivitylogOptions(): LogOptions
     {
-        return $this->applicationActivityLogOptions()->logExcept(['push_token_hash', 'last_report_at', 'stale_alerted_at', 'skipped_runtime_aggregates']);
+        return $this->applicationActivityLogOptions()->logExcept(['push_token_hash', 'last_report_at', 'environment', 'stale_alerted_at', 'skipped_runtime_aggregates']);
     }
 
     /**

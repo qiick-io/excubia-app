@@ -9,6 +9,7 @@ use App\Models\AlertLog;
 use App\Models\HealthReport;
 use App\Models\Project;
 use App\Models\User;
+use App\Services\ReportHealthService;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Str;
@@ -20,7 +21,7 @@ use Inertia\Testing\AssertableInertia as Assert;
  * dashboard, the license inventory, and the immediate infrastructure alerts.
  *
  * `tests/Fixtures/core/report-schema.json` is a copy of excubia-core `develop` at
- * f92f50b490ed381d2fa5431ae5c169a621c64b1c (2026-11-07). `report-every-check.json` holds one
+ * 919659e576d5d363edb08b67bab1d71f5b97aece (2026-11-08, core #210: `details.kind`). `report-every-check.json` holds one
  * check per contract id, and one finding per `details` shape of the schema. Refresh both when
  * core adds a check id.
  */
@@ -148,6 +149,31 @@ it('lists the issues problems-first with their group, and summarises the details
 
     $this->get(route('projects.view', ['shop', 'licenses']))
         ->assertInertia(fn (Assert $page) => $page->where('view', 'licenses')->has('health.licenses.flagged', 3));
+});
+
+it('reads the license kind from the details (core #204) and infers it from status and severity for older cores', function () {
+    $project = Project::factory()->create(['slug' => 'shop']);
+    $report = everyCheckReport();
+    $licenses = collect($report['checks'])->firstWhere('checkId', 'dependency-licenses');
+    $kinds = fn (array $check): array => app(ReportHealthService::class)->flaggedLicenses(withCheck($report, $check));
+
+    // The details win over status and severity: a low warning core marks copyleft is copyleft.
+    $licenses['findings'][2]['details']['kind'] = 'copyleft';
+    expect(array_column($kinds($licenses), 'kind', 'package'))->toBe(['mongodb/mongodb' => 'denied', 'left-pad' => 'copyleft', 'mpdf/mpdf' => 'copyleft']);
+
+    // Cores before 1.0.0-beta.4 send no kind, and a value outside the enum counts as none.
+    $licenses['findings'] = array_map(fn (array $finding): array => [...$finding, 'details' => array_diff_key($finding['details'], ['kind' => true])], $licenses['findings']);
+    $licenses['findings'][0]['details']['kind'] = 'forbidden';
+    expect(array_column($kinds($licenses), 'kind', 'package'))->toBe(['mongodb/mongodb' => 'denied', 'mpdf/mpdf' => 'copyleft', 'left-pad' => 'unknown']);
+
+    pushEveryCheckReport($project, withCheck($report, $licenses));
+
+    $this->actingAs(User::factory()->create()->assignRole(RoleEnum::Reader->value))
+        ->get(route('projects.view', ['shop', 'licenses']))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('health.licenses.flagged.0.kind', 'denied')
+            ->where('health.licenses.flagged.1.kind', 'copyleft')
+            ->where('health.licenses.flagged.2.kind', 'unknown'));
 });
 
 it('renders a check id this app does not know under its own name, in the other group', function () {

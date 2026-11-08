@@ -786,6 +786,7 @@
             "findings": "Problemi aperti",
             "lastReport": "Ultimo report {{time}}",
             "lastReportStale": "Non aggiornato · ultimo report {{time}}",
+            "environment": "Ambiente {{environment}}",
             "checks": "Controlli superati",
             "allChecksPass": "Tutti i controlli superati",
             "checkCount": {
