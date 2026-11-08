@@ -1,0 +1,17 @@
+{
+    "$schema": "https://unpkg.com/knip@6/schema.json",
+    "entry": ["resources/js/pages/**/*.tsx"],
+    "project": ["resources/js/**/*.{ts,tsx}"],
+    "ignore": [
+        "resources/js/components/ui/**",
+        "resources/js/components/admin/data-table-faceted-filter.tsx",
+        "resources/js/components/layout/page-layout.tsx",
+        "resources/js/components/user-menu-content.tsx",
+        "resources/js/lib/clipboard.ts",
+        "resources/js/lib/list-per-page.ts",
+        "resources/js/lib/live-announcer.ts",
+        "resources/js/lib/toast.ts"
+    ],
+    "ignoreDependencies": ["concurrently"],
+    "ignoreBinaries": ["oxlint"]
+}

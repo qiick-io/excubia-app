@@ -8,6 +8,7 @@ export enum PermissionEnum {
     CanDeleteProjects = 'can-delete-projects',
     CanRunChecks = 'can-run-checks',
     CanManageExceptions = 'can-manage-exceptions',
+    CanDismissFindings = 'can-dismiss-findings',
     CanShowUsers = 'can-show-users',
     CanCreateUsers = 'can-create-users',
     CanEditUsers = 'can-edit-users',
@@ -25,6 +26,8 @@ export enum PermissionEnum {
     CanShowActivityLogs = 'can-show-activity-logs',
     CanShowJobs = 'can-show-jobs',
     CanManageJobs = 'can-manage-jobs',
+    CanShowSystem = 'can-show-system',
+    CanManageAlerts = 'can-manage-alerts',
     CanUseAi = 'can-use-ai',
     CanManageProjectSettings = 'can-manage-project-settings',
 }

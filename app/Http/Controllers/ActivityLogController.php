@@ -27,7 +27,7 @@ class ActivityLogController extends Controller
         $filters = $request->activityFilters();
 
         return Inertia::render('admin/activity-logs/index', [
-            'activityLogs' => ActivityLogResource::collection($activityLogs->filteredQuery($filters)
+            'activityLogs' => ActivityLogResource::collection($activityLogs->filteredQuery($filters, $request->user())
                 ->paginate($request->perPage())
                 ->withQueryString()),
             // Labels for the selected users of the user filter; the picker searches the rest.

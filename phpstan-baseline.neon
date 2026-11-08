@@ -1,0 +1,151 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Parameter \#2 \$viewer of method App\\Services\\ActivityLogService\:\:filteredQuery\(\) expects App\\Models\\User, App\\Models\\User\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/ActivityLogController.php
+
+		-
+			message: '#^Parameter \#4 \$user of method App\\Actions\\MuteAlertAction\:\:execute\(\) expects App\\Models\\User, App\\Models\\User\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/ProjectAlertsController.php
+
+		-
+			message: '#^Parameter \#2 \$actor of method App\\Actions\\UpdateFindingDismissalAction\:\:execute\(\) expects App\\Models\\User, App\\Models\\User\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/ProjectReportController.php
+
+		-
+			message: '#^Cannot access property \$alert_email_filters on App\\Models\\User\|null\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: app/Http/Controllers/Settings/ProfileController.php
+
+		-
+			message: '#^Cannot access property \$email_verified_at on App\\Models\\User\|null\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: app/Http/Controllers/Settings/ProfileController.php
+
+		-
+			message: '#^Cannot access property \$has_alert_emails on App\\Models\\User\|null\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: app/Http/Controllers/Settings/ProfileController.php
+
+		-
+			message: '#^Cannot call method can\(\) on App\\Models\\User\|null\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Http/Controllers/Settings/ProfileController.php
+
+		-
+			message: '#^Cannot call method delete\(\) on App\\Models\\User\|null\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Http/Controllers/Settings/ProfileController.php
+
+		-
+			message: '#^Cannot call method fill\(\) on App\\Models\\User\|null\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Http/Controllers/Settings/ProfileController.php
+
+		-
+			message: '#^Cannot call method isDirty\(\) on App\\Models\\User\|null\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Http/Controllers/Settings/ProfileController.php
+
+		-
+			message: '#^Cannot call method save\(\) on App\\Models\\User\|null\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Http/Controllers/Settings/ProfileController.php
+
+		-
+			message: '#^Cannot call method diffForHumans\(\) on Illuminate\\Support\\Carbon\|null\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Http/Controllers/Settings/SecurityController.php
+
+		-
+			message: '#^Cannot call method hasEnabledTwoFactorAuthentication\(\) on App\\Models\\User\|null\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Http/Controllers/Settings/SecurityController.php
+
+		-
+			message: '#^Cannot call method passkeys\(\) on App\\Models\\User\|null\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Http/Controllers/Settings/SecurityController.php
+
+		-
+			message: '#^Cannot call method update\(\) on App\\Models\\User\|null\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Http/Controllers/Settings/SecurityController.php
+
+		-
+			message: '#^Parameter \#1 \$viewer of method App\\Services\\SystemHealthService\:\:snapshot\(\) expects App\\Models\\User, App\\Models\\User\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/SystemHealthController.php
+
+		-
+			message: '#^Cannot access property \$id on App\\Models\\User\|null\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: app/Http/Requests/Settings/ProfileUpdateRequest.php
+
+		-
+			message: '#^Parameter \#2 \$hashedValue of static method Illuminate\\Support\\Facades\\Hash\:\:check\(\) expects string, string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Providers/FortifyServiceProvider.php
+
+		-
+			message: '#^Parameter \#1 of callable callable\(array\{type\: string, sampleRate\: float, dimensions\: array\<string, string\>, count\: int, errorCount\: int, totalMs\: float\|null, maxMs\: float\|null, lastAt\: Carbon\\CarbonImmutable, histogram\: list\<float\>\|null, metrics\: array\<string, float\|null\>\}\)\: array\<string, string\|null\> expects array\{type\: string, sampleRate\: float, dimensions\: array\<string, string\>, count\: int, errorCount\: int, totalMs\: float\|null, maxMs\: float\|null, lastAt\: Carbon\\CarbonImmutable, \.\.\.\}, array\{type\: string, sampleRate\: float, dimensions\: array\<string, string\>, count\: int, errorCount\: int, totalMs\: float\|null, maxMs\: float\|null, lastAt\: Carbon\\CarbonImmutable, \.\.\.\}\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/AiUsageService.php
+
+		-
+			message: '#^Parameter \#1 \$string of function mb_substr expects string, string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/AlertSuppressionService.php
+
+		-
+			message: '#^Cannot access property \$id on App\\Models\\HealthReport\|null\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: app/Services/AssistantQueryService.php
+
+		-
+			message: '#^Cannot access property \$received_at on App\\Models\\HealthReport\|null\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: app/Services/AssistantQueryService.php
+
+		-
+			message: '#^Cannot access property \$project_id on App\\Models\\HealthReport\|null\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: app/Services/FindingsTrendService.php
+
+		-
+			message: '#^Cannot access property \$received_at on App\\Models\\HealthReport\|null\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: app/Services/FindingsTrendService.php
+
+		-
+			message: '#^Cannot call method map\(\) on Illuminate\\Database\\Eloquent\\Collection\<int, App\\Models\\Finding\>\|null\.$#'
+			identifier: method.nonObject
+			count: 2
+			path: app/Services/FleetService.php

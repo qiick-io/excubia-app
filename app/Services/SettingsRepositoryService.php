@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Ai\Agents\ExcubiaAssistantAgent;
+use App\Data\AlertFilterData;
 use App\Enums\AlertEventEnum;
 use App\Enums\SeverityEnum;
 use App\Enums\ThemePresetEnum;
@@ -19,7 +20,9 @@ use Illuminate\Validation\Rules\Password;
  * for the code that uses them (login, password rule, 2FA requirement, report history, SSO,
  * UI locale, default appearance, sidebar modules).
  *
- * Secrets (`oidc_client_secret`) are stored encrypted and left out of forEdit().
+ * Secrets (SECRET_KEYS: the OIDC client secret, the webhook signing secret, the Slack incoming-
+ * webhook URL, which is a bearer secret, and the Telegram bot token) are stored encrypted and
+ * left out of forEdit().
  *
  * Registered as a singleton; values are read once per instance and reloaded after a write.
  */
@@ -29,7 +32,7 @@ class SettingsRepositoryService
 
     public const APPEARANCES = ['system', 'light', 'dark'];
 
-    public const SECRET_KEYS = ['oidc_client_secret', 'webhook_secret', 'notifier_telegram_bot_token'];
+    public const SECRET_KEYS = ['oidc_client_secret', 'webhook_secret', 'notifier_slack_webhook_url', 'notifier_telegram_bot_token'];
 
     /**
      * Main sidebar modules in their default order: the single source for the sidebar settings
@@ -41,6 +44,7 @@ class SettingsRepositoryService
     public const SIDEBAR_MODULES = [
         ['id' => 'dashboard', 'locked' => true],
         ['id' => 'projects', 'locked' => false],
+        ['id' => 'fleet', 'locked' => false],
         ['id' => 'assistant', 'locked' => false],
         ['id' => 'activity', 'locked' => false],
         ['id' => 'users', 'locked' => false],
@@ -89,6 +93,7 @@ class SettingsRepositoryService
             'two_factor_required' => false,
             'reports_kept_per_project' => config('excubia.reports_kept_per_project'),
             'stale_after_hours' => config('excubia.stale_after_hours'),
+            'pennant_stale_after_days' => config('excubia.pennant_stale_after_days'),
             'runtime_retention_days' => config('excubia.runtime_retention_days'),
             'exceptions_retention_days' => config('excubia.exceptions_retention_days'),
             'activity_retention_days' => config('activitylog.clean_after_days'),
@@ -104,8 +109,27 @@ class SettingsRepositoryService
             'notifier_slack_webhook_url' => null,
             'notifier_telegram_bot_token' => null,
             'notifier_telegram_chat_id' => null,
-            'notifier_event_types' => null,
-            'notifier_minimum_severity' => SeverityEnum::High->value,
+            // Per channel (webhook, slack, telegram): AlertFilterData::toArray(); see alertChannelFilter().
+            'alert_channels' => null,
+            // Event → severity, overriding AlertEventEnum::defaultSeverity().
+            'alert_event_severities' => null,
+            // Optional runtime alert rules (#107, #114): null / false is off.
+            'alert_cache_hit_ratio_below' => null,
+            'alert_delivery_failures_enabled' => false,
+            'alert_log_spike_per_hour' => null,
+            // AI usage alert rules (#129): null is off.
+            'alert_ai_spend_spike_percent' => null,
+            'alert_ai_error_rate_above' => null,
+            // Billing webhook alert rules (#178): null / false is off.
+            'alert_billing_webhook_failures_per_hour' => null,
+            'alert_billing_payment_failed_enabled' => false,
+            // Failed-login alert rule (#180): null is off.
+            'alert_auth_failed_logins_per_hour' => null,
+            // Scout index failure alert rule (#184): null is off.
+            'alert_scout_index_failures_per_hour' => null,
+            // AI price table (#129): null uses AiPriceService::defaults().
+            'ai_prices' => null,
+            'ai_prices_updated_on' => null,
             'webhook_last_success' => null,
             'webhook_last_error' => null,
         ];
@@ -201,6 +225,17 @@ class SettingsRepositoryService
             }
         });
 
+        $this->values = null;
+    }
+
+    /**
+     * Deletes the given keys; their defaults apply again.
+     *
+     * @param  list<string>  $keys
+     */
+    public function forget(array $keys): void
+    {
+        Setting::query()->whereIn('key', $keys)->delete();
         $this->values = null;
     }
 
@@ -382,6 +417,15 @@ class SettingsRepositoryService
         return $this->integer('runtime_retention_days', 1, 3650);
     }
 
+    /**
+     * Days a Laravel Pennant feature must be checked with always the same value before the
+     * Runtime tab lists it as a stale flag (#189, Checks).
+     */
+    public function pennantStaleAfterDays(): int
+    {
+        return $this->integer('pennant_stale_after_days', 1, 3650);
+    }
+
     /** Days exception groups are kept after they were last seen (Data retention). */
     public function exceptionsRetentionDays(): int
     {
@@ -439,7 +483,12 @@ class SettingsRepositoryService
 
     public function slackWebhookUrl(): ?string
     {
-        return $this->string('notifier_slack_webhook_url');
+        // ponytail: installs from before #51 saved the URL in plain text; it is still used until
+        // the next save encrypts it. Drop the fallback at 1.0.0.
+        $legacy = $this->string('notifier_slack_webhook_url');
+
+        return $this->secret('notifier_slack_webhook_url')
+            ?? ($legacy !== null && str_starts_with($legacy, 'https://hooks.slack.com/') ? $legacy : null);
     }
 
     public function telegramBotToken(): ?string
@@ -453,22 +502,96 @@ class SettingsRepositoryService
     }
 
     /**
-     * Events the Slack / Telegram notifiers send; every event until the setting is saved.
-     *
-     * @return list<string>
+     * The filters of one alert channel (#22). Until saved, the webhook takes every event and
+     * severity, Slack and Telegram every event from `high`, or the shared filter they had before
+     * per-channel filters (`notifier_event_types`, `notifier_minimum_severity`).
      */
-    public function notifierEventTypes(): array
+    public function alertChannelFilter(string $channel): AlertFilterData
     {
-        $value = $this->all()['notifier_event_types'];
-        $names = AlertEventEnum::selectableValues();
+        $values = $this->all();
+        $stored = is_array($values['alert_channels']) ? ($values['alert_channels'][$channel] ?? null) : null;
 
-        return is_array($value) ? array_values(array_intersect($names, $value)) : $names;
+        if ($stored === null && $channel !== 'webhook' && array_key_exists('notifier_minimum_severity', $values)) {
+            $stored = ['minimum_severity' => $values['notifier_minimum_severity'], 'event_types' => $values['notifier_event_types'] ?? null];
+        }
+
+        return AlertFilterData::fromStored($stored, $channel === 'webhook' ? SeverityEnum::Info : SeverityEnum::High);
     }
 
-    /** Alerts below this severity are not sent to Slack or Telegram. */
-    public function notifierMinimumSeverity(): SeverityEnum
+    /**
+     * The severity of an event that does not take one from a finding: the admin's choice in
+     * Settings → Integrations, else the built-in default.
+     */
+    public function alertEventSeverity(AlertEventEnum $event): SeverityEnum
     {
-        return SeverityEnum::tryFrom((string) $this->all()['notifier_minimum_severity']) ?? SeverityEnum::High;
+        $stored = $this->all()['alert_event_severities'];
+        $value = is_array($stored) && in_array($event->value, AlertEventEnum::severityEditableValues(), true) ? ($stored[$event->value] ?? null) : null;
+
+        return SeverityEnum::tryFrom((string) $value) ?? $event->defaultSeverity();
+    }
+
+    /** Cache hit ratio (percent) under which a store alerts, or null when the rule is off. */
+    public function alertCacheHitRatioBelow(): ?int
+    {
+        return $this->positiveInteger('alert_cache_hit_ratio_below');
+    }
+
+    /** Whether failed mails and notifications alert. */
+    public function shouldAlertDeliveryFailures(): bool
+    {
+        return (bool) $this->all()['alert_delivery_failures_enabled'];
+    }
+
+    /** Error-level log entries per channel and hour from which a channel alerts, or null when off. */
+    public function alertLogSpikePerHour(): ?int
+    {
+        return $this->positiveInteger('alert_log_spike_per_hour');
+    }
+
+    /**
+     * Today's estimated AI spend of a project, as a percentage of its average day of the 7 days
+     * before, from which it alerts (#129); null when off.
+     */
+    public function alertAiSpendSpikePercent(): ?int
+    {
+        return $this->positiveInteger('alert_ai_spend_spike_percent');
+    }
+
+    /** AI error rate (percent of calls in the last hour) above which a project alerts (#129); null when off. */
+    public function alertAiErrorRateAbove(): ?int
+    {
+        return $this->positiveInteger('alert_ai_error_rate_above');
+    }
+
+    /** Failed billing webhooks per provider and hour from which a project alerts (#178); null when off. */
+    public function alertBillingWebhookFailuresPerHour(): ?int
+    {
+        return $this->positiveInteger('alert_billing_webhook_failures_per_hour');
+    }
+
+    /** Whether failed payments reported by billing webhooks alert (#178). */
+    public function shouldAlertBillingPaymentFailures(): bool
+    {
+        return (bool) $this->all()['alert_billing_payment_failed_enabled'];
+    }
+
+    /** Failed logins per auth guard and hour from which a project alerts (#180); null when off. */
+    public function alertAuthFailedLoginsPerHour(): ?int
+    {
+        return $this->positiveInteger('alert_auth_failed_logins_per_hour');
+    }
+
+    /** Failed Scout index jobs per model and hour from which a project alerts (#184); null when off. */
+    public function alertScoutIndexFailuresPerHour(): ?int
+    {
+        return $this->positiveInteger('alert_scout_index_failures_per_hour');
+    }
+
+    private function positiveInteger(string $key): ?int
+    {
+        $value = $this->all()[$key];
+
+        return is_numeric($value) && (int) $value > 0 ? (int) $value : null;
     }
 
     /**

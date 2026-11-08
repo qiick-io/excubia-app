@@ -6,6 +6,7 @@ namespace App\Http\Resources;
 
 use App\Models\User;
 use App\Models\UserGroup;
+use App\Services\EffectivePermissionResolverService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -25,6 +26,8 @@ class UserResource extends JsonResource
     {
         /** @var User $user */
         $user = $this->resource;
+        $actor = $request->user();
+        $canUpdate = Gate::allows('update', $user);
 
         return [
             'id' => $user->id,
@@ -45,7 +48,10 @@ class UserResource extends JsonResource
                 ->map(fn (UserGroup $group): array => ['id' => $group->id, 'name' => $group->name])
                 ->values()
                 ->all()),
-            'can_update' => Gate::allows('update', $user),
+            'can_update' => $canUpdate,
+            // Only a super-admin changes their own roles (#151).
+            'can_change_roles' => $canUpdate && $actor instanceof User
+                && (! $user->is($actor) || app(EffectivePermissionResolverService::class)->isSuperAdmin($actor)),
             'can_delete' => Gate::allows('delete', $user),
         ];
     }

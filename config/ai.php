@@ -187,11 +187,13 @@ return [
     |
     | Assistant conversations are stored in the app database. The title is the
     | start of the first question, so no extra model call is made for it.
+    | The connection stays null (the default one): a named connection would
+    | make the AI migration ignore `migrate --database` (#136).
     |
     */
 
     'conversations' => [
-        'connection' => env('DB_CONNECTION'),
+        'connection' => null,
         'tables' => [
             'conversations' => 'agent_conversations',
             'messages' => 'agent_conversation_messages',

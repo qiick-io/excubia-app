@@ -14,22 +14,18 @@ use Illuminate\Validation\Rule;
  * Validates a runtime push of excubia-core (`docs/push-schema.json` `$defs.runtimeEnvelope`,
  * payload `docs/runtime-schema.json`, protocol version 1). Each aggregate of a known type must
  * carry the dimensions and metrics of its type; an aggregate of a type this app does not know
- * only needs a `type` and is skipped on store, never rejected (#111). The token was checked by
- * AuthenticateProjectToken.
+ * only needs a `type` and is skipped on store, never rejected (#111). A value core enumerates
+ * (`statusClass`, `outcome`, `level`, `origin`, `exitCodeClass`, `operation`, `octaneServer`,
+ * `workerType`, the billing `provider` and `eventType`, the auth `guard`, the Scout `engine` and `operation`, the Pennant `feature`, the health `status` and `severity`) is only checked as a string: core adds values
+ * additively, and a value this app does not know must never reject the batch (#169). StorePushedRuntimeAction stores it, or
+ * skips and counts the entry when the app cannot read it. The token was checked by
+ * AuthenticateProjectTokenMiddleware.
  */
 class StorePushedRuntimeRequest extends FormRequest
 {
-    private const STATUS_CLASSES = ['1xx', '2xx', '3xx', '4xx', '5xx'];
-
-    /** Dimensions limited to a set of values, per type (`docs/runtime-schema.json`). */
-    private const DIMENSION_VALUES = [
-        'request' => ['statusClass' => self::STATUS_CLASSES],
-        'outgoingHttp' => ['statusClass' => self::STATUS_CLASSES],
-        'job' => ['outcome' => ['processed', 'failed']],
-        'scheduledTask' => ['outcome' => ['finished', 'failed', 'skipped']],
-        'logLevel' => ['level' => ['emergency', 'alert', 'critical', 'error', 'warning', 'notice', 'info', 'debug', 'unknown']],
-        'duplicateQuery' => ['origin' => ['request', 'job']],
-        'command' => ['exitCodeClass' => ['0', '1', 'other']],
+    /** Dimensions with a pattern (`docs/runtime-schema.json`); unknown check ids are accepted. */
+    private const DIMENSION_PATTERNS = [
+        'health' => ['checkId' => '/^[a-z0-9-]{1,64}$/'],
     ];
 
     /** Validation of the type-specific metrics (`RuntimeTypeEnum::metrics()`). */
@@ -52,6 +48,61 @@ class StorePushedRuntimeRequest extends FormRequest
         'diskUsedGb' => ['present', 'nullable', 'numeric', 'min:0'],
         'diskTotalGb' => ['present', 'nullable', 'numeric', 'min:0'],
         'isContainer' => ['sometimes', 'boolean'],
+        // Unknown values are skipped and counted on store (#169).
+        'status' => ['required', 'string', 'max:64'],
+        'severity' => ['required', 'string', 'max:64'],
+        'findingCount' => ['required', 'integer', 'min:0'],
+        'fingerprints' => ['present', 'list', 'max:'.RuntimeTypeEnum::HEALTH_FINGERPRINTS],
+        'fingerprints.*' => ['string', 'regex:/^[0-9a-f]{64}$/'],
+        // `ai` (#129): usage counts are null when the provider does not report them.
+        'failoverCount' => ['required', 'integer', 'min:0'],
+        'inputTokens' => ['present', 'nullable', 'integer', 'min:0'],
+        'outputTokens' => ['present', 'nullable', 'integer', 'min:0'],
+        'cacheReadInputTokens' => ['present', 'nullable', 'integer', 'min:0'],
+        'cacheWriteInputTokens' => ['present', 'nullable', 'integer', 'min:0'],
+        'reasoningTokens' => ['present', 'nullable', 'integer', 'min:0'],
+        'imageInputTokens' => ['present', 'nullable', 'integer', 'min:0'],
+        'imageOutputTokens' => ['present', 'nullable', 'integer', 'min:0'],
+        'audioSeconds' => ['present', 'nullable', 'numeric', 'min:0'],
+        'searchUnits' => ['present', 'nullable', 'numeric', 'min:0'],
+        // `octane` (#168): every metric always present, 0 without that event (`maxMb` above).
+        'workerStarts' => ['required', 'integer', 'min:0'],
+        'workerStops' => ['required', 'integer', 'min:0'],
+        'requests' => ['required', 'integer', 'min:0'],
+        'tasks' => ['required', 'integer', 'min:0'],
+        'ticks' => ['required', 'integer', 'min:0'],
+        'totalRequestsAtStop' => ['required', 'integer', 'min:0'],
+        'maxRequestsAtStop' => ['required', 'integer', 'min:0'],
+        'maxGrowthMb' => ['required', 'numeric', 'min:0'],
+        // `reverb` (#175): every metric always present, 0 without that event.
+        'connectionsOpened' => ['required', 'integer', 'min:0'],
+        'connectionsRejected' => ['required', 'integer', 'min:0'],
+        'connectionsPruned' => ['required', 'integer', 'min:0'],
+        'messagesReceived' => ['required', 'integer', 'min:0'],
+        'messagesSent' => ['required', 'integer', 'min:0'],
+        'publicChannelsCreated' => ['required', 'integer', 'min:0'],
+        'privateChannelsCreated' => ['required', 'integer', 'min:0'],
+        'presenceChannelsCreated' => ['required', 'integer', 'min:0'],
+        'publicChannelsRemoved' => ['required', 'integer', 'min:0'],
+        'privateChannelsRemoved' => ['required', 'integer', 'min:0'],
+        'presenceChannelsRemoved' => ['required', 'integer', 'min:0'],
+        'maxConnections' => ['required', 'integer', 'min:0'],
+        // `billingWebhook` (#178): every counter always present, 0 without that event.
+        'handledCount' => ['required', 'integer', 'min:0'],
+        'paymentFailedCount' => ['required', 'integer', 'min:0'],
+        'paymentActionRequiredCount' => ['required', 'integer', 'min:0'],
+        'subscriptionCanceledCount' => ['required', 'integer', 'min:0'],
+        // `auth` (#180): every counter always present, 0 without that event.
+        'loginCount' => ['required', 'integer', 'min:0'],
+        'lockoutCount' => ['required', 'integer', 'min:0'],
+        'tokenAuthenticationCount' => ['required', 'integer', 'min:0'],
+        // `scout` (#184): always present, 0 for searches.
+        'modelCount' => ['required', 'integer', 'min:0'],
+        // `pennant` (#189): every counter always present, 0 without that event.
+        'activeCount' => ['required', 'integer', 'min:0'],
+        'inactiveCount' => ['required', 'integer', 'min:0'],
+        'resolvedCount' => ['required', 'integer', 'min:0'],
+        'unknownCount' => ['required', 'integer', 'min:0'],
     ];
 
     public function authorize(): bool
@@ -113,8 +164,8 @@ class StorePushedRuntimeRequest extends FormRequest
 
     /**
      * Rules for one aggregate of a known type, keyed by its field (`histogram.*` included).
-     * Dimensions are strings (empty allowed, as core sends an empty queue name); those with a
-     * fixed set of values must be one of them.
+     * Dimensions are strings (empty allowed, as core sends an empty queue name), enumerated ones
+     * included (#169); those with a pattern must match it.
      *
      * @return array<string, list<mixed>>
      */
@@ -128,8 +179,8 @@ class StorePushedRuntimeRequest extends FormRequest
         ];
 
         foreach ($type->dimensions() as $dimension) {
-            $values = self::DIMENSION_VALUES[$type->value][$dimension] ?? null;
-            $rules[$dimension] = $values === null ? ['present', 'string', 'max:2000'] : ['required', 'string', Rule::in($values)];
+            $pattern = self::DIMENSION_PATTERNS[$type->value][$dimension] ?? null;
+            $rules[$dimension] = $pattern === null ? ['present', 'string', 'max:2000'] : ['required', 'string', 'regex:'.$pattern];
         }
 
         foreach ($type->optionalDimensions() as $dimension) {
@@ -137,14 +188,20 @@ class StorePushedRuntimeRequest extends FormRequest
         }
 
         if ($type->isTimed()) {
-            $rules['totalMs'] = ['required', 'numeric', 'min:0'];
-            $rules['maxMs'] = ['required', 'numeric', 'min:0'];
+            // A Scout search has no duration (#184); unknown operations must not reject the batch.
+            $presence = $type->hasOptionalTiming() ? 'sometimes' : 'required';
+            $rules['totalMs'] = [$presence, 'numeric', 'min:0'];
+            $rules['maxMs'] = [$presence, 'numeric', 'min:0'];
             $rules['histogram'] = ['sometimes', 'list', 'size:'.RuntimeTypeEnum::HISTOGRAM_LENGTH];
             $rules['histogram.*'] = ['integer', 'min:0'];
         }
 
         foreach (array_keys($type->metrics()) as $metric) {
             $rules[$metric] = self::METRIC_RULES[$metric];
+
+            if (isset(self::METRIC_RULES[$metric.'.*'])) {
+                $rules[$metric.'.*'] = self::METRIC_RULES[$metric.'.*'];
+            }
         }
 
         return $rules;

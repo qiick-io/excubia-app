@@ -232,7 +232,9 @@ it('sends a password-reset email through Fortify', function () {
 
 it('splits user permissions per operation, as in externa-core', function () {
     Role::create(['name' => 'user-viewer'])->givePermissionTo(PermissionEnum::CanShowUsers->value);
-    Role::create(['name' => 'user-editor'])->givePermissionTo([PermissionEnum::CanShowUsers->value, PermissionEnum::CanEditUsers->value]);
+    // The editor also holds can-show-projects: it may only manage users whose roles (here
+    // reader) it could grant itself (#151).
+    Role::create(['name' => 'user-editor'])->givePermissionTo([PermissionEnum::CanShowUsers->value, PermissionEnum::CanEditUsers->value, PermissionEnum::CanShowProjects->value]);
     $viewer = User::factory()->create()->assignRole('user-viewer');
     $editor = User::factory()->create()->assignRole('user-editor');
     $target = managedUser();
@@ -248,4 +250,20 @@ it('splits user permissions per operation, as in externa-core', function () {
         ->assertRedirect(route('users.index'));
 
     expect($target->fresh()->first_name)->toBe('Grace');
+});
+
+it('lists the roles the user may grant for the role picker', function () {
+    $admin = managedUser(RoleEnum::Admin);
+
+    $this->actingAs($admin)->getJson(route('users.assignable-roles'))
+        ->assertOk()
+        ->assertJsonPath('last_page', 1)
+        ->assertJson(fn ($json) => $json->has('data')->etc());
+
+    $names = collect($this->actingAs($admin)->getJson(route('users.assignable-roles'))->json('data'))->pluck('name');
+    expect($names)->not->toContain(RoleEnum::SuperAdmin->value)
+        ->and(collect($this->actingAs($admin)->getJson(route('users.assignable-roles', ['search' => 'read']))->json('data'))->pluck('name')->all())
+        ->toBe([RoleEnum::Reader->value]);
+
+    $this->actingAs(managedUser())->getJson(route('users.assignable-roles'))->assertForbidden();
 });

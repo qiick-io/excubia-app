@@ -13,7 +13,7 @@ use Illuminate\Validation\Rule;
  * Validates an exceptions push of excubia-core (`docs/push-schema.json`
  * `$defs.exceptionsEnvelope`, payload `docs/exception-schema.json`, protocol version 1). The
  * core masks every group before it leaves the project; the app stores it as received. The
- * token was checked by AuthenticateProjectToken.
+ * token was checked by AuthenticateProjectTokenMiddleware.
  */
 class StorePushedExceptionsRequest extends FormRequest
 {
@@ -35,6 +35,7 @@ class StorePushedExceptionsRequest extends FormRequest
             'batchId' => ['required', 'string', 'regex:/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/'],
             'sentAt' => ['required', 'date'],
             'exceptions' => ['required', 'array'],
+            'exceptions.release' => ['sometimes', 'string', 'max:100'],
             'exceptions.groups' => ['present', 'list'],
             'exceptions.groups.*' => ['array'],
             'exceptions.groups.*.class' => ['required', 'string', 'max:255'],
@@ -48,7 +49,8 @@ class StorePushedExceptionsRequest extends FormRequest
             'exceptions.groups.*.previous' => ['present', 'list', 'max:5'],
             'exceptions.groups.*.previous.*' => ['string', 'max:255'],
             'exceptions.groups.*.context' => ['required', 'array'],
-            'exceptions.groups.*.context.kind' => ['required', 'in:request,job,command,unknown'],
+            // A kind this app does not know is stored as unknown, never rejected (#169).
+            'exceptions.groups.*.context.kind' => ['required', 'string', 'max:64'],
             'exceptions.groups.*.context.name' => ['present', 'string', 'max:255'],
             'exceptions.groups.*.environment' => ['required', 'string', 'max:64'],
             'exceptions.groups.*.count' => ['required', 'integer', 'min:1'],

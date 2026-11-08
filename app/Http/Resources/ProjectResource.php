@@ -35,6 +35,7 @@ class ProjectResource extends JsonResource
             'visibility' => $project->visibility->value,
             'has_push_token' => $project->push_token_hash !== null,
             'last_report_at' => $project->last_report_at?->toIso8601String(),
+            'environment' => $project->environment,
             'is_stale' => app(ProjectStalenessService::class)->isStale($project),
             'latest_report' => $this->whenLoaded('latestReport', fn (): ?array => $project->latestReport === null ? null : (new HealthReportResource($project->latestReport))->resolve()),
             'created_at' => $project->created_at?->toIso8601String(),

@@ -2,7 +2,16 @@
 
 ## Supported versions
 
-Excubia App is pre-release. Security fixes go to the latest `0.x` release.
+| Version                            | Supported                                                            |
+| ---------------------------------- | -------------------------------------------------------------------- |
+| 1.x (latest minor)                 | Yes: security fixes ship as a patch release of the latest 1.x minor  |
+| 1.x (older minors)                 | No: upgrade to the latest 1.x minor (no breaking changes within 1.x) |
+| 1.0.0 betas and release candidates | Until 1.0.0 is released, the latest pre-release only                 |
+| 0.x and earlier                    | No                                                                   |
+
+Run the latest release of the 1.x line: the Docker image tag and `composer.json` carry the version, and Settings → System shows it.
+
+The threat model, data flows, retention and who can see what are in [`docs/SECURITY-MODEL.md`](docs/SECURITY-MODEL.md).
 
 ## Reporting a vulnerability
 

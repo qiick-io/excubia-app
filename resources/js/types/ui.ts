@@ -8,8 +8,6 @@ export type AppLayoutProps = {
     headerActions?: ReactNode;
 };
 
-export type AppVariant = 'header' | 'sidebar';
-
 /** Toast flashed by the server with `Inertia::flash('toast', ...)`. */
 export type FlashToast = {
     type: 'success' | 'info' | 'warning' | 'error';

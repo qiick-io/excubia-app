@@ -1,18 +1,18 @@
+import type { ColumnDef } from '@tanstack/react-table';
 import { Head, router } from '@inertiajs/react';
 import { ArrowDownAZ, ArrowUpAZ, Plus, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { DataTable } from '@/components/admin/data-table';
+import type { DataTableSort } from '@/components/admin/data-table';
+import { DataTableColumnHeader } from '@/components/admin/data-table-column-header';
+import { ButtonGroup } from '@/components/ui/button-group';
 import { DataTableToolbar } from '@/components/admin/data-table-toolbar';
 import { GroupFormDrawer } from '@/components/admin/group-form-drawer';
 import { HeaderIconButton } from '@/components/admin/header-icon-button';
 import { NameSlugCell } from '@/components/admin/name-slug-cell';
 import { ConfirmDestructiveDialog } from '@/components/confirm-destructive-dialog';
-import {
-    hasTablePaginationFooter,
-    PageLayout,
-    TablePaginationFooter,
-    TablePanel,
-} from '@/components/layout/page-layout';
+import { PageLayout } from '@/components/layout/page-layout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Drawer } from '@/components/ui/drawer';
@@ -23,14 +23,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
 import { PermissionEnum } from '@/enums/permission-enum';
 import { useCan } from '@/hooks/use-can';
 import { useDebouncedServerSearch } from '@/hooks/use-debounced-server-search';
@@ -50,6 +42,16 @@ import type {
 
 type GroupSortField = 'name' | 'created_at' | 'updated_at';
 type GroupSortDirection = 'asc' | 'desc';
+
+const GROUP_SORT_FIELDS: GroupSortField[] = [
+    'name',
+    'created_at',
+    'updated_at',
+];
+
+function isGroupSortField(value: string): value is GroupSortField {
+    return (GROUP_SORT_FIELDS as string[]).includes(value);
+}
 
 type Filters = {
     search?: string;
@@ -181,6 +183,85 @@ export default function AdminGroupsIndex({
         deepLink.syncClosed();
     };
 
+    const changeSort = (nextSort: DataTableSort): void => {
+        if (!isGroupSortField(nextSort.id)) {
+            return;
+        }
+
+        setSort(nextSort.id);
+        setDirection(nextSort.direction);
+        visit({ sort: nextSort.id, direction: nextSort.direction });
+    };
+
+    const columns: ColumnDef<AdminGroupRow>[] = [
+        {
+            accessorKey: 'name',
+            enableSorting: true,
+            meta: { cellClassName: 'max-w-[16rem]' },
+            header: ({ column }) => (
+                <DataTableColumnHeader
+                    column={column}
+                    title={t('groups.columns.name')}
+                />
+            ),
+            cell: ({ row }) => (
+                <NameSlugCell
+                    name={row.original.name}
+                    slug={row.original.slug}
+                />
+            ),
+        },
+        {
+            id: 'roles',
+            header: t('groups.columns.roles'),
+            cell: ({ row }) => (
+                <div className="flex flex-wrap gap-1">
+                    {row.original.roles.map((role) => (
+                        <Badge key={role.id} variant="secondary">
+                            {role.name}
+                        </Badge>
+                    ))}
+                </div>
+            ),
+        },
+        {
+            id: 'members',
+            header: t('groups.columns.members'),
+            meta: {
+                headerClassName: 'text-right',
+                cellClassName: 'text-right tabular-nums',
+            },
+            cell: ({ row }) => row.original.users_count ?? '—',
+        },
+        {
+            id: 'actions',
+            header: t('groups.columns.actions'),
+            meta: {
+                headerClassName: 'w-[1%] text-right',
+                cellClassName: 'text-right',
+                isRowClickIgnored: true,
+            },
+            cell: ({ row }) =>
+                row.original.can_update ? (
+                    <ButtonGroup
+                        aria-label={t('groups.columns.actions')}
+                        className="ml-auto"
+                    >
+                        <HeaderIconButton
+                            type="button"
+                            variant="outline"
+                            size="icon-sm"
+                            className="text-destructive hover:text-destructive"
+                            label={t('common.delete')}
+                            onClick={() => setPendingDeleteGroup(row.original)}
+                        >
+                            <Trash2 className="size-3.5" />
+                        </HeaderIconButton>
+                    </ButtonGroup>
+                ) : null,
+        },
+    ];
+
     return (
         <AppLayout
             breadcrumbs={breadcrumbs}
@@ -265,98 +346,25 @@ export default function AdminGroupsIndex({
                         </div>
                     }
                 >
-                    <TablePanel
-                        footer={
-                            hasTablePaginationFooter(groups) ? (
-                                <TablePaginationFooter pagination={groups} />
-                            ) : undefined
+                    <DataTable
+                        columns={columns}
+                        data={groups.data}
+                        getRowId={(group) => String(group.id)}
+                        sort={{ id: sort, direction }}
+                        onSortChange={changeSort}
+                        pagination={groups}
+                        onRowClick={openEdit}
+                        getRowProps={(group) => ({
+                            className: group.can_update
+                                ? 'cursor-pointer'
+                                : undefined,
+                        })}
+                        emptyState={
+                            <span className="text-muted-foreground">
+                                {t('groups.empty')}
+                            </span>
                         }
-                    >
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Name</TableHead>
-                                    <TableHead>Roles</TableHead>
-                                    <TableHead className="text-right">
-                                        Members
-                                    </TableHead>
-                                    <TableHead className="w-[1%] text-right">
-                                        Actions
-                                    </TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {groups.data.length === 0 ? (
-                                    <TableRow>
-                                        <TableCell
-                                            colSpan={4}
-                                            className="text-muted-foreground"
-                                        >
-                                            No groups yet.
-                                        </TableCell>
-                                    </TableRow>
-                                ) : (
-                                    groups.data.map((group) => (
-                                        <TableRow
-                                            key={group.id}
-                                            className={
-                                                group.can_update
-                                                    ? 'cursor-pointer'
-                                                    : undefined
-                                            }
-                                            onClick={() => openEdit(group)}
-                                        >
-                                            <TableCell className="max-w-[16rem]">
-                                                <NameSlugCell
-                                                    name={group.name}
-                                                    slug={group.slug}
-                                                />
-                                            </TableCell>
-                                            <TableCell>
-                                                <div className="flex flex-wrap gap-1">
-                                                    {group.roles.map((r) => (
-                                                        <Badge
-                                                            key={r.id}
-                                                            variant="secondary"
-                                                        >
-                                                            {r.name}
-                                                        </Badge>
-                                                    ))}
-                                                </div>
-                                            </TableCell>
-                                            <TableCell className="text-right tabular-nums">
-                                                {group.users_count ?? '—'}
-                                            </TableCell>
-                                            <TableCell
-                                                className="text-right"
-                                                onClick={(e) =>
-                                                    e.stopPropagation()
-                                                }
-                                            >
-                                                {group.can_update && (
-                                                    <HeaderIconButton
-                                                        type="button"
-                                                        variant="destructive-ghost"
-                                                        size="icon-sm"
-                                                        label={t(
-                                                            'common.delete',
-                                                        )}
-                                                        onClick={() =>
-                                                            setPendingDeleteGroup(
-                                                                group,
-                                                            )
-                                                        }
-                                                    >
-                                                        <Trash2 className="size-3.5" />
-                                                    </HeaderIconButton>
-                                                )}
-                                            </TableCell>
-                                        </TableRow>
-                                    ))
-                                )}
-                            </TableBody>
-                        </Table>
-                    </TablePanel>
+                    />
                 </PageLayout>
 
                 <GroupFormDrawer

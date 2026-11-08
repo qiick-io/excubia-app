@@ -1,5 +1,11 @@
 import { useTranslation } from 'react-i18next';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+    Avatar,
+    AvatarBadge,
+    AvatarFallback,
+    AvatarImage,
+} from '@/components/ui/avatar';
+import { avatarToneClass } from '@/lib/avatar-tone';
 import { cn } from '@/lib/utils';
 
 /**
@@ -27,15 +33,17 @@ type UserAvatarProps = {
     /** Used for the initial when the name is empty. */
     email?: string;
     imageUrl?: string | null;
-    /** Presence: online / offline dot bottom-right. Omit for no dot. */
+    /** Presence: green online / grey offline badge. Omit for no badge. */
     isOnline?: boolean;
+    size?: 'default' | 'sm' | 'lg';
     className?: string;
 };
 
 /**
- * User avatar: per-user colour initials (or the image) with an optional online
- * / offline dot. Decorative: the row text next to it already names the user,
- * so the dot is `aria-hidden` and only titled for pointer users.
+ * User avatar: the image, else per-user colour initials, with an optional
+ * presence `AvatarBadge` (bottom-right). Decorative: the row text next to it
+ * already names the user, so the badge is `aria-hidden` and only titled for
+ * pointer users. Works as a child of `AvatarGroup`.
  */
 export function UserAvatar({
     userId,
@@ -43,30 +51,28 @@ export function UserAvatar({
     email = '',
     imageUrl,
     isOnline,
+    size = 'default',
     className,
 }: UserAvatarProps) {
     const { t } = useTranslation();
 
     return (
-        <span className={cn('relative shrink-0', className)}>
-            <Avatar userId={userId} className="size-7">
-                {imageUrl ? <AvatarImage src={imageUrl} alt={name} /> : null}
-                <AvatarFallback className="text-xs font-medium">
-                    {getInitials(name, email)}
-                </AvatarFallback>
-            </Avatar>
+        <Avatar size={size} className={className}>
+            {imageUrl ? <AvatarImage src={imageUrl} alt={name} /> : null}
+            <AvatarFallback
+                className={cn(avatarToneClass(userId), 'text-xs font-medium')}
+            >
+                {getInitials(name, email)}
+            </AvatarFallback>
             {isOnline === undefined ? null : (
-                <span
-                    className={cn(
-                        'absolute -right-0.5 -bottom-0.5 size-2 rounded-full ring-2 ring-background',
-                        isOnline ? 'bg-success' : 'bg-muted-foreground/30',
-                    )}
+                <AvatarBadge
+                    className={isOnline ? 'bg-success' : 'bg-muted-foreground'}
                     title={isOnline ? t('common.online') : t('common.offline')}
                     data-test="user-online-dot"
                     data-online={isOnline ? '1' : '0'}
                     aria-hidden
                 />
             )}
-        </span>
+        </Avatar>
     );
 }

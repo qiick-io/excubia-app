@@ -3,95 +3,107 @@
 declare(strict_types=1);
 
 /**
- * Codice Perfetto guardrails (see CLAUDE.md).
+ * qiick naming and architecture guardrails, identical in every qiick repo.
  *
- * Laravel and starter-kit files keep their upstream names and are excluded with ignoring().
+ * Generated from qiick-io/app-ui `standards/php/NamingArchitectureTest.php` by
+ * `scripts/sync-standards.mjs`; CI fails when this copy differs. Do not edit it here:
+ *
+ * - framework / package scaffolding a rule must skip goes in `naming-architecture.php`
+ *   next to this file (the repo's own list, with a reason per entry);
+ * - repo-specific rules go in another test file in `tests/Arch/`.
+ *
+ * The rules are the "Role suffixes" and "Architecture" sections of the qiick code
+ * standard. A namespace the repo does not have passes trivially.
  */
-arch('every application class declares strict types')
-    ->expect('App')
+
+/**
+ * @var array{
+ *     namespace: string,
+ *     ignoring?: array<string, list<string>>,
+ *     suffixes?: array<string, string>,
+ * } $namingArchitecture
+ */
+$namingArchitecture = require __DIR__.'/naming-architecture.php';
+$rootNamespace = $namingArchitecture['namespace'];
+$ignoredBy = static fn (string $rule): array => $namingArchitecture['ignoring'][$rule] ?? [];
+
+/** Sub-namespace => role suffix every class in it must end with. */
+$classSuffixes = [
+    'Actions' => 'Action',
+    'Builders' => 'Builder',
+    'Console\Commands' => 'Command',
+    'Data' => 'Data',
+    'Events' => 'Event',
+    'Exceptions' => 'Exception',
+    'Http\Controllers' => 'Controller',
+    'Http\Middleware' => 'Middleware',
+    'Http\Requests' => 'Request',
+    'Http\Resources' => 'Resource',
+    'Http\Responses' => 'Response',
+    'Jobs' => 'Job',
+    'Listeners' => 'Listener',
+    'Notifications' => 'Notification',
+    'Observers' => 'Observer',
+    'Policies' => 'Policy',
+    'Rules' => 'Rule',
+    'Services' => 'Service',
+    ...($namingArchitecture['suffixes'] ?? []),
+];
+
+arch('strict types')
+    ->expect($rootNamespace)
     ->toUseStrictTypes()
-    ->ignoring([
-        'App\Actions\Fortify',
-        'App\Concerns',
-        'App\Http\Controllers\Controller',
-        'App\Http\Controllers\Settings',
-        'App\Http\Middleware',
-        'App\Http\Requests\Settings',
-        'App\Models\User',
-        'App\Providers',
-    ]);
+    ->ignoring($ignoredBy('strict types'));
 
 arch('no debugging helpers')
     ->expect(['dd', 'dump', 'ray', 'var_dump'])
     ->not->toBeUsed();
 
-arch('env helper is not used outside config')
+arch('env() only in config')
     ->expect('env')
     ->not->toBeUsed()
-    ->ignoring('Config');
+    ->ignoring(['Config', ...$ignoredBy('env')]);
 
 arch('controllers do not use the DB facade')
-    ->expect('App\Http\Controllers')
+    ->expect("{$rootNamespace}\\Http\\Controllers")
     ->not->toUse('Illuminate\Support\Facades\DB');
 
-arch('models use bare nouns')
-    ->expect('App\Models')
+arch('models use bare domain nouns')
+    ->expect("{$rootNamespace}\\Models")
     ->classes()
     ->not->toHaveSuffix('Model');
 
-arch('data objects are readonly and suffixed')
-    ->expect('App\Data')
+arch('data objects are readonly')
+    ->expect("{$rootNamespace}\\Data")
     ->classes()
     ->toBeReadonly()
-    ->toHaveSuffix('Data');
+    ->ignoring($ignoredBy('Data'));
 
-arch('actions end with Action')
-    ->expect('App\Actions')
-    ->classes()
-    ->toHaveSuffix('Action')
-    ->ignoring('App\Actions\Fortify');
+foreach ($classSuffixes as $subNamespace => $suffix) {
+    // Fortify's published actions keep their upstream names in every Laravel app.
+    $scaffolding = $subNamespace === 'Actions' ? ["{$rootNamespace}\\Actions\\Fortify"] : [];
 
-arch('services end with Service')
-    ->expect('App\Services')
-    ->classes()
-    ->toHaveSuffix('Service');
+    arch("{$subNamespace} end with {$suffix}")
+        ->expect("{$rootNamespace}\\{$subNamespace}")
+        ->classes()
+        ->toHaveSuffix($suffix)
+        ->ignoring([...$scaffolding, ...$ignoredBy($subNamespace)]);
+}
 
-arch('jobs end with Job')
-    ->expect('App\Jobs')
-    ->classes()
-    ->toHaveSuffix('Job');
-
-arch('console commands end with Command')
-    ->expect('App\Console\Commands')
-    ->classes()
-    ->toHaveSuffix('Command');
-
-arch('enums end with Enum')
-    ->expect('App\Enums')
+arch('Enums end with Enum')
+    ->expect("{$rootNamespace}\\Enums")
     ->enums()
-    ->toHaveSuffix('Enum');
+    ->toHaveSuffix('Enum')
+    ->ignoring($ignoredBy('Enums'));
 
-arch('controllers end with Controller')
-    ->expect('App\Http\Controllers')
-    ->classes()
-    ->toHaveSuffix('Controller');
+arch('Contracts are interfaces ending with Contract')
+    ->expect("{$rootNamespace}\\Contracts")
+    ->toBeInterfaces()
+    ->toHaveSuffix('Contract')
+    ->ignoring($ignoredBy('Contracts'));
 
-arch('form requests end with Request')
-    ->expect('App\Http\Requests')
-    ->classes()
-    ->toHaveSuffix('Request');
-
-arch('policies end with Policy')
-    ->expect('App\Policies')
-    ->classes()
-    ->toHaveSuffix('Policy');
-
-arch('AI agents end with Agent')
-    ->expect('App\Ai\Agents')
-    ->classes()
-    ->toHaveSuffix('Agent');
-
-arch('AI tools end with Tool')
-    ->expect('App\Ai\Tools')
-    ->classes()
-    ->toHaveSuffix('Tool');
+arch('traits end with Trait')
+    ->expect($rootNamespace)
+    ->traits()
+    ->toHaveSuffix('Trait')
+    ->ignoring($ignoredBy('traits'));

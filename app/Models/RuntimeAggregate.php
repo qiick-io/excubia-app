@@ -11,12 +11,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
- * One minute of one runtime series of a project (#48, #111): one of the 16 core runtime types
+ * One minute of one runtime series of a project (#48, #111): one of the 17 core runtime types
  * per its dimensions (and the batch's release, when sent). Counts are the recorded events; the
  * estimated real count is `count / sample_rate`. `total_ms` and `max_ms` are null for types that
  * are not timed; `metrics` holds the type-specific metrics of `RuntimeTypeEnum::metrics()`
- * (memory, cache counters, repeats, server gauges and `isContainer`), `histogram` the optional
- * 12 latency counts.
+ * (memory, cache counters, repeats, server gauges and `isContainer`, health status, severity,
+ * finding count and fingerprints), `histogram` the optional 12 latency counts.
  *
  * @property int $id
  * @property int $project_id
@@ -30,7 +30,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $release
  * @property float|null $total_ms
  * @property float|null $max_ms
- * @property array<string, int|float|bool|null>|null $metrics
+ * @property array<string, mixed>|null $metrics
  * @property list<int>|null $histogram
  */
 #[Fillable(['project_id', 'type', 'bucket', 'sample_rate', 'dimension_key', 'dimensions', 'count', 'error_count', 'total_ms', 'max_ms', 'release', 'metrics', 'histogram'])]
