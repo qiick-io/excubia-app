@@ -23,9 +23,9 @@ return new class extends Migration
             $table->string('task');
             $table->string('expression', 100);
             $table->string('timezone', 64);
-            $table->boolean('without_overlapping')->default(false);
-            $table->boolean('on_one_server')->default(false);
-            $table->boolean('runs_in_maintenance_mode')->default(false);
+            $table->boolean('is_without_overlapping')->default(false);
+            $table->boolean('is_on_one_server')->default(false);
+            $table->boolean('can_run_in_maintenance_mode')->default(false);
             $table->json('environments');
             $table->unsignedSmallInteger('late_after_minutes')->default(5);
             // Schedule order of the inventory.
@@ -59,6 +59,7 @@ return new class extends Migration
 
             $table->unique(['project_id', 'task_id', 'bucket', 'outcome']);
             $table->index(['project_id', 'bucket']);
+            $table->index('bucket');
         });
     }
 

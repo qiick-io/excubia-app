@@ -332,6 +332,18 @@ it('raises the runtime alert rules once per hour and subject, only when they are
     expect(AlertLog::query()->where('event', 'runtime.log_spike')->count())->toBe(2);
 });
 
+it('cools down a runtime alert whose subject is longer than the column (#193)', function () {
+    $project = Project::factory()->create();
+    $channel = str_repeat('c', 400);
+    alertRuntimeRow($project, 'logLevel', ['level' => 'error', 'channel' => $channel], 60);
+    app(SettingsRepositoryService::class)->save(['alert_log_spike_per_hour' => 50]);
+
+    $this->artisan('excubia:evaluate-runtime-alerts')->assertSuccessful();
+    $this->artisan('excubia:evaluate-runtime-alerts')->assertSuccessful();
+
+    expect(AlertLog::query()->pluck('subject')->all())->toBe([mb_substr("log:{$channel}", 0, AlertLog::SUBJECT_LENGTH)]);
+});
+
 it('saves the billing webhook rules in Settings → Integrations, off by default (#178)', function () {
     $filter = ['minimum_severity' => 'high', 'event_types' => ['finding.new']];
     $channels = ['channels' => ['webhook' => $filter, 'slack' => $filter, 'telegram' => $filter]];
@@ -494,7 +506,7 @@ it('mails the weekly digest to the users who want it, in their locale', function
     ExceptionGroup::query()->create([
         'project_id' => $project->id, 'fingerprint' => str_repeat('a', 64), 'environment' => 'production', 'class' => 'RuntimeException',
         'message' => 'secret body', 'frames' => [], 'previous' => [], 'context_kind' => 'request', 'context_name' => 'checkout.store',
-        'count' => 12, 'first_seen' => Date::now()->subDays(20), 'last_seen' => Date::now(), 'status' => 'open',
+        'count' => 12, 'first_seen_at' => Date::now()->subDays(20), 'last_seen_at' => Date::now(), 'status' => 'open',
     ]);
     $project->scheduledTasks()->create([
         'task_id' => str_repeat('b', 64), 'task' => 'artisan reports:send', 'expression' => '0 3 * * *', 'timezone' => 'UTC', 'environments' => [],

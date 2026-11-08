@@ -131,8 +131,8 @@ function seededA11yProject(): Project
         'context_kind' => 'request',
         'context_name' => 'checkout.store',
         'count' => 4,
-        'first_seen' => $now->copy()->subHour(),
-        'last_seen' => $now,
+        'first_seen_at' => $now->copy()->subHour(),
+        'last_seen_at' => $now,
         'status' => 'open',
     ]);
 

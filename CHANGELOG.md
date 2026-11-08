@@ -40,4 +40,5 @@ upgrade from the version before (see [docs/self-hosting.md](docs/self-hosting.md
 ### Upgrade notes
 
 - **First release:** there is nothing to upgrade from. Install with `composer create-project qiick/excubia-app` and `php artisan excubia:install`, or the Docker image (`ghcr.io/qiick-io/excubia-app`); see [docs/self-hosting.md](docs/self-hosting.md).
+- **Migrations are frozen and forward-only from this release on** (#193): released migrations are never edited again, every schema change is a new migration, and each release upgrades the previous database with `php artisan migrate --force` (run by `excubia:upgrade` and the Docker entrypoint). Back up the database before every upgrade. Development databases created before this release need one last fresh migration.
 - **Upgrade steps from here on (source):** check out or merge the new tag, then `composer install --no-dev -o`, `npm ci && npm run build`, `php artisan excubia:upgrade --force` and `php artisan optimize`. **Docker:** pull `ghcr.io/qiick-io/excubia-app:<version>` and recreate the containers; the `app` container migrates on start.

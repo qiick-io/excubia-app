@@ -43,6 +43,9 @@ class AlertLog extends Model
 
     public const SKIPPED = 'skipped';
 
+    /** Length of the `subject` column: longer subjects (a route, a server name) are cut to it before every lookup. */
+    public const SUBJECT_LENGTH = 255;
+
     /**
      * @return BelongsTo<Project, $this>
      */

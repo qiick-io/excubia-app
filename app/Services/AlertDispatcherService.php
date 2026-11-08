@@ -58,6 +58,8 @@ class AlertDispatcherService
     public function dispatch(AlertEventEnum $event, Project $project, string $summary, array $data = [], ?SeverityEnum $severity = null, ?string $subject = null, array $fingerprints = []): void
     {
         $severity ??= $this->settings->alertEventSeverity($event);
+        // Stored cut to the column, so the mute, duplicate and throttle lookups compare the stored value.
+        $subject = $subject === null ? null : mb_substr($subject, 0, AlertLog::SUBJECT_LENGTH);
         $payload = [
             'id' => (string) Str::uuid(),
             'event' => $event->value,
@@ -79,7 +81,7 @@ class AlertDispatcherService
             'project_id' => $project->id,
             'event' => $event->value,
             'severity' => $severity->value,
-            'subject' => $subject === null ? null : mb_substr($subject, 0, 255),
+            'subject' => $subject,
             'summary' => mb_substr($summary, 0, 500),
             'status' => match (true) {
                 $reason !== null => AlertLog::SUPPRESSED,

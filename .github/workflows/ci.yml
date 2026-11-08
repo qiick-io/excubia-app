@@ -273,6 +273,22 @@ jobs:
       - name: Install and upgrade smoke test
         run: scripts/e2e/install-upgrade.sh
 
+  # Forward-only migrations (#193): a migration on `main`, on the latest `v*` tag or in the
+  # freeze baseline `database/migrations/.frozen` is never modified, renamed or deleted.
+  migrations-frozen:
+    name: Migrations frozen
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The release tags, `main` and the base branch.
+          fetch-depth: 0
+
+      - name: Check frozen migrations
+        run: scripts/migrations-frozen.sh "${{ github.base_ref && format('origin/{0}', github.base_ref) || '' }}"
+
   # Axe smoke (#112), as in externa-core: pull requests to `develop` run only the smoke test ("lite");
   # pushes and pull requests to `main` run every browser test. Not part of `php artisan test`.
   accessibility:

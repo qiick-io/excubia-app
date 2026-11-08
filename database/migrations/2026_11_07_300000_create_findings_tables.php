@@ -34,11 +34,12 @@ return new class extends Migration
             // Inclusive, as the `until` of an excubia.json ignore rule.
             $table->date('dismissed_until')->nullable();
             $table->string('dismissed_reason', 500)->nullable();
-            $table->foreignId('dismissed_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('dismissed_by_user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
 
             $table->unique(['project_id', 'fingerprint']);
             $table->index(['project_id', 'status']);
+            $table->index('dismissed_by_user_id');
         });
 
         Schema::create('finding_events', function (Blueprint $table): void {
@@ -55,6 +56,9 @@ return new class extends Migration
 
             $table->index(['finding_id', 'occurred_at']);
             $table->index(['event', 'occurred_at']);
+            // The report prune nulls these out; user deletion too.
+            $table->index('health_report_id');
+            $table->index('user_id');
         });
     }
 

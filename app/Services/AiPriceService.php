@@ -17,7 +17,9 @@ use Carbon\CarbonInterface;
  * A model is priced by the row of its provider (as named in the project's `config/ai.php`) with
  * the same model name, or the row whose model the reported one extends by a date or version
  * suffix (`gpt-4o-2024-08-06` → `gpt-4o`, `claude-sonnet-4-5-20250929` → `claude-sonnet-4-5`).
- * A model without a row has no cost: the pages show its tokens only.
+ * A model without a row has no cost: the pages show its tokens only. A deprecated model that its
+ * provider bills as another model from a day on (ROUTES) is priced by that model's row from that
+ * day, so earlier days keep their own price.
  *
  * Cost = uncached input × input + cache read × cache read + cache write × cache write + output
  * × output + reasoning × reasoning + image input/output tokens × their prices + audio seconds ×
@@ -45,6 +47,21 @@ class AiPriceService
         'gemini' => 'https://aistudio.google.com/docs/pricing',
     ];
 
+    /**
+     * Deprecated models their provider routes to and bills as another model from a day on (UTC),
+     * by provider and model: [first day, billed model]. Gemini 2.5 Pro and 2.5 Flash per
+     * https://aistudio.google.com/docs/deprecations, checked on DEFAULTS_UPDATED_ON. Exact model
+     * names only: Google's notice names no snapshot of them.
+     *
+     * @var array<string, array<string, array{0: string, 1: string}>>
+     */
+    public const ROUTES = [
+        'gemini' => [
+            'gemini-2.5-pro' => ['2026-12-01', 'gemini-3.8-flash'],
+            'gemini-2.5-flash' => ['2026-12-01', 'gemini-3.5-flash-lite'],
+        ],
+    ];
+
     /** The price fields of a row, after provider and model. */
     public const PRICE_FIELDS = ['input', 'cache_read', 'cache_write', 'output', 'reasoning', 'image_input', 'image_output', 'audio_second', 'search_unit'];
 
@@ -56,7 +73,8 @@ class AiPriceService
      * 5-minute write (the 1-hour write costs more), Claude Haiku 5.5 is priced for prompts up to
      * 100k tokens and Gemini 2.5 Pro for prompts up to 200k tokens (both cost more above), and
      * Gemini is priced for text, image and video input (audio input costs more). Gemini's output
-     * price includes thinking tokens.
+     * price includes thinking tokens. Gemini 3.8 Flash is at its price until 2026-12-31 (input,
+     * cache read and output double from 2027-01-01).
      *
      * @var list<array{0: string, 1: string, 2: float, 3: float|null, 4: float|null, 5: float, 6?: float|null, 7?: float|null, 8?: float|null, 9?: float|null}>
      */
@@ -80,6 +98,8 @@ class AiPriceService
         ['openai', 'whisper-1', 0.0, null, null, 0.0, null, null, null, 0.0001],
         ['gemini', 'gemini-2.5-pro', 1.25, 0.125, null, 10.0],
         ['gemini', 'gemini-2.5-flash', 0.3, 0.03, null, 2.5],
+        ['gemini', 'gemini-3.8-flash', 0.75, 0.075, null, 3.75],
+        ['gemini', 'gemini-3.5-flash-lite', 0.3, 0.03, null, 2.5],
     ];
 
     /** @var list<Price>|null */
@@ -167,18 +187,29 @@ class AiPriceService
     }
 
     /**
-     * The estimated cost (USD) of some usage of a provider and model; null when the model has no
-     * price, 0.0 when nothing was used.
+     * The model a provider bills some usage of a model on a day as: its ROUTES model from the
+     * route's first day, else the model itself.
+     */
+    public function billedModel(string $provider, string $model, CarbonInterface $on): string
+    {
+        $route = self::ROUTES[mb_strtolower($provider)][mb_strtolower($model)] ?? null;
+
+        return $route !== null && $on->toDateString() >= $route[0] ? $route[1] : $model;
+    }
+
+    /**
+     * The estimated cost (USD) of some usage of a provider and model on a day; null when the
+     * model, as billed that day (billedModel), has no price, 0.0 when nothing was used.
      *
      * @param  Usage  $usage  estimated real amounts
      */
-    public function cost(string $provider, string $model, array $usage): ?float
+    public function cost(string $provider, string $model, array $usage, CarbonInterface $on): ?float
     {
         if (array_sum($usage) <= 0) {
             return 0.0;
         }
 
-        $price = $this->priceFor($provider, $model);
+        $price = $this->priceFor($provider, $this->billedModel($provider, $model, $on));
 
         if ($price === null) {
             return null;
@@ -216,7 +247,8 @@ class AiPriceService
             ->get();
         $total = ['cost' => 0.0, 'calls' => 0.0, 'hasUnpriced' => false];
 
-        foreach ($rows->groupBy('usage_key') as $days) {
+        // Days billed as another model (ROUTES) are priced apart.
+        foreach ($rows->groupBy(fn (AiUsageDay $day): string => $day->usage_key."\0".$this->billedModel($day->provider, $day->model, $day->day)) as $days) {
             /** @var AiUsageDay $first */
             $first = $days->first();
             $usage = [];
@@ -226,7 +258,7 @@ class AiPriceService
             }
 
             /** @var Usage $usage */
-            $cost = $this->cost($first->provider, $first->model, $usage);
+            $cost = $this->cost($first->provider, $first->model, $usage, $first->day);
             $total['calls'] += (float) $days->sum('calls');
             $total['cost'] += $cost ?? 0.0;
             $total['hasUnpriced'] = $total['hasUnpriced'] || $cost === null;

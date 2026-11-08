@@ -27,8 +27,8 @@ use Illuminate\Support\Carbon;
  * @property string $context_kind
  * @property string $context_name
  * @property int $count
- * @property Carbon $first_seen
- * @property Carbon $last_seen
+ * @property Carbon $first_seen_at
+ * @property Carbon $last_seen_at
  * @property string|null $first_release release of the first batch with the group (#106)
  * @property string|null $last_release release of the batch with the latest occurrence
  * @property string|null $regressed_release release a resolved group came back in
@@ -36,7 +36,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $resolved_at
  * @property int|null $range_count occurrences in the time range, when loaded (#113)
  */
-#[Fillable(['project_id', 'fingerprint', 'environment', 'class', 'message', 'frames', 'previous', 'context_kind', 'context_name', 'count', 'first_seen', 'last_seen', 'first_release', 'last_release', 'regressed_release', 'status', 'resolved_at'])]
+#[Fillable(['project_id', 'fingerprint', 'environment', 'class', 'message', 'frames', 'previous', 'context_kind', 'context_name', 'count', 'first_seen_at', 'last_seen_at', 'first_release', 'last_release', 'regressed_release', 'status', 'resolved_at'])]
 class ExceptionGroup extends Model
 {
     /** Context kinds of excubia-core (`docs/exception-schema.json`); any other is stored as `unknown` (#169). */
@@ -69,8 +69,8 @@ class ExceptionGroup extends Model
             'frames' => 'array',
             'previous' => 'array',
             'count' => 'integer',
-            'first_seen' => 'datetime',
-            'last_seen' => 'datetime',
+            'first_seen_at' => 'datetime',
+            'last_seen_at' => 'datetime',
             'status' => ExceptionStatusEnum::class,
             'resolved_at' => 'datetime',
         ];

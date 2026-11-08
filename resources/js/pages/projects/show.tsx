@@ -555,7 +555,7 @@ function OverviewView({
         (exceptions.length > 0 ? 1 : 0) +
         (runtime !== null ? 1 : 0) +
         (hasRelease ? 1 : 0);
-    const lastSeen = openExceptions[0]?.last_seen ?? null;
+    const lastSeen = openExceptions[0]?.last_seen_at ?? null;
 
     return (
         <div className="flex flex-col gap-4">

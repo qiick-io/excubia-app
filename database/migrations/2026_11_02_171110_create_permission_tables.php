@@ -112,6 +112,8 @@ return new class extends Migration
                 ->cascadeOnDelete();
 
             $table->primary([$pivotPermission, $pivotRole], 'role_has_permissions_permission_id_role_id_primary');
+            // The role side of the pivot: PostgreSQL does not index foreign keys (#193).
+            $table->index($pivotRole);
         });
 
         app('cache')

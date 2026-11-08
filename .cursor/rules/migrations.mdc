@@ -1,0 +1,12 @@
+---
+description: Excubia App migrations are frozen and forward-only from 1.0.0-beta.1
+globs: "database/migrations/**"
+alwaysApply: true
+---
+
+# Migrations: forward-only (#193)
+
+- From `1.0.0-beta.1` on, every schema change is a **new migration**. Never edit, rename or delete an existing file in `database/migrations/`. The old pre-release rule (edit the `create_*` migrations in place) no longer applies.
+- A new migration runs with `php artisan migrate --force` on a customer database that has data: backfill what it needs, never assume `migrate:fresh`. It must work on SQLite, MySQL and PostgreSQL (CI runs all three).
+- Index the columns of hot queries and every foreign key column (PostgreSQL does not index them); `tests/Feature/SchemaTest.php` checks the foreign keys and the cascade on project delete.
+- CI `Migrations frozen` (`scripts/migrations-frozen.sh`) fails when a PR modifies or deletes a migration that exists on `main`, on the latest `v*` tag or in `database/migrations/.frozen`. That baseline only grows: never remove or change a line.

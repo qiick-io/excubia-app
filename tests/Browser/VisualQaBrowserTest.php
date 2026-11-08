@@ -142,8 +142,8 @@ function seededVisualProject(): Project
             'context_kind' => 'job',
             'context_name' => 'App\\Jobs\\SendOrderConfirmation',
             'count' => $count,
-            'first_seen' => $now->copy()->subDays(3),
-            'last_seen' => $now->copy()->subHours(5),
+            'first_seen_at' => $now->copy()->subDays(3),
+            'last_seen_at' => $now->copy()->subHours(5),
             'status' => $status,
         ]);
     }

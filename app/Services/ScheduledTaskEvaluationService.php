@@ -54,7 +54,7 @@ class ScheduledTaskEvaluationService
             return new ScheduledTaskEvaluationData(ScheduledTaskStatusEnum::NotExpected, nextDueAt: $nextDueAt);
         }
 
-        if ($context->isInMaintenanceMode && ! $task->runs_in_maintenance_mode) {
+        if ($context->isInMaintenanceMode && ! $task->can_run_in_maintenance_mode) {
             return new ScheduledTaskEvaluationData(ScheduledTaskStatusEnum::Paused, nextDueAt: $nextDueAt);
         }
 
