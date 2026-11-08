@@ -7,8 +7,11 @@
 # runtime type and exception capture turned on, generates some traffic there, then runs
 # `excubia:check --format=json`, `excubia:push` and `excubia:push-runtime` against this app.
 # It fails unless every command exits 0 (the push commands exit 3 on any non-2xx answer) and the
-# app stored a report, runtime aggregates and exception groups for the project, and `health`
-# aggregates when the core has them (#115). Skipped runtime types only warn.
+# app stored a report, runtime aggregates and exception groups for the project, `health`
+# aggregates when the core has them (#115), and `ai` aggregates when the core has that type (#169):
+# the throwaway app then installs the Laravel AI SDK (`laravel/ai`, a fixture of this test, not a
+# dependency of this app) and runs one agent prompt, and a classification when the core sends that
+# operation, on the SDK's fake gateways, so no provider is called. Skipped runtime types only warn.
 #
 # Usage: scripts/e2e/core-contract.sh [core constraint]   (default: ^1.0@beta; e.g. dev-develop)
 # Environment: E2E_WORK_DIR (default: a new temp dir), E2E_APP_PORT (8765), E2E_PROBE_PORT (8766),
@@ -173,6 +176,60 @@ if php -r 'exit(isset(json_decode(file_get_contents($argv[1]), true)["runtime"][
     EXPECT_HEALTH=1
 fi
 
+# A core with the `ai` type (#198) records the Laravel AI SDK: install it in the throwaway app and
+# drive it without network through its fake gateways (#169).
+EXPECT_AI=0
+EXPECT_CLASSIFICATION=0
+
+if php -r 'exit(isset(json_decode(file_get_contents($argv[1]), true)["runtime"]["ai"]) ? 0 : 1);' "${PROBE_DIR}/excubia.json"; then
+    EXPECT_AI=1
+    (cd "${PROBE_DIR}" && composer require laravel/ai --no-interaction --with-all-dependencies) >> "${WORK_DIR}/probe-composer.log" 2>&1 || fail "composer require laravel/ai failed"
+    (cd "${PROBE_DIR}" && composer show laravel/ai | sed -n 's/^versions *: /laravel\/ai installed: /p')
+
+    if grep -q '"classification"' "${PROBE_DIR}/vendor/qiick/excubia-core/docs/runtime-schema.json"; then
+        EXPECT_CLASSIFICATION=1
+    fi
+
+    mkdir -p "${PROBE_DIR}/app/Ai"
+    cat > "${PROBE_DIR}/app/Ai/E2eAgent.php" <<'PHP'
+<?php
+
+namespace App\Ai;
+
+use Laravel\Ai\Contracts\Agent;
+use Laravel\Ai\Promptable;
+
+// An agent for the Excubia end-to-end contract test, answered by the SDK's fake gateway.
+class E2eAgent implements Agent
+{
+    use Promptable;
+
+    public function instructions(): string
+    {
+        return 'You answer the Excubia end-to-end test.';
+    }
+}
+PHP
+
+    cat >> "${PROBE_DIR}/routes/web.php" <<PHP
+
+// AI traffic for the Excubia end-to-end contract test, on the SDK's fake gateways (no network).
+Route::get('/e2e/ai', function () {
+    App\Ai\E2eAgent::fake(['e2e answer']);
+    (new App\Ai\E2eAgent)->prompt('e2e', provider: 'openai', model: 'gpt-e2e');
+
+    if (${EXPECT_CLASSIFICATION} === 1) {
+        Laravel\Ai\Classification::fake();
+        Laravel\Ai\Classification::of('e2e')
+            ->question('mood', new Laravel\Ai\Classification\Choice('Mood?', ['happy' => 'Happy', 'sad' => 'Sad']))
+            ->classify(['openai' => 'gpt-e2e']);
+    }
+
+    return 'ok';
+});
+PHP
+fi
+
 cat >> "${PROBE_DIR}/routes/web.php" <<'PHP'
 
 // Traffic for the Excubia end-to-end contract test (scripts/e2e/core-contract.sh in excubia-app).
@@ -227,6 +284,11 @@ for _ in 1 2 3; do
     [ "${status}" = "200" ] || fail "GET /e2e/traffic answered ${status}"
 done
 
+if [ "${EXPECT_AI}" = "1" ]; then
+    status="$(curl -s -o /dev/null -w '%{http_code}' "${PROBE_URL}/e2e/ai")"
+    [ "${status}" = "200" ] || fail "GET /e2e/ai answered ${status}"
+fi
+
 status="$(curl -s -o /dev/null -w '%{http_code}' "${PROBE_URL}/e2e/fail")"
 [ "${status}" = "500" ] || fail "GET /e2e/fail answered ${status}, expected 500"
 
@@ -251,6 +313,7 @@ RESULT="$(app_artisan tinker --execute '
         "reports" => $project->healthReports()->count(),
         "runtimeAggregates" => $project->runtimeAggregates()->count(),
         "runtimeTypes" => $project->runtimeAggregates()->toBase()->selectRaw("type, count(*) as rows")->groupBy("type")->pluck("rows", "type"),
+        "aiOperations" => $project->runtimeAggregates()->where("type", "ai")->get()->map(fn ($aggregate) => $aggregate->dimensions["operation"] ?? null)->unique()->values(),
         "exceptionGroups" => $project->exceptionGroups()->count(),
         "skippedRuntimeAggregates" => $project->skipped_runtime_aggregates,
     ]).PHP_EOL;
@@ -272,6 +335,14 @@ php -r '
         $errors[] = "no health aggregates stored";
     }
 
+    if ($argv[3] === "1" && ! in_array("agent", $result["aiOperations"], true)) {
+        $errors[] = "no ai agent aggregates stored";
+    }
+
+    if ($argv[4] === "1" && ! in_array("classification", $result["aiOperations"], true)) {
+        $errors[] = "no ai classification aggregates stored";
+    }
+
     if ($result["skippedRuntimeAggregates"] > 0) {
         // A type this app does not store yet: the push still succeeds (#111), so warn only.
         $message = $result["skippedRuntimeAggregates"]." runtime aggregates of a type this app does not know were skipped";
@@ -282,6 +353,6 @@ php -r '
         fwrite(STDERR, implode(PHP_EOL, $errors).PHP_EOL);
         exit(1);
     }
-' "${RESULT}" "${EXPECT_HEALTH}" || fail "excubia-app did not store the pushed data"
+' "${RESULT}" "${EXPECT_HEALTH}" "${EXPECT_AI}" "${EXPECT_CLASSIFICATION}" || fail "excubia-app did not store the pushed data"
 
 step "E2E passed against qiick/excubia-core:${CORE_VERSION}"
