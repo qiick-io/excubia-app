@@ -513,6 +513,7 @@
             "title": "AI prices",
             "description": "Prices per provider and model that turn the AI usage of your projects into estimated costs. The provider is the name in the project's config/ai.php. A dated model name (gpt-4o-2024-08-06) uses the row of its model (gpt-4o). Models without a row show tokens without a cost.",
             "estimates": "These are estimates, not your bill: verify them against your provider. Table dated {{date}}; the defaults were last checked on {{defaultsDate}}.",
+            "sources": "Defaults from the official pricing pages, standard tier, base prices of tiered models (checked on {{date}}):",
             "add": "Add model",
             "restore": "Restore defaults",
             "provider": "Provider",

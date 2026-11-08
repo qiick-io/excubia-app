@@ -216,6 +216,7 @@ it('edits the AI price table with can-manage-alerts and restores nothing it was 
         ->where('updatedOn', AiPriceService::DEFAULTS_UPDATED_ON)
         ->has('prices', count(app(AiPriceService::class)->defaults()))
         ->where('prices.0.model', 'claude-opus-5-5')
+        ->where('defaultsSources.anthropic', 'https://platform.claude.com/docs/en/about-claude/pricing')
         ->has('defaults'));
 
     $row = ['provider' => 'acme', 'model' => 'secret-model', 'input' => 1, 'output' => 2, 'cache_read' => '', 'cache_write' => 0.5];

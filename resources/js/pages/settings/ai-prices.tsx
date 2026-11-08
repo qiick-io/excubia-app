@@ -57,7 +57,8 @@ const toFormRow = (row: PriceRow): FormRow => ({
 /**
  * Settings → AI prices (#129): the editable price table that turns the AI usage the projects
  * push into estimated costs, one row per provider (as named in the project's `config/ai.php`)
- * and model. Seeded with estimates of public list prices to verify; "Restore defaults" puts
+ * and model. Seeded with the list prices of the official pricing pages (`defaultsSources`, linked
+ * in the note); "Restore defaults" puts
  * them back in the form. A model without a row shows its tokens without a cost. Needs
  * `can-manage-alerts`.
  */
@@ -66,11 +67,13 @@ export default function AiPricesSettings({
     defaults,
     updatedOn,
     defaultsUpdatedOn,
+    defaultsSources,
 }: {
     prices: PriceRow[];
     defaults: PriceRow[];
     updatedOn: string;
     defaultsUpdatedOn: string;
+    defaultsSources: Record<string, string>;
 }) {
     const { t } = useTranslation();
     const form = useForm<{ prices: FormRow[] }>({
@@ -127,6 +130,26 @@ export default function AiPricesSettings({
                                 date: updatedOn,
                                 defaultsDate: defaultsUpdatedOn,
                             })}
+                            <p>
+                                {t('settings.aiPrices.sources', {
+                                    date: defaultsUpdatedOn,
+                                })}{' '}
+                                {Object.entries(defaultsSources).map(
+                                    ([provider, url], index) => (
+                                        <span key={provider}>
+                                            {index > 0 ? ', ' : null}
+                                            <a
+                                                href={url}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="underline underline-offset-4"
+                                            >
+                                                {provider}
+                                            </a>
+                                        </span>
+                                    ),
+                                )}
+                            </p>
                         </AlertDescription>
                     </Alert>
 

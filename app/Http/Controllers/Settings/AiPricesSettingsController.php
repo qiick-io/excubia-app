@@ -29,6 +29,7 @@ class AiPricesSettingsController extends Controller
             'defaults' => $prices->defaults(),
             'updatedOn' => $prices->updatedOn(),
             'defaultsUpdatedOn' => AiPriceService::DEFAULTS_UPDATED_ON,
+            'defaultsSources' => AiPriceService::SOURCES,
         ]);
     }
 
