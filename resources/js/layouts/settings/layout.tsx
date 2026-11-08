@@ -206,14 +206,16 @@ export default function SettingsLayout({
     );
 
     return (
-        // App shell is h-svh + overflow-hidden; only the content pane scrolls.
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 py-6">
+        // App shell is h-svh + overflow-hidden. On `lg` only the content pane scrolls; below `lg`
+        // the nav stacks above the content, so the whole column scrolls (a `min-h-0 flex-1` pane
+        // under a tall nav would shrink to 0 px, #209).
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-6 lg:overflow-hidden">
             <Heading
                 title={t('settings.layout.title')}
                 description={t('settings.layout.description')}
             />
 
-            <div className="flex min-h-0 flex-1 flex-col lg:flex-row lg:space-x-12">
+            <div className="flex flex-col lg:min-h-0 lg:flex-1 lg:flex-row lg:space-x-12">
                 <aside className="w-full max-w-xl shrink-0 lg:w-48">
                     <nav
                         className="flex flex-col gap-2"
@@ -268,10 +270,11 @@ export default function SettingsLayout({
 
                 <Separator className="my-6 shrink-0 lg:hidden" />
 
-                {/* Scroll pane: sticky Save bars pin to this box, not the viewport. */}
+                {/* Scroll pane on `lg`: sticky Save bars pin to this box, not the viewport. */}
                 <div
+                    data-test="settings-content"
                     className={cn(
-                        'min-h-0 flex-1 overflow-y-auto',
+                        'lg:min-h-0 lg:flex-1 lg:overflow-y-auto',
                         wide ? 'md:max-w-4xl' : 'md:max-w-2xl',
                     )}
                 >
