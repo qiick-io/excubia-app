@@ -50,6 +50,8 @@ enum AlertEventEnum: string
     case BillingPaymentFailed = 'billing.payment_failed';
     // Failed logins of a guard in the last hour at a threshold (#180); off by default.
     case AuthFailedLoginSpike = 'auth.failed_login_spike';
+    // Failed Scout index jobs of a model in the last hour at a threshold (#184); off by default.
+    case ScoutIndexFailures = 'scout.index_failures';
     // PHP, Laravel or Node security support ends within a lead time, or has ended (#157).
     case EolApproaching = 'eol.approaching';
     case EolReached = 'eol.reached';
@@ -80,7 +82,7 @@ enum AlertEventEnum: string
         return match ($this) {
             self::InfrastructureFailed => SeverityEnum::Critical,
             self::ProjectStale, self::HealthStale, self::ScheduleMissed, self::CacheHitRatioLow, self::EolApproaching, self::AiBudgetWarning, self::AiSpendSpike, self::BillingPaymentFailed => SeverityEnum::Medium,
-            self::FindingNew, self::HealthFailed, self::ProjectWorsened, self::ScheduleFailed, self::SchedulerDown, self::DeliveryFailed, self::LogSpike, self::PushRejected, self::EolReached, self::AiBudgetExceeded, self::AiErrorRate, self::BillingWebhookFailures, self::AuthFailedLoginSpike => SeverityEnum::High,
+            self::FindingNew, self::HealthFailed, self::ProjectWorsened, self::ScheduleFailed, self::SchedulerDown, self::DeliveryFailed, self::LogSpike, self::PushRejected, self::EolReached, self::AiBudgetExceeded, self::AiErrorRate, self::BillingWebhookFailures, self::AuthFailedLoginSpike, self::ScoutIndexFailures => SeverityEnum::High,
             self::ReportChecksSkipped => SeverityEnum::Low,
             default => SeverityEnum::Info,
         };

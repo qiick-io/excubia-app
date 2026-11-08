@@ -93,6 +93,7 @@ class SettingsRepositoryService
             'two_factor_required' => false,
             'reports_kept_per_project' => config('excubia.reports_kept_per_project'),
             'stale_after_hours' => config('excubia.stale_after_hours'),
+            'pennant_stale_after_days' => config('excubia.pennant_stale_after_days'),
             'runtime_retention_days' => config('excubia.runtime_retention_days'),
             'exceptions_retention_days' => config('excubia.exceptions_retention_days'),
             'activity_retention_days' => config('activitylog.clean_after_days'),
@@ -124,6 +125,8 @@ class SettingsRepositoryService
             'alert_billing_payment_failed_enabled' => false,
             // Failed-login alert rule (#180): null is off.
             'alert_auth_failed_logins_per_hour' => null,
+            // Scout index failure alert rule (#184): null is off.
+            'alert_scout_index_failures_per_hour' => null,
             // AI price table (#129): null uses AiPriceService::defaults().
             'ai_prices' => null,
             'ai_prices_updated_on' => null,
@@ -414,6 +417,15 @@ class SettingsRepositoryService
         return $this->integer('runtime_retention_days', 1, 3650);
     }
 
+    /**
+     * Days a Laravel Pennant feature must be checked with always the same value before the
+     * Runtime tab lists it as a stale flag (#189, Checks).
+     */
+    public function pennantStaleAfterDays(): int
+    {
+        return $this->integer('pennant_stale_after_days', 1, 3650);
+    }
+
     /** Days exception groups are kept after they were last seen (Data retention). */
     public function exceptionsRetentionDays(): int
     {
@@ -567,6 +579,12 @@ class SettingsRepositoryService
     public function alertAuthFailedLoginsPerHour(): ?int
     {
         return $this->positiveInteger('alert_auth_failed_logins_per_hour');
+    }
+
+    /** Failed Scout index jobs per model and hour from which a project alerts (#184); null when off. */
+    public function alertScoutIndexFailuresPerHour(): ?int
+    {
+        return $this->positiveInteger('alert_scout_index_failures_per_hour');
     }
 
     private function positiveInteger(string $key): ?int

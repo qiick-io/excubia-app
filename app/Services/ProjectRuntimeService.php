@@ -62,6 +62,10 @@ class ProjectRuntimeService
         'handledCount' => 'sum', 'paymentFailedCount' => 'sum', 'paymentActionRequiredCount' => 'sum', 'subscriptionCanceledCount' => 'sum',
         // `auth` (#180).
         'loginCount' => 'sum', 'lockoutCount' => 'sum', 'tokenAuthenticationCount' => 'sum',
+        // `scout` (#184).
+        'modelCount' => 'sum',
+        // `pennant` (#189).
+        'activeCount' => 'sum', 'inactiveCount' => 'sum', 'resolvedCount' => 'sum', 'unknownCount' => 'sum',
     ];
 
     /**
@@ -88,7 +92,13 @@ class ProjectRuntimeService
     /** The levels the error-log chart counts. */
     private const ERROR_LOG_LEVELS = ['emergency', 'alert', 'critical', 'error'];
 
-    public function __construct(private readonly TimeSeriesService $timeSeries) {}
+    /** A `pennant` feature core hashed: the first 12 hex characters of the name's sha256 (core #226). */
+    private const PENNANT_HASHED_FEATURE = '/^[0-9a-f]{12}$/';
+
+    public function __construct(
+        private readonly TimeSeriesService $timeSeries,
+        private readonly SettingsRepositoryService $settings,
+    ) {}
 
     /**
      * @return array<string, mixed>|null null when the project never pushed runtime data
@@ -138,6 +148,8 @@ class ProjectRuntimeService
             'reverb' => $this->reverb($project, $of(RuntimeTypeEnum::Reverb)),
             'billing' => $this->billing($of(RuntimeTypeEnum::BillingWebhook)),
             'auth' => $this->auth($of(RuntimeTypeEnum::Auth)),
+            'scout' => $this->scout($of(RuntimeTypeEnum::Scout)),
+            'pennant' => $this->pennant($project, $of(RuntimeTypeEnum::Pennant), $now),
             'deploys' => $this->timeSeries->deploys($project, $range, $now),
         ];
     }
@@ -282,8 +294,9 @@ class ProjectRuntimeService
         return [
             'count' => $this->estimate($series, fn (array $one): float => $one['count']),
             'errors' => $this->estimate($series, fn (array $one): float => $one['errorCount']),
-            'averageMs' => $recorded > 0 ? round($series->sum('totalMs') / $recorded, 1) : null,
-            'maxMs' => $series->isEmpty() ? null : round((float) $series->max('maxMs'), 1),
+            // Null without any duration, as for a Scout search (#184).
+            'averageMs' => $recorded > 0 && $series->contains(fn (array $one): bool => $one['totalMs'] !== null) ? round($series->sum('totalMs') / $recorded, 1) : null,
+            'maxMs' => $series->max('maxMs') === null ? null : round((float) $series->max('maxMs'), 1),
             ...$this->percentiles($series->reject(fn (array $one): bool => ($one['dimensions']['outcome'] ?? '') === 'skipped')),
         ];
     }
@@ -738,5 +751,122 @@ class ProjectRuntimeService
                 'tokenAuthentications' => $this->estimate($group, fn (array $one): ?float => $one['metrics']['tokenAuthenticationCount']),
             ];
         });
+    }
+
+    /**
+     * Laravel Scout (#184) per model class, engine and operation: estimated index and remove
+     * jobs with the failed ones and their rate (%), the records they carried, and job durations
+     * with p95; for `search` the searches started, without durations (core sends none). Index
+     * updates with `scout.queue` off are not recorded by core.
+     *
+     * @param  Collection<int, Series>  $series
+     * @return list<array<string, mixed>>
+     */
+    private function scout(Collection $series): array
+    {
+        return $this->table($series, ['model', 'engine', 'operation'], function (Collection $group): array {
+            $totals = $this->totals($group);
+
+            return [
+                ...$totals,
+                'errorRate' => $totals['count'] > 0 ? round($totals['errors'] / $totals['count'] * 100, 1) : null,
+                'records' => $this->estimate($group, fn (array $one): ?float => $one['metrics']['modelCount']),
+            ];
+        });
+    }
+
+    /**
+     * Laravel Pennant (#189) per feature over the range: estimated checks (active plus inactive),
+     * the active share (%, null without checks), first resolutions for a scope and checks of an
+     * undefined feature, and whether core hashed the name. Next to them the stale flags of
+     * stalePennantFeatures(), which look further back than the range.
+     *
+     * @param  Collection<int, Series>  $series
+     * @return array{staleAfterDays: int, staleWindowDays: int, stale: list<array{feature: string, isHashed: bool, value: 'active'|'inactive', checks: int}>, rows: list<array<string, mixed>>}
+     */
+    private function pennant(Project $project, Collection $series, CarbonImmutable $now): array
+    {
+        $staleAfterDays = $this->settings->pennantStaleAfterDays();
+        // Older minutes are pruned, so a retention shorter than the setting caps the window.
+        $staleWindowDays = min($staleAfterDays, $this->settings->runtimeRetentionDays());
+
+        return [
+            'staleAfterDays' => $staleAfterDays,
+            'staleWindowDays' => $staleWindowDays,
+            'stale' => $this->stalePennantFeatures($project, $staleWindowDays, $now),
+            'rows' => $this->table($series, ['feature'], function (Collection $group): array {
+                $active = $this->estimate($group, fn (array $one): ?float => $one['metrics']['activeCount']);
+                $inactive = $this->estimate($group, fn (array $one): ?float => $one['metrics']['inactiveCount']);
+
+                return [
+                    'isHashed' => preg_match(self::PENNANT_HASHED_FEATURE, (string) ($group->first()['dimensions']['feature'] ?? '')) === 1,
+                    'count' => $this->estimate($group, fn (array $one): float => $one['count']),
+                    'checks' => $active + $inactive,
+                    'active' => $active,
+                    'inactive' => $inactive,
+                    'activeShare' => $active + $inactive > 0 ? round($active / ($active + $inactive) * 100, 1) : null,
+                    'resolved' => $this->estimate($group, fn (array $one): ?float => $one['metrics']['resolvedCount']),
+                    'unknown' => $this->estimate($group, fn (array $one): ?float => $one['metrics']['unknownCount']),
+                ];
+            }),
+        ];
+    }
+
+    /**
+     * Stale Pennant flags (#189; core sends no check for them): features checked on each of the
+     * `$days` whole UTC days before today whose checks over those days and today all found the
+     * same value, so the flag can be removed. `value` is that value; `checks` the estimated
+     * checks of the window. Summed per feature and day in SQL. With the window as long as the
+     * retention, its first day is partly pruned already.
+     *
+     * @return list<array{feature: string, isHashed: bool, value: 'active'|'inactive', checks: int}>
+     */
+    private function stalePennantFeatures(Project $project, int $days, CarbonImmutable $now): array
+    {
+        $today = $now->startOfDay();
+        $driver = (new RuntimeAggregate)->getConnection()->getDriverName();
+        $active = $this->jsonNumber($driver, 'metrics', 'activeCount');
+        $inactive = $this->jsonNumber($driver, 'metrics', 'inactiveCount');
+
+        $rows = $this->window($project, RuntimeTypeEnum::Pennant, $today->subDays($days))
+            ->select('dimension_key')
+            ->addSelect([
+                new Expression('min(id) as id'),
+                new Expression('date(bucket) as day'),
+                new Expression("sum(1.0 * {$active} / sample_rate) as active"),
+                new Expression("sum(1.0 * {$inactive} / sample_rate) as inactive"),
+            ])
+            ->groupBy('dimension_key', new Expression('date(bucket)'))
+            ->get();
+
+        /** @var array<int, array<string, string>> $dimensions */
+        $dimensions = RuntimeAggregate::query()->whereKey($rows->pluck('id')->unique()->all())->pluck('dimensions', 'id')->all();
+        $stale = [];
+
+        // One group per feature: a release or sample rate change is a new dimension key.
+        foreach ($rows->groupBy(fn (object $row): string => (string) ($dimensions[(int) $row->id]['feature'] ?? '')) as $feature => $featureRows) {
+            $activeChecks = (int) round($featureRows->sum(fn (object $row): float => (float) $row->active));
+            $inactiveChecks = (int) round($featureRows->sum(fn (object $row): float => (float) $row->inactive));
+            $checkedDays = $featureRows
+                ->filter(fn (object $row): bool => (float) $row->active + (float) $row->inactive > 0 && substr((string) $row->day, 0, 10) < $today->toDateString())
+                ->map(fn (object $row): string => substr((string) $row->day, 0, 10))
+                ->unique()
+                ->count();
+
+            if ($checkedDays < $days || ($activeChecks > 0 && $inactiveChecks > 0)) {
+                continue;
+            }
+
+            $stale[] = [
+                'feature' => (string) $feature,
+                'isHashed' => preg_match(self::PENNANT_HASHED_FEATURE, (string) $feature) === 1,
+                'value' => $inactiveChecks === 0 ? 'active' : 'inactive',
+                'checks' => $activeChecks + $inactiveChecks,
+            ];
+        }
+
+        usort($stale, fn (array $left, array $right): int => $right['checks'] <=> $left['checks']);
+
+        return array_slice($stale, 0, self::TABLE_LIMIT);
     }
 }

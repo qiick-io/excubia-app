@@ -32,8 +32,10 @@ import type {
     RuntimeBillingRow,
     RuntimeCountRow,
     RuntimeOctaneRow,
+    RuntimePennantRow,
     RuntimeReverbChannels,
     RuntimeReverbRow,
+    RuntimeScoutRow,
     RuntimeRow,
     RuntimeServer,
     RuntimeSummary,
@@ -478,6 +480,10 @@ export function RuntimeView({ runtime }: { runtime: RuntimeSummary | null }) {
             <BillingCard billing={runtime.billing} format={format} />
 
             <AuthCard auth={runtime.auth} format={format} />
+
+            <ScoutCard scout={runtime.scout} format={format} />
+
+            <PennantCard pennant={runtime.pennant} format={format} />
         </div>
     );
 }
@@ -755,6 +761,203 @@ function AuthCard({
                 {
                     label: t('runtime.tokenAuthentications'),
                     cell: (row) => format.count(row.tokenAuthentications),
+                },
+            ]}
+        />
+    );
+}
+
+/**
+ * Laravel Scout (#184) per model, engine and operation: index and remove jobs with failures
+ * and the failure rate, records synced, p95 and slowest job; searches show only their count
+ * (core sends no failures, records or durations for them).
+ */
+function ScoutCard({
+    scout,
+    format,
+}: {
+    scout: RuntimeSummary['scout'];
+    format: Formatters;
+}) {
+    const { t } = useTranslation();
+    const isSearch = (row: RuntimeScoutRow) => row.operation === 'search';
+
+    return (
+        <RuntimeCard<RuntimeScoutRow>
+            title={t('runtime.scout')}
+            description={t('runtime.scoutDescription')}
+            configKey="runtime.scout"
+            rows={scout}
+            name={(row) => (
+                <Name
+                    primary={row.model}
+                    secondary={`${row.engine} · ${row.operation}`}
+                    isMono
+                    isSecondaryMono
+                />
+            )}
+            columns={[
+                {
+                    label: t('runtime.count'),
+                    cell: (row) => format.count(row.count),
+                },
+                {
+                    label: t('runtime.failedRate'),
+                    cell: (row) =>
+                        isSearch(row)
+                            ? '—'
+                            : `${format.count(row.errors)} (${format.number(row.errorRate)}%)`,
+                    isProblem: (row) => row.errors > 0,
+                },
+                {
+                    label: t('runtime.scoutRecords'),
+                    cell: (row) =>
+                        isSearch(row) ? '—' : format.count(row.records),
+                },
+                { label: 'p95', cell: (row) => format.ms(row.p95) },
+                {
+                    label: t('runtime.max'),
+                    cell: (row) => format.ms(row.maxMs),
+                },
+            ]}
+        />
+    );
+}
+
+/**
+ * Laravel Pennant (#189) per feature: checks with the active and inactive split and the active
+ * share (rollout progress), first resolutions and checks of an undefined feature (a removed
+ * flag still checked, or a typo). Hashed names carry a badge. The stale flags (always the same
+ * value on each day of the stale window) and the undefined features lead the card as badges;
+ * a note says when the runtime retention shortens the stale window below the setting.
+ */
+function PennantCard({
+    pennant,
+    format,
+}: {
+    pennant: RuntimeSummary['pennant'];
+    format: Formatters;
+}) {
+    const { t } = useTranslation();
+    const staleValues = new Map(
+        pennant.stale.map((stale) => [stale.feature, stale.value]),
+    );
+    const undefinedFeatures = pennant.rows.filter((row) => row.unknown > 0);
+
+    return (
+        <RuntimeCard<RuntimePennantRow>
+            title={t('runtime.pennant')}
+            description={t('runtime.pennantDescription')}
+            configKey="runtime.pennant"
+            rows={pennant.rows}
+            summary={
+                <div className="flex flex-col gap-2">
+                    <p className="text-sm text-muted-foreground">
+                        {t('runtime.pennantStaleRule', {
+                            count: pennant.staleWindowDays,
+                        })}
+                        {pennant.staleWindowDays < pennant.staleAfterDays
+                            ? ` ${t('runtime.pennantStaleRetention', {
+                                  setting: pennant.staleAfterDays,
+                                  window: pennant.staleWindowDays,
+                              })}`
+                            : null}
+                    </p>
+                    <div
+                        className="flex flex-wrap gap-2"
+                        aria-label={t('runtime.pennantStaleFlags')}
+                    >
+                        {pennant.stale.length === 0 ? (
+                            <Badge variant="muted">
+                                {t('runtime.pennantNoStaleFlags')}
+                            </Badge>
+                        ) : (
+                            pennant.stale.map((stale) => (
+                                <Badge key={stale.feature} variant="warning">
+                                    <span className="font-mono">
+                                        {stale.feature}
+                                    </span>{' '}
+                                    {t(
+                                        stale.value === 'active'
+                                            ? 'runtime.pennantAlwaysActive'
+                                            : 'runtime.pennantAlwaysInactive',
+                                    )}
+                                </Badge>
+                            ))
+                        )}
+                    </div>
+                    {undefinedFeatures.length > 0 ? (
+                        <div
+                            className="flex flex-wrap gap-2"
+                            aria-label={t('runtime.pennantUndefinedFeatures')}
+                        >
+                            {undefinedFeatures.map((row) => (
+                                <Badge key={row.feature} variant="destructive">
+                                    <span className="font-mono">
+                                        {row.feature}
+                                    </span>{' '}
+                                    {t('runtime.pennantUndefinedChecks', {
+                                        count: row.unknown,
+                                    })}
+                                </Badge>
+                            ))}
+                        </div>
+                    ) : null}
+                </div>
+            }
+            name={(row) => {
+                const staleValue = staleValues.get(row.feature);
+
+                return (
+                    <div className="flex items-center gap-2">
+                        <div className="min-w-0">
+                            <Name primary={row.feature} isMono />
+                        </div>
+                        {row.isHashed ? (
+                            <Badge
+                                variant="muted"
+                                title={t('runtime.pennantHashedHint')}
+                            >
+                                {t('runtime.pennantHashed')}
+                            </Badge>
+                        ) : null}
+                        {staleValue ? (
+                            <Badge variant="warning">
+                                {t(
+                                    staleValue === 'active'
+                                        ? 'runtime.pennantAlwaysActive'
+                                        : 'runtime.pennantAlwaysInactive',
+                                )}
+                            </Badge>
+                        ) : null}
+                    </div>
+                );
+            }}
+            columns={[
+                {
+                    label: t('runtime.pennantChecks'),
+                    cell: (row) => format.count(row.checks),
+                },
+                {
+                    label: t('runtime.pennantActiveInactive'),
+                    cell: (row) =>
+                        `${format.count(row.active)} / ${format.count(row.inactive)}`,
+                },
+                {
+                    label: t('runtime.pennantActiveShare'),
+                    cell: (row) =>
+                        row.activeShare === null
+                            ? '—'
+                            : `${format.number(row.activeShare)}%`,
+                },
+                {
+                    label: t('runtime.pennantResolved'),
+                    cell: (row) => format.count(row.resolved),
+                },
+                {
+                    label: t('runtime.pennantUnknown'),
+                    cell: (row) => format.count(row.unknown),
+                    isProblem: (row) => row.unknown > 0,
                 },
             ]}
         />

@@ -47,5 +47,7 @@ composer require qiick/excubia-core:^1.0@beta
 | Reverb card and `laravel-reverb` findings (laravel/reverb)                                      | next core release (`dev-develop`, `reverb`)         | `runtime.reverb.enabled`                                               |
 | Billing webhooks card and `laravel-cashier` findings (laravel/cashier, laravel/cashier-paddle)  | next core release (`dev-develop`, `billingWebhook`) | `runtime.billing.enabled`                                              |
 | Authentication card and `laravel-api-tokens` findings (laravel/sanctum, laravel/passport)       | next core release (`dev-develop`, `auth`)           | `runtime.auth.enabled`                                                 |
+| Search (Scout) card (laravel/scout, queued indexing with `scout.queue`)                         | next core release (`dev-develop`, `scout`)          | `runtime.scout.enabled`                                                |
+| Feature flags (Pennant) card and stale flags (laravel/pennant)                                  | next core release (`dev-develop`, `pennant`)        | `runtime.pennant.enabled`                                              |
 
 "Next core release" features already work with `qiick/excubia-core:dev-develop`; with an older core the app shows nothing for them.

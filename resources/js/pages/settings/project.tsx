@@ -28,6 +28,7 @@ type GeneralProjectSettings = Pick<
     | 'report_bug_url'
     | 'report_error_url'
     | 'stale_after_hours'
+    | 'pennant_stale_after_days'
     | 'reports_kept_per_project'
     | 'runtime_retention_days'
     | 'exceptions_retention_days'
@@ -37,6 +38,7 @@ type GeneralProjectSettings = Pick<
 type NumberField = {
     field:
         | 'stale_after_hours'
+        | 'pennant_stale_after_days'
         | 'reports_kept_per_project'
         | 'runtime_retention_days'
         | 'exceptions_retention_days'
@@ -57,6 +59,12 @@ const CHECK_FIELDS: NumberField[] = [
         labelKey: 'settings.project.staleAfterHours',
         hintKey: 'settings.project.staleAfterHoursHint',
         max: 8760,
+    },
+    {
+        field: 'pennant_stale_after_days',
+        labelKey: 'settings.project.pennantStaleAfterDays',
+        hintKey: 'settings.project.pennantStaleAfterDaysHint',
+        max: 3650,
     },
 ];
 
@@ -104,6 +112,7 @@ function buildFormState(project: GeneralProjectSettings) {
         report_bug_url: project.report_bug_url ?? '',
         report_error_url: project.report_error_url ?? '',
         stale_after_hours: project.stale_after_hours,
+        pennant_stale_after_days: project.pennant_stale_after_days,
         reports_kept_per_project: project.reports_kept_per_project,
         runtime_retention_days: project.runtime_retention_days,
         exceptions_retention_days: project.exceptions_retention_days,

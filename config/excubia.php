@@ -58,6 +58,10 @@ return [
 
     'exceptions_retention_days' => (int) env('EXCUBIA_EXCEPTIONS_RETENTION_DAYS', 90),
 
+    // Days of checks with always the same value after which a Laravel Pennant feature counts as a
+    // stale flag on the Runtime tab (#189); judged over the runtime retention when that is shorter.
+    'pennant_stale_after_days' => (int) env('EXCUBIA_PENNANT_STALE_AFTER_DAYS', 30),
+
     // The system project also records this install's own runtime and exceptions (#84). The data
     // stays in this database, masked by excubia-core like any project's.
     'self_monitoring' => (bool) env('EXCUBIA_SELF_MONITORING', true),

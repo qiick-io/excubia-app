@@ -40,6 +40,10 @@ enum RuntimeTypeEnum: string
     case BillingWebhook = 'billingWebhook';
     // Laravel authentication per guard (#180, core #219).
     case Auth = 'auth';
+    // Laravel Scout index jobs and searches (#184, core #222).
+    case Scout = 'scout';
+    // Laravel Pennant feature checks (#189, core #226).
+    case Pennant = 'pennant';
 
     /** Counts per latency bucket of the optional `histogram` (core `$defs.histogram`). */
     public const HISTOGRAM_LENGTH = 12;
@@ -87,6 +91,13 @@ enum RuntimeTypeEnum: string
      */
     public const AUTH_COUNTERS = ['loginCount', 'lockoutCount', 'tokenAuthenticationCount'];
 
+    /**
+     * Counters of `pennant` (#189): checks that found the feature active or inactive, first
+     * resolutions for a scope and checks of an undefined feature; they add up and `count` is
+     * their sum (core `$defs.pennant`).
+     */
+    public const PENNANT_COUNTERS = ['activeCount', 'inactiveCount', 'resolvedCount', 'unknownCount'];
+
     /** Server gauges: readings that keep the larger value on merge (null only when all are null). */
     private const SERVER_GAUGES = ['loadAverage1', 'loadAverage5', 'loadAverage15', 'cpuCores', 'cpuLimit', 'memoryUsedMb', 'memoryTotalMb', 'diskUsedGb', 'diskTotalGb'];
 
@@ -128,6 +139,8 @@ enum RuntimeTypeEnum: string
             self::Reverb => ['server', 'appId'],
             self::BillingWebhook => ['provider', 'eventType'],
             self::Auth => ['guard'],
+            self::Scout => ['model', 'engine', 'operation'],
+            self::Pennant => ['feature'],
         };
     }
 
@@ -149,11 +162,22 @@ enum RuntimeTypeEnum: string
     }
 
     /**
-     * Whether entries carry `totalMs` and `maxMs` and may carry a latency `histogram`.
+     * Whether entries carry `totalMs` and `maxMs` and may carry a latency `histogram`. For
+     * hasOptionalTiming() types only some entries do.
      */
     public function isTimed(): bool
     {
-        return in_array($this, [self::Request, self::SlowQuery, self::Job, self::ScheduledTask, self::OutgoingHttp, self::QueueWait, self::Command, self::Ai, self::AiTool, self::BillingWebhook], true);
+        return in_array($this, [self::Request, self::SlowQuery, self::Job, self::ScheduledTask, self::OutgoingHttp, self::QueueWait, self::Command, self::Ai, self::AiTool, self::BillingWebhook, self::Scout], true);
+    }
+
+    /**
+     * Whether a timed type also has entries without durations: a Scout `search` (#184) has no
+     * `totalMs`, `maxMs` or histogram, its `index` and `remove` jobs do. Such an entry is timed
+     * when it carries both `totalMs` and `maxMs`.
+     */
+    public function hasOptionalTiming(): bool
+    {
+        return $this === self::Scout;
     }
 
     /**
@@ -179,6 +203,8 @@ enum RuntimeTypeEnum: string
             self::Reverb => [...array_fill_keys(self::REVERB_COUNTERS, 'sum'), 'maxConnections' => 'max'],
             self::BillingWebhook => array_fill_keys(self::BILLING_COUNTERS, 'sum'),
             self::Auth => array_fill_keys(self::AUTH_COUNTERS, 'sum'),
+            self::Scout => ['modelCount' => 'sum'],
+            self::Pennant => array_fill_keys(self::PENNANT_COUNTERS, 'sum'),
             default => [],
         };
     }

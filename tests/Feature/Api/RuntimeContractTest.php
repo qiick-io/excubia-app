@@ -6,6 +6,7 @@ use App\Actions\RotateProjectTokenAction;
 use App\Enums\RuntimeTypeEnum;
 use App\Models\Project;
 use App\Models\RuntimeAggregate;
+use App\Models\RuntimeHourlyRollup;
 use App\Models\ScheduledTaskRun;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Http;
@@ -18,7 +19,7 @@ use Illuminate\Support\Str;
  * value core may add to an enumerated field (#169).
  *
  * `tests/Fixtures/core/runtime-schema.json` is a copy of excubia-core `develop` at
- * a77172d09996e3d8e777d70366493414607055ce (2026-11-08, core #220: the `auth` type). Refresh it when core adds a type or a value.
+ * b6d8be8106bb1848332538d2434b06286ded2f49 (2026-11-08, core #226: the `pennant` type). Refresh it when core adds a type or a value.
  * The app has no JSON Schema validator, so coreSchemaErrors() (tests/Pest.php) checks the keywords
  * the runtime schema uses (required, additionalProperties, const, enum, type, pattern, min/max, lengths).
  */
@@ -85,6 +86,14 @@ function coreRuntimeAggregates(): array
         ],
         'auth' => [
             'type' => 'auth', ...$base, 'guard' => 'web', 'count' => 12, 'errorCount' => 3, 'loginCount' => 7, 'lockoutCount' => 1, 'tokenAuthenticationCount' => 1,
+        ],
+        // An index job; a `search` entry has no duration (see the Scout search test).
+        'scout' => [
+            'type' => 'scout', ...$base, 'model' => 'App\\Models\\Post', 'engine' => 'meilisearch', 'operation' => 'index', 'modelCount' => 250, ...$timed,
+        ],
+        // `count` is the sum of the four counters; `errorCount` is always 0.
+        'pennant' => [
+            'type' => 'pennant', ...$base, ...$quiet, 'feature' => 'App\\Features\\NewCheckout', 'activeCount' => 2, 'inactiveCount' => 1, 'resolvedCount' => 1, 'unknownCount' => 0,
         ],
     ];
 }
@@ -181,6 +190,8 @@ it('merges entries of the same series across batches by each metric rule', funct
         [...$aggregates['reverb'], 'count' => 30, 'errorCount' => 0, 'connectionsOpened' => 4, 'connectionsRejected' => 0, 'connectionsPruned' => 1, 'maxConnections' => 12, 'messagesReceived' => 5, 'messagesSent' => 9, 'publicChannelsCreated' => 1, 'privateChannelsRemoved' => 2],
         [...$aggregates['billingWebhook'], 'count' => 2, 'errorCount' => 0, 'handledCount' => 2, 'paymentFailedCount' => 2, 'paymentActionRequiredCount' => 1, 'subscriptionCanceledCount' => 1],
         [...$aggregates['auth'], 'count' => 5, 'errorCount' => 4, 'loginCount' => 1, 'lockoutCount' => 0, 'tokenAuthenticationCount' => 0],
+        [...$aggregates['scout'], 'count' => 2, 'errorCount' => 0, 'modelCount' => 50, 'totalMs' => 99.5, 'maxMs' => 60],
+        [...$aggregates['pennant'], 'count' => 3, 'activeCount' => 0, 'inactiveCount' => 1, 'resolvedCount' => 0, 'unknownCount' => 2],
     ];
 
     $this->postJson(route('api.runtime.store'), coreRuntimeEnvelope(array_values($aggregates)), $headers)->assertCreated();
@@ -217,7 +228,12 @@ it('merges entries of the same series across batches by each metric rule', funct
             'handledCount' => 5, 'paymentFailedCount' => 6, 'paymentActionRequiredCount' => 1, 'subscriptionCanceledCount' => 1,
         ])
         ->and([$row('auth')->count, $row('auth')->error_count])->toBe([17, 7])
-        ->and($row('auth')->metrics)->toEqual(['loginCount' => 8, 'lockoutCount' => 1, 'tokenAuthenticationCount' => 1]);
+        ->and($row('auth')->metrics)->toEqual(['loginCount' => 8, 'lockoutCount' => 1, 'tokenAuthenticationCount' => 1])
+        ->and([$row('scout')->count, $row('scout')->error_count, $row('scout')->total_ms, $row('scout')->max_ms])->toBe([6, 1, 500.0, 250.25])
+        ->and($row('scout')->metrics)->toEqual(['modelCount' => 300])
+        ->and($row('scout')->histogram)->toBe([0, 0, 2, 0, 2, 2, 2, 0, 0, 0, 0, 0])
+        ->and([$row('pennant')->count, $row('pennant')->error_count, $row('pennant')->total_ms, $row('pennant')->histogram])->toBe([7, 0, null, null])
+        ->and($row('pennant')->metrics)->toEqual(['activeCount' => 2, 'inactiveCount' => 2, 'resolvedCount' => 1, 'unknownCount' => 2]);
 
     // A log entry without channel is its own series, never merged with one that has it.
     expect($project->runtimeAggregates()->where('type', 'logLevel')->count())->toBe(2);
@@ -285,7 +301,38 @@ it('still rejects a known type that breaks its own contract', function (string $
     'auth without logins' => ['auth', 'loginCount', null],
     'auth lockouts below zero' => ['auth', 'lockoutCount', -1],
     'auth without a guard' => ['auth', 'guard', null],
+    'Scout without records' => ['scout', 'modelCount', null],
+    'Scout records below zero' => ['scout', 'modelCount', -1],
+    'Scout without a model' => ['scout', 'model', null],
+    'Scout duration as text' => ['scout', 'totalMs', 'slow'],
+    'Pennant without active checks' => ['pennant', 'activeCount', null],
+    'Pennant undefined checks below zero' => ['pennant', 'unknownCount', -1],
+    'Pennant without a feature' => ['pennant', 'feature', null],
 ]);
+
+it('stores a Scout search entry without durations and keeps it apart from the index jobs (#184)', function () {
+    [$project, $headers] = contractProject();
+    $schema = coreRuntimeSchema();
+    $index = coreRuntimeAggregates()['scout'];
+    $search = [...array_diff_key($index, ['totalMs' => true, 'maxMs' => true, 'histogram' => true]), 'operation' => 'search', 'count' => 9, 'errorCount' => 0, 'modelCount' => 0];
+
+    // coreSchemaErrors() skips `if` / `then` / `else`: a search carries no duration, the other operations carry both.
+    expect(coreSchemaErrors($search, $schema['$defs']['scout'], $schema))->toBe([])
+        ->and($schema['$defs']['scout']['if'])->toBe(['properties' => ['operation' => ['const' => 'search']]])
+        ->and($schema['$defs']['scout']['then'])->toBe(['not' => ['anyOf' => [['required' => ['totalMs']], ['required' => ['maxMs']], ['required' => ['histogram']]]]])
+        ->and(coreSchemaErrors($index, $schema['$defs']['scout']['else'], $schema))->toBe([])
+        ->and(coreSchemaErrors($search, $schema['$defs']['scout']['else'], $schema))->not->toBe([]);
+
+    $this->postJson(route('api.runtime.store'), coreRuntimeEnvelope([$search, $index]), $headers)->assertCreated();
+    $this->postJson(route('api.runtime.store'), coreRuntimeEnvelope([$search]), $headers)->assertCreated();
+
+    $searchRow = $project->runtimeAggregates()->get()->sole(fn (RuntimeAggregate $row): bool => $row->dimensions['operation'] === 'search');
+
+    expect($project->runtimeAggregates()->count())->toBe(2)
+        ->and([$searchRow->count, $searchRow->error_count, $searchRow->total_ms, $searchRow->max_ms, $searchRow->histogram])->toBe([18, 0, null, null, null])
+        ->and($searchRow->metrics)->toEqual(['modelCount' => 0])
+        ->and(RuntimeHourlyRollup::query()->where('type', 'scout')->sum('count'))->toEqual(22);
+});
 
 it('stores a classification entry of the Laravel AI SDK (core #212)', function () {
     [$project, $headers] = contractProject();
@@ -327,6 +374,10 @@ it('stores a value core may add to an enumerated dimension instead of rejecting 
     'billing provider' => ['billingWebhook', 'provider'],
     'billing event type' => ['billingWebhook', 'eventType'],
     'auth guard' => ['auth', 'guard'],
+    'Scout engine' => ['scout', 'engine'],
+    'Scout operation' => ['scout', 'operation'],
+    // Any feature name is stored, a hashed one included (#189).
+    'Pennant feature' => ['pennant', 'feature'],
 ]);
 
 it('keeps a scheduled task outcome it does not know out of the schedule monitoring', function () {
