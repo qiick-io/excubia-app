@@ -29,6 +29,7 @@ import type {
     PasswordPolicy,
     ProjectSettingsForm,
 } from '@/types';
+import { edit as editProfile } from '@/routes/profile';
 
 type SecurityProjectSettings = Pick<
     ProjectSettingsForm,
@@ -75,8 +76,9 @@ export default function ProjectSecuritySettingsPage({
     const [form, setForm] = useState(() => buildFormState(project));
 
     const breadcrumbs: BreadcrumbItem[] = [
+        { title: t('settings.layout.title'), href: editProfile() },
         {
-            title: t('settings.project.securityNav.breadcrumb'),
+            title: t('settings.layout.authSecurity'),
             href: editSecurity(),
         },
     ];

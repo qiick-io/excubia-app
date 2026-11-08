@@ -15,10 +15,11 @@
             <directory>tests/Feature</directory>
         </testsuite>
     </testsuites>
-    <!-- The seeded benchmark of #113 runs on demand with the benchmark group. -->
+    <!-- The seeded benchmark of #113 and the visual QA screenshots of #194 run on demand with their group. -->
     <groups>
         <exclude>
             <group>benchmark</group>
+            <group>visual</group>
         </exclude>
     </groups>
     <source>

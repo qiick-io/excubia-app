@@ -220,7 +220,6 @@
             "aiPrices": "Prezzi"
         },
         "profile": {
-            "breadcrumb": "Impostazioni profilo",
             "head": "Impostazioni profilo",
             "title": "Informazioni profilo",
             "description": "Aggiorna i dettagli del profilo e l'indirizzo email",
@@ -235,7 +234,6 @@
             "alertsTestHint": "Salva prima. L'email arriva al tuo indirizzo e serve un queue worker."
         },
         "security": {
-            "breadcrumb": "Impostazioni sicurezza",
             "head": "Impostazioni sicurezza",
             "passwordTitle": "Aggiorna password",
             "passwordDescription": "Usa una password lunga e casuale per mantenere l'account al sicuro",
@@ -254,7 +252,6 @@
             "passkeysNeedHttps": "Le passkey richiedono HTTPS."
         },
         "project": {
-            "breadcrumb": "Impostazioni progetto",
             "head": "Impostazioni progetto",
             "generalTitle": "Generale",
             "generalDescription": "Identità del progetto e link di supporto",
@@ -316,13 +313,11 @@
                 "settings": "Impostazioni"
             },
             "localization": {
-                "breadcrumb": "Impostazioni di localizzazione",
                 "head": "Impostazioni di localizzazione",
                 "title": "Lingua admin",
                 "description": "Lingua predefinita dell’interfaccia admin"
             },
             "securityNav": {
-                "breadcrumb": "Autenticazione e sicurezza",
                 "head": "Autenticazione e sicurezza"
             },
             "checksTitle": "Controlli",
@@ -347,7 +342,6 @@
             "activityRetentionDaysHint": "Le voci del registro attività più vecchie vengono eliminate."
         },
         "appearance": {
-            "breadcrumb": "Impostazioni aspetto",
             "head": "Impostazioni aspetto",
             "title": "Impostazioni aspetto",
             "description": "Aggiorna il branding del progetto e il tema predefinito",
@@ -369,7 +363,6 @@
             "dark": "Scuro",
             "system": "Sistema",
             "sidebar": {
-                "breadcrumb": "Impostazioni barra laterale",
                 "head": "Impostazioni barra laterale"
             },
             "themePresetTitle": "Preset tema",
@@ -388,7 +381,6 @@
             "presetPreviewDark": "Scuro"
         },
         "performance": {
-            "breadcrumb": "Impostazioni performance",
             "head": "Impostazioni performance",
             "statusTitle": "Stato runtime",
             "statusDescription": "Vista in sola lettura della configurazione runtime",
@@ -428,7 +420,6 @@
             "readOnly": "sola lettura"
         },
         "integrations": {
-            "breadcrumb": "Integrazioni",
             "head": "Integrazioni",
             "webhookTitle": "Webhook in uscita",
             "webhookDescription": "Invia avvisi firmati al tuo endpoint quando un progetto cambia",

@@ -39,6 +39,7 @@ import type {
     ProjectAppearance,
     ThemePresetSlug,
 } from '@/types';
+import { edit as editProfile } from '@/routes/profile';
 
 /**
  * Re-apply the saved theme CSS (shared Inertia props) over the live preview.
@@ -112,8 +113,9 @@ export default function Appearance({
     }, [selectedPreset, projectColor, projectColorDark, projectAppearance]);
 
     const breadcrumbs: BreadcrumbItem[] = [
+        { title: t('settings.layout.title'), href: editProfile() },
         {
-            title: t('settings.appearance.breadcrumb'),
+            title: t('settings.layout.appearance'),
             href: editAppearance(),
         },
     ];
