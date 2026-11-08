@@ -926,6 +926,41 @@
           }
         }
       ]
+    },
+    {
+      "checkId": "laravel-octane-config",
+      "name": "Octane configuration",
+      "status": "warn",
+      "findings": [
+        {
+          "checkId": "laravel-octane-config",
+          "severity": "info",
+          "status": "pass",
+          "subject": "octane.server",
+          "message": "Octane runs on swoole.",
+          "fixHint": "No action needed.",
+          "evidenceUrl": null,
+          "fingerprint": "15da5983dd56d533ccd0b367a4328220236e117ea210434bf8a669bb01c3ac6c",
+          "details": {
+            "server": "swoole",
+            "maxRequests": null
+          }
+        },
+        {
+          "checkId": "laravel-octane-config",
+          "severity": "low",
+          "status": "warn",
+          "subject": "octane.max_requests",
+          "message": "octane.max_requests is not set in production.",
+          "fixHint": "Set OCTANE_MAX_REQUESTS (for example 500) so workers restart before leaks build up.",
+          "evidenceUrl": null,
+          "fingerprint": "e5813614332aa165d7e07332b315034295d2b89e95e6398aa743fcf545b26052",
+          "details": {
+            "server": "swoole",
+            "maxRequests": null
+          }
+        }
+      ]
     }
   ],
   "upgradePlan": [

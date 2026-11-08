@@ -1122,7 +1122,17 @@
         "deploysLabel_one": "{{count}} deploy: {{releases}}.",
         "deploysLabel_other": "{{count}} deploy: {{releases}}.",
         "requestsOverTimeDescription": "Richieste riuscite ed errori server (5xx) {{bucket}} {{during}}.",
-        "requestsOverTime": "Richieste nel tempo"
+        "requestsOverTime": "Richieste nel tempo",
+        "octane": "Worker Octane",
+        "octaneDescription": "Per server e tipo di worker. La memoria è letta dopo ogni richiesta; una crescita oltre {{threshold}} MB dalla prima richiesta di un worker può essere un leak.",
+        "octaneMaxRequests": "max_requests: {{count}}.",
+        "octaneMaxRequestsUnset": "max_requests non è impostato.",
+        "possibleLeak": "Possibile leak",
+        "tasksTicks": "Task / tick",
+        "workerStartsStops": "Avvii / arresti",
+        "workerErrors": "Errori dei worker",
+        "memoryGrowth": "Crescita max",
+        "requestsAtStop": "Richieste all'arresto (media / max)"
     },
     "exceptions": {
         "emptyTitle": "Nessuna eccezione",
@@ -1547,6 +1557,10 @@
         "php-production-ini": {
             "label": "php.ini di produzione",
             "description": "display_errors, expose_php e log_errors del PHP web in produzione."
+        },
+        "laravel-octane-config": {
+            "label": "Configurazione Octane",
+            "description": "Server Octane e, in produzione, se max_requests riavvia i worker prima che i leak si accumulino."
         }
     },
     "details": {

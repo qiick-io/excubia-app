@@ -43,5 +43,6 @@ composer require qiick/excubia-core:^1.0@beta
 | Container limits on server metrics, log channel per log level                                   | next core release (`dev-develop`)                  | —                                                                      |
 | Reported app environment (overview, schedule), license `kind` read from the report              | next core release (`dev-develop`)                  | — (older cores: inferred from exceptions and status / severity)        |
 | Backups, database connections and size, Redis memory, OPcache and production `php.ini` findings | next core release (`dev-develop`)                  | —                                                                      |
+| Octane workers card and `laravel-octane-config` findings (laravel/octane)                       | next core release (`dev-develop`, `octane`)        | `runtime.octane.enabled`                                               |
 
 "Next core release" features already work with `qiick/excubia-core:dev-develop`; with an older core the app shows nothing for them.

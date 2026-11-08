@@ -18,7 +18,7 @@ use Illuminate\Support\Str;
  * value core may add to an enumerated field (#169).
  *
  * `tests/Fixtures/core/runtime-schema.json` is a copy of excubia-core `develop` at
- * 83317684a26c3330ea3a3330882a588ba388d08e (2026-11-08, core #212: `ai` operation `classification`). Refresh it when core adds a type or a value.
+ * 5e67a99d4bf70fa8fb50b1277f2a225e904f0eed (2026-11-08, core #214: the `octane` type). Refresh it when core adds a type or a value.
  * The app has no JSON Schema validator, so coreSchemaErrors() (tests/Pest.php) checks the keywords
  * the runtime schema uses (required, additionalProperties, const, enum, type, pattern, min/max, lengths).
  */
@@ -70,6 +70,10 @@ function coreRuntimeAggregates(): array
             'reasoningTokens' => null, 'imageInputTokens' => null, 'imageOutputTokens' => null, 'audioSeconds' => null, 'searchUnits' => null,
         ],
         'aiTool' => ['type' => 'aiTool', ...$base, 'agent' => 'App\\Ai\\SupportAgent', 'tool' => 'App\\Ai\\Tools\\LookupOrderTool', ...$timed],
+        'octane' => [
+            'type' => 'octane', ...$base, 'server' => 'web-1', 'octaneServer' => 'swoole', 'workerType' => 'http', 'count' => 312, 'workerStarts' => 2, 'workerStops' => 2,
+            'requests' => 305, 'tasks' => 0, 'ticks' => 0, 'totalRequestsAtStop' => 1000, 'maxRequestsAtStop' => 500, 'maxMb' => 48.211, 'maxGrowthMb' => 12.004,
+        ],
     ];
 }
 
@@ -161,6 +165,7 @@ it('merges entries of the same series across batches by each metric rule', funct
         [...$aggregates['server'], 'loadAverage1' => 1.25, 'loadAverage5' => null, 'cpuLimit' => null, 'memoryUsedMb' => null, 'isContainer' => false],
         array_diff_key([...$aggregates['queueWait'], 'count' => 1, 'totalMs' => 10, 'maxMs' => 10], ['histogram' => true]),
         array_diff_key($aggregates['logLevel'], ['channel' => true]),
+        [...$aggregates['octane'], 'count' => 50, 'errorCount' => 2, 'workerStarts' => 1, 'workerStops' => 1, 'requests' => 40, 'tasks' => 3, 'ticks' => 6, 'totalRequestsAtStop' => 480, 'maxRequestsAtStop' => 480, 'maxMb' => 60.5, 'maxGrowthMb' => 2.25],
     ];
 
     $this->postJson(route('api.runtime.store'), coreRuntimeEnvelope(array_values($aggregates)), $headers)->assertCreated();
@@ -180,7 +185,12 @@ it('merges entries of the same series across batches by each metric rule', funct
         ])
         ->and($row('server')->count)->toBe(2)
         ->and($row('queueWait')->histogram)->toBeNull()
-        ->and($row('queueWait')->total_ms)->toBe(410.5);
+        ->and($row('queueWait')->total_ms)->toBe(410.5)
+        ->and([$row('octane')->count, $row('octane')->error_count])->toBe([362, 3])
+        ->and($row('octane')->metrics)->toEqual([
+            'workerStarts' => 3, 'workerStops' => 3, 'requests' => 345, 'tasks' => 3, 'ticks' => 6,
+            'totalRequestsAtStop' => 1480, 'maxRequestsAtStop' => 500, 'maxMb' => 60.5, 'maxGrowthMb' => 12.004,
+        ]);
 
     // A log entry without channel is its own series, never merged with one that has it.
     expect($project->runtimeAggregates()->where('type', 'logLevel')->count())->toBe(2);
@@ -239,6 +249,8 @@ it('still rejects a known type that breaks its own contract', function (string $
     'AI tokens as text' => ['ai', 'inputTokens', 'many'],
     'AI without failovers' => ['ai', 'failoverCount', null],
     'AI tool without a tool' => ['aiTool', 'tool', null],
+    'Octane without requests' => ['octane', 'requests', null],
+    'Octane growth below zero' => ['octane', 'maxGrowthMb', -0.5],
 ]);
 
 it('stores a classification entry of the Laravel AI SDK (core #212)', function () {
@@ -275,6 +287,8 @@ it('stores a value core may add to an enumerated dimension instead of rejecting 
     'duplicate query origin' => ['duplicateQuery', 'origin'],
     'command exit code class' => ['command', 'exitCodeClass'],
     'AI operation' => ['ai', 'operation'],
+    'Octane server' => ['octane', 'octaneServer'],
+    'Octane worker type' => ['octane', 'workerType'],
 ]);
 
 it('keeps a scheduled task outcome it does not know out of the schedule monitoring', function () {

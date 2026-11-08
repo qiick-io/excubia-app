@@ -29,6 +29,7 @@ import {
 import { cn } from '@/lib/utils';
 import type {
     RuntimeCountRow,
+    RuntimeOctaneRow,
     RuntimeRow,
     RuntimeServer,
     RuntimeSummary,
@@ -465,7 +466,90 @@ export function RuntimeView({ runtime }: { runtime: RuntimeSummary | null }) {
             />
 
             <ServersCard servers={runtime.servers} format={format} />
+
+            <OctaneCard octane={runtime.octane} format={format} />
         </div>
+    );
+}
+
+/**
+ * Octane workers (#168) per server and worker type: requests, tasks and ticks, worker starts
+ * and stops, errors, memory after a request and its growth since a worker's first request
+ * (a possible leak above the threshold, named in a badge), and the requests a worker handled
+ * before it stopped against `octane.max_requests` from the laravel-octane-config check.
+ */
+function OctaneCard({
+    octane,
+    format,
+}: {
+    octane: RuntimeSummary['octane'];
+    format: Formatters;
+}) {
+    const { t } = useTranslation();
+    const maxRequests = octane.config
+        ? octane.config.maxRequests === null
+            ? ` ${t('runtime.octaneMaxRequestsUnset')}`
+            : ` ${t('runtime.octaneMaxRequests', { count: octane.config.maxRequests })}`
+        : '';
+
+    return (
+        <RuntimeCard<RuntimeOctaneRow>
+            title={t('runtime.octane')}
+            description={`${t('runtime.octaneDescription', { threshold: octane.leakGrowthMb })}${maxRequests}`}
+            configKey="runtime.octane"
+            rows={octane.rows}
+            name={(row) => (
+                <div className="flex items-center gap-2">
+                    <div className="min-w-0">
+                        <Name
+                            primary={row.server}
+                            secondary={`${row.octaneServer} · ${row.workerType}`}
+                            isMono
+                        />
+                    </div>
+                    {row.isPossibleLeak ? (
+                        <Badge variant="warning">
+                            {t('runtime.possibleLeak')}
+                        </Badge>
+                    ) : null}
+                </div>
+            )}
+            columns={[
+                {
+                    label: t('runtime.requests'),
+                    cell: (row) => format.count(row.requests),
+                },
+                {
+                    label: t('runtime.tasksTicks'),
+                    cell: (row) =>
+                        `${format.count(row.tasks)} / ${format.count(row.ticks)}`,
+                },
+                {
+                    label: t('runtime.workerStartsStops'),
+                    cell: (row) =>
+                        `${format.count(row.workerStarts)} / ${format.count(row.workerStops)}`,
+                },
+                {
+                    label: t('runtime.workerErrors'),
+                    cell: (row) => format.count(row.errors),
+                    isProblem: (row) => row.errors > 0,
+                },
+                {
+                    label: t('runtime.peakMemory'),
+                    cell: (row) => `${format.number(row.maxMb)} MB`,
+                },
+                {
+                    label: t('runtime.memoryGrowth'),
+                    cell: (row) => `${format.number(row.maxGrowthMb)} MB`,
+                    isProblem: (row) => row.isPossibleLeak,
+                },
+                {
+                    label: t('runtime.requestsAtStop'),
+                    cell: (row) =>
+                        `${format.number(row.averageRequestsAtStop, 0)} / ${format.number(row.maxRequestsAtStop, 0)}`,
+                },
+            ]}
+        />
     );
 }
 

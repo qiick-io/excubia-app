@@ -15,9 +15,9 @@ use Illuminate\Validation\Rule;
  * payload `docs/runtime-schema.json`, protocol version 1). Each aggregate of a known type must
  * carry the dimensions and metrics of its type; an aggregate of a type this app does not know
  * only needs a `type` and is skipped on store, never rejected (#111). A value core enumerates
- * (`statusClass`, `outcome`, `level`, `origin`, `exitCodeClass`, `operation`, the health `status`
- * and `severity`) is only checked as a string: core adds values additively, and a value this
- * app does not know must never reject the batch (#169). StorePushedRuntimeAction stores it, or
+ * (`statusClass`, `outcome`, `level`, `origin`, `exitCodeClass`, `operation`, `octaneServer`,
+ * `workerType`, the health `status` and `severity`) is only checked as a string: core adds values
+ * additively, and a value this app does not know must never reject the batch (#169). StorePushedRuntimeAction stores it, or
  * skips and counts the entry when the app cannot read it. The token was checked by
  * AuthenticateProjectToken.
  */
@@ -65,6 +65,15 @@ class StorePushedRuntimeRequest extends FormRequest
         'imageOutputTokens' => ['present', 'nullable', 'integer', 'min:0'],
         'audioSeconds' => ['present', 'nullable', 'numeric', 'min:0'],
         'searchUnits' => ['present', 'nullable', 'numeric', 'min:0'],
+        // `octane` (#168): every metric always present, 0 without that event (`maxMb` above).
+        'workerStarts' => ['required', 'integer', 'min:0'],
+        'workerStops' => ['required', 'integer', 'min:0'],
+        'requests' => ['required', 'integer', 'min:0'],
+        'tasks' => ['required', 'integer', 'min:0'],
+        'ticks' => ['required', 'integer', 'min:0'],
+        'totalRequestsAtStop' => ['required', 'integer', 'min:0'],
+        'maxRequestsAtStop' => ['required', 'integer', 'min:0'],
+        'maxGrowthMb' => ['required', 'numeric', 'min:0'],
     ];
 
     public function authorize(): bool

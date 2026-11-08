@@ -52,7 +52,21 @@ class ProjectRuntimeService
         // `ai` (#129), read only by AiUsageService.
         'failoverCount' => 'sum', 'inputTokens' => 'sum', 'outputTokens' => 'sum', 'cacheReadInputTokens' => 'sum', 'cacheWriteInputTokens' => 'sum',
         'reasoningTokens' => 'sum', 'imageInputTokens' => 'sum', 'imageOutputTokens' => 'sum', 'audioSeconds' => 'sum', 'searchUnits' => 'sum',
+        // `octane` (#168); its `maxMb` is the one above.
+        'workerStarts' => 'sum', 'workerStops' => 'sum', 'requests' => 'sum', 'tasks' => 'sum', 'ticks' => 'sum', 'totalRequestsAtStop' => 'sum', 'maxRequestsAtStop' => 'max', 'maxGrowthMb' => 'max',
     ];
+
+    /**
+     * Growth of a worker's memory since its first request (MiB) above which the Octane card
+     * flags a possible leak (#168).
+     *
+     * ponytail: one fixed threshold for every app; make it a setting if apps with large
+     * per-request caches see false alarms.
+     */
+    public const OCTANE_LEAK_GROWTH_MB = 32;
+
+    /** The check whose `details` carry `octane.server` and `octane.max_requests` (core #213). */
+    private const OCTANE_CONFIG_CHECK = 'laravel-octane-config';
 
     /** The types of the Runtime tab; the AI usage types (#129) have their own tab (AiUsageService). */
     private const AI_TYPES = [RuntimeTypeEnum::Ai, RuntimeTypeEnum::AiTool];
@@ -106,6 +120,7 @@ class ProjectRuntimeService
             'deprecations' => $this->countTable($of(RuntimeTypeEnum::Deprecation), ['source', 'message', 'phpVersion']),
             'duplicateQueries' => $this->duplicateQueries($of(RuntimeTypeEnum::DuplicateQuery)),
             'servers' => $this->servers($project, $of(RuntimeTypeEnum::Server)),
+            'octane' => $this->octane($project, $of(RuntimeTypeEnum::Octane)),
             'deploys' => $this->timeSeries->deploys($project, $range, $now),
         ];
     }
@@ -522,5 +537,76 @@ class ProjectRuntimeService
         }
 
         return $servers;
+    }
+
+    /**
+     * Octane workers (#168) per server, Octane server and worker type: estimated requests, tasks,
+     * ticks, worker starts and stops and errors; the most memory after a request and its largest
+     * growth since a worker's first request, flagged as a possible leak above
+     * OCTANE_LEAK_GROWTH_MB; and the requests a worker handled before it stopped (average and
+     * most), with `octane.max_requests` from the latest report's laravel-octane-config check
+     * (null when that check did not report it).
+     *
+     * @param  Collection<int, Series>  $series
+     * @return array{config: array{server: string|null, maxRequests: int|null}|null, leakGrowthMb: int, rows: list<array<string, mixed>>}
+     */
+    private function octane(Project $project, Collection $series): array
+    {
+        $rows = $this->table($series, ['server', 'octaneServer', 'workerType'], function (Collection $group): array {
+            $metric = fn (string $name): float => (float) $group->max(fn (array $one): float => (float) $one['metrics'][$name]);
+            $counters = [];
+
+            foreach (RuntimeTypeEnum::OCTANE_COUNTERS as $counter) {
+                $counters[$counter] = $this->estimate($group, fn (array $one): ?float => $one['metrics'][$counter]);
+            }
+
+            // Both are the recorded stops' own counts, so the average is not scaled by sample rate.
+            $recordedStops = $group->sum(fn (array $one): float => (float) $one['metrics']['workerStops']);
+            $maxGrowthMb = round($metric('maxGrowthMb'), 3);
+
+            return [
+                'requests' => $counters['requests'],
+                'tasks' => $counters['tasks'],
+                'ticks' => $counters['ticks'],
+                'workerStarts' => $counters['workerStarts'],
+                'workerStops' => $counters['workerStops'],
+                'errors' => $this->estimate($group, fn (array $one): float => $one['errorCount']),
+                'maxMb' => round($metric('maxMb'), 3),
+                'maxGrowthMb' => $maxGrowthMb,
+                'isPossibleLeak' => $maxGrowthMb >= self::OCTANE_LEAK_GROWTH_MB,
+                'averageRequestsAtStop' => $recordedStops > 0 ? round($group->sum(fn (array $one): float => (float) $one['metrics']['totalRequestsAtStop']) / $recordedStops, 1) : null,
+                'maxRequestsAtStop' => $recordedStops > 0 ? (int) $metric('maxRequestsAtStop') : null,
+            ];
+        }, 'requests');
+
+        return ['config' => $rows === [] ? null : $this->octaneConfig($project), 'leakGrowthMb' => self::OCTANE_LEAK_GROWTH_MB, 'rows' => $rows];
+    }
+
+    /**
+     * `server` and `maxRequests` of the laravel-octane-config findings of the latest report
+     * (`$defs.laravelOctaneConfigDetails`), or null when that report has none.
+     *
+     * @return array{server: string|null, maxRequests: int|null}|null
+     */
+    private function octaneConfig(Project $project): ?array
+    {
+        foreach ((array) ($project->latestReport?->report['checks'] ?? []) as $check) {
+            if (! is_array($check) || ($check['checkId'] ?? null) !== self::OCTANE_CONFIG_CHECK) {
+                continue;
+            }
+
+            foreach ((array) ($check['findings'] ?? []) as $finding) {
+                $details = is_array($finding) ? ($finding['details'] ?? null) : null;
+
+                if (is_array($details) && array_key_exists('maxRequests', $details)) {
+                    return [
+                        'server' => is_string($details['server'] ?? null) ? $details['server'] : null,
+                        'maxRequests' => is_int($details['maxRequests']) ? $details['maxRequests'] : null,
+                    ];
+                }
+            }
+        }
+
+        return null;
     }
 }

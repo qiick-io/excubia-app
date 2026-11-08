@@ -32,6 +32,8 @@ enum RuntimeTypeEnum: string
     // Laravel AI SDK operations and agent tool calls (#129, core #198).
     case Ai = 'ai';
     case AiTool = 'aiTool';
+    // Laravel Octane workers (#168, core #213).
+    case Octane = 'octane';
 
     /** Counts per latency bucket of the optional `histogram` (core `$defs.histogram`). */
     public const HISTOGRAM_LENGTH = 12;
@@ -50,6 +52,12 @@ enum RuntimeTypeEnum: string
      * null-safe sum on merge. `inputTokens` includes the cached input.
      */
     public const AI_USAGE = ['inputTokens', 'outputTokens', 'cacheReadInputTokens', 'cacheWriteInputTokens', 'reasoningTokens', 'imageInputTokens', 'imageOutputTokens', 'audioSeconds', 'searchUnits'];
+
+    /**
+     * Counters of `octane` (#168): they add up. `maxRequestsAtStop`, `maxMb` and `maxGrowthMb`
+     * keep the larger value (core `$defs.octane`).
+     */
+    public const OCTANE_COUNTERS = ['workerStarts', 'workerStops', 'requests', 'tasks', 'ticks', 'totalRequestsAtStop'];
 
     /** Server gauges: readings that keep the larger value on merge (null only when all are null). */
     private const SERVER_GAUGES = ['loadAverage1', 'loadAverage5', 'loadAverage15', 'cpuCores', 'cpuLimit', 'memoryUsedMb', 'memoryTotalMb', 'diskUsedGb', 'diskTotalGb'];
@@ -88,6 +96,7 @@ enum RuntimeTypeEnum: string
             self::Health => ['server', 'checkId'],
             self::Ai => ['operation', 'provider', 'model'],
             self::AiTool => ['agent', 'tool'],
+            self::Octane => ['server', 'octaneServer', 'workerType'],
         };
     }
 
@@ -135,6 +144,7 @@ enum RuntimeTypeEnum: string
             self::Server => [...array_fill_keys(self::SERVER_GAUGES, 'max'), 'isContainer' => 'or'],
             self::Health => ['status' => 'status', 'severity' => 'severity', 'findingCount' => 'max', 'fingerprints' => 'union'],
             self::Ai => ['failoverCount' => 'sum', ...array_fill_keys(self::AI_USAGE, 'sum')],
+            self::Octane => [...array_fill_keys(self::OCTANE_COUNTERS, 'sum'), 'maxRequestsAtStop' => 'max', 'maxMb' => 'max', 'maxGrowthMb' => 'max'],
             default => [],
         };
     }
