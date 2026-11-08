@@ -1,3 +1,4 @@
+import type { ColumnDef } from '@tanstack/react-table';
 import { Head, Link } from '@inertiajs/react';
 import {
     CalendarClock,
@@ -9,6 +10,7 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import { Fragment, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { DataTable } from '@/components/admin/data-table';
 import { PageEmptyState } from '@/components/admin/page-empty-state';
 import { FilterSearch } from '@/components/layout/page-header';
 import { PageLayout, TablePanel } from '@/components/layout/page-layout';
@@ -270,6 +272,152 @@ function ReadinessView({ readiness }: { readiness: Readiness }) {
         );
     }
 
+    const readinessColumns: ColumnDef<(typeof readiness.projects)[number]>[] = [
+        {
+            id: 'project',
+            header: t('fleet.project'),
+            meta: { cellClassName: 'align-top' },
+            cell: ({ row: tableRow }) => {
+                const row = tableRow.original;
+
+                return (
+                    <>
+                        <ProjectLink project={row.project} />
+                    </>
+                );
+            },
+        },
+        {
+            id: 'laravel',
+            header: t('report.runtime.laravel'),
+            meta: { cellClassName: 'align-top font-mono text-xs' },
+            cell: ({ row: tableRow }) => {
+                const row = tableRow.original;
+
+                return <>{row.laravelVersion ?? '—'}</>;
+            },
+        },
+        {
+            id: 'status',
+            header: t('fleet.status'),
+            meta: { cellClassName: 'align-top' },
+            cell: ({ row: tableRow }) => {
+                const row = tableRow.original;
+
+                return (
+                    <>
+                        <Badge variant={READINESS_VARIANTS[row.status]}>
+                            {row.status === 'unknown' ||
+                            row.targetMajor === null
+                                ? t('fleet.readiness.status.unknown')
+                                : t(`fleet.readiness.status.${row.status}`, {
+                                      major: row.targetMajor,
+                                  })}
+                        </Badge>
+                    </>
+                );
+            },
+        },
+        {
+            id: 'blockers',
+            header: t('fleet.readiness.blockers'),
+            meta: { cellClassName: 'align-top whitespace-normal' },
+            cell: ({ row: tableRow }) => {
+                const row = tableRow.original;
+
+                return (
+                    <>
+                        {row.blockers.length === 0 ? (
+                            <span className="text-sm text-muted-foreground">
+                                {row.hasReport ? '—' : t('dashboard.noReports')}
+                            </span>
+                        ) : (
+                            <ul className="space-y-1 text-sm">
+                                {row.blockers.map((blocker) => (
+                                    <li
+                                        key={blocker.package}
+                                        className="flex flex-wrap items-center gap-1"
+                                    >
+                                        <span className="font-mono text-xs">
+                                            {blocker.package}
+                                        </span>
+                                        <span className="font-mono text-xs text-muted-foreground">
+                                            {blocker.lockedVersion}
+                                        </span>
+                                        {blocker.isPreReleaseOnly ? (
+                                            <Badge variant="muted">
+                                                {t(
+                                                    'fleet.readiness.preReleaseOnly',
+                                                )}
+                                            </Badge>
+                                        ) : null}
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                        {row.dismissedBlockers.length > 0 ? (
+                            <ul className="mt-1 space-y-1 text-xs text-muted-foreground">
+                                {row.dismissedBlockers.map((blocker) => (
+                                    <li
+                                        key={blocker.package}
+                                        className="flex flex-wrap items-center gap-1"
+                                    >
+                                        <Badge variant="muted">
+                                            {t('findings.status.dismissed')}
+                                        </Badge>
+                                        <span className="font-mono">
+                                            {blocker.package}
+                                        </span>
+                                        <span>
+                                            <DismissalText
+                                                dismissal={blocker.dismissal}
+                                            />
+                                        </span>
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : null}
+                        {row.uncheckedPackages > 0 ? (
+                            <p className="mt-1 text-xs text-muted-foreground">
+                                {t('fleet.readiness.uncheckedPackages', {
+                                    count: row.uncheckedPackages,
+                                })}
+                            </p>
+                        ) : null}
+                    </>
+                );
+            },
+        },
+        {
+            id: 'upgradePlan',
+            header: t('report.upgradePlan'),
+            meta: { cellClassName: 'align-top' },
+            cell: ({ row: tableRow }) => {
+                const row = tableRow.original;
+
+                return (
+                    <>
+                        {row.hasReport ? (
+                            <Link
+                                href={projectsRoutes.view.url({
+                                    project: row.project.slug,
+                                    view: 'plan',
+                                })}
+                                className="text-sm text-primary underline underline-offset-4"
+                            >
+                                {t('fleet.readiness.planLink', {
+                                    count: row.planSteps,
+                                })}
+                            </Link>
+                        ) : (
+                            '—'
+                        )}
+                    </>
+                );
+            },
+        },
+    ];
+
     return (
         <div className="flex flex-col gap-4">
             <p className="max-w-2xl text-sm text-muted-foreground">
@@ -298,135 +446,11 @@ function ReadinessView({ readiness }: { readiness: Readiness }) {
                     />
                 ) : null}
             </div>
-            <TablePanel>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>{t('fleet.project')}</TableHead>
-                            <TableHead>{t('report.runtime.laravel')}</TableHead>
-                            <TableHead>{t('fleet.status')}</TableHead>
-                            <TableHead>
-                                {t('fleet.readiness.blockers')}
-                            </TableHead>
-                            <TableHead>{t('report.upgradePlan')}</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {readiness.projects.map((row) => (
-                            <TableRow key={row.project.slug}>
-                                <TableCell className="align-top">
-                                    <ProjectLink project={row.project} />
-                                </TableCell>
-                                <TableCell className="align-top font-mono text-xs">
-                                    {row.laravelVersion ?? '—'}
-                                </TableCell>
-                                <TableCell className="align-top">
-                                    <Badge
-                                        variant={READINESS_VARIANTS[row.status]}
-                                    >
-                                        {row.status === 'unknown' ||
-                                        row.targetMajor === null
-                                            ? t(
-                                                  'fleet.readiness.status.unknown',
-                                              )
-                                            : t(
-                                                  `fleet.readiness.status.${row.status}`,
-                                                  { major: row.targetMajor },
-                                              )}
-                                    </Badge>
-                                </TableCell>
-                                <TableCell className="align-top whitespace-normal">
-                                    {row.blockers.length === 0 ? (
-                                        <span className="text-sm text-muted-foreground">
-                                            {row.hasReport
-                                                ? '—'
-                                                : t('dashboard.noReports')}
-                                        </span>
-                                    ) : (
-                                        <ul className="space-y-1 text-sm">
-                                            {row.blockers.map((blocker) => (
-                                                <li
-                                                    key={blocker.package}
-                                                    className="flex flex-wrap items-center gap-1"
-                                                >
-                                                    <span className="font-mono text-xs">
-                                                        {blocker.package}
-                                                    </span>
-                                                    <span className="font-mono text-xs text-muted-foreground">
-                                                        {blocker.lockedVersion}
-                                                    </span>
-                                                    {blocker.isPreReleaseOnly ? (
-                                                        <Badge variant="muted">
-                                                            {t(
-                                                                'fleet.readiness.preReleaseOnly',
-                                                            )}
-                                                        </Badge>
-                                                    ) : null}
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    )}
-                                    {row.dismissedBlockers.length > 0 ? (
-                                        <ul className="mt-1 space-y-1 text-xs text-muted-foreground">
-                                            {row.dismissedBlockers.map(
-                                                (blocker) => (
-                                                    <li
-                                                        key={blocker.package}
-                                                        className="flex flex-wrap items-center gap-1"
-                                                    >
-                                                        <Badge variant="muted">
-                                                            {t(
-                                                                'findings.status.dismissed',
-                                                            )}
-                                                        </Badge>
-                                                        <span className="font-mono">
-                                                            {blocker.package}
-                                                        </span>
-                                                        <span>
-                                                            <DismissalText
-                                                                dismissal={
-                                                                    blocker.dismissal
-                                                                }
-                                                            />
-                                                        </span>
-                                                    </li>
-                                                ),
-                                            )}
-                                        </ul>
-                                    ) : null}
-                                    {row.uncheckedPackages > 0 ? (
-                                        <p className="mt-1 text-xs text-muted-foreground">
-                                            {t(
-                                                'fleet.readiness.uncheckedPackages',
-                                                {
-                                                    count: row.uncheckedPackages,
-                                                },
-                                            )}
-                                        </p>
-                                    ) : null}
-                                </TableCell>
-                                <TableCell className="align-top">
-                                    {row.hasReport ? (
-                                        <Link
-                                            href={projectsRoutes.view.url({
-                                                project: row.project.slug,
-                                                view: 'plan',
-                                            })}
-                                            className="text-sm text-primary underline underline-offset-4"
-                                        >
-                                            {t('fleet.readiness.planLink', {
-                                                count: row.planSteps,
-                                            })}
-                                        </Link>
-                                    ) : (
-                                        '—'
-                                    )}
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </TablePanel>
+            <DataTable
+                columns={readinessColumns}
+                data={readiness.projects}
+                getRowId={(row) => String(row.project.slug)}
+            />
         </div>
     );
 }
@@ -456,6 +480,119 @@ function AdvisoriesView({
             (row.advisoryId ?? '').toLowerCase().includes(needle));
     const filtered = rows.filter(isMatch);
     const dismissed = dismissedRows.filter(isMatch);
+    const exposureColumns: ColumnDef<(typeof filtered)[number]>[] = [
+        {
+            id: 'package',
+            header: t('fleet.advisories.package'),
+            meta: { cellClassName: 'align-top' },
+            cell: ({ row: tableRow }) => {
+                const row = tableRow.original;
+
+                return (
+                    <>
+                        <div className="font-mono text-xs">{row.package}</div>
+                        <div className="text-xs text-muted-foreground">
+                            {t(`fleet.advisories.ecosystem.${row.ecosystem}`)}
+                        </div>
+                    </>
+                );
+            },
+        },
+        {
+            id: 'advisory',
+            header: t('fleet.advisories.advisory'),
+            meta: { cellClassName: 'align-top whitespace-normal' },
+            cell: ({ row: tableRow }) => {
+                const row = tableRow.original;
+
+                return (
+                    <>
+                        <div className="flex flex-wrap items-center gap-1">
+                            <Badge variant="outline">
+                                {t(`fleet.advisories.kind.${row.kind}`)}
+                            </Badge>
+                            {row.advisoryId !== null ? (
+                                row.evidenceUrl !== null ? (
+                                    <a
+                                        href={row.evidenceUrl}
+                                        target="_blank"
+                                        rel="noreferrer noopener"
+                                        className="inline-flex items-center gap-0.5 font-mono text-xs text-primary underline underline-offset-4"
+                                    >
+                                        {row.advisoryId}
+                                        <ExternalLink
+                                            className="size-3"
+                                            aria-hidden
+                                        />
+                                    </a>
+                                ) : (
+                                    <span className="font-mono text-xs">
+                                        {row.advisoryId}
+                                    </span>
+                                )
+                            ) : null}
+                        </div>
+                        {row.replacement !== null ? (
+                            <p className="mt-1 text-xs text-muted-foreground">
+                                {t('fleet.advisories.replacement', {
+                                    package: row.replacement,
+                                })}
+                            </p>
+                        ) : null}
+                    </>
+                );
+            },
+        },
+        {
+            id: 'severityLabel',
+            header: t('report.severityLabel'),
+            meta: { cellClassName: 'align-top' },
+            cell: ({ row: tableRow }) => {
+                const row = tableRow.original;
+
+                return (
+                    <>
+                        <SeverityBadge severity={row.severity} />
+                    </>
+                );
+            },
+        },
+        {
+            id: 'projects',
+            header: t('fleet.advisories.projects'),
+            meta: { cellClassName: 'align-top whitespace-normal' },
+            cell: ({ row: tableRow }) => {
+                const row = tableRow.original;
+
+                return (
+                    <>
+                        <ul className="space-y-1 text-sm">
+                            {row.projects.map((project) => (
+                                <li
+                                    key={project.slug}
+                                    className="flex flex-wrap items-center gap-x-2"
+                                >
+                                    <ProjectLink project={project} />
+                                    <span className="font-mono text-xs">
+                                        {project.lockedVersion || '—'}
+                                        {project.fixedVersions.length > 0
+                                            ? ` → ${project.fixedVersions.join(', ')}`
+                                            : ''}
+                                    </span>
+                                    {project.severity !== row.severity ? (
+                                        <SeverityBadge
+                                            severity={project.severity}
+                                        />
+                                    ) : null}
+                                </li>
+                            ))}
+                        </ul>
+                    </>
+                );
+            },
+        },
+    ];
+
     const exposure =
         filtered.length === 0 ? (
             <PageEmptyState
@@ -472,110 +609,100 @@ function AdvisoriesView({
                 }
             />
         ) : (
-            <TablePanel>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>
-                                {t('fleet.advisories.package')}
-                            </TableHead>
-                            <TableHead>
-                                {t('fleet.advisories.advisory')}
-                            </TableHead>
-                            <TableHead>{t('report.severityLabel')}</TableHead>
-                            <TableHead>
-                                {t('fleet.advisories.projects')}
-                            </TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {filtered.map((row) => (
-                            <TableRow key={row.key}>
-                                <TableCell className="align-top">
-                                    <div className="font-mono text-xs">
-                                        {row.package}
-                                    </div>
-                                    <div className="text-xs text-muted-foreground">
-                                        {t(
-                                            `fleet.advisories.ecosystem.${row.ecosystem}`,
-                                        )}
-                                    </div>
-                                </TableCell>
-                                <TableCell className="align-top whitespace-normal">
-                                    <div className="flex flex-wrap items-center gap-1">
-                                        <Badge variant="outline">
-                                            {t(
-                                                `fleet.advisories.kind.${row.kind}`,
-                                            )}
-                                        </Badge>
-                                        {row.advisoryId !== null ? (
-                                            row.evidenceUrl !== null ? (
-                                                <a
-                                                    href={row.evidenceUrl}
-                                                    target="_blank"
-                                                    rel="noreferrer noopener"
-                                                    className="inline-flex items-center gap-0.5 font-mono text-xs text-primary underline underline-offset-4"
-                                                >
-                                                    {row.advisoryId}
-                                                    <ExternalLink
-                                                        className="size-3"
-                                                        aria-hidden
-                                                    />
-                                                </a>
-                                            ) : (
-                                                <span className="font-mono text-xs">
-                                                    {row.advisoryId}
-                                                </span>
-                                            )
-                                        ) : null}
-                                    </div>
-                                    {row.replacement !== null ? (
-                                        <p className="mt-1 text-xs text-muted-foreground">
-                                            {t('fleet.advisories.replacement', {
-                                                package: row.replacement,
-                                            })}
-                                        </p>
-                                    ) : null}
-                                </TableCell>
-                                <TableCell className="align-top">
-                                    <SeverityBadge severity={row.severity} />
-                                </TableCell>
-                                <TableCell className="align-top whitespace-normal">
-                                    <ul className="space-y-1 text-sm">
-                                        {row.projects.map((project) => (
-                                            <li
-                                                key={project.slug}
-                                                className="flex flex-wrap items-center gap-x-2"
-                                            >
-                                                <ProjectLink
-                                                    project={project}
-                                                />
-                                                <span className="font-mono text-xs">
-                                                    {project.lockedVersion ||
-                                                        '—'}
-                                                    {project.fixedVersions
-                                                        .length > 0
-                                                        ? ` → ${project.fixedVersions.join(', ')}`
-                                                        : ''}
-                                                </span>
-                                                {project.severity !==
-                                                row.severity ? (
-                                                    <SeverityBadge
-                                                        severity={
-                                                            project.severity
-                                                        }
-                                                    />
-                                                ) : null}
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </TablePanel>
+            <DataTable
+                columns={exposureColumns}
+                data={filtered}
+                getRowId={(row) => String(row.key)}
+            />
         );
+
+    const dismissedColumns: ColumnDef<(typeof dismissed)[number]>[] = [
+        {
+            id: 'package',
+            header: t('fleet.advisories.package'),
+            meta: { cellClassName: 'align-top' },
+            cell: ({ row: tableRow }) => {
+                const row = tableRow.original;
+
+                return (
+                    <>
+                        <div className="font-mono text-xs">{row.package}</div>
+                        <div className="font-mono text-xs text-muted-foreground">
+                            {row.lockedVersion || '—'}
+                        </div>
+                    </>
+                );
+            },
+        },
+        {
+            id: 'advisory',
+            header: t('fleet.advisories.advisory'),
+            meta: { cellClassName: 'align-top whitespace-normal' },
+            cell: ({ row: tableRow }) => {
+                const row = tableRow.original;
+
+                return (
+                    <>
+                        <div className="flex flex-wrap items-center gap-1">
+                            <Badge variant="outline">
+                                {t(`fleet.advisories.kind.${row.kind}`)}
+                            </Badge>
+                            {row.advisoryId !== null ? (
+                                <span className="font-mono text-xs">
+                                    {row.advisoryId}
+                                </span>
+                            ) : null}
+                        </div>
+                    </>
+                );
+            },
+        },
+        {
+            id: 'severityLabel',
+            header: t('report.severityLabel'),
+            meta: { cellClassName: 'align-top' },
+            cell: ({ row: tableRow }) => {
+                const row = tableRow.original;
+
+                return (
+                    <>
+                        <SeverityBadge severity={row.severity} />
+                    </>
+                );
+            },
+        },
+        {
+            id: 'project',
+            header: t('fleet.project'),
+            meta: { cellClassName: 'align-top' },
+            cell: ({ row: tableRow }) => {
+                const row = tableRow.original;
+
+                return (
+                    <>
+                        <ProjectLink project={row.project} />
+                    </>
+                );
+            },
+        },
+        {
+            id: 'reason',
+            header: t('findings.reason'),
+            meta: {
+                cellClassName:
+                    'align-top text-sm whitespace-normal text-muted-foreground',
+            },
+            cell: ({ row: tableRow }) => {
+                const row = tableRow.original;
+
+                return (
+                    <>
+                        <DismissalText dismissal={row.dismissal} />
+                    </>
+                );
+            },
+        },
+    ];
 
     return (
         <PageLayout
@@ -628,72 +755,11 @@ function AdvisoriesView({
                         <p className="text-sm text-muted-foreground">
                             {t('fleet.advisories.dismissedDescription')}
                         </p>
-                        <TablePanel>
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>
-                                            {t('fleet.advisories.package')}
-                                        </TableHead>
-                                        <TableHead>
-                                            {t('fleet.advisories.advisory')}
-                                        </TableHead>
-                                        <TableHead>
-                                            {t('report.severityLabel')}
-                                        </TableHead>
-                                        <TableHead>
-                                            {t('fleet.project')}
-                                        </TableHead>
-                                        <TableHead>
-                                            {t('findings.reason')}
-                                        </TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {dismissed.map((row) => (
-                                        <TableRow key={row.key}>
-                                            <TableCell className="align-top">
-                                                <div className="font-mono text-xs">
-                                                    {row.package}
-                                                </div>
-                                                <div className="font-mono text-xs text-muted-foreground">
-                                                    {row.lockedVersion || '—'}
-                                                </div>
-                                            </TableCell>
-                                            <TableCell className="align-top whitespace-normal">
-                                                <div className="flex flex-wrap items-center gap-1">
-                                                    <Badge variant="outline">
-                                                        {t(
-                                                            `fleet.advisories.kind.${row.kind}`,
-                                                        )}
-                                                    </Badge>
-                                                    {row.advisoryId !== null ? (
-                                                        <span className="font-mono text-xs">
-                                                            {row.advisoryId}
-                                                        </span>
-                                                    ) : null}
-                                                </div>
-                                            </TableCell>
-                                            <TableCell className="align-top">
-                                                <SeverityBadge
-                                                    severity={row.severity}
-                                                />
-                                            </TableCell>
-                                            <TableCell className="align-top">
-                                                <ProjectLink
-                                                    project={row.project}
-                                                />
-                                            </TableCell>
-                                            <TableCell className="align-top text-sm whitespace-normal text-muted-foreground">
-                                                <DismissalText
-                                                    dismissal={row.dismissal}
-                                                />
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </TablePanel>
+                        <DataTable
+                            columns={dismissedColumns}
+                            data={dismissed}
+                            getRowId={(row) => String(row.key)}
+                        />
                     </section>
                 </div>
             ) : (

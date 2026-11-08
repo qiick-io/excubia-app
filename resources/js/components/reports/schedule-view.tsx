@@ -1,7 +1,9 @@
+import type { ColumnDef } from '@tanstack/react-table';
 import { CalendarClock, CircleAlert } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { DataTable } from '@/components/admin/data-table';
 import { PageEmptyState } from '@/components/admin/page-empty-state';
-import { PageLayout, TablePanel } from '@/components/layout/page-layout';
+import { PageLayout } from '@/components/layout/page-layout';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { StackedBarChart } from '@/components/reports/severity-chart';
 import {
@@ -17,14 +19,6 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
 import type {
     RuntimeDeploy,
     ScheduledTaskRow,
@@ -107,6 +101,91 @@ export function ScheduleView({
         totals.skipped += point.skipped;
     }
 
+    const taskColumns: ColumnDef<ScheduledTaskRow>[] = [
+        {
+            id: 'task',
+            header: t('schedule.task'),
+            meta: { cellClassName: 'max-w-[32rem]' },
+            cell: ({ row }) => {
+                const task = row.original;
+
+                return (
+                    <>
+                        <div className="truncate font-medium">{task.task}</div>
+                        <div className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
+                            <span className="font-mono">{task.expression}</span>
+                            <span>· {task.timezone}</span>
+                            {task.environments.map((environment) => (
+                                <Badge key={environment} variant="outline">
+                                    {environment}
+                                </Badge>
+                            ))}
+                        </div>
+                    </>
+                );
+            },
+        },
+        {
+            id: 'runs',
+            header: t('schedule.runs'),
+            meta: { cellClassName: 'text-xs tabular-nums' },
+            cell: ({ row }) => {
+                const task = row.original;
+
+                return <>{t('schedule.runsSummary', task.runs)}</>;
+            },
+        },
+        {
+            id: 'lastRun',
+            header: t('schedule.lastRun'),
+            meta: { cellClassName: 'text-xs tabular-nums' },
+            cell: ({ row }) => {
+                const task = row.original;
+
+                return (
+                    <>
+                        <div>{formatTime(task.last_run_at)}</div>
+                        {task.last_outcome !== null ? (
+                            <div className="text-muted-foreground">
+                                {t(`schedule.outcome.${task.last_outcome}`)}
+                            </div>
+                        ) : null}
+                    </>
+                );
+            },
+        },
+        {
+            id: 'nextDue',
+            header: t('schedule.nextDue'),
+            meta: { cellClassName: 'text-xs tabular-nums' },
+            cell: ({ row }) => {
+                const task = row.original;
+
+                return <>{formatTime(task.next_due_at)}</>;
+            },
+        },
+        {
+            id: 'statusLabel',
+            header: t('schedule.statusLabel'),
+            cell: ({ row }) => {
+                const task = row.original;
+
+                return (
+                    <>
+                        <Badge variant={STATUS_VARIANTS[task.status]}>
+                            {t(`schedule.status.${task.status}`)}
+                        </Badge>
+                        {task.is_low_confidence ? (
+                            <div className="mt-1 text-xs text-muted-foreground">
+                                {t('schedule.lowConfidence')}
+                            </div>
+                        ) : null}
+                    </>
+                );
+            },
+        },
+    ];
+
     return (
         <PageLayout
             description={t('schedule.description')}
@@ -166,74 +245,11 @@ export function ScheduleView({
                     />
                 </CardContent>
             </Card>
-            <TablePanel>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>{t('schedule.task')}</TableHead>
-                            <TableHead>{t('schedule.runs')}</TableHead>
-                            <TableHead>{t('schedule.lastRun')}</TableHead>
-                            <TableHead>{t('schedule.nextDue')}</TableHead>
-                            <TableHead>{t('schedule.statusLabel')}</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {tasks.map((task) => (
-                            <TableRow key={task.id}>
-                                <TableCell className="max-w-[32rem]">
-                                    <div className="truncate font-medium">
-                                        {task.task}
-                                    </div>
-                                    <div className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
-                                        <span className="font-mono">
-                                            {task.expression}
-                                        </span>
-                                        <span>· {task.timezone}</span>
-                                        {task.environments.map(
-                                            (environment) => (
-                                                <Badge
-                                                    key={environment}
-                                                    variant="outline"
-                                                >
-                                                    {environment}
-                                                </Badge>
-                                            ),
-                                        )}
-                                    </div>
-                                </TableCell>
-                                <TableCell className="text-xs tabular-nums">
-                                    {t('schedule.runsSummary', task.runs)}
-                                </TableCell>
-                                <TableCell className="text-xs tabular-nums">
-                                    <div>{formatTime(task.last_run_at)}</div>
-                                    {task.last_outcome !== null ? (
-                                        <div className="text-muted-foreground">
-                                            {t(
-                                                `schedule.outcome.${task.last_outcome}`,
-                                            )}
-                                        </div>
-                                    ) : null}
-                                </TableCell>
-                                <TableCell className="text-xs tabular-nums">
-                                    {formatTime(task.next_due_at)}
-                                </TableCell>
-                                <TableCell>
-                                    <Badge
-                                        variant={STATUS_VARIANTS[task.status]}
-                                    >
-                                        {t(`schedule.status.${task.status}`)}
-                                    </Badge>
-                                    {task.is_low_confidence ? (
-                                        <div className="mt-1 text-xs text-muted-foreground">
-                                            {t('schedule.lowConfidence')}
-                                        </div>
-                                    ) : null}
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </TablePanel>
+            <DataTable
+                columns={taskColumns}
+                data={tasks}
+                getRowId={(task) => String(task.id)}
+            />
         </PageLayout>
     );
 }

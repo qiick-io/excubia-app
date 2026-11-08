@@ -1,18 +1,12 @@
+import type { ColumnDef } from '@tanstack/react-table';
 import { Head, Link } from '@inertiajs/react';
 import { ExternalLink } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { PageLayout, TablePanel } from '@/components/layout/page-layout';
+import { DataTable } from '@/components/admin/data-table';
+import { PageLayout } from '@/components/layout/page-layout';
 import { Badge } from '@/components/ui/badge';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 import { edit as editProfile } from '@/routes/profile';
@@ -161,15 +155,143 @@ export default function SystemIndex(props: SystemHealthProps) {
     );
 
     const staleCell = (value: string | null, isStale: boolean) => (
-        <TableCell className="whitespace-nowrap tabular-nums">
+        <>
             {formatTime(value, never)}
             {isStale ? (
                 <Badge variant="warning" className="ml-2">
                     {t('system.pushes.stale')}
                 </Badge>
             ) : null}
-        </TableCell>
+        </>
     );
+
+    const pushColumns: ColumnDef<(typeof pushes.projects)[number]>[] = [
+        {
+            id: 'project',
+            header: t('system.columns.project'),
+            cell: ({ row }) => (
+                <Link
+                    href={projectsRoutes.show.url(row.original.slug)}
+                    className="underline underline-offset-4"
+                >
+                    {row.original.name}
+                </Link>
+            ),
+        },
+        {
+            id: 'reports',
+            header: t('system.pushes.reports'),
+            meta: { cellClassName: 'whitespace-nowrap tabular-nums' },
+            cell: ({ row }) =>
+                staleCell(row.original.reportAt, row.original.isReportStale),
+        },
+        {
+            id: 'runtime',
+            header: t('system.pushes.runtime'),
+            meta: { cellClassName: 'whitespace-nowrap tabular-nums' },
+            cell: ({ row }) =>
+                staleCell(row.original.runtimeAt, row.original.isRuntimeStale),
+        },
+        {
+            id: 'exceptions',
+            header: t('system.pushes.exceptions'),
+            meta: { cellClassName: 'whitespace-nowrap tabular-nums' },
+            cell: ({ row }) => staleCell(row.original.exceptionsAt, false),
+        },
+    ];
+
+    const failureColumns: ColumnDef<(typeof alertFailures.latest)[number]>[] = [
+        {
+            id: 'project',
+            header: t('system.columns.project'),
+            cell: ({ row }) => {
+                const failure = row.original;
+
+                return <>{failure.project}</>;
+            },
+        },
+        {
+            id: 'event',
+            header: t('system.alertFailures.event'),
+            meta: { cellClassName: 'font-mono text-xs' },
+            cell: ({ row }) => {
+                const failure = row.original;
+
+                return <>{failure.event}</>;
+            },
+        },
+        {
+            id: 'channels',
+            header: t('system.alertFailures.channels'),
+            cell: ({ row }) => {
+                const failure = row.original;
+
+                return <>{failure.channels.join(', ')}</>;
+            },
+        },
+        {
+            id: 'at',
+            header: t('system.alertFailures.at'),
+            meta: {
+                headerClassName: 'text-right',
+                cellClassName: 'text-right whitespace-nowrap tabular-nums',
+            },
+            cell: ({ row }) => {
+                const failure = row.original;
+
+                return <>{formatTime(failure.at, never)}</>;
+            },
+        },
+    ];
+
+    const rejectionColumns: ColumnDef<(typeof rejections.rows)[number]>[] = [
+        {
+            id: 'endpoint',
+            header: t('system.rejections.endpoint'),
+            meta: { cellClassName: 'font-mono text-xs' },
+            cell: ({ row: tableRow }) => {
+                const row = tableRow.original;
+
+                return <>/api/{row.endpoint}</>;
+            },
+        },
+        {
+            id: 'status',
+            header: t('system.rejections.status'),
+            meta: {
+                headerClassName: 'text-right',
+                cellClassName: 'text-right tabular-nums',
+            },
+            cell: ({ row: tableRow }) => {
+                const row = tableRow.original;
+
+                return <>{row.status}</>;
+            },
+        },
+        {
+            id: 'reason',
+            header: t('system.rejections.reason'),
+            meta: { cellClassName: 'font-mono text-xs' },
+            cell: ({ row: tableRow }) => {
+                const row = tableRow.original;
+
+                return <>{row.reason}</>;
+            },
+        },
+        {
+            id: 'count',
+            header: t('system.columns.count'),
+            meta: {
+                headerClassName: 'text-right',
+                cellClassName: 'text-right tabular-nums',
+            },
+            cell: ({ row: tableRow }) => {
+                const row = tableRow.original;
+
+                return <>{row.count}</>;
+            },
+        },
+    ];
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -247,65 +369,16 @@ export default function SystemIndex(props: SystemHealthProps) {
                                     hours: pushes.staleAfterHours,
                                 })}
                             </p>
-                            <TablePanel>
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>
-                                                {t('system.columns.project')}
-                                            </TableHead>
-                                            <TableHead>
-                                                {t('system.pushes.reports')}
-                                            </TableHead>
-                                            <TableHead>
-                                                {t('system.pushes.runtime')}
-                                            </TableHead>
-                                            <TableHead>
-                                                {t('system.pushes.exceptions')}
-                                            </TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {pushes.projects.length === 0 ? (
-                                            <TableRow>
-                                                <TableCell
-                                                    colSpan={4}
-                                                    className="text-muted-foreground"
-                                                >
-                                                    {t('system.pushes.empty')}
-                                                </TableCell>
-                                            </TableRow>
-                                        ) : (
-                                            pushes.projects.map((project) => (
-                                                <TableRow key={project.slug}>
-                                                    <TableCell>
-                                                        <Link
-                                                            href={projectsRoutes.show.url(
-                                                                project.slug,
-                                                            )}
-                                                            className="underline underline-offset-4"
-                                                        >
-                                                            {project.name}
-                                                        </Link>
-                                                    </TableCell>
-                                                    {staleCell(
-                                                        project.reportAt,
-                                                        project.isReportStale,
-                                                    )}
-                                                    {staleCell(
-                                                        project.runtimeAt,
-                                                        project.isRuntimeStale,
-                                                    )}
-                                                    {staleCell(
-                                                        project.exceptionsAt,
-                                                        false,
-                                                    )}
-                                                </TableRow>
-                                            ))
-                                        )}
-                                    </TableBody>
-                                </Table>
-                            </TablePanel>
+                            <DataTable
+                                columns={pushColumns}
+                                data={pushes.projects}
+                                getRowId={(project) => project.slug}
+                                emptyState={
+                                    <span className="text-muted-foreground">
+                                        {t('system.pushes.empty')}
+                                    </span>
+                                }
+                            />
                         </HealthSection>
 
                         <HealthSection
@@ -314,61 +387,20 @@ export default function SystemIndex(props: SystemHealthProps) {
                             item={rejections}
                             docsUrl={docsUrl}
                         >
-                            <TablePanel>
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>
-                                                {t(
-                                                    'system.rejections.endpoint',
-                                                )}
-                                            </TableHead>
-                                            <TableHead className="text-right">
-                                                {t('system.rejections.status')}
-                                            </TableHead>
-                                            <TableHead>
-                                                {t('system.rejections.reason')}
-                                            </TableHead>
-                                            <TableHead className="text-right">
-                                                {t('system.columns.count')}
-                                            </TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {rejections.rows.length === 0 ? (
-                                            <TableRow>
-                                                <TableCell
-                                                    colSpan={4}
-                                                    className="text-muted-foreground"
-                                                >
-                                                    {t(
-                                                        'system.rejections.empty',
-                                                    )}
-                                                </TableCell>
-                                            </TableRow>
-                                        ) : (
-                                            rejections.rows.map((row) => (
-                                                <TableRow
-                                                    key={`${row.endpoint}-${row.status}-${row.reason}`}
-                                                >
-                                                    <TableCell className="font-mono text-xs">
-                                                        /api/{row.endpoint}
-                                                    </TableCell>
-                                                    <TableCell className="text-right tabular-nums">
-                                                        {row.status}
-                                                    </TableCell>
-                                                    <TableCell className="font-mono text-xs">
-                                                        {row.reason}
-                                                    </TableCell>
-                                                    <TableCell className="text-right tabular-nums">
-                                                        {row.count}
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))
-                                        )}
-                                    </TableBody>
-                                </Table>
-                            </TablePanel>
+                            <DataTable
+                                columns={rejectionColumns}
+                                data={rejections.rows}
+                                getRowId={(row) =>
+                                    String(
+                                        `${row.endpoint}-${row.status}-${row.reason}`,
+                                    )
+                                }
+                                emptyState={
+                                    <span className="text-muted-foreground">
+                                        {t('system.rejections.empty')}
+                                    </span>
+                                }
+                            />
                         </HealthSection>
 
                         <HealthSection
@@ -412,63 +444,13 @@ export default function SystemIndex(props: SystemHealthProps) {
                                             count: alertFailures.total,
                                         })}
                                     </p>
-                                    <TablePanel>
-                                        <Table>
-                                            <TableHeader>
-                                                <TableRow>
-                                                    <TableHead>
-                                                        {t(
-                                                            'system.columns.project',
-                                                        )}
-                                                    </TableHead>
-                                                    <TableHead>
-                                                        {t(
-                                                            'system.alertFailures.event',
-                                                        )}
-                                                    </TableHead>
-                                                    <TableHead>
-                                                        {t(
-                                                            'system.alertFailures.channels',
-                                                        )}
-                                                    </TableHead>
-                                                    <TableHead className="text-right">
-                                                        {t(
-                                                            'system.alertFailures.at',
-                                                        )}
-                                                    </TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {alertFailures.latest.map(
-                                                    (failure, index) => (
-                                                        <TableRow
-                                                            key={`${failure.at}-${index}`}
-                                                        >
-                                                            <TableCell>
-                                                                {
-                                                                    failure.project
-                                                                }
-                                                            </TableCell>
-                                                            <TableCell className="font-mono text-xs">
-                                                                {failure.event}
-                                                            </TableCell>
-                                                            <TableCell>
-                                                                {failure.channels.join(
-                                                                    ', ',
-                                                                )}
-                                                            </TableCell>
-                                                            <TableCell className="text-right whitespace-nowrap tabular-nums">
-                                                                {formatTime(
-                                                                    failure.at,
-                                                                    never,
-                                                                )}
-                                                            </TableCell>
-                                                        </TableRow>
-                                                    ),
-                                                )}
-                                            </TableBody>
-                                        </Table>
-                                    </TablePanel>
+                                    <DataTable
+                                        columns={failureColumns}
+                                        data={alertFailures.latest}
+                                        getRowId={(failure) =>
+                                            `${failure.at}-${failure.project}-${failure.event}`
+                                        }
+                                    />
                                 </>
                             )}
                         </HealthSection>
