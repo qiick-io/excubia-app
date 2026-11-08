@@ -10,36 +10,33 @@
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 
 /*
- * Severity scale for charts (stacked by severity): one red ramp, critical darkest on light and
- * brightest on dark, validated as an ordinal ramp (dataviz validate_palette --ordinal) against
- * the card surfaces. Badges keep the status tokens.
+ * The one severity scale (#204), shared by the stacked severity charts and the severity badges
+ * (`SEVERITY_SCALE` in components/reports/severity-badge.tsx): critical, high and medium carry
+ * the status tokens of their badge (destructive, warning, info), low and info stay neutral, low
+ * the stronger grey. Every slot is at least 3:1 against the card in light (white) and dark
+ * (ink-900), and the status tokens follow the high-contrast theme.
  */
 :root {
-    --severity-chart-critical: var(--color-red-900);
-    --severity-chart-high: var(--color-red-700);
-    --severity-chart-medium: var(--color-red-500);
-    --severity-chart-low: var(--color-red-400);
-    --severity-chart-info: var(--color-red-300);
+    --severity-critical: var(--destructive);
+    --severity-high: var(--warning);
+    --severity-medium: var(--info);
+    --severity-low: var(--muted-foreground);
+    --severity-info: var(--color-ink-400);
 }
 
 .dark {
-    --severity-chart-critical: var(--color-red-100);
-    --severity-chart-high: var(--color-red-200);
-    --severity-chart-medium: var(--color-red-300);
-    --severity-chart-low: var(--color-red-400);
-    --severity-chart-info: var(--color-red-600);
+    --severity-info: var(--color-ink-500);
 }
 
 /*
- * Requests chart (successful vs 5xx), validated as a 2-slot categorical palette against the
- * card surfaces (dataviz validate_palette, light and dark).
+ * Requests chart (successful vs 5xx): errors take the critical severity colour, successes a
+ * blue that stays apart from it in light and dark.
  */
 :root {
     --runtime-chart-ok: var(--color-blue-600);
-    --runtime-chart-error: var(--color-red-600);
+    --runtime-chart-error: var(--severity-critical);
 }
 
 .dark {
     --runtime-chart-ok: var(--color-blue-500);
-    --runtime-chart-error: var(--color-red-400);
 }

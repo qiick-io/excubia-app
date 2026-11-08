@@ -25,6 +25,13 @@ use Illuminate\Support\Facades\DB;
  */
 class StorePushedReportAction
 {
+    /**
+     * Tries of the store transaction: concurrent pushes can deadlock on MySQL's gap locks (or,
+     * past the busy timeout, find SQLite locked), and the whole push is then rolled back and
+     * run again (#195).
+     */
+    private const TRANSACTION_ATTEMPTS = 3;
+
     public function __construct(
         private ReportAlertsService $reportAlerts,
         private StoreScheduleInventoryAction $scheduleInventory,
@@ -83,7 +90,7 @@ class StorePushedReportAction
                 $this->reportAlerts->afterReport($project, $healthReport, $previous, $wasStale, $changes);
 
                 return $healthReport;
-            });
+            }, attempts: self::TRANSACTION_ATTEMPTS);
         } catch (UniqueConstraintViolationException) {
             // A concurrent retry of the same batch won the race.
             return $project->healthReports()->where('batch_id', $batchId)->firstOrFail();

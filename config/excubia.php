@@ -56,7 +56,17 @@ return [
     // older ones are pruned daily by excubia:prune-telemetry.
     'runtime_retention_days' => (int) env('EXCUBIA_RUNTIME_RETENTION_DAYS', 14),
 
+    // Hours of per-minute runtime rows kept (#212, at least 24): excubia:downsample-runtime folds
+    // older minutes into one row per series and hour every hour, which the 24 h, 7 d and 14 d
+    // ranges read with the same totals. The hourly rows are kept for the runtime retention.
+    'runtime_minute_hours' => (int) env('EXCUBIA_RUNTIME_MINUTE_HOURS', 48),
+
     'exceptions_retention_days' => (int) env('EXCUBIA_EXCEPTIONS_RETENTION_DAYS', 90),
+
+    // Days of exception occurrences kept for the charts and "In range" counts (#214, at least 14,
+    // the longest range; never longer than the exceptions retention). Older than the per-minute
+    // window they are hourly rows; the groups keep their totals for the exceptions retention.
+    'exception_occurrence_days' => (int) env('EXCUBIA_EXCEPTION_OCCURRENCE_DAYS', 14),
 
     // Days of checks with always the same value after which a Laravel Pennant feature counts as a
     // stale flag on the Runtime tab (#189); judged over the runtime retention when that is shorter.

@@ -11,15 +11,24 @@ export const SEVERITIES: Severity[] = [
     'info',
 ];
 
-const SEVERITY_VARIANTS: Record<
+/**
+ * The one severity scale (#204): each severity's badge variant and its chart colour, the
+ * `--severity-*` token in app.css that points at the same status token as the badge (critical
+ * destructive, high warning, medium info; low and info neutral, low the stronger grey). Charts and
+ * badges read it from here, so a severity looks the same everywhere.
+ */
+export const SEVERITY_SCALE: Record<
     Severity,
-    NonNullable<VariantProps<typeof badgeVariants>['variant']>
+    {
+        badge: NonNullable<VariantProps<typeof badgeVariants>['variant']>;
+        chartColor: string;
+    }
 > = {
-    critical: 'destructive',
-    high: 'warning',
-    medium: 'info',
-    low: 'secondary',
-    info: 'muted',
+    critical: { badge: 'destructive', chartColor: 'var(--severity-critical)' },
+    high: { badge: 'warning', chartColor: 'var(--severity-high)' },
+    medium: { badge: 'info', chartColor: 'var(--severity-medium)' },
+    low: { badge: 'secondary', chartColor: 'var(--severity-low)' },
+    info: { badge: 'muted', chartColor: 'var(--severity-info)' },
 };
 
 /**
@@ -40,7 +49,7 @@ export function SeverityBadge({
     }
 
     return (
-        <Badge variant={SEVERITY_VARIANTS[severity]}>
+        <Badge variant={SEVERITY_SCALE[severity].badge}>
             {count === undefined
                 ? t(`report.severity.${severity}`)
                 : `${count} ${t(`report.severity.${severity}`)}`}

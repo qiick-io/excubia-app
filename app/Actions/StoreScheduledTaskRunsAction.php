@@ -38,7 +38,9 @@ class StoreScheduledTaskRunsAction
                 'outcome' => (string) $aggregate['outcome'],
             ];
             $sampleRate = round((float) $aggregate['sampleRate'], 4);
-            $existing = ScheduledTaskRun::query()->where($identity)->lockForUpdate()->first();
+            // Locked by key once found: a locking read of a missing row takes a gap lock on MySQL (#195).
+            $found = ScheduledTaskRun::query()->where($identity)->value('id');
+            $existing = $found === null ? null : ScheduledTaskRun::query()->whereKey($found)->lockForUpdate()->first();
 
             if ($existing === null) {
                 ScheduledTaskRun::query()->create([...$identity, 'count' => (int) $aggregate['count'], 'sample_rate' => $sampleRate]);

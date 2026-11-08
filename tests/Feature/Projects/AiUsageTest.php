@@ -178,7 +178,7 @@ it('prices Gemini 2.5 Pro and Flash as the models Google bills them as from 2026
         ->and(app(AiPriceService::class)->cost('gemini', 'gemini-2.5-pro', $usage, $before))->toEqualWithDelta(11.25, 0.000001);
 });
 
-it('splits the AI tab timeline of Gemini 2.5 Pro at 2026-12-01', function () {
+it('splits the AI tab timeline and totals of Gemini 2.5 Pro at 2026-12-01', function () {
     Date::setTestNow('2026-12-01 12:30:00');
     $gemini = ['provider' => 'gemini', 'model' => 'gemini-2.5-pro', 'count' => 1, 'errorCount' => 0, 'failoverCount' => 0, 'histogram' => null,
         'inputTokens' => 1_000_000, 'outputTokens' => 1_000_000, 'cacheReadInputTokens' => 0, 'cacheWriteInputTokens' => 0];
@@ -189,7 +189,88 @@ it('splits the AI tab timeline of Gemini 2.5 Pro at 2026-12-01', function () {
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->where('ai.timeline', fn ($points): bool => abs(collect($points)->sum('cost') - 15.75) < 0.0001)
+            // The totals price each side of the change at its own row, not the whole series at its last minute (#202).
+            ->where('ai.totals.cost', 15.75)
+            ->where('ai.models.0.cost', 15.75)
+            ->where('ai.totals.count', 2)
             ->where('ai.month.cost', 4.5));
+});
+
+it('prices Gemini 3.8 Flash at its 2027-01-01 price from that day, earlier days at the old one (#202)', function () {
+    $prices = app(AiPriceService::class);
+    $usage = ['inputTokens' => 2_000_000.0, 'outputTokens' => 1_000_000.0, 'cacheReadInputTokens' => 1_000_000.0, 'cacheWriteInputTokens' => 0.0, 'reasoningTokens' => 0.0, 'imageInputTokens' => 0.0, 'imageOutputTokens' => 0.0, 'audioSeconds' => 0.0, 'searchUnits' => 0.0];
+    $lastOldDay = Date::parse('2026-12-31 23:59:59');
+    $firstNewDay = Date::parse('2027-01-01 00:00:00');
+
+    // Until 2026-12-31: $0.75 input + $0.075 cache read + $3.75 output; from 2027-01-01: $1.50 + $0.15 + $7.50.
+    expect($prices->cost('gemini', 'gemini-3.8-flash', $usage, $lastOldDay))->toEqualWithDelta(0.75 + 0.075 + 3.75, 0.000001)
+        ->and($prices->cost('gemini', 'gemini-3.8-flash', $usage, $firstNewDay))->toEqualWithDelta(1.5 + 0.15 + 7.5, 0.000001)
+        ->and($prices->priceFor('gemini', 'gemini-3.8-flash-001', $firstNewDay))->toMatchArray(['effective_from' => '2027-01-01', 'input' => 1.5])
+        // Gemini 2.5 Pro, billed as 3.8 Flash since 2026-12-01, follows its price history.
+        ->and($prices->cost('gemini', 'gemini-2.5-pro', $usage, $firstNewDay))->toEqualWithDelta(1.5 + 0.15 + 7.5, 0.000001)
+        ->and($prices->changeDays())->toBe(['2026-12-01', '2027-01-01'])
+        ->and($prices->periodOf($lastOldDay))->toBe('2026-12-01')
+        ->and($prices->periodOf(Date::parse('2026-11-30')))->toBe('');
+
+    foreach (['2026-12-31', '2027-01-01'] as $day) {
+        AiUsageDay::query()->forceCreate([
+            'project_id' => $this->project->id, 'day' => $day, 'usage_key' => hash('sha256', "gemini\0gemini-3.8-flash"), 'provider' => 'gemini', 'model' => 'gemini-3.8-flash',
+            'calls' => 10, 'input_tokens' => 1_000_000, 'output_tokens' => 1_000_000,
+        ]);
+    }
+
+    expect($prices->costOfDays($this->project, Date::parse('2026-12-31'), Date::parse('2027-01-01'))['cost'])->toEqualWithDelta(4.5 + 9.0, 0.000001);
+});
+
+it('prices old-shape saved rows since forever and dated rows from their day', function () {
+    // A table saved before #202: no effective_from.
+    app(SettingsRepositoryService::class)->save(['ai_prices' => [
+        ['provider' => 'acme', 'model' => 'model-a', 'input' => 1, 'output' => 2],
+        ['provider' => 'acme', 'model' => 'model-a', 'effective_from' => '2026-11-15', 'input' => 3, 'output' => 4],
+        ['provider' => 'acme', 'model' => 'model-b', 'effective_from' => '2026-11-15', 'input' => 5, 'output' => 6],
+        ['provider' => 'acme', 'model' => 'model-c', 'effective_from' => 'not a day', 'input' => 7, 'output' => 8],
+    ]]);
+    $prices = app(AiPriceService::class);
+
+    expect($prices->priceFor('acme', 'model-a', Date::parse('2020-01-01')))->toMatchArray(['effective_from' => null, 'input' => 1.0])
+        ->and($prices->priceFor('acme', 'model-a', Date::parse('2026-11-14 23:59:59'))['input'])->toBe(1.0)
+        ->and($prices->priceFor('acme', 'model-a', Date::parse('2026-11-15'))['input'])->toBe(3.0)
+        ->and($prices->priceFor('acme', 'model-a')['input'])->toBe(3.0)
+        // Before its only row the model has no price; an unreadable date counts as since forever.
+        ->and($prices->priceFor('acme', 'model-b', Date::parse('2026-11-14')))->toBeNull()
+        ->and($prices->priceFor('acme', 'model-c', Date::parse('2020-01-01')))->toMatchArray(['effective_from' => null, 'input' => 7.0])
+        ->and($prices->changeDays())->toBe(['2026-11-15', '2026-12-01']);
+
+    aiUsageDay($this->project, '2026-11-14', 1_000_000, 'model-a');
+    aiUsageDay($this->project, '2026-11-15', 1_000_000, 'model-a');
+    AiUsageDay::query()->update(['provider' => 'acme', 'usage_key' => hash('sha256', "acme\0model-a")]);
+
+    // $2 on the 14th, $4 on the 15th.
+    expect($prices->costOfDays($this->project, Date::parse('2026-11-14'), Date::parse('2026-11-15'))['cost'])->toEqualWithDelta(6.0, 0.000001);
+});
+
+it('saves a new price of a model from a date in Settings → AI prices and keeps the history', function () {
+    $admin = aiUser(RoleEnum::Admin);
+    $this->actingAs($admin)->get(route('ai-prices.edit'))->assertInertia(fn (Assert $page) => $page
+        ->where('prices', fn ($rows): bool => collect($rows)->contains(fn (array $row): bool => $row['model'] === 'gemini-3.8-flash' && $row['effective_from'] === '2027-01-01' && $row['output'] === 7.5))
+        ->where('prices.0.effective_from', null));
+
+    $row = ['provider' => 'acme', 'model' => 'model-a', 'effective_from' => '', 'input' => 1, 'output' => 2];
+    $this->actingAs($admin)->put(route('ai-prices.update'), ['prices' => [$row, [...$row, 'effective_from' => '2026-11-15'], [...$row, 'effective_from' => '2026-11-15']]])->assertSessionHasErrors('prices.2.model');
+    $this->actingAs($admin)->put(route('ai-prices.update'), ['prices' => [[...$row, 'effective_from' => '15/11/2026']]])->assertSessionHasErrors('prices.0.effective_from');
+    $this->actingAs($admin)->put(route('ai-prices.update'), ['prices' => [$row, [...$row, 'effective_from' => '2026-11-15', 'input' => 3]]])->assertSessionHasNoErrors();
+
+    $prices = app(AiPriceService::class);
+
+    expect($prices->prices())->toHaveCount(2)
+        ->and($prices->prices()[0]['effective_from'])->toBeNull()
+        ->and($prices->prices()[1]['effective_from'])->toBe('2026-11-15')
+        ->and($prices->priceFor('acme', 'model-a', Date::parse('2026-11-14'))['input'])->toBe(1.0)
+        ->and($prices->priceFor('acme', 'model-a', Date::parse('2026-11-15'))['input'])->toBe(3.0);
+
+    $this->actingAs($admin)->get(route('ai-prices.edit'))->assertInertia(fn (Assert $page) => $page
+        ->has('prices', 2)
+        ->where('prices.1.effective_from', '2026-11-15'));
 });
 
 it('shows the AI tab with spend, calls, failovers, p95, token split, breakdowns and tools to readers', function () {

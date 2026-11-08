@@ -18,7 +18,8 @@ require_once __DIR__.'/BrowserSeedHelpers.php';
  * Visual QA screenshots (#194): every page and project tab, full page, at desktop (1440px) and
  * mobile (390px) width, in light and dark, over the axe smoke seed plus one runtime push of
  * every core type, so each runtime card has rows. Nothing is asserted beyond "the page renders
- * without JavaScript errors": the PNGs land in `tests/Browser/Screenshots/visual-*.png` for a human.
+ * without JavaScript errors and the settings content pane is not collapsed (#209): the PNGs land in
+ * `tests/Browser/Screenshots/visual-*.png` for a human.
  * Excluded from every run by phpunit.xml; run it with
  * `vendor/bin/pest tests/Browser/VisualQaBrowserTest.php --group=visual`.
  */
@@ -44,6 +45,13 @@ function screenshotEverywhere(string $name, string $path, ?callable $interact = 
             if ($interact !== null) {
                 $page = $interact($page);
             }
+
+            // Below `lg` the settings nav stacks above the content: a pane that shrinks to 0 px
+            // under it hides every form (#209). Checked at the real viewport, before it grows.
+            $page->assertScript(
+                "() => [...document.querySelectorAll('[data-test=\"settings-content\"]')].every((pane) => pane.getBoundingClientRect().height > 0)",
+                true,
+            );
 
             // The shell scrolls an inner container, so a full-page shot alone stops at the
             // viewport: grow the viewport by what the page-level scroller hides first. Inner
@@ -199,6 +207,7 @@ it('screenshots every authenticated page and project tab', function () {
     $project = seededVisualProject();
 
     $openFirstRow = fn (string $text): Closure => fn (mixed $page): mixed => $page->click($text)->wait(0.4);
+    $openSlackEventPicker = fn (mixed $page): mixed => $page->click('#channels-slack--events-selected')->wait(0.4);
 
     $pages = [
         'dashboard' => [route('dashboard', absolute: false)],
@@ -229,6 +238,7 @@ it('screenshots every authenticated page and project tab', function () {
         'settings-ai-prices' => [route('ai-prices.edit', absolute: false)],
         'settings-project' => [route('project.edit', absolute: false)],
         'settings-integrations' => [route('project.integrations.edit', absolute: false)],
+        'settings-integrations-events' => [route('project.integrations.edit', absolute: false), $openSlackEventPicker],
         'settings-localization' => [route('project.localization.edit', absolute: false)],
         'settings-project-security' => [route('project.security.edit', absolute: false)],
         'settings-system' => [route('system.index', absolute: false)],
