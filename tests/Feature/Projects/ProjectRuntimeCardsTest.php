@@ -8,6 +8,7 @@ use App\Models\Project;
 use App\Models\RuntimeAggregate;
 use App\Models\User;
 use App\Services\ProjectRuntimeService;
+use App\Services\SettingsRepositoryService;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Str;
@@ -80,7 +81,8 @@ it('sends every card, empty, to a project whose core sends only the default type
         ->where('runtime.reverb', ['check' => null, 'rows' => []])
         ->where('runtime.billing', ['totals' => ['paymentFailed' => 0, 'paymentActionRequired' => 0, 'subscriptionCanceled' => 0], 'rows' => []])
         ->where('runtime.auth', [])
-        ->where('runtime.scout', []));
+        ->where('runtime.scout', [])
+        ->where('runtime.pennant', ['staleAfterDays' => 30, 'staleWindowDays' => 14, 'stale' => [], 'rows' => []]));
 });
 
 it('shows the skipped aggregates of unknown types, even before any known type arrives', function () {
@@ -454,4 +456,77 @@ it('shows Scout per model, engine and operation with failures, records and p95, 
         ->where('runtime.scout.2.engine', 'my-driver')
         ->where('runtime.scout.2.operation', 'futureValue')
         ->where('runtime.scout.2.maxMs', 5));
+});
+
+/**
+ * One minute of Pennant checks of a feature (#189); `count` is the sum of the four counters.
+ *
+ * @param  array{activeCount?: int, inactiveCount?: int, resolvedCount?: int, unknownCount?: int}  $counters
+ * @param  array<string, mixed>  $values
+ */
+function pennantRow(Project $project, string $feature, array $counters, array $values = []): RuntimeAggregate
+{
+    $metrics = [...['activeCount' => 0, 'inactiveCount' => 0, 'resolvedCount' => 0, 'unknownCount' => 0], ...$counters];
+
+    return cardRow($project, 'pennant', ['feature' => $feature], ['count' => array_sum($metrics), 'metrics' => $metrics, ...$values]);
+}
+
+it('shows Pennant per feature with the active split, resolutions and undefined checks, hashed names as such (#189)', function () {
+    pennantRow($this->project, 'new-checkout', ['activeCount' => 6, 'inactiveCount' => 2, 'resolvedCount' => 2]);
+    // Sampled at 50 %: the counts are estimated.
+    pennantRow($this->project, 'new-checkout', ['activeCount' => 1, 'inactiveCount' => 1], ['bucket' => '2026-11-05 11:30:00', 'sample_rate' => 0.5]);
+    // A name core hashed, checked although it is not defined.
+    pennantRow($this->project, 'a1b2c3d4e5f6', ['unknownCount' => 3]);
+
+    runtimePage($this->viewer, $this->project)->assertInertia(fn (Assert $page) => $page
+        ->has('runtime.pennant.rows', 2)
+        ->where('runtime.pennant.rows.0', [
+            'feature' => 'new-checkout', 'isHashed' => false, 'count' => 14, 'checks' => 12, 'active' => 8, 'inactive' => 4,
+            'activeShare' => 66.7, 'resolved' => 2, 'unknown' => 0, 'lastAt' => '2026-11-05T11:58:00Z',
+        ])
+        ->where('runtime.pennant.rows.1', [
+            'feature' => 'a1b2c3d4e5f6', 'isHashed' => true, 'count' => 3, 'checks' => 0, 'active' => 0, 'inactive' => 0,
+            'activeShare' => null, 'resolved' => 0, 'unknown' => 3, 'lastAt' => '2026-11-05T11:58:00Z',
+        ])
+        ->where('runtime.pennant.stale', []));
+});
+
+it('lists Pennant flags checked every day of the window with always the same value as stale (#189)', function () {
+    // The default 30 days are capped by the default 14-day runtime retention: 2026-10-22 to 2026-11-04.
+    foreach (range(1, 14) as $daysAgo) {
+        $bucket = Date::now()->subDays($daysAgo)->setTime(9, 0)->format('Y-m-d H:i:s');
+
+        pennantRow($this->project, 'always-on', ['activeCount' => 5], ['bucket' => $bucket]);
+        pennantRow($this->project, 'App\\Features\\AlwaysOff', ['inactiveCount' => 2, 'resolvedCount' => 1], ['bucket' => $bucket]);
+        pennantRow($this->project, 'rolling-out', ['activeCount' => 3, 'inactiveCount' => $daysAgo === 1 ? 1 : 0], ['bucket' => $bucket]);
+
+        if ($daysAgo !== 7) {
+            pennantRow($this->project, 'weekday-only', ['activeCount' => 4], ['bucket' => $bucket]);
+        }
+    }
+
+    // Older than the window: it counts neither for nor against a flag.
+    pennantRow($this->project, 'always-on', ['inactiveCount' => 9], ['bucket' => '2026-10-21 23:00:00']);
+    // Today's checks count: a flag turned off today is not stale any more.
+    pennantRow($this->project, 'App\\Features\\AlwaysOff', ['inactiveCount' => 1]);
+
+    runtimePage($this->viewer, $this->project)->assertInertia(fn (Assert $page) => $page
+        ->where('runtime.pennant.staleAfterDays', 30)
+        ->where('runtime.pennant.staleWindowDays', 14)
+        ->where('runtime.pennant.stale', [
+            ['feature' => 'always-on', 'isHashed' => false, 'value' => 'active', 'checks' => 70],
+            ['feature' => 'App\\Features\\AlwaysOff', 'isHashed' => false, 'value' => 'inactive', 'checks' => 29],
+        ]));
+
+    // A shorter setting than the retention is the window; a day without checks keeps a flag off the list.
+    app(SettingsRepositoryService::class)->save(['pennant_stale_after_days' => 3]);
+    pennantRow($this->project, 'App\\Features\\AlwaysOff', ['activeCount' => 1], ['bucket' => '2026-11-05 12:00:00']);
+
+    runtimePage($this->viewer, $this->project)->assertInertia(fn (Assert $page) => $page
+        ->where('runtime.pennant.staleAfterDays', 3)
+        ->where('runtime.pennant.staleWindowDays', 3)
+        ->where('runtime.pennant.stale', [
+            ['feature' => 'always-on', 'isHashed' => false, 'value' => 'active', 'checks' => 15],
+            ['feature' => 'weekday-only', 'isHashed' => false, 'value' => 'active', 'checks' => 12],
+        ]));
 });

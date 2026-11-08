@@ -21,6 +21,7 @@ class UpdateProjectSettingsRequest extends FormRequest
     /** Number keys with their bounds: Checks and Data retention. */
     private const NUMBER_KEYS = [
         'stale_after_hours' => [1, 8760],
+        'pennant_stale_after_days' => [1, 3650],
         'reports_kept_per_project' => [1, 1000],
         'runtime_retention_days' => [1, 3650],
         'exceptions_retention_days' => [1, 3650],

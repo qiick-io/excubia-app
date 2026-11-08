@@ -409,6 +409,33 @@ export type RuntimeScoutRow = {
     lastAt: string | null;
 } & RuntimePercentiles;
 
+/**
+ * Laravel Pennant checks of one feature over the range (#189), estimated: `checks` is the
+ * active plus inactive ones, `activeShare` the active % of them, `resolved` the first
+ * resolutions for a scope and `unknown` the checks of an undefined feature. `isHashed` when
+ * core sent the first 12 hex characters of the name's sha256 instead of the name.
+ */
+export type RuntimePennantRow = {
+    feature: string;
+    isHashed: boolean;
+    count: number;
+    checks: number;
+    active: number;
+    inactive: number;
+    activeShare: number | null;
+    resolved: number;
+    unknown: number;
+    lastAt: string | null;
+};
+
+/** A Pennant feature checked every day of the stale window with always the same value (#189). */
+type RuntimePennantStaleFeature = {
+    feature: string;
+    isHashed: boolean;
+    value: 'active' | 'inactive';
+    checks: number;
+};
+
 /** A time range of the runtime, exceptions and schedule tabs (#113), `TimeRangeEnum`. */
 export type TimeRange = '1h' | '6h' | '24h' | '7d' | '14d';
 
@@ -480,6 +507,16 @@ export type RuntimeSummary = {
     auth: RuntimeAuthRow[];
     /** Laravel Scout per model, engine and operation (#184). */
     scout: RuntimeScoutRow[];
+    /**
+     * Laravel Pennant per feature (#189), and the stale flags over the last `staleWindowDays`
+     * days: the `staleAfterDays` setting, capped by the runtime retention.
+     */
+    pennant: {
+        staleAfterDays: number;
+        staleWindowDays: number;
+        stale: RuntimePennantStaleFeature[];
+        rows: RuntimePennantRow[];
+    };
     /** Deploys of the range, oldest first (#106); `bucket` matches a `timeline` point. */
     deploys: RuntimeDeploy[];
 };
