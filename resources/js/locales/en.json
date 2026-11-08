@@ -70,6 +70,7 @@
         "platform": "Platform",
         "dashboard": "Dashboard",
         "projects": "Projects",
+        "fleet": "Fleet",
         "assistant": "Assistant",
         "activityLog": "Activity Log",
         "users": "Users",
@@ -160,6 +161,36 @@
             "authToggle": "login using a recovery code",
             "recoveryPlaceholder": "Enter recovery code",
             "orYouCan": "or you can "
+        },
+        "setup": {
+            "head": "Set up Excubia",
+            "stepOf": "Step {{step}} of {{total}}",
+            "notice": {
+                "title": "Excubia is not set up yet",
+                "description": "This install has no account. Create the first admin to start.",
+                "link": "Set up Excubia"
+            },
+            "admin": {
+                "title": "Create the admin account",
+                "description": "This account becomes the super-admin of this install. There is no public sign-up: add more users later under Users.",
+                "submit": "Create admin"
+            },
+            "project": {
+                "title": "Add your first project",
+                "name": "Project name",
+                "description": "The Laravel app to watch, for example “Shop”. You can add more projects later.",
+                "submit": "Create project",
+                "skip": "Skip for now"
+            },
+            "done": {
+                "title": "Connect your project",
+                "description": "Run these steps in “{{name}}”. Copy the token now: it is shown only once.",
+                "install": "Install the core package",
+                "config": "excubia.json (optional: runtime and exceptions)",
+                "cron": "Server cron (keeps the scheduler running)",
+                "firstPush": "Then run php artisan excubia:push once to send the first report.",
+                "submit": "Go to the dashboard"
+            }
         }
     },
     "settings": {
@@ -177,6 +208,7 @@
             "roles": "Roles",
             "permissions": "Permissions",
             "jobs": "Jobs",
+            "system": "System",
             "reportBug": "Report a Bug",
             "general": "General",
             "localization": "Localization",
@@ -184,19 +216,24 @@
             "sidebar": "Sidebar",
             "sectionAi": "AI",
             "aiTools": "Tools",
-            "integrations": "Integrations"
+            "integrations": "Integrations",
+            "aiPrices": "Prices"
         },
         "profile": {
-            "breadcrumb": "Profile settings",
             "head": "Profile settings",
             "title": "Profile information",
             "description": "Update your profile details and email address",
             "unverified": "Your email address is unverified.",
             "resend": "Click here to resend the verification email.",
-            "linkSent": "A new verification link has been sent to your email address."
+            "linkSent": "A new verification link has been sent to your email address.",
+            "weeklyDigest": "Send me a weekly email digest (new findings, regressions, EOL, top exceptions, schedule problems)",
+            "alertsTitle": "Alert emails",
+            "alertsDescription": "Get an email when an alert you care about fires, for the projects you can see.",
+            "alertsEnabled": "Send me alert emails",
+            "alertsTest": "Send test email",
+            "alertsTestHint": "Save first. The mail goes to your address and needs a queue worker."
         },
         "security": {
-            "breadcrumb": "Security settings",
             "head": "Security settings",
             "passwordTitle": "Update password",
             "passwordDescription": "Ensure your account is using a long, random password to stay secure",
@@ -215,7 +252,6 @@
             "passkeysNeedHttps": "Passkeys need HTTPS."
         },
         "project": {
-            "breadcrumb": "Project settings",
             "head": "Project settings",
             "generalTitle": "General",
             "generalDescription": "Project identity and support links",
@@ -263,6 +299,7 @@
             "modules": {
                 "dashboard": "Dashboard",
                 "projects": "Projects",
+                "fleet": "Fleet",
                 "assistant": "Assistant",
                 "files": "Files",
                 "collections": "Collections",
@@ -276,19 +313,19 @@
                 "settings": "Settings"
             },
             "localization": {
-                "breadcrumb": "Localization settings",
                 "head": "Localization settings",
                 "title": "Admin language",
                 "description": "Default language for the admin UI"
             },
             "securityNav": {
-                "breadcrumb": "Authentication & security",
                 "head": "Authentication & security"
             },
             "checksTitle": "Checks",
-            "checksDescription": "Stale projects",
+            "checksDescription": "Stale projects and feature flags",
             "reportsKeptPerProject": "Reports kept per project",
             "reportsKeptPerProjectHint": "How many reports to keep for each project; older ones are removed.",
+            "pennantStaleAfterDays": "Stale feature flags after (days)",
+            "pennantStaleAfterDaysHint": "Days a Laravel Pennant feature must be checked with always the same value before the Runtime tab lists it as a stale flag. Judged over the runtime data kept, when that is shorter.",
             "staleAfterHours": "Stale after (hours)",
             "staleAfterHoursHint": "Hours without a report before a project counts as stale.",
             "description": "Project description",
@@ -305,7 +342,6 @@
             "activityRetentionDaysHint": "Activity log entries older than this are deleted."
         },
         "appearance": {
-            "breadcrumb": "Appearance settings",
             "head": "Appearance settings",
             "title": "Appearance settings",
             "description": "Update project branding and the default theme",
@@ -327,7 +363,6 @@
             "dark": "Dark",
             "system": "System",
             "sidebar": {
-                "breadcrumb": "Sidebar settings",
                 "head": "Sidebar settings"
             },
             "themePresetTitle": "Theme preset",
@@ -346,7 +381,6 @@
             "presetPreviewDark": "Dark"
         },
         "performance": {
-            "breadcrumb": "Performance settings",
             "head": "Performance settings",
             "statusTitle": "Runtime status",
             "statusDescription": "Read-only view of the runtime configuration",
@@ -386,12 +420,11 @@
             "readOnly": "read-only"
         },
         "integrations": {
-            "breadcrumb": "Integrations",
             "head": "Integrations",
             "webhookTitle": "Outbound webhooks",
             "webhookDescription": "Send signed alerts to your endpoint when a project changes",
             "webhookUrl": "Webhook URL",
-            "webhookUrlHint": "HTTPS only. Leave empty to disable. Receives every event. Requires a queue worker.",
+            "webhookUrlHint": "HTTPS only. Leave empty to disable. Requires a queue worker.",
             "webhookSecret": "Webhook secret",
             "webhookSecretHint": "Used for the HMAC-SHA256 signature (X-Excubia-Signature of \"timestamp.body\"). Leave blank to keep the current secret.",
             "generateSecret": "Generate secret",
@@ -402,13 +435,27 @@
             "lastError": "Last failed delivery",
             "deliveryNone": "None yet.",
             "notifiersTitle": "Outbound notifiers (Slack & Telegram)",
-            "notifiersDescription": "Optional human-readable alerts for the chosen events. Outbound only.",
-            "eventTypes": "Notify on these events",
-            "eventTypesHint": "Slack and Telegram only send these events; the webhook gets every event. Send test always works.",
+            "notifiersDescription": "Optional human-readable alerts. Each channel has its own minimum severity, events and projects. Outbound only.",
+            "eventTypes": "Events",
+            "eventTypesHint": "Only these events are sent here. Send test always works.",
+            "eventsAll": "All events",
+            "eventsSelected": "Selected events",
+            "eventsCount": "{{selected}} of {{total}} events",
+            "eventsNone": "No event is selected: nothing is sent here.",
+            "eventGroups": {
+                "findings": "Findings and reports",
+                "projects": "Projects and pushes",
+                "health": "Health and infrastructure",
+                "schedule": "Scheduled tasks",
+                "runtime": "Runtime",
+                "ai": "AI",
+                "billing": "Billing",
+                "other": "Other"
+            },
             "minimumSeverity": "Minimum severity",
-            "minimumSeverityHint": "Slack and Telegram skip alerts below this severity.",
+            "minimumSeverityHint": "Alerts below this severity are not sent here.",
             "slackUrl": "Slack incoming webhook URL",
-            "slackUrlHint": "https://hooks.slack.com/services/… Leave empty to disable.",
+            "slackUrlHint": "https://hooks.slack.com/services/… Stored encrypted; leave blank to keep it.",
             "sendTestSlack": "Send Slack test",
             "sendTestTelegram": "Send Telegram test",
             "sendTestNotifierHint": "Save first. Requires a queue worker.",
@@ -423,7 +470,92 @@
                 "project.recovered": "The worst severity of the latest report is lower than before.",
                 "project.stale": "A project sent no report within the stale window.",
                 "project.reporting_again": "A stale project sends reports again.",
-                "project.token_changed": "A push token was rotated or revoked."
+                "project.token_changed": "A push token was rotated or revoked.",
+                "schedule.missed": "A scheduled task still had not run when its next due time came.",
+                "schedule.failed": "A run of a scheduled task failed.",
+                "schedule.scheduler_down": "The scheduler stopped: excubia:heartbeat did not run.",
+                "runtime.cache_hit_ratio_low": "A cache store hits less than the threshold.",
+                "runtime.delivery_failed": "A mailable or notification failed.",
+                "runtime.log_spike": "A log channel wrote more error entries than the threshold.",
+                "eol.approaching": "PHP, Laravel or Node security support ends within 90, 30 or 7 days (EXCUBIA_EOL_ALERT_DAYS). Once per threshold; high at 7 days.",
+                "eol.reached": "A project runs a PHP, Laravel or Node version whose security support has ended.",
+                "infrastructure.failed": "A database, storage or disk check fails (new, or on the first report). Sent at once, critical.",
+                "health.failed": "A check of the minute-level health samples fails on a server for two readings in a row. Takes the finding's severity; sent again when the failing findings change.",
+                "health.recovered": "A failing check of the health samples no longer fails on any server.",
+                "health.stale": "A server that was sending health samples sent none for five minutes. The health alerts ignore it until it sends again.",
+                "report.checks_skipped": "A check was skipped because a data source failed, so the report is incomplete.",
+                "push.rejected": "Pushes were rejected for a missing, unknown, revoked or disabled token, again and again within an hour. A leaked or forgotten token?",
+                "project.created": "A project was created.",
+                "project.deleted": "A project was deleted.",
+                "project.disabled": "A project was disabled.",
+                "ai.budget_warning": "A project's estimated AI spend this month reached 80% of its budget (set on its AI tab).",
+                "ai.budget_exceeded": "A project's estimated AI spend this month reached its budget.",
+                "ai.spend_spike": "Today's estimated AI spend is above the threshold share of the 7-day average.",
+                "ai.error_rate": "The share of failed AI calls in the last hour is above the threshold.",
+                "billing.webhook_failures": "Billing webhooks of a provider failed (5xx, retried by the provider) at least the threshold of times in the last hour.",
+                "billing.payment_failed": "A billing provider reported failed payments in the last hour.",
+                "auth.failed_login_spike": "An auth guard saw at least the threshold of failed logins in the last hour (brute force or credential stuffing).",
+                "scout.index_failures": "A searchable model's Laravel Scout index jobs failed at least the threshold of times in the last hour (the search index drifts from the database)."
+            },
+            "runtimeRulesTitle": "Runtime alert rules",
+            "runtimeRulesDescription": "Optional alerts from the runtime data the projects push, checked every 15 minutes over the last hour. Empty turns a rule off.",
+            "cacheHitRatio": "Cache hit ratio below (%)",
+            "cacheHitRatioHint": "Alert when a cache store hits less than this share of at least 100 lookups in the last hour.",
+            "logSpike": "Error-log entries per channel and hour",
+            "logSpikeHint": "Alert when a log channel writes at least this many error, critical, alert or emergency entries in the last hour.",
+            "deliveryFailures": "Alert when mails or notifications fail",
+            "billingWebhookFailures": "Failed billing webhooks per provider and hour",
+            "billingWebhookFailuresHint": "Alert when the Laravel Cashier webhooks of a provider fail at least this many times in the last hour (the provider retries them).",
+            "billingPaymentFailures": "Alert when a billing provider reports failed payments",
+            "authFailedLogins": "Failed logins per guard and hour",
+            "authFailedLoginsHint": "Alert when an auth guard records at least this many failed logins in the last hour.",
+            "scoutIndexFailures": "Failed Scout index jobs per model and hour",
+            "scoutIndexFailuresHint": "Alert when the queued Laravel Scout index or remove jobs of a model fail at least this many times in the last hour.",
+            "projects": "Projects",
+            "projectsHint": "Leave every box empty to send the alerts of every project.",
+            "emailTitle": "Email",
+            "emailDescription": "Every user who can see projects turns alert emails on for themselves in their profile, with their own minimum severity, events and projects. Mails use the app's mail settings and need a queue worker.",
+            "emailLink": "Open your profile",
+            "severitiesTitle": "Default severities",
+            "severitiesDescription": "The severity of each event that does not take one from a finding. The minimum severity of every channel and subscription is compared with it.",
+            "aiRulesTitle": "AI usage alert rules",
+            "aiRulesDescription": "Optional alerts from the AI usage the projects push (Laravel AI SDK), with costs estimated from Settings → AI prices. Monthly budgets are set per project on its AI tab. Empty turns a rule off.",
+            "aiSpendSpike": "Today's AI spend above (% of the 7-day average)",
+            "aiSpendSpikeHint": "Alert once a day when a project's estimated AI spend today reaches this share of its average day over the 7 days before, from $1. 300 means three times the average.",
+            "aiErrorRate": "AI error rate above (%)",
+            "aiErrorRateHint": "Alert when more than this share of the AI calls of the last hour failed, with at least 20 calls."
+        },
+        "aiPrices": {
+            "breadcrumb": "AI prices",
+            "head": "AI prices",
+            "title": "AI prices",
+            "description": "Prices per provider and model that turn the AI usage of your projects into estimated costs. The provider is the name in the project's config/ai.php. A dated model name (gpt-4o-2024-08-06) uses the row of its model (gpt-4o). Models without a row show tokens without a cost.",
+            "estimates": "These are estimates, not your bill: verify them against your provider. Table dated {{date}}; the defaults were last checked on {{defaultsDate}}.",
+            "sources": "Defaults from the official pricing pages, standard tier, base prices of tiered models (checked on {{date}}):",
+            "add": "Add model",
+            "restore": "Restore defaults",
+            "provider": "Provider",
+            "model": "Model",
+            "effectiveFrom": "From",
+            "effectiveFromOf": "First day of {{model}}",
+            "providerOf": "Provider of row {{row}}",
+            "modelOf": "Model of row {{row}}",
+            "priceOf": "{{field}} for {{model}}",
+            "remove": "Remove",
+            "removeRow": "Remove {{model}}",
+            "addFrom": "New price of {{model}} from a date",
+            "units": "USD. Tokens per 1M; audio per second; search units per unit. Empty cache prices use the input price; an empty reasoning price counts reasoning as part of the output (as OpenAI and Anthropic report it).",
+            "history": "Price history: a row prices the days from its date (UTC) until the next row of the same model; an empty date means since always. To change a price from a day, add a row of the model with that date (\"New price from a date\"): earlier days keep their price. Gemini 3.8 Flash doubles from 2027-01-01.",
+            "fields": {
+                "input": "Input",
+                "cache_read": "Cache read",
+                "cache_write": "Cache write",
+                "output": "Output",
+                "reasoning": "Reasoning",
+                "image_input": "Image in",
+                "image_output": "Image out",
+                "audio_second": "Audio / s",
+                "search_unit": "Search unit"
             }
         }
     },
@@ -497,11 +629,21 @@
         "sortBy": "Sort by",
         "columns": {
             "created": "Created",
-            "updated": "Updated"
+            "updated": "Updated",
+            "name": "Name",
+            "email": "Email",
+            "roles": "Roles",
+            "groups": "Groups",
+            "status": "Status",
+            "actions": "Actions"
         },
         "ssoBadge": "SSO",
         "actions": {
             "sendResetEmail": "Send reset email"
+        },
+        "status": {
+            "active": "Active",
+            "inactive": "Inactive"
         }
     },
     "groups": {
@@ -512,7 +654,14 @@
         "title": "Groups",
         "newGroup": "New group",
         "searchPlaceholder": "Search groups…",
-        "sortBy": "Sort by"
+        "sortBy": "Sort by",
+        "columns": {
+            "name": "Name",
+            "roles": "Roles",
+            "members": "Members",
+            "actions": "Actions"
+        },
+        "empty": "No groups yet."
     },
     "projects": {
         "title": "Projects",
@@ -567,6 +716,9 @@
         "lastReport": "Last report {{date}}",
         "noReports": "No reports yet",
         "stale": "Stale",
+        "liveHealthFailing_one": "{{count}} failing",
+        "liveHealthFailing_other": "{{count}} failing",
+        "liveHealthStale": "Server silent",
         "trend": {
             "title": "Findings over time",
             "description": "Every project's latest report on each day of the last {{count}} days, per severity.",
@@ -664,7 +816,11 @@
             "plan": "Upgrade plan",
             "history": "History",
             "runtime": "Runtime",
-            "exceptions": "Exceptions"
+            "exceptions": "Exceptions",
+            "schedule": "Schedule",
+            "alerts": "Alerts",
+            "licenses": "Licenses",
+            "ai": "AI"
         },
         "support": {
             "supported": "Supported",
@@ -710,6 +866,7 @@
             "findings": "Open findings",
             "lastReport": "Last report {{time}}",
             "lastReportStale": "Stale · last report {{time}}",
+            "environment": "Environment {{environment}}",
             "checks": "Checks passing",
             "allChecksPass": "All checks pass",
             "checkCount": {
@@ -739,7 +896,22 @@
                 "allFindings": "All findings",
                 "exception": "Exception",
                 "emptyTitle": "Nothing needs attention"
-            }
+            },
+            "release": "Release",
+            "lastDeploy": "Deployed {{time}}",
+            "noDeploy": "No deploy marker yet",
+            "deployCount_one": "{{count}} deploy in the history",
+            "deployCount_other": "{{count}} deploys in the history"
+        },
+        "release": "Release",
+        "deploy": "Deploy",
+        "liveHealth": {
+            "title": "Live health",
+            "description": "The minute-level health samples of the last hour, per check and server. Updates every minute.",
+            "servers": "Servers",
+            "lastSample": "Last sample",
+            "serverStatus": "{{server}}: {{status}}",
+            "serverStale": "{{server}}: no sample"
         }
     },
     "assistant": {
@@ -808,6 +980,75 @@
             "actions": "Actions"
         }
     },
+    "system": {
+        "description": "Health of this Excubia install. Each item links to its fix hint.",
+        "fixHint": "How to fix: {{item}}",
+        "never": "Never",
+        "status": {
+            "ok": "OK",
+            "warning": "Warning",
+            "error": "Error",
+            "unknown": "Unknown"
+        },
+        "columns": {
+            "project": "Project",
+            "count": "Count"
+        },
+        "scheduler": {
+            "title": "Scheduler",
+            "lastRun": "Last heartbeat: {{time}}"
+        },
+        "queue": {
+            "title": "Queue worker",
+            "connection": "Connection",
+            "lastRun": "Last heartbeat",
+            "pending": "Pending jobs",
+            "failed": "Failed jobs"
+        },
+        "pushes": {
+            "title": "Last push per project",
+            "description": "Reports are stale after {{hours}} hours, runtime after 15 minutes.",
+            "reports": "Reports",
+            "runtime": "Runtime",
+            "exceptions": "Exceptions",
+            "stale": "Stale",
+            "empty": "No enabled projects."
+        },
+        "rejections": {
+            "title": "Ingest rejections (24 h)",
+            "endpoint": "Endpoint",
+            "status": "Status",
+            "reason": "Reason",
+            "empty": "No rejected pushes in the last 24 hours."
+        },
+        "skippedRuntime": {
+            "title": "Unknown runtime types skipped",
+            "empty": "No runtime entries skipped.",
+            "row_one": "{{project}}: {{count}} entry skipped",
+            "row_other": "{{project}}: {{count}} entries skipped"
+        },
+        "alertFailures": {
+            "title": "Alert delivery failures (24 h)",
+            "empty": "No failed alert deliveries in the last 24 hours.",
+            "total_one": "{{count}} failed alert",
+            "total_other": "{{count}} failed alerts",
+            "event": "Event",
+            "channels": "Failed channels",
+            "at": "Time"
+        },
+        "rollups": {
+            "title": "Runtime rollups",
+            "pending": "Runtime stored before the hourly rollups is missing from the dashboard totals: run the backfill once.",
+            "done": "The hourly rollups cover the stored runtime."
+        },
+        "version": {
+            "title": "Version and compatibility",
+            "app": "Excubia App",
+            "core": "excubia-core in the app",
+            "accepts": "Accepts excubia-core",
+            "protocol": "Protocol versions"
+        }
+    },
     "fix": {
         "actions": "Fix",
         "copied": "Copied to the clipboard",
@@ -827,18 +1068,15 @@
         "averageResponse": "Average response",
         "slowestResponse": "Slowest response",
         "allRoutes": "All routes",
-        "lastHours": "Last {{count}} hours",
-        "requestsPerHour": "Requests per hour",
-        "requestsPerHourDescription": "Successful requests and server errors (5xx), last 24 hours.",
         "successful": "Successful",
         "serverErrors": "5xx",
-        "chartLabel": "Stacked bar chart of requests per hour: {{count}} requests, {{errors}} server errors in the last 24 hours.",
+        "chartLabel": "Stacked bar chart of requests {{bucket}}: {{count}} requests, {{errors}} server errors {{during}}.",
         "routes": "Routes",
         "outgoingHttp": "Outgoing HTTP",
         "slowQueries": "Slow queries",
         "jobs": "Jobs",
         "scheduledTasks": "Scheduled tasks",
-        "noData": "No data in the last 24 hours.",
+        "noData": "No data in this range.",
         "name": "Name",
         "count": "Count",
         "average": "Average",
@@ -849,7 +1087,122 @@
             "finished": "Finished",
             "skipped": "Skipped"
         },
-        "sampled": "~ estimated from sampled events"
+        "sampled": "~ estimated from sampled events",
+        "enableHint": "To collect it, turn on in excubia.json:",
+        "skipped_one": "{{count}} runtime entry of a type this Excubia version does not know was skipped. Update Excubia to see it.",
+        "skipped_other": "{{count}} runtime entries of types this Excubia version does not know were skipped. Update Excubia to see them.",
+        "duplicateQueries": "N+1 queries",
+        "duplicateQueriesDescription": "Query shapes repeated within one request or job.",
+        "origin": {
+            "request": "Request",
+            "job": "Job"
+        },
+        "occurrences": "Occurrences",
+        "averageRepeats": "Avg repeats",
+        "maxRepeats": "Max repeats",
+        "queueWait": "Queue wait",
+        "queueWaitDescription": "Time from push to first attempt, per queue.",
+        "commands": "Artisan commands",
+        "failed": "Failed",
+        "requestMemory": "Request memory",
+        "jobMemory": "Job memory",
+        "averageMemory": "Avg peak",
+        "peakMemory": "Max peak",
+        "cache": "Cache",
+        "cacheDescription": "{{rate}}% hit rate: {{hits}} hits, {{misses}} misses.",
+        "hitRate": "Hit rate",
+        "hits": "Hits",
+        "misses": "Misses",
+        "writes": "Writes",
+        "deletes": "Deletes",
+        "mail": "Mail",
+        "notifications": "Notifications",
+        "sent": "Sent",
+        "logLevels": "Logs",
+        "logLevelsDescription": "Log entries per level and channel; the chart shows error level and above {{bucket}}.",
+        "errorLogs": "Error-level entries",
+        "logChartLabel": "Bar chart of error-level log entries {{bucket}}: {{count}} {{during}}.",
+        "level": "Level",
+        "channel": "Channel",
+        "unknownChannel": "unknown",
+        "deprecations": "Deprecations",
+        "deprecationsDescription": "PHP deprecations per source and PHP version, to plan upgrades.",
+        "servers": "Servers",
+        "serversDescription": "Latest sample of each server that runs the scheduler.",
+        "server": "Server",
+        "load": "Load 1 / 5 / 15",
+        "memory": "Memory",
+        "disk": "Disk",
+        "lastSample": "Last sample",
+        "container": "Container",
+        "cpuLimit_one": "limit {{count}} CPU",
+        "cpuLimit_other": "limit {{count}} CPUs",
+        "cpuCores_one": "{{count}} core",
+        "cpuCores_other": "{{count}} cores",
+        "deploy": "Deploy",
+        "deployMarkersHint": "Dashed lines mark deploys.",
+        "deploysLabel_one": "{{count}} deploy: {{releases}}.",
+        "deploysLabel_other": "{{count}} deploys: {{releases}}.",
+        "requestsOverTimeDescription": "Successful requests and server errors (5xx) {{bucket}} {{during}}.",
+        "requestsOverTime": "Requests over time",
+        "octane": "Octane workers",
+        "octaneDescription": "Per server and worker type. Memory is read after each request; growth above {{threshold}} MB since a worker's first request may be a leak.",
+        "octaneMaxRequests": "max_requests: {{count}}.",
+        "octaneMaxRequestsUnset": "max_requests is not set.",
+        "possibleLeak": "Possible leak",
+        "tasksTicks": "Tasks / ticks",
+        "workerStartsStops": "Starts / stops",
+        "workerErrors": "Worker errors",
+        "memoryGrowth": "Max growth",
+        "requestsAtStop": "Requests at stop (avg / max)",
+        "reverb": "Reverb",
+        "reverbDescription": "Per server and Reverb app. Peak connections is the most connections subscribed to a channel in one minute; channels are public / private / presence.",
+        "reverbReachable": "The Reverb server answered in {{latency}} ms in the latest report.",
+        "reverbUnreachable": "The Reverb server did not answer in the latest report.",
+        "messagesInOut": "Messages in / out",
+        "connectionsOpened": "Opened",
+        "connectionsRejected": "Rejected",
+        "connectionsPruned": "Pruned",
+        "reverbErrors": "Errors",
+        "channelsCreated": "Channels created",
+        "channelsRemoved": "Channels removed",
+        "peakConnections": "Peak connections",
+        "billing": "Billing webhooks",
+        "billingDescription": "Laravel Cashier webhooks per provider and event type. Failed ones ended with a server error (5xx) and the provider retries them; event types Cashier has no handler for are neither handled nor failed. Only the event type is received: never amounts, customers or other payload data.",
+        "billingTotals": "Payment signals in this range",
+        "received": "Received",
+        "handled": "Handled",
+        "failedRate": "Failed (rate)",
+        "paymentFailed": "Failed payments",
+        "paymentActionRequired": "Payments needing action",
+        "subscriptionCanceled": "Canceled subscriptions",
+        "auth": "Authentication",
+        "authDescription": "Laravel logins per auth guard: successful and failed logins with the failure rate, lockouts by the login rate limiter, and requests authenticated by a Sanctum personal access token. Passport token requests are not counted. Never users, emails, credentials, tokens or IP addresses.",
+        "logins": "Logins",
+        "lockouts": "Lockouts",
+        "tokenAuthentications": "Token auths",
+        "scout": "Search (Scout)",
+        "scoutDescription": "Laravel Scout per model, engine and operation: queued index and remove jobs with failures, the records they synced and their duration, and the searches started (without duration). Index updates with scout.queue off (Scout's default) run inline and are not recorded. Never search queries, record ids or record data.",
+        "scoutRecords": "Records",
+        "pennant": "Feature flags (Pennant)",
+        "pennantDescription": "Laravel Pennant checks per feature: active and inactive results with the active share (rollout progress), first resolutions for a scope, and checks of a feature that is not defined (a removed flag still checked, or a typo). Names outside letters, digits and _ . : - \\ are sent as a short hash. Never the scope (user, team) or the value.",
+        "pennantStaleRule_one": "Stale flags: checked on the last day with always the same value, candidates for removal.",
+        "pennantStaleRule_other": "Stale flags: checked on each of the last {{count}} days with always the same value, candidates for removal.",
+        "pennantStaleRetention": "The setting asks for {{setting}} days, but runtime data is kept for {{window}} days only, so flags are judged over {{window}} days.",
+        "pennantStaleFlags": "Stale feature flags",
+        "pennantNoStaleFlags": "No stale flags",
+        "pennantAlwaysActive": "always on",
+        "pennantAlwaysInactive": "always off",
+        "pennantUndefinedFeatures": "Undefined features still checked",
+        "pennantUndefinedChecks_one": "undefined, {{count}} check",
+        "pennantUndefinedChecks_other": "undefined, {{count}} checks",
+        "pennantHashed": "hashed",
+        "pennantHashedHint": "The first 12 hex characters of the name's sha256: excubia-core hashes names with other characters.",
+        "pennantChecks": "Checks",
+        "pennantActiveInactive": "Active / inactive",
+        "pennantActiveShare": "Active share",
+        "pennantResolved": "Resolutions",
+        "pennantUnknown": "Undefined"
     },
     "exceptions": {
         "emptyTitle": "No exceptions",
@@ -885,12 +1238,107 @@
         "stackHint": "Innermost first; project code highlighted. Paths are relative and arguments are never sent.",
         "resolve": "Resolve",
         "ignore": "Ignore",
-        "reopen": "Reopen"
+        "reopen": "Reopen",
+        "firstRelease": "First seen in release",
+        "lastRelease": "Last seen in release",
+        "regressedIn": "Regressed in {{release}}",
+        "occurrences": "Occurrences",
+        "occurrencesDescription": "Occurrences {{bucket}} {{during}}, counted at the last occurrence of each push.",
+        "inRange": "In range",
+        "emptyRangeDescription": "No exception group was seen {{during}}. Pick a longer range to see older groups.",
+        "occurrencesChartLabel": "Bar chart of occurrences {{bucket}}: {{count}} {{during}}.",
+        "emptyRangeTitle": "No exceptions in this range"
+    },
+    "schedule": {
+        "description": "The scheduled tasks of the latest report, each with its last run, next due time and status. Checked every minute against the runs pushed with runtime monitoring.",
+        "emptyTitle": "No scheduled tasks",
+        "emptyDescription": "Push with php artisan excubia:push to send the schedule, and turn on runtime monitoring to match each task with its runs.",
+        "guide": "Scheduled tasks guide",
+        "task": "Task",
+        "lastRun": "Last run",
+        "nextDue": "Next due",
+        "statusLabel": "Status",
+        "lowConfidence": "Low confidence: runs are sampled or the environment is unknown",
+        "schedulerDownTitle": "The scheduler is down",
+        "schedulerDownDescription": "excubia:heartbeat has not run since {{time}}, so no task runs.",
+        "outcome": {
+            "finished": "Finished",
+            "failed": "Failed",
+            "skipped": "Skipped"
+        },
+        "status": {
+            "pending": "Pending",
+            "on_time": "On time",
+            "late": "Late",
+            "missed": "Missed",
+            "failed": "Failed",
+            "skipped": "Skipped",
+            "scheduler_down": "Scheduler down",
+            "not_expected": "Other environment",
+            "paused": "Maintenance",
+            "unknown": "No run data"
+        },
+        "runsOverTime": "Runs over time",
+        "runsOverTimeDescription": "Runs of all scheduled tasks per outcome {{bucket}} {{during}}.",
+        "runsSummary": "{{finished}} finished · {{failed}} failed · {{skipped}} skipped",
+        "runsChartLabel": "Stacked bar chart of scheduled task runs {{bucket}}: {{finished}} finished, {{failed}} failed, {{skipped}} skipped {{during}}.",
+        "runs": "Runs"
     },
     "ai": {
         "fabDescription": "Quick assistant drawer. Open the full page for history.",
         "fabTitle": "New chat",
-        "openFullPage": "Open full page"
+        "openFullPage": "Open full page",
+        "emptyTitle": "No AI usage yet",
+        "emptyDescription": "Projects with laravel/ai and excubia-core 1.0.0-beta.4 or later send their AI calls when runtime.ai.enabled (and runtime.aiTools.enabled for tool calls) is on in excubia.json.",
+        "privacy": "Excubia never receives prompts, instructions, attachments, responses, reasoning, tool arguments or results: only counts, token usage, durations and agent, tool, provider and model names.",
+        "spend": "Estimated spend",
+        "estimate": "Estimate from the price table",
+        "calls": "Calls",
+        "errors": "Errors",
+        "failures": "Failures",
+        "errorRate": "{{rate}}% failed",
+        "failovers": "Failovers",
+        "failoversHint": "Failed attempts moved to the next provider",
+        "p95": "p95 latency",
+        "allCalls": "All calls",
+        "slowest": "Slowest",
+        "spendOverTime": "Spend over time",
+        "spendOverTimeDescription": "Estimated spend {{bucket}} {{during}}.",
+        "chartLabel": "Bar chart: estimated AI spend {{bucket}} {{during}}, {{cost}} in total.",
+        "month": "This month",
+        "monthDescription": "Estimated spend since the 1st (UTC) against the monthly budget, which alerts at 80% and 100%.",
+        "noBudget": "No budget",
+        "ofBudget": "of {{budget}}",
+        "budgetUsed": "{{percent}}% of the budget used",
+        "budget": "Monthly budget (USD)",
+        "budgetHint": "Empty turns the budget alerts off.",
+        "tokens": "Tokens",
+        "tokensDescription": "Input without the cached part, cache reads and writes, output and reasoning.",
+        "inputTokens": "Input",
+        "cachedTokens": "Cached",
+        "cacheReadTokens": "Cache read",
+        "cacheWriteTokens": "Cache write",
+        "outputTokens": "Output",
+        "reasoningTokens": "Reasoning",
+        "cost": "Cost",
+        "noPrice": "No price",
+        "unpricedHint": "Some models have no price, so their cost is not counted.",
+        "byModel": "By model",
+        "byProvider": "By provider",
+        "byAgent": "By agent",
+        "pricesNote": "Estimated with the price table of {{date}}.",
+        "pricesLink": "Edit the AI prices",
+        "tools": "Tool calls",
+        "toolsDescription": "Calls per agent tool and their failures, timed in the tool handler.",
+        "operation": {
+            "agent": "Agent",
+            "image": "Images",
+            "embeddings": "Embeddings",
+            "transcription": "Transcription",
+            "reranking": "Reranking",
+            "audio": "Text to speech",
+            "classification": "Classification"
+        }
     },
     "files": {
         "card": {
@@ -907,5 +1355,533 @@
         "connecting": "Connecting…",
         "disabled": "Realtime off",
         "offline": "Realtime offline"
+    },
+    "alerts": {
+        "description": "The alerts of this project: what was sent, what failed and what was suppressed. Mute a rule or an issue, or plan maintenance windows.",
+        "maintenanceModeTitle": "Alerts are paused",
+        "maintenanceModeDescription": "The latest report says the application is in maintenance mode. Alerts resume with the next report after php artisan up.",
+        "windowsTitle": "Maintenance windows",
+        "windowsDescription": "Alerts are suppressed while a window is in force.",
+        "addWindow": "Add window",
+        "removeWindow": "Remove window {{name}}",
+        "noWindows": "No maintenance windows.",
+        "windowActive": "In force",
+        "windowFormDescription": "A one-off period, or one that repeats every week. Times are local to the timezone.",
+        "mutesTitle": "Muted",
+        "mutesDescription": "Rules and issues muted from the history below.",
+        "noMutes": "Nothing is muted.",
+        "wholeRule": "Whole rule",
+        "forever": "forever",
+        "until": "until {{time}}",
+        "unmute": "Unmute",
+        "historyTitle": "Alert history",
+        "historyDescription": "The latest 100 alerts.",
+        "noHistory": "No alerts yet.",
+        "time": "Time",
+        "alert": "Alert",
+        "statusLabel": "Status",
+        "actions": "Actions",
+        "muteMenu": "Mute",
+        "status": {
+            "queued": "Queued",
+            "sent": "Sent",
+            "failed": "Delivery failed",
+            "suppressed": "Suppressed",
+            "skipped": "No channel"
+        },
+        "reason": {
+            "muted": "Muted",
+            "maintenance_window": "Maintenance window",
+            "maintenance_mode": "Maintenance mode",
+            "duplicate": "Duplicate",
+            "throttled": "Throttled"
+        },
+        "channel": {
+            "webhook": "Webhook",
+            "slack": "Slack",
+            "telegram": "Telegram",
+            "email": "Email"
+        },
+        "delivery": {
+            "queued": "queued",
+            "sent": "sent",
+            "failed": "failed"
+        },
+        "mute": {
+            "rule": "Mute this rule",
+            "issue": "Mute this issue"
+        },
+        "duration": {
+            "1h": "For 1 hour",
+            "24h": "For 24 hours",
+            "7d": "For 7 days",
+            "forever": "Forever"
+        },
+        "recurrence": "Repeats",
+        "once": "Once",
+        "weekly": "Weekly",
+        "startsAt": "Starts at",
+        "endsAt": "Ends at",
+        "weekdaysLabel": "Days",
+        "startTime": "Start time",
+        "durationMinutes": "Length (minutes)",
+        "timezone": "Timezone",
+        "minutes_one": "{{count}} minute",
+        "minutes_other": "{{count}} minutes",
+        "weekdays": {
+            "1": "Mon",
+            "2": "Tue",
+            "3": "Wed",
+            "4": "Thu",
+            "5": "Fri",
+            "6": "Sat",
+            "7": "Sun"
+        }
+    },
+    "timeRange": {
+        "label": "Time range",
+        "option": {
+            "1h": "1h",
+            "6h": "6h",
+            "24h": "24h",
+            "7d": "7d",
+            "14d": "14d"
+        },
+        "last": {
+            "1h": "Last hour",
+            "6h": "Last 6 hours",
+            "24h": "Last 24 hours",
+            "7d": "Last 7 days",
+            "14d": "Last 14 days"
+        },
+        "during": {
+            "1h": "in the last hour",
+            "6h": "in the last 6 hours",
+            "24h": "in the last 24 hours",
+            "7d": "in the last 7 days",
+            "14d": "in the last 14 days"
+        },
+        "bucket": {
+            "1h": "per minute",
+            "6h": "per 10 minutes",
+            "24h": "per hour",
+            "7d": "per 6 hours",
+            "14d": "per day"
+        }
+    },
+    "checks": {
+        "category": {
+            "infrastructure": "Infrastructure",
+            "configuration": "Configuration",
+            "dependencies": "Dependencies",
+            "other": "Other checks"
+        },
+        "categoryLabel": "Group",
+        "allCategories": "All groups",
+        "docs": "How this check works",
+        "unknownDescription": "A check from a newer excubia-core. Its message and details are shown as sent.",
+        "php-eol": {
+            "label": "PHP end of life",
+            "description": "Whether the PHP version still gets security and bug fixes (endoflife.date)."
+        },
+        "laravel-eol": {
+            "label": "Laravel end of life",
+            "description": "Whether the Laravel major still gets security and bug fixes."
+        },
+        "node-eol": {
+            "label": "Node end of life",
+            "description": "Whether the declared Node version is still maintained."
+        },
+        "composer-advisories": {
+            "label": "Known vulnerabilities (Composer)",
+            "description": "Security advisories on Packagist that affect a locked Composer package."
+        },
+        "npm-advisories": {
+            "label": "Known vulnerabilities (npm)",
+            "description": "Vulnerabilities on OSV.dev that affect a package of the JavaScript lockfile."
+        },
+        "composer-abandoned": {
+            "label": "Abandoned packages",
+            "description": "Composer packages their maintainers marked as abandoned on Packagist."
+        },
+        "composer-stale": {
+            "label": "Stale packages",
+            "description": "Composer packages with an archived repository or no release for a long time."
+        },
+        "laravel-next-blocker": {
+            "label": "Next-major blockers",
+            "description": "Direct dependencies whose latest release does not allow the next Laravel major yet."
+        },
+        "laravel-debug-mode": {
+            "label": "Debug mode",
+            "description": "app.debug is on outside local and testing, so errors show internals."
+        },
+        "laravel-production-caches": {
+            "label": "Production caches",
+            "description": "The config, route and event caches that production should build at deploy."
+        },
+        "laravel-pending-migrations": {
+            "label": "Pending migrations",
+            "description": "Migrations that have not run against the database."
+        },
+        "laravel-failed-jobs": {
+            "label": "Failed jobs",
+            "description": "Jobs in the failed job store, and how long the oldest has been there."
+        },
+        "laravel-scheduler-heartbeat": {
+            "label": "Scheduler heartbeat",
+            "description": "Whether the scheduler ran excubia:heartbeat in the last minutes."
+        },
+        "laravel-maintenance-mode": {
+            "label": "Maintenance mode",
+            "description": "Whether the app is down for maintenance (php artisan down)."
+        },
+        "laravel-app-key": {
+            "label": "Application key",
+            "description": "Whether app.key is set: without it, encryption and sessions break."
+        },
+        "laravel-session-security": {
+            "label": "Session cookie security",
+            "description": "Secure and HTTP-only flags of the session cookie in production."
+        },
+        "laravel-cors-wildcard": {
+            "label": "CORS wildcard origin",
+            "description": "A * allowed origin, which fails together with credentials."
+        },
+        "laravel-production-drivers": {
+            "label": "Production drivers",
+            "description": "Queue, cache, session and mail drivers meant for local work, used in production."
+        },
+        "laravel-log-level": {
+            "label": "Log level",
+            "description": "Whether the default log channel logs debug entries in production."
+        },
+        "laravel-dev-packages": {
+            "label": "Development packages",
+            "description": "Development tools in require and enabled in production."
+        },
+        "dependency-licenses": {
+            "label": "Dependency licenses",
+            "description": "Licenses the lockfiles declare: denied, strong copyleft, missing or unknown."
+        },
+        "laravel-database": {
+            "label": "Database",
+            "description": "Whether each checked database connection answers."
+        },
+        "laravel-cache": {
+            "label": "Cache",
+            "description": "Whether the default cache store can write, read and delete a key."
+        },
+        "laravel-storage": {
+            "label": "Writable storage",
+            "description": "Whether storage and bootstrap/cache are writable."
+        },
+        "laravel-disk-space": {
+            "label": "Disk space",
+            "description": "How full the disk holding storage/ is."
+        },
+        "laravel-queue-backlog": {
+            "label": "Queue backlog",
+            "description": "Pending jobs per queue and how long the oldest has waited."
+        },
+        "php-platform-requirements": {
+            "label": "Platform requirements",
+            "description": "PHP version and extensions the locked packages require, as composer check-platform-reqs."
+        },
+        "env-example-sync": {
+            "label": ".env.example sync",
+            "description": "Keys the config reads that .env.example does not list, and unused keys. Names only."
+        },
+        "composer-outdated": {
+            "label": "Outdated packages",
+            "description": "Direct Composer dependencies with a newer patch, minor or major release."
+        },
+        "laravel-queue-workers": {
+            "label": "Queue workers",
+            "description": "Whether Horizon or a queue worker is running for the queues with pending jobs."
+        },
+        "npm-outdated": {
+            "label": "Outdated packages (npm)",
+            "description": "Direct npm dependencies with a newer patch, minor or major release."
+        },
+        "laravel-backups": {
+            "label": "Backups",
+            "description": "Age, size and count of the spatie/laravel-backup backups per destination."
+        },
+        "laravel-database-connections": {
+            "label": "Database connections",
+            "description": "Open connections on the default database server."
+        },
+        "laravel-database-size": {
+            "label": "Database size",
+            "description": "Size of the default database and its largest tables."
+        },
+        "laravel-redis-memory": {
+            "label": "Redis memory",
+            "description": "Memory used against maxmemory, and the eviction policy, per Redis connection."
+        },
+        "php-opcache": {
+            "label": "OPcache",
+            "description": "OPcache of the web PHP: enabled, hit rate, memory and timestamp validation."
+        },
+        "php-production-ini": {
+            "label": "Production php.ini",
+            "description": "display_errors, expose_php and log_errors of the web PHP in production."
+        },
+        "laravel-octane-config": {
+            "label": "Octane configuration",
+            "description": "Octane server and, in production, whether max_requests restarts workers before leaks build up."
+        },
+        "laravel-reverb": {
+            "label": "Reverb server",
+            "description": "Whether the Reverb server of the broadcast connection answers a TCP connect within 2 s, and how fast."
+        },
+        "laravel-cashier": {
+            "label": "Laravel Cashier",
+            "description": "Per Cashier package (Stripe, Paddle): the webhook secret, test keys in production and the route to the webhook controller."
+        },
+        "laravel-api-tokens": {
+            "label": "API tokens",
+            "description": "Laravel Sanctum and Passport token posture: tokens that never expire or sit unused, stateful domains, Passport keys and their file permissions, and token lifetimes."
+        }
+    },
+    "details": {
+        "title": "Details",
+        "yes": "Yes",
+        "no": "No",
+        "megabytes": "{{value}} MB",
+        "percent": "{{value}}%",
+        "minutes_one": "{{count}} minute",
+        "minutes_other": "{{count}} minutes",
+        "hours_one": "{{count}} hour",
+        "hours_other": "{{count}} hours",
+        "package": "Package",
+        "lockedVersion": "Installed",
+        "affectedVersions": "Affected versions",
+        "fixedVersions": "Fixed in",
+        "lockfile": "Lockfile",
+        "cycle": "Cycle",
+        "securitySupportEndsOn": "Security support until",
+        "activeSupportEndsOn": "Active support until",
+        "replacement": "Replacement",
+        "targetMajor": "Target major",
+        "count": "Count",
+        "oldestAgeHours": "Oldest",
+        "minutesSinceLastRun": "Since the last run",
+        "licenses": "Licenses",
+        "ecosystem": "Ecosystem",
+        "hasCredentials": "With credentials",
+        "component": "Component",
+        "driver": "Driver",
+        "connection": "Connection",
+        "store": "Store",
+        "directory": "Directory",
+        "usedPercent": "Used",
+        "queue": "Queue",
+        "pendingCount": "Pending jobs",
+        "oldestAgeMinutes": "Oldest waits",
+        "requirement": "Requirement",
+        "requiredBy": "Required by",
+        "checkedPhpVersion": "Checked PHP",
+        "isStandaloneCli": "Standalone CLI",
+        "key": "Key",
+        "configFiles": "Config files",
+        "keys": "Keys",
+        "latestPatch": "Latest patch",
+        "latestMinor": "Latest minor",
+        "latestMajor": "Latest major",
+        "isMajorBehind": "Major behind",
+        "minutesSinceLastSeen": "Last worker seen",
+        "status": "Status",
+        "processes": "Processes",
+        "supervisors": "Supervisors",
+        "disk": "Disk",
+        "ageHours": "Newest backup age",
+        "sizeMb": "Size",
+        "connectionCount": "Open connections",
+        "largestTables": "Largest tables",
+        "usedMb": "Used memory",
+        "maxMb": "Max memory",
+        "policy": "Eviction policy",
+        "sapi": "PHP SAPI",
+        "ageMinutes": "Snapshot age",
+        "isOpcacheEnabled": "OPcache enabled",
+        "hitRate": "Hit rate",
+        "memoryUsedPercent": "Memory used",
+        "cachedScripts": "Cached scripts",
+        "isValidateTimestampsEnabled": "Validates timestamps",
+        "directive": "Directive",
+        "isEnabled": "Enabled"
+    },
+    "health": {
+        "notChecked": "Not checked",
+        "withinLimits": "Within limits",
+        "infrastructure": {
+            "title": "Infrastructure",
+            "description": "Services the app needs, from the latest report.",
+            "disk": "Disk",
+            "databaseSize": "Database size",
+            "connections": "Database connections",
+            "queueBacklog": "Queue backlog",
+            "backlogValue_one": "{{count}} pending job on {{queues}} queue(s), the oldest waits {{minutes}} min",
+            "backlogValue_other": "{{count}} pending jobs on {{queues}} queue(s), the oldest waits {{minutes}} min",
+            "redis": "Redis memory",
+            "redisValue": "{{connection}}: {{used}} of {{max}} MB",
+            "backups": "Backups",
+            "backupValue": "{{disk}}: newest {{age}} old, {{count}} backups"
+        },
+        "dependencies": {
+            "title": "Dependencies",
+            "description": "Outdated direct dependencies and the license inventory.",
+            "allLicenses": "All licenses",
+            "outdated": "Outdated",
+            "patch": "Patch",
+            "minor": "Minor",
+            "major": "Major"
+        },
+        "ecosystem": {
+            "composer": "Composer",
+            "npm": "npm"
+        }
+    },
+    "licenses": {
+        "unavailable": "No license inventory: the dependency-licenses check did not run (excubia-core 1.0.0-beta.2 or later).",
+        "emptyTitle": "No license inventory",
+        "packages_one": "{{count}} package inspected",
+        "packages_other": "{{count}} packages inspected",
+        "kindCount": {
+            "denied_one": "{{count}} denied",
+            "denied_other": "{{count}} denied",
+            "copyleft_one": "{{count}} copyleft",
+            "copyleft_other": "{{count}} copyleft",
+            "unknown_one": "{{count}} unknown",
+            "unknown_other": "{{count}} unknown"
+        },
+        "kinds": {
+            "denied": "Denied",
+            "copyleft": "Strong copyleft",
+            "unknown": "Unknown"
+        },
+        "kind": "Kind",
+        "license": "License",
+        "total": "Total",
+        "none": "None declared",
+        "flaggedTitle": "Packages to review",
+        "flaggedDescription": "Denied licenses first, then strong copyleft, then missing or unknown ones.",
+        "noneFlagged": "No package uses a denied, strong copyleft or unknown license.",
+        "noneFlaggedTitle": "Licenses look fine",
+        "inventoryTitle": "Inventory",
+        "fleetTitle": "Licenses to review",
+        "fleetDescription": "Denied, strong copyleft and unknown licenses in the latest reports, with the projects that use them."
+    },
+    "fleet": {
+        "title": "Fleet",
+        "project": "Project",
+        "status": "Status",
+        "views": {
+            "label": "Fleet views",
+            "readiness": "Upgrade readiness",
+            "advisories": "Advisory exposure",
+            "eol": "EOL calendar"
+        },
+        "empty": {
+            "title": "No projects yet",
+            "description": "Register a project and push its first report to see it here."
+        },
+        "readiness": {
+            "description": "From the open next-major blockers of each project: a project can move when none of its direct dependencies blocks the next Laravel major. A dismissed blocker does not block.",
+            "target": "Laravel {{major}}",
+            "canMove": "{{ready}} of {{total}} projects can move to Laravel {{major}} today",
+            "unknownDescription": "No report, Laravel not locked or the blocker check did not run.",
+            "blockers": "Blocking packages",
+            "preReleaseOnly": "Pre-release only",
+            "uncheckedPackages_one": "{{count}} private package not checked",
+            "uncheckedPackages_other": "{{count}} private packages not checked",
+            "planLink_one": "Upgrade plan ({{count}} step)",
+            "planLink_other": "Upgrade plan ({{count}} steps)",
+            "status": {
+                "ready": "Ready for Laravel {{major}}",
+                "blocked": "Blocked for Laravel {{major}}",
+                "unknown": "Unknown"
+            }
+        },
+        "advisories": {
+            "description": "Packages with known advisories, abandoned or stale, and the projects that lock them, from the open findings of each project. Dismissed findings are listed apart.",
+            "search": "Package or advisory id",
+            "kindLabel": "Filter by kind",
+            "allKinds": "All kinds",
+            "kind": {
+                "advisory": "Advisory",
+                "abandoned": "Abandoned",
+                "stale": "Stale"
+            },
+            "ecosystem": {
+                "composer": "Composer",
+                "npm": "npm"
+            },
+            "package": "Package",
+            "advisory": "Advisory",
+            "projects": "Projects: locked → fixed",
+            "replacement": "Replace with {{package}}",
+            "emptyTitle": "No exposed packages",
+            "emptyDescription": "No latest report has a known advisory, an abandoned or a stale package.",
+            "noMatchTitle": "No matching packages",
+            "noMatchDescription": "Try another package name or advisory id.",
+            "dismissedTitle": "Dismissed findings",
+            "dismissedDescription": "Open findings a user dismissed, with the reason and the last day the dismissal holds."
+        },
+        "eol": {
+            "description": "PHP, Laravel and Node support windows of every project, soonest end first.",
+            "active": "Active support",
+            "security": "Security support",
+            "today": "Today",
+            "activeUntil": "Active until",
+            "timeline": "Timeline",
+            "emptyTitle": "No support dates",
+            "emptyDescription": "No latest report has support dates for PHP, Laravel or Node yet."
+        }
+    },
+    "findings": {
+        "statusFilter": "Finding status",
+        "status": {
+            "open": "Open",
+            "dismissed": "Dismissed",
+            "resolved": "Resolved",
+            "all": "All"
+        },
+        "firstSeen": "First seen",
+        "lastSeen": "Last seen",
+        "fixedOn": "Fixed in the report of {{date}}",
+        "reopened_one": "Came back {{count}} time",
+        "reopened_other": "Came back {{count}} times",
+        "notInLatest": "Its check did not run in the latest report",
+        "lifecycle": "Lifecycle",
+        "history": "History",
+        "event": {
+            "opened": "First seen",
+            "resolved": "Fixed",
+            "reopened": "Came back",
+            "dismissed": "Dismissed",
+            "undismissed": "Dismissal removed"
+        },
+        "inRelease": "in {{release}}",
+        "byUser": "by {{name}}",
+        "untilDate": "until {{date}}",
+        "dismissedUntil": "Dismissed until {{date}}",
+        "dismissedForGood": "Dismissed with no end date",
+        "dismiss": "Dismiss",
+        "dismissTitle": "Dismiss this finding",
+        "dismissDescription": "A dismissed finding raises no alerts and leaves the worst severity and the weekly digest. It still resolves and comes back with the reports.",
+        "reason": "Reason",
+        "reasonPlaceholder": "Why this finding does not need a fix",
+        "until": "Dismissed until (optional)",
+        "untilHint": "The last day the dismissal holds. Leave it empty to dismiss it for good.",
+        "confirmDismiss": "Dismiss finding",
+        "cancel": "Cancel",
+        "undismiss": "Remove dismissal",
+        "ignoreRule": "excubia.json ignore rule",
+        "ignoreRuleHint": "Add it to the project's excubia.json to leave the finding out of the report itself.",
+        "noResolved": "No resolved findings yet",
+        "noResolvedDescription": "Findings show up here once a later report runs their check without them."
     }
 }

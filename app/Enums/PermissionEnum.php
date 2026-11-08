@@ -20,6 +20,7 @@ enum PermissionEnum: string
     // Project data
     case CanRunChecks = 'can-run-checks';
     case CanManageExceptions = 'can-manage-exceptions';
+    case CanDismissFindings = 'can-dismiss-findings';
 
     // Users
     case CanShowUsers = 'can-show-users';
@@ -49,6 +50,12 @@ enum PermissionEnum: string
     // Queue jobs
     case CanShowJobs = 'can-show-jobs';
     case CanManageJobs = 'can-manage-jobs';
+
+    // System health page (#117)
+    case CanShowSystem = 'can-show-system';
+
+    // Alerts (#22): Settings → Integrations, default severities, mutes and maintenance windows
+    case CanManageAlerts = 'can-manage-alerts';
 
     // AI
     case CanUseAi = 'can-use-ai';

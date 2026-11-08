@@ -6,12 +6,10 @@ namespace App\Actions;
 
 use App\Enums\ExceptionStatusEnum;
 use App\Models\ExceptionGroup;
+use App\Models\ExceptionOccurrence;
 use App\Models\Project;
-use App\Models\PushedBatch;
+use App\Traits\StoresPushedBatchOnceTrait;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\UniqueConstraintViolationException;
-use Illuminate\Support\Facades\Date;
-use Illuminate\Support\Facades\DB;
 
 /**
  * Stores an exceptions batch pushed by a project (#49), grouped by fingerprint and environment
@@ -19,48 +17,56 @@ use Illuminate\Support\Facades\DB;
  * across batches. The first occurrence's message and frames are kept; the context follows the
  * latest occurrence. A resolved group reopens when it occurs again; an ignored one stays
  * ignored. A repeated `batchId` stores nothing and returns false.
+ *
+ * The batch's optional `release` (#106) is kept as the group's first and last release. A
+ * resolved group that comes back in another release than the one it was last seen in is a
+ * regression in that release (the fix shipped and did not hold); coming back in the same
+ * release only reopens it, as the fix may not be deployed yet.
+ *
+ * Each group's count is also added to the minute of its last occurrence (#113), for the group's
+ * chart: the payload has no time per occurrence.
  */
 class StorePushedExceptionsAction
 {
+    use StoresPushedBatchOnceTrait;
+
     /**
      * @param  list<array<string, mixed>>  $groups  validated by StorePushedExceptionsRequest
+     * @param  string|null  $release  the batch's `exceptions.release`
      * @return bool true when the batch was new
      */
-    public function execute(Project $project, string $batchId, array $groups): bool
+    public function execute(Project $project, string $batchId, array $groups, ?string $release = null): bool
     {
-        try {
-            return DB::transaction(function () use ($project, $batchId, $groups): bool {
-                PushedBatch::query()->create(['project_id' => $project->id, 'type' => 'exceptions', 'batch_id' => $batchId, 'received_at' => Date::now()]);
-
-                foreach ($groups as $group) {
-                    $this->add($project, $group);
-                }
-
-                return true;
-            });
-        } catch (UniqueConstraintViolationException) {
-            return false;
-        }
+        return $this->storeOnce($project, 'exceptions', $batchId, function () use ($project, $groups, $release): void {
+            foreach ($groups as $group) {
+                $this->add($project, $group, $release);
+            }
+        });
     }
 
     /**
      * @param  array<string, mixed>  $group
      */
-    private function add(Project $project, array $group): void
+    private function add(Project $project, array $group, ?string $release): void
     {
         $firstSeen = CarbonImmutable::parse((string) $group['firstSeen'])->utc();
         $lastSeen = CarbonImmutable::parse((string) $group['lastSeen'])->utc();
         $context = (array) $group['context'];
+        // A kind this app does not know (#169) is stored as unknown, so a newer core never loses the group.
+        $kind = in_array($context['kind'], ExceptionGroup::CONTEXT_KINDS, true) ? (string) $context['kind'] : 'unknown';
 
-        $existing = ExceptionGroup::query()
+        // Read first, then lock the row found by its key: a locking read of a missing row takes a
+        // gap lock on MySQL, and concurrent pushes of other projects then deadlock (#195). A
+        // group created concurrently fails the insert and the batch runs again (StoresPushedBatchOnceTrait).
+        $found = ExceptionGroup::query()
             ->where('project_id', $project->id)
             ->where('fingerprint', (string) $group['fingerprint'])
             ->where('environment', (string) $group['environment'])
-            ->lockForUpdate()
-            ->first();
+            ->value('id');
+        $existing = $found === null ? null : ExceptionGroup::query()->whereKey($found)->lockForUpdate()->first();
 
         if ($existing === null) {
-            ExceptionGroup::query()->create([
+            $created = ExceptionGroup::query()->create([
                 'project_id' => $project->id,
                 'fingerprint' => (string) $group['fingerprint'],
                 'environment' => (string) $group['environment'],
@@ -68,26 +74,58 @@ class StorePushedExceptionsAction
                 'message' => (string) $group['message'],
                 'frames' => array_values((array) $group['frames']),
                 'previous' => array_values((array) $group['previous']),
-                'context_kind' => (string) $context['kind'],
+                'context_kind' => $kind,
                 'context_name' => (string) $context['name'],
                 'count' => (int) $group['count'],
-                'first_seen' => $firstSeen,
-                'last_seen' => $lastSeen,
+                'first_seen_at' => $firstSeen,
+                'last_seen_at' => $lastSeen,
+                'first_release' => $release,
+                'last_release' => $release,
                 'status' => ExceptionStatusEnum::Open,
             ]);
+            $this->addOccurrences($created, $lastSeen, (int) $group['count']);
 
             return;
         }
 
-        $isNewer = $lastSeen->gt($existing->last_seen);
+        $isNewer = $lastSeen->gt($existing->last_seen_at);
+        $isRegression = $existing->status === ExceptionStatusEnum::Resolved
+            && $release !== null
+            && $existing->last_release !== null
+            && $release !== $existing->last_release;
 
         $existing->forceFill([
             'count' => $existing->count + (int) $group['count'],
-            'first_seen' => $firstSeen->lt($existing->first_seen) ? $firstSeen : $existing->first_seen,
-            'last_seen' => $isNewer ? $lastSeen : $existing->last_seen,
-            'context_kind' => $isNewer ? (string) $context['kind'] : $existing->context_kind,
+            'first_seen_at' => $firstSeen->lt($existing->first_seen_at) ? $firstSeen : $existing->first_seen_at,
+            'last_seen_at' => $isNewer ? $lastSeen : $existing->last_seen_at,
+            'context_kind' => $isNewer ? $kind : $existing->context_kind,
             'context_name' => $isNewer ? (string) $context['name'] : $existing->context_name,
-            ...($existing->status === ExceptionStatusEnum::Resolved ? ['status' => ExceptionStatusEnum::Open, 'resolved_at' => null] : []),
+            'first_release' => $existing->first_release ?? $release,
+            'last_release' => $isNewer && $release !== null ? $release : ($existing->last_release ?? $release),
+            ...($existing->status === ExceptionStatusEnum::Resolved ? [
+                'status' => ExceptionStatusEnum::Open,
+                'resolved_at' => null,
+                'regressed_release' => $isRegression ? $release : null,
+            ] : []),
         ])->save();
+        $this->addOccurrences($existing, $lastSeen, (int) $group['count']);
+    }
+
+    /**
+     * Adds a batch's count to the group's minute. The group row is locked, so this read and
+     * write cannot race another batch of the same group.
+     */
+    private function addOccurrences(ExceptionGroup $group, CarbonImmutable $lastSeen, int $count): void
+    {
+        $bucket = $lastSeen->startOfMinute();
+        $occurrence = ExceptionOccurrence::query()->where('exception_group_id', $group->id)->where('bucket', $bucket)->first();
+
+        if ($occurrence === null) {
+            ExceptionOccurrence::query()->create(['project_id' => $group->project_id, 'exception_group_id' => $group->id, 'bucket' => $bucket, 'count' => $count]);
+
+            return;
+        }
+
+        $occurrence->forceFill(['count' => $occurrence->count + $count])->save();
     }
 }

@@ -77,6 +77,8 @@ class FortifyServiceProvider extends ServiceProvider
             'canUseOidc' => app(SettingsRepositoryService::class)->isOidcLoginAvailable(),
             'oidcButtonLabel' => app(SettingsRepositoryService::class)->oidcButtonLabel(),
             'status' => $request->session()->get('status'),
+            // A fresh install has no user yet: the login page links to the first-run wizard (#116).
+            'needsSetup' => ! User::query()->exists(),
         ]));
 
         Fortify::resetPasswordView(fn (Request $request) => Inertia::render('auth/reset-password', [

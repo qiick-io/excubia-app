@@ -1,0 +1,323 @@
+{
+    "$comment": "Frozen answers of the ingest API (docs/API.md, #50). Change only with an announced, additive 1.x change.",
+    "endpoints": {
+        "reports": {
+            "stored": {
+                "status": 201,
+                "body": {
+                    "status": "stored",
+                    "reportId": "<int>"
+                }
+            },
+            "duplicate": {
+                "status": 200,
+                "body": {
+                    "status": "duplicate",
+                    "reportId": "<int>"
+                }
+            },
+            "missing_token": {
+                "status": 401,
+                "body": {
+                    "message": "Missing, unknown or revoked project token."
+                }
+            },
+            "unknown_token": {
+                "status": 401,
+                "body": {
+                    "message": "Missing, unknown or revoked project token."
+                }
+            },
+            "disabled_project": {
+                "status": 403,
+                "body": {
+                    "message": "This project is disabled in Excubia."
+                }
+            },
+            "too_large": {
+                "status": 413,
+                "body": {
+                    "message": "The body is larger than 2 KB."
+                }
+            },
+            "protocol_version_2": {
+                "status": 422,
+                "body": {
+                    "message": "Unsupported protocolVersion. This Excubia app accepts: 1. Update qiick/excubia-core or the app.",
+                    "errors": {
+                        "protocolVersion": [
+                            "Unsupported protocolVersion. This Excubia app accepts: 1. Update qiick/excubia-core or the app."
+                        ]
+                    }
+                }
+            },
+            "invalid_json": {
+                "status": 422,
+                "body": {
+                    "message": "The protocol version field is required. (and 6 more errors)",
+                    "errors": {
+                        "protocolVersion": [
+                            "The protocol version field is required."
+                        ],
+                        "batchId": ["The batch id field is required."],
+                        "sentAt": ["The sent at field is required."],
+                        "report": ["The report field is required."],
+                        "report.schemaVersion": [
+                            "The report.schema version field is required."
+                        ],
+                        "report.checks": [
+                            "The report.checks field must be present."
+                        ],
+                        "report.upgradePlan": [
+                            "The report.upgrade plan field must be present."
+                        ]
+                    }
+                }
+            },
+            "json_too_deep": {
+                "status": 422,
+                "body": {
+                    "message": "The protocol version field is required. (and 6 more errors)",
+                    "errors": {
+                        "protocolVersion": [
+                            "The protocol version field is required."
+                        ],
+                        "batchId": ["The batch id field is required."],
+                        "sentAt": ["The sent at field is required."],
+                        "report": ["The report field is required."],
+                        "report.schemaVersion": [
+                            "The report.schema version field is required."
+                        ],
+                        "report.checks": [
+                            "The report.checks field must be present."
+                        ],
+                        "report.upgradePlan": [
+                            "The report.upgrade plan field must be present."
+                        ]
+                    }
+                }
+            },
+            "wrong_method": {
+                "status": 405,
+                "body": {
+                    "message": "The GET method is not supported for route api/reports. Supported methods: POST."
+                }
+            },
+            "throttled": {
+                "status": 429,
+                "body": {
+                    "message": "Too Many Attempts."
+                },
+                "headers": ["Retry-After"]
+            }
+        },
+        "runtime": {
+            "stored": {
+                "status": 201,
+                "body": {
+                    "status": "stored"
+                }
+            },
+            "duplicate": {
+                "status": 200,
+                "body": {
+                    "status": "duplicate"
+                }
+            },
+            "missing_token": {
+                "status": 401,
+                "body": {
+                    "message": "Missing, unknown or revoked project token."
+                }
+            },
+            "unknown_token": {
+                "status": 401,
+                "body": {
+                    "message": "Missing, unknown or revoked project token."
+                }
+            },
+            "disabled_project": {
+                "status": 403,
+                "body": {
+                    "message": "This project is disabled in Excubia."
+                }
+            },
+            "too_large": {
+                "status": 413,
+                "body": {
+                    "message": "The body is larger than 2 KB."
+                }
+            },
+            "protocol_version_2": {
+                "status": 422,
+                "body": {
+                    "message": "Unsupported protocolVersion. This Excubia app accepts: 1. Update qiick/excubia-core or the app.",
+                    "errors": {
+                        "protocolVersion": [
+                            "Unsupported protocolVersion. This Excubia app accepts: 1. Update qiick/excubia-core or the app."
+                        ]
+                    }
+                }
+            },
+            "invalid_json": {
+                "status": 422,
+                "body": {
+                    "message": "The protocol version field is required. (and 6 more errors)",
+                    "errors": {
+                        "protocolVersion": [
+                            "The protocol version field is required."
+                        ],
+                        "type": ["The type field is required."],
+                        "batchId": ["The batch id field is required."],
+                        "sentAt": ["The sent at field is required."],
+                        "runtime": ["The runtime field is required."],
+                        "runtime.bucketSeconds": [
+                            "The runtime.bucket seconds field is required."
+                        ],
+                        "runtime.aggregates": [
+                            "The runtime.aggregates field must be present."
+                        ]
+                    }
+                }
+            },
+            "json_too_deep": {
+                "status": 422,
+                "body": {
+                    "message": "The protocol version field is required. (and 6 more errors)",
+                    "errors": {
+                        "protocolVersion": [
+                            "The protocol version field is required."
+                        ],
+                        "type": ["The type field is required."],
+                        "batchId": ["The batch id field is required."],
+                        "sentAt": ["The sent at field is required."],
+                        "runtime": ["The runtime field is required."],
+                        "runtime.bucketSeconds": [
+                            "The runtime.bucket seconds field is required."
+                        ],
+                        "runtime.aggregates": [
+                            "The runtime.aggregates field must be present."
+                        ]
+                    }
+                }
+            },
+            "unknown_runtime_type": {
+                "status": 201,
+                "body": {
+                    "status": "stored"
+                }
+            },
+            "wrong_method": {
+                "status": 405,
+                "body": {
+                    "message": "The GET method is not supported for route api/runtime. Supported methods: POST."
+                }
+            },
+            "throttled": {
+                "status": 429,
+                "body": {
+                    "message": "Too Many Attempts."
+                },
+                "headers": ["Retry-After"]
+            }
+        },
+        "exceptions": {
+            "stored": {
+                "status": 201,
+                "body": {
+                    "status": "stored"
+                }
+            },
+            "duplicate": {
+                "status": 200,
+                "body": {
+                    "status": "duplicate"
+                }
+            },
+            "missing_token": {
+                "status": 401,
+                "body": {
+                    "message": "Missing, unknown or revoked project token."
+                }
+            },
+            "unknown_token": {
+                "status": 401,
+                "body": {
+                    "message": "Missing, unknown or revoked project token."
+                }
+            },
+            "disabled_project": {
+                "status": 403,
+                "body": {
+                    "message": "This project is disabled in Excubia."
+                }
+            },
+            "too_large": {
+                "status": 413,
+                "body": {
+                    "message": "The body is larger than 2 KB."
+                }
+            },
+            "protocol_version_2": {
+                "status": 422,
+                "body": {
+                    "message": "Unsupported protocolVersion. This Excubia app accepts: 1. Update qiick/excubia-core or the app.",
+                    "errors": {
+                        "protocolVersion": [
+                            "Unsupported protocolVersion. This Excubia app accepts: 1. Update qiick/excubia-core or the app."
+                        ]
+                    }
+                }
+            },
+            "invalid_json": {
+                "status": 422,
+                "body": {
+                    "message": "The protocol version field is required. (and 5 more errors)",
+                    "errors": {
+                        "protocolVersion": [
+                            "The protocol version field is required."
+                        ],
+                        "type": ["The type field is required."],
+                        "batchId": ["The batch id field is required."],
+                        "sentAt": ["The sent at field is required."],
+                        "exceptions": ["The exceptions field is required."],
+                        "exceptions.groups": [
+                            "The exceptions.groups field must be present."
+                        ]
+                    }
+                }
+            },
+            "json_too_deep": {
+                "status": 422,
+                "body": {
+                    "message": "The protocol version field is required. (and 5 more errors)",
+                    "errors": {
+                        "protocolVersion": [
+                            "The protocol version field is required."
+                        ],
+                        "type": ["The type field is required."],
+                        "batchId": ["The batch id field is required."],
+                        "sentAt": ["The sent at field is required."],
+                        "exceptions": ["The exceptions field is required."],
+                        "exceptions.groups": [
+                            "The exceptions.groups field must be present."
+                        ]
+                    }
+                }
+            },
+            "wrong_method": {
+                "status": 405,
+                "body": {
+                    "message": "The GET method is not supported for route api/exceptions. Supported methods: POST."
+                }
+            },
+            "throttled": {
+                "status": 429,
+                "body": {
+                    "message": "Too Many Attempts."
+                },
+                "headers": ["Retry-After"]
+            }
+        }
+    }
+}

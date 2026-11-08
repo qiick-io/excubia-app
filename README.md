@@ -10,81 +10,52 @@
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
-**Excubia App** is the optional, open-source (MIT), self-hosted Laravel dashboard of [Excubia](https://github.com/qiick-io/excubia-core), part of the [qiick](https://qiick.io) suite. It keeps the health of all your Laravel projects in one place: PHP / Laravel / Node end of life, known vulnerabilities, abandoned and stale packages, next-major blockers and the suggested upgrade order.
+**Excubia App** is the open-source (MIT), self-hosted Laravel dashboard of [Excubia](https://github.com/qiick-io/excubia-core), part of the [qiick](https://qiick.io) suite. It keeps the health of all your Laravel projects in one place: PHP / Laravel / Node end of life, known vulnerabilities, abandoned, outdated and stale packages, licenses, next-major blockers and the suggested upgrade order, plus opt-in runtime monitoring, exceptions, scheduled tasks and alerts.
 
-It is built on [`qiick/excubia-core`](https://github.com/qiick-io/excubia-core), the Composer package that ships the `excubia` CLI and the checks engine. The app does not reimplement any check. Each monitored project installs `qiick/excubia-core` and pushes its reports to the app with a per-project token, so projects can live anywhere. The app stores the reports and shows them on a dashboard.
+The checks run inside each project through [`qiick/excubia-core`](https://github.com/qiick-io/excubia-core), the Composer package with the `excubia` CLI and the checks engine. Each project pushes its reports to the app with its own token, so projects can live anywhere. The app stores them and shows them on one dashboard. It does not reimplement any check.
 
-> **Status:** early development. Nothing is released yet and it is not ready for production. See the [v0.1.0 milestone](https://github.com/qiick-io/excubia-app/milestone/1) for the plan.
+> **Status: beta (`1.0.0-beta`).** Feature-complete for 1.0 and ready to try on real projects. The ingest API and the core contracts are frozen; until 1.0.0 only fixes and additive changes land. Migrations can still change between betas, so upgrade one beta at a time and keep backups ([upgrades](./docs/self-hosting.md#upgrades)). Please [report issues](https://github.com/qiick-io/excubia-app/issues).
 
-## Planned for v0.1.0
+## Features
 
-- Register projects with a push token and receive the reports they send (`excubia push`)
-- Dashboard: worst severity per project, findings, upgrade plan, report history, stale projects
-- Private login with users, groups, roles and permissions, and optional OIDC single sign-on (same model as Externa)
-- Self-hosted, no telemetry
+- **Reports:** worst severity per project, findings with fix hints, upgrade plan, report history, stale projects, license inventory.
+- **Finding lifecycle:** first and last seen, fixed in which report, came back, per-finding history; dismiss a finding with a reason and an optional end date (the fields of an `excubia.json` ignore rule).
+- **Runtime and exceptions (opt-in in each project):** requests, slow and N+1 queries, jobs, queue wait, cache, mail, outgoing HTTP, server metrics, with p50 / p95 / p99; masked exception groups.
+- **Scheduled tasks:** late, missed and failed runs, "scheduler down".
+- **Alerts** by mail and integrations, with mutes and maintenance windows, and a weekly digest.
+- **Access:** users, groups, roles and permissions, two-factor and passkeys, optional OIDC single sign-on.
+- **Self-hosted, no telemetry.** Excubia also watches its own install. Optional read-only AI assistant with a local model.
 
-Later: opt-in runtime monitoring and exception tracking (sent by `qiick/excubia-core`), alerts, and a hosted version on qiick Cloud.
+## Quick start
 
-## Self-hosting
+**On a server (Composer):** create a new site from Packagist, no git clone:
 
-### Requirements
+```bash
+composer create-project qiick/excubia-app my-excubia
+cd my-excubia
+nvm use   # Node 24
+php artisan excubia:install
+```
 
-- PHP 8.4 with the `pdo_sqlite` extension (or the driver of the database you use), Composer 2
-- Node 24 and npm, to build the frontend
-- A web server pointing to `public/` (nginx, Apache, Caddy or Laravel Herd), served over HTTPS: `excubia push` refuses plain HTTP except to localhost
-- Cron (or a process manager) for the Laravel scheduler
+`create-project` only copies `.env` (if missing) and runs `key:generate`: no migrate, no seed, no SQLite assumption. `excubia:install` asks for the app name and URL and the database (SQLite, PostgreSQL, MySQL or MariaDB), writes `.env`, migrates, seeds the permissions and the system project, and builds the frontend. Then open `/setup` to create the admin and the first project. For CI, the same command runs without questions: `php artisan excubia:install -n --db=pgsql --db-host=… --url=https://…` (every answer has an option).
 
-SQLite is the default database. MySQL, MariaDB and PostgreSQL work too: set `DB_CONNECTION` and the `DB_*` values in `.env`.
+> **Install only, not the update channel.** `composer create-project` copies the app once. Once that tree is in **your** git remote, Composer does not pull newer Excubia releases into it. To stay current, track the Git tags (or add `upstream` and merge `vX.Y.Z`), then run `php artisan excubia:upgrade` (migrate, permissions, system project, caches, queue restart). Optional code sync, dry run first: `php artisan excubia:upgrade --sync-upstream=vX.Y.Z --dry-run`. Docker: pull a newer image tag. Details: **[docs/self-hosting.md](./docs/self-hosting.md#upgrades)**.
 
-### Install
+**With Docker:**
 
 ```bash
 git clone https://github.com/qiick-io/excubia-app.git
 cd excubia-app
-composer install --no-dev --optimize-autoloader
-cp .env.example .env
-php artisan key:generate
+docker compose up -d --build
 ```
 
-Edit `.env`: set `APP_ENV=production`, `APP_DEBUG=false` and `APP_URL` to the public HTTPS URL of the app. Projects push to that URL. Then:
+Open <http://localhost:8080/setup>: create the admin, the first project, and copy the install snippet into that project. The compose file runs the web server, the queue worker and the scheduler, with SQLite in a volume. For production, put a TLS proxy in front and set `APP_URL` and `TRUSTED_PROXIES`.
 
-```bash
-touch database/database.sqlite   # SQLite only
-php artisan migrate --force
-php artisan db:seed --class=SystemProjectSeeder --force
-npm ci && npm run build
-php artisan excubia:create-user
-```
+Laravel Forge, Ploi or a plain server, HTTPS, backups and upgrades: **[docs/self-hosting.md](./docs/self-hosting.md)**. Which excubia-core version each feature needs: **[docs/compatibility.md](./docs/compatibility.md)**.
 
-`SystemProjectSeeder` adds the **Excubia** system project, so the app watches itself from the start (see below). `excubia:create-user` asks for a name, an email and a password. The first user becomes super-admin. There is no public sign-up, so add more users here or under **Users** in the app.
+## Add a project
 
-### Scheduler and queue
-
-The app runs scheduled tasks:
-
-- `excubia:system-report` checks this Excubia install and stores the report on the system project (daily);
-- `excubia:system-telemetry` stores this install's own runtime and exceptions on the system project (every minute);
-- `excubia:prune-reports` keeps the newest reports of each project (30 by default, in **Settings → Project**);
-- `excubia:prune-telemetry` keeps 14 days of runtime aggregates and exception groups seen in the last 90 days (`EXCUBIA_RUNTIME_RETENTION_DAYS`, `EXCUBIA_EXCEPTIONS_RETENTION_DAYS`);
-- `activitylog:clean` trims the activity log.
-
-Run the Laravel scheduler with a cron entry:
-
-```cron
-* * * * * cd /path/to/excubia-app && php artisan schedule:run >> /dev/null 2>&1
-```
-
-or keep `php artisan schedule:work` running. **Refresh now** on the system project queues its report, so run a queue worker (`php artisan queue:work`) or set `QUEUE_CONNECTION=sync`. Failed jobs, if any, show under **Settings → Jobs**.
-
-### Excubia watches itself
-
-The **Excubia** system project runs the `qiick/excubia-core` checks on this install every day, with no push token: the report is built and stored locally. Only package names and versions leave the server, as for any project. It cannot be deleted or renamed. Disable it in its drawer to stop the checks. Everyone with access to projects sees it; an admin can set its **Visibility** to _Admins only_, since the instance's own findings can be sensitive. The same setting works on any project.
-
-It also records this install's own runtime (requests, slow queries, jobs, scheduled tasks, outgoing HTTP) and exceptions: excubia-core's collectors run on the app, and `excubia:system-telemetry` (every minute) moves them to the system project, with no push token or HTTP call. The data stays in this database, masked by the core. Turn it off with `EXCUBIA_SELF_MONITORING=false`.
-
-### Add a project
-
-1. In the app, open **Projects → New project** and give it a name. The app shows the push token **once**: copy it.
+1. In the app, open **Projects → New project** (or the last step of `/setup`) and give it a name. The app shows the push token **once**: copy it.
 2. In the Laravel project to watch, install the core package (1.0.0-beta.1 or later, the first version with `excubia push`):
 
     ```bash
@@ -110,32 +81,15 @@ Run `php artisan excubia:push` once to send the first report. A project that has
 
 **Runtime and exceptions (optional).** With `runtime.enabled` or `exceptions.enabled` in the project's `excubia.json`, `excubia:push-runtime` runs every minute and sends per-minute aggregates (requests per route, slow queries, jobs, scheduled tasks, outgoing HTTP per host) to `/api/runtime` and masked exception groups to `/api/exceptions`, with the same URL and token. The core masks everything before it leaves the project; no request bodies, headers, users, IP addresses or query bindings are sent.
 
-### AI assistant (optional)
+**Scheduled tasks (optional).** `excubia:push` sends the project's schedule with each report, and the runtime `scheduledTask` aggregates carry the same `taskId`. The **Schedule** tab of the project lists each task with its last run, next due time and status: late (no run within `lateAfterMinutes`, default 5, after the due time), missed (still no run at the next due time), failed, or skipped. Tasks limited to other environments (the `environment` the project reports, from excubia-core 1.0.0-beta.4; with an older core, read from the project's exceptions) and, in maintenance mode, tasks without `evenInMaintenanceMode()` are not expected to run. When `excubia:heartbeat` stops too, the tasks show "Scheduler down" and one `schedule.scheduler_down` alert is sent instead of one per task. Missed and failed runs send `schedule.missed` and `schedule.failed` alerts, except when runs are sampled (`sampleRate` below 1), where a missing run proves little.
 
-Off by default. To turn it on, run a model with [Ollama](https://ollama.com) and add to `.env`:
+**Live health (optional).** With `runtime.health.enabled` in the project's `excubia.json` (qiick/excubia-core 1.0.0-beta.3 and later), `excubia:push-runtime` sends one `health` sample per check and server each minute. The project overview then shows a **Live health** card (per check, per server, last sample time, refreshed every minute), and three alerts follow it: `health.failed` when a server's last two readings of a check fail (a `skipped` sample is no reading), sent again when the set of failing findings changes; `health.recovered` when no server's latest reading fails any more; and `health.stale` when a server that was sending stops for five minutes. The alerts ignore a stale server, but when every server is stale nothing recovers: silence is never a recovery. An `infrastructure.failed` of a report and a `health.failed` for the same check and finding within 15 minutes send one alert; the other is kept in the history as a duplicate. The dashboard's project list shows each project's live health too. Mutes and maintenance windows apply. Projects without health samples keep the daily report only.
 
-```dotenv
-EXCUBIA_AI_ENABLED=true
-OLLAMA_URL=http://localhost:11434
-OLLAMA_MODEL=qwen3.5:4b
-```
+**Alert channels.** Alerts go out through the queue, to the signed webhook, Slack, Telegram and email. Each channel has its own minimum severity, events and projects in **Settings → Integrations**, where admins also change the default severity of each event (the `can-manage-alerts` permission). Users turn alert emails on for themselves in **Settings → Profile**, with their own filters, for the projects they can see. The alerts one report raises go out as one Slack, Telegram and email message per channel (the webhook still gets one request per alert), and the same event, project and subject alerts at most once an hour unless it gets worse (`EXCUBIA_ALERT_THROTTLE_MINUTES`). `eol.approaching` (90, 30 and 7 days before the security support of PHP, Laravel or Node ends, `EXCUBIA_EOL_ALERT_DAYS`) and `eol.reached` alert once per threshold and runtime cycle. See [Alerts](./docs/self-hosting.md#alerts) for the events, the webhook payload and signature.
 
-Pick a model that supports tool calling. For an OpenAI-compatible local server such as LM Studio, set `AI_DEFAULT_PROVIDER=local`, `LOCAL_AI_URL` and `LOCAL_AI_MODEL` instead. Users with the `can-use-ai` permission (admin and super-admin by default) see **Assistant** in the sidebar and can ask questions about the stored reports, such as "which projects have critical advisories?" or "what got worse since last week?". The assistant is read-only. To use a cloud provider instead, set `AI_DEFAULT_PROVIDER` and that provider's key (see `config/ai.php`). The data in the Privacy section below then leaves your server.
+**Alert controls.** The **Alerts** tab of a project lists every alert: sent, failed delivery, suppressed (with the reason) or skipped (no channel takes it). From a row, mute the rule (the event on this project) or the issue (one finding, task, cache store…) for 1 hour, 24 hours, 7 days or forever. Maintenance windows, one-off or weekly in a timezone, suppress the project's alerts while in force, and so does the core `laravel-maintenance-mode` finding of the latest report (schedule alerts excepted: the Schedule tab already pauses the tasks that do not run in maintenance mode). `project.token_changed` is only silenced by an explicit mute, and never throttled.
 
-### Update
-
-```bash
-php artisan down
-git pull
-composer install --no-dev --optimize-autoloader
-php artisan migrate --force
-php artisan db:seed --class=SystemProjectSeeder --force   # once; does nothing if it exists
-npm ci && npm run build
-php artisan optimize
-php artisan up
-```
-
-### Privacy
+## Privacy
 
 - Projects send their reports only to this app, authenticated by their own token.
 - The checks run inside each project, through `qiick/excubia-core`. They send only package names and versions to public data sources.
@@ -153,7 +107,7 @@ PHP 8.4, Laravel 13, Inertia, React 19, TypeScript, Tailwind CSS v4, Pest, Pint,
 
 ## Contributing
 
-Open or pick an issue first; one issue per pull request, branches from `develop`, Conventional Commits. Details will land in `CONTRIBUTING.md`.
+Open or pick an issue first; one issue per pull request, branches from `develop`, Conventional Commits. See [`CONTRIBUTING.md`](./CONTRIBUTING.md).
 
 ### Checks
 
@@ -161,7 +115,8 @@ CI (`.github/workflows/ci.yml`) runs on every pull request and push to `develop`
 
 - **PHP 8.4** and **PHP 8.5**: `npm run build`, Pint, PHPStan, Pest, `npm run lint` and `npm run types`. Run the same locally before a push (see `CLAUDE.md`).
 - **Core contract (^1.0@beta)** and **Core contract (dev-develop)**: the end-to-end test between `qiick/excubia-core` and this app.
-- **Accessibility**: the axe smoke test (`tests/Browser/A11ySmokeBrowserTest.php`) on login, dashboard, projects, a project overview, runtime, exceptions and settings, in light and dark plus one high-contrast pass. It fails on any serious or critical violation. Pull requests to `develop` run only this smoke test; pushes and pull requests to `main` run every test in `tests/Browser`.
+- **Docker image** (`.github/workflows/docker.yml`): builds the production image and checks that a fresh container answers `/up` and `/setup`. Nothing is pushed; publishing to GHCR stays a manual release step.
+- **Accessibility**: the axe smoke test (`tests/Browser/A11ySmokeBrowserTest.php`) on login, the first-run wizard, dashboard, projects, a project overview, runtime, exceptions and settings, in light and dark plus one high-contrast pass. It fails on any serious or critical violation. Pull requests to `develop` run only this smoke test; pushes and pull requests to `main` run every test in `tests/Browser`.
 
 The contract test serves this app with `php artisan serve` on a throwaway SQLite database, registers a project with a push token, and creates a throwaway Laravel app that installs `qiick/excubia-core` with every runtime type and exception capture turned on. It sends some traffic to that app, then runs `excubia:check --format=json`, `excubia:push` and `excubia:push-runtime` against this app. It fails unless every command succeeds (the push commands fail on any non-2xx answer) and the app stored a report, runtime aggregates and an exception group. Runtime entries of a type this app does not know yet are reported as a warning. Run it locally after `composer install`:
 

@@ -70,6 +70,7 @@
         "platform": "Piattaforma",
         "dashboard": "Dashboard",
         "projects": "Progetti",
+        "fleet": "Flotta",
         "assistant": "Assistente",
         "activityLog": "Activity Log",
         "users": "Utenti",
@@ -160,6 +161,36 @@
             "authToggle": "accedere con un codice di recupero",
             "recoveryPlaceholder": "Inserisci il codice di recupero",
             "orYouCan": "oppure puoi "
+        },
+        "setup": {
+            "head": "Configura Excubia",
+            "stepOf": "Passo {{step}} di {{total}}",
+            "notice": {
+                "title": "Excubia non è ancora configurato",
+                "description": "Questa installazione non ha account. Crea il primo amministratore per iniziare.",
+                "link": "Configura Excubia"
+            },
+            "admin": {
+                "title": "Crea l’account amministratore",
+                "description": "Questo account diventa il super-admin dell’installazione. Non c’è registrazione pubblica: aggiungi altri utenti più tardi in Utenti.",
+                "submit": "Crea amministratore"
+            },
+            "project": {
+                "title": "Aggiungi il primo progetto",
+                "name": "Nome del progetto",
+                "description": "L’app Laravel da monitorare, per esempio “Shop”. Puoi aggiungere altri progetti più tardi.",
+                "submit": "Crea progetto",
+                "skip": "Salta per ora"
+            },
+            "done": {
+                "title": "Collega il progetto",
+                "description": "Esegui questi passi in “{{name}}”. Copia il token ora: viene mostrato una sola volta.",
+                "install": "Installa il pacchetto core",
+                "config": "excubia.json (facoltativo: runtime ed eccezioni)",
+                "cron": "Cron del server (tiene attivo lo scheduler)",
+                "firstPush": "Poi esegui una volta php artisan excubia:push per inviare il primo report.",
+                "submit": "Vai alla dashboard"
+            }
         }
     },
     "settings": {
@@ -177,6 +208,7 @@
             "roles": "Ruoli",
             "permissions": "Permessi",
             "jobs": "Job",
+            "system": "Sistema",
             "reportBug": "Segnala un Bug",
             "general": "Generale",
             "localization": "Localizzazione",
@@ -184,19 +216,24 @@
             "sidebar": "Barra laterale",
             "sectionAi": "AI",
             "aiTools": "Strumenti",
-            "integrations": "Integrazioni"
+            "integrations": "Integrazioni",
+            "aiPrices": "Prezzi"
         },
         "profile": {
-            "breadcrumb": "Impostazioni profilo",
             "head": "Impostazioni profilo",
             "title": "Informazioni profilo",
             "description": "Aggiorna i dettagli del profilo e l'indirizzo email",
             "unverified": "Il tuo indirizzo email non è verificato.",
             "resend": "Clicca qui per reinviare l'email di verifica.",
-            "linkSent": "Un nuovo link di verifica è stato inviato al tuo indirizzo email."
+            "linkSent": "Un nuovo link di verifica è stato inviato al tuo indirizzo email.",
+            "weeklyDigest": "Inviami un riepilogo settimanale via email (nuovi problemi, regressioni, EOL, eccezioni principali, problemi di schedule)",
+            "alertsTitle": "Avvisi via email",
+            "alertsDescription": "Ricevi un'email quando scatta un avviso che ti interessa, per i progetti che puoi vedere.",
+            "alertsEnabled": "Inviami gli avvisi via email",
+            "alertsTest": "Invia email di prova",
+            "alertsTestHint": "Salva prima. L'email arriva al tuo indirizzo e serve un queue worker."
         },
         "security": {
-            "breadcrumb": "Impostazioni sicurezza",
             "head": "Impostazioni sicurezza",
             "passwordTitle": "Aggiorna password",
             "passwordDescription": "Usa una password lunga e casuale per mantenere l'account al sicuro",
@@ -215,7 +252,6 @@
             "passkeysNeedHttps": "Le passkey richiedono HTTPS."
         },
         "project": {
-            "breadcrumb": "Impostazioni progetto",
             "head": "Impostazioni progetto",
             "generalTitle": "Generale",
             "generalDescription": "Identità del progetto e link di supporto",
@@ -263,6 +299,7 @@
             "modules": {
                 "dashboard": "Dashboard",
                 "projects": "Progetti",
+                "fleet": "Flotta",
                 "assistant": "Assistente",
                 "files": "File",
                 "collections": "Collezioni",
@@ -276,19 +313,19 @@
                 "settings": "Impostazioni"
             },
             "localization": {
-                "breadcrumb": "Impostazioni di localizzazione",
                 "head": "Impostazioni di localizzazione",
                 "title": "Lingua admin",
                 "description": "Lingua predefinita dell’interfaccia admin"
             },
             "securityNav": {
-                "breadcrumb": "Autenticazione e sicurezza",
                 "head": "Autenticazione e sicurezza"
             },
             "checksTitle": "Controlli",
-            "checksDescription": "Progetti non aggiornati",
+            "checksDescription": "Progetti non aggiornati e feature flag",
             "reportsKeptPerProject": "Report conservati per progetto",
             "reportsKeptPerProjectHint": "Quanti report conservare per ogni progetto; i più vecchi vengono rimossi.",
+            "pennantStaleAfterDays": "Feature flag obsoleti dopo (giorni)",
+            "pennantStaleAfterDaysHint": "Giorni in cui una feature di Laravel Pennant deve essere verificata sempre con lo stesso valore prima che la scheda Runtime la elenchi come flag obsoleto. Valutato sui dati runtime conservati, se sono meno.",
             "staleAfterHours": "Obsoleto dopo (ore)",
             "staleAfterHoursHint": "Ore senza report prima che un progetto sia considerato obsoleto.",
             "description": "Descrizione del progetto",
@@ -305,7 +342,6 @@
             "activityRetentionDaysHint": "Le voci del registro attività più vecchie vengono eliminate."
         },
         "appearance": {
-            "breadcrumb": "Impostazioni aspetto",
             "head": "Impostazioni aspetto",
             "title": "Impostazioni aspetto",
             "description": "Aggiorna il branding del progetto e il tema predefinito",
@@ -327,7 +363,6 @@
             "dark": "Scuro",
             "system": "Sistema",
             "sidebar": {
-                "breadcrumb": "Impostazioni barra laterale",
                 "head": "Impostazioni barra laterale"
             },
             "themePresetTitle": "Preset tema",
@@ -346,7 +381,6 @@
             "presetPreviewDark": "Scuro"
         },
         "performance": {
-            "breadcrumb": "Impostazioni performance",
             "head": "Impostazioni performance",
             "statusTitle": "Stato runtime",
             "statusDescription": "Vista in sola lettura della configurazione runtime",
@@ -386,12 +420,11 @@
             "readOnly": "sola lettura"
         },
         "integrations": {
-            "breadcrumb": "Integrazioni",
             "head": "Integrazioni",
             "webhookTitle": "Webhook in uscita",
             "webhookDescription": "Invia avvisi firmati al tuo endpoint quando un progetto cambia",
             "webhookUrl": "URL del webhook",
-            "webhookUrlHint": "Solo HTTPS. Lascia vuoto per disattivare. Riceve tutti gli eventi. Serve un queue worker.",
+            "webhookUrlHint": "Solo HTTPS. Lascia vuoto per disattivare. Serve un queue worker.",
             "webhookSecret": "Segreto del webhook",
             "webhookSecretHint": "Usato per la firma HMAC-SHA256 (X-Excubia-Signature di \"timestamp.body\"). Lascia vuoto per mantenere quello attuale.",
             "generateSecret": "Genera segreto",
@@ -402,13 +435,27 @@
             "lastError": "Ultima consegna fallita",
             "deliveryNone": "Ancora nessuna.",
             "notifiersTitle": "Notifiche in uscita (Slack e Telegram)",
-            "notifiersDescription": "Avvisi leggibili, facoltativi, per gli eventi scelti. Solo in uscita.",
-            "eventTypes": "Notifica questi eventi",
-            "eventTypesHint": "Slack e Telegram inviano solo questi eventi; il webhook li riceve tutti. Il test funziona sempre.",
+            "notifiersDescription": "Avvisi leggibili, facoltativi. Ogni canale ha la sua gravità minima, i suoi eventi e i suoi progetti. Solo in uscita.",
+            "eventTypes": "Eventi",
+            "eventTypesHint": "Qui vengono inviati solo questi eventi. Il test funziona sempre.",
+            "eventsAll": "Tutti gli eventi",
+            "eventsSelected": "Eventi selezionati",
+            "eventsCount": "{{selected}} di {{total}} eventi",
+            "eventsNone": "Nessun evento selezionato: qui non viene inviato nulla.",
+            "eventGroups": {
+                "findings": "Problemi e report",
+                "projects": "Progetti e push",
+                "health": "Salute e infrastruttura",
+                "schedule": "Attività pianificate",
+                "runtime": "Runtime",
+                "ai": "AI",
+                "billing": "Fatturazione",
+                "other": "Altro"
+            },
             "minimumSeverity": "Gravità minima",
-            "minimumSeverityHint": "Slack e Telegram ignorano gli avvisi sotto questa gravità.",
+            "minimumSeverityHint": "Gli avvisi sotto questa gravità non vengono inviati qui.",
             "slackUrl": "URL incoming webhook di Slack",
-            "slackUrlHint": "https://hooks.slack.com/services/… Lascia vuoto per disattivare.",
+            "slackUrlHint": "https://hooks.slack.com/services/… Salvato cifrato; lascia vuoto per mantenerlo.",
             "sendTestSlack": "Test Slack",
             "sendTestTelegram": "Test Telegram",
             "sendTestNotifierHint": "Salva prima. Serve un queue worker.",
@@ -423,7 +470,92 @@
                 "project.recovered": "La gravità peggiore dell'ultimo report è più bassa di prima.",
                 "project.stale": "Un progetto non ha inviato report entro la finestra di aggiornamento.",
                 "project.reporting_again": "Un progetto non aggiornato torna a inviare report.",
-                "project.token_changed": "Un token di push è stato rigenerato o revocato."
+                "project.token_changed": "Un token di push è stato rigenerato o revocato.",
+                "schedule.missed": "Un task pianificato non era ancora partito alla scadenza successiva.",
+                "schedule.failed": "Un'esecuzione di un task pianificato è fallita.",
+                "schedule.scheduler_down": "Lo scheduler si è fermato: excubia:heartbeat non è partito.",
+                "runtime.cache_hit_ratio_low": "Uno store di cache ha un hit ratio sotto la soglia.",
+                "runtime.delivery_failed": "Un mailable o una notifica è fallito.",
+                "runtime.log_spike": "Un canale di log ha scritto più voci di errore della soglia.",
+                "eol.approaching": "Il supporto di sicurezza di PHP, Laravel o Node termina entro 90, 30 o 7 giorni (EXCUBIA_EOL_ALERT_DAYS). Una volta per soglia; alta a 7 giorni.",
+                "eol.reached": "Un progetto usa una versione di PHP, Laravel o Node il cui supporto di sicurezza è terminato.",
+                "infrastructure.failed": "Un controllo di database, storage o disco fallisce (nuovo, o al primo report). Inviato subito, critico.",
+                "health.failed": "Un controllo dei campioni di salute al minuto fallisce su un server per due letture di fila. Prende la gravità del finding; viene inviato di nuovo quando cambiano i finding falliti.",
+                "health.recovered": "Un controllo fallito dei campioni di salute non fallisce più su nessun server.",
+                "health.stale": "Un server che inviava campioni di salute non ne invia da cinque minuti. Gli avvisi di salute lo ignorano finché non riprende.",
+                "report.checks_skipped": "Un controllo è stato saltato perché una fonte dati non ha risposto: il report è incompleto.",
+                "push.rejected": "Push rifiutati più volte in un'ora per un token mancante, sconosciuto, revocato o di un progetto disattivato. Un token trapelato o dimenticato?",
+                "project.created": "È stato creato un progetto.",
+                "project.deleted": "È stato eliminato un progetto.",
+                "project.disabled": "È stato disattivato un progetto.",
+                "ai.budget_warning": "La spesa AI stimata del mese di un progetto ha raggiunto l'80 % del budget (impostato nella scheda AI).",
+                "ai.budget_exceeded": "La spesa AI stimata del mese di un progetto ha raggiunto il budget.",
+                "ai.spend_spike": "La spesa AI stimata di oggi supera la soglia rispetto alla media di 7 giorni.",
+                "ai.error_rate": "La quota di chiamate AI fallite nell'ultima ora supera la soglia.",
+                "billing.webhook_failures": "I webhook di fatturazione di un provider sono falliti (5xx, ritentati dal provider) almeno quanto la soglia nell'ultima ora.",
+                "billing.payment_failed": "Un provider di fatturazione ha segnalato pagamenti falliti nell'ultima ora.",
+                "auth.failed_login_spike": "Una guard di autenticazione ha registrato almeno la soglia di login falliti nell'ultima ora (brute force o credential stuffing).",
+                "scout.index_failures": "I job di indicizzazione Laravel Scout di un modello sono falliti almeno quante volte la soglia nell'ultima ora (l'indice di ricerca si discosta dal database)."
+            },
+            "runtimeRulesTitle": "Regole di avviso runtime",
+            "runtimeRulesDescription": "Avvisi opzionali dai dati runtime inviati dai progetti, controllati ogni 15 minuti sull'ultima ora. Vuoto disattiva la regola.",
+            "cacheHitRatio": "Hit ratio della cache sotto (%)",
+            "cacheHitRatioHint": "Avvisa quando uno store di cache trova meno di questa quota su almeno 100 letture nell'ultima ora.",
+            "logSpike": "Voci di log di errore per canale e ora",
+            "logSpikeHint": "Avvisa quando un canale di log scrive almeno questo numero di voci error, critical, alert o emergency nell'ultima ora.",
+            "deliveryFailures": "Avvisa quando email o notifiche falliscono",
+            "billingWebhookFailures": "Webhook di fatturazione falliti per provider e ora",
+            "billingWebhookFailuresHint": "Avvisa quando i webhook di Laravel Cashier di un provider falliscono almeno questo numero di volte nell'ultima ora (il provider li ritenta).",
+            "billingPaymentFailures": "Avvisa quando un provider di fatturazione segnala pagamenti falliti",
+            "authFailedLogins": "Login falliti per guard e ora",
+            "authFailedLoginsHint": "Avvisa quando una guard di autenticazione registra almeno questo numero di login falliti nell'ultima ora.",
+            "scoutIndexFailures": "Job di indicizzazione Scout falliti per modello e ora",
+            "scoutIndexFailuresHint": "Avvisa quando i job in coda di indicizzazione o rimozione di Laravel Scout di un modello falliscono almeno questo numero di volte nell'ultima ora.",
+            "projects": "Progetti",
+            "projectsHint": "Lascia tutte le caselle vuote per inviare gli avvisi di ogni progetto.",
+            "emailTitle": "Email",
+            "emailDescription": "Ogni utente che vede i progetti attiva gli avvisi via email per sé nel proprio profilo, con la sua gravità minima, i suoi eventi e i suoi progetti. Le email usano le impostazioni mail dell'app e servono un queue worker.",
+            "emailLink": "Apri il tuo profilo",
+            "severitiesTitle": "Gravità predefinite",
+            "severitiesDescription": "La gravità di ogni evento che non la prende da un problema. La gravità minima di ogni canale e iscrizione si confronta con questa.",
+            "aiRulesTitle": "Regole di avviso sull'uso dell'AI",
+            "aiRulesDescription": "Avvisi facoltativi dall'uso dell'AI inviato dai progetti (Laravel AI SDK), con costi stimati da Impostazioni → Prezzi AI. I budget mensili si impostano per progetto nella sua scheda AI. Vuoto disattiva la regola.",
+            "aiSpendSpike": "Spesa AI di oggi oltre (% della media di 7 giorni)",
+            "aiSpendSpikeHint": "Avvisa una volta al giorno quando la spesa AI stimata di oggi di un progetto raggiunge questa quota della sua giornata media dei 7 giorni precedenti, da 1 $. 300 significa tre volte la media.",
+            "aiErrorRate": "Tasso di errore AI oltre (%)",
+            "aiErrorRateHint": "Avvisa quando è fallita più di questa quota delle chiamate AI dell'ultima ora, con almeno 20 chiamate."
+        },
+        "aiPrices": {
+            "breadcrumb": "Prezzi AI",
+            "head": "Prezzi AI",
+            "title": "Prezzi AI",
+            "description": "Prezzi per provider e modello che trasformano l'uso dell'AI dei progetti in costi stimati. Il provider è il nome nel config/ai.php del progetto. Un modello con data (gpt-4o-2024-08-06) usa la riga del suo modello (gpt-4o). I modelli senza riga mostrano i token senza costo.",
+            "estimates": "Sono stime, non la tua fattura: verificale con il provider. Tabella del {{date}}; i valori predefiniti sono stati verificati il {{defaultsDate}}.",
+            "sources": "Valori predefiniti dalle pagine prezzi ufficiali, livello standard, prezzi base dei modelli a fasce (verificati il {{date}}):",
+            "add": "Aggiungi modello",
+            "restore": "Ripristina predefiniti",
+            "provider": "Provider",
+            "model": "Modello",
+            "effectiveFrom": "Dal",
+            "effectiveFromOf": "Primo giorno di {{model}}",
+            "providerOf": "Provider della riga {{row}}",
+            "modelOf": "Modello della riga {{row}}",
+            "priceOf": "{{field}} per {{model}}",
+            "remove": "Rimuovi",
+            "removeRow": "Rimuovi {{model}}",
+            "addFrom": "Nuovo prezzo di {{model}} da una data",
+            "units": "USD. Token per 1M; audio al secondo; unità di ricerca per unità. Senza prezzo di cache vale il prezzo di input; senza prezzo di reasoning il reasoning conta come output (come lo riportano OpenAI e Anthropic).",
+            "history": "Storico prezzi: una riga prezza i giorni dalla sua data (UTC) fino alla riga successiva dello stesso modello; una data vuota vale da sempre. Per cambiare un prezzo da un giorno, aggiungi una riga del modello con quella data (\"Nuovo prezzo da una data\"): i giorni precedenti mantengono il loro prezzo. Gemini 3.8 Flash raddoppia dal 2027-01-01.",
+            "fields": {
+                "input": "Input",
+                "cache_read": "Lettura cache",
+                "cache_write": "Scrittura cache",
+                "output": "Output",
+                "reasoning": "Reasoning",
+                "image_input": "Immagini in",
+                "image_output": "Immagini out",
+                "audio_second": "Audio / s",
+                "search_unit": "Unità ricerca"
             }
         }
     },
@@ -497,11 +629,21 @@
         "sortBy": "Ordina per",
         "columns": {
             "created": "Creato",
-            "updated": "Aggiornato"
+            "updated": "Aggiornato",
+            "name": "Nome",
+            "email": "Email",
+            "roles": "Ruoli",
+            "groups": "Gruppi",
+            "status": "Stato",
+            "actions": "Azioni"
         },
         "ssoBadge": "SSO",
         "actions": {
             "sendResetEmail": "Invia email di reset"
+        },
+        "status": {
+            "active": "Attivo",
+            "inactive": "Disattivato"
         }
     },
     "groups": {
@@ -512,7 +654,14 @@
         "title": "Gruppi",
         "newGroup": "Nuovo gruppo",
         "searchPlaceholder": "Cerca gruppi…",
-        "sortBy": "Ordina per"
+        "sortBy": "Ordina per",
+        "columns": {
+            "name": "Nome",
+            "roles": "Ruoli",
+            "members": "Membri",
+            "actions": "Azioni"
+        },
+        "empty": "Ancora nessun gruppo."
     },
     "projects": {
         "title": "Progetti",
@@ -567,6 +716,9 @@
         "lastReport": "Ultimo report {{date}}",
         "noReports": "Nessun report",
         "stale": "Fermo",
+        "liveHealthFailing_one": "{{count}} fallito",
+        "liveHealthFailing_other": "{{count}} falliti",
+        "liveHealthStale": "Server silente",
         "trend": {
             "title": "Problemi nel tempo",
             "description": "L'ultimo report di ogni progetto per ogni giorno degli ultimi {{count}} giorni, per severità.",
@@ -664,7 +816,11 @@
             "plan": "Piano di upgrade",
             "history": "Storico",
             "runtime": "Runtime",
-            "exceptions": "Eccezioni"
+            "exceptions": "Eccezioni",
+            "schedule": "Pianificazione",
+            "alerts": "Avvisi",
+            "licenses": "Licenze",
+            "ai": "AI"
         },
         "support": {
             "supported": "Supportato",
@@ -710,6 +866,7 @@
             "findings": "Problemi aperti",
             "lastReport": "Ultimo report {{time}}",
             "lastReportStale": "Non aggiornato · ultimo report {{time}}",
+            "environment": "Ambiente {{environment}}",
             "checks": "Controlli superati",
             "allChecksPass": "Tutti i controlli superati",
             "checkCount": {
@@ -739,7 +896,22 @@
                 "allFindings": "Tutti i problemi",
                 "exception": "Eccezione",
                 "emptyTitle": "Niente da sistemare"
-            }
+            },
+            "release": "Release",
+            "lastDeploy": "Deploy {{time}}",
+            "noDeploy": "Ancora nessun deploy segnato",
+            "deployCount_one": "{{count}} deploy nella cronologia",
+            "deployCount_other": "{{count}} deploy nella cronologia"
+        },
+        "release": "Release",
+        "deploy": "Deploy",
+        "liveHealth": {
+            "title": "Salute in tempo reale",
+            "description": "I campioni di salute al minuto dell'ultima ora, per controllo e server. Si aggiorna ogni minuto.",
+            "servers": "Server",
+            "lastSample": "Ultimo campione",
+            "serverStatus": "{{server}}: {{status}}",
+            "serverStale": "{{server}}: nessun campione"
         }
     },
     "assistant": {
@@ -808,6 +980,75 @@
             "actions": "Azioni"
         }
     },
+    "system": {
+        "description": "Stato di salute di questa installazione di Excubia. Ogni voce rimanda al suo suggerimento di correzione.",
+        "fixHint": "Come risolvere: {{item}}",
+        "never": "Mai",
+        "status": {
+            "ok": "OK",
+            "warning": "Attenzione",
+            "error": "Errore",
+            "unknown": "Sconosciuto"
+        },
+        "columns": {
+            "project": "Progetto",
+            "count": "Numero"
+        },
+        "scheduler": {
+            "title": "Scheduler",
+            "lastRun": "Ultimo heartbeat: {{time}}"
+        },
+        "queue": {
+            "title": "Worker della coda",
+            "connection": "Connessione",
+            "lastRun": "Ultimo heartbeat",
+            "pending": "Job in attesa",
+            "failed": "Job falliti"
+        },
+        "pushes": {
+            "title": "Ultimo invio per progetto",
+            "description": "I report sono obsoleti dopo {{hours}} ore, il runtime dopo 15 minuti.",
+            "reports": "Report",
+            "runtime": "Runtime",
+            "exceptions": "Eccezioni",
+            "stale": "Obsoleto",
+            "empty": "Nessun progetto attivo."
+        },
+        "rejections": {
+            "title": "Invii rifiutati (24 h)",
+            "endpoint": "Endpoint",
+            "status": "Stato",
+            "reason": "Motivo",
+            "empty": "Nessun invio rifiutato nelle ultime 24 ore."
+        },
+        "skippedRuntime": {
+            "title": "Tipi di runtime sconosciuti ignorati",
+            "empty": "Nessuna voce di runtime ignorata.",
+            "row_one": "{{project}}: {{count}} voce ignorata",
+            "row_other": "{{project}}: {{count}} voci ignorate"
+        },
+        "alertFailures": {
+            "title": "Consegne di avvisi fallite (24 h)",
+            "empty": "Nessuna consegna di avvisi fallita nelle ultime 24 ore.",
+            "total_one": "{{count}} avviso fallito",
+            "total_other": "{{count}} avvisi falliti",
+            "event": "Evento",
+            "channels": "Canali falliti",
+            "at": "Ora"
+        },
+        "rollups": {
+            "title": "Aggregazioni orarie del runtime",
+            "pending": "Il runtime salvato prima delle aggregazioni orarie manca dai totali della dashboard: esegui il backfill una volta.",
+            "done": "Le aggregazioni orarie coprono il runtime salvato."
+        },
+        "version": {
+            "title": "Versione e compatibilità",
+            "app": "Excubia App",
+            "core": "excubia-core nell’app",
+            "accepts": "Accetta excubia-core",
+            "protocol": "Versioni del protocollo"
+        }
+    },
     "fix": {
         "actions": "Fix",
         "copied": "Copiato negli appunti",
@@ -827,18 +1068,15 @@
         "averageResponse": "Risposta media",
         "slowestResponse": "Risposta più lenta",
         "allRoutes": "Tutte le route",
-        "lastHours": "Ultime {{count}} ore",
-        "requestsPerHour": "Richieste per ora",
-        "requestsPerHourDescription": "Richieste riuscite ed errori server (5xx), ultime 24 ore.",
         "successful": "Riuscite",
         "serverErrors": "5xx",
-        "chartLabel": "Grafico a barre impilate delle richieste per ora: {{count}} richieste, {{errors}} errori server nelle ultime 24 ore.",
+        "chartLabel": "Grafico a barre impilate delle richieste {{bucket}}: {{count}} richieste, {{errors}} errori server {{during}}.",
         "routes": "Route",
         "outgoingHttp": "HTTP in uscita",
         "slowQueries": "Query lente",
         "jobs": "Job",
         "scheduledTasks": "Task schedulati",
-        "noData": "Nessun dato nelle ultime 24 ore.",
+        "noData": "Nessun dato in questo intervallo.",
         "name": "Nome",
         "count": "Conteggio",
         "average": "Media",
@@ -849,7 +1087,122 @@
             "finished": "Completati",
             "skipped": "Saltati"
         },
-        "sampled": "~ stimato dagli eventi campionati"
+        "sampled": "~ stimato dagli eventi campionati",
+        "enableHint": "Per raccoglierli, attiva in excubia.json:",
+        "skipped_one": "{{count}} voce runtime di un tipo che questa versione di Excubia non conosce è stata saltata. Aggiorna Excubia per vederla.",
+        "skipped_other": "{{count}} voci runtime di tipi che questa versione di Excubia non conosce sono state saltate. Aggiorna Excubia per vederle.",
+        "duplicateQueries": "Query N+1",
+        "duplicateQueriesDescription": "Forme di query ripetute in una stessa richiesta o job.",
+        "origin": {
+            "request": "Richiesta",
+            "job": "Job"
+        },
+        "occurrences": "Occorrenze",
+        "averageRepeats": "Ripetizioni medie",
+        "maxRepeats": "Ripetizioni max",
+        "queueWait": "Attesa in coda",
+        "queueWaitDescription": "Tempo dal push al primo tentativo, per coda.",
+        "commands": "Comandi Artisan",
+        "failed": "Falliti",
+        "requestMemory": "Memoria delle richieste",
+        "jobMemory": "Memoria dei job",
+        "averageMemory": "Picco medio",
+        "peakMemory": "Picco max",
+        "cache": "Cache",
+        "cacheDescription": "Hit rate {{rate}}%: {{hits}} hit, {{misses}} miss.",
+        "hitRate": "Hit rate",
+        "hits": "Hit",
+        "misses": "Miss",
+        "writes": "Scritture",
+        "deletes": "Eliminazioni",
+        "mail": "Mail",
+        "notifications": "Notifiche",
+        "sent": "Inviate",
+        "logLevels": "Log",
+        "logLevelsDescription": "Voci di log per livello e canale; il grafico mostra {{bucket}} quelle di livello error e superiore.",
+        "errorLogs": "Voci di livello error",
+        "logChartLabel": "Grafico a barre delle voci di log di livello error {{bucket}}: {{count}} {{during}}.",
+        "level": "Livello",
+        "channel": "Canale",
+        "unknownChannel": "sconosciuto",
+        "deprecations": "Deprecazioni",
+        "deprecationsDescription": "Deprecazioni PHP per origine e versione di PHP, per pianificare gli aggiornamenti.",
+        "servers": "Server",
+        "serversDescription": "Ultimo campione di ogni server che esegue lo scheduler.",
+        "server": "Server",
+        "load": "Carico 1 / 5 / 15",
+        "memory": "Memoria",
+        "disk": "Disco",
+        "lastSample": "Ultimo campione",
+        "container": "Container",
+        "cpuLimit_one": "limite {{count}} CPU",
+        "cpuLimit_other": "limite {{count}} CPU",
+        "cpuCores_one": "{{count}} core",
+        "cpuCores_other": "{{count}} core",
+        "deploy": "Deploy",
+        "deployMarkersHint": "Le linee tratteggiate segnano i deploy.",
+        "deploysLabel_one": "{{count}} deploy: {{releases}}.",
+        "deploysLabel_other": "{{count}} deploy: {{releases}}.",
+        "requestsOverTimeDescription": "Richieste riuscite ed errori server (5xx) {{bucket}} {{during}}.",
+        "requestsOverTime": "Richieste nel tempo",
+        "octane": "Worker Octane",
+        "octaneDescription": "Per server e tipo di worker. La memoria è letta dopo ogni richiesta; una crescita oltre {{threshold}} MB dalla prima richiesta di un worker può essere un leak.",
+        "octaneMaxRequests": "max_requests: {{count}}.",
+        "octaneMaxRequestsUnset": "max_requests non è impostato.",
+        "possibleLeak": "Possibile leak",
+        "tasksTicks": "Task / tick",
+        "workerStartsStops": "Avvii / arresti",
+        "workerErrors": "Errori dei worker",
+        "memoryGrowth": "Crescita max",
+        "requestsAtStop": "Richieste all'arresto (media / max)",
+        "reverb": "Reverb",
+        "reverbDescription": "Per server e app Reverb. Il picco di connessioni è il massimo di connessioni iscritte a un canale in un minuto; i canali sono pubblici / privati / presence.",
+        "reverbReachable": "Il server Reverb ha risposto in {{latency}} ms nell'ultimo report.",
+        "reverbUnreachable": "Il server Reverb non ha risposto nell'ultimo report.",
+        "messagesInOut": "Messaggi in / out",
+        "connectionsOpened": "Aperte",
+        "connectionsRejected": "Rifiutate",
+        "connectionsPruned": "Chiuse per timeout",
+        "reverbErrors": "Errori",
+        "channelsCreated": "Canali creati",
+        "channelsRemoved": "Canali rimossi",
+        "peakConnections": "Picco connessioni",
+        "billing": "Webhook di fatturazione",
+        "billingDescription": "Webhook di Laravel Cashier per provider e tipo di evento. Quelli falliti sono terminati con un errore server (5xx) e il provider li ritenta; i tipi di evento senza handler di Cashier non sono né gestiti né falliti. Arriva solo il tipo di evento: mai importi, clienti o altri dati del payload.",
+        "billingTotals": "Segnali di pagamento in questo intervallo",
+        "received": "Ricevuti",
+        "handled": "Gestiti",
+        "failedRate": "Falliti (tasso)",
+        "paymentFailed": "Pagamenti falliti",
+        "paymentActionRequired": "Pagamenti da confermare",
+        "subscriptionCanceled": "Abbonamenti annullati",
+        "auth": "Autenticazione",
+        "authDescription": "Login di Laravel per guard: login riusciti e falliti con il tasso di fallimento, blocchi del rate limiter dei login e richieste autenticate da un personal access token di Sanctum. Le richieste con token Passport non sono contate. Mai utenti, email, credenziali, token o indirizzi IP.",
+        "logins": "Login",
+        "lockouts": "Blocchi",
+        "tokenAuthentications": "Autenticazioni token",
+        "scout": "Ricerca (Scout)",
+        "scoutDescription": "Laravel Scout per modello, engine e operazione: job in coda di indicizzazione e rimozione con i fallimenti, i record sincronizzati e la durata, e le ricerche avviate (senza durata). Gli aggiornamenti dell'indice con scout.queue disattivato (il default di Scout) sono eseguiti inline e non vengono registrati. Mai query di ricerca, id o dati dei record.",
+        "scoutRecords": "Record",
+        "pennant": "Feature flag (Pennant)",
+        "pennantDescription": "Verifiche di Laravel Pennant per feature: risultati attivi e inattivi con la quota attiva (avanzamento del rollout), prime risoluzioni per uno scope e verifiche di una feature non definita (un flag rimosso ancora verificato, o un refuso). I nomi con caratteri diversi da lettere, cifre e _ . : - \\ arrivano come hash breve. Mai lo scope (utente, team) né il valore.",
+        "pennantStaleRule_one": "Flag obsoleti: verificati nell'ultimo giorno sempre con lo stesso valore, candidati alla rimozione.",
+        "pennantStaleRule_other": "Flag obsoleti: verificati in ciascuno degli ultimi {{count}} giorni sempre con lo stesso valore, candidati alla rimozione.",
+        "pennantStaleRetention": "L'impostazione chiede {{setting}} giorni, ma i dati runtime sono conservati solo per {{window}} giorni, quindi i flag sono valutati su {{window}} giorni.",
+        "pennantStaleFlags": "Feature flag obsoleti",
+        "pennantNoStaleFlags": "Nessun flag obsoleto",
+        "pennantAlwaysActive": "sempre attivo",
+        "pennantAlwaysInactive": "sempre disattivo",
+        "pennantUndefinedFeatures": "Feature non definite ancora verificate",
+        "pennantUndefinedChecks_one": "non definita, {{count}} verifica",
+        "pennantUndefinedChecks_other": "non definita, {{count}} verifiche",
+        "pennantHashed": "hash",
+        "pennantHashedHint": "I primi 12 caratteri esadecimali dello sha256 del nome: excubia-core trasforma in hash i nomi con altri caratteri.",
+        "pennantChecks": "Verifiche",
+        "pennantActiveInactive": "Attive / inattive",
+        "pennantActiveShare": "Quota attiva",
+        "pennantResolved": "Risoluzioni",
+        "pennantUnknown": "Non definite"
     },
     "exceptions": {
         "emptyTitle": "Nessuna eccezione",
@@ -885,12 +1238,107 @@
         "stackHint": "Dal più interno; il codice del progetto è evidenziato. I percorsi sono relativi e gli argomenti non vengono mai inviati.",
         "resolve": "Risolvi",
         "ignore": "Ignora",
-        "reopen": "Riapri"
+        "reopen": "Riapri",
+        "firstRelease": "Vista la prima volta nella release",
+        "lastRelease": "Vista l'ultima volta nella release",
+        "regressedIn": "Regressione in {{release}}",
+        "occurrences": "Occorrenze",
+        "occurrencesDescription": "Occorrenze {{bucket}} {{during}}, contate all'ultima occorrenza di ogni invio.",
+        "inRange": "Nell’intervallo",
+        "emptyRangeDescription": "Nessun gruppo di eccezioni visto {{during}}. Scegli un intervallo più lungo per vedere i gruppi più vecchi.",
+        "occurrencesChartLabel": "Grafico a barre delle occorrenze {{bucket}}: {{count}} {{during}}.",
+        "emptyRangeTitle": "Nessuna eccezione in questo intervallo"
+    },
+    "schedule": {
+        "description": "I task pianificati dell'ultimo report, ognuno con l'ultima esecuzione, la prossima scadenza e lo stato. Controllati ogni minuto con le esecuzioni inviate dal monitoraggio runtime.",
+        "emptyTitle": "Nessun task pianificato",
+        "emptyDescription": "Esegui php artisan excubia:push per inviare la pianificazione e attiva il monitoraggio runtime per collegare ogni task alle sue esecuzioni.",
+        "guide": "Guida ai task pianificati",
+        "task": "Task",
+        "lastRun": "Ultima esecuzione",
+        "nextDue": "Prossima scadenza",
+        "statusLabel": "Stato",
+        "lowConfidence": "Affidabilità bassa: esecuzioni campionate o ambiente sconosciuto",
+        "schedulerDownTitle": "Lo scheduler è fermo",
+        "schedulerDownDescription": "excubia:heartbeat non parte dal {{time}}, quindi nessun task viene eseguito.",
+        "outcome": {
+            "finished": "Completato",
+            "failed": "Fallito",
+            "skipped": "Saltato"
+        },
+        "status": {
+            "pending": "In attesa",
+            "on_time": "In orario",
+            "late": "In ritardo",
+            "missed": "Mancato",
+            "failed": "Fallito",
+            "skipped": "Saltato",
+            "scheduler_down": "Scheduler fermo",
+            "not_expected": "Altro ambiente",
+            "paused": "Manutenzione",
+            "unknown": "Nessun dato"
+        },
+        "runsOverTime": "Esecuzioni nel tempo",
+        "runsOverTimeDescription": "Esecuzioni di tutti i task pianificati per esito {{bucket}} {{during}}.",
+        "runsSummary": "{{finished}} completate · {{failed}} fallite · {{skipped}} saltate",
+        "runsChartLabel": "Grafico a barre impilate delle esecuzioni dei task pianificati {{bucket}}: {{finished}} completate, {{failed}} fallite, {{skipped}} saltate {{during}}.",
+        "runs": "Esecuzioni"
     },
     "ai": {
         "fabDescription": "Drawer rapido dell'assistente. Apri la pagina completa per la cronologia.",
         "fabTitle": "Nuova chat",
-        "openFullPage": "Apri a schermo intero"
+        "openFullPage": "Apri a schermo intero",
+        "emptyTitle": "Nessun uso dell'AI",
+        "emptyDescription": "I progetti con laravel/ai ed excubia-core 1.0.0-beta.4 o successivo inviano le chiamate AI quando runtime.ai.enabled (e runtime.aiTools.enabled per le chiamate ai tool) è attivo in excubia.json.",
+        "privacy": "Excubia non riceve mai prompt, istruzioni, allegati, risposte, reasoning, argomenti o risultati dei tool: solo conteggi, uso dei token, durate e nomi di agent, tool, provider e modelli.",
+        "spend": "Spesa stimata",
+        "estimate": "Stima dalla tabella prezzi",
+        "calls": "Chiamate",
+        "errors": "Errori",
+        "failures": "Fallimenti",
+        "errorRate": "{{rate}}% fallite",
+        "failovers": "Failover",
+        "failoversHint": "Tentativi falliti passati al provider successivo",
+        "p95": "Latenza p95",
+        "allCalls": "Tutte le chiamate",
+        "slowest": "Più lenta",
+        "spendOverTime": "Spesa nel tempo",
+        "spendOverTimeDescription": "Spesa stimata {{bucket}} {{during}}.",
+        "chartLabel": "Grafico a barre: spesa AI stimata {{bucket}} {{during}}, {{cost}} in totale.",
+        "month": "Questo mese",
+        "monthDescription": "Spesa stimata dal 1° (UTC) rispetto al budget mensile, che avvisa all'80 % e al 100 %.",
+        "noBudget": "Nessun budget",
+        "ofBudget": "di {{budget}}",
+        "budgetUsed": "{{percent}}% del budget usato",
+        "budget": "Budget mensile (USD)",
+        "budgetHint": "Vuoto disattiva gli avvisi sul budget.",
+        "tokens": "Token",
+        "tokensDescription": "Input senza la parte in cache, letture e scritture di cache, output e reasoning.",
+        "inputTokens": "Input",
+        "cachedTokens": "In cache",
+        "cacheReadTokens": "Lettura cache",
+        "cacheWriteTokens": "Scrittura cache",
+        "outputTokens": "Output",
+        "reasoningTokens": "Reasoning",
+        "cost": "Costo",
+        "noPrice": "Senza prezzo",
+        "unpricedHint": "Alcuni modelli non hanno un prezzo, quindi il loro costo non è conteggiato.",
+        "byModel": "Per modello",
+        "byProvider": "Per provider",
+        "byAgent": "Per agent",
+        "pricesNote": "Stimato con la tabella prezzi del {{date}}.",
+        "pricesLink": "Modifica i prezzi AI",
+        "tools": "Chiamate ai tool",
+        "toolsDescription": "Chiamate per tool degli agent e i loro fallimenti, misurate nell'handler del tool.",
+        "operation": {
+            "agent": "Agent",
+            "image": "Immagini",
+            "embeddings": "Embedding",
+            "transcription": "Trascrizione",
+            "reranking": "Reranking",
+            "audio": "Sintesi vocale",
+            "classification": "Classificazione"
+        }
     },
     "files": {
         "card": {
@@ -907,5 +1355,533 @@
         "connecting": "Connessione…",
         "disabled": "Realtime off",
         "offline": "Realtime offline"
+    },
+    "alerts": {
+        "description": "Gli avvisi di questo progetto: cosa è stato inviato, cosa è fallito e cosa è stato soppresso. Silenzia una regola o un problema, o pianifica finestre di manutenzione.",
+        "maintenanceModeTitle": "Avvisi in pausa",
+        "maintenanceModeDescription": "L'ultimo report dice che l'applicazione è in modalità manutenzione. Gli avvisi riprendono con il report successivo a php artisan up.",
+        "windowsTitle": "Finestre di manutenzione",
+        "windowsDescription": "Gli avvisi sono soppressi mentre una finestra è attiva.",
+        "addWindow": "Aggiungi finestra",
+        "removeWindow": "Rimuovi la finestra {{name}}",
+        "noWindows": "Nessuna finestra di manutenzione.",
+        "windowActive": "Attiva",
+        "windowFormDescription": "Un periodo singolo o uno che si ripete ogni settimana. Gli orari sono locali al fuso orario.",
+        "mutesTitle": "Silenziati",
+        "mutesDescription": "Regole e problemi silenziati dalla cronologia qui sotto.",
+        "noMutes": "Niente è silenziato.",
+        "wholeRule": "Intera regola",
+        "forever": "per sempre",
+        "until": "fino a {{time}}",
+        "unmute": "Riattiva",
+        "historyTitle": "Cronologia avvisi",
+        "historyDescription": "Gli ultimi 100 avvisi.",
+        "noHistory": "Ancora nessun avviso.",
+        "time": "Ora",
+        "alert": "Avviso",
+        "statusLabel": "Stato",
+        "actions": "Azioni",
+        "muteMenu": "Silenzia",
+        "status": {
+            "queued": "In coda",
+            "sent": "Inviato",
+            "failed": "Consegna fallita",
+            "suppressed": "Soppresso",
+            "skipped": "Nessun canale"
+        },
+        "reason": {
+            "muted": "Silenziato",
+            "maintenance_window": "Finestra di manutenzione",
+            "maintenance_mode": "Modalità manutenzione",
+            "duplicate": "Duplicato",
+            "throttled": "Già inviato nell'ultima ora"
+        },
+        "channel": {
+            "webhook": "Webhook",
+            "slack": "Slack",
+            "telegram": "Telegram",
+            "email": "Email"
+        },
+        "delivery": {
+            "queued": "in coda",
+            "sent": "inviato",
+            "failed": "fallito"
+        },
+        "mute": {
+            "rule": "Silenzia questa regola",
+            "issue": "Silenzia questo problema"
+        },
+        "duration": {
+            "1h": "Per 1 ora",
+            "24h": "Per 24 ore",
+            "7d": "Per 7 giorni",
+            "forever": "Per sempre"
+        },
+        "recurrence": "Ripetizione",
+        "once": "Una volta",
+        "weekly": "Settimanale",
+        "startsAt": "Inizio",
+        "endsAt": "Fine",
+        "weekdaysLabel": "Giorni",
+        "startTime": "Ora di inizio",
+        "durationMinutes": "Durata (minuti)",
+        "timezone": "Fuso orario",
+        "minutes_one": "{{count}} minuto",
+        "minutes_other": "{{count}} minuti",
+        "weekdays": {
+            "1": "Lun",
+            "2": "Mar",
+            "3": "Mer",
+            "4": "Gio",
+            "5": "Ven",
+            "6": "Sab",
+            "7": "Dom"
+        }
+    },
+    "timeRange": {
+        "label": "Intervallo di tempo",
+        "option": {
+            "1h": "1 h",
+            "6h": "6 h",
+            "24h": "24 h",
+            "7d": "7 g",
+            "14d": "14 g"
+        },
+        "last": {
+            "1h": "Ultima ora",
+            "6h": "Ultime 6 ore",
+            "24h": "Ultime 24 ore",
+            "7d": "Ultimi 7 giorni",
+            "14d": "Ultimi 14 giorni"
+        },
+        "during": {
+            "1h": "nell'ultima ora",
+            "6h": "nelle ultime 6 ore",
+            "24h": "nelle ultime 24 ore",
+            "7d": "negli ultimi 7 giorni",
+            "14d": "negli ultimi 14 giorni"
+        },
+        "bucket": {
+            "1h": "al minuto",
+            "6h": "ogni 10 minuti",
+            "24h": "per ora",
+            "7d": "ogni 6 ore",
+            "14d": "al giorno"
+        }
+    },
+    "checks": {
+        "category": {
+            "infrastructure": "Infrastruttura",
+            "configuration": "Configurazione",
+            "dependencies": "Dipendenze",
+            "other": "Altri controlli"
+        },
+        "categoryLabel": "Gruppo",
+        "allCategories": "Tutti i gruppi",
+        "docs": "Come funziona questo controllo",
+        "unknownDescription": "Un controllo di un excubia-core più recente. Messaggio e dettagli sono mostrati come inviati.",
+        "php-eol": {
+            "label": "Fine vita di PHP",
+            "description": "Se la versione di PHP riceve ancora correzioni di sicurezza e bug (endoflife.date)."
+        },
+        "laravel-eol": {
+            "label": "Fine vita di Laravel",
+            "description": "Se la major di Laravel riceve ancora correzioni di sicurezza e bug."
+        },
+        "node-eol": {
+            "label": "Fine vita di Node",
+            "description": "Se la versione di Node dichiarata è ancora mantenuta."
+        },
+        "composer-advisories": {
+            "label": "Vulnerabilità note (Composer)",
+            "description": "Avvisi di sicurezza su Packagist che riguardano un pacchetto Composer bloccato."
+        },
+        "npm-advisories": {
+            "label": "Vulnerabilità note (npm)",
+            "description": "Vulnerabilità su OSV.dev che riguardano un pacchetto del lockfile JavaScript."
+        },
+        "composer-abandoned": {
+            "label": "Pacchetti abbandonati",
+            "description": "Pacchetti Composer segnati come abbandonati su Packagist dai loro maintainer."
+        },
+        "composer-stale": {
+            "label": "Pacchetti fermi",
+            "description": "Pacchetti Composer con repository archiviato o senza release da molto tempo."
+        },
+        "laravel-next-blocker": {
+            "label": "Blocchi per la prossima major",
+            "description": "Dipendenze dirette la cui ultima release non consente ancora la prossima major di Laravel."
+        },
+        "laravel-debug-mode": {
+            "label": "Modalità debug",
+            "description": "app.debug è attivo fuori da local e testing, quindi gli errori mostrano dettagli interni."
+        },
+        "laravel-production-caches": {
+            "label": "Cache di produzione",
+            "description": "Le cache di config, route ed eventi che la produzione dovrebbe creare al deploy."
+        },
+        "laravel-pending-migrations": {
+            "label": "Migrazioni in sospeso",
+            "description": "Migrazioni non ancora eseguite sul database."
+        },
+        "laravel-failed-jobs": {
+            "label": "Job falliti",
+            "description": "Job nell’archivio dei job falliti e da quanto c’è il più vecchio."
+        },
+        "laravel-scheduler-heartbeat": {
+            "label": "Heartbeat dello scheduler",
+            "description": "Se lo scheduler ha eseguito excubia:heartbeat negli ultimi minuti."
+        },
+        "laravel-maintenance-mode": {
+            "label": "Modalità manutenzione",
+            "description": "Se l’app è in manutenzione (php artisan down)."
+        },
+        "laravel-app-key": {
+            "label": "Chiave dell’applicazione",
+            "description": "Se app.key è impostata: senza, crittografia e sessioni non funzionano."
+        },
+        "laravel-session-security": {
+            "label": "Sicurezza del cookie di sessione",
+            "description": "Flag secure e HTTP-only del cookie di sessione in produzione."
+        },
+        "laravel-cors-wildcard": {
+            "label": "Origine CORS jolly",
+            "description": "Un’origine consentita *, che fallisce insieme alle credenziali."
+        },
+        "laravel-production-drivers": {
+            "label": "Driver di produzione",
+            "description": "Driver di coda, cache, sessione e mail pensati per lo sviluppo, usati in produzione."
+        },
+        "laravel-log-level": {
+            "label": "Livello di log",
+            "description": "Se il canale di log predefinito registra voci debug in produzione."
+        },
+        "laravel-dev-packages": {
+            "label": "Pacchetti di sviluppo",
+            "description": "Strumenti di sviluppo in require e attivi in produzione."
+        },
+        "dependency-licenses": {
+            "label": "Licenze delle dipendenze",
+            "description": "Licenze dichiarate nei lockfile: vietate, copyleft forte, mancanti o sconosciute."
+        },
+        "laravel-database": {
+            "label": "Database",
+            "description": "Se ogni connessione al database controllata risponde."
+        },
+        "laravel-cache": {
+            "label": "Cache",
+            "description": "Se lo store di cache predefinito può scrivere, leggere ed eliminare una chiave."
+        },
+        "laravel-storage": {
+            "label": "Storage scrivibile",
+            "description": "Se storage e bootstrap/cache sono scrivibili."
+        },
+        "laravel-disk-space": {
+            "label": "Spazio su disco",
+            "description": "Quanto è pieno il disco che contiene storage/."
+        },
+        "laravel-queue-backlog": {
+            "label": "Arretrato delle code",
+            "description": "Job in attesa per coda e da quanto aspetta il più vecchio."
+        },
+        "php-platform-requirements": {
+            "label": "Requisiti di piattaforma",
+            "description": "Versione di PHP ed estensioni richieste dai pacchetti bloccati, come composer check-platform-reqs."
+        },
+        "env-example-sync": {
+            "label": "Allineamento di .env.example",
+            "description": "Chiavi lette dalla config ma assenti da .env.example, e chiavi inutilizzate. Solo i nomi."
+        },
+        "composer-outdated": {
+            "label": "Pacchetti non aggiornati",
+            "description": "Dipendenze Composer dirette con una release patch, minor o major più recente."
+        },
+        "laravel-queue-workers": {
+            "label": "Worker delle code",
+            "description": "Se Horizon o un worker è attivo per le code con job in attesa."
+        },
+        "npm-outdated": {
+            "label": "Pacchetti non aggiornati (npm)",
+            "description": "Dipendenze npm dirette con una release patch, minor o major più recente."
+        },
+        "laravel-backups": {
+            "label": "Backup",
+            "description": "Età, dimensione e numero dei backup di spatie/laravel-backup per destinazione."
+        },
+        "laravel-database-connections": {
+            "label": "Connessioni al database",
+            "description": "Connessioni aperte sul server del database predefinito."
+        },
+        "laravel-database-size": {
+            "label": "Dimensione del database",
+            "description": "Dimensione del database predefinito e delle sue tabelle più grandi."
+        },
+        "laravel-redis-memory": {
+            "label": "Memoria Redis",
+            "description": "Memoria usata rispetto a maxmemory e politica di eviction per connessione Redis."
+        },
+        "php-opcache": {
+            "label": "OPcache",
+            "description": "OPcache del PHP web: attivazione, hit rate, memoria e validazione dei timestamp."
+        },
+        "php-production-ini": {
+            "label": "php.ini di produzione",
+            "description": "display_errors, expose_php e log_errors del PHP web in produzione."
+        },
+        "laravel-octane-config": {
+            "label": "Configurazione Octane",
+            "description": "Server Octane e, in produzione, se max_requests riavvia i worker prima che i leak si accumulino."
+        },
+        "laravel-reverb": {
+            "label": "Server Reverb",
+            "description": "Se il server Reverb della connessione di broadcast risponde a una connessione TCP entro 2 s, e in quanto tempo."
+        },
+        "laravel-cashier": {
+            "label": "Laravel Cashier",
+            "description": "Per pacchetto Cashier (Stripe, Paddle): il secret dei webhook, le chiavi di test in produzione e la route verso il controller dei webhook."
+        },
+        "laravel-api-tokens": {
+            "label": "Token API",
+            "description": "Configurazione dei token di Laravel Sanctum e Passport: token che non scadono o inutilizzati, domini stateful, chiavi Passport e i loro permessi, durata dei token."
+        }
+    },
+    "details": {
+        "title": "Dettagli",
+        "yes": "Sì",
+        "no": "No",
+        "megabytes": "{{value}} MB",
+        "percent": "{{value}} %",
+        "minutes_one": "{{count}} minuto",
+        "minutes_other": "{{count}} minuti",
+        "hours_one": "{{count}} ora",
+        "hours_other": "{{count}} ore",
+        "package": "Pacchetto",
+        "lockedVersion": "Installata",
+        "affectedVersions": "Versioni interessate",
+        "fixedVersions": "Corretta in",
+        "lockfile": "Lockfile",
+        "cycle": "Ciclo",
+        "securitySupportEndsOn": "Supporto di sicurezza fino al",
+        "activeSupportEndsOn": "Supporto attivo fino al",
+        "replacement": "Sostituto",
+        "targetMajor": "Major di destinazione",
+        "count": "Numero",
+        "oldestAgeHours": "Il più vecchio",
+        "minutesSinceLastRun": "Dall’ultima esecuzione",
+        "licenses": "Licenze",
+        "ecosystem": "Ecosistema",
+        "hasCredentials": "Con credenziali",
+        "component": "Componente",
+        "driver": "Driver",
+        "connection": "Connessione",
+        "store": "Store",
+        "directory": "Cartella",
+        "usedPercent": "Usato",
+        "queue": "Coda",
+        "pendingCount": "Job in attesa",
+        "oldestAgeMinutes": "Il più vecchio aspetta",
+        "requirement": "Requisito",
+        "requiredBy": "Richiesto da",
+        "checkedPhpVersion": "PHP controllato",
+        "isStandaloneCli": "CLI standalone",
+        "key": "Chiave",
+        "configFiles": "File di config",
+        "keys": "Chiavi",
+        "latestPatch": "Ultima patch",
+        "latestMinor": "Ultima minor",
+        "latestMajor": "Ultima major",
+        "isMajorBehind": "Indietro di una major",
+        "minutesSinceLastSeen": "Ultimo worker visto",
+        "status": "Stato",
+        "processes": "Processi",
+        "supervisors": "Supervisor",
+        "disk": "Disco",
+        "ageHours": "Età dell’ultimo backup",
+        "sizeMb": "Dimensione",
+        "connectionCount": "Connessioni aperte",
+        "largestTables": "Tabelle più grandi",
+        "usedMb": "Memoria usata",
+        "maxMb": "Memoria massima",
+        "policy": "Politica di eviction",
+        "sapi": "SAPI di PHP",
+        "ageMinutes": "Età dello snapshot",
+        "isOpcacheEnabled": "OPcache attivo",
+        "hitRate": "Hit rate",
+        "memoryUsedPercent": "Memoria usata",
+        "cachedScripts": "Script in cache",
+        "isValidateTimestampsEnabled": "Valida i timestamp",
+        "directive": "Direttiva",
+        "isEnabled": "Attivo"
+    },
+    "health": {
+        "notChecked": "Non controllato",
+        "withinLimits": "Nei limiti",
+        "infrastructure": {
+            "title": "Infrastruttura",
+            "description": "I servizi di cui l’app ha bisogno, dall’ultimo report.",
+            "disk": "Disco",
+            "databaseSize": "Dimensione del database",
+            "connections": "Connessioni al database",
+            "queueBacklog": "Arretrato delle code",
+            "backlogValue_one": "{{count}} job in attesa su {{queues}} coda/e, il più vecchio aspetta da {{minutes}} min",
+            "backlogValue_other": "{{count}} job in attesa su {{queues}} coda/e, il più vecchio aspetta da {{minutes}} min",
+            "redis": "Memoria Redis",
+            "redisValue": "{{connection}}: {{used}} di {{max}} MB",
+            "backups": "Backup",
+            "backupValue": "{{disk}}: il più recente ha {{age}}, {{count}} backup"
+        },
+        "dependencies": {
+            "title": "Dipendenze",
+            "description": "Dipendenze dirette non aggiornate e inventario delle licenze.",
+            "allLicenses": "Tutte le licenze",
+            "outdated": "Non aggiornate",
+            "patch": "Patch",
+            "minor": "Minor",
+            "major": "Major"
+        },
+        "ecosystem": {
+            "composer": "Composer",
+            "npm": "npm"
+        }
+    },
+    "licenses": {
+        "unavailable": "Nessun inventario delle licenze: il controllo dependency-licenses non è stato eseguito (excubia-core 1.0.0-beta.2 o successivo).",
+        "emptyTitle": "Nessun inventario delle licenze",
+        "packages_one": "{{count}} pacchetto esaminato",
+        "packages_other": "{{count}} pacchetti esaminati",
+        "kindCount": {
+            "denied_one": "{{count}} vietata",
+            "denied_other": "{{count}} vietate",
+            "copyleft_one": "{{count}} copyleft",
+            "copyleft_other": "{{count}} copyleft",
+            "unknown_one": "{{count}} sconosciuta",
+            "unknown_other": "{{count}} sconosciute"
+        },
+        "kinds": {
+            "denied": "Vietata",
+            "copyleft": "Copyleft forte",
+            "unknown": "Sconosciuta"
+        },
+        "kind": "Tipo",
+        "license": "Licenza",
+        "total": "Totale",
+        "none": "Nessuna dichiarata",
+        "flaggedTitle": "Pacchetti da rivedere",
+        "flaggedDescription": "Prima le licenze vietate, poi il copyleft forte, poi quelle mancanti o sconosciute.",
+        "noneFlagged": "Nessun pacchetto usa una licenza vietata, copyleft forte o sconosciuta.",
+        "noneFlaggedTitle": "Licenze a posto",
+        "inventoryTitle": "Inventario",
+        "fleetTitle": "Licenze da rivedere",
+        "fleetDescription": "Licenze vietate, copyleft forte e sconosciute negli ultimi report, con i progetti che le usano."
+    },
+    "fleet": {
+        "title": "Flotta",
+        "project": "Progetto",
+        "status": "Stato",
+        "views": {
+            "label": "Viste della flotta",
+            "readiness": "Prontezza upgrade",
+            "advisories": "Esposizione advisory",
+            "eol": "Calendario EOL"
+        },
+        "empty": {
+            "title": "Nessun progetto",
+            "description": "Registra un progetto e invia il primo report per vederlo qui."
+        },
+        "readiness": {
+            "description": "Dai blocchi aperti alla prossima major di ogni progetto: un progetto può passare quando nessuna dipendenza diretta blocca la prossima major di Laravel. Un blocco ignorato non blocca.",
+            "target": "Laravel {{major}}",
+            "canMove": "{{ready}} progetti su {{total}} possono passare a Laravel {{major}} oggi",
+            "unknownDescription": "Nessun report, Laravel non bloccato nel lock o controllo dei blocchi non eseguito.",
+            "blockers": "Pacchetti bloccanti",
+            "preReleaseOnly": "Solo pre-release",
+            "uncheckedPackages_one": "{{count}} pacchetto privato non controllato",
+            "uncheckedPackages_other": "{{count}} pacchetti privati non controllati",
+            "planLink_one": "Piano di upgrade ({{count}} passo)",
+            "planLink_other": "Piano di upgrade ({{count}} passi)",
+            "status": {
+                "ready": "Pronto per Laravel {{major}}",
+                "blocked": "Bloccato per Laravel {{major}}",
+                "unknown": "Sconosciuto"
+            }
+        },
+        "advisories": {
+            "description": "Pacchetti con advisory note, abbandonati o non aggiornati, e i progetti che li usano, dai problemi aperti di ogni progetto. I problemi ignorati sono elencati a parte.",
+            "search": "Pacchetto o id advisory",
+            "kindLabel": "Filtra per tipo",
+            "allKinds": "Tutti i tipi",
+            "kind": {
+                "advisory": "Advisory",
+                "abandoned": "Abbandonato",
+                "stale": "Non aggiornato"
+            },
+            "ecosystem": {
+                "composer": "Composer",
+                "npm": "npm"
+            },
+            "package": "Pacchetto",
+            "advisory": "Advisory",
+            "projects": "Progetti: installata → corretta",
+            "replacement": "Sostituisci con {{package}}",
+            "emptyTitle": "Nessun pacchetto esposto",
+            "emptyDescription": "Nessun ultimo report ha advisory note, pacchetti abbandonati o non aggiornati.",
+            "noMatchTitle": "Nessun pacchetto corrispondente",
+            "noMatchDescription": "Prova un altro nome di pacchetto o id advisory.",
+            "dismissedTitle": "Problemi ignorati",
+            "dismissedDescription": "Problemi aperti che un utente ha ignorato, con il motivo e l'ultimo giorno in cui vale."
+        },
+        "eol": {
+            "description": "Finestre di supporto di PHP, Laravel e Node di ogni progetto, dalla scadenza più vicina.",
+            "active": "Supporto attivo",
+            "security": "Supporto di sicurezza",
+            "today": "Oggi",
+            "activeUntil": "Attivo fino al",
+            "timeline": "Linea temporale",
+            "emptyTitle": "Nessuna data di supporto",
+            "emptyDescription": "Nessun ultimo report ha ancora date di supporto per PHP, Laravel o Node."
+        }
+    },
+    "findings": {
+        "statusFilter": "Stato del problema",
+        "status": {
+            "open": "Aperti",
+            "dismissed": "Ignorati",
+            "resolved": "Risolti",
+            "all": "Tutti"
+        },
+        "firstSeen": "Visto la prima volta",
+        "lastSeen": "Visto l'ultima volta",
+        "fixedOn": "Risolto nel report del {{date}}",
+        "reopened_one": "Tornato {{count}} volta",
+        "reopened_other": "Tornato {{count}} volte",
+        "notInLatest": "Il suo controllo non è stato eseguito nell'ultimo report",
+        "lifecycle": "Ciclo di vita",
+        "history": "Cronologia",
+        "event": {
+            "opened": "Visto la prima volta",
+            "resolved": "Risolto",
+            "reopened": "Tornato",
+            "dismissed": "Ignorato",
+            "undismissed": "Ignora rimosso"
+        },
+        "inRelease": "in {{release}}",
+        "byUser": "da {{name}}",
+        "untilDate": "fino al {{date}}",
+        "dismissedUntil": "Ignorato fino al {{date}}",
+        "dismissedForGood": "Ignorato senza scadenza",
+        "dismiss": "Ignora",
+        "dismissTitle": "Ignora questo problema",
+        "dismissDescription": "Un problema ignorato non genera avvisi ed è escluso dalla gravità peggiore e dal riepilogo settimanale. Si risolve e torna comunque con i report.",
+        "reason": "Motivo",
+        "reasonPlaceholder": "Perché questo problema non va corretto",
+        "until": "Ignorato fino al (facoltativo)",
+        "untilHint": "L'ultimo giorno in cui vale. Lascialo vuoto per ignorarlo senza scadenza.",
+        "confirmDismiss": "Ignora problema",
+        "cancel": "Annulla",
+        "undismiss": "Rimuovi ignora",
+        "ignoreRule": "Regola ignore di excubia.json",
+        "ignoreRuleHint": "Aggiungila all'excubia.json del progetto per escludere il problema dal report stesso.",
+        "noResolved": "Ancora nessun problema risolto",
+        "noResolvedDescription": "I problemi compaiono qui quando un report successivo esegue il loro controllo senza trovarli."
     }
 }

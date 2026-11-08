@@ -3,21 +3,27 @@
 namespace App\Providers;
 
 use App\Enums\PermissionEnum;
+use App\Models\Project;
 use App\Models\User;
 use App\Policies\ActivityPolicy;
 use App\Policies\JobPolicy;
 use App\Policies\PermissionPolicy;
 use App\Policies\RolePolicy;
+use App\Policies\SystemHealthPolicy;
 use App\Services\EffectivePermissionResolverService;
 use App\Services\JobMonitorQueryService;
 use App\Services\SelfMonitoringService;
 use App\Services\SettingsRepositoryService;
+use App\Services\SystemHealthService;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Http\Request;
+use Illuminate\Mail\Markdown;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
@@ -54,20 +60,39 @@ class AppServiceProvider extends ServiceProvider
         $this->configureActivityLogging();
         $this->registerAuthActivityListeners();
         $this->configureRateLimiting();
+        $this->configureTrustedProxies();
         // Excubia's own runtime and exceptions for the system project (#84).
         app(SelfMonitoringService::class)->register($this->app);
     }
 
     /**
-     * `excubia-push`: pushes per minute for one project token (by its hash), or per IP without one.
+     * Trusts the reverse proxies of `excubia.trusted_proxies` (`TRUSTED_PROXIES`): `*` or a
+     * comma-separated list. Nothing is trusted by default.
+     */
+    protected function configureTrustedProxies(): void
+    {
+        $proxies = trim((string) config('excubia.trusted_proxies'));
+
+        if ($proxies === '') {
+            return;
+        }
+
+        TrustProxies::at($proxies === '*' ? '*' : array_map(trim(...), explode(',', $proxies)));
+    }
+
+    /**
+     * `excubia-push`: pushes per minute for one project, or per IP for a missing or unknown token.
+     * Keying on the token itself would give every made-up token its own bucket (#51), so a client
+     * could send unlimited requests by changing the token on each one.
      */
     protected function configureRateLimiting(): void
     {
         RateLimiter::for('excubia-push', function (Request $request): Limit {
             $token = $request->bearerToken();
+            $projectId = $token === null ? null : Project::query()->where('push_token_hash', hash('sha256', $token))->value('id');
 
             return Limit::perMinute(config('excubia.push_requests_per_minute'))
-                ->by($token === null ? 'ip:'.$request->ip() : 'token:'.hash('sha256', $token));
+                ->by($projectId === null ? 'ip:'.$request->ip() : 'project:'.$projectId);
         });
     }
 
@@ -82,6 +107,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Permission::class, PermissionPolicy::class);
         // Queue rows have no model: the queue monitor's policy is keyed on its read service.
         Gate::policy(JobMonitorQueryService::class, JobPolicy::class);
+        Gate::policy(SystemHealthService::class, SystemHealthPolicy::class);
 
         Gate::before(fn (User $user, string $ability): ?bool => PermissionEnum::tryFrom($ability) !== null
             && app(EffectivePermissionResolverService::class)->hasPermission($user, $ability) ? true : null);
@@ -154,6 +180,14 @@ class AppServiceProvider extends ServiceProvider
             app()->isProduction(),
         );
 
+        // Lazy loading, silently discarded and missing attributes throw outside
+        // production, so tests catch them (qiick standards, Automated checks).
+        Model::shouldBeStrict(! app()->isProduction());
+
         Password::defaults(fn (): Password => app(SettingsRepositoryService::class)->passwordRule());
+
+        // Values echoed into Markdown mails (the weekly digest) come from pushed reports: escape
+        // their `[` and `<`, so a package or task name cannot plant a link in the email (#51).
+        Markdown::withSecuredEncoding();
     }
 }

@@ -1,11 +1,12 @@
 import { useMemo } from 'react';
-import type { AdminRoleRef, AdminSelectOption } from '@/types/admin';
+import users from '@/routes/users';
+import type { AdminRoleRef } from '@/types/admin';
 import { PaginatedMultiSelect } from './paginated-multi-select';
 import type { PaginatedMultiSelectProps } from './paginated-multi-select';
 
 export type RoleMultiSelectProps = Omit<
     PaginatedMultiSelectProps,
-    'fetchUrl' | 'options' | 'placeholder' | 'value' | 'onChange'
+    'fetchUrl' | 'placeholder' | 'value' | 'onChange'
 > & {
     placeholder?: string;
     /** Selected role names (Excubia validates roles by name). */
@@ -16,7 +17,27 @@ export type RoleMultiSelectProps = Omit<
 };
 
 /**
- * Role picker over the assignable roles shared by the page; maps names to ids for the select.
+ * The assignable roles plus the ones already selected, so a read-only or locked picker still
+ * shows roles the current user cannot grant (#151).
+ * @param {AdminRoleRef[]} roles - Roles the current user may assign.
+ * @param {AdminRoleRef[]} selected - Roles the edited record holds.
+ * @returns {AdminRoleRef[]}
+ */
+export function withSelectedRoles(
+    roles: AdminRoleRef[],
+    selected: AdminRoleRef[],
+): AdminRoleRef[] {
+    return [
+        ...roles,
+        ...selected.filter(
+            (role) => !roles.some((option) => option.id === role.id),
+        ),
+    ];
+}
+
+/**
+ * Role picker on the registry picker, searching the roles the user may grant
+ * (`users.assignable-roles`); maps names to ids. `roles` labels the selected ones.
  * @param {*} props - Component props.
  * @returns {JSX.Element}
  */
@@ -27,14 +48,14 @@ export function RoleMultiSelect({
     roles,
     ...props
 }: RoleMultiSelectProps) {
-    const options: AdminSelectOption[] = useMemo(
+    const options = useMemo(
         () => roles.map((role) => ({ id: role.id, label: role.name })),
         [roles],
     );
 
     return (
         <PaginatedMultiSelect
-            options={options}
+            fetchUrl={users.assignableRoles.url()}
             initialOptions={options}
             placeholder={placeholder}
             value={roles

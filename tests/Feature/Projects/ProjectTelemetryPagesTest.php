@@ -10,6 +10,7 @@ use App\Models\RuntimeAggregate;
 use App\Models\User;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Support\Facades\Date;
+use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
 
 /**
@@ -57,8 +58,11 @@ function exceptionRow(Project $project, array $values = []): ExceptionGroup
         'context_kind' => 'request',
         'context_name' => 'checkout.store',
         'count' => 4,
-        'first_seen' => '2026-11-05 10:00:00',
-        'last_seen' => $values['last_seen'] ?? '2026-11-05 12:00:00',
+        'first_seen_at' => '2026-11-05 10:00:00',
+        'last_seen_at' => $values['last_seen_at'] ?? '2026-11-05 12:00:00',
+        'first_release' => $values['first_release'] ?? null,
+        'last_release' => $values['last_release'] ?? null,
+        'regressed_release' => $values['regressed_release'] ?? null,
         'status' => $values['status'] ?? 'open',
     ]);
 }
@@ -78,7 +82,7 @@ it('summarises the last 24 hours of runtime on the project page', function () {
             ->where('runtime.requests.errors', 10)
             ->where('runtime.requests.averageMs', 100)
             ->where('runtime.requests.maxMs', 800)
-            ->has('runtime.requests.hourly', 25)
+            ->has('runtime.requests.timeline', 25)
             ->has('runtime.requests.routes', 1)
             ->where('runtime.requests.routes.0.route', 'checkout.store')
             ->where('runtime.jobs.0.outcomes.failed', 2)
@@ -94,7 +98,7 @@ it('shows no runtime block before the first runtime push', function () {
 
 it('lists exception groups open first with a fix prompt', function () {
     $project = Project::factory()->create(['slug' => 'shop']);
-    exceptionRow($project, ['fingerprint' => str_repeat('b', 64), 'status' => 'resolved', 'last_seen' => '2026-11-05 12:20:00']);
+    exceptionRow($project, ['fingerprint' => str_repeat('b', 64), 'status' => 'resolved', 'last_seen_at' => '2026-11-05 12:20:00']);
     exceptionRow($project);
 
     $this->actingAs(telemetryViewer(RoleEnum::Admin))->get(route('projects.show', 'shop'))
@@ -137,6 +141,8 @@ it('adds runtime and open exceptions to the dashboard for the scoped projects', 
     runtimeRow($shop, 'request', ['route' => 'home', 'method' => 'GET', 'statusClass' => '2xx'], ['count' => 40, 'bucket' => '2026-10-15 10:00:00']);
     exceptionRow($shop);
     exceptionRow($shop, ['fingerprint' => str_repeat('c', 64), 'status' => 'ignored']);
+    // The rows are written directly, so their hourly rollups (#137) come from the backfill.
+    $this->artisan('excubia:backfill-runtime-rollups')->assertSuccessful();
 
     $this->actingAs(telemetryViewer())->get(route('dashboard'))
         ->assertInertia(fn (Assert $page) => $page
@@ -147,4 +153,32 @@ it('adds runtime and open exceptions to the dashboard for the scoped projects', 
 
     $this->actingAs(telemetryViewer())->get(route('dashboard', ['project' => 'blog']))
         ->assertInertia(fn (Assert $page) => $page->where('overview.runtime', null)->where('overview.exceptions', null));
+});
+
+it('marks the deploys of the runtime window and shows releases on reports and exceptions (#106)', function () {
+    $project = Project::factory()->create(['slug' => 'shop']);
+    runtimeRow($project, 'request', ['route' => 'home', 'method' => 'GET', 'statusClass' => '2xx']);
+    $report = fn (string $at, ?string $release, ?string $deployedAt) => $project->healthReports()->create([
+        'batch_id' => (string) Str::uuid(),
+        'received_at' => $at,
+        'generated_at' => $at,
+        'release' => $release,
+        'deployed_at' => $deployedAt,
+        'report' => ['schemaVersion' => 1, 'checks' => [], 'upgradePlan' => []],
+    ]);
+    $report('2026-11-03 09:00:00', 'v0.9.0', '2026-11-03 09:00:00');
+    $report('2026-11-05 11:20:00', 'v1.0.0', '2026-11-05 11:20:00');
+    $report('2026-11-05 12:00:00', 'v1.0.0', null);
+    exceptionRow($project, ['first_release' => 'v0.9.0', 'last_release' => 'v1.0.0', 'regressed_release' => 'v1.0.0']);
+
+    $this->actingAs(telemetryViewer())->get(route('projects.show', 'shop'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('runtime.deploys', [['release' => 'v1.0.0', 'deployedAt' => '2026-11-05T11:20:00Z', 'bucket' => '2026-11-05T11:00:00Z']])
+            ->where('runtime.requests.timeline', fn ($timeline): bool => collect($timeline)->contains('at', '2026-11-05T11:00:00Z'))
+            ->where('reports.0.release', 'v1.0.0')
+            ->where('reports.0.deployed_at', null)
+            ->where('reports.1.deployed_at', '2026-11-05T11:20:00+00:00')
+            ->where('exceptions.0.first_release', 'v0.9.0')
+            ->where('exceptions.0.last_release', 'v1.0.0')
+            ->where('exceptions.0.regressed_release', 'v1.0.0'));
 });

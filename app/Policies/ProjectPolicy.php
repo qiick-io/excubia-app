@@ -14,6 +14,7 @@ use App\Services\EffectivePermissionResolverService;
  * Projects are listed with `can-show-projects` and created, edited, deleted and given push tokens
  * with `can-*-projects`. A project visible to admins only is hidden from everyone else. The
  * system project (#70) is never deleted and has no push token; only admins change visibility.
+ * Its alert mutes and maintenance windows need `can-manage-alerts`.
  */
 class ProjectPolicy
 {
@@ -55,6 +56,14 @@ class ProjectPolicy
     public function changeVisibility(User $actor, Project $project): bool
     {
         return $this->update($actor, $project) && $this->permissions->isAdmin($actor);
+    }
+
+    /**
+     * Mutes and maintenance windows of the project's Alerts tab (#22, #114).
+     */
+    public function manageAlerts(User $actor, Project $project): bool
+    {
+        return $actor->can(PermissionEnum::CanManageAlerts->value) && $this->view($actor, $project);
     }
 
     public function refreshReport(User $actor, Project $project): bool

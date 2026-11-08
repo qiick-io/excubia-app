@@ -5,28 +5,42 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Actions\UpdateExceptionStatusAction;
+use App\Actions\UpdateFindingDismissalAction;
 use App\Enums\ExceptionStatusEnum;
 use App\Enums\PermissionEnum;
+use App\Enums\TimeRangeEnum;
 use App\Http\Requests\UpdateExceptionStatusRequest;
-use App\Http\Resources\ExceptionGroupResource;
+use App\Http\Requests\UpdateFindingDismissalRequest;
 use App\Http\Resources\HealthReportResource;
 use App\Http\Resources\ProjectResource;
 use App\Jobs\RunSystemReportJob;
 use App\Models\ExceptionGroup;
+use App\Models\Finding;
+use App\Models\HealthReport;
 use App\Models\Project;
+use App\Services\AiUsageService;
+use App\Services\FindingLifecycleService;
 use App\Services\FixSuggestionService;
+use App\Services\HealthStatusService;
+use App\Services\ProjectAlertsService;
 use App\Services\ProjectRuntimeService;
+use App\Services\ProjectTelemetryService;
 use App\Services\ReportFindingsService;
+use App\Services\ReportHealthService;
+use App\Services\TimeSeriesService;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 
 /**
- * Project page (`/projects/{slug}`): the findings and upgrade plan of the latest report, and
- * the summaries of the reports kept in the history. The system project (#70) can be refreshed
- * from here.
+ * Project page (`/projects/{slug}`): the findings, health summary, licenses and upgrade plan of
+ * the latest report, and the summaries of the reports kept in the history. The system project
+ * (#70) can be refreshed from here. The runtime, AI (#129), exceptions and schedule tabs cover
+ * the time range of `?range=` (#113); the overview keeps the default range and every exception group.
  */
 class ProjectReportController extends Controller
 {
@@ -35,9 +49,12 @@ class ProjectReportController extends Controller
      *
      * @var list<string>
      */
-    public const VIEWS = ['findings', 'runtime', 'exceptions', 'plan', 'history'];
+    public const VIEWS = ['findings', 'licenses', 'runtime', 'ai', 'exceptions', 'schedule', 'alerts', 'plan', 'history'];
 
-    public function show(Request $request, Project $project, ReportFindingsService $findings, FixSuggestionService $fixes, ProjectRuntimeService $runtime, ?string $view = null): Response|RedirectResponse
+    /** The tabs with a time range picker (#113). */
+    public const RANGE_VIEWS = ['runtime', 'ai', 'exceptions', 'schedule'];
+
+    public function show(Request $request, Project $project, ReportFindingsService $findings, FixSuggestionService $fixes, ProjectRuntimeService $runtime, ProjectTelemetryService $telemetry, TimeSeriesService $timeSeries, ReportHealthService $health, ?string $view = null): Response|RedirectResponse
     {
         Gate::authorize('view', $project);
 
@@ -46,36 +63,69 @@ class ProjectReportController extends Controller
             return to_route('projects.view', ['project' => $project->slug, 'view' => $request->query('view')]);
         }
 
-        $project->load('latestReport');
-
+        // Loaded by the first prop that needs it, so the poll does not read the report.
+        $report = fn (): ?HealthReport => $project->loadMissing('latestReport')->latestReport;
+        $hasRange = in_array($view, self::RANGE_VIEWS, true);
+        $range = $hasRange ? ($request->enum('range', TimeRangeEnum::class) ?? TimeRangeEnum::DEFAULT) : TimeRangeEnum::DEFAULT;
+        $now = CarbonImmutable::instance(Date::now());
+        $scheduleData = null;
+        // Shared by `schedule` and `scheduleTimeline`, computed once.
+        $schedule = function () use (&$scheduleData, $view, $telemetry, $project, $range, $now): array {
+            return $scheduleData ??= $view === 'schedule' ? $telemetry->schedule($project, $range, $now) : ['tasks' => [], 'timeline' => []];
+        };
+        // The Findings tab lists the lifecycle (#18): every open finding, also from checks the
+        // latest report did not run, and the latest resolved ones.
+        $lifecycleData = null;
+        $lifecycleFindings = function () use (&$lifecycleData, $view, $project): array {
+            return $lifecycleData ??= $view === 'findings' ? app(FindingLifecycleService::class)->forPage($project) : [];
+        };
         // A ready command and prompt per finding that warns or fails (#78), keyed like
-        // ReportFindingsService::identity() so the page can match its rows.
-        $findingFixes = [];
+        // ReportFindingsService::identity() so the page can match its rows; on the Findings tab
+        // also for the open findings the latest report did not check.
+        $findingFixes = function () use ($report, $findings, $fixes, $lifecycleFindings): object {
+            $byIdentity = [];
+            $openFindings = array_filter($lifecycleFindings(), fn (array $finding): bool => $finding['lifecycle']['status'] !== 'resolved');
 
-        if ($project->latestReport !== null) {
-            foreach ($findings->issues($project->latestReport) as $finding) {
-                $findingFixes[$findings->identity($finding)] = $fixes->forFinding($finding);
+            foreach ([...(($latest = $report()) === null ? [] : $findings->issues($latest)), ...$openFindings] as $finding) {
+                $byIdentity[$findings->identity($finding)] ??= $fixes->forFinding($finding);
             }
-        }
 
+            return (object) $byIdentity;
+        };
+
+        // Every prop is a closure, so the overview's minute poll of `liveHealth` (#143), a
+        // partial reload, computes that prop only.
         return Inertia::render('projects/show', [
-            'project' => (new ProjectResource($project))->resolve(),
+            'project' => fn (): array => (new ProjectResource($project->loadMissing('latestReport')))->resolve(),
             'view' => $view ?? 'overview',
-            'canRefreshReport' => (bool) $request->user()?->can('refreshReport', $project),
-            'report' => $project->latestReport?->report,
-            'findingFixes' => (object) $findingFixes,
-            'runtime' => $runtime->summary($project),
-            // ponytail: the 100 most relevant groups (open first, then the latest); paginate if
-            // a project keeps more.
-            'exceptions' => ExceptionGroupResource::collection(
-                $project->exceptionGroups()
-                    ->orderByRaw('case status when ? then 0 when ? then 1 else 2 end', [ExceptionStatusEnum::Open->value, ExceptionStatusEnum::Resolved->value])
-                    ->orderByDesc('last_seen')
-                    ->limit(100)
-                    ->get(),
-            )->resolve(),
-            'canManageExceptions' => (bool) $request->user()?->can(PermissionEnum::CanManageExceptions->value),
-            'reports' => HealthReportResource::collection(
+            'canRefreshReport' => fn (): bool => (bool) $request->user()?->can('refreshReport', $project),
+            'report' => fn (): ?array => $report()?->report,
+            'findingFixes' => $findingFixes,
+            // The issues in page order with their check group, and the health summary (#108, #109).
+            'issues' => fn (): array => ($latest = $report()) === null ? [] : $findings->prioritized($latest),
+            // The finding lifecycle (#18), on the Findings tab only.
+            'findings' => $lifecycleFindings,
+            'canDismissFindings' => fn (): bool => (bool) $request->user()?->can(PermissionEnum::CanDismissFindings->value),
+            'health' => fn (): ?array => ($latest = $report()) === null ? null : $health->summary($latest->report),
+            // Minute-level status per check and server (#115), on the overview, which polls it.
+            'liveHealth' => fn (): array => $view === null ? app(HealthStatusService::class)->forPage($project, $now) : [],
+            'range' => $range->value,
+            'runtime' => fn (): ?array => $view === 'ai' ? null : $runtime->summary($project, $range),
+            // AI usage and estimated cost (#129), only on its tab.
+            'ai' => fn (): ?array => $view === 'ai' ? app(AiUsageService::class)->summary($project, $range) : null,
+            'exceptions' => fn (): array => $telemetry->exceptions($project, $view === 'exceptions' ? $range : null, $now),
+            // Tells "none in this range" from "none yet" on the Exceptions tab.
+            'hasExceptions' => fn (): bool => $view === 'exceptions' && $project->exceptionGroups()->exists(),
+            // Schedule inventory, status and runs (#110), only on its tab.
+            'schedule' => fn (): array => $schedule()['tasks'],
+            'scheduleTimeline' => fn (): array => $schedule()['timeline'],
+            // Chart markers of the exceptions and schedule tabs; the runtime has its own.
+            'deploys' => fn (): array => in_array($view, ['exceptions', 'schedule'], true) ? $timeSeries->deploys($project, $range, $now) : [],
+            // Alert history, mutes and maintenance windows (#114), only on its tab.
+            'alerts' => fn (): ?array => $view === 'alerts' ? app(ProjectAlertsService::class)->forPage($project) : null,
+            'canManageAlerts' => fn (): bool => (bool) $request->user()?->can('manageAlerts', $project),
+            'canManageExceptions' => fn (): bool => (bool) $request->user()?->can(PermissionEnum::CanManageExceptions->value),
+            'reports' => fn (): array => HealthReportResource::collection(
                 $project->healthReports()->orderByDesc('received_at')->orderByDesc('id')->get(),
             )->resolve(),
         ]);
@@ -93,6 +143,26 @@ class ProjectReportController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => __('System report started.')]);
 
         return to_route('projects.show', $project->slug);
+    }
+
+    /**
+     * Dismisses a finding with a reason and an optional last day, or removes the dismissal (#18).
+     */
+    public function updateFinding(UpdateFindingDismissalRequest $request, Project $project, Finding $finding, UpdateFindingDismissalAction $updateDismissal): RedirectResponse
+    {
+        $isDismissed = $request->boolean('is_dismissed');
+        $until = $request->date('until', 'Y-m-d');
+
+        $updateDismissal->execute(
+            $finding,
+            $request->user(),
+            $isDismissed ? $request->string('reason')->trim()->toString() : null,
+            $isDismissed ? $until : null,
+        );
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => $isDismissed ? __('Finding dismissed.') : __('Dismissal removed.')]);
+
+        return back();
     }
 
     /**

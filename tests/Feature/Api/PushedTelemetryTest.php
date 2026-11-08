@@ -95,7 +95,7 @@ it('stores a runtime batch per type and series', function () {
 
     $failedJob = $project->runtimeAggregates()->where('type', RuntimeTypeEnum::Job->value)->sole();
     expect($failedJob->sample_rate)->toBe(0.5)
-        ->and($failedJob->dimensions)->toBe(['job' => 'App\\Jobs\\SendReport', 'queue' => 'default', 'connection' => 'redis', 'outcome' => 'failed'])
+        ->and($failedJob->dimensions)->toBeSameJson(['job' => 'App\\Jobs\\SendReport', 'queue' => 'default', 'connection' => 'redis', 'outcome' => 'failed'])
         ->and($failedJob->bucket->toIso8601ZuluString())->toBe('2026-11-05T11:58:00Z');
 });
 
@@ -125,7 +125,9 @@ it('rejects runtime pushes with a wrong token, an unknown protocol or invalid ag
 
     $this->postJson(route('api.runtime.store'), runtimeEnvelope([['type' => 'request', 'bucket' => '2026-11-05T11:58:30Z', 'sampleRate' => 1, 'route' => 'home', 'method' => 'GET', 'statusClass' => '6xx', 'count' => 1, 'errorCount' => 0, 'totalMs' => 1, 'maxMs' => 1]]), ['Authorization' => "Bearer {$token}"])
         ->assertUnprocessable()
-        ->assertJsonValidationErrors(['runtime.aggregates.0.bucket', 'runtime.aggregates.0.statusClass']);
+        ->assertJsonValidationErrors('runtime.aggregates.0.bucket')
+        // A status class core may add later is no reason to reject the batch (#169).
+        ->assertJsonMissingValidationErrors('runtime.aggregates.0.statusClass');
 
     $this->postJson(route('api.runtime.store'), runtimeEnvelope([['type' => 'job', 'bucket' => '2026-11-05T11:58:00Z', 'sampleRate' => 1, 'job' => 'X', 'count' => 1, 'errorCount' => 0, 'totalMs' => 1, 'maxMs' => 1]]), ['Authorization' => "Bearer {$token}"])
         ->assertUnprocessable()
@@ -152,8 +154,8 @@ it('stores exception groups by fingerprint and environment, additive across batc
 
     $production = $project->exceptionGroups()->where('environment', 'production')->sole();
     expect($production->count)->toBe(5)
-        ->and($production->first_seen->toIso8601ZuluString())->toBe('2026-11-05T10:00:00Z')
-        ->and($production->last_seen->toIso8601ZuluString())->toBe('2026-11-05T11:50:00Z')
+        ->and($production->first_seen_at->toIso8601ZuluString())->toBe('2026-11-05T10:00:00Z')
+        ->and($production->last_seen_at->toIso8601ZuluString())->toBe('2026-11-05T11:50:00Z')
         ->and($production->context_kind)->toBe('job')
         ->and($production->message)->toBe('SQLSTATE[23505]: duplicate key value for [email]')
         ->and($production->frames[0]['file'])->toBe('app/Actions/CreateUserAction.php')
@@ -182,7 +184,9 @@ it('rejects invalid or oversized exception pushes', function () {
 
     $this->postJson(route('api.exceptions.store'), exceptionsEnvelope([exceptionGroupPayload(['fingerprint' => 'short', 'context' => ['kind' => 'cli', 'name' => 'x']])]), $headers)
         ->assertUnprocessable()
-        ->assertJsonValidationErrors(['exceptions.groups.0.fingerprint', 'exceptions.groups.0.context.kind']);
+        ->assertJsonValidationErrors('exceptions.groups.0.fingerprint')
+        // A context kind core may add later is no reason to reject the batch (#169).
+        ->assertJsonMissingValidationErrors('exceptions.groups.0.context.kind');
 
     $this->postJson(route('api.exceptions.store'), [...exceptionsEnvelope([exceptionGroupPayload()]), 'type' => 'runtime'], $headers)
         ->assertUnprocessable()
@@ -193,6 +197,15 @@ it('rejects invalid or oversized exception pushes', function () {
         ->assertStatus(413);
 
     expect(ExceptionGroup::query()->count())->toBe(0);
+});
+
+it('stores an exception group with a context kind this app does not know as unknown (#169)', function () {
+    [$project, $token] = telemetryProject();
+
+    $this->postJson(route('api.exceptions.store'), exceptionsEnvelope([exceptionGroupPayload(['context' => ['kind' => 'futureKind', 'name' => 'x']])]), ['Authorization' => "Bearer {$token}"])
+        ->assertCreated();
+
+    expect($project->exceptionGroups()->sole()->context_kind)->toBe('unknown');
 });
 
 it('prunes runtime aggregates and exception groups past their retention', function () {
@@ -231,4 +244,68 @@ it('prunes with the Data retention settings over the config defaults', function 
 
     expect(RuntimeAggregate::query()->count())->toBe(0)
         ->and(ExceptionGroup::query()->count())->toBe(0);
+});
+
+it('keeps the first and last release of an exception group and flags a regression (#106)', function () {
+    [$project, $token] = telemetryProject();
+    $headers = ['Authorization' => "Bearer {$token}"];
+    $push = fn (array $group, ?string $release) => test()->postJson(
+        route('api.exceptions.store'),
+        array_replace_recursive(exceptionsEnvelope([$group]), $release === null ? [] : ['exceptions' => ['release' => $release]]),
+        $headers,
+    )->assertCreated();
+    $group = fn (): ExceptionGroup => $project->exceptionGroups()->sole();
+
+    $push(exceptionGroupPayload(), 'v1.0.0');
+    $push(exceptionGroupPayload(['lastSeen' => '2026-11-05T11:40:00Z']), 'v1.1.0');
+    expect($group())->first_release->toBe('v1.0.0')->last_release->toBe('v1.1.0')->regressed_release->toBeNull();
+
+    // Back in the release it was last seen in: the fix may not be deployed yet, only a reopen.
+    $group()->update(['status' => 'resolved', 'resolved_at' => Date::now()]);
+    $push(exceptionGroupPayload(['lastSeen' => '2026-11-05T11:45:00Z']), 'v1.1.0');
+    expect($group())->status->toBe(ExceptionStatusEnum::Open)->regressed_release->toBeNull();
+
+    // Back in a later release: a regression in that release.
+    $group()->update(['status' => 'resolved', 'resolved_at' => Date::now()]);
+    $push(exceptionGroupPayload(['lastSeen' => '2026-11-05T11:50:00Z']), 'v1.2.0');
+    expect($group())->status->toBe(ExceptionStatusEnum::Open)->last_release->toBe('v1.2.0')->regressed_release->toBe('v1.2.0');
+
+    // A batch without a release (older core) keeps what is known.
+    $push(exceptionGroupPayload(['lastSeen' => '2026-11-05T11:55:00Z']), null);
+    expect($group())->first_release->toBe('v1.0.0')->last_release->toBe('v1.2.0')->count->toBe(15);
+});
+
+it('stores exception groups without a release as before (#106)', function () {
+    [$project, $token] = telemetryProject();
+
+    $this->postJson(route('api.exceptions.store'), exceptionsEnvelope([exceptionGroupPayload()]), ['Authorization' => "Bearer {$token}"])->assertCreated();
+    $this->postJson(route('api.exceptions.store'), [...exceptionsEnvelope([exceptionGroupPayload()]), 'exceptions' => ['groups' => [exceptionGroupPayload()], 'release' => str_repeat('a', 101)]], ['Authorization' => "Bearer {$token}"])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('exceptions.release');
+
+    expect($project->exceptionGroups()->sole())->first_release->toBeNull()->last_release->toBeNull()->regressed_release->toBeNull();
+});
+
+it('keeps the environment of a runtime batch on the project (core #203) and drops an invalid one', function () {
+    [$project, $token] = telemetryProject();
+    $push = fn (?string $environment) => test()->postJson(
+        route('api.runtime.store'),
+        array_replace_recursive(runtimeEnvelope(), $environment === null ? [] : ['runtime' => ['environment' => $environment]]),
+        ['Authorization' => "Bearer {$token}"],
+    );
+
+    $push('production')->assertCreated();
+    expect($project->fresh()?->environment)->toBe('production');
+
+    // Cores before 1.0.0-beta.4 send none: the last known value stays.
+    $push(null)->assertCreated();
+    expect($project->fresh()?->environment)->toBe('production');
+
+    // Never a hostname: dropped, and the batch is still stored.
+    $push('web-1.example.com')->assertCreated();
+    expect($project->fresh()?->environment)->toBe('production')
+        ->and($project->runtimeAggregates()->count())->toBe(6);
+
+    $push('staging')->assertCreated();
+    expect($project->fresh()?->environment)->toBe('staging');
 });

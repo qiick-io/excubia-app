@@ -3,6 +3,7 @@ import {
     BookOpen,
     FolderGit2,
     FolderKanban,
+    Layers,
     LayoutGrid,
     PanelRight,
     ScrollText,
@@ -41,6 +42,7 @@ import { toggleAiAssistant } from '@/lib/ai-open';
 import { dashboard } from '@/routes';
 import activityLogs from '@/routes/activity-logs';
 import ai from '@/routes/ai';
+import fleet from '@/routes/fleet';
 import groups from '@/routes/groups';
 import projects from '@/routes/projects';
 import { edit as editProfile } from '@/routes/profile';
@@ -88,6 +90,13 @@ export function AppSidebar() {
                 titleKey: 'nav.projects',
                 href: projects.index.url(),
                 icon: FolderKanban,
+                permission: PermissionEnum.CanShowProjects,
+            },
+            fleet: {
+                id: 'fleet',
+                titleKey: 'nav.fleet',
+                href: fleet.show.url(),
+                icon: Layers,
                 permission: PermissionEnum.CanShowProjects,
             },
             assistant: {
@@ -170,6 +179,7 @@ export function AppSidebar() {
                     undefined,
                     item.id === 'assistant' ||
                         item.id === 'projects' ||
+                        item.id === 'fleet' ||
                         item.id === 'settings',
                 )}
                 tooltip={{ children: t(item.titleKey) }}

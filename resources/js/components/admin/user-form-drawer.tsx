@@ -1,6 +1,9 @@
 import { useForm } from '@inertiajs/react';
 import { useEffect } from 'react';
-import { RoleMultiSelect } from '@/components/admin/role-multi-select';
+import {
+    RoleMultiSelect,
+    withSelectedRoles,
+} from '@/components/admin/role-multi-select';
 import PasswordInput from '@/components/password-input';
 import { Button } from '@/components/ui/button';
 import {
@@ -57,6 +60,9 @@ export function UserFormDrawer({
 }: UserFormDrawerProps) {
     const form = useForm({ ...EMPTY_USER_FORM });
     const isCreate = editing === null;
+    // Only a super-admin changes their own access (#151); the server enforces it too.
+    const isRolesLocked = editing !== null && !editing.can_change_roles;
+    const roleOptions = withSelectedRoles(roles, editing?.roles ?? []);
 
     useEffect(() => {
         if (!open) {
@@ -318,10 +324,15 @@ export function UserFormDrawer({
                                 onChange={(selectedRoles) =>
                                     form.setData('roles', selectedRoles)
                                 }
-                                roles={roles}
-                                disabled={readOnly}
+                                roles={roleOptions}
+                                disabled={readOnly || isRolesLocked}
                                 placeholder="Select at least one role"
                             />
+                            {isRolesLocked && !readOnly && (
+                                <FieldDescription id="user-roles-locked-hint">
+                                    You cannot change your own roles.
+                                </FieldDescription>
+                            )}
                             <FieldError id="user-roles-error">
                                 {form.errors.roles ?? form.errors['roles.0']}
                             </FieldError>

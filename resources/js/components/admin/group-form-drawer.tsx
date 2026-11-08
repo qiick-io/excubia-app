@@ -1,6 +1,9 @@
 import { useForm } from '@inertiajs/react';
 import { useEffect } from 'react';
-import { RoleMultiSelect } from '@/components/admin/role-multi-select';
+import {
+    RoleMultiSelect,
+    withSelectedRoles,
+} from '@/components/admin/role-multi-select';
 import { UserMultiSelect } from '@/components/admin/user-multi-select';
 import { Button } from '@/components/ui/button';
 import {
@@ -54,6 +57,9 @@ export function GroupFormDrawer({
     onSuccess,
 }: GroupFormDrawerProps) {
     const form = useForm({ ...EMPTY_GROUP_FORM });
+    // Only a super-admin changes their own access (#151); the server enforces it too.
+    const isRolesLocked = editing !== null && !editing.can_change_roles;
+    const roleOptions = withSelectedRoles(roles, editing?.roles ?? []);
 
     useEffect(() => {
         if (!open) {
@@ -189,12 +195,18 @@ export function GroupFormDrawer({
                                 onChange={(selectedRoles) =>
                                     form.setData('roles', selectedRoles)
                                 }
-                                roles={roles}
-                                disabled={readOnly}
+                                roles={roleOptions}
+                                disabled={readOnly || isRolesLocked}
                             />
                             <FieldDescription id="group-roles-hint">
                                 Members inherit these roles’ permissions.
                             </FieldDescription>
+                            {isRolesLocked && !readOnly && (
+                                <FieldDescription id="group-roles-locked-hint">
+                                    You cannot change the roles of a group you
+                                    belong to.
+                                </FieldDescription>
+                            )}
                             <FieldError id="group-roles-error">
                                 {form.errors.roles ?? form.errors['roles.0']}
                             </FieldError>

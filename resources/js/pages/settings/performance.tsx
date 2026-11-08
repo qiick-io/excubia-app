@@ -9,6 +9,7 @@ import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 import { edit as editPerformance } from '@/routes/performance';
 import type { BreadcrumbItem } from '@/types';
+import { edit as editProfile } from '@/routes/profile';
 
 type FlushAction = {
     key: string;
@@ -52,8 +53,9 @@ export default function PerformanceSettingsPage({
     const [flushing, setFlushing] = useState<string | null>(null);
 
     const breadcrumbs: BreadcrumbItem[] = [
+        { title: t('settings.layout.title'), href: editProfile() },
         {
-            title: t('settings.performance.breadcrumb'),
+            title: t('settings.layout.performance'),
             href: editPerformance(),
         },
     ];

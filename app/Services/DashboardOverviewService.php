@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enums\CheckCategoryEnum;
 use App\Enums\ExceptionStatusEnum;
 use App\Enums\SeverityEnum;
 use App\Models\ExceptionGroup;
 use App\Models\HealthReport;
 use App\Models\Project;
 use App\Models\RuntimeAggregate;
+use App\Models\RuntimeHourlyRollup;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Date;
 
@@ -24,16 +27,6 @@ use Illuminate\Support\Facades\Date;
  */
 class DashboardOverviewService
 {
-    /** Configuration checks of excubia-core 1.0, shown apart from the dependency findings. */
-    public const POSTURE_CHECK_IDS = [
-        'laravel-debug-mode',
-        'laravel-production-caches',
-        'laravel-pending-migrations',
-        'laravel-failed-jobs',
-        'laravel-scheduler-heartbeat',
-        'laravel-maintenance-mode',
-    ];
-
     /** Most grouped issues returned, so the page stays light. */
     public const TOP_ISSUES_LIMIT = 25;
 
@@ -47,7 +40,54 @@ class DashboardOverviewService
         private ReportFindingsService $findings,
         private ProjectStalenessService $staleness,
         private FixSuggestionService $fixes,
+        private ReportHealthService $health,
     ) {}
+
+    /**
+     * Configuration and infrastructure checks (#109) have their own block, apart from the
+     * dependency findings.
+     */
+    private function isPosture(string $checkId): bool
+    {
+        return in_array(CheckCategoryEnum::forCheck($checkId), [CheckCategoryEnum::Configuration, CheckCategoryEnum::Infrastructure], true);
+    }
+
+    /**
+     * Fleet license view (#108): each denied, copyleft or unknown license of the latest reports
+     * with the projects and packages that use it, denied first, then by the number of projects.
+     *
+     * @param  Collection<int, Project>  $projects
+     * @return list<array{license: string, kind: string, packages: list<string>, projects: list<array{slug: string, name: string}>}>
+     */
+    private function licenses(Collection $projects): array
+    {
+        $rows = [];
+
+        foreach ($projects as $project) {
+            if ($project->latestReport === null) {
+                continue;
+            }
+
+            foreach ($this->health->flaggedLicenses($project->latestReport->report) as $flagged) {
+                foreach ($flagged['licenses'] === [] ? ['NOASSERTION'] : $flagged['licenses'] as $license) {
+                    $key = $flagged['kind'].'|'.$license;
+                    $rows[$key] ??= ['license' => $license, 'kind' => $flagged['kind'], 'packages' => [], 'projects' => []];
+                    $rows[$key]['packages'][$flagged['package']] = $flagged['package'];
+                    $rows[$key]['projects'][$project->slug] = ['slug' => $project->slug, 'name' => $project->name];
+                }
+            }
+        }
+
+        $kindRank = ['denied' => 0, 'copyleft' => 1, 'unknown' => 2];
+        $rows = array_values(array_map(fn (array $row): array => [
+            ...$row,
+            'packages' => array_values($row['packages']),
+            'projects' => array_values($row['projects']),
+        ], $rows));
+        usort($rows, fn (array $first, array $second): int => [$kindRank[$first['kind']], -count($first['projects']), $first['license']] <=> [$kindRank[$second['kind']], -count($second['projects']), $second['license']]);
+
+        return $rows;
+    }
 
     /**
      * @param  Collection<int, Project>  $projects  the scoped projects, with `latestReport` loaded
@@ -83,6 +123,7 @@ class DashboardOverviewService
             ...$this->topIssues($projects),
             'endOfSupport' => $this->endOfSupport($projects, $today),
             'configuration' => $this->configuration($projects),
+            'licenses' => $this->licenses($projects),
             ...$this->telemetry($projects, $today, $periodDays),
         ];
     }
@@ -141,7 +182,7 @@ class DashboardOverviewService
         $count = 0;
 
         foreach ($reports as $report) {
-            foreach ($this->runtimes($report) as $runtime) {
+            foreach ($this->health->runtimes($report->report) as $runtime) {
                 if ($runtime['securitySupportEndsOn'] !== null && $runtime['securitySupportEndsOn'] <= $limit) {
                     $count++;
                 }
@@ -154,7 +195,7 @@ class DashboardOverviewService
     /**
      * The findings that warn or fail in the latest reports, grouped by check, package (or
      * subject) and advisory, worst first and then by the number of projects affected.
-     * Configuration checks are left out: they have their own block.
+     * Configuration and infrastructure checks are left out: they have their own block.
      *
      * @param  Collection<int, Project>  $projects
      * @return array{topIssues: list<array<string, mixed>>, topIssuesTotal: int}
@@ -171,7 +212,7 @@ class DashboardOverviewService
             foreach ($this->findings->issues($project->latestReport) as $finding) {
                 $checkId = (string) ($finding['checkId'] ?? '');
 
-                if (in_array($checkId, self::POSTURE_CHECK_IDS, true)) {
+                if ($this->isPosture($checkId)) {
                     continue;
                 }
 
@@ -247,7 +288,7 @@ class DashboardOverviewService
                 continue;
             }
 
-            foreach ($this->runtimes($project->latestReport) as $name => $runtime) {
+            foreach ($this->health->runtimes($project->latestReport->report) as $name => $runtime) {
                 if ($runtime['securitySupportEndsOn'] !== null && $runtime['securitySupportEndsOn'] <= $horizon) {
                     $rows[] = ['project' => ['slug' => $project->slug, 'name' => $project->name], 'runtime' => $name, ...$runtime];
                 }
@@ -275,7 +316,7 @@ class DashboardOverviewService
             }
 
             foreach ($this->findings->issues($project->latestReport) as $finding) {
-                if (! in_array($finding['checkId'] ?? null, self::POSTURE_CHECK_IDS, true)) {
+                if (! $this->isPosture((string) ($finding['checkId'] ?? ''))) {
                     continue;
                 }
 
@@ -312,16 +353,22 @@ class DashboardOverviewService
     {
         $ids = $projects->pluck('id');
         $from = $today->subDays($periodDays);
-        $requests = fn (CarbonImmutable $start, CarbonImmutable $end): array => RuntimeAggregate::query()
-            ->whereIn('project_id', $ids)
-            ->where('type', 'request')
-            ->where('bucket', '>=', $start)
-            ->where('bucket', '<', $end)
-            ->get(['count', 'error_count', 'sample_rate'])
-            ->reduce(fn (array $sum, RuntimeAggregate $row): array => [
-                $sum[0] + $row->count / $row->sample_rate,
-                $sum[1] + $row->error_count / $row->sample_rate,
-            ], [0.0, 0.0]);
+        // The whole hours of a period from the hourly rollups (#137), the minutes of its partial
+        // first and last hour from the aggregates, so the totals stay exact to the minute.
+        $requests = function (CarbonImmutable $start, CarbonImmutable $end) use ($ids): array {
+            $firstHour = $start->ceilHour();
+            $lastHour = $end->startOfHour();
+
+            if ($firstHour >= $lastHour) {
+                return $this->requestSums(RuntimeAggregate::query()->toBase(), $ids, $start, $end);
+            }
+
+            $hours = $this->requestSums(RuntimeHourlyRollup::query()->toBase(), $ids, $firstHour, $lastHour);
+            $head = $this->requestSums(RuntimeAggregate::query()->toBase(), $ids, $start, $firstHour);
+            $tail = $this->requestSums(RuntimeAggregate::query()->toBase(), $ids, $lastHour, $end);
+
+            return [$hours[0] + $head[0] + $tail[0], $hours[1] + $head[1] + $tail[1]];
+        };
 
         $hasRuntime = RuntimeAggregate::query()->whereIn('project_id', $ids)->exists();
         $hasExceptions = ExceptionGroup::query()->whereIn('project_id', $ids)->exists();
@@ -339,14 +386,14 @@ class DashboardOverviewService
             ] : null,
             'exceptions' => $hasExceptions ? [
                 'open' => (clone $open)->count(),
-                'new' => (clone $open)->where('first_seen', '>=', $from)->count(),
-                'top' => array_values((clone $open)->orderByDesc('last_seen')->limit(self::TOP_EXCEPTIONS_LIMIT)->get()
+                'new' => (clone $open)->where('first_seen_at', '>=', $from)->count(),
+                'top' => array_values((clone $open)->orderByDesc('last_seen_at')->limit(self::TOP_EXCEPTIONS_LIMIT)->get()
                     ->map(fn (ExceptionGroup $group): array => [
                         'id' => $group->id,
                         'class' => $group->class,
                         'message' => $group->message,
                         'count' => $group->count,
-                        'lastSeen' => $group->last_seen->toIso8601String(),
+                        'lastSeen' => $group->last_seen_at->toIso8601String(),
                         'context' => $group->context_name,
                         'project' => ['slug' => $slugs[$group->project_id], 'name' => $names[$group->project_id]],
                     ])->all()),
@@ -355,34 +402,22 @@ class DashboardOverviewService
     }
 
     /**
-     * The report's `project` block (excubia-core 1.0), per runtime, versions without a leading "v".
+     * Estimated requests and errors of the projects between two instants, summed in SQL from the
+     * minute aggregates or the hourly rollups (both have the same columns).
      *
-     * @return array<string, array{version: string|null, cycle: string|null, securitySupportEndsOn: string|null, activeSupportEndsOn: string|null}>
+     * @param  Collection<int, mixed>  $ids
+     * @return array{0: float, 1: float}
      */
-    private function runtimes(HealthReport $report): array
+    private function requestSums(Builder $query, Collection $ids, CarbonImmutable $from, CarbonImmutable $to): array
     {
-        $project = $report->report['project'] ?? null;
-        $runtimes = [];
+        $sum = $query
+            ->whereIn('project_id', $ids)
+            ->where('type', 'request')
+            ->where('bucket', '>=', $from)
+            ->where('bucket', '<', $to)
+            ->selectRaw('sum(1.0 * count / sample_rate) as requests, sum(1.0 * error_count / sample_rate) as errors')
+            ->first();
 
-        if (! is_array($project)) {
-            return $runtimes;
-        }
-
-        foreach (['php', 'laravel', 'node'] as $name) {
-            $entry = $project[$name] ?? null;
-
-            if (! is_array($entry)) {
-                continue;
-            }
-
-            $runtimes[$name] = [
-                'version' => is_string($entry['version'] ?? null) ? ltrim($entry['version'], 'vV') : null,
-                'cycle' => is_string($entry['cycle'] ?? null) ? $entry['cycle'] : null,
-                'securitySupportEndsOn' => is_string($entry['securitySupportEndsOn'] ?? null) ? $entry['securitySupportEndsOn'] : null,
-                'activeSupportEndsOn' => is_string($entry['activeSupportEndsOn'] ?? null) ? $entry['activeSupportEndsOn'] : null,
-            ];
-        }
-
-        return $runtimes;
+        return [(float) ($sum->requests ?? 0), (float) ($sum->errors ?? 0)];
     }
 }
