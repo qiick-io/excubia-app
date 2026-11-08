@@ -20,6 +20,7 @@ import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 import { edit } from '@/routes/security';
 import type { BreadcrumbItem } from '@/types';
+import { edit as editProfile } from '@/routes/profile';
 
 // oxfmt-ignore
 type Props = {
@@ -36,8 +37,9 @@ export default function Security({ passwordRules, ...props }: Props) {
     const currentPasswordInput = useRef<HTMLInputElement>(null);
 
     const breadcrumbs: BreadcrumbItem[] = [
+        { title: t('settings.layout.title'), href: editProfile() },
         {
-            title: t('settings.security.breadcrumb'),
+            title: t('settings.layout.security'),
             href: edit(),
         },
     ];

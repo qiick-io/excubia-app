@@ -19,6 +19,7 @@ import SettingsLayout from '@/layouts/settings/layout';
 import { cn } from '@/lib/utils';
 import aiPricesRoutes from '@/routes/ai-prices';
 import type { BreadcrumbItem } from '@/types';
+import { edit as editProfile } from '@/routes/profile';
 
 /** The price fields of a row, as AiPriceService::PRICE_FIELDS. */
 const PRICE_FIELDS = [
@@ -81,6 +82,7 @@ export default function AiPricesSettings({
     });
 
     const breadcrumbs: BreadcrumbItem[] = [
+        { title: t('settings.layout.title'), href: editProfile() },
         {
             title: t('settings.aiPrices.breadcrumb'),
             href: aiPricesRoutes.edit.url(),

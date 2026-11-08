@@ -220,7 +220,6 @@
             "aiPrices": "Prices"
         },
         "profile": {
-            "breadcrumb": "Profile settings",
             "head": "Profile settings",
             "title": "Profile information",
             "description": "Update your profile details and email address",
@@ -235,7 +234,6 @@
             "alertsTestHint": "Save first. The mail goes to your address and needs a queue worker."
         },
         "security": {
-            "breadcrumb": "Security settings",
             "head": "Security settings",
             "passwordTitle": "Update password",
             "passwordDescription": "Ensure your account is using a long, random password to stay secure",
@@ -254,7 +252,6 @@
             "passkeysNeedHttps": "Passkeys need HTTPS."
         },
         "project": {
-            "breadcrumb": "Project settings",
             "head": "Project settings",
             "generalTitle": "General",
             "generalDescription": "Project identity and support links",
@@ -316,13 +313,11 @@
                 "settings": "Settings"
             },
             "localization": {
-                "breadcrumb": "Localization settings",
                 "head": "Localization settings",
                 "title": "Admin language",
                 "description": "Default language for the admin UI"
             },
             "securityNav": {
-                "breadcrumb": "Authentication & security",
                 "head": "Authentication & security"
             },
             "checksTitle": "Checks",
@@ -347,7 +342,6 @@
             "activityRetentionDaysHint": "Activity log entries older than this are deleted."
         },
         "appearance": {
-            "breadcrumb": "Appearance settings",
             "head": "Appearance settings",
             "title": "Appearance settings",
             "description": "Update project branding and the default theme",
@@ -369,7 +363,6 @@
             "dark": "Dark",
             "system": "System",
             "sidebar": {
-                "breadcrumb": "Sidebar settings",
                 "head": "Sidebar settings"
             },
             "themePresetTitle": "Theme preset",
@@ -388,7 +381,6 @@
             "presetPreviewDark": "Dark"
         },
         "performance": {
-            "breadcrumb": "Performance settings",
             "head": "Performance settings",
             "statusTitle": "Runtime status",
             "statusDescription": "Read-only view of the runtime configuration",
@@ -428,7 +420,6 @@
             "readOnly": "read-only"
         },
         "integrations": {
-            "breadcrumb": "Integrations",
             "head": "Integrations",
             "webhookTitle": "Outbound webhooks",
             "webhookDescription": "Send signed alerts to your endpoint when a project changes",
@@ -483,7 +474,7 @@
                 "project.created": "A project was created.",
                 "project.deleted": "A project was deleted.",
                 "project.disabled": "A project was disabled.",
-                "ai.budget_warning": "A project's estimated AI spend this month reached 80 % of its budget (set on its AI tab).",
+                "ai.budget_warning": "A project's estimated AI spend this month reached 80% of its budget (set on its AI tab).",
                 "ai.budget_exceeded": "A project's estimated AI spend this month reached its budget.",
                 "ai.spend_spike": "Today's estimated AI spend is above the threshold share of the 7-day average.",
                 "ai.error_rate": "The share of failed AI calls in the last hour is above the threshold.",
@@ -1297,7 +1288,7 @@
         "spendOverTimeDescription": "Estimated spend {{bucket}} {{during}}.",
         "chartLabel": "Bar chart: estimated AI spend {{bucket}} {{during}}, {{cost}} in total.",
         "month": "This month",
-        "monthDescription": "Estimated spend since the 1st (UTC) against the monthly budget, which alerts at 80 % and 100 %.",
+        "monthDescription": "Estimated spend since the 1st (UTC) against the monthly budget, which alerts at 80% and 100%.",
         "noBudget": "No budget",
         "ofBudget": "of {{budget}}",
         "budgetUsed": "{{percent}}% of the budget used",
@@ -1641,7 +1632,7 @@
         "yes": "Yes",
         "no": "No",
         "megabytes": "{{value}} MB",
-        "percent": "{{value}} %",
+        "percent": "{{value}}%",
         "minutes_one": "{{count}} minute",
         "minutes_other": "{{count}} minutes",
         "hours_one": "{{count}} hour",

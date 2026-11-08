@@ -136,8 +136,9 @@ export default function ProjectIntegrationsSettings({
     );
 
     const breadcrumbs: BreadcrumbItem[] = [
+        { title: t('settings.layout.title'), href: editProfile() },
         {
-            title: t('settings.integrations.breadcrumb'),
+            title: t('settings.layout.integrations'),
             href: integrationsRoutes.edit.url(),
         },
     ];

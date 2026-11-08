@@ -18,6 +18,7 @@ import type {
     ProjectSettingsForm,
     SidebarModuleSetting,
 } from '@/types';
+import { edit as editProfile } from '@/routes/profile';
 
 type SidebarProjectSettings = Pick<ProjectSettingsForm, 'sidebar_modules'>;
 
@@ -119,8 +120,9 @@ export default function AppearanceSidebarSettingsPage({ project }: Props) {
     });
 
     const breadcrumbs: BreadcrumbItem[] = [
+        { title: t('settings.layout.title'), href: editProfile() },
         {
-            title: t('settings.appearance.sidebar.breadcrumb'),
+            title: t('settings.layout.sidebar'),
             href: editSidebar(),
         },
     ];

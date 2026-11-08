@@ -738,7 +738,8 @@ function OverviewView({
                 </section>
             ) : null}
 
-            <section className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+            {/* The checks list is long: the runtimes card keeps its own height (#194). */}
+            <section className="grid grid-cols-1 items-start gap-4 xl:grid-cols-12">
                 <RuntimesCard latest={latest} className="xl:col-span-5" />
                 {health !== null ? (
                     <ChecksCard health={health} className="xl:col-span-7" />
