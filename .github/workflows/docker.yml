@@ -1,8 +1,9 @@
 name: Docker
 
-# Production image (#116). Pull requests and pushes build the image and smoke-test /up; nothing
-# is pushed. Publishing to GHCR is a release step for Luca: the `publish` job stays disabled
-# until he turns it on (remove `if: false`).
+# Production image (#116). Pull requests and pushes build the image and smoke-test /health/ready,
+# /health/live, /up and /setup; nothing is pushed. A release tag `vX.Y.Z` (created by Luca, see
+# CLAUDE.md) also publishes ghcr.io/qiick-io/excubia-app with semver tags, as externa-core; a
+# manual run with `version` re-publishes a tag.
 on:
   push:
     branches:
@@ -10,6 +11,11 @@ on:
       - develop
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release tag to (re)publish, e.g. v1.0.0-beta.1'
+        required: true
   pull_request:
     branches:
       - main
@@ -44,12 +50,14 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # The image migrates a fresh SQLite volume and must answer /up.
+      # The image migrates a fresh SQLite volume and must answer the probes and /setup.
       - name: Smoke test
         run: |
           docker run -d --name excubia -p 8080:8080 excubia-app:ci
           for attempt in $(seq 1 30); do
-            if curl -fsS http://127.0.0.1:8080/up > /dev/null; then
+            if curl -fsS http://127.0.0.1:8080/health/ready > /dev/null; then
+              curl -fsS http://127.0.0.1:8080/health/live > /dev/null
+              curl -fsS -o /dev/null http://127.0.0.1:8080/up
               curl -fsS -o /dev/null http://127.0.0.1:8080/setup
               exit 0
             fi
@@ -60,9 +68,8 @@ jobs:
 
   publish:
     name: Publish image
-    # ponytail: disabled until Luca decides to publish (CLAUDE.md "Ask Luca first"); on a `v*` tag
-    # it would push ghcr.io/qiick-io/excubia-app with the version tags. Remove `if: false` to enable.
-    if: false && startsWith(github.ref, 'refs/tags/v')
+    # Release tags only (or a manual run naming one): tags themselves need Luca's "rilascia".
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -72,6 +79,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref }}
+
+      # arm64 is built under emulation.
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
 
       - name: Set up Buildx
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
@@ -88,9 +101,14 @@ jobs:
         uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
         with:
           images: ghcr.io/qiick-io/excubia-app
+          # `latest` follows the newest stable release only; a pre-release (`-beta.N`) gets its
+          # exact version and nothing else.
+          flavor: |
+            latest=false
           tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{version}},value=${{ github.event_name == 'workflow_dispatch' && inputs.version || '' }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ github.event_name == 'workflow_dispatch' && inputs.version || '' }}
+            type=raw,value=latest,enable=${{ !contains(github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name, '-') }}
 
       - name: Build and push
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0

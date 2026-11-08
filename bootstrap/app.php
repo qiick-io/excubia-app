@@ -18,6 +18,10 @@ return Application::configure(basePath: dirname(__DIR__))
         api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
+        // Auth-free liveness and readiness probes, as externa-core.
+        then: function (): void {
+            require __DIR__.'/../routes/health.php';
+        },
     )
     ->withMiddleware(function (Middleware $middleware): void {
         // Pushed reports are stored as sent, so their strings are neither trimmed nor nulled.
