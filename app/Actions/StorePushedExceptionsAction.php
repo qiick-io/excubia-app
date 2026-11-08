@@ -32,6 +32,13 @@ use Illuminate\Support\Facades\DB;
 class StorePushedExceptionsAction
 {
     /**
+     * Tries of the store transaction: concurrent pushes can deadlock on MySQL's gap locks (or,
+     * past the busy timeout, find SQLite locked), and the whole push is then rolled back and
+     * run again (#195).
+     */
+    private const TRANSACTION_ATTEMPTS = 3;
+
+    /**
      * @param  list<array<string, mixed>>  $groups  validated by StorePushedExceptionsRequest
      * @param  string|null  $release  the batch's `exceptions.release`
      * @return bool true when the batch was new
@@ -47,7 +54,7 @@ class StorePushedExceptionsAction
                 }
 
                 return true;
-            });
+            }, attempts: self::TRANSACTION_ATTEMPTS);
         } catch (UniqueConstraintViolationException) {
             return false;
         }

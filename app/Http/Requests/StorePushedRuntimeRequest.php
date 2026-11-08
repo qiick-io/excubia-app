@@ -126,9 +126,13 @@ class StorePushedRuntimeRequest extends FormRequest
             'runtime.release' => ['sometimes', 'string', 'max:100'],
             'runtime.bucketSeconds' => ['required', 'integer', 'in:60'],
             'runtime.aggregates' => ['present', 'list'],
-            'runtime.aggregates.*' => ['array'],
-            'runtime.aggregates.*.type' => ['required', 'string'],
         ];
+
+        // Wildcards only when some entry needs them (see aggregateRules()).
+        if (! self::isListOf($this->input('runtime.aggregates'), fn (mixed $aggregate): bool => is_array($aggregate) && is_string($aggregate['type'] ?? null) && trim($aggregate['type']) !== '')) {
+            $rules['runtime.aggregates.*'] = ['array'];
+            $rules['runtime.aggregates.*.type'] = ['required', 'string'];
+        }
 
         foreach ((array) $this->input('runtime.aggregates', []) as $index => $aggregate) {
             $type = is_array($aggregate) && is_string($aggregate['type'] ?? null) ? RuntimeTypeEnum::tryFrom($aggregate['type']) : null;
@@ -137,7 +141,7 @@ class StorePushedRuntimeRequest extends FormRequest
                 continue;
             }
 
-            foreach ($this->aggregateRules($type) as $field => $fieldRules) {
+            foreach ($this->aggregateRules($type, $aggregate) as $field => $fieldRules) {
                 $rules["runtime.aggregates.{$index}.{$field}"] = $fieldRules;
             }
         }
@@ -167,9 +171,15 @@ class StorePushedRuntimeRequest extends FormRequest
      * Dimensions are strings (empty allowed, as core sends an empty queue name), enumerated ones
      * included (#169); those with a pattern must match it.
      *
+     * The element rules of a list (`histogram.*`, `fingerprints.*`) are left out when every
+     * element plainly passes them: the validator expands each wildcard over the whole flattened
+     * body, which made them about a third of the validation time of a runtime push (#195). Any
+     * other value keeps the rule, so what is rejected, and the error keys, stay the same.
+     *
+     * @param  array<string, mixed>  $aggregate
      * @return array<string, list<mixed>>
      */
-    private function aggregateRules(RuntimeTypeEnum $type): array
+    private function aggregateRules(RuntimeTypeEnum $type, array $aggregate): array
     {
         $rules = [
             'bucket' => ['required', 'string', 'regex:/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:00Z$/'],
@@ -193,17 +203,46 @@ class StorePushedRuntimeRequest extends FormRequest
             $rules['totalMs'] = [$presence, 'numeric', 'min:0'];
             $rules['maxMs'] = [$presence, 'numeric', 'min:0'];
             $rules['histogram'] = ['sometimes', 'list', 'size:'.RuntimeTypeEnum::HISTOGRAM_LENGTH];
-            $rules['histogram.*'] = ['integer', 'min:0'];
+
+            if (! self::isListOf($aggregate['histogram'] ?? [], fn (mixed $value): bool => is_int($value) && $value >= 0)) {
+                $rules['histogram.*'] = ['integer', 'min:0'];
+            }
         }
 
         foreach (array_keys($type->metrics()) as $metric) {
             $rules[$metric] = self::METRIC_RULES[$metric];
 
-            if (isset(self::METRIC_RULES[$metric.'.*'])) {
-                $rules[$metric.'.*'] = self::METRIC_RULES[$metric.'.*'];
+            if ($metric === 'fingerprints' && ! self::isListOf($aggregate[$metric] ?? [], fn (mixed $value): bool => is_string($value) && preg_match('/^[0-9a-f]{64}$/', $value) === 1)) {
+                $rules['fingerprints.*'] = self::METRIC_RULES['fingerprints.*'];
             }
         }
 
         return $rules;
+    }
+
+    /**
+     * True when the element rule cannot fail: the value is a list whose every element passes the
+     * check, or no array at all (the wildcard then matches nothing). An array with keys keeps the
+     * rule, which reports its elements as before.
+     *
+     * @param  callable(mixed): bool  $isValid
+     */
+    private static function isListOf(mixed $values, callable $isValid): bool
+    {
+        if (! is_array($values)) {
+            return true;
+        }
+
+        if (! array_is_list($values)) {
+            return false;
+        }
+
+        foreach ($values as $value) {
+            if (! $isValid($value)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

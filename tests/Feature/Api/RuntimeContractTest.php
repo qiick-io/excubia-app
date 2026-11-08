@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 use App\Actions\RotateProjectTokenAction;
 use App\Enums\RuntimeTypeEnum;
+use App\Http\Requests\StorePushedRuntimeRequest;
 use App\Models\Project;
 use App\Models\RuntimeAggregate;
 use App\Models\RuntimeHourlyRollup;
 use App\Models\ScheduledTaskRun;
 use Illuminate\Support\Facades\Date;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
@@ -399,3 +401,64 @@ it('skips and counts health samples with a status or severity it does not know',
     expect($project->runtimeAggregates()->pluck('type')->map->value->all())->toBe(['mail'])
         ->and($project->fresh()?->skipped_runtime_aggregates)->toBe(1);
 })->with(['status', 'severity']);
+
+it('rejects a bad list element or entry with the same error key when the valid ones skip the wildcard rules (#195)', function (array $entry, string $error) {
+    [, $headers] = contractProject();
+
+    $this->postJson(route('api.runtime.store'), coreRuntimeEnvelope([coreRuntimeAggregates()['request'], $entry]), $headers)
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors($error)
+        ->assertJsonMissingValidationErrors('runtime.aggregates.0.histogram.0');
+
+    expect(RuntimeAggregate::query()->count())->toBe(0);
+})->with([
+    'histogram bucket below zero' => [[...coreRuntimeAggregates()['job'], 'histogram' => [0, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0]], 'runtime.aggregates.1.histogram.3'],
+    'histogram bucket as text' => [[...coreRuntimeAggregates()['job'], 'histogram' => [0, 'x', 0, 1, 0, 0, 0, 0, 0, 0, 0, 0]], 'runtime.aggregates.1.histogram.1'],
+    'histogram with keys' => [[...coreRuntimeAggregates()['job'], 'histogram' => ['a' => -1]], 'runtime.aggregates.1.histogram.a'],
+    'health fingerprint not hex' => [[...coreRuntimeAggregates()['health'], 'fingerprints' => [str_repeat('c', 64), 'nope']], 'runtime.aggregates.1.fingerprints.1'],
+    'entry that is no object' => [['request'], 'runtime.aggregates.1.type'],
+    'entry without a type' => [array_diff_key(coreRuntimeAggregates()['request'], ['type' => true]), 'runtime.aggregates.1.type'],
+    'entry with an empty type' => [[...coreRuntimeAggregates()['request'], 'type' => ''], 'runtime.aggregates.1.type'],
+]);
+
+it('validates a valid batch without wildcard rules, which expand over the whole body (#195)', function () {
+    $request = (new StorePushedRuntimeRequest)->merge(coreRuntimeEnvelope(array_values(coreRuntimeAggregates())));
+
+    expect(array_filter(array_keys($request->rules()), fn (string $field): bool => str_contains($field, '*')))->toBe([]);
+});
+
+it('merges entries of the same series within one batch as across batches (#195)', function () {
+    [$project, $headers] = contractProject();
+    $aggregates = coreRuntimeAggregates();
+    $again = [
+        [...$aggregates['request'], 'count' => 2, 'errorCount' => 0, 'totalMs' => 100, 'maxMs' => 900, 'histogram' => [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]],
+        [...$aggregates['server'], 'loadAverage1' => 1.25, 'loadAverage5' => null, 'isContainer' => false],
+        array_diff_key([...$aggregates['queueWait'], 'count' => 1, 'totalMs' => 10, 'maxMs' => 10], ['histogram' => true]),
+    ];
+
+    $this->postJson(route('api.runtime.store'), coreRuntimeEnvelope([...array_values($aggregates), ...$again]), $headers)->assertCreated();
+    $this->postJson(route('api.runtime.store'), coreRuntimeEnvelope([$aggregates['request']]), $headers)->assertCreated();
+
+    $row = fn (string $type): RuntimeAggregate => $project->runtimeAggregates()->where('type', $type)->sole();
+
+    expect([$row('request')->count, $row('request')->error_count, $row('request')->total_ms, $row('request')->max_ms])->toBe([10, 2, 901.0, 900.0])
+        ->and($row('request')->histogram)->toBe([1, 0, 2, 0, 2, 2, 2, 0, 0, 0, 0, 1])
+        ->and($row('server')->count)->toBe(2)
+        ->and($row('server')->metrics)->toMatchArray(['loadAverage1' => 1.25, 'loadAverage5' => 0.4, 'isContainer' => true])
+        ->and([$row('queueWait')->total_ms, $row('queueWait')->histogram])->toBe([410.5, null])
+        ->and(RuntimeHourlyRollup::query()->where('type', 'request')->sole()->count)->toBe(10);
+});
+
+it('stores a runtime batch with the same number of queries whatever its size (#195)', function () {
+    [, $headers] = contractProject();
+    $queries = function (int $series) use ($headers): int {
+        $aggregates = array_map(fn (int $index): array => [...coreRuntimeAggregates()['request'], 'route' => "route-{$index}", 'bucket' => '2026-11-06T11:'.(10 + $series % 50).':00Z'], range(1, $series));
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+        $this->postJson(route('api.runtime.store'), coreRuntimeEnvelope($aggregates), $headers)->assertCreated();
+
+        return count(DB::getQueryLog());
+    };
+
+    expect($queries(10))->toBe($queries(40));
+});
