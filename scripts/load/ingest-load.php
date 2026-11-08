@@ -342,12 +342,9 @@ function databaseSize(): int
             return (int) filesize($connection->getDatabaseName());
         })(),
         'pgsql' => $connection->scalar('select pg_database_size(current_database())'),
-        default => (function () use ($connection): int {
-            // InnoDB refreshes its sizes lazily: analyze the written tables first.
-            $connection->statement('analyze table '.implode(', ', LOAD_TABLES));
-
-            return (int) $connection->scalar('select sum(data_length + index_length) from information_schema.tables where table_schema = database()');
-        })(),
+        // The tablespace files on disk: InnoDB's table statistics lag behind by minutes.
+        'mysql' => $connection->scalar("select sum(file_size) from information_schema.innodb_tablespaces where name like concat(database(), '/%')"),
+        default => $connection->scalar('select sum(data_length + index_length) from information_schema.tables where table_schema = database()'),
     };
 }
 

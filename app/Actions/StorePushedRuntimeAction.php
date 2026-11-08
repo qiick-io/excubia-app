@@ -7,13 +7,12 @@ namespace App\Actions;
 use App\Enums\RuntimeTypeEnum;
 use App\Enums\SeverityEnum;
 use App\Models\Project;
-use App\Models\PushedBatch;
 use App\Models\RuntimeAggregate;
+use App\Traits\StoresPushedBatchOnceTrait;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
-use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Date;
-use Illuminate\Support\Facades\DB;
 
 /**
  * Stores a runtime batch pushed by a project (#48, #111). Aggregates are additive, as
@@ -29,18 +28,13 @@ use Illuminate\Support\Facades\DB;
  * and the `ai` entries to the daily AI usage (#129).
  * After a new batch with `health` samples (#115) the health alerts are evaluated.
  *
- * The entries are merged in PHP first, then the series the batch touches are read in one locked
- * query and the new ones written in one insert per chunk (#195): one read and one write per entry
+ * The entries are merged in PHP first, then the series the batch touches are read in one query
+ * (and locked by key when found) and the new ones written in one insert per chunk (#195): one read and one write per entry
  * held SQLite's single write lock for most of a push.
  */
 class StorePushedRuntimeAction
 {
-    /**
-     * Tries of the store transaction: concurrent pushes can deadlock on MySQL's gap locks (or,
-     * past the busy timeout, find SQLite locked), and the whole push is then rolled back and
-     * run again (#195).
-     */
-    private const TRANSACTION_ATTEMPTS = 3;
+    use StoresPushedBatchOnceTrait;
 
     /** The columns merged() adds an entry to. */
     private const MERGED = ['count', 'error_count', 'total_ms', 'max_ms', 'metrics', 'histogram'];
@@ -60,49 +54,45 @@ class StorePushedRuntimeAction
      */
     public function execute(Project $project, string $batchId, array $aggregates, ?string $release = null, ?string $environment = null): bool
     {
-        try {
-            $isNew = DB::transaction(function () use ($project, $batchId, $aggregates, $release, $environment): bool {
-                PushedBatch::query()->create(['project_id' => $project->id, 'type' => 'runtime', 'batch_id' => $batchId, 'received_at' => Date::now()]);
+        $isNew = $this->storeOnce($project, 'runtime', $batchId, function () use ($project, $aggregates, $release, $environment): void {
+            if ($environment !== null && $environment !== $project->environment && preg_match(Project::ENVIRONMENT_PATTERN, $environment) === 1) {
+                // A query update: no model event, so no activity log entry per push.
+                Project::query()->whereKey($project->id)->update(['environment' => $environment]);
+            }
 
-                if ($environment !== null && $environment !== $project->environment && preg_match(Project::ENVIRONMENT_PATTERN, $environment) === 1) {
-                    // A query update: no model event, so no activity log entry per push.
-                    Project::query()->whereKey($project->id)->update(['environment' => $environment]);
+            $skipped = 0;
+            $minutes = [];
+            $series = [];
+
+            foreach ($aggregates as $aggregate) {
+                $type = RuntimeTypeEnum::tryFrom((string) ($aggregate['type'] ?? ''));
+
+                if ($type === null || $this->isUnreadable($type, $aggregate)) {
+                    $skipped++;
+
+                    continue;
                 }
 
-                $skipped = 0;
-                $minutes = [];
-                $series = [];
+                [$key, $entry, $minutes[]] = $this->entry($project, $type, $aggregate, $release);
+                $series[$key] = isset($series[$key]) ? [...$series[$key], ...$this->merged($type, $series[$key], $entry)] : $entry;
+            }
 
-                foreach ($aggregates as $aggregate) {
-                    $type = RuntimeTypeEnum::tryFrom((string) ($aggregate['type'] ?? ''));
+            $this->store($project, $series);
+            $this->rollups->execute($minutes);
 
-                    if ($type === null || $this->isUnreadable($type, $aggregate)) {
-                        $skipped++;
+            // Daily AI usage per provider and model (#129), for the monthly budget and the digest.
+            $this->aiUsageDays->execute($project, array_values(array_filter($aggregates, fn (array $aggregate): bool => ($aggregate['type'] ?? null) === RuntimeTypeEnum::Ai->value)));
 
-                        continue;
-                    }
+            // Runs per scheduled task for schedule monitoring (#110), known outcomes only.
+            $this->scheduledTaskRuns->execute($project, $aggregates);
 
-                    [$key, $entry, $minutes[]] = $this->entry($project, $type, $aggregate, $release);
-                    $series[$key] = isset($series[$key]) ? [...$series[$key], ...$this->merged($type, $series[$key], $entry)] : $entry;
-                }
+            if ($skipped > 0) {
+                // A query increment: no model event, so no activity log entry per push.
+                Project::query()->whereKey($project->id)->increment('skipped_runtime_aggregates', $skipped);
+            }
+        });
 
-                $this->store($project, $series);
-                $this->rollups->execute($minutes);
-
-                // Daily AI usage per provider and model (#129), for the monthly budget and the digest.
-                $this->aiUsageDays->execute($project, array_values(array_filter($aggregates, fn (array $aggregate): bool => ($aggregate['type'] ?? null) === RuntimeTypeEnum::Ai->value)));
-
-                // Runs per scheduled task for schedule monitoring (#110), known outcomes only.
-                $this->scheduledTaskRuns->execute($project, $aggregates);
-
-                if ($skipped > 0) {
-                    // A query increment: no model event, so no activity log entry per push.
-                    Project::query()->whereKey($project->id)->increment('skipped_runtime_aggregates', $skipped);
-                }
-
-                return true;
-            }, attempts: self::TRANSACTION_ATTEMPTS);
-        } catch (UniqueConstraintViolationException) {
+        if (! $isNew) {
             return false;
         }
 
@@ -111,7 +101,7 @@ class StorePushedRuntimeAction
             $this->healthAlerts->execute($project);
         }
 
-        return $isNew;
+        return true;
     }
 
     /**
@@ -183,8 +173,8 @@ class StorePushedRuntimeAction
     }
 
     /**
-     * Adds the batch's series to the stored ones: the stored series are read in one locked
-     * query and merged, the new ones inserted in chunks below the bound-parameter limits.
+     * Adds the batch's series to the stored ones: the stored series are read in one query,
+     * locked by key and merged, the new ones inserted in chunks below the bound-parameter limits.
      *
      * @param  array<string, array<string, mixed>>  $series  rows by series key, see entry()
      */
@@ -193,14 +183,22 @@ class StorePushedRuntimeAction
         $stored = [];
 
         foreach (array_chunk($series, 500, true) as $chunk) {
-            $found = RuntimeAggregate::query()
+            // One condition per series on the identity index. Not three `in` lists: PostgreSQL
+            // 17.0 answered an index scan with several `= ANY` arrays without some matching rows,
+            // and the batch then failed on the unique index (#195).
+            $ids = RuntimeAggregate::query()
                 ->where('project_id', $project->id)
-                // Type and bucket keep the lookup on the identity index, whatever the retention.
-                ->whereIn('type', array_unique(array_map(fn (array $row): string => $row['type']->value, $chunk)))
-                ->whereIn('bucket', array_unique(array_column($chunk, 'bucket')))
-                ->whereIn('dimension_key', array_unique(array_column($chunk, 'dimension_key')))
-                ->lockForUpdate()
-                ->get();
+                ->where(function (Builder $query) use ($chunk): void {
+                    foreach ($chunk as $row) {
+                        $query->orWhere(fn (Builder $series): Builder => $series->where('type', $row['type']->value)->where('bucket', $row['bucket'])->where('dimension_key', $row['dimension_key']));
+                    }
+                })
+                ->pluck('id');
+
+            // Locks only the rows found, by key: a locking read over missing rows takes gap locks
+            // on MySQL, and concurrent pushes of other projects then deadlock. A series created
+            // concurrently fails the insert and the batch runs again (StoresPushedBatchOnceTrait).
+            $found = $ids->isEmpty() ? [] : RuntimeAggregate::query()->whereKey($ids)->lockForUpdate()->get();
 
             foreach ($found as $aggregate) {
                 $stored[self::seriesKey($aggregate->type, $aggregate->bucket, $aggregate->sample_rate, $aggregate->dimension_key)] = $aggregate;

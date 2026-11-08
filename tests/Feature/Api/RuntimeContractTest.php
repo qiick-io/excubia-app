@@ -3,12 +3,14 @@
 declare(strict_types=1);
 
 use App\Actions\RotateProjectTokenAction;
+use App\Actions\StoreRuntimeRollupsAction;
 use App\Enums\RuntimeTypeEnum;
 use App\Http\Requests\StorePushedRuntimeRequest;
 use App\Models\Project;
 use App\Models\RuntimeAggregate;
 use App\Models\RuntimeHourlyRollup;
 use App\Models\ScheduledTaskRun;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -461,4 +463,32 @@ it('stores a runtime batch with the same number of queries whatever its size (#1
     };
 
     expect($queries(10))->toBe($queries(40));
+});
+
+it('runs a batch again when a concurrent batch created one of its series first, and still answers a repeat as a duplicate (#195)', function () {
+    [$project, $headers] = contractProject();
+
+    // The first try loses the race for a new series row, as two concurrent batches of one project can.
+    app()->instance(StoreRuntimeRollupsAction::class, new class extends StoreRuntimeRollupsAction
+    {
+        private bool $hasFailed = false;
+
+        public function execute(iterable $minutes): void
+        {
+            if (! $this->hasFailed) {
+                $this->hasFailed = true;
+
+                throw new UniqueConstraintViolationException('sqlite', 'insert into "runtime_aggregates"', [], new PDOException('UNIQUE constraint failed'));
+            }
+
+            parent::execute($minutes);
+        }
+    });
+    $envelope = coreRuntimeEnvelope([coreRuntimeAggregates()['request']]);
+
+    $this->postJson(route('api.runtime.store'), $envelope, $headers)->assertCreated();
+    $this->postJson(route('api.runtime.store'), $envelope, $headers)->assertOk()->assertJson(['status' => 'duplicate']);
+
+    expect($project->runtimeAggregates()->sole()->count)->toBe(4)
+        ->and(RuntimeHourlyRollup::query()->sole()->count)->toBe(4);
 });
