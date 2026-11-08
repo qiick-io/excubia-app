@@ -16,7 +16,7 @@ use Illuminate\Validation\Rule;
  * carry the dimensions and metrics of its type; an aggregate of a type this app does not know
  * only needs a `type` and is skipped on store, never rejected (#111). A value core enumerates
  * (`statusClass`, `outcome`, `level`, `origin`, `exitCodeClass`, `operation`, `octaneServer`,
- * `workerType`, the billing `provider` and `eventType`, the health `status` and `severity`) is only checked as a string: core adds values
+ * `workerType`, the billing `provider` and `eventType`, the auth `guard`, the health `status` and `severity`) is only checked as a string: core adds values
  * additively, and a value this app does not know must never reject the batch (#169). StorePushedRuntimeAction stores it, or
  * skips and counts the entry when the app cannot read it. The token was checked by
  * AuthenticateProjectToken.
@@ -92,6 +92,10 @@ class StorePushedRuntimeRequest extends FormRequest
         'paymentFailedCount' => ['required', 'integer', 'min:0'],
         'paymentActionRequiredCount' => ['required', 'integer', 'min:0'],
         'subscriptionCanceledCount' => ['required', 'integer', 'min:0'],
+        // `auth` (#180): every counter always present, 0 without that event.
+        'loginCount' => ['required', 'integer', 'min:0'],
+        'lockoutCount' => ['required', 'integer', 'min:0'],
+        'tokenAuthenticationCount' => ['required', 'integer', 'min:0'],
     ];
 
     public function authorize(): bool

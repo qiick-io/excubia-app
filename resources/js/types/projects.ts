@@ -376,6 +376,21 @@ export type RuntimeBillingRow = {
 } & RuntimePercentiles &
     RuntimeBillingSignals;
 
+/**
+ * Laravel authentication of one guard (#180). Counts are estimated; `count` is every event
+ * recorded, `failureRate` the failed share of login attempts in %, null without any.
+ */
+export type RuntimeAuthRow = {
+    guard: string;
+    count: number;
+    logins: number;
+    failed: number;
+    failureRate: number | null;
+    lockouts: number;
+    tokenAuthentications: number;
+    lastAt: string | null;
+};
+
 /** A time range of the runtime, exceptions and schedule tabs (#113), `TimeRangeEnum`. */
 export type TimeRange = '1h' | '6h' | '24h' | '7d' | '14d';
 
@@ -443,6 +458,8 @@ export type RuntimeSummary = {
         totals: RuntimeBillingSignals;
         rows: RuntimeBillingRow[];
     };
+    /** Laravel authentication per guard (#180). */
+    auth: RuntimeAuthRow[];
     /** Deploys of the range, oldest first (#106); `bucket` matches a `timeline` point. */
     deploys: RuntimeDeploy[];
 };

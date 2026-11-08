@@ -38,6 +38,8 @@ enum RuntimeTypeEnum: string
     case Reverb = 'reverb';
     // Laravel Cashier webhooks (#178, core #217).
     case BillingWebhook = 'billingWebhook';
+    // Laravel authentication per guard (#180, core #219).
+    case Auth = 'auth';
 
     /** Counts per latency bucket of the optional `histogram` (core `$defs.histogram`). */
     public const HISTOGRAM_LENGTH = 12;
@@ -79,6 +81,12 @@ enum RuntimeTypeEnum: string
      */
     public const BILLING_COUNTERS = ['handledCount', 'paymentFailedCount', 'paymentActionRequiredCount', 'subscriptionCanceledCount'];
 
+    /**
+     * Counters of `auth` (#180) beyond count and errorCount (the failed logins): successful
+     * logins, lockouts and Sanctum token authentications; they add up (core `$defs.auth`).
+     */
+    public const AUTH_COUNTERS = ['loginCount', 'lockoutCount', 'tokenAuthenticationCount'];
+
     /** Server gauges: readings that keep the larger value on merge (null only when all are null). */
     private const SERVER_GAUGES = ['loadAverage1', 'loadAverage5', 'loadAverage15', 'cpuCores', 'cpuLimit', 'memoryUsedMb', 'memoryTotalMb', 'diskUsedGb', 'diskTotalGb'];
 
@@ -119,6 +127,7 @@ enum RuntimeTypeEnum: string
             self::Octane => ['server', 'octaneServer', 'workerType'],
             self::Reverb => ['server', 'appId'],
             self::BillingWebhook => ['provider', 'eventType'],
+            self::Auth => ['guard'],
         };
     }
 
@@ -169,6 +178,7 @@ enum RuntimeTypeEnum: string
             self::Octane => [...array_fill_keys(self::OCTANE_COUNTERS, 'sum'), 'maxRequestsAtStop' => 'max', 'maxMb' => 'max', 'maxGrowthMb' => 'max'],
             self::Reverb => [...array_fill_keys(self::REVERB_COUNTERS, 'sum'), 'maxConnections' => 'max'],
             self::BillingWebhook => array_fill_keys(self::BILLING_COUNTERS, 'sum'),
+            self::Auth => array_fill_keys(self::AUTH_COUNTERS, 'sum'),
             default => [],
         };
     }

@@ -486,7 +486,8 @@
                 "ai.spend_spike": "Today's estimated AI spend is above the threshold share of the 7-day average.",
                 "ai.error_rate": "The share of failed AI calls in the last hour is above the threshold.",
                 "billing.webhook_failures": "Billing webhooks of a provider failed (5xx, retried by the provider) at least the threshold of times in the last hour.",
-                "billing.payment_failed": "A billing provider reported failed payments in the last hour."
+                "billing.payment_failed": "A billing provider reported failed payments in the last hour.",
+                "auth.failed_login_spike": "An auth guard saw at least the threshold of failed logins in the last hour (brute force or credential stuffing)."
             },
             "runtimeRulesTitle": "Runtime alert rules",
             "runtimeRulesDescription": "Optional alerts from the runtime data the projects push, checked every 15 minutes over the last hour. Empty turns a rule off.",
@@ -498,6 +499,8 @@
             "billingWebhookFailures": "Failed billing webhooks per provider and hour",
             "billingWebhookFailuresHint": "Alert when the Laravel Cashier webhooks of a provider fail at least this many times in the last hour (the provider retries them).",
             "billingPaymentFailures": "Alert when a billing provider reports failed payments",
+            "authFailedLogins": "Failed logins per guard and hour",
+            "authFailedLoginsHint": "Alert when an auth guard records at least this many failed logins in the last hour.",
             "projects": "Projects",
             "projectsHint": "Leave every box empty to send the alerts of every project.",
             "emailTitle": "Email",
@@ -1158,7 +1161,12 @@
         "failedRate": "Failed (rate)",
         "paymentFailed": "Failed payments",
         "paymentActionRequired": "Payments needing action",
-        "subscriptionCanceled": "Canceled subscriptions"
+        "subscriptionCanceled": "Canceled subscriptions",
+        "auth": "Authentication",
+        "authDescription": "Laravel logins per auth guard: successful and failed logins with the failure rate, lockouts by the login rate limiter, and requests authenticated by a Sanctum personal access token. Passport token requests are not counted. Never users, emails, credentials, tokens or IP addresses.",
+        "logins": "Logins",
+        "lockouts": "Lockouts",
+        "tokenAuthentications": "Token auths"
     },
     "exceptions": {
         "emptyTitle": "No exceptions",
@@ -1595,6 +1603,10 @@
         "laravel-cashier": {
             "label": "Laravel Cashier",
             "description": "Per Cashier package (Stripe, Paddle): the webhook secret, test keys in production and the route to the webhook controller."
+        },
+        "laravel-api-tokens": {
+            "label": "API tokens",
+            "description": "Laravel Sanctum and Passport token posture: tokens that never expire or sit unused, stateful domains, Passport keys and their file permissions, and token lifetimes."
         }
     },
     "details": {
