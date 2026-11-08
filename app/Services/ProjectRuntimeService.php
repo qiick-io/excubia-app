@@ -60,6 +60,8 @@ class ProjectRuntimeService
         'publicChannelsRemoved' => 'sum', 'privateChannelsRemoved' => 'sum', 'presenceChannelsRemoved' => 'sum', 'maxConnections' => 'max',
         // `billingWebhook` (#178).
         'handledCount' => 'sum', 'paymentFailedCount' => 'sum', 'paymentActionRequiredCount' => 'sum', 'subscriptionCanceledCount' => 'sum',
+        // `auth` (#180).
+        'loginCount' => 'sum', 'lockoutCount' => 'sum', 'tokenAuthenticationCount' => 'sum',
     ];
 
     /**
@@ -135,6 +137,7 @@ class ProjectRuntimeService
             'octane' => $this->octane($project, $of(RuntimeTypeEnum::Octane)),
             'reverb' => $this->reverb($project, $of(RuntimeTypeEnum::Reverb)),
             'billing' => $this->billing($of(RuntimeTypeEnum::BillingWebhook)),
+            'auth' => $this->auth($of(RuntimeTypeEnum::Auth)),
             'deploys' => $this->timeSeries->deploys($project, $range, $now),
         ];
     }
@@ -710,5 +713,30 @@ class ProjectRuntimeService
                 ];
             }),
         ];
+    }
+
+    /**
+     * Laravel authentication (#180) per guard: estimated successful and failed logins with the
+     * failure rate (% of login attempts, null without any), lockouts and Sanctum token
+     * authentications. `count` is every event recorded and orders the rows.
+     *
+     * @param  Collection<int, Series>  $series
+     * @return list<array<string, mixed>>
+     */
+    private function auth(Collection $series): array
+    {
+        return $this->table($series, ['guard'], function (Collection $group): array {
+            $logins = $this->estimate($group, fn (array $one): ?float => $one['metrics']['loginCount']);
+            $failed = $this->estimate($group, fn (array $one): float => $one['errorCount']);
+
+            return [
+                'count' => $this->estimate($group, fn (array $one): float => $one['count']),
+                'logins' => $logins,
+                'failed' => $failed,
+                'failureRate' => $logins + $failed > 0 ? round($failed / ($logins + $failed) * 100, 1) : null,
+                'lockouts' => $this->estimate($group, fn (array $one): ?float => $one['metrics']['lockoutCount']),
+                'tokenAuthentications' => $this->estimate($group, fn (array $one): ?float => $one['metrics']['tokenAuthenticationCount']),
+            ];
+        });
     }
 }

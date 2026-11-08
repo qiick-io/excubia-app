@@ -381,6 +381,51 @@ it('raises the billing webhook rules per provider once per hour, only when they 
         ->and(AlertEventEnum::BillingWebhookFailures->defaultSeverity()->value)->toBe('high');
 });
 
+it('saves the failed-login rule in Settings → Integrations, off by default (#180)', function () {
+    $filter = ['minimum_severity' => 'high', 'event_types' => ['finding.new']];
+    $channels = ['channels' => ['webhook' => $filter, 'slack' => $filter, 'telegram' => $filter]];
+    $settings = app(SettingsRepositoryService::class);
+
+    expect($settings->alertAuthFailedLoginsPerHour())->toBeNull();
+
+    $this->actingAs(controlsAdmin())->put(route('project.integrations.update'), [...$channels, 'alert_auth_failed_logins_per_hour' => '50'])
+        ->assertSessionHasNoErrors();
+
+    expect($settings->alertAuthFailedLoginsPerHour())->toBe(50);
+
+    $this->actingAs(controlsAdmin())->get(route('project.integrations.edit'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('project.alert_auth_failed_logins_per_hour', 50)
+            ->where('events', fn ($events): bool => collect($events)->contains('auth.failed_login_spike')));
+
+    $this->actingAs(controlsAdmin())->put(route('project.integrations.update'), [...$channels, 'alert_auth_failed_logins_per_hour' => '0'])
+        ->assertSessionHasErrors('alert_auth_failed_logins_per_hour');
+
+    $this->actingAs(controlsAdmin())->put(route('project.integrations.update'), [...$channels, 'alert_auth_failed_logins_per_hour' => ''])
+        ->assertSessionHasNoErrors();
+
+    expect($settings->alertAuthFailedLoginsPerHour())->toBeNull();
+});
+
+it('raises the failed-login rule per guard once per hour, only when it is on (#180)', function () {
+    $project = Project::factory()->create();
+    $auth = fn (int $logins = 0, int $lockouts = 0): array => ['loginCount' => $logins, 'lockoutCount' => $lockouts, 'tokenAuthenticationCount' => 0];
+    alertRuntimeRow($project, 'auth', ['guard' => 'web'], 60, 50, $auth(10, 3));
+    alertRuntimeRow($project, 'auth', ['guard' => 'admin'], 25, 20, $auth(5));
+    alertRuntimeRow($project, 'auth', ['guard' => 'sanctum'], 500, 0, $auth());
+
+    $this->artisan('excubia:evaluate-runtime-alerts')->expectsOutputToContain('No runtime alert rule is on')->assertSuccessful();
+
+    app(SettingsRepositoryService::class)->save(['alert_auth_failed_logins_per_hour' => 50]);
+    $this->artisan('excubia:evaluate-runtime-alerts')->assertSuccessful();
+    $this->artisan('excubia:evaluate-runtime-alerts')->assertSuccessful();
+
+    // web reached 50 failed logins; admin (20) stays under the threshold; sanctum only authenticated tokens.
+    expect(AlertLog::query()->get()->map(fn (AlertLog $log): string => "{$log->event}|{$log->subject}")->all())->toBe(['auth.failed_login_spike|auth:web'])
+        ->and(AlertLog::query()->sole()->summary)->toBe('guard web: 50 failed logins in the last hour')
+        ->and(AlertEventEnum::AuthFailedLoginSpike->defaultSeverity()->value)->toBe('high');
+});
+
 it('saves the weekly digest choice on the profile', function () {
     $user = controlsAdmin();
 

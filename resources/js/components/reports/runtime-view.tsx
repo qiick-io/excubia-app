@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 import type {
+    RuntimeAuthRow,
     RuntimeBillingRow,
     RuntimeCountRow,
     RuntimeOctaneRow,
@@ -475,6 +476,8 @@ export function RuntimeView({ runtime }: { runtime: RuntimeSummary | null }) {
             <ReverbCard reverb={runtime.reverb} format={format} />
 
             <BillingCard billing={runtime.billing} format={format} />
+
+            <AuthCard auth={runtime.auth} format={format} />
         </div>
     );
 }
@@ -706,6 +709,53 @@ function BillingCard({
                     isProblem: (row: RuntimeBillingRow) =>
                         signal.key === 'paymentFailed' && row[signal.key] > 0,
                 })),
+            ]}
+        />
+    );
+}
+
+/**
+ * Laravel authentication (#180) per guard: successful logins, failed logins with the failure
+ * rate, lockouts and Sanctum token authentications.
+ */
+function AuthCard({
+    auth,
+    format,
+}: {
+    auth: RuntimeSummary['auth'];
+    format: Formatters;
+}) {
+    const { t } = useTranslation();
+
+    return (
+        <RuntimeCard<RuntimeAuthRow>
+            title={t('runtime.auth')}
+            description={t('runtime.authDescription')}
+            configKey="runtime.auth"
+            rows={auth}
+            name={(row) => <Name primary={row.guard} isMono />}
+            columns={[
+                {
+                    label: t('runtime.logins'),
+                    cell: (row) => format.count(row.logins),
+                },
+                {
+                    label: t('runtime.failedRate'),
+                    cell: (row) =>
+                        row.failureRate === null
+                            ? format.count(row.failed)
+                            : `${format.count(row.failed)} (${format.number(row.failureRate)}%)`,
+                    isProblem: (row) => row.failed > 0,
+                },
+                {
+                    label: t('runtime.lockouts'),
+                    cell: (row) => format.count(row.lockouts),
+                    isProblem: (row) => row.lockouts > 0,
+                },
+                {
+                    label: t('runtime.tokenAuthentications'),
+                    cell: (row) => format.count(row.tokenAuthentications),
+                },
             ]}
         />
     );

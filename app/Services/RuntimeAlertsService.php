@@ -21,7 +21,8 @@ use Illuminate\Support\Facades\Date;
  * - `runtime.log_spike`: a log channel wrote at least the threshold of error-level entries;
  * - `billing.webhook_failures` (#178): a billing provider's webhooks failed (5xx, the provider
  *   retries them) at least the threshold of times;
- * - `billing.payment_failed` (#178): a billing provider reported failed payments.
+ * - `billing.payment_failed` (#178): a billing provider reported failed payments;
+ * - `auth.failed_login_spike` (#180): an auth guard saw at least the threshold of failed logins.
  * Counts are estimated (`count / sample_rate`). Each subject alerts at most once per hour: the
  * alert history is the cooldown.
  *
@@ -48,7 +49,8 @@ class RuntimeAlertsService
             || $this->settings->shouldAlertDeliveryFailures()
             || $this->settings->alertLogSpikePerHour() !== null
             || $this->settings->alertBillingWebhookFailuresPerHour() !== null
-            || $this->settings->shouldAlertBillingPaymentFailures();
+            || $this->settings->shouldAlertBillingPaymentFailures()
+            || $this->settings->alertAuthFailedLoginsPerHour() !== null;
     }
 
     /**
@@ -58,7 +60,7 @@ class RuntimeAlertsService
     {
         $series = RuntimeAggregate::query()
             ->where('project_id', $project->id)
-            ->whereIn('type', [RuntimeTypeEnum::Cache->value, RuntimeTypeEnum::Mail->value, RuntimeTypeEnum::Notification->value, RuntimeTypeEnum::LogLevel->value, RuntimeTypeEnum::BillingWebhook->value])
+            ->whereIn('type', [RuntimeTypeEnum::Cache->value, RuntimeTypeEnum::Mail->value, RuntimeTypeEnum::Notification->value, RuntimeTypeEnum::LogLevel->value, RuntimeTypeEnum::BillingWebhook->value, RuntimeTypeEnum::Auth->value])
             ->where('bucket', '>=', Date::now()->subHour())
             ->get()
             ->groupBy(fn (RuntimeAggregate $aggregate): string => $aggregate->type->value);
@@ -105,7 +107,36 @@ class RuntimeAlertsService
             }
         }
 
-        return $sent + $this->billing($project, $series->get(RuntimeTypeEnum::BillingWebhook->value, collect()));
+        return $sent
+            + $this->billing($project, $series->get(RuntimeTypeEnum::BillingWebhook->value, collect()))
+            + $this->failedLogins($project, $series->get(RuntimeTypeEnum::Auth->value, collect()));
+    }
+
+    /**
+     * The failed-login rule (#180), per auth guard over the last hour: a brute-force or
+     * credential-stuffing signal. Lockouts are not counted: they already show on the card.
+     *
+     * @param  Collection<int, RuntimeAggregate>  $series
+     */
+    private function failedLogins(Project $project, Collection $series): int
+    {
+        $threshold = $this->settings->alertAuthFailedLoginsPerHour();
+
+        if ($threshold === null) {
+            return 0;
+        }
+
+        $sent = 0;
+
+        foreach ($series->groupBy(fn (RuntimeAggregate $aggregate): string => (string) ($aggregate->dimensions['guard'] ?? '')) as $guard => $rows) {
+            $failed = $this->estimate($rows, fn (RuntimeAggregate $aggregate): float => $aggregate->error_count);
+
+            if ($failed >= $threshold) {
+                $sent += $this->send($project, AlertEventEnum::AuthFailedLoginSpike, "auth:{$guard}", "guard {$guard}: {$failed} failed logins in the last hour", ['guard' => $guard, 'failedLogins' => $failed]);
+            }
+        }
+
+        return $sent;
     }
 
     /**

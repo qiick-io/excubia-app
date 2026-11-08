@@ -46,5 +46,6 @@ composer require qiick/excubia-core:^1.0@beta
 | Octane workers card and `laravel-octane-config` findings (laravel/octane)                       | next core release (`dev-develop`, `octane`)         | `runtime.octane.enabled`                                               |
 | Reverb card and `laravel-reverb` findings (laravel/reverb)                                      | next core release (`dev-develop`, `reverb`)         | `runtime.reverb.enabled`                                               |
 | Billing webhooks card and `laravel-cashier` findings (laravel/cashier, laravel/cashier-paddle)  | next core release (`dev-develop`, `billingWebhook`) | `runtime.billing.enabled`                                              |
+| Authentication card and `laravel-api-tokens` findings (laravel/sanctum, laravel/passport)       | next core release (`dev-develop`, `auth`)           | `runtime.auth.enabled`                                                 |
 
 "Next core release" features already work with `qiick/excubia-core:dev-develop`; with an older core the app shows nothing for them.

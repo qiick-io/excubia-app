@@ -55,6 +55,7 @@ class ProjectIntegrationsSettingsController extends Controller
                 'alert_ai_error_rate_above' => $this->settings->alertAiErrorRateAbove(),
                 'alert_billing_webhook_failures_per_hour' => $this->settings->alertBillingWebhookFailuresPerHour(),
                 'alert_billing_payment_failed_enabled' => $this->settings->shouldAlertBillingPaymentFailures(),
+                'alert_auth_failed_logins_per_hour' => $this->settings->alertAuthFailedLoginsPerHour(),
             ],
             'events' => AlertEventEnum::selectableValues(),
             'severities' => SeverityEnum::values(),

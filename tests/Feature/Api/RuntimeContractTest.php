@@ -18,7 +18,7 @@ use Illuminate\Support\Str;
  * value core may add to an enumerated field (#169).
  *
  * `tests/Fixtures/core/runtime-schema.json` is a copy of excubia-core `develop` at
- * 9ad5e3805f689b296a72bf382fe472c298668368 (2026-11-08, core #218: the `billingWebhook` type). Refresh it when core adds a type or a value.
+ * a77172d09996e3d8e777d70366493414607055ce (2026-11-08, core #220: the `auth` type). Refresh it when core adds a type or a value.
  * The app has no JSON Schema validator, so coreSchemaErrors() (tests/Pest.php) checks the keywords
  * the runtime schema uses (required, additionalProperties, const, enum, type, pattern, min/max, lengths).
  */
@@ -82,6 +82,9 @@ function coreRuntimeAggregates(): array
         'billingWebhook' => [
             'type' => 'billingWebhook', ...$base, 'provider' => 'stripe', 'eventType' => 'invoice.payment_failed', ...$timed,
             'handledCount' => 3, 'paymentFailedCount' => 4, 'paymentActionRequiredCount' => 0, 'subscriptionCanceledCount' => 0,
+        ],
+        'auth' => [
+            'type' => 'auth', ...$base, 'guard' => 'web', 'count' => 12, 'errorCount' => 3, 'loginCount' => 7, 'lockoutCount' => 1, 'tokenAuthenticationCount' => 1,
         ],
     ];
 }
@@ -177,6 +180,7 @@ it('merges entries of the same series across batches by each metric rule', funct
         [...$aggregates['octane'], 'count' => 50, 'errorCount' => 2, 'workerStarts' => 1, 'workerStops' => 1, 'requests' => 40, 'tasks' => 3, 'ticks' => 6, 'totalRequestsAtStop' => 480, 'maxRequestsAtStop' => 480, 'maxMb' => 60.5, 'maxGrowthMb' => 2.25],
         [...$aggregates['reverb'], 'count' => 30, 'errorCount' => 0, 'connectionsOpened' => 4, 'connectionsRejected' => 0, 'connectionsPruned' => 1, 'maxConnections' => 12, 'messagesReceived' => 5, 'messagesSent' => 9, 'publicChannelsCreated' => 1, 'privateChannelsRemoved' => 2],
         [...$aggregates['billingWebhook'], 'count' => 2, 'errorCount' => 0, 'handledCount' => 2, 'paymentFailedCount' => 2, 'paymentActionRequiredCount' => 1, 'subscriptionCanceledCount' => 1],
+        [...$aggregates['auth'], 'count' => 5, 'errorCount' => 4, 'loginCount' => 1, 'lockoutCount' => 0, 'tokenAuthenticationCount' => 0],
     ];
 
     $this->postJson(route('api.runtime.store'), coreRuntimeEnvelope(array_values($aggregates)), $headers)->assertCreated();
@@ -211,7 +215,9 @@ it('merges entries of the same series across batches by each metric rule', funct
         ->and([$row('billingWebhook')->count, $row('billingWebhook')->error_count])->toBe([6, 1])
         ->and($row('billingWebhook')->metrics)->toEqual([
             'handledCount' => 5, 'paymentFailedCount' => 6, 'paymentActionRequiredCount' => 1, 'subscriptionCanceledCount' => 1,
-        ]);
+        ])
+        ->and([$row('auth')->count, $row('auth')->error_count])->toBe([17, 7])
+        ->and($row('auth')->metrics)->toEqual(['loginCount' => 8, 'lockoutCount' => 1, 'tokenAuthenticationCount' => 1]);
 
     // A log entry without channel is its own series, never merged with one that has it.
     expect($project->runtimeAggregates()->where('type', 'logLevel')->count())->toBe(2);
@@ -276,6 +282,9 @@ it('still rejects a known type that breaks its own contract', function (string $
     'Reverb connections below zero' => ['reverb', 'maxConnections', -1],
     'billing webhook without handled count' => ['billingWebhook', 'handledCount', null],
     'billing payment signal below zero' => ['billingWebhook', 'paymentFailedCount', -1],
+    'auth without logins' => ['auth', 'loginCount', null],
+    'auth lockouts below zero' => ['auth', 'lockoutCount', -1],
+    'auth without a guard' => ['auth', 'guard', null],
 ]);
 
 it('stores a classification entry of the Laravel AI SDK (core #212)', function () {
@@ -317,6 +326,7 @@ it('stores a value core may add to an enumerated dimension instead of rejecting 
     'Reverb app id' => ['reverb', 'appId'],
     'billing provider' => ['billingWebhook', 'provider'],
     'billing event type' => ['billingWebhook', 'eventType'],
+    'auth guard' => ['auth', 'guard'],
 ]);
 
 it('keeps a scheduled task outcome it does not know out of the schedule monitoring', function () {
