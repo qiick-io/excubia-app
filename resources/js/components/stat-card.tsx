@@ -100,7 +100,10 @@ export function trendOf(
     if (previous === 0) {
         return {
             delta,
-            label: delta === 0 ? '0' : `${delta > 0 ? '+' : ''}${delta}`,
+            label:
+                delta === 0
+                    ? '0'
+                    : `${delta > 0 ? '+' : ''}${delta.toLocaleString()}`,
         };
     }
 

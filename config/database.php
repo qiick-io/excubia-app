@@ -38,10 +38,14 @@ return [
             'database' => env('DB_DATABASE', database_path('database.sqlite')),
             'prefix' => '',
             'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
-            'busy_timeout' => null,
-            'journal_mode' => null,
-            'synchronous' => null,
-            'transaction_mode' => 'DEFERRED',
+            // Concurrent pushes write at once (#195): WAL lets readers run beside the one
+            // writer, and IMMEDIATE transactions queue on the write lock for busy_timeout
+            // milliseconds instead of failing with "database is locked" when a read turns
+            // into a write. NORMAL is the durable setting for WAL.
+            'busy_timeout' => env('DB_BUSY_TIMEOUT', 10000),
+            'journal_mode' => env('DB_JOURNAL_MODE', 'wal'),
+            'synchronous' => env('DB_SYNCHRONOUS', 'normal'),
+            'transaction_mode' => env('DB_TRANSACTION_MODE', 'IMMEDIATE'),
         ],
 
         'mysql' => [

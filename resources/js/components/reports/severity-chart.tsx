@@ -10,7 +10,10 @@ import {
     XAxis,
     YAxis,
 } from 'recharts';
-import { SEVERITIES } from '@/components/reports/severity-badge';
+import {
+    SEVERITIES,
+    SEVERITY_SCALE,
+} from '@/components/reports/severity-badge';
 import type { Severity } from '@/types';
 
 export type SeverityChartPoint = { label: string } & Record<Severity, number>;
@@ -79,7 +82,11 @@ export function StackedBarChart({
                     />
                     <YAxis
                         allowDecimals={formatValue !== undefined}
-                        tickFormatter={formatValue}
+                        // Grouped digits by default: a bare 60000 reads as 6000 at a glance (#194).
+                        tickFormatter={
+                            formatValue ??
+                            ((value: number) => value.toLocaleString())
+                        }
                         tick={{
                             fontSize: 11,
                             fill: 'var(--color-muted-foreground)',
@@ -169,8 +176,8 @@ export function StackedBarChart({
 }
 
 /**
- * Findings per severity as stacked bars, one bar per point (a report, a day). The severity
- * colours are the ordinal red ramp in app.css (`--severity-chart-*`).
+ * Findings per severity as stacked bars, one bar per point (a report, a day), in the colours of
+ * the severity badges (`SEVERITY_SCALE`, #204).
  */
 export function SeverityStackedBarChart({
     data,
@@ -188,7 +195,7 @@ export function SeverityStackedBarChart({
             series={SEVERITIES.map((severity) => ({
                 key: severity,
                 label: t(`report.severity.${severity}`),
-                color: `var(--severity-chart-${severity})`,
+                color: SEVERITY_SCALE[severity].chartColor,
             }))}
         />
     );

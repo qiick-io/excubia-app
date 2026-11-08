@@ -29,7 +29,7 @@ class UpdateFindingDismissalAction
                 'dismissed_at' => $isDismissal ? $now : null,
                 'dismissed_until' => $isDismissal ? $until?->toDateString() : null,
                 'dismissed_reason' => $reason,
-                'dismissed_by' => $isDismissal ? $actor->id : null,
+                'dismissed_by_user_id' => $isDismissal ? $actor->id : null,
             ])->save();
 
             $finding->events()->create([

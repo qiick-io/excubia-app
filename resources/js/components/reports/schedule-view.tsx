@@ -187,69 +187,79 @@ export function ScheduleView({
     ];
 
     return (
+        // The chart and the task table stack taller than a phone screen: the pane scrolls, like Alerts.
         <PageLayout
+            scrollContent
             description={t('schedule.description')}
             filtersRight={
                 <TimeRangePicker slug={slug} view="schedule" range={range} />
             }
         >
-            {isSchedulerDown ? (
-                <Alert variant="destructive">
-                    <CircleAlert />
-                    <AlertTitle>{t('schedule.schedulerDownTitle')}</AlertTitle>
-                    <AlertDescription>
-                        {t('schedule.schedulerDownDescription', {
-                            time: formatTime(heartbeat.last_run_at),
-                        })}
-                    </AlertDescription>
-                </Alert>
-            ) : null}
-            <Card>
-                <CardHeader className="pb-3">
-                    <CardTitle>{t('schedule.runsOverTime')}</CardTitle>
-                    <CardDescription>
-                        {t('schedule.runsOverTimeDescription', phrases)}
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="h-48">
-                    <StackedBarChart
-                        data={timeline.map((point) => ({
-                            label: point.at,
-                            finished: point.finished,
-                            failed: point.failed,
-                            skipped: point.skipped,
-                        }))}
-                        formatLabel={bucketLabel(range)}
-                        markers={deployMarkers(deploys, t('runtime.deploy'))}
-                        series={[
-                            {
-                                key: 'finished',
-                                label: t('schedule.outcome.finished'),
-                                color: 'var(--runtime-chart-ok)',
-                            },
-                            {
-                                key: 'failed',
-                                label: t('schedule.outcome.failed'),
-                                color: 'var(--runtime-chart-error)',
-                            },
-                            {
-                                key: 'skipped',
-                                label: t('schedule.outcome.skipped'),
-                                color: 'var(--color-muted-foreground)',
-                            },
-                        ]}
-                        label={t('schedule.runsChartLabel', {
-                            ...totals,
-                            ...phrases,
-                        })}
-                    />
-                </CardContent>
-            </Card>
-            <DataTable
-                columns={taskColumns}
-                data={tasks}
-                getRowId={(task) => String(task.id)}
-            />
+            {/* PageLayout stacks its children without a gap. */}
+            <div className="flex flex-col gap-4">
+                {isSchedulerDown ? (
+                    <Alert variant="destructive">
+                        <CircleAlert />
+                        <AlertTitle>
+                            {t('schedule.schedulerDownTitle')}
+                        </AlertTitle>
+                        <AlertDescription>
+                            {t('schedule.schedulerDownDescription', {
+                                time: formatTime(heartbeat.last_run_at),
+                            })}
+                        </AlertDescription>
+                    </Alert>
+                ) : null}
+                <Card>
+                    <CardHeader className="pb-3">
+                        <CardTitle>{t('schedule.runsOverTime')}</CardTitle>
+                        <CardDescription>
+                            {t('schedule.runsOverTimeDescription', phrases)}
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="h-48">
+                        <StackedBarChart
+                            data={timeline.map((point) => ({
+                                label: point.at,
+                                finished: point.finished,
+                                failed: point.failed,
+                                skipped: point.skipped,
+                            }))}
+                            formatLabel={bucketLabel(range)}
+                            markers={deployMarkers(
+                                deploys,
+                                t('runtime.deploy'),
+                            )}
+                            series={[
+                                {
+                                    key: 'finished',
+                                    label: t('schedule.outcome.finished'),
+                                    color: 'var(--runtime-chart-ok)',
+                                },
+                                {
+                                    key: 'failed',
+                                    label: t('schedule.outcome.failed'),
+                                    color: 'var(--runtime-chart-error)',
+                                },
+                                {
+                                    key: 'skipped',
+                                    label: t('schedule.outcome.skipped'),
+                                    color: 'var(--color-muted-foreground)',
+                                },
+                            ]}
+                            label={t('schedule.runsChartLabel', {
+                                ...totals,
+                                ...phrases,
+                            })}
+                        />
+                    </CardContent>
+                </Card>
+                <DataTable
+                    columns={taskColumns}
+                    data={tasks}
+                    getRowId={(task) => String(task.id)}
+                />
+            </div>
         </PageLayout>
     );
 }

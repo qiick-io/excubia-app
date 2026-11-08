@@ -13,7 +13,8 @@ use Illuminate\Support\Facades\Date;
 /**
  * Settings → AI prices (#129): the price rows per provider and model, in USD (tokens per 1M,
  * audio per second, search units per unit). Input and output prices are required, the others
- * optional; a provider and model appear once. Needs `can-manage-alerts`, like the budgets and
+ * optional. A row may start on a day (`effective_from`, UTC, #202; empty for since forever), so a
+ * provider and model appear once per start day. Needs `can-manage-alerts`, like the budgets and
  * alert rules the prices feed.
  */
 class UpdateAiPricesSettingsRequest extends FormRequest
@@ -36,6 +37,7 @@ class UpdateAiPricesSettingsRequest extends FormRequest
             'prices.*' => ['array'],
             'prices.*.provider' => ['required', 'string', 'max:100'],
             'prices.*.model' => ['required', 'string', 'max:200'],
+            'prices.*.effective_from' => ['nullable', 'date_format:Y-m-d'],
         ];
 
         foreach (AiPriceService::PRICE_FIELDS as $field) {
@@ -46,7 +48,7 @@ class UpdateAiPricesSettingsRequest extends FormRequest
     }
 
     /**
-     * A provider and model listed twice is an error on the second row.
+     * A provider and model listed twice from the same day is an error on the second row.
      *
      * @return list<callable>
      */
@@ -56,10 +58,10 @@ class UpdateAiPricesSettingsRequest extends FormRequest
             $seen = [];
 
             foreach ((array) $this->input('prices', []) as $index => $row) {
-                $key = mb_strtolower(trim((string) ($row['provider'] ?? ''))."\0".trim((string) ($row['model'] ?? '')));
+                $key = mb_strtolower(trim((string) ($row['provider'] ?? ''))."\0".trim((string) ($row['model'] ?? ''))."\0".trim((string) ($row['effective_from'] ?? '')));
 
                 if (isset($seen[$key])) {
-                    $validator->errors()->add("prices.{$index}.model", __('This provider and model are already listed.'));
+                    $validator->errors()->add("prices.{$index}.model", __('This provider and model are already listed from this day.'));
                 }
 
                 $seen[$key] = true;
@@ -75,7 +77,12 @@ class UpdateAiPricesSettingsRequest extends FormRequest
         $rows = [];
 
         foreach ((array) $this->input('prices', []) as $row) {
-            $price = ['provider' => mb_strtolower(trim((string) $row['provider'])), 'model' => trim((string) $row['model'])];
+            $effectiveFrom = trim((string) ($row['effective_from'] ?? ''));
+            $price = [
+                'provider' => mb_strtolower(trim((string) $row['provider'])),
+                'model' => trim((string) $row['model']),
+                'effective_from' => $effectiveFrom === '' ? null : $effectiveFrom,
+            ];
 
             foreach (AiPriceService::PRICE_FIELDS as $field) {
                 $price[$field] = is_numeric($row[$field] ?? null) ? (float) $row[$field] : null;

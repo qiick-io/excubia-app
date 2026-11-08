@@ -53,7 +53,7 @@ class AiUsageService
 
         $now = CarbonImmutable::instance(Date::now());
         $from = $range->start($now);
-        $series = $this->runtime->series($project, $from, [RuntimeTypeEnum::Ai, RuntimeTypeEnum::AiTool])->groupBy('type');
+        $series = $this->seriesByPricePeriod($project, $from)->groupBy('type');
         $calls = $series->get(RuntimeTypeEnum::Ai->value, collect());
         $tools = $series->get(RuntimeTypeEnum::AiTool->value, collect());
         $monthStart = $now->startOfMonth();
@@ -79,6 +79,31 @@ class AiUsageService
     }
 
     /**
+     * The `ai` and `aiTool` series from a moment to now, summed apart for each price period
+     * (AiPriceService::changeDays()), so a range across a price change prices each side at its
+     * own row (#202). Without a change day in the range this is one query.
+     *
+     * @return Collection<int, Series>
+     */
+    private function seriesByPricePeriod(Project $project, CarbonImmutable $from): Collection
+    {
+        $types = [RuntimeTypeEnum::Ai, RuntimeTypeEnum::AiTool];
+        $boundaries = array_map(
+            fn (string $day): CarbonImmutable => CarbonImmutable::parse($day, 'UTC'),
+            array_filter($this->prices->changeDays(), fn (string $day): bool => $day > $from->toDateString() && $day <= Date::now()->toDateString()),
+        );
+        $series = collect();
+        $start = $from;
+
+        foreach ($boundaries as $boundary) {
+            $series = $series->concat($this->runtime->series($project, $start, $types, $boundary));
+            $start = $boundary;
+        }
+
+        return $series->concat($this->runtime->series($project, $start, $types))->values();
+    }
+
+    /**
      * Estimated calls, errors, failovers and their rates, the token split and the cost of some
      * series.
      *
@@ -96,12 +121,10 @@ class AiUsageService
         $hasUnpriced = false;
 
         // Priced per model, so each series takes its own price.
-        foreach ($series->groupBy(fn (array $one): string => ($one['dimensions']['provider'] ?? '')."\0".($one['dimensions']['model'] ?? '')) as $group) {
+        foreach ($series->groupBy(fn (array $one): string => ($one['dimensions']['provider'] ?? '')."\0".($one['dimensions']['model'] ?? '')."\0".$this->prices->periodOf($one['lastAt'])) as $group) {
             /** @var Series $first */
             $first = $group->first();
-            // ponytail: a series is priced as of its last minute, so a range across a ROUTES day
-            // prices its earlier days at the new price too (the timeline and the month split at the
-            // day). Upgrade: split the series query at the route days if that matters.
+            // Each series lies in one price period (seriesByPricePeriod), so its last minute prices it.
             $groupCost = $this->prices->cost($first['dimensions']['provider'] ?? '', $first['dimensions']['model'] ?? '', $this->usage($group), $first['lastAt']);
             $cost += $groupCost ?? 0.0;
             $hasUnpriced = $hasUnpriced || $groupCost === null;

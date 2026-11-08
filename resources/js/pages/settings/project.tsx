@@ -18,6 +18,7 @@ import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 import { edit as editProject } from '@/routes/project';
 import type { BreadcrumbItem, ProjectSettingsForm } from '@/types';
+import { edit as editProfile } from '@/routes/profile';
 
 type GeneralProjectSettings = Pick<
     ProjectSettingsForm,
@@ -129,8 +130,9 @@ export default function ProjectSettingsPage({ project }: Props) {
     const [form, setForm] = useState(() => buildFormState(project));
 
     const breadcrumbs: BreadcrumbItem[] = [
+        { title: t('settings.layout.title'), href: editProfile() },
         {
-            title: t('settings.project.breadcrumb'),
+            title: t('settings.layout.general'),
             href: editProject(),
         },
     ];

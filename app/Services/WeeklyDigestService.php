@@ -101,7 +101,7 @@ class WeeklyDigestService
             'exceptions' => array_values(ExceptionGroup::query()
                 ->where('project_id', $project->id)
                 ->where('status', ExceptionStatusEnum::Open->value)
-                ->where('last_seen', '>=', $since)
+                ->where('last_seen_at', '>=', $since)
                 ->orderByDesc('count')
                 ->limit(self::ROWS)
                 ->get()

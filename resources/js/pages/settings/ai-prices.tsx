@@ -1,5 +1,5 @@
 import { Head, useForm } from '@inertiajs/react';
-import { Info, Plus, RotateCcw, Trash2 } from 'lucide-react';
+import { CalendarPlus, Info, Plus, RotateCcw, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import Heading from '@/components/heading';
 import { SettingsFormActions } from '@/components/settings-form-actions';
@@ -19,6 +19,7 @@ import SettingsLayout from '@/layouts/settings/layout';
 import { cn } from '@/lib/utils';
 import aiPricesRoutes from '@/routes/ai-prices';
 import type { BreadcrumbItem } from '@/types';
+import { edit as editProfile } from '@/routes/profile';
 
 /** The price fields of a row, as AiPriceService::PRICE_FIELDS. */
 const PRICE_FIELDS = [
@@ -35,17 +36,24 @@ const PRICE_FIELDS = [
 
 type PriceField = (typeof PRICE_FIELDS)[number];
 
-type PriceRow = { provider: string; model: string } & Record<
-    PriceField,
-    number | null
->;
+/** A price row; `effective_from` is its first day (UTC), null for since always (#202). */
+type PriceRow = {
+    provider: string;
+    model: string;
+    effective_from: string | null;
+} & Record<PriceField, number | null>;
 
-/** A row as the form edits it: every number as text, empty for none. */
-type FormRow = { provider: string; model: string } & Record<PriceField, string>;
+/** A row as the form edits it: every number and the date as text, empty for none. */
+type FormRow = {
+    provider: string;
+    model: string;
+    effective_from: string;
+} & Record<PriceField, string>;
 
 const toFormRow = (row: PriceRow): FormRow => ({
     provider: row.provider,
     model: row.model,
+    effective_from: row.effective_from ?? '',
     ...(Object.fromEntries(
         PRICE_FIELDS.map((field) => [
             field,
@@ -59,8 +67,9 @@ const toFormRow = (row: PriceRow): FormRow => ({
  * push into estimated costs, one row per provider (as named in the project's `config/ai.php`)
  * and model. Seeded with the list prices of the official pricing pages (`defaultsSources`, linked
  * in the note); "Restore defaults" puts
- * them back in the form. A model without a row shows its tokens without a cost. Needs
- * `can-manage-alerts`.
+ * them back in the form. A model without a row shows its tokens without a cost. A row may start
+ * on a day (#202): "New price from a date" adds a copy of a row right below it, so the history of
+ * a model stays together and earlier days keep their price. Needs `can-manage-alerts`.
  */
 export default function AiPricesSettings({
     prices,
@@ -81,6 +90,7 @@ export default function AiPricesSettings({
     });
 
     const breadcrumbs: BreadcrumbItem[] = [
+        { title: t('settings.layout.title'), href: editProfile() },
         {
             title: t('settings.aiPrices.breadcrumb'),
             href: aiPricesRoutes.edit.url(),
@@ -94,6 +104,17 @@ export default function AiPricesSettings({
                 rowIndex === index ? { ...row, [key]: value } : row,
             ),
         );
+
+    /** A copy of a row right below it, from today (UTC), for the user to set its date and prices. */
+    const addPriceFromDate = (index: number): void =>
+        form.setData('prices', [
+            ...form.data.prices.slice(0, index + 1),
+            {
+                ...form.data.prices[index],
+                effective_from: new Date().toISOString().slice(0, 10),
+            },
+            ...form.data.prices.slice(index + 1),
+        ]);
 
     const errors = form.errors as Record<string, string | undefined>;
     const rowError = (index: number): string | undefined =>
@@ -163,6 +184,7 @@ export default function AiPricesSettings({
                                     toFormRow({
                                         provider: '',
                                         model: '',
+                                        effective_from: null,
                                         ...(Object.fromEntries(
                                             PRICE_FIELDS.map((field) => [
                                                 field,
@@ -197,6 +219,9 @@ export default function AiPricesSettings({
                                     </TableHead>
                                     <TableHead>
                                         {t('settings.aiPrices.model')}
+                                    </TableHead>
+                                    <TableHead>
+                                        {t('settings.aiPrices.effectiveFrom')}
                                     </TableHead>
                                     {PRICE_FIELDS.map((field) => (
                                         <TableHead
@@ -267,6 +292,34 @@ export default function AiPricesSettings({
                                                     ) : null}
                                                 </TableCell>
                                             ))}
+                                            <TableCell className="min-w-36 align-top">
+                                                <Input
+                                                    type="date"
+                                                    value={row.effective_from}
+                                                    onChange={(event) =>
+                                                        setCell(
+                                                            index,
+                                                            'effective_from',
+                                                            event.target.value,
+                                                        )
+                                                    }
+                                                    aria-label={t(
+                                                        'settings.aiPrices.effectiveFromOf',
+                                                        {
+                                                            model:
+                                                                label ||
+                                                                index + 1,
+                                                        },
+                                                    )}
+                                                    aria-invalid={
+                                                        errors[
+                                                            `prices.${index}.effective_from`
+                                                        ]
+                                                            ? true
+                                                            : undefined
+                                                    }
+                                                />
+                                            </TableCell>
                                             {PRICE_FIELDS.map((field) => (
                                                 <TableCell
                                                     key={field}
@@ -308,7 +361,26 @@ export default function AiPricesSettings({
                                                     />
                                                 </TableCell>
                                             ))}
-                                            <TableCell className="align-top">
+                                            <TableCell className="align-top whitespace-nowrap">
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() =>
+                                                        addPriceFromDate(index)
+                                                    }
+                                                    aria-label={t(
+                                                        'settings.aiPrices.addFrom',
+                                                        {
+                                                            model:
+                                                                label ||
+                                                                index + 1,
+                                                        },
+                                                    )}
+                                                    data-test={`ai-prices-add-from-${index}`}
+                                                >
+                                                    <CalendarPlus />
+                                                </Button>
                                                 <Button
                                                     type="button"
                                                     variant="ghost"
@@ -343,6 +415,9 @@ export default function AiPricesSettings({
                     </div>
                     <p className="text-sm text-muted-foreground">
                         {t('settings.aiPrices.units')}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                        {t('settings.aiPrices.history')}
                     </p>
 
                     <SettingsFormActions

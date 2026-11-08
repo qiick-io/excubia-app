@@ -50,19 +50,21 @@ This document describes what Excubia App receives, where it stores it, how long 
 
 ### 4. Retention
 
-| Data                                                             | Kept                                                                      | Setting                                       |
-| ---------------------------------------------------------------- | ------------------------------------------------------------------------- | --------------------------------------------- |
-| Health reports                                                   | the latest N per project (default 30)                                     | `EXCUBIA_REPORTS_KEPT_PER_PROJECT`, Settings  |
-| Findings and finding events                                      | while the project exists (resolved findings stay as history)              | —                                             |
-| Runtime aggregates, hourly rollups, task runs                    | 14 days                                                                   | `EXCUBIA_RUNTIME_RETENTION_DAYS`, Settings    |
-| Daily AI usage per provider and model (#129)                     | the longer of the runtime retention and 62 days (budget and digest)       | `EXCUBIA_RUNTIME_RETENTION_DAYS`, Settings    |
-| Exception groups and occurrences                                 | 90 days after last seen                                                   | `EXCUBIA_EXCEPTIONS_RETENTION_DAYS`, Settings |
-| Pushed batch ids, alert history                                  | the longer of the two retentions above                                    | —                                             |
-| Ended alert mutes                                                | deleted daily                                                             | —                                             |
-| Ingest rejection counters                                        | 2 days                                                                    | —                                             |
-| Activity log (incl. IP and user agent, failed login identifiers) | `activitylog.clean_after_days`                                            | Settings → activity retention                 |
-| Assistant conversations                                          | until the user deletes them, or the user is deleted                       | —                                             |
-| Sessions, failed jobs, cache                                     | Laravel defaults (`SESSION_LIFETIME`, `queue:prune-failed` not scheduled) | —                                             |
+| Data                                                             | Kept                                                                      | Setting                                                                    |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| Health reports                                                   | the latest N per project (default 30)                                     | `EXCUBIA_REPORTS_KEPT_PER_PROJECT`, Settings                               |
+| Findings and finding events                                      | while the project exists (resolved findings stay as history)              | —                                                                          |
+| Runtime aggregates, hourly rollups, task runs                    | 14 days; runtime minutes older than 48 hours are folded into hours (#212) | `EXCUBIA_RUNTIME_RETENTION_DAYS`, Settings; `EXCUBIA_RUNTIME_MINUTE_HOURS` |
+| Daily AI usage per provider and model (#129)                     | the longer of the runtime retention and 62 days (budget and digest)       | `EXCUBIA_RUNTIME_RETENTION_DAYS`, Settings                                 |
+| Exception groups (totals, first and last seen, releases)         | 90 days after last seen                                                   | `EXCUBIA_EXCEPTIONS_RETENTION_DAYS`, Settings                              |
+| Exception occurrences                                            | 14 days; minutes older than 48 hours are folded into hours (#214)         | `EXCUBIA_EXCEPTION_OCCURRENCE_DAYS`; `EXCUBIA_RUNTIME_MINUTE_HOURS`        |
+| Pushed batch ids                                                 | 14 days                                                                   | —                                                                          |
+| Alert history                                                    | the longer of the two retentions above                                    | —                                                                          |
+| Ended alert mutes                                                | deleted daily                                                             | —                                                                          |
+| Ingest rejection counters                                        | 2 days                                                                    | —                                                                          |
+| Activity log (incl. IP and user agent, failed login identifiers) | `activitylog.clean_after_days`                                            | Settings → activity retention                                              |
+| Assistant conversations                                          | until the user deletes them, or the user is deleted                       | —                                                                          |
+| Sessions, failed jobs, cache                                     | Laravel defaults (`SESSION_LIFETIME`, `queue:prune-failed` not scheduled) | —                                                                          |
 
 Deleting a project deletes its reports, findings, telemetry, tasks, alerts, mutes and windows (foreign keys cascade).
 

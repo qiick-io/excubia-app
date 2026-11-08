@@ -14,6 +14,7 @@ import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 import aiSettings from '@/routes/ai-settings';
 import type { BreadcrumbItem } from '@/types';
+import { edit as editProfile } from '@/routes/profile';
 
 type ToolRow = {
     name: string;
@@ -56,6 +57,7 @@ export default function AiSettingsPage({
     }, [recentlySuccessful]);
 
     const breadcrumbs: BreadcrumbItem[] = [
+        { title: t('settings.layout.title'), href: editProfile() },
         {
             title: t('settings.ai.breadcrumb'),
             href: aiSettings.edit.url(),

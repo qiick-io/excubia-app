@@ -220,7 +220,6 @@
             "aiPrices": "Prices"
         },
         "profile": {
-            "breadcrumb": "Profile settings",
             "head": "Profile settings",
             "title": "Profile information",
             "description": "Update your profile details and email address",
@@ -235,7 +234,6 @@
             "alertsTestHint": "Save first. The mail goes to your address and needs a queue worker."
         },
         "security": {
-            "breadcrumb": "Security settings",
             "head": "Security settings",
             "passwordTitle": "Update password",
             "passwordDescription": "Ensure your account is using a long, random password to stay secure",
@@ -254,7 +252,6 @@
             "passkeysNeedHttps": "Passkeys need HTTPS."
         },
         "project": {
-            "breadcrumb": "Project settings",
             "head": "Project settings",
             "generalTitle": "General",
             "generalDescription": "Project identity and support links",
@@ -316,13 +313,11 @@
                 "settings": "Settings"
             },
             "localization": {
-                "breadcrumb": "Localization settings",
                 "head": "Localization settings",
                 "title": "Admin language",
                 "description": "Default language for the admin UI"
             },
             "securityNav": {
-                "breadcrumb": "Authentication & security",
                 "head": "Authentication & security"
             },
             "checksTitle": "Checks",
@@ -347,7 +342,6 @@
             "activityRetentionDaysHint": "Activity log entries older than this are deleted."
         },
         "appearance": {
-            "breadcrumb": "Appearance settings",
             "head": "Appearance settings",
             "title": "Appearance settings",
             "description": "Update project branding and the default theme",
@@ -369,7 +363,6 @@
             "dark": "Dark",
             "system": "System",
             "sidebar": {
-                "breadcrumb": "Sidebar settings",
                 "head": "Sidebar settings"
             },
             "themePresetTitle": "Theme preset",
@@ -388,7 +381,6 @@
             "presetPreviewDark": "Dark"
         },
         "performance": {
-            "breadcrumb": "Performance settings",
             "head": "Performance settings",
             "statusTitle": "Runtime status",
             "statusDescription": "Read-only view of the runtime configuration",
@@ -428,7 +420,6 @@
             "readOnly": "read-only"
         },
         "integrations": {
-            "breadcrumb": "Integrations",
             "head": "Integrations",
             "webhookTitle": "Outbound webhooks",
             "webhookDescription": "Send signed alerts to your endpoint when a project changes",
@@ -447,6 +438,20 @@
             "notifiersDescription": "Optional human-readable alerts. Each channel has its own minimum severity, events and projects. Outbound only.",
             "eventTypes": "Events",
             "eventTypesHint": "Only these events are sent here. Send test always works.",
+            "eventsAll": "All events",
+            "eventsSelected": "Selected events",
+            "eventsCount": "{{selected}} of {{total}} events",
+            "eventsNone": "No event is selected: nothing is sent here.",
+            "eventGroups": {
+                "findings": "Findings and reports",
+                "projects": "Projects and pushes",
+                "health": "Health and infrastructure",
+                "schedule": "Scheduled tasks",
+                "runtime": "Runtime",
+                "ai": "AI",
+                "billing": "Billing",
+                "other": "Other"
+            },
             "minimumSeverity": "Minimum severity",
             "minimumSeverityHint": "Alerts below this severity are not sent here.",
             "slackUrl": "Slack incoming webhook URL",
@@ -483,7 +488,7 @@
                 "project.created": "A project was created.",
                 "project.deleted": "A project was deleted.",
                 "project.disabled": "A project was disabled.",
-                "ai.budget_warning": "A project's estimated AI spend this month reached 80 % of its budget (set on its AI tab).",
+                "ai.budget_warning": "A project's estimated AI spend this month reached 80% of its budget (set on its AI tab).",
                 "ai.budget_exceeded": "A project's estimated AI spend this month reached its budget.",
                 "ai.spend_spike": "Today's estimated AI spend is above the threshold share of the 7-day average.",
                 "ai.error_rate": "The share of failed AI calls in the last hour is above the threshold.",
@@ -531,12 +536,16 @@
             "restore": "Restore defaults",
             "provider": "Provider",
             "model": "Model",
+            "effectiveFrom": "From",
+            "effectiveFromOf": "First day of {{model}}",
             "providerOf": "Provider of row {{row}}",
             "modelOf": "Model of row {{row}}",
             "priceOf": "{{field}} for {{model}}",
             "remove": "Remove",
             "removeRow": "Remove {{model}}",
+            "addFrom": "New price of {{model}} from a date",
             "units": "USD. Tokens per 1M; audio per second; search units per unit. Empty cache prices use the input price; an empty reasoning price counts reasoning as part of the output (as OpenAI and Anthropic report it).",
+            "history": "Price history: a row prices the days from its date (UTC) until the next row of the same model; an empty date means since always. To change a price from a day, add a row of the model with that date (\"New price from a date\"): earlier days keep their price. Gemini 3.8 Flash doubles from 2027-01-01.",
             "fields": {
                 "input": "Input",
                 "cache_read": "Cache read",
@@ -1297,7 +1306,7 @@
         "spendOverTimeDescription": "Estimated spend {{bucket}} {{during}}.",
         "chartLabel": "Bar chart: estimated AI spend {{bucket}} {{during}}, {{cost}} in total.",
         "month": "This month",
-        "monthDescription": "Estimated spend since the 1st (UTC) against the monthly budget, which alerts at 80 % and 100 %.",
+        "monthDescription": "Estimated spend since the 1st (UTC) against the monthly budget, which alerts at 80% and 100%.",
         "noBudget": "No budget",
         "ofBudget": "of {{budget}}",
         "budgetUsed": "{{percent}}% of the budget used",
@@ -1641,7 +1650,7 @@
         "yes": "Yes",
         "no": "No",
         "megabytes": "{{value}} MB",
-        "percent": "{{value}} %",
+        "percent": "{{value}}%",
         "minutes_one": "{{count}} minute",
         "minutes_other": "{{count}} minutes",
         "hours_one": "{{count}} hour",

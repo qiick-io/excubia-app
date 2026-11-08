@@ -7,6 +7,7 @@ Excubia App is in **beta** (`1.0.0-beta`). The ingest API and the excubia-core c
 - [Install on a server (Composer, Forge, Ploi or by hand)](#install-on-a-server-composer-forge-ploi-or-by-hand)
 - [First run](#first-run)
 - [Scheduler and queue](#scheduler-and-queue)
+- [Sizing](#sizing)
 - [Health probes](#health-probes)
 - [Backups](#backups)
 - [Upgrades](#upgrades)
@@ -156,7 +157,8 @@ The app runs scheduled tasks:
 - `excubia:system-telemetry` stores this install's own runtime and exceptions on the system project (every minute);
 - `excubia:prune-reports` keeps the newest reports of each project (30 by default, in **Settings → Project**);
 - `excubia:evaluate-schedules` flags late, missed and failed scheduled tasks of the projects (every minute);
-- `excubia:prune-telemetry` keeps 14 days of runtime aggregates, their hourly rollups and scheduled-task runs, and exception groups seen in the last 90 days (`EXCUBIA_RUNTIME_RETENTION_DAYS`, `EXCUBIA_EXCEPTIONS_RETENTION_DAYS`), and the alert history for the longer of the two;
+- `excubia:downsample-runtime` folds the runtime minutes older than 48 hours into hourly rows (`EXCUBIA_RUNTIME_MINUTE_HOURS`, hourly; after an upgrade its first run folds the whole backlog);
+- `excubia:prune-telemetry` keeps 14 days of runtime aggregates, their hourly rollups and scheduled-task runs, and exception groups seen in the last 90 days (`EXCUBIA_RUNTIME_RETENTION_DAYS`, `EXCUBIA_EXCEPTIONS_RETENTION_DAYS`), the alert history for the longer of the two, and the pushed batch ids for 14 days;
 - `excubia:evaluate-runtime-alerts` runs the optional runtime alert rules of **Settings → Integrations** (every 15 minutes);
 - `excubia:alert-stale` alerts on projects that stopped reporting (hourly);
 - `excubia:send-digests` mails the weekly digest to the users who turned it on in **Settings → Profile** (Mondays at 08:00; needs a mailer);
@@ -226,6 +228,87 @@ A JSON `POST` to the HTTPS URL, retried 3 times with backoff (10, 30, 60 seconds
 
 `data` holds the event's details and is an empty object when there are none. Fields may be added to the payload and to `data`, never removed or renamed; the webhook stays one request per alert even when the other channels group a report's alerts. Headers: `X-Excubia-Event` (the event), `X-Excubia-Event-Id` (the `id`), `X-Excubia-Timestamp` (Unix seconds) and `X-Excubia-Signature: sha256=<hex>`, the HMAC-SHA256 of `<timestamp>.<raw body>` with the webhook secret. Check the signature on the raw body and reject old timestamps. The test event is `ping`, with `project: null`.
 
+## Sizing
+
+How many projects one instance takes, measured with the ingest load test (#195). Each test project pushes what excubia-core sends with runtime monitoring on: one runtime batch a minute with about 55 series (a busy app: 10 routes, 4 jobs, cache, logs, server, health, `ai`, `octane`, `reverb`, auth, Pennant, Scout…), an exceptions batch in most minutes (1 to 3 groups) and a full report every hour. An app with less traffic sends fewer series and costs less, in proportion.
+
+All projects push at second 0 of the minute (their schedulers fire together), and excubia-core gives up on a push after 5 seconds without an answer. It keeps the batch and retries on its next run, so nothing is lost, but the next minute then carries twice the load. The limit is therefore the **burst**: how long after second 0 the last push of the minute is answered.
+
+Measured on one machine (Apple M1 Pro, 10 cores, shared with the database and the load generator), 8 PHP workers, real time (one minute every 60 s), 2 minutes per size:
+
+| Database      | Projects | Pushes a minute | p50 / p95 / p99 per push | Last answer after second 0 (p99) | Errors | Queue backlog |
+| ------------- | -------- | --------------- | ------------------------ | -------------------------------- | ------ | ------------- |
+| SQLite        | 10       | 18              | 140 / 347 / 363 ms       | 0.4 s                            | 0      | 0             |
+| SQLite        | 50       | 85              | 412 / 660 / 782 ms       | 0.9 s                            | 0      | 0             |
+| SQLite        | 200      | 353             | 451 / 1027 / 1519 ms     | 3.6 s                            | 0      | 0             |
+| SQLite        | 500      | 889             | 480 / 1127 / 1876 ms     | 9.8 s (50 % above 5 s)           | 0      | 0             |
+| MySQL 8.0     | 10       | 17              | 109 / 183 / 185 ms       | 0.2 s                            | 0      | 0             |
+| MySQL 8.0     | 50       | 86              | 218 / 329 / 498 ms       | 0.5 s                            | 0      | 0             |
+| MySQL 8.0     | 200      | 349             | 262 / 394 / 437 ms       | 1.7 s                            | 0      | 0             |
+| MySQL 8.0     | 500      | 891             | 254 / 414 / 450 ms       | 4.3 s                            | 0      | 0             |
+| PostgreSQL 17 | 10       | 19              | 118 / 180 / 188 ms       | 0.2 s                            | 0      | 0             |
+| PostgreSQL 17 | 50       | 91              | 258 / 355 / 522 ms       | 0.5 s                            | 0      | 0             |
+| PostgreSQL 17 | 200      | 360             | 300 / 531 / 597 ms       | 2.2 s                            | 0      | 0             |
+| PostgreSQL 17 | 500      | 877             | 292 / 447 / 495 ms       | 4.6 s                            | 0      | 0             |
+
+The instance answers about 105 pushes a second on SQLite (one writer at a time) and 200 to 225 on MySQL and PostgreSQL (the PHP workers are the limit).
+
+### What to plan for
+
+- **SQLite: up to about 200 projects with runtime.** The app opens SQLite in WAL mode with immediate transactions and a busy timeout (`DB_JOURNAL_MODE=wal`, `DB_TRANSACTION_MODE=IMMEDIATE`, `DB_BUSY_TIMEOUT=10000` ms, `DB_SYNCHRONOUS=normal`), so concurrent pushes queue for the single writer instead of failing. Keep the database file on a local disk (a Docker volume is fine); WAL does not work on NFS or other network file systems.
+- **MySQL 8 or PostgreSQL: up to about 500 projects per 8 PHP workers**, more with more workers and cores. Each push costs a worker 20 to 40 ms of CPU (validation and storing). FrankenPHP in the Docker image runs 2 threads per CPU; with PHP-FPM set `pm.max_children` to about twice the cores. Add cores, or a second web container on the same database, before the burst nears 5 seconds. On PostgreSQL 17, run the latest minor release.
+- **Reports only, no runtime:** one report push a day per project is negligible; thousands of projects fit on SQLite.
+- **The queue stays empty under ingest:** pushes are stored in the request. The queue carries alerts, the system report and the heartbeat.
+- The push rate limit (`EXCUBIA_PUSH_REQUESTS_PER_MINUTE`, 30 per project by default) is far above the 2 to 3 pushes a minute a project sends.
+
+### Disk
+
+Runtime minutes take nearly all the space while they are minutes: at the test's 55 series a minute a project writes about 77,000 rows a day. Excubia keeps them per minute for 48 hours only (`EXCUBIA_RUNTIME_MINUTE_HOURS`, at least 24); every hour `excubia:downsample-runtime` folds older minutes into one row per series and hour (#212), with the same dimensions, counts, totals, maxima, histograms and health status, so the 24 h, 7 d and 14 d ranges, percentiles and charts show the same numbers as before the fold. The hourly rows stay for `EXCUBIA_RUNTIME_RETENTION_DAYS` (14 by default, the longest time range; `excubia:prune-telemetry` deletes older ones every day).
+
+Measured with `scripts/load/ingest-load.php --fold` (50 busy projects, 120 minutes; `runtime_aggregates` with its indexes, compacted):
+
+| Per busy project (55 series) | SQLite | PostgreSQL 17 | MySQL 8.0 |
+| ---------------------------- | ------ | ------------- | --------- |
+| One day in minutes           | 34 MB  | 39 MB         | 43 MB     |
+| One day in hours             | 0.6 MB | 0.7 MB        | 1.8 MB    |
+| Held with the defaults       | 75 MB  | 88 MB         | 108 MB    |
+| Held before #212 (14 days)   | 473 MB | 553 MB        | 605 MB    |
+
+"Held with the defaults" is 2 days of minutes and 12 days of hours, the size once the retention is reached; it then stays flat, as the daily prune frees as much as a day adds and the databases reuse the freed pages (`VACUUM` gives SQLite's free pages back to the disk). Next to it come the batch ids of the last 14 days (about 0.4 MB a day per project, 6 MB in all), exception occurrences (below, 1 to 2 MB) and the latest 30 reports per project (about 1 MB). So plan for:
+
+| Projects (busy, 55 series) | SQLite | PostgreSQL | MySQL  |
+| -------------------------- | ------ | ---------- | ------ |
+| 10                         | 0.9 GB | 1 GB       | 1.2 GB |
+| 50                         | 4.2 GB | 4.8 GB     | 5.9 GB |
+| 200                        | 17 GB  | 19 GB      | 24 GB  |
+
+Exception occurrences (the per-minute counts behind the Exceptions tab's "In range" column and each group's chart) follow the runtime minutes (#214): the same hourly run folds those older than `EXCUBIA_RUNTIME_MINUTE_HOURS` into one row per group and hour, and the daily prune deletes them after `EXCUBIA_EXCEPTION_OCCURRENCE_DAYS` (14 by default, at least 14, the longest range; never longer than the exceptions retention). The exception groups themselves stay for `EXCUBIA_EXCEPTIONS_RETENTION_DAYS` (90) with their totals, first and last seen and releases, which the overview, the digest and the 90-day list read. Measured the same way (`exception_occurrences` with its indexes, the test's one to three of 15 groups a minute; MySQL over 480 minutes, as InnoDB grows a small table's file in large steps):
+
+| Per busy project (15 groups) | SQLite  | PostgreSQL 17 | MySQL 8.0 |
+| ---------------------------- | ------- | ------------- | --------- |
+| One day in minutes           | 0.24 MB | 0.32 MB       | 0.78 MB   |
+| One day in hours             | 0.04 MB | 0.06 MB       | 0.05 MB   |
+| Held with the defaults       | 1 MB    | 1.4 MB        | 2.2 MB    |
+| Held before #214 (90 days)   | 22 MB   | 29 MB         | 70 MB     |
+
+Scale by your series: an app with 10 series a minute needs a fifth of the runtime part. The per-minute window costs the most: 24 hours instead of 48 saves a day of minutes per project, at the price of 1 h and 6 h ranges that cannot look back further than a day. A longer `EXCUBIA_RUNTIME_RETENTION_DAYS` adds one day of hours per day (and lets the Pennant stale flags look back further).
+
+### Run the load test
+
+`scripts/load/ingest-load.php` (PHP and curl only; manual, not part of CI) creates N projects with push tokens in the app's database and pushes from them every simulated minute against a running app. It prints p50 / p95 / p99 per endpoint, the error rate, the burst (when each push got its answer after second 0, and the share above 5 s), the queue backlog and the database growth per simulated day; with `--fold`, on a fresh database, it then folds the minutes into hours and prints the size of the runtime and exception occurrence tables per project and day in minutes and in hours. Run it against a test install, never production: it adds projects and data (`--cleanup` deletes the projects again).
+
+```bash
+# In the app directory, with the same .env as the server, and a queue worker running.
+EXCUBIA_PUSH_REQUESTS_PER_MINUTE=100000 PHP_CLI_SERVER_WORKERS=8 php artisan serve --no-reload &   # or the Docker stack
+php artisan queue:work &
+
+php scripts/load/ingest-load.php --url=http://127.0.0.1:8000 --projects=200 --minutes=3                # real time: a minute every 60 s
+php scripts/load/ingest-load.php --url=http://127.0.0.1:8000 --projects=20 --minutes=120 --interval=0  # back to back: ceiling and growth
+php scripts/load/ingest-load.php --cleanup
+```
+
+Options: `--interval` (real seconds per simulated minute; `0` plays them back to back, which needs the high rate limit above), `--concurrency` (requests open at once, 64 by default, like a proxy in front of the workers), `--report-every` (minutes between a project's reports, 60), `--json`.
+
 ## Health probes
 
 Two endpoints answer without signing in, for load balancers, Docker and uptime monitors (as in externa-core):
@@ -254,7 +337,7 @@ docker compose exec app rm /app/storage/backup.sqlite
 sqlite3 /path/to/database.sqlite ".backup '/backups/excubia-$(date +%F).sqlite'"
 ```
 
-Do not copy the `.sqlite` file with `cp` while the app runs: a write in progress can leave a broken copy. To back up the whole Docker volume instead, stop the containers first (`docker compose stop`) and archive the volume.
+Do not copy the `.sqlite` file with `cp` while the app runs: a write in progress can leave a broken copy, and the latest writes may still sit in `database.sqlite-wal` (the app opens SQLite in WAL mode, see [Sizing](#sizing)). To back up the whole Docker volume instead, stop the containers first (`docker compose stop`) and archive the volume.
 
 ### MySQL, MariaDB, PostgreSQL
 
@@ -265,7 +348,7 @@ pg_dump --format=custom excubia > excubia-$(date +%F).dump
 
 ### Restore
 
-Stop the app (`docker compose stop` or `php artisan down`), put the database file back (or load the dump), restore the same `APP_KEY`, start again. The entrypoint and the deploy script run any pending migration.
+Stop the app (`docker compose stop` or `php artisan down`), put the database file back (or load the dump; for SQLite, delete any `database.sqlite-wal` and `database.sqlite-shm` left next to it first), restore the same `APP_KEY`, start again. The entrypoint and the deploy script run any pending migration.
 
 Keep the `APP_KEY` with the backups: without it, the OIDC client secret and the two-factor secrets cannot be read, and every user is logged out. Push tokens are stored as hashes and do not depend on the key.
 
@@ -283,7 +366,15 @@ Read the [changelog](../CHANGELOG.md) first: every version has **Upgrade notes**
 | `php artisan excubia:upgrade` | Runs after the code is on the new release: `migrate --force`, the permission and system project sync, `optimize:clear`, `queue:restart`. It runs no `composer` or `npm`. Opt-in: `--sync-upstream=vX.Y.Z` merges the official tag first. |
 | Docker                        | Pull a newer GHCR image tag and keep the volume (Path C). The container migrates on start.                                                                                                                                               |
 
-Migrations are forward-only once released: every release upgrades from the one before with `php artisan migrate`. Upgrading one release at a time, in order, is the safest path.
+### Database migrations
+
+From `1.0.0-beta.1` on, migrations are **forward-only**: a released migration is never edited, renamed or deleted, and every schema change ships as a new migration. Every release therefore upgrades the database of the one before in place, with your data:
+
+1. **Back up first** ([Backups](#backups)): the database and the `APP_KEY`. A migration cannot be rolled back on a production database without that backup.
+2. Run the migrations: `php artisan excubia:upgrade --force` runs `php artisan migrate --force` for you (`--force` because `APP_ENV` is `production`). Docker runs them when the `app` container starts. Never `migrate:fresh` or `migrate:refresh` on an install you keep: they drop every table.
+3. Check that nothing is left: `php artisan migrate:status` lists no `Pending` migration.
+
+Upgrading one release at a time, in order, is the safest path. CI fails a pull request that changes a released migration (the `Migrations frozen` check), and the `Install and upgrade` job upgrades the previous release's database to the new code.
 
 ### Path A: Git tag (recommended)
 

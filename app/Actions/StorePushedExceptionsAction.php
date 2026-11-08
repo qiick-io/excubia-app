@@ -8,11 +8,8 @@ use App\Enums\ExceptionStatusEnum;
 use App\Models\ExceptionGroup;
 use App\Models\ExceptionOccurrence;
 use App\Models\Project;
-use App\Models\PushedBatch;
+use App\Traits\StoresPushedBatchOnceTrait;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\UniqueConstraintViolationException;
-use Illuminate\Support\Facades\Date;
-use Illuminate\Support\Facades\DB;
 
 /**
  * Stores an exceptions batch pushed by a project (#49), grouped by fingerprint and environment
@@ -31,6 +28,8 @@ use Illuminate\Support\Facades\DB;
  */
 class StorePushedExceptionsAction
 {
+    use StoresPushedBatchOnceTrait;
+
     /**
      * @param  list<array<string, mixed>>  $groups  validated by StorePushedExceptionsRequest
      * @param  string|null  $release  the batch's `exceptions.release`
@@ -38,19 +37,11 @@ class StorePushedExceptionsAction
      */
     public function execute(Project $project, string $batchId, array $groups, ?string $release = null): bool
     {
-        try {
-            return DB::transaction(function () use ($project, $batchId, $groups, $release): bool {
-                PushedBatch::query()->create(['project_id' => $project->id, 'type' => 'exceptions', 'batch_id' => $batchId, 'received_at' => Date::now()]);
-
-                foreach ($groups as $group) {
-                    $this->add($project, $group, $release);
-                }
-
-                return true;
-            });
-        } catch (UniqueConstraintViolationException) {
-            return false;
-        }
+        return $this->storeOnce($project, 'exceptions', $batchId, function () use ($project, $groups, $release): void {
+            foreach ($groups as $group) {
+                $this->add($project, $group, $release);
+            }
+        });
     }
 
     /**
@@ -64,12 +55,15 @@ class StorePushedExceptionsAction
         // A kind this app does not know (#169) is stored as unknown, so a newer core never loses the group.
         $kind = in_array($context['kind'], ExceptionGroup::CONTEXT_KINDS, true) ? (string) $context['kind'] : 'unknown';
 
-        $existing = ExceptionGroup::query()
+        // Read first, then lock the row found by its key: a locking read of a missing row takes a
+        // gap lock on MySQL, and concurrent pushes of other projects then deadlock (#195). A
+        // group created concurrently fails the insert and the batch runs again (StoresPushedBatchOnceTrait).
+        $found = ExceptionGroup::query()
             ->where('project_id', $project->id)
             ->where('fingerprint', (string) $group['fingerprint'])
             ->where('environment', (string) $group['environment'])
-            ->lockForUpdate()
-            ->first();
+            ->value('id');
+        $existing = $found === null ? null : ExceptionGroup::query()->whereKey($found)->lockForUpdate()->first();
 
         if ($existing === null) {
             $created = ExceptionGroup::query()->create([
@@ -83,8 +77,8 @@ class StorePushedExceptionsAction
                 'context_kind' => $kind,
                 'context_name' => (string) $context['name'],
                 'count' => (int) $group['count'],
-                'first_seen' => $firstSeen,
-                'last_seen' => $lastSeen,
+                'first_seen_at' => $firstSeen,
+                'last_seen_at' => $lastSeen,
                 'first_release' => $release,
                 'last_release' => $release,
                 'status' => ExceptionStatusEnum::Open,
@@ -94,7 +88,7 @@ class StorePushedExceptionsAction
             return;
         }
 
-        $isNewer = $lastSeen->gt($existing->last_seen);
+        $isNewer = $lastSeen->gt($existing->last_seen_at);
         $isRegression = $existing->status === ExceptionStatusEnum::Resolved
             && $release !== null
             && $existing->last_release !== null
@@ -102,8 +96,8 @@ class StorePushedExceptionsAction
 
         $existing->forceFill([
             'count' => $existing->count + (int) $group['count'],
-            'first_seen' => $firstSeen->lt($existing->first_seen) ? $firstSeen : $existing->first_seen,
-            'last_seen' => $isNewer ? $lastSeen : $existing->last_seen,
+            'first_seen_at' => $firstSeen->lt($existing->first_seen_at) ? $firstSeen : $existing->first_seen_at,
+            'last_seen_at' => $isNewer ? $lastSeen : $existing->last_seen_at,
             'context_kind' => $isNewer ? $kind : $existing->context_kind,
             'context_name' => $isNewer ? (string) $context['name'] : $existing->context_name,
             'first_release' => $existing->first_release ?? $release,

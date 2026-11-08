@@ -182,14 +182,17 @@ class ProjectRuntimeService
      * buckets and the summed or maxed metrics of those types (server gauges excluded, see
      * servers()). A JSON number is cast to decimal so MySQL and PostgreSQL add it like SQLite
      * does. A series' histogram sums only the minutes that have one, and is null when none has.
-     * Metrics of other types are null.
+     * Metrics of other types are null. `$until` (excluded) ends the window before now, so the AI
+     * tab can sum the minutes of each price period apart (#202).
      *
      * @param  array<int, RuntimeTypeEnum>  $types
      * @return Collection<int, Series>
      */
-    public function series(Project $project, CarbonImmutable $from, array $types): Collection
+    public function series(Project $project, CarbonImmutable $from, array $types, ?CarbonImmutable $until = null): Collection
     {
-        $query = $this->window($project, null, $from)->whereIn('type', array_map(fn (RuntimeTypeEnum $type): string => $type->value, $types));
+        $query = $this->window($project, null, $from)
+            ->whereIn('type', array_map(fn (RuntimeTypeEnum $type): string => $type->value, $types))
+            ->when($until !== null, fn (Builder $query) => $query->where('bucket', '<', $until));
         $driver = (new RuntimeAggregate)->getConnection()->getDriverName();
         $metrics = array_intersect_key(self::SQL_METRICS, array_merge(...array_map(fn (RuntimeTypeEnum $type): array => $type->metrics(), $types)));
         $selects = ['min(id) as id', 'sum(count) as count', 'sum(error_count) as error_count', 'sum(total_ms) as total_ms', 'max(max_ms) as max_ms', 'max(bucket) as last_at', 'count(histogram) as histogram_rows'];

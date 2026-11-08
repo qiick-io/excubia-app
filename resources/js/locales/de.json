@@ -220,7 +220,6 @@
             "aiPrices": "Preise"
         },
         "profile": {
-            "breadcrumb": "Profileinstellungen",
             "head": "Profileinstellungen",
             "title": "Profilinformationen",
             "description": "Aktualisieren Sie Ihre Profildaten und E-Mail-Adresse",
@@ -235,7 +234,6 @@
             "alertsTestHint": "Zuerst speichern. Die Mail geht an deine Adresse und benötigt einen Queue-Worker."
         },
         "security": {
-            "breadcrumb": "Sicherheitseinstellungen",
             "head": "Sicherheitseinstellungen",
             "passwordTitle": "Passwort aktualisieren",
             "passwordDescription": "Verwenden Sie ein langes, zufälliges Passwort, um Ihr Konto zu schützen",
@@ -254,7 +252,6 @@
             "passkeysNeedHttps": "Passkeys benötigen HTTPS."
         },
         "project": {
-            "breadcrumb": "Projekteinstellungen",
             "head": "Projekteinstellungen",
             "generalTitle": "Allgemein",
             "generalDescription": "Projektidentität und Support-Links",
@@ -316,13 +313,11 @@
                 "settings": "Einstellungen"
             },
             "localization": {
-                "breadcrumb": "Lokalisierungseinstellungen",
                 "head": "Lokalisierungseinstellungen",
                 "title": "Admin-Sprache",
                 "description": "Standardsprache der Admin-Oberfläche"
             },
             "securityNav": {
-                "breadcrumb": "Authentifizierung & Sicherheit",
                 "head": "Authentifizierung & Sicherheit"
             },
             "checksTitle": "Prüfungen",
@@ -347,7 +342,6 @@
             "activityRetentionDaysHint": "Ältere Einträge im Aktivitätsprotokoll werden gelöscht."
         },
         "appearance": {
-            "breadcrumb": "Darstellungseinstellungen",
             "head": "Darstellungseinstellungen",
             "title": "Darstellungseinstellungen",
             "description": "Projekt-Branding und Standard-Theme aktualisieren",
@@ -369,7 +363,6 @@
             "dark": "Dunkel",
             "system": "System",
             "sidebar": {
-                "breadcrumb": "Seitenleisten-Einstellungen",
                 "head": "Seitenleisten-Einstellungen"
             },
             "themePresetTitle": "Theme-Preset",
@@ -392,7 +385,6 @@
             "appEnv": "APP_ENV",
             "bootstrapDescription": "Status der Laravel-Bootstrap-Caches (config, routes, events, packages).",
             "bootstrapTitle": "Bootstrap-Caches",
-            "breadcrumb": "Leistung",
             "cacheStore": "Cache-Store",
             "configCached": "Config gecacht",
             "eventsCached": "Events gecacht",
@@ -428,7 +420,6 @@
             "readOnly": "schreibgeschützt"
         },
         "integrations": {
-            "breadcrumb": "Integrationen",
             "head": "Integrationen",
             "webhookTitle": "Ausgehende Webhooks",
             "webhookDescription": "Signierte Warnungen an deinen Endpunkt senden, wenn sich ein Projekt ändert",
@@ -447,6 +438,20 @@
             "notifiersDescription": "Optionale lesbare Warnungen. Jeder Kanal hat seinen eigenen Mindestschweregrad, seine Ereignisse und Projekte. Nur ausgehend.",
             "eventTypes": "Ereignisse",
             "eventTypesHint": "Nur diese Ereignisse werden hierher gesendet. Der Test funktioniert immer.",
+            "eventsAll": "Alle Ereignisse",
+            "eventsSelected": "Ausgewählte Ereignisse",
+            "eventsCount": "{{selected}} von {{total}} Ereignissen",
+            "eventsNone": "Kein Ereignis ausgewählt: Hierher wird nichts gesendet.",
+            "eventGroups": {
+                "findings": "Befunde und Berichte",
+                "projects": "Projekte und Pushes",
+                "health": "Health und Infrastruktur",
+                "schedule": "Geplante Aufgaben",
+                "runtime": "Runtime",
+                "ai": "KI",
+                "billing": "Abrechnung",
+                "other": "Sonstige"
+            },
             "minimumSeverity": "Mindestschweregrad",
             "minimumSeverityHint": "Warnungen unter diesem Schweregrad werden hier nicht gesendet.",
             "slackUrl": "Slack-Incoming-Webhook-URL",
@@ -531,12 +536,16 @@
             "restore": "Standardwerte wiederherstellen",
             "provider": "Anbieter",
             "model": "Modell",
+            "effectiveFrom": "Ab",
+            "effectiveFromOf": "Erster Tag von {{model}}",
             "providerOf": "Anbieter der Zeile {{row}}",
             "modelOf": "Modell der Zeile {{row}}",
             "priceOf": "{{field}} für {{model}}",
             "remove": "Entfernen",
             "removeRow": "{{model}} entfernen",
+            "addFrom": "Neuer Preis für {{model}} ab einem Datum",
             "units": "USD. Tokens pro 1 Mio.; Audio pro Sekunde; Sucheinheiten pro Einheit. Ohne Cache-Preis gilt der Input-Preis; ohne Reasoning-Preis zählt Reasoning zum Output (wie OpenAI und Anthropic es melden).",
+            "history": "Preisverlauf: Eine Zeile bepreist die Tage ab ihrem Datum (UTC) bis zur nächsten Zeile desselben Modells; ein leeres Datum gilt seit jeher. Um einen Preis ab einem Tag zu ändern, füge eine Zeile des Modells mit diesem Datum hinzu („Neuer Preis ab einem Datum“): frühere Tage behalten ihren Preis. Gemini 3.8 Flash verdoppelt sich ab 2027-01-01.",
             "fields": {
                 "input": "Input",
                 "cache_read": "Cache lesen",

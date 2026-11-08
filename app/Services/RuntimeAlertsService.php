@@ -213,6 +213,8 @@ class RuntimeAlertsService
      */
     private function send(Project $project, AlertEventEnum $event, string $subject, string $summary, array $data): int
     {
+        // As AlertDispatcherService stores it: a subject longer than the column still cools down.
+        $subject = mb_substr($subject, 0, AlertLog::SUBJECT_LENGTH);
         $isCoolingDown = AlertLog::query()
             ->where('project_id', $project->id)
             ->where('event', $event->value)
