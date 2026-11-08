@@ -157,7 +157,8 @@ The app runs scheduled tasks:
 - `excubia:system-telemetry` stores this install's own runtime and exceptions on the system project (every minute);
 - `excubia:prune-reports` keeps the newest reports of each project (30 by default, in **Settings → Project**);
 - `excubia:evaluate-schedules` flags late, missed and failed scheduled tasks of the projects (every minute);
-- `excubia:prune-telemetry` keeps 14 days of runtime aggregates, their hourly rollups and scheduled-task runs, and exception groups seen in the last 90 days (`EXCUBIA_RUNTIME_RETENTION_DAYS`, `EXCUBIA_EXCEPTIONS_RETENTION_DAYS`), and the alert history for the longer of the two;
+- `excubia:downsample-runtime` folds the runtime minutes older than 48 hours into hourly rows (`EXCUBIA_RUNTIME_MINUTE_HOURS`, hourly; after an upgrade its first run folds the whole backlog);
+- `excubia:prune-telemetry` keeps 14 days of runtime aggregates, their hourly rollups and scheduled-task runs, and exception groups seen in the last 90 days (`EXCUBIA_RUNTIME_RETENTION_DAYS`, `EXCUBIA_EXCEPTIONS_RETENTION_DAYS`), the alert history for the longer of the two, and the pushed batch ids for 14 days;
 - `excubia:evaluate-runtime-alerts` runs the optional runtime alert rules of **Settings → Integrations** (every 15 minutes);
 - `excubia:alert-stale` alerts on projects that stopped reporting (hourly);
 - `excubia:send-digests` mails the weekly digest to the users who turned it on in **Settings → Profile** (Mondays at 08:00; needs a mailer);
@@ -262,19 +263,30 @@ The instance answers about 105 pushes a second on SQLite (one writer at a time) 
 
 ### Disk
 
-Runtime minutes take nearly all the space: at the test's 55 series a minute a project adds about 77,000 rows a day, **36 MB a day on SQLite, 55 MB on PostgreSQL and 76 MB on MySQL** (indexes included). Hourly rollups, exception groups and reports are small next to it. The database holds `EXCUBIA_RUNTIME_RETENTION_DAYS` of it (14 by default; `excubia:prune-telemetry` deletes older minutes every day), so plan for:
+Runtime minutes take nearly all the space while they are minutes: at the test's 55 series a minute a project writes about 77,000 rows a day. Excubia keeps them per minute for 48 hours only (`EXCUBIA_RUNTIME_MINUTE_HOURS`, at least 24); every hour `excubia:downsample-runtime` folds older minutes into one row per series and hour (#212), with the same dimensions, counts, totals, maxima, histograms and health status, so the 24 h, 7 d and 14 d ranges, percentiles and charts show the same numbers as before the fold. The hourly rows stay for `EXCUBIA_RUNTIME_RETENTION_DAYS` (14 by default, the longest time range; `excubia:prune-telemetry` deletes older ones every day).
 
-| Projects (busy, 55 series) | SQLite, 14 days | PostgreSQL, 14 days | MySQL, 14 days | SQLite, 7 days |
-| -------------------------- | --------------- | ------------------- | -------------- | -------------- |
-| 10                         | 5 GB            | 8 GB                | 11 GB          | 2.5 GB         |
-| 50                         | 25 GB           | 38 GB               | 53 GB          | 13 GB          |
-| 200                        | 100 GB          | 154 GB              | 213 GB         | 50 GB          |
+Measured with `scripts/load/ingest-load.php --fold` (50 busy projects, 120 minutes; `runtime_aggregates` with its indexes, compacted):
 
-Scale by your series: an app with 10 series a minute needs a fifth of it. Halving `EXCUBIA_RUNTIME_RETENTION_DAYS` halves the runtime part. Once the retention is reached the size stays flat: the daily prune frees as much as a day adds, and the databases reuse the freed pages (`VACUUM` gives SQLite's free pages back to the disk).
+| Per busy project (55 series) | SQLite | PostgreSQL 17 | MySQL 8.0 |
+| ---------------------------- | ------ | ------------- | --------- |
+| One day in minutes           | 34 MB  | 39 MB         | 43 MB     |
+| One day in hours             | 0.6 MB | 0.7 MB        | 1.8 MB    |
+| Held with the defaults       | 75 MB  | 88 MB         | 108 MB    |
+| Held before #212 (14 days)   | 473 MB | 553 MB        | 605 MB    |
+
+"Held with the defaults" is 2 days of minutes and 12 days of hours, the size once the retention is reached; it then stays flat, as the daily prune frees as much as a day adds and the databases reuse the freed pages (`VACUUM` gives SQLite's free pages back to the disk). Next to it come the batch ids of the last 14 days (about 0.4 MB a day per project, 6 MB in all), exception occurrences for the exceptions retention (about 0.25 MB a day at the test's one to three groups a minute, 20 MB over 90 days) and the latest 30 reports per project (about 1 MB). So plan for:
+
+| Projects (busy, 55 series) | SQLite | PostgreSQL | MySQL  |
+| -------------------------- | ------ | ---------- | ------ |
+| 10                         | 1 GB   | 1.2 GB     | 1.4 GB |
+| 50                         | 5 GB   | 6 GB       | 7 GB   |
+| 200                        | 20 GB  | 23 GB      | 27 GB  |
+
+Scale by your series: an app with 10 series a minute needs a fifth of the runtime part. The per-minute window costs the most: 24 hours instead of 48 saves a day of minutes per project, at the price of 1 h and 6 h ranges that cannot look back further than a day. A longer `EXCUBIA_RUNTIME_RETENTION_DAYS` adds one day of hours per day (and lets the Pennant stale flags look back further).
 
 ### Run the load test
 
-`scripts/load/ingest-load.php` (PHP and curl only; manual, not part of CI) creates N projects with push tokens in the app's database and pushes from them every simulated minute against a running app. It prints p50 / p95 / p99 per endpoint, the error rate, the burst (when each push got its answer after second 0, and the share above 5 s), the queue backlog and the database growth per simulated day. Run it against a test install, never production: it adds projects and data (`--cleanup` deletes the projects again).
+`scripts/load/ingest-load.php` (PHP and curl only; manual, not part of CI) creates N projects with push tokens in the app's database and pushes from them every simulated minute against a running app. It prints p50 / p95 / p99 per endpoint, the error rate, the burst (when each push got its answer after second 0, and the share above 5 s), the queue backlog and the database growth per simulated day; with `--fold`, on a fresh database, it then folds the minutes into hours and prints the runtime table's size per project and day in minutes and in hours. Run it against a test install, never production: it adds projects and data (`--cleanup` deletes the projects again).
 
 ```bash
 # In the app directory, with the same .env as the server, and a queue worker running.

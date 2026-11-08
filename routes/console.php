@@ -23,6 +23,9 @@ Schedule::command('excubia:prune-reports')->daily();
 // Runtime aggregates and exception groups past their retention (#48, #49).
 Schedule::command('excubia:prune-telemetry')->daily();
 
+// Runtime minutes past the per-minute window folded into hourly rows (#212).
+Schedule::command('excubia:downsample-runtime')->hourly()->withoutOverlapping();
+
 // Excubia checks itself and stores the report on the system project (#70).
 Schedule::command('excubia:system-report')->daily();
 
