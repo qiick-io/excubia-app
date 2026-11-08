@@ -33,5 +33,6 @@
     "$:week in the last 7 days, $:previous in the 7 days before": "$:week in den letzten 7 Tagen, $:previous in den 7 Tagen davor",
     "Some models have no price in Settings → AI prices and are not counted.": "Einige Modelle haben keinen Preis unter Einstellungen → KI-Preise und werden nicht gezählt.",
     "AI prices saved.": "KI-Preise gespeichert.",
+    "This provider and model are already listed from this day.": "Dieser Anbieter und dieses Modell sind ab diesem Tag bereits aufgeführt.",
     "AI budget saved.": "KI-Budget gespeichert."
 }
