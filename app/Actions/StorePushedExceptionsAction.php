@@ -61,6 +61,8 @@ class StorePushedExceptionsAction
         $firstSeen = CarbonImmutable::parse((string) $group['firstSeen'])->utc();
         $lastSeen = CarbonImmutable::parse((string) $group['lastSeen'])->utc();
         $context = (array) $group['context'];
+        // A kind this app does not know (#169) is stored as unknown, so a newer core never loses the group.
+        $kind = in_array($context['kind'], ExceptionGroup::CONTEXT_KINDS, true) ? (string) $context['kind'] : 'unknown';
 
         $existing = ExceptionGroup::query()
             ->where('project_id', $project->id)
@@ -78,7 +80,7 @@ class StorePushedExceptionsAction
                 'message' => (string) $group['message'],
                 'frames' => array_values((array) $group['frames']),
                 'previous' => array_values((array) $group['previous']),
-                'context_kind' => (string) $context['kind'],
+                'context_kind' => $kind,
                 'context_name' => (string) $context['name'],
                 'count' => (int) $group['count'],
                 'first_seen' => $firstSeen,
@@ -102,7 +104,7 @@ class StorePushedExceptionsAction
             'count' => $existing->count + (int) $group['count'],
             'first_seen' => $firstSeen->lt($existing->first_seen) ? $firstSeen : $existing->first_seen,
             'last_seen' => $isNewer ? $lastSeen : $existing->last_seen,
-            'context_kind' => $isNewer ? (string) $context['kind'] : $existing->context_kind,
+            'context_kind' => $isNewer ? $kind : $existing->context_kind,
             'context_name' => $isNewer ? (string) $context['name'] : $existing->context_name,
             'first_release' => $existing->first_release ?? $release,
             'last_release' => $isNewer && $release !== null ? $release : ($existing->last_release ?? $release),

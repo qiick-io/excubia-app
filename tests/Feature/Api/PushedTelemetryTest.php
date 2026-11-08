@@ -125,7 +125,9 @@ it('rejects runtime pushes with a wrong token, an unknown protocol or invalid ag
 
     $this->postJson(route('api.runtime.store'), runtimeEnvelope([['type' => 'request', 'bucket' => '2026-11-05T11:58:30Z', 'sampleRate' => 1, 'route' => 'home', 'method' => 'GET', 'statusClass' => '6xx', 'count' => 1, 'errorCount' => 0, 'totalMs' => 1, 'maxMs' => 1]]), ['Authorization' => "Bearer {$token}"])
         ->assertUnprocessable()
-        ->assertJsonValidationErrors(['runtime.aggregates.0.bucket', 'runtime.aggregates.0.statusClass']);
+        ->assertJsonValidationErrors('runtime.aggregates.0.bucket')
+        // A status class core may add later is no reason to reject the batch (#169).
+        ->assertJsonMissingValidationErrors('runtime.aggregates.0.statusClass');
 
     $this->postJson(route('api.runtime.store'), runtimeEnvelope([['type' => 'job', 'bucket' => '2026-11-05T11:58:00Z', 'sampleRate' => 1, 'job' => 'X', 'count' => 1, 'errorCount' => 0, 'totalMs' => 1, 'maxMs' => 1]]), ['Authorization' => "Bearer {$token}"])
         ->assertUnprocessable()
@@ -182,7 +184,9 @@ it('rejects invalid or oversized exception pushes', function () {
 
     $this->postJson(route('api.exceptions.store'), exceptionsEnvelope([exceptionGroupPayload(['fingerprint' => 'short', 'context' => ['kind' => 'cli', 'name' => 'x']])]), $headers)
         ->assertUnprocessable()
-        ->assertJsonValidationErrors(['exceptions.groups.0.fingerprint', 'exceptions.groups.0.context.kind']);
+        ->assertJsonValidationErrors('exceptions.groups.0.fingerprint')
+        // A context kind core may add later is no reason to reject the batch (#169).
+        ->assertJsonMissingValidationErrors('exceptions.groups.0.context.kind');
 
     $this->postJson(route('api.exceptions.store'), [...exceptionsEnvelope([exceptionGroupPayload()]), 'type' => 'runtime'], $headers)
         ->assertUnprocessable()
@@ -193,6 +197,15 @@ it('rejects invalid or oversized exception pushes', function () {
         ->assertStatus(413);
 
     expect(ExceptionGroup::query()->count())->toBe(0);
+});
+
+it('stores an exception group with a context kind this app does not know as unknown (#169)', function () {
+    [$project, $token] = telemetryProject();
+
+    $this->postJson(route('api.exceptions.store'), exceptionsEnvelope([exceptionGroupPayload(['context' => ['kind' => 'futureKind', 'name' => 'x']])]), ['Authorization' => "Bearer {$token}"])
+        ->assertCreated();
+
+    expect($project->exceptionGroups()->sole()->context_kind)->toBe('unknown');
 });
 
 it('prunes runtime aggregates and exception groups past their retention', function () {

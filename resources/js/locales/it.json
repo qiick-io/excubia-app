@@ -1256,7 +1256,8 @@
             "embeddings": "Embedding",
             "transcription": "Trascrizione",
             "reranking": "Reranking",
-            "audio": "Sintesi vocale"
+            "audio": "Sintesi vocale",
+            "classification": "Classificazione"
         }
     },
     "files": {

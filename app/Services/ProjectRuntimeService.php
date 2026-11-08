@@ -427,7 +427,7 @@ class ProjectRuntimeService
     }
 
     /**
-     * Log entries per level (most severe first), per level and channel (null for entries
+     * Log entries per level (most severe first, then levels this app does not know), per level and channel (null for entries
      * without one), and error-level entries per bucket of the range.
      *
      * @param  Collection<int, Series>  $series
@@ -438,7 +438,10 @@ class ProjectRuntimeService
         $byLevel = $series->groupBy(fn (array $one): string => $one['dimensions']['level'] ?? 'unknown');
         $levels = [];
 
-        foreach (self::LOG_LEVELS as $level) {
+        // Levels this app does not know (#169) follow the known ones, by name.
+        $unknownLevels = $byLevel->keys()->map(fn (int|string $level): string => (string) $level)->diff(self::LOG_LEVELS)->sort()->values()->all();
+
+        foreach ([...self::LOG_LEVELS, ...$unknownLevels] as $level) {
             $group = $byLevel->get($level);
 
             if ($group !== null) {

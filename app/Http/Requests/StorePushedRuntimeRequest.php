@@ -14,25 +14,15 @@ use Illuminate\Validation\Rule;
  * Validates a runtime push of excubia-core (`docs/push-schema.json` `$defs.runtimeEnvelope`,
  * payload `docs/runtime-schema.json`, protocol version 1). Each aggregate of a known type must
  * carry the dimensions and metrics of its type; an aggregate of a type this app does not know
- * only needs a `type` and is skipped on store, never rejected (#111). The token was checked by
+ * only needs a `type` and is skipped on store, never rejected (#111). A value core enumerates
+ * (`statusClass`, `outcome`, `level`, `origin`, `exitCodeClass`, `operation`, the health `status`
+ * and `severity`) is only checked as a string: core adds values additively, and a value this
+ * app does not know must never reject the batch (#169). StorePushedRuntimeAction stores it, or
+ * skips and counts the entry when the app cannot read it. The token was checked by
  * AuthenticateProjectToken.
  */
 class StorePushedRuntimeRequest extends FormRequest
 {
-    private const STATUS_CLASSES = ['1xx', '2xx', '3xx', '4xx', '5xx'];
-
-    /** Dimensions limited to a set of values, per type (`docs/runtime-schema.json`). */
-    private const DIMENSION_VALUES = [
-        'request' => ['statusClass' => self::STATUS_CLASSES],
-        'outgoingHttp' => ['statusClass' => self::STATUS_CLASSES],
-        'job' => ['outcome' => ['processed', 'failed']],
-        'scheduledTask' => ['outcome' => ['finished', 'failed', 'skipped']],
-        'logLevel' => ['level' => ['emergency', 'alert', 'critical', 'error', 'warning', 'notice', 'info', 'debug', 'unknown']],
-        'duplicateQuery' => ['origin' => ['request', 'job']],
-        'command' => ['exitCodeClass' => ['0', '1', 'other']],
-        'ai' => ['operation' => ['agent', 'image', 'embeddings', 'transcription', 'reranking', 'audio']],
-    ];
-
     /** Dimensions with a pattern (`docs/runtime-schema.json`); unknown check ids are accepted. */
     private const DIMENSION_PATTERNS = [
         'health' => ['checkId' => '/^[a-z0-9-]{1,64}$/'],
@@ -58,8 +48,9 @@ class StorePushedRuntimeRequest extends FormRequest
         'diskUsedGb' => ['present', 'nullable', 'numeric', 'min:0'],
         'diskTotalGb' => ['present', 'nullable', 'numeric', 'min:0'],
         'isContainer' => ['sometimes', 'boolean'],
-        'status' => ['required', 'string', 'in:pass,warn,fail,skipped'],
-        'severity' => ['required', 'string', 'in:critical,high,medium,low,info'],
+        // Unknown values are skipped and counted on store (#169).
+        'status' => ['required', 'string', 'max:64'],
+        'severity' => ['required', 'string', 'max:64'],
         'findingCount' => ['required', 'integer', 'min:0'],
         'fingerprints' => ['present', 'list', 'max:'.RuntimeTypeEnum::HEALTH_FINGERPRINTS],
         'fingerprints.*' => ['string', 'regex:/^[0-9a-f]{64}$/'],
@@ -135,8 +126,8 @@ class StorePushedRuntimeRequest extends FormRequest
 
     /**
      * Rules for one aggregate of a known type, keyed by its field (`histogram.*` included).
-     * Dimensions are strings (empty allowed, as core sends an empty queue name); those with a
-     * fixed set of values must be one of them.
+     * Dimensions are strings (empty allowed, as core sends an empty queue name), enumerated ones
+     * included (#169); those with a pattern must match it.
      *
      * @return array<string, list<mixed>>
      */
@@ -150,13 +141,8 @@ class StorePushedRuntimeRequest extends FormRequest
         ];
 
         foreach ($type->dimensions() as $dimension) {
-            $values = self::DIMENSION_VALUES[$type->value][$dimension] ?? null;
             $pattern = self::DIMENSION_PATTERNS[$type->value][$dimension] ?? null;
-            $rules[$dimension] = match (true) {
-                $values !== null => ['required', 'string', Rule::in($values)],
-                $pattern !== null => ['required', 'string', 'regex:'.$pattern],
-                default => ['present', 'string', 'max:2000'],
-            };
+            $rules[$dimension] = $pattern === null ? ['present', 'string', 'max:2000'] : ['required', 'string', 'regex:'.$pattern];
         }
 
         foreach ($type->optionalDimensions() as $dimension) {

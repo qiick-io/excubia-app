@@ -133,14 +133,24 @@ it('merges health samples of one server, check and minute by the worst status', 
         ->and($project->fresh()?->skipped_runtime_aggregates)->toBe(0);
 });
 
-it('accepts unknown check ids and rejects a broken health entry', function () {
+it('accepts unknown check ids, skips and counts unknown statuses and severities, and rejects a broken health entry', function () {
     [$project, $headers] = healthProject();
 
     pushHealth($headers, [healthEntry('2026-11-07T09:58:00Z', 'pass', ['checkId' => 'laravel-future-probe'])]);
 
     expect(RuntimeAggregate::query()->sole()->dimensions['checkId'])->toBe('laravel-future-probe');
 
-    foreach ([['status', 'down'], ['severity', 'urgent'], ['checkId', 'Laravel Database'], ['fingerprints', ['nope']], ['findingCount', -1]] as [$field, $value]) {
+    // A status or severity core may add later cannot be ranked: skipped and counted, never a 422 (#169).
+    pushHealth($headers, [
+        healthEntry('2026-11-07T09:59:00Z', 'down'),
+        healthEntry('2026-11-07T09:59:00Z', 'pass', ['severity' => 'urgent', 'checkId' => 'laravel-cache']),
+        healthEntry('2026-11-07T09:59:00Z', 'warn', ['checkId' => 'laravel-storage']),
+    ]);
+
+    expect(RuntimeAggregate::query()->pluck('dimensions')->pluck('checkId')->all())->toEqualCanonicalizing(['laravel-future-probe', 'laravel-storage'])
+        ->and($project->fresh()?->skipped_runtime_aggregates)->toBe(2);
+
+    foreach ([['checkId', 'Laravel Database'], ['fingerprints', ['nope']], ['findingCount', -1]] as [$field, $value]) {
         $this->postJson(route('api.runtime.store'), [
             'protocolVersion' => 1, 'type' => 'runtime', 'batchId' => (string) Str::uuid(), 'sentAt' => '2026-11-07T10:00:00Z',
             'runtime' => ['bucketSeconds' => 60, 'aggregates' => [healthEntry('2026-11-07T09:59:00Z', 'pass', [$field => $value])]],

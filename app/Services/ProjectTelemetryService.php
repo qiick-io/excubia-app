@@ -23,9 +23,6 @@ use Illuminate\Support\Facades\Date;
  */
 class ProjectTelemetryService
 {
-    /** Outcomes of a scheduled-task run, as excubia-core sends them. */
-    private const OUTCOMES = ['finished', 'failed', 'skipped'];
-
     public function __construct(private readonly TimeSeriesService $timeSeries) {}
 
     /**
@@ -82,7 +79,7 @@ class ProjectTelemetryService
         $runs = fn () => ScheduledTaskRun::query()->where('project_id', $project->id)->where('bucket', '>=', $range->start($now))->toBase();
         $sums = [];
 
-        foreach (self::OUTCOMES as $outcome) {
+        foreach (ScheduledTaskRun::OUTCOMES as $outcome) {
             $sums[$outcome] = "case when outcome = '{$outcome}' then 1.0 * count / sample_rate else 0 end";
         }
 
@@ -97,7 +94,7 @@ class ProjectTelemetryService
         foreach ($project->scheduledTasks()->get() as $task) {
             $tasks[] = [
                 ...(new ScheduledTaskResource($task))->resolve(),
-                'runs' => [...array_fill_keys(self::OUTCOMES, 0), ...($byTask[$task->task_id] ?? [])],
+                'runs' => [...array_fill_keys(ScheduledTaskRun::OUTCOMES, 0), ...($byTask[$task->task_id] ?? [])],
             ];
         }
 

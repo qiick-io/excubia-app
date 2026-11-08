@@ -6,6 +6,7 @@ use App\Actions\RotateProjectTokenAction;
 use App\Enums\RuntimeTypeEnum;
 use App\Models\Project;
 use App\Models\RuntimeAggregate;
+use App\Models\ScheduledTaskRun;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
@@ -13,10 +14,11 @@ use Illuminate\Support\Str;
 /**
  * Contract of `POST /api/runtime` with excubia-core (#111): one entry of every core runtime type,
  * with every optional field, is checked against core's `docs/runtime-schema.json` and must be
- * stored; a type the app does not know is skipped and counted, never rejected.
+ * stored; a type the app does not know is skipped and counted, never rejected, and neither is a
+ * value core may add to an enumerated field (#169).
  *
  * `tests/Fixtures/core/runtime-schema.json` is a copy of excubia-core `develop` at
- * 8e9f346c454316453c7c33c6e92294cabfe2f239 (2026-11-08, core #208: `environment`). Refresh it when core adds a type.
+ * 83317684a26c3330ea3a3330882a588ba388d08e (2026-11-08, core #212: `ai` operation `classification`). Refresh it when core adds a type or a value.
  * The app has no JSON Schema validator, so coreSchemaErrors() (tests/Pest.php) checks the keywords
  * the runtime schema uses (required, additionalProperties, const, enum, type, pattern, min/max, lengths).
  */
@@ -231,13 +233,66 @@ it('still rejects a known type that breaks its own contract', function (string $
     'cache without hits' => ['cache', 'hits', null],
     'memory below zero' => ['requestMemory', 'maxMb', -1],
     'repeats below the threshold' => ['duplicateQuery', 'maxRepeats', 1],
-    'unknown log level' => ['logLevel', 'level', 'fatal'],
-    'unknown exit code class' => ['command', 'exitCodeClass', '2'],
     'short histogram' => ['queueWait', 'histogram', [1, 2, 1]],
     'server gauge as text' => ['server', 'loadAverage1', 'high'],
     'container flag as text' => ['server', 'isContainer', 'maybe'],
-    'unknown AI operation' => ['ai', 'operation', 'chat'],
     'AI tokens as text' => ['ai', 'inputTokens', 'many'],
     'AI without failovers' => ['ai', 'failoverCount', null],
     'AI tool without a tool' => ['aiTool', 'tool', null],
 ]);
+
+it('stores a classification entry of the Laravel AI SDK (core #212)', function () {
+    [$project, $headers] = contractProject();
+    $schema = coreRuntimeSchema();
+    $classification = [...array_diff_key(coreRuntimeAggregates()['ai'], ['agent' => true]), 'operation' => 'classification', 'provider' => 'openai', 'model' => 'gpt-5-mini'];
+
+    expect(coreSchemaErrors($classification, $schema['$defs']['ai'], $schema))->toBe([]);
+
+    $this->postJson(route('api.runtime.store'), coreRuntimeEnvelope([$classification]), $headers)->assertCreated();
+
+    // MySQL's JSON column reorders keys: compare them, not their order.
+    expect($project->runtimeAggregates()->sole()->dimensions)->toEqualCanonicalizing(['operation' => 'classification', 'provider' => 'openai', 'model' => 'gpt-5-mini'])
+        ->toHaveKeys(['operation', 'provider', 'model'])->toHaveCount(3);
+});
+
+it('stores a value core may add to an enumerated dimension instead of rejecting the batch', function (string $type, string $dimension) {
+    [$project, $headers] = contractProject();
+    $future = [...coreRuntimeAggregates()[$type], $dimension => 'futureValue'];
+
+    $this->postJson(route('api.runtime.store'), coreRuntimeEnvelope([$future, coreRuntimeAggregates()['mail']]), $headers)
+        ->assertCreated()
+        ->assertJson(['status' => 'stored']);
+
+    expect($project->runtimeAggregates()->where('type', $type)->sole()->dimensions[$dimension])->toBe('futureValue')
+        ->and($project->runtimeAggregates()->where('type', 'mail')->exists())->toBeTrue()
+        ->and($project->fresh()?->skipped_runtime_aggregates)->toBe(0);
+})->with([
+    'request status class' => ['request', 'statusClass'],
+    'outgoing HTTP status class' => ['outgoingHttp', 'statusClass'],
+    'job outcome' => ['job', 'outcome'],
+    'scheduled task outcome' => ['scheduledTask', 'outcome'],
+    'log level' => ['logLevel', 'level'],
+    'duplicate query origin' => ['duplicateQuery', 'origin'],
+    'command exit code class' => ['command', 'exitCodeClass'],
+    'AI operation' => ['ai', 'operation'],
+]);
+
+it('keeps a scheduled task outcome it does not know out of the schedule monitoring', function () {
+    [$project, $headers] = contractProject();
+
+    $this->postJson(route('api.runtime.store'), coreRuntimeEnvelope([[...coreRuntimeAggregates()['scheduledTask'], 'outcome' => 'futureValue'], coreRuntimeAggregates()['scheduledTask']]), $headers)
+        ->assertCreated();
+
+    expect(ScheduledTaskRun::query()->pluck('outcome')->all())->toBe(['finished'])
+        ->and($project->runtimeAggregates()->count())->toBe(2);
+});
+
+it('skips and counts health samples with a status or severity it does not know', function (string $metric) {
+    [$project, $headers] = contractProject();
+
+    $this->postJson(route('api.runtime.store'), coreRuntimeEnvelope([[...coreRuntimeAggregates()['health'], $metric => 'futureValue'], coreRuntimeAggregates()['mail']]), $headers)
+        ->assertCreated();
+
+    expect($project->runtimeAggregates()->pluck('type')->map->value->all())->toBe(['mail'])
+        ->and($project->fresh()?->skipped_runtime_aggregates)->toBe(1);
+})->with(['status', 'severity']);

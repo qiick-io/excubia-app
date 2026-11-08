@@ -49,7 +49,8 @@ class StorePushedExceptionsRequest extends FormRequest
             'exceptions.groups.*.previous' => ['present', 'list', 'max:5'],
             'exceptions.groups.*.previous.*' => ['string', 'max:255'],
             'exceptions.groups.*.context' => ['required', 'array'],
-            'exceptions.groups.*.context.kind' => ['required', 'in:request,job,command,unknown'],
+            // A kind this app does not know is stored as unknown, never rejected (#169).
+            'exceptions.groups.*.context.kind' => ['required', 'string', 'max:64'],
             'exceptions.groups.*.context.name' => ['present', 'string', 'max:255'],
             'exceptions.groups.*.environment' => ['required', 'string', 'max:64'],
             'exceptions.groups.*.count' => ['required', 'integer', 'min:1'],

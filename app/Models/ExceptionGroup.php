@@ -39,6 +39,9 @@ use Illuminate\Support\Carbon;
 #[Fillable(['project_id', 'fingerprint', 'environment', 'class', 'message', 'frames', 'previous', 'context_kind', 'context_name', 'count', 'first_seen', 'last_seen', 'first_release', 'last_release', 'regressed_release', 'status', 'resolved_at'])]
 class ExceptionGroup extends Model
 {
+    /** Context kinds of excubia-core (`docs/exception-schema.json`); any other is stored as `unknown` (#169). */
+    public const CONTEXT_KINDS = ['request', 'job', 'command', 'unknown'];
+
     /**
      * @return BelongsTo<Project, $this>
      */

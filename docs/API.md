@@ -89,6 +89,8 @@ excubia-core maps the status to its exit code (`3` for every non-2xx) and prints
 
 - Unknown keys anywhere in the envelope or payload are accepted and ignored, so a newer core with additive fields keeps pushing.
 - `/api/runtime`: an aggregate whose `type` the app does not know (sent by a newer core) only needs a string `type`. It is skipped, counted on the project (`skipped_runtime_aggregates`, shown on Settings → System) and never stored, and the push still answers `201` (or `200`) for the known types.
+- `/api/runtime`: a value the app does not know in a field core enumerates (`statusClass`, `outcome`, `level`, `origin`, `exitCodeClass`, the `ai` `operation`, such as `classification` from excubia-core #212) only needs to be a string. It is stored as a dimension and shown under its own name; a `scheduledTask` outcome the app does not know stays out of the schedule monitoring. A `health` sample whose `status` or `severity` the app does not know cannot be ranked, so it is skipped and counted like an unknown type. None of them rejects the batch.
+- `/api/exceptions`: a `context.kind` the app does not know only needs to be a string and is stored as `unknown`.
 - New check ids in a report are stored and shown under their own id.
 
 ## `POST /api/reports`
