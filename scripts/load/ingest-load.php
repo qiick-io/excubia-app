@@ -26,7 +26,10 @@ declare(strict_types=1);
  * Options: --url (required), --projects (10), --minutes (5, simulated minutes), --interval (60:
  * real seconds per simulated minute; 0 plays the minutes back to back to find the ceiling),
  * --concurrency (64), --report-every (60), --report (the report JSON pushed, default the core
- * fixture), --json (print the summary as JSON), --cleanup (delete the load projects and stop).
+ * fixture), --json (print the summary as JSON), --fold (after the run, fold the minutes into
+ * hourly rows as excubia:downsample-runtime does and print the runtime table's size per project
+ * and day at both resolutions, #212; use a fresh database, the table is measured whole and
+ * compacted first), --cleanup (delete the load projects and stop).
  *
  * Run it from the repository root with the same environment (`.env` or variables) as the server,
  * so it creates the projects and reads the sizes in the same database. Back-to-back minutes
@@ -36,9 +39,12 @@ declare(strict_types=1);
  */
 
 use App\Actions\DeleteProjectAction;
+use App\Actions\DownsampleRuntimeAction;
 use App\Actions\RotateProjectTokenAction;
 use App\Models\Project;
+use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Console\Kernel;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -50,7 +56,7 @@ const LOAD_TABLES = [
     'health_reports', 'findings', 'finding_events', 'scheduled_task_runs', 'ai_usage_days', 'activity_log', 'cache', 'jobs',
 ];
 
-$options = getopt('', ['url:', 'projects:', 'minutes:', 'interval:', 'concurrency:', 'report-every:', 'report:', 'json', 'cleanup']);
+$options = getopt('', ['url:', 'projects:', 'minutes:', 'interval:', 'concurrency:', 'report-every:', 'report:', 'json', 'fold', 'cleanup']);
 $root = dirname(__DIR__, 2);
 
 require $root.'/vendor/autoload.php';
@@ -119,7 +125,60 @@ for ($minute = 0; $minute < $minutes; $minute++) {
 }
 
 $summary = summarize($results, $waves, $backlog, $interval, $minutes, $projectCount, $sizeBefore, $rowsBefore);
+
+if (isset($options['fold'])) {
+    $summary['fold'] = foldRuntime($firstMinute, $minutes, $projectCount);
+}
+
 fwrite(STDOUT, isset($options['json']) ? json_encode($summary, JSON_PRETTY_PRINT)."\n" : formatSummary($summary));
+
+/**
+ * Folds every pushed minute into hourly rows (#212) and measures `runtime_aggregates` (indexes
+ * included) before and after, per project and simulated day: the minutes for the per-minute
+ * window, the hours for the rest of the retention.
+ *
+ * @return array{minute_bytes_per_project_day: int, hour_bytes_per_project_day: int, rows_folded: int}
+ */
+function foldRuntime(int $firstMinute, int $minutes, int $projects): array
+{
+    $minuteBytes = runtimeTableSize();
+    $lastMinute = $firstMinute + ($minutes - 1) * 60;
+
+    // From the oldest minute, through the hour of the last one.
+    Cache::forget(DownsampleRuntimeAction::FOLDED_UNTIL_KEY);
+    $folded = app(DownsampleRuntimeAction::class)->execute(CarbonImmutable::createFromTimestampUTC($lastMinute)->addHour());
+    $hours = intdiv($lastMinute, 3600) - intdiv($firstMinute, 3600) + 1;
+
+    return [
+        'minute_bytes_per_project_day' => (int) round($minuteBytes / $minutes * 1440 / $projects),
+        'hour_bytes_per_project_day' => (int) round(runtimeTableSize() / $hours * 24 / $projects),
+        'rows_folded' => $folded,
+    ];
+}
+
+/** Bytes of `runtime_aggregates` and its indexes, compacted first so freed pages do not count. */
+function runtimeTableSize(): int
+{
+    $connection = DB::connection();
+
+    return (int) match ($connection->getDriverName()) {
+        'sqlite' => (function () use ($connection): int {
+            $connection->statement('vacuum');
+
+            return (int) $connection->scalar("select sum(pgsize) from dbstat where name in (select name from sqlite_master where tbl_name = 'runtime_aggregates')");
+        })(),
+        'pgsql' => (function () use ($connection): int {
+            $connection->statement('vacuum full runtime_aggregates');
+
+            return (int) $connection->scalar("select pg_total_relation_size('runtime_aggregates')");
+        })(),
+        default => (function () use ($connection): int {
+            $connection->statement('optimize table runtime_aggregates');
+
+            return (int) $connection->scalar("select file_size from information_schema.innodb_tablespaces where name = concat(database(), '/runtime_aggregates')");
+        })(),
+    };
+}
 
 /**
  * Creates the missing load projects and gives each a fresh push token (shown once, so a token
@@ -440,6 +499,13 @@ function formatSummary(array $summary): string
 
     foreach ($summary['rows_per_day'] as $table => $rows) {
         $lines[] = sprintf('             %-24s %10d rows per day', $table, $rows);
+    }
+
+    if (isset($summary['fold'])) {
+        $lines[] = sprintf(
+            '  fold       runtime_aggregates per project and day: %.2f MB in minutes, %.3f MB in hours (%d rows folded)',
+            $summary['fold']['minute_bytes_per_project_day'] / 1_048_576, $summary['fold']['hour_bytes_per_project_day'] / 1_048_576, $summary['fold']['rows_folded'],
+        );
     }
 
     return implode("\n", $lines)."\n";
