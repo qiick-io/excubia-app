@@ -487,7 +487,8 @@
                 "ai.error_rate": "Der Anteil fehlgeschlagener KI-Aufrufe in der letzten Stunde liegt über dem Schwellenwert.",
                 "billing.webhook_failures": "Billing-Webhooks eines Anbieters sind in der letzten Stunde mindestens so oft wie der Schwellenwert fehlgeschlagen (5xx, vom Anbieter wiederholt).",
                 "billing.payment_failed": "Ein Billing-Anbieter hat in der letzten Stunde fehlgeschlagene Zahlungen gemeldet.",
-                "auth.failed_login_spike": "Ein Auth-Guard hat in der letzten Stunde mindestens so viele fehlgeschlagene Logins wie der Schwellenwert gezählt (Brute Force oder Credential Stuffing)."
+                "auth.failed_login_spike": "Ein Auth-Guard hat in der letzten Stunde mindestens so viele fehlgeschlagene Logins wie der Schwellenwert gezählt (Brute Force oder Credential Stuffing).",
+                "scout.index_failures": "Die Laravel-Scout-Indexjobs eines durchsuchbaren Modells sind in der letzten Stunde mindestens so oft wie der Schwellenwert fehlgeschlagen (der Suchindex weicht von der Datenbank ab)."
             },
             "runtimeRulesTitle": "Runtime-Alarmregeln",
             "runtimeRulesDescription": "Optionale Alarme aus den Runtime-Daten der Projekte, alle 15 Minuten über die letzte Stunde geprüft. Leer schaltet eine Regel ab.",
@@ -501,6 +502,8 @@
             "billingPaymentFailures": "Alarmieren, wenn ein Billing-Anbieter fehlgeschlagene Zahlungen meldet",
             "authFailedLogins": "Fehlgeschlagene Logins pro Guard und Stunde",
             "authFailedLoginsHint": "Alarmieren, wenn ein Auth-Guard in der letzten Stunde mindestens so viele fehlgeschlagene Logins zählt.",
+            "scoutIndexFailures": "Fehlgeschlagene Scout-Indexjobs pro Modell und Stunde",
+            "scoutIndexFailuresHint": "Alarmieren, wenn die Laravel-Scout-Index- oder -Entfernungsjobs in der Queue eines Modells in der letzten Stunde mindestens so oft fehlschlagen.",
             "projects": "Projekte",
             "projectsHint": "Alle Kästchen leer lassen, um die Warnungen aller Projekte zu senden.",
             "emailTitle": "E-Mail",
@@ -1166,7 +1169,10 @@
         "authDescription": "Laravel-Logins pro Auth-Guard: erfolgreiche und fehlgeschlagene Logins mit der Fehlerquote, Sperren durch den Login-Rate-Limiter und Anfragen, die ein Sanctum-Personal-Access-Token authentifiziert hat. Passport-Token-Anfragen werden nicht gezählt. Nie Benutzer, E-Mails, Zugangsdaten, Tokens oder IP-Adressen.",
         "logins": "Logins",
         "lockouts": "Sperren",
-        "tokenAuthentications": "Token-Authentifizierungen"
+        "tokenAuthentications": "Token-Authentifizierungen",
+        "scout": "Suche (Scout)",
+        "scoutDescription": "Laravel Scout pro Modell, Engine und Operation: Index- und Entfernungsjobs in der Queue mit Fehlschlägen, den synchronisierten Datensätzen und ihrer Dauer, und die gestarteten Suchen (ohne Dauer). Indexaktualisierungen mit ausgeschaltetem scout.queue (Scouts Standard) laufen inline und werden nicht erfasst. Nie Suchanfragen, Datensatz-IDs oder Datensatzinhalte.",
+        "scoutRecords": "Datensätze"
     },
     "exceptions": {
         "emptyTitle": "Keine Exceptions",

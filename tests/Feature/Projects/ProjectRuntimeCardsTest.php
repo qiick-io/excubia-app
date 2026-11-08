@@ -79,7 +79,8 @@ it('sends every card, empty, to a project whose core sends only the default type
         ->where('runtime.octane', ['config' => null, 'leakGrowthMb' => ProjectRuntimeService::OCTANE_LEAK_GROWTH_MB, 'rows' => []])
         ->where('runtime.reverb', ['check' => null, 'rows' => []])
         ->where('runtime.billing', ['totals' => ['paymentFailed' => 0, 'paymentActionRequired' => 0, 'subscriptionCanceled' => 0], 'rows' => []])
-        ->where('runtime.auth', []));
+        ->where('runtime.auth', [])
+        ->where('runtime.scout', []));
 });
 
 it('shows the skipped aggregates of unknown types, even before any known type arrives', function () {
@@ -422,4 +423,35 @@ it('shows authentication per guard with the failure rate, lockouts and token aut
         ])
         ->where('runtime.auth.2.guard', 'unknown')
         ->where('runtime.auth.2.failureRate', 100));
+});
+
+it('shows Scout per model, engine and operation with failures, records and p95, and searches without durations (#184)', function () {
+    $post = ['model' => 'App\\Models\\Post', 'engine' => 'meilisearch'];
+
+    cardRow($this->project, 'scout', [...$post, 'operation' => 'index'], [
+        'count' => 10, 'error_count' => 1, 'total_ms' => 500, 'max_ms' => 250, 'metrics' => ['modelCount' => 40],
+        'histogram' => [0, 0, 0, 0, 4, 6, 0, 0, 0, 0, 0, 0],
+    ]);
+    // Sampled at 50 %: the counts and records are estimated.
+    cardRow($this->project, 'scout', [...$post, 'operation' => 'index'], [
+        'bucket' => '2026-11-05 11:30:00', 'sample_rate' => 0.5, 'count' => 2, 'error_count' => 1, 'total_ms' => 100, 'max_ms' => 80, 'metrics' => ['modelCount' => 4],
+    ]);
+    // A search has no duration.
+    cardRow($this->project, 'scout', [...$post, 'operation' => 'search'], ['count' => 30, 'metrics' => ['modelCount' => 0]]);
+    // An engine and an operation this app does not know (#169) are shown as sent.
+    cardRow($this->project, 'scout', ['model' => 'unknown', 'engine' => 'my-driver', 'operation' => 'futureValue'], ['count' => 1, 'total_ms' => 5, 'max_ms' => 5, 'metrics' => ['modelCount' => 0]]);
+
+    runtimePage($this->viewer, $this->project)->assertInertia(fn (Assert $page) => $page
+        ->has('runtime.scout', 3)
+        ->where('runtime.scout.0', [
+            ...$post, 'operation' => 'search', 'count' => 30, 'errors' => 0, 'averageMs' => null, 'maxMs' => null,
+            'p50' => null, 'p95' => null, 'p99' => null, 'errorRate' => 0, 'records' => 0, 'lastAt' => '2026-11-05T11:58:00Z',
+        ])
+        ->where('runtime.scout.1', [
+            ...$post, 'operation' => 'index', 'count' => 14, 'errors' => 3, 'averageMs' => 50, 'maxMs' => 250,
+            'p50' => 125, 'p95' => 237.5, 'p99' => 247.5, 'errorRate' => 21.4, 'records' => 48, 'lastAt' => '2026-11-05T11:58:00Z',
+        ])
+        ->where('runtime.scout.2.engine', 'my-driver')
+        ->where('runtime.scout.2.operation', 'futureValue')
+        ->where('runtime.scout.2.maxMs', 5));
 });

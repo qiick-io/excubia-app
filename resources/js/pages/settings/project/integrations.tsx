@@ -57,6 +57,7 @@ type IntegrationsSettings = {
     alert_billing_webhook_failures_per_hour: number | null;
     alert_billing_payment_failed_enabled: boolean;
     alert_auth_failed_logins_per_hour: number | null;
+    alert_scout_index_failures_per_hour: number | null;
     webhook_last_success: Delivery;
     webhook_last_error: Delivery;
 };
@@ -105,6 +106,9 @@ export default function ProjectIntegrationsSettings({
         ),
         alert_auth_failed_logins_per_hour: String(
             project.alert_auth_failed_logins_per_hour ?? '',
+        ),
+        alert_scout_index_failures_per_hour: String(
+            project.alert_scout_index_failures_per_hour ?? '',
         ),
     });
     const [testing, setTesting] = useState<Channel | null>(null);
@@ -644,6 +648,29 @@ export default function ProjectIntegrationsSettings({
                                         onChange={(value) =>
                                             setValue(
                                                 'alert_auth_failed_logins_per_hour',
+                                                value,
+                                            )
+                                        }
+                                    />
+                                    <TextField
+                                        name="alert_scout_index_failures_per_hour"
+                                        type="number"
+                                        label={t(
+                                            'settings.integrations.scoutIndexFailures',
+                                        )}
+                                        hint={t(
+                                            'settings.integrations.scoutIndexFailuresHint',
+                                        )}
+                                        placeholder="1"
+                                        value={
+                                            form.alert_scout_index_failures_per_hour
+                                        }
+                                        error={
+                                            errors.alert_scout_index_failures_per_hour
+                                        }
+                                        onChange={(value) =>
+                                            setValue(
+                                                'alert_scout_index_failures_per_hour',
                                                 value,
                                             )
                                         }

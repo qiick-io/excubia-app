@@ -22,7 +22,9 @@ use Illuminate\Support\Facades\Date;
  * - `billing.webhook_failures` (#178): a billing provider's webhooks failed (5xx, the provider
  *   retries them) at least the threshold of times;
  * - `billing.payment_failed` (#178): a billing provider reported failed payments;
- * - `auth.failed_login_spike` (#180): an auth guard saw at least the threshold of failed logins.
+ * - `auth.failed_login_spike` (#180): an auth guard saw at least the threshold of failed logins;
+ * - `scout.index_failures` (#184): a searchable model's Scout index jobs failed at least the
+ *   threshold of times (the search index drifts from the database).
  * Counts are estimated (`count / sample_rate`). Each subject alerts at most once per hour: the
  * alert history is the cooldown.
  *
@@ -50,7 +52,8 @@ class RuntimeAlertsService
             || $this->settings->alertLogSpikePerHour() !== null
             || $this->settings->alertBillingWebhookFailuresPerHour() !== null
             || $this->settings->shouldAlertBillingPaymentFailures()
-            || $this->settings->alertAuthFailedLoginsPerHour() !== null;
+            || $this->settings->alertAuthFailedLoginsPerHour() !== null
+            || $this->settings->alertScoutIndexFailuresPerHour() !== null;
     }
 
     /**
@@ -60,7 +63,7 @@ class RuntimeAlertsService
     {
         $series = RuntimeAggregate::query()
             ->where('project_id', $project->id)
-            ->whereIn('type', [RuntimeTypeEnum::Cache->value, RuntimeTypeEnum::Mail->value, RuntimeTypeEnum::Notification->value, RuntimeTypeEnum::LogLevel->value, RuntimeTypeEnum::BillingWebhook->value, RuntimeTypeEnum::Auth->value])
+            ->whereIn('type', [RuntimeTypeEnum::Cache->value, RuntimeTypeEnum::Mail->value, RuntimeTypeEnum::Notification->value, RuntimeTypeEnum::LogLevel->value, RuntimeTypeEnum::BillingWebhook->value, RuntimeTypeEnum::Auth->value, RuntimeTypeEnum::Scout->value])
             ->where('bucket', '>=', Date::now()->subHour())
             ->get()
             ->groupBy(fn (RuntimeAggregate $aggregate): string => $aggregate->type->value);
@@ -109,7 +112,35 @@ class RuntimeAlertsService
 
         return $sent
             + $this->billing($project, $series->get(RuntimeTypeEnum::BillingWebhook->value, collect()))
-            + $this->failedLogins($project, $series->get(RuntimeTypeEnum::Auth->value, collect()));
+            + $this->failedLogins($project, $series->get(RuntimeTypeEnum::Auth->value, collect()))
+            + $this->scoutIndexFailures($project, $series->get(RuntimeTypeEnum::Scout->value, collect()));
+    }
+
+    /**
+     * The Scout index failure rule (#184), per searchable model over the last hour: failed
+     * `index` and `remove` jobs (a `search` row never has errors), across engines.
+     *
+     * @param  Collection<int, RuntimeAggregate>  $series
+     */
+    private function scoutIndexFailures(Project $project, Collection $series): int
+    {
+        $threshold = $this->settings->alertScoutIndexFailuresPerHour();
+
+        if ($threshold === null) {
+            return 0;
+        }
+
+        $sent = 0;
+
+        foreach ($series->groupBy(fn (RuntimeAggregate $aggregate): string => (string) ($aggregate->dimensions['model'] ?? '')) as $model => $rows) {
+            $failed = $this->estimate($rows, fn (RuntimeAggregate $aggregate): float => $aggregate->error_count);
+
+            if ($failed >= $threshold) {
+                $sent += $this->send($project, AlertEventEnum::ScoutIndexFailures, "scout:{$model}", "{$model}: {$failed} failed Scout index jobs in the last hour", ['model' => $model, 'failedJobs' => $failed]);
+            }
+        }
+
+        return $sent;
     }
 
     /**

@@ -391,6 +391,24 @@ export type RuntimeAuthRow = {
     lastAt: string | null;
 };
 
+/**
+ * Laravel Scout of one model class, engine and operation (#184). Counts are estimated; for
+ * `index` and `remove` `count` is the jobs that ended, `errors` the failed ones and `records`
+ * the records they carried; for `search` `count` is the searches started, without durations.
+ */
+export type RuntimeScoutRow = {
+    model: string;
+    engine: string;
+    operation: string;
+    count: number;
+    errors: number;
+    errorRate: number | null;
+    records: number;
+    averageMs: number | null;
+    maxMs: number | null;
+    lastAt: string | null;
+} & RuntimePercentiles;
+
 /** A time range of the runtime, exceptions and schedule tabs (#113), `TimeRangeEnum`. */
 export type TimeRange = '1h' | '6h' | '24h' | '7d' | '14d';
 
@@ -460,6 +478,8 @@ export type RuntimeSummary = {
     };
     /** Laravel authentication per guard (#180). */
     auth: RuntimeAuthRow[];
+    /** Laravel Scout per model, engine and operation (#184). */
+    scout: RuntimeScoutRow[];
     /** Deploys of the range, oldest first (#106); `bucket` matches a `timeline` point. */
     deploys: RuntimeDeploy[];
 };

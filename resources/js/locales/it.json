@@ -487,7 +487,8 @@
                 "ai.error_rate": "La quota di chiamate AI fallite nell'ultima ora supera la soglia.",
                 "billing.webhook_failures": "I webhook di fatturazione di un provider sono falliti (5xx, ritentati dal provider) almeno quanto la soglia nell'ultima ora.",
                 "billing.payment_failed": "Un provider di fatturazione ha segnalato pagamenti falliti nell'ultima ora.",
-                "auth.failed_login_spike": "Una guard di autenticazione ha registrato almeno la soglia di login falliti nell'ultima ora (brute force o credential stuffing)."
+                "auth.failed_login_spike": "Una guard di autenticazione ha registrato almeno la soglia di login falliti nell'ultima ora (brute force o credential stuffing).",
+                "scout.index_failures": "I job di indicizzazione Laravel Scout di un modello sono falliti almeno quante volte la soglia nell'ultima ora (l'indice di ricerca si discosta dal database)."
             },
             "runtimeRulesTitle": "Regole di avviso runtime",
             "runtimeRulesDescription": "Avvisi opzionali dai dati runtime inviati dai progetti, controllati ogni 15 minuti sull'ultima ora. Vuoto disattiva la regola.",
@@ -501,6 +502,8 @@
             "billingPaymentFailures": "Avvisa quando un provider di fatturazione segnala pagamenti falliti",
             "authFailedLogins": "Login falliti per guard e ora",
             "authFailedLoginsHint": "Avvisa quando una guard di autenticazione registra almeno questo numero di login falliti nell'ultima ora.",
+            "scoutIndexFailures": "Job di indicizzazione Scout falliti per modello e ora",
+            "scoutIndexFailuresHint": "Avvisa quando i job in coda di indicizzazione o rimozione di Laravel Scout di un modello falliscono almeno questo numero di volte nell'ultima ora.",
             "projects": "Progetti",
             "projectsHint": "Lascia tutte le caselle vuote per inviare gli avvisi di ogni progetto.",
             "emailTitle": "Email",
@@ -1166,7 +1169,10 @@
         "authDescription": "Login di Laravel per guard: login riusciti e falliti con il tasso di fallimento, blocchi del rate limiter dei login e richieste autenticate da un personal access token di Sanctum. Le richieste con token Passport non sono contate. Mai utenti, email, credenziali, token o indirizzi IP.",
         "logins": "Login",
         "lockouts": "Blocchi",
-        "tokenAuthentications": "Autenticazioni token"
+        "tokenAuthentications": "Autenticazioni token",
+        "scout": "Ricerca (Scout)",
+        "scoutDescription": "Laravel Scout per modello, engine e operazione: job in coda di indicizzazione e rimozione con i fallimenti, i record sincronizzati e la durata, e le ricerche avviate (senza durata). Gli aggiornamenti dell'indice con scout.queue disattivato (il default di Scout) sono eseguiti inline e non vengono registrati. Mai query di ricerca, id o dati dei record.",
+        "scoutRecords": "Record"
     },
     "exceptions": {
         "emptyTitle": "Nessuna eccezione",

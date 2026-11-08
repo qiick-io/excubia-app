@@ -34,6 +34,7 @@ import type {
     RuntimeOctaneRow,
     RuntimeReverbChannels,
     RuntimeReverbRow,
+    RuntimeScoutRow,
     RuntimeRow,
     RuntimeServer,
     RuntimeSummary,
@@ -478,6 +479,8 @@ export function RuntimeView({ runtime }: { runtime: RuntimeSummary | null }) {
             <BillingCard billing={runtime.billing} format={format} />
 
             <AuthCard auth={runtime.auth} format={format} />
+
+            <ScoutCard scout={runtime.scout} format={format} />
         </div>
     );
 }
@@ -755,6 +758,63 @@ function AuthCard({
                 {
                     label: t('runtime.tokenAuthentications'),
                     cell: (row) => format.count(row.tokenAuthentications),
+                },
+            ]}
+        />
+    );
+}
+
+/**
+ * Laravel Scout (#184) per model, engine and operation: index and remove jobs with failures
+ * and the failure rate, records synced, p95 and slowest job; searches show only their count
+ * (core sends no failures, records or durations for them).
+ */
+function ScoutCard({
+    scout,
+    format,
+}: {
+    scout: RuntimeSummary['scout'];
+    format: Formatters;
+}) {
+    const { t } = useTranslation();
+    const isSearch = (row: RuntimeScoutRow) => row.operation === 'search';
+
+    return (
+        <RuntimeCard<RuntimeScoutRow>
+            title={t('runtime.scout')}
+            description={t('runtime.scoutDescription')}
+            configKey="runtime.scout"
+            rows={scout}
+            name={(row) => (
+                <Name
+                    primary={row.model}
+                    secondary={`${row.engine} · ${row.operation}`}
+                    isMono
+                    isSecondaryMono
+                />
+            )}
+            columns={[
+                {
+                    label: t('runtime.count'),
+                    cell: (row) => format.count(row.count),
+                },
+                {
+                    label: t('runtime.failedRate'),
+                    cell: (row) =>
+                        isSearch(row)
+                            ? '—'
+                            : `${format.count(row.errors)} (${format.number(row.errorRate)}%)`,
+                    isProblem: (row) => row.errors > 0,
+                },
+                {
+                    label: t('runtime.scoutRecords'),
+                    cell: (row) =>
+                        isSearch(row) ? '—' : format.count(row.records),
+                },
+                { label: 'p95', cell: (row) => format.ms(row.p95) },
+                {
+                    label: t('runtime.max'),
+                    cell: (row) => format.ms(row.maxMs),
                 },
             ]}
         />

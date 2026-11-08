@@ -62,6 +62,8 @@ class ProjectRuntimeService
         'handledCount' => 'sum', 'paymentFailedCount' => 'sum', 'paymentActionRequiredCount' => 'sum', 'subscriptionCanceledCount' => 'sum',
         // `auth` (#180).
         'loginCount' => 'sum', 'lockoutCount' => 'sum', 'tokenAuthenticationCount' => 'sum',
+        // `scout` (#184).
+        'modelCount' => 'sum',
     ];
 
     /**
@@ -138,6 +140,7 @@ class ProjectRuntimeService
             'reverb' => $this->reverb($project, $of(RuntimeTypeEnum::Reverb)),
             'billing' => $this->billing($of(RuntimeTypeEnum::BillingWebhook)),
             'auth' => $this->auth($of(RuntimeTypeEnum::Auth)),
+            'scout' => $this->scout($of(RuntimeTypeEnum::Scout)),
             'deploys' => $this->timeSeries->deploys($project, $range, $now),
         ];
     }
@@ -282,8 +285,9 @@ class ProjectRuntimeService
         return [
             'count' => $this->estimate($series, fn (array $one): float => $one['count']),
             'errors' => $this->estimate($series, fn (array $one): float => $one['errorCount']),
-            'averageMs' => $recorded > 0 ? round($series->sum('totalMs') / $recorded, 1) : null,
-            'maxMs' => $series->isEmpty() ? null : round((float) $series->max('maxMs'), 1),
+            // Null without any duration, as for a Scout search (#184).
+            'averageMs' => $recorded > 0 && $series->contains(fn (array $one): bool => $one['totalMs'] !== null) ? round($series->sum('totalMs') / $recorded, 1) : null,
+            'maxMs' => $series->max('maxMs') === null ? null : round((float) $series->max('maxMs'), 1),
             ...$this->percentiles($series->reject(fn (array $one): bool => ($one['dimensions']['outcome'] ?? '') === 'skipped')),
         ];
     }
@@ -736,6 +740,28 @@ class ProjectRuntimeService
                 'failureRate' => $logins + $failed > 0 ? round($failed / ($logins + $failed) * 100, 1) : null,
                 'lockouts' => $this->estimate($group, fn (array $one): ?float => $one['metrics']['lockoutCount']),
                 'tokenAuthentications' => $this->estimate($group, fn (array $one): ?float => $one['metrics']['tokenAuthenticationCount']),
+            ];
+        });
+    }
+
+    /**
+     * Laravel Scout (#184) per model class, engine and operation: estimated index and remove
+     * jobs with the failed ones and their rate (%), the records they carried, and job durations
+     * with p95; for `search` the searches started, without durations (core sends none). Index
+     * updates with `scout.queue` off are not recorded by core.
+     *
+     * @param  Collection<int, Series>  $series
+     * @return list<array<string, mixed>>
+     */
+    private function scout(Collection $series): array
+    {
+        return $this->table($series, ['model', 'engine', 'operation'], function (Collection $group): array {
+            $totals = $this->totals($group);
+
+            return [
+                ...$totals,
+                'errorRate' => $totals['count'] > 0 ? round($totals['errors'] / $totals['count'] * 100, 1) : null,
+                'records' => $this->estimate($group, fn (array $one): ?float => $one['metrics']['modelCount']),
             ];
         });
     }
