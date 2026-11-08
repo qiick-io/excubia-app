@@ -74,6 +74,11 @@ function coreRuntimeAggregates(): array
             'type' => 'octane', ...$base, 'server' => 'web-1', 'octaneServer' => 'swoole', 'workerType' => 'http', 'count' => 312, 'workerStarts' => 2, 'workerStops' => 2,
             'requests' => 305, 'tasks' => 0, 'ticks' => 0, 'totalRequestsAtStop' => 1000, 'maxRequestsAtStop' => 500, 'maxMb' => 48.211, 'maxGrowthMb' => 12.004,
         ],
+        'reverb' => [
+            'type' => 'reverb', ...$base, 'server' => 'ws-1', 'appId' => 'my-app', 'count' => 120, 'errorCount' => 1, 'connectionsOpened' => 10, 'connectionsRejected' => 1,
+            'connectionsPruned' => 2, 'maxConnections' => 8, 'messagesReceived' => 40, 'messagesSent' => 60, 'publicChannelsCreated' => 3, 'privateChannelsCreated' => 2,
+            'presenceChannelsCreated' => 1, 'publicChannelsRemoved' => 1, 'privateChannelsRemoved' => 0, 'presenceChannelsRemoved' => 0,
+        ],
         'billingWebhook' => [
             'type' => 'billingWebhook', ...$base, 'provider' => 'stripe', 'eventType' => 'invoice.payment_failed', ...$timed,
             'handledCount' => 3, 'paymentFailedCount' => 4, 'paymentActionRequiredCount' => 0, 'subscriptionCanceledCount' => 0,
@@ -170,6 +175,7 @@ it('merges entries of the same series across batches by each metric rule', funct
         array_diff_key([...$aggregates['queueWait'], 'count' => 1, 'totalMs' => 10, 'maxMs' => 10], ['histogram' => true]),
         array_diff_key($aggregates['logLevel'], ['channel' => true]),
         [...$aggregates['octane'], 'count' => 50, 'errorCount' => 2, 'workerStarts' => 1, 'workerStops' => 1, 'requests' => 40, 'tasks' => 3, 'ticks' => 6, 'totalRequestsAtStop' => 480, 'maxRequestsAtStop' => 480, 'maxMb' => 60.5, 'maxGrowthMb' => 2.25],
+        [...$aggregates['reverb'], 'count' => 30, 'errorCount' => 0, 'connectionsOpened' => 4, 'connectionsRejected' => 0, 'connectionsPruned' => 1, 'maxConnections' => 12, 'messagesReceived' => 5, 'messagesSent' => 9, 'publicChannelsCreated' => 1, 'privateChannelsRemoved' => 2],
         [...$aggregates['billingWebhook'], 'count' => 2, 'errorCount' => 0, 'handledCount' => 2, 'paymentFailedCount' => 2, 'paymentActionRequiredCount' => 1, 'subscriptionCanceledCount' => 1],
     ];
 
@@ -195,6 +201,12 @@ it('merges entries of the same series across batches by each metric rule', funct
         ->and($row('octane')->metrics)->toEqual([
             'workerStarts' => 3, 'workerStops' => 3, 'requests' => 345, 'tasks' => 3, 'ticks' => 6,
             'totalRequestsAtStop' => 1480, 'maxRequestsAtStop' => 500, 'maxMb' => 60.5, 'maxGrowthMb' => 12.004,
+        ])
+        ->and([$row('reverb')->count, $row('reverb')->error_count])->toBe([150, 1])
+        ->and($row('reverb')->metrics)->toEqual([
+            'connectionsOpened' => 14, 'connectionsRejected' => 1, 'connectionsPruned' => 3, 'messagesReceived' => 45, 'messagesSent' => 69,
+            'publicChannelsCreated' => 4, 'privateChannelsCreated' => 4, 'presenceChannelsCreated' => 2,
+            'publicChannelsRemoved' => 2, 'privateChannelsRemoved' => 2, 'presenceChannelsRemoved' => 0, 'maxConnections' => 12,
         ])
         ->and([$row('billingWebhook')->count, $row('billingWebhook')->error_count])->toBe([6, 1])
         ->and($row('billingWebhook')->metrics)->toEqual([
@@ -260,6 +272,8 @@ it('still rejects a known type that breaks its own contract', function (string $
     'AI tool without a tool' => ['aiTool', 'tool', null],
     'Octane without requests' => ['octane', 'requests', null],
     'Octane growth below zero' => ['octane', 'maxGrowthMb', -0.5],
+    'Reverb without messages sent' => ['reverb', 'messagesSent', null],
+    'Reverb connections below zero' => ['reverb', 'maxConnections', -1],
     'billing webhook without handled count' => ['billingWebhook', 'handledCount', null],
     'billing payment signal below zero' => ['billingWebhook', 'paymentFailedCount', -1],
 ]);
@@ -300,6 +314,7 @@ it('stores a value core may add to an enumerated dimension instead of rejecting 
     'AI operation' => ['ai', 'operation'],
     'Octane server' => ['octane', 'octaneServer'],
     'Octane worker type' => ['octane', 'workerType'],
+    'Reverb app id' => ['reverb', 'appId'],
     'billing provider' => ['billingWebhook', 'provider'],
     'billing event type' => ['billingWebhook', 'eventType'],
 ]);

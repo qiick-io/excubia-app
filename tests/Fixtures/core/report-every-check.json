@@ -963,6 +963,41 @@
       ]
     },
     {
+      "checkId": "laravel-reverb",
+      "name": "Reverb server",
+      "status": "fail",
+      "findings": [
+        {
+          "checkId": "laravel-reverb",
+          "severity": "info",
+          "status": "pass",
+          "subject": "reverb",
+          "message": "The Reverb server answers (3.2 ms to connect).",
+          "fixHint": "",
+          "evidenceUrl": null,
+          "fingerprint": "8c1f0b3e6a2d4f5b9e7c1a3d5f7b9e1c3a5d7f9b1e3c5a7d9f1b3e5c7a9d1f3b",
+          "details": {
+            "isReachable": true,
+            "latencyMs": 3.2
+          }
+        },
+        {
+          "checkId": "laravel-reverb",
+          "severity": "high",
+          "status": "fail",
+          "subject": "reverb",
+          "message": "The Reverb server does not answer on its configured host and port within 2 s: broadcasts fail.",
+          "fixHint": "Keep php artisan reverb:start running under a process monitor such as Supervisor, and check REVERB_HOST and REVERB_PORT.",
+          "evidenceUrl": "https://laravel.com/docs/reverb#running-server",
+          "fingerprint": "2d4f6b8a0c1e3f5a7b9d1c3e5f7a9b1d3f5c7e9a1b3d5f7e9c1a3b5d7f9e1c3a",
+          "details": {
+            "isReachable": false,
+            "latencyMs": null
+          }
+        }
+      ]
+    },
+    {
       "checkId": "laravel-cashier",
       "name": "Laravel Cashier",
       "status": "warn",

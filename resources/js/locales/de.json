@@ -1138,6 +1138,18 @@
         "workerErrors": "Worker-Fehler",
         "memoryGrowth": "Max. Anstieg",
         "requestsAtStop": "Anfragen beim Stopp (Ø / max)",
+        "reverb": "Reverb",
+        "reverbDescription": "Pro Server und Reverb-App. Spitze der Verbindungen sind die meisten Verbindungen mit einem abonnierten Kanal in einer Minute; Kanäle sind öffentlich / privat / Presence.",
+        "reverbReachable": "Der Reverb-Server antwortete im letzten Bericht in {{latency}} ms.",
+        "reverbUnreachable": "Der Reverb-Server antwortete im letzten Bericht nicht.",
+        "messagesInOut": "Nachrichten ein / aus",
+        "connectionsOpened": "Geöffnet",
+        "connectionsRejected": "Abgelehnt",
+        "connectionsPruned": "Wegen Timeout getrennt",
+        "reverbErrors": "Fehler",
+        "channelsCreated": "Kanäle erstellt",
+        "channelsRemoved": "Kanäle entfernt",
+        "peakConnections": "Max. Verbindungen",
         "billing": "Billing-Webhooks",
         "billingDescription": "Laravel-Cashier-Webhooks pro Anbieter und Ereignistyp. Fehlgeschlagene endeten mit einem Serverfehler (5xx), der Anbieter wiederholt sie; Ereignistypen ohne Cashier-Handler sind weder verarbeitet noch fehlgeschlagen. Nur der Ereignistyp kommt an: nie Beträge, Kunden oder andere Payload-Daten.",
         "billingTotals": "Zahlungssignale in diesem Zeitraum",
@@ -1575,6 +1587,10 @@
         "laravel-octane-config": {
             "label": "Octane-Konfiguration",
             "description": "Octane-Server und, in Produktion, ob max_requests die Worker neu startet, bevor sich Lecks aufbauen."
+        },
+        "laravel-reverb": {
+            "label": "Reverb-Server",
+            "description": "Ob der Reverb-Server der Broadcast-Verbindung innerhalb von 2 s eine TCP-Verbindung annimmt, und wie schnell."
         },
         "laravel-cashier": {
             "label": "Laravel Cashier",

@@ -34,6 +34,8 @@ enum RuntimeTypeEnum: string
     case AiTool = 'aiTool';
     // Laravel Octane workers (#168, core #213).
     case Octane = 'octane';
+    // Laravel Reverb WebSocket servers (#175, core #215).
+    case Reverb = 'reverb';
     // Laravel Cashier webhooks (#178, core #217).
     case BillingWebhook = 'billingWebhook';
 
@@ -60,6 +62,16 @@ enum RuntimeTypeEnum: string
      * keep the larger value (core `$defs.octane`).
      */
     public const OCTANE_COUNTERS = ['workerStarts', 'workerStops', 'requests', 'tasks', 'ticks', 'totalRequestsAtStop'];
+
+    /**
+     * Counters of `reverb` (#175): they add up. `maxConnections` is a gauge that keeps the larger
+     * value (core `$defs.reverb`).
+     */
+    public const REVERB_COUNTERS = [
+        'connectionsOpened', 'connectionsRejected', 'connectionsPruned', 'messagesReceived', 'messagesSent',
+        'publicChannelsCreated', 'privateChannelsCreated', 'presenceChannelsCreated',
+        'publicChannelsRemoved', 'privateChannelsRemoved', 'presenceChannelsRemoved',
+    ];
 
     /**
      * Counters of `billingWebhook` (#178) beyond count and errorCount: webhooks Cashier's handler
@@ -105,6 +117,7 @@ enum RuntimeTypeEnum: string
             self::Ai => ['operation', 'provider', 'model'],
             self::AiTool => ['agent', 'tool'],
             self::Octane => ['server', 'octaneServer', 'workerType'],
+            self::Reverb => ['server', 'appId'],
             self::BillingWebhook => ['provider', 'eventType'],
         };
     }
@@ -154,6 +167,7 @@ enum RuntimeTypeEnum: string
             self::Health => ['status' => 'status', 'severity' => 'severity', 'findingCount' => 'max', 'fingerprints' => 'union'],
             self::Ai => ['failoverCount' => 'sum', ...array_fill_keys(self::AI_USAGE, 'sum')],
             self::Octane => [...array_fill_keys(self::OCTANE_COUNTERS, 'sum'), 'maxRequestsAtStop' => 'max', 'maxMb' => 'max', 'maxGrowthMb' => 'max'],
+            self::Reverb => [...array_fill_keys(self::REVERB_COUNTERS, 'sum'), 'maxConnections' => 'max'],
             self::BillingWebhook => array_fill_keys(self::BILLING_COUNTERS, 'sum'),
             default => [],
         };

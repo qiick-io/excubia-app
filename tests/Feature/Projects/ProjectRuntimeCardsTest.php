@@ -77,6 +77,7 @@ it('sends every card, empty, to a project whose core sends only the default type
         ->where('runtime.duplicateQueries', [])
         ->where('runtime.servers', [])
         ->where('runtime.octane', ['config' => null, 'leakGrowthMb' => ProjectRuntimeService::OCTANE_LEAK_GROWTH_MB, 'rows' => []])
+        ->where('runtime.reverb', ['check' => null, 'rows' => []])
         ->where('runtime.billing', ['totals' => ['paymentFailed' => 0, 'paymentActionRequired' => 0, 'subscriptionCanceled' => 0], 'rows' => []]));
 });
 
@@ -293,6 +294,73 @@ it('leaves max_requests out when the latest report has no laravel-octane-config 
         ->where('runtime.octane.config', null)
         ->where('runtime.octane.rows.0.requests', 2)
         ->where('runtime.octane.rows.0.maxRequestsAtStop', null));
+});
+
+/**
+ * The metrics of one `reverb` minute, 0 unless given.
+ *
+ * @param  array<string, int>  $metrics
+ * @return array{metrics: array<string, int>}
+ */
+function reverbMetrics(array $metrics): array
+{
+    return ['metrics' => [...array_fill_keys([...RuntimeTypeEnum::REVERB_COUNTERS, 'maxConnections'], 0), ...$metrics]];
+}
+
+/**
+ * A latest report whose laravel-reverb check carries the given details.
+ *
+ * @param  array<string, mixed>  $details
+ */
+function reverbReport(Project $project, string $status, array $details): void
+{
+    $project->healthReports()->create([
+        'batch_id' => (string) Str::uuid(), 'received_at' => now(), 'generated_at' => now(),
+        'report' => ['checks' => [['checkId' => 'laravel-reverb', 'status' => $status, 'findings' => [
+            ['checkId' => 'laravel-reverb', 'subject' => 'reverb', 'status' => $status, 'severity' => $status === 'pass' ? 'info' : 'high', 'details' => $details],
+        ]]]],
+    ]);
+}
+
+it('shows Reverb servers per server and app with the peak of connections and the check reading (#175)', function () {
+    $app = ['server' => 'ws-1', 'appId' => 'my-app'];
+
+    cardRow($this->project, 'reverb', $app, ['count' => 80, 'error_count' => 2, ...reverbMetrics([
+        'connectionsOpened' => 10, 'connectionsRejected' => 1, 'connectionsPruned' => 2, 'messagesReceived' => 30, 'messagesSent' => 50, 'maxConnections' => 7,
+        'publicChannelsCreated' => 3, 'privateChannelsCreated' => 2, 'presenceChannelsCreated' => 1, 'publicChannelsRemoved' => 1,
+    ])]);
+    cardRow($this->project, 'reverb', $app, ['bucket' => '2026-11-05 11:59:00', 'count' => 20, ...reverbMetrics(['messagesSent' => 15, 'maxConnections' => 12, 'privateChannelsRemoved' => 2])]);
+    // Sampled at 50 %: the event counts are estimated, the connection gauge is not.
+    cardRow($this->project, 'reverb', [...$app, 'server' => 'ws-2'], ['sample_rate' => 0.5, 'count' => 10, ...reverbMetrics(['messagesReceived' => 4, 'messagesSent' => 5, 'connectionsOpened' => 3, 'maxConnections' => 9])]);
+    // A channel event outside an app scope (core sends `unknown`) is shown as sent.
+    cardRow($this->project, 'reverb', [...$app, 'appId' => 'unknown'], ['count' => 1, ...reverbMetrics(['publicChannelsRemoved' => 1])]);
+    reverbReport($this->project, 'pass', ['isReachable' => true, 'latencyMs' => 3.2]);
+
+    runtimePage($this->viewer, $this->project)->assertInertia(fn (Assert $page) => $page
+        ->where('runtime.reverb.check', ['isReachable' => true, 'latencyMs' => 3.2])
+        ->has('runtime.reverb.rows', 3)
+        ->where('runtime.reverb.rows.0', [
+            'server' => 'ws-1', 'appId' => 'my-app',
+            'messagesReceived' => 30, 'messagesSent' => 65, 'connectionsOpened' => 10, 'connectionsRejected' => 1, 'connectionsPruned' => 2, 'errors' => 2,
+            'channelsCreated' => ['public' => 3, 'private' => 2, 'presence' => 1],
+            'channelsRemoved' => ['public' => 1, 'private' => 2, 'presence' => 0],
+            'peakConnections' => 12, 'lastAt' => '2026-11-05T11:59:00Z',
+        ])
+        ->where('runtime.reverb.rows.1.server', 'ws-2')
+        ->where('runtime.reverb.rows.1.messagesReceived', 8)
+        ->where('runtime.reverb.rows.1.messagesSent', 10)
+        ->where('runtime.reverb.rows.1.connectionsOpened', 6)
+        ->where('runtime.reverb.rows.1.peakConnections', 9)
+        ->where('runtime.reverb.rows.2.appId', 'unknown')
+        ->where('runtime.reverb.rows.2.channelsRemoved.public', 1));
+});
+
+it('shows an unreachable Reverb server from the latest report, also without runtime rows', function () {
+    cardRow($this->project, 'request', ['route' => 'home', 'method' => 'GET', 'statusClass' => '2xx'], ['total_ms' => 100, 'max_ms' => 20]);
+    reverbReport($this->project, 'fail', ['isReachable' => false, 'latencyMs' => null]);
+
+    runtimePage($this->viewer, $this->project)->assertInertia(fn (Assert $page) => $page
+        ->where('runtime.reverb', ['check' => ['isReachable' => false, 'latencyMs' => null], 'rows' => []]));
 });
 
 it('shows billing webhooks per provider and event type with the payment signal totals (#178)', function () {

@@ -326,6 +326,32 @@ export type RuntimeOctaneRow = {
     lastAt: string | null;
 };
 
+/** Channel counts of a Reverb app by name prefix (#175). */
+export type RuntimeReverbChannels = {
+    public: number;
+    private: number;
+    presence: number;
+};
+
+/**
+ * One Reverb app on one server (#175). Counts are estimated; `peakConnections` is the largest
+ * once-a-minute connection sample, not scaled.
+ */
+export type RuntimeReverbRow = {
+    server: string;
+    appId: string;
+    messagesReceived: number;
+    messagesSent: number;
+    connectionsOpened: number;
+    connectionsRejected: number;
+    connectionsPruned: number;
+    errors: number;
+    channelsCreated: RuntimeReverbChannels;
+    channelsRemoved: RuntimeReverbChannels;
+    peakConnections: number;
+    lastAt: string | null;
+};
+
 /** The payment signals of Laravel Cashier webhooks (#178), estimated. */
 export type RuntimeBillingSignals = {
     paymentFailed: number;
@@ -403,6 +429,14 @@ export type RuntimeSummary = {
         config: { server: string | null; maxRequests: number | null } | null;
         leakGrowthMb: number;
         rows: RuntimeOctaneRow[];
+    };
+    /**
+     * Reverb servers (#175); `check` is the latest laravel-reverb reading, null when the report
+     * has none.
+     */
+    reverb: {
+        check: { isReachable: boolean; latencyMs: number | null } | null;
+        rows: RuntimeReverbRow[];
     };
     /** Laravel Cashier webhooks (#178) and the payment signals of the whole range. */
     billing: {
