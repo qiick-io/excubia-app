@@ -187,7 +187,9 @@ export function ScheduleView({
     ];
 
     return (
+        // The chart and the task table stack taller than a phone screen: the pane scrolls, like Alerts.
         <PageLayout
+            scrollContent
             description={t('schedule.description')}
             filtersRight={
                 <TimeRangePicker slug={slug} view="schedule" range={range} />
