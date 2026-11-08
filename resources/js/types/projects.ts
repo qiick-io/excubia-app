@@ -12,6 +12,8 @@ export type ProjectRow = {
     visibility: ProjectVisibility;
     has_push_token: boolean;
     last_report_at: string | null;
+    /** Laravel `app.env` last reported by excubia-core 1.0.0-beta.4 or later, null when unknown. */
+    environment: string | null;
     /** Never reported, or last report older than the stale setting. */
     is_stale: boolean;
     /** Present on the dashboard and the project page only. */

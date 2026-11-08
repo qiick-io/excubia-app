@@ -24,6 +24,8 @@ return new class extends Migration
             $table->string('visibility', 16)->default('everyone');
             $table->string('push_token_hash', 64)->nullable()->unique();
             $table->timestamp('last_report_at')->nullable();
+            // Laravel app.env last reported by a report or runtime batch (core #203); null when never sent.
+            $table->string('environment', 64)->nullable();
             // When the project.stale alert was sent; cleared by the next report (#22).
             $table->timestamp('stale_alerted_at')->nullable();
             // Runtime entries of unknown types skipped on ingest (#111).

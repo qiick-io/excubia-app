@@ -16,7 +16,7 @@ use Illuminate\Support\Str;
  * stored; a type the app does not know is skipped and counted, never rejected.
  *
  * `tests/Fixtures/core/runtime-schema.json` is a copy of excubia-core `develop` at
- * 9fd10fea1546e8d09ea6a623153583d7dc73f458 (2026-11-07, core #200: `ai` and `aiTool`). Refresh it when core adds a type.
+ * 8e9f346c454316453c7c33c6e92294cabfe2f239 (2026-11-08, core #208: `environment`). Refresh it when core adds a type.
  * The app has no JSON Schema validator, so coreSchemaErrors() (tests/Pest.php) checks the keywords
  * the runtime schema uses (required, additionalProperties, const, enum, type, pattern, min/max, lengths).
  */

@@ -8,8 +8,9 @@ use Carbon\CarbonImmutable;
 
 /**
  * What the schedule evaluation (#110) knows about a project at `now`:
- * - `environment`: the app environment, from its latest exception group (the report carries
- *   none); null when unknown;
+ * - `environment`: the app environment the project reported (`projects.environment`, core
+ *   #203), else the one of its latest exception group (older cores, the standalone CLI); null
+ *   when unknown;
  * - `isInMaintenanceMode`: the latest report has a `laravel-maintenance-mode` finding;
  * - `sampleRate`: the rate of the project's newest scheduled-task run, null without runs;
  * - `runsSince`: the oldest run bucket with a `taskId` on record, so due times before the app

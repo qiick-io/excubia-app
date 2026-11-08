@@ -75,7 +75,7 @@ function defaultSchedule(): array
  *
  * @param  list<array<string, mixed>>|null  $schedule
  */
-function pushSchedule(Project $project, string $token, ?array $schedule, bool $isInMaintenanceMode = false): mixed
+function pushSchedule(Project $project, string $token, ?array $schedule, bool $isInMaintenanceMode = false, ?string $environment = null): mixed
 {
     $report = [
         'schemaVersion' => 1,
@@ -92,6 +92,10 @@ function pushSchedule(Project $project, string $token, ?array $schedule, bool $i
         $report['schedule'] = $schedule;
     }
 
+    if ($environment !== null) {
+        $report['environment'] = $environment;
+    }
+
     return test()->withToken($token)->postJson('/api/reports', [
         'protocolVersion' => 1,
         'batchId' => (string) Str::uuid(),
@@ -105,7 +109,7 @@ function pushSchedule(Project $project, string $token, ?array $schedule, bool $i
  *
  * @param  list<array{0: string, 1: string, 2: string, 3: string, 4?: float}>  $runs
  */
-function pushRuns(string $token, array $runs, bool $hasTaskId = true): mixed
+function pushRuns(string $token, array $runs, bool $hasTaskId = true, ?string $environment = null): mixed
 {
     $aggregates = array_map(fn (array $run): array => array_filter([
         'type' => 'scheduledTask',
@@ -125,7 +129,7 @@ function pushRuns(string $token, array $runs, bool $hasTaskId = true): mixed
         'type' => 'runtime',
         'batchId' => (string) Str::uuid(),
         'sentAt' => Date::now()->toIso8601ZuluString(),
-        'runtime' => ['bucketSeconds' => 60, 'aggregates' => $aggregates],
+        'runtime' => array_filter(['bucketSeconds' => 60, 'environment' => $environment, 'aggregates' => $aggregates], fn (mixed $value): bool => $value !== null),
     ]);
 }
 
@@ -295,6 +299,46 @@ it('expects no runs of a task limited to another environment', function () {
 
     expect(taskStatus($project, 'artisan billing:charge'))->toBe('not_expected')
         ->and(taskStatus($project, 'artisan reports:send'))->toBe('missed');
+});
+
+it('reads the reported environment over the one of the exception groups (core #203)', function () {
+    $schedule = [...defaultSchedule(), scheduleEntry('artisan billing:charge', '0 * * * *', ['environments' => ['production']])];
+    $project = Project::factory()->create();
+    ExceptionGroup::query()->create([
+        'project_id' => $project->id, 'fingerprint' => str_repeat('a', 64), 'environment' => 'staging', 'class' => 'RuntimeException',
+        'message' => 'x', 'frames' => [], 'previous' => [], 'context_kind' => 'request', 'context_name' => 'home', 'count' => 1,
+        'first_seen' => Date::now(), 'last_seen' => Date::now(), 'status' => 'open',
+    ]);
+    $token = app(RotateProjectTokenAction::class)->execute($project);
+    pushSchedule($project, $token, $schedule, environment: 'production')->assertCreated();
+    pushRuns($token, heartbeats('2026-11-05 08:00:00', '2026-11-05 10:03:00'))->assertCreated();
+    Date::setTestNow('2026-11-05 10:05:00');
+    $this->artisan('excubia:evaluate-schedules')->assertSuccessful();
+
+    // The staging exception would have made it not expected; the app says production.
+    expect(taskStatus($project, 'artisan billing:charge'))->toBe('missed')
+        ->and(ScheduledTask::query()->where('task', 'artisan billing:charge')->sole()->is_low_confidence)->toBeFalse();
+
+    // A runtime batch from staging moves it: the task is not expected there.
+    pushRuns($token, heartbeats('2026-11-05 10:04:00', '2026-11-05 10:04:00'), environment: 'staging')->assertCreated();
+    $this->artisan('excubia:evaluate-schedules')->assertSuccessful();
+
+    expect(taskStatus($project, 'artisan billing:charge'))->toBe('not_expected');
+
+    // The overview shows the reported environment.
+    $this->seed(PermissionSeeder::class);
+    $this->actingAs(User::factory()->create()->assignRole(RoleEnum::Reader->value))
+        ->get(route('projects.show', $project->slug))
+        ->assertInertia(fn (Assert $page) => $page->where('project.environment', 'staging'));
+});
+
+it('keeps a task limited to an environment uncertain when no environment is known', function () {
+    $schedule = [...defaultSchedule(), scheduleEntry('artisan billing:charge', '0 * * * *', ['environments' => ['production']])];
+    [$project] = scheduledProject('2026-11-05 10:05:00', schedule: $schedule);
+
+    expect($project->fresh()?->environment)->toBeNull()
+        ->and(taskStatus($project, 'artisan billing:charge'))->toBe('missed')
+        ->and(ScheduledTask::query()->where('task', 'artisan billing:charge')->sole()->is_low_confidence)->toBeTrue();
 });
 
 it('tells the whole scheduler down from one missed task, with one alert', function () {

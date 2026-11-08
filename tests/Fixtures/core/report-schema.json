@@ -57,6 +57,11 @@
             "items": {
                 "$ref": "#/$defs/scheduledTask"
             }
+        },
+        "environment": {
+            "description": "Optional (#203): the Laravel environment of the app (app.env), for example production or staging, set by php artisan excubia:check and excubia:push only; the standalone CLI omits it. A short name only, never a hostname: omitted when app.env does not match the pattern.",
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,64}$"
         }
     },
     "$defs": {
@@ -1090,6 +1095,10 @@
                 "ecosystem": {
                     "description": "Lockfile the package comes from: composer (composer.lock) or npm (the report's javascriptLockfile). yarn.lock and pnpm-lock.yaml record no licenses: their npm packages without one get no row and are not counted in the inventory; one skipped row (not-applicable, subject the lockfile, no details) counts them.",
                     "enum": ["composer", "npm"]
+                },
+                "kind": {
+                    "description": "Optional (#204): why the license was flagged, so an app need not infer it from status and severity. denied: in checks.dependency-licenses.denied (fail, high); copyleft: a strong copyleft license (warn, medium); unknown: none declared or not a known permitted license (warn, low). Set on every finding from 1.0.0-beta.4; reports from older versions omit it.",
+                    "enum": ["denied", "copyleft", "unknown"]
                 }
             }
         },

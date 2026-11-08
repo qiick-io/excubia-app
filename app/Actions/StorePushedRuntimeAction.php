@@ -40,13 +40,20 @@ class StorePushedRuntimeAction
     /**
      * @param  list<array<string, mixed>>  $aggregates  validated by StorePushedRuntimeRequest
      * @param  string|null  $release  the batch's `runtime.release`, an extra dimension
+     * @param  string|null  $environment  the batch's `runtime.environment` (core #203): kept on the project when it matches `Project::ENVIRONMENT_PATTERN`, dropped otherwise
      * @return bool true when the batch was new
      */
-    public function execute(Project $project, string $batchId, array $aggregates, ?string $release = null): bool
+    public function execute(Project $project, string $batchId, array $aggregates, ?string $release = null, ?string $environment = null): bool
     {
         try {
-            $isNew = DB::transaction(function () use ($project, $batchId, $aggregates, $release): bool {
+            $isNew = DB::transaction(function () use ($project, $batchId, $aggregates, $release, $environment): bool {
                 PushedBatch::query()->create(['project_id' => $project->id, 'type' => 'runtime', 'batch_id' => $batchId, 'received_at' => Date::now()]);
+
+                if ($environment !== null && $environment !== $project->environment && preg_match(Project::ENVIRONMENT_PATTERN, $environment) === 1) {
+                    // A query update: no model event, so no activity log entry per push.
+                    Project::query()->whereKey($project->id)->update(['environment' => $environment]);
+                }
+
                 $skipped = 0;
                 $minutes = [];
 

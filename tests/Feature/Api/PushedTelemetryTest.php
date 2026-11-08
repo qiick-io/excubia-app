@@ -272,3 +272,27 @@ it('stores exception groups without a release as before (#106)', function () {
 
     expect($project->exceptionGroups()->sole())->first_release->toBeNull()->last_release->toBeNull()->regressed_release->toBeNull();
 });
+
+it('keeps the environment of a runtime batch on the project (core #203) and drops an invalid one', function () {
+    [$project, $token] = telemetryProject();
+    $push = fn (?string $environment) => test()->postJson(
+        route('api.runtime.store'),
+        array_replace_recursive(runtimeEnvelope(), $environment === null ? [] : ['runtime' => ['environment' => $environment]]),
+        ['Authorization' => "Bearer {$token}"],
+    );
+
+    $push('production')->assertCreated();
+    expect($project->fresh()?->environment)->toBe('production');
+
+    // Cores before 1.0.0-beta.4 send none: the last known value stays.
+    $push(null)->assertCreated();
+    expect($project->fresh()?->environment)->toBe('production');
+
+    // Never a hostname: dropped, and the batch is still stored.
+    $push('web-1.example.com')->assertCreated();
+    expect($project->fresh()?->environment)->toBe('production')
+        ->and($project->runtimeAggregates()->count())->toBe(6);
+
+    $push('staging')->assertCreated();
+    expect($project->fresh()?->environment)->toBe('staging');
+});

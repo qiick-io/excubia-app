@@ -93,7 +93,7 @@ excubia-core maps the status to its exit code (`3` for every non-2xx) and prints
 
 ## `POST /api/reports`
 
-Envelope: `protocolVersion`, `batchId`, `sentAt` (UTC, `Y-m-d\TH:i:s\Z`), `report`. Payload: [`report-schema.json`](https://github.com/qiick-io/excubia-core/blob/develop/docs/report-schema.json) version 1. The app requires `report.schemaVersion`, `report.checks` (each with `checkId`, `name`, `status` and `findings`) and `report.upgradePlan`; `generatedAt`, `release`, `deployedAt` and `schedule` are optional.
+Envelope: `protocolVersion`, `batchId`, `sentAt` (UTC, `Y-m-d\TH:i:s\Z`), `report`. Payload: [`report-schema.json`](https://github.com/qiick-io/excubia-core/blob/develop/docs/report-schema.json) version 1. The app requires `report.schemaVersion`, `report.checks` (each with `checkId`, `name`, `status` and `findings`) and `report.upgradePlan`; `generatedAt`, `release`, `deployedAt`, `schedule` and `environment` are optional. `environment` (excubia-core 1.0.0-beta.4, `php artisan excubia:check` / `excubia:push` only) is the pushing app's `app.env`: a value that does not match `^[A-Za-z0-9_-]{1,64}$` is dropped, never rejected, and a report without it keeps the project's last known environment.
 
 ```http
 POST /api/reports HTTP/1.1
@@ -114,7 +114,7 @@ Content-Type: application/json
 
 ## `POST /api/runtime`
 
-Envelope (`$defs.runtimeEnvelope`): `protocolVersion`, `type: "runtime"`, `batchId`, `sentAt`, `runtime` with `bucketSeconds` (`60`), `aggregates` (a list, may be empty) and an optional `release`. Payload: [`runtime-schema.json`](https://github.com/qiick-io/excubia-core/blob/develop/docs/runtime-schema.json). Each aggregate of a known type must carry `bucket`, `sampleRate`, `count`, `errorCount`, the dimensions and metrics of its type, and, for timed types, `totalMs`, `maxMs` and an optional 12-bucket `histogram`. Aggregates are additive: the app sums entries with the same type, bucket, sample rate and dimensions, also across batches.
+Envelope (`$defs.runtimeEnvelope`): `protocolVersion`, `type: "runtime"`, `batchId`, `sentAt`, `runtime` with `bucketSeconds` (`60`), `aggregates` (a list, may be empty), an optional `release` and an optional `environment` (excubia-core 1.0.0-beta.4, the same pattern and rules as the report's). Payload: [`runtime-schema.json`](https://github.com/qiick-io/excubia-core/blob/develop/docs/runtime-schema.json). Each aggregate of a known type must carry `bucket`, `sampleRate`, `count`, `errorCount`, the dimensions and metrics of its type, and, for timed types, `totalMs`, `maxMs` and an optional 12-bucket `histogram`. Aggregates are additive: the app sums entries with the same type, bucket, sample rate and dimensions, also across batches.
 
 ```json
 {

@@ -41,6 +41,7 @@ composer require qiick/excubia-core:^1.0@beta
 | AI tab: AI usage, estimated cost, budgets and alerts (laravel/ai)                               | 1.0.0-beta.4 (`ai`, `aiTool`)                      | `runtime.ai`, `runtime.aiTools`                                        |
 | Server CPU, memory and disk                                                                     | 1.0.0-beta.2                                       | `runtime.server.enabled`                                               |
 | Container limits on server metrics, log channel per log level                                   | next core release (`dev-develop`)                  | —                                                                      |
+| Reported app environment (overview, schedule), license `kind` read from the report              | next core release (`dev-develop`)                  | — (older cores: inferred from exceptions and status / severity)        |
 | Backups, database connections and size, Redis memory, OPcache and production `php.ini` findings | next core release (`dev-develop`)                  | —                                                                      |
 
 "Next core release" features already work with `qiick/excubia-core:dev-develop`; with an older core the app shows nothing for them.

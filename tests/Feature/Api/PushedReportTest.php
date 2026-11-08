@@ -244,3 +244,30 @@ it('stores the release and the deploy time of a report (#106), and reports witho
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['report.release', 'report.deployedAt']);
 });
+
+it('keeps the reported environment on the project (core #203), keeps it on a report without one and drops an invalid one', function () {
+    [$project, $token] = pushingProject();
+    $staging = pushEnvelope();
+    $staging['report']['environment'] = 'staging';
+
+    pushReport($token, $staging)->assertCreated();
+
+    expect($project->fresh()?->environment)->toBe('staging')
+        ->and(HealthReport::query()->sole()->report['environment'])->toBe('staging');
+
+    // The standalone CLI and cores before 1.0.0-beta.4 send none: the last known value stays.
+    pushReport($token, pushEnvelope())->assertCreated();
+
+    expect($project->fresh()?->environment)->toBe('staging');
+
+    // Never a hostname or anything outside the pattern: dropped, not rejected, nothing stored.
+    foreach (['shop.example.com', str_repeat('a', 65), '', ['production']] as $invalid) {
+        $envelope = pushEnvelope();
+        $envelope['report']['environment'] = $invalid;
+
+        pushReport($token, $envelope)->assertCreated();
+
+        expect($project->fresh()?->environment)->toBe('staging')
+            ->and($project->healthReports()->latest('id')->firstOrFail()->report)->not->toHaveKey('environment');
+    }
+});
