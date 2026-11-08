@@ -216,6 +216,26 @@ export function AiUsageView({
                 />
             </section>
 
+            <BreakdownCard
+                title={t('ai.byModel')}
+                description={t('ai.pricesNote', {
+                    date: ai.pricesUpdatedOn,
+                })}
+                footer={
+                    <Link
+                        href={aiPricesRoutes.edit.url()}
+                        className="text-sm underline underline-offset-4"
+                    >
+                        {t('ai.pricesLink')}
+                    </Link>
+                }
+                rows={ai.models}
+                name={(row) => (
+                    <Name primary={row.model} secondary={row.provider} />
+                )}
+                columns={usageColumns}
+            />
+
             <section className="grid grid-cols-1 gap-4 xl:grid-cols-12">
                 <Card className="xl:col-span-4">
                     <CardHeader className="pb-3">
@@ -264,29 +284,6 @@ export function AiUsageView({
                 </Card>
                 <BreakdownCard
                     className="xl:col-span-8"
-                    title={t('ai.byModel')}
-                    description={t('ai.pricesNote', {
-                        date: ai.pricesUpdatedOn,
-                    })}
-                    footer={
-                        <Link
-                            href={aiPricesRoutes.edit.url()}
-                            className="text-sm underline underline-offset-4"
-                        >
-                            {t('ai.pricesLink')}
-                        </Link>
-                    }
-                    rows={ai.models}
-                    name={(row) => (
-                        <Name primary={row.model} secondary={row.provider} />
-                    )}
-                    columns={usageColumns}
-                />
-            </section>
-
-            <section className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-                <BreakdownCard
-                    className="xl:col-span-5"
                     title={t('ai.byProvider')}
                     rows={ai.providers}
                     name={(row) => <Name primary={row.provider} />}
@@ -294,29 +291,29 @@ export function AiUsageView({
                         (column) => column.label !== 'p95',
                     )}
                 />
-                <BreakdownCard
-                    className="xl:col-span-7"
-                    title={t('ai.byAgent')}
-                    rows={ai.agents}
-                    name={(row) => (
-                        <Name
-                            primary={
-                                row.agent ??
-                                t(`ai.operation.${row.operation}`, {
-                                    defaultValue: row.operation,
-                                })
-                            }
-                            secondary={
-                                row.agent === null
-                                    ? undefined
-                                    : t('ai.operation.agent')
-                            }
-                            isMono={row.agent !== null}
-                        />
-                    )}
-                    columns={usageColumns}
-                />
             </section>
+
+            <BreakdownCard
+                title={t('ai.byAgent')}
+                rows={ai.agents}
+                name={(row) => (
+                    <Name
+                        primary={
+                            row.agent ??
+                            t(`ai.operation.${row.operation}`, {
+                                defaultValue: row.operation,
+                            })
+                        }
+                        secondary={
+                            row.agent === null
+                                ? undefined
+                                : t('ai.operation.agent')
+                        }
+                        isMono={row.agent !== null}
+                    />
+                )}
+                columns={usageColumns}
+            />
 
             <BreakdownCard
                 title={t('ai.tools')}

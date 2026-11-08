@@ -73,7 +73,7 @@ class ProjectRuntimeService
 
         $now = CarbonImmutable::instance(Date::now());
         $from = $range->start($now);
-        $series = $this->series($project, $from, array_values(array_filter(RuntimeTypeEnum::cases(), fn (RuntimeTypeEnum $type): bool => ! in_array($type, self::AI_TYPES, true))));
+        $series = $this->series($project, $from, array_filter(RuntimeTypeEnum::cases(), fn (RuntimeTypeEnum $type): bool => ! in_array($type, self::AI_TYPES, true)));
         $byType = $series->groupBy('type');
         $of = fn (RuntimeTypeEnum $type): Collection => $byType->get($type->value, collect());
         $requests = $of(RuntimeTypeEnum::Request);
@@ -140,7 +140,7 @@ class ProjectRuntimeService
      * does. A series' histogram sums only the minutes that have one, and is null when none has.
      * Metrics of other types are null.
      *
-     * @param  list<RuntimeTypeEnum>  $types
+     * @param  array<int, RuntimeTypeEnum>  $types
      * @return Collection<int, Series>
      */
     public function series(Project $project, CarbonImmutable $from, array $types): Collection

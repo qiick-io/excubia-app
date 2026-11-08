@@ -95,6 +95,24 @@ function seededA11yProject(): Project
         'max_ms' => 800,
     ]);
 
+    // AI tab (#129): an agent run with tokens and one tool call.
+    foreach ([['ai', ['operation' => 'agent', 'provider' => 'anthropic', 'model' => 'claude-sonnet-4-6', 'agent' => 'App\\Ai\\SupportAgent'], ['failoverCount' => 1, 'inputTokens' => 120000, 'outputTokens' => 9000, 'cacheReadInputTokens' => 80000, 'cacheWriteInputTokens' => 10000, 'reasoningTokens' => null, 'imageInputTokens' => null, 'imageOutputTokens' => null, 'audioSeconds' => null, 'searchUnits' => null]], ['aiTool', ['agent' => 'App\\Ai\\SupportAgent', 'tool' => 'App\\Ai\\Tools\\OrderTool'], null]] as [$type, $dimensions, $metrics]) {
+        RuntimeAggregate::query()->create([
+            'project_id' => $project->id,
+            'type' => $type,
+            'bucket' => $now->copy()->subMinutes(5)->startOfMinute(),
+            'sample_rate' => 1,
+            'dimension_key' => hash('sha256', $type),
+            'dimensions' => $dimensions,
+            'count' => 12,
+            'error_count' => 1,
+            'total_ms' => 9600,
+            'max_ms' => 2100,
+            'metrics' => $metrics,
+            'histogram' => [0, 0, 0, 0, 0, 2, 4, 3, 2, 1, 0, 0],
+        ]);
+    }
+
     // Live health strip of the overview (#115): a failing check and a stale server.
     foreach ([['web-1', 'laravel-database', 'fail', 1], ['worker-1', 'laravel-database', 'pass', 20], ['web-1', 'laravel-cache', 'pass', 1]] as [$server, $checkId, $status, $minutesAgo]) {
         RuntimeAggregate::query()->create([
@@ -187,6 +205,7 @@ it('has no critical or serious axe issues on the main authenticated pages in lig
         route('projects.view', [$project, 'findings'], false).'?finding='.rawurlencode('laravel-backups|s3|'),
         route('projects.view', [$project, 'licenses'], false),
         route('projects.view', [$project, 'runtime'], false),
+        route('projects.view', [$project, 'ai'], false),
         route('projects.view', [$project, 'exceptions'], false),
         route('projects.view', [$project, 'schedule'], false),
         route('projects.view', [$project, 'alerts'], false),
@@ -195,6 +214,7 @@ it('has no critical or serious axe issues on the main authenticated pages in lig
         route('fleet.view', 'advisories', false),
         route('fleet.view', 'eol', false),
         route('project.integrations.edit', absolute: false),
+        route('ai-prices.edit', absolute: false),
         route('profile.edit', absolute: false),
         route('appearance.edit', absolute: false),
         route('project.edit', absolute: false),

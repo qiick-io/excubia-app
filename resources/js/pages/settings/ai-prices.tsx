@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
+import { cn } from '@/lib/utils';
 import aiPricesRoutes from '@/routes/ai-prices';
 import type { BreadcrumbItem } from '@/types';
 
@@ -204,7 +205,12 @@ export default function AiPricesSettings({
                                             ).map((key) => (
                                                 <TableCell
                                                     key={key}
-                                                    className="min-w-36 align-top"
+                                                    className={cn(
+                                                        key === 'model'
+                                                            ? 'min-w-56'
+                                                            : 'min-w-32',
+                                                        'align-top',
+                                                    )}
                                                 >
                                                     <Input
                                                         value={row[key]}

@@ -78,11 +78,19 @@ class AiPriceService
      */
     public function defaults(): array
     {
-        return array_map(fn (array $row): array => [
+        return array_values(array_map(fn (array $row): array => [
             'provider' => $row[0],
             'model' => $row[1],
-            ...array_combine(self::PRICE_FIELDS, array_map(fn (int $index): ?float => $row[$index] ?? null, range(2, 10))),
-        ], self::DEFAULTS);
+            'input' => $row[2],
+            'cache_read' => $row[3],
+            'cache_write' => $row[4],
+            'output' => $row[5],
+            'reasoning' => $row[6] ?? null,
+            'image_input' => $row[7] ?? null,
+            'image_output' => $row[8] ?? null,
+            'audio_second' => $row[9] ?? null,
+            'search_unit' => $row[10] ?? null,
+        ], self::DEFAULTS));
     }
 
     /**
@@ -185,7 +193,9 @@ class AiPriceService
     {
         $rows = AiUsageDay::query()
             ->where('project_id', $project->id)
-            ->whereBetween('day', [$from->toDateString(), $to->toDateString()])
+            // A half-open range: SQLite stores a model-written date with its time.
+            ->where('day', '>=', $from->toDateString())
+            ->where('day', '<', $to->copy()->addDay()->toDateString())
             ->get();
         $total = ['cost' => 0.0, 'calls' => 0.0, 'hasUnpriced' => false];
 
