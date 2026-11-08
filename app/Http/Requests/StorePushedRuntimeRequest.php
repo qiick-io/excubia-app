@@ -30,6 +30,7 @@ class StorePushedRuntimeRequest extends FormRequest
         'logLevel' => ['level' => ['emergency', 'alert', 'critical', 'error', 'warning', 'notice', 'info', 'debug', 'unknown']],
         'duplicateQuery' => ['origin' => ['request', 'job']],
         'command' => ['exitCodeClass' => ['0', '1', 'other']],
+        'ai' => ['operation' => ['agent', 'image', 'embeddings', 'transcription', 'reranking', 'audio']],
     ];
 
     /** Dimensions with a pattern (`docs/runtime-schema.json`); unknown check ids are accepted. */
@@ -62,6 +63,17 @@ class StorePushedRuntimeRequest extends FormRequest
         'findingCount' => ['required', 'integer', 'min:0'],
         'fingerprints' => ['present', 'list', 'max:'.RuntimeTypeEnum::HEALTH_FINGERPRINTS],
         'fingerprints.*' => ['string', 'regex:/^[0-9a-f]{64}$/'],
+        // `ai` (#129): usage counts are null when the provider does not report them.
+        'failoverCount' => ['required', 'integer', 'min:0'],
+        'inputTokens' => ['present', 'nullable', 'integer', 'min:0'],
+        'outputTokens' => ['present', 'nullable', 'integer', 'min:0'],
+        'cacheReadInputTokens' => ['present', 'nullable', 'integer', 'min:0'],
+        'cacheWriteInputTokens' => ['present', 'nullable', 'integer', 'min:0'],
+        'reasoningTokens' => ['present', 'nullable', 'integer', 'min:0'],
+        'imageInputTokens' => ['present', 'nullable', 'integer', 'min:0'],
+        'imageOutputTokens' => ['present', 'nullable', 'integer', 'min:0'],
+        'audioSeconds' => ['present', 'nullable', 'numeric', 'min:0'],
+        'searchUnits' => ['present', 'nullable', 'numeric', 'min:0'],
     ];
 
     public function authorize(): bool

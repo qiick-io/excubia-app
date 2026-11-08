@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\Actions;
 
 use App\Models\RuntimeHourlyRollup;
+use App\Traits\AddsOnUpsertTrait;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Illuminate\Contracts\Database\Query\Expression;
-use Illuminate\Database\Connection;
 
 /**
  * Adds runtime minutes to their hourly rollups (#137): per project, type, hour and sample rate,
@@ -21,6 +21,8 @@ use Illuminate\Database\Connection;
  */
 class StoreRuntimeRollupsAction
 {
+    use AddsOnUpsertTrait;
+
     /** Hours per statement, so one stays below the bound-parameter limits. */
     private const CHUNK = 500;
 
@@ -50,29 +52,10 @@ class StoreRuntimeRollupsAction
         }
 
         $connection = (new RuntimeHourlyRollup)->getConnection();
-        $update = array_map(fn (string $column): Expression => $this->sum($connection, $column), array_combine(self::SUMS, self::SUMS));
+        $update = array_map(fn (string $column): Expression => $this->addOnUpsert($connection, 'runtime_hourly_rollups', $column, $column === 'total_ms'), array_combine(self::SUMS, self::SUMS));
 
         foreach (array_chunk(array_values($hours), self::CHUNK) as $chunk) {
             RuntimeHourlyRollup::query()->toBase()->upsert($chunk, ['project_id', 'type', 'bucket', 'sample_rate'], $update);
         }
-    }
-
-    /**
-     * The stored value plus the incoming one, as the upsert's update expression of a column. A
-     * null side (types that are not timed) is read as zero only when the other side has a value.
-     *
-     * @param  'count'|'error_count'|'total_ms'  $column
-     */
-    private function sum(Connection $connection, string $column): Expression
-    {
-        $stored = "runtime_hourly_rollups.{$column}";
-        $incoming = match ($connection->getDriverName()) {
-            'mysql', 'mariadb' => $connection->getConfig('use_upsert_alias') ? "laravel_upsert_alias.{$column}" : "values({$column})",
-            default => "excluded.{$column}",
-        };
-
-        return $connection->raw($column === 'total_ms'
-            ? "case when {$stored} is null and {$incoming} is null then null else coalesce({$stored}, 0) + coalesce({$incoming}, 0) end"
-            : "{$stored} + {$incoming}");
     }
 }

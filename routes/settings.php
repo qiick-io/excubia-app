@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Settings\AiPricesSettingsController;
 use App\Http\Controllers\Settings\AiSettingsController;
 use App\Http\Controllers\Settings\AlertSubscriptionController;
 use App\Http\Controllers\Settings\AppearanceSettingsController;
@@ -43,6 +44,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->whereIn('channel', ['webhook', 'slack', 'telegram'])
             ->middleware('throttle:10,1')
             ->name('project.integrations.test');
+
+        // AI price table (#129), which the AI budgets and alerts use.
+        Route::get('settings/ai-prices', [AiPricesSettingsController::class, 'edit'])->name('ai-prices.edit');
+        Route::put('settings/ai-prices', [AiPricesSettingsController::class, 'update'])->name('ai-prices.update');
     });
 
     // Alert emails of the signed-in user (#22): their own filters and a test mail to themselves.

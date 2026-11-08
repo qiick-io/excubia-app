@@ -28,6 +28,8 @@ return new class extends Migration
             $table->timestamp('stale_alerted_at')->nullable();
             // Runtime entries of unknown types skipped on ingest (#111).
             $table->unsignedBigInteger('skipped_runtime_aggregates')->default(0);
+            // Estimated AI spend per calendar month (USD) that alerts at 80 % and 100 % (#129); null is off.
+            $table->decimal('ai_monthly_budget', 12, 2)->nullable();
             $table->timestamps();
         });
     }

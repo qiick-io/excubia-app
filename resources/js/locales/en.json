@@ -216,7 +216,8 @@
             "sidebar": "Sidebar",
             "sectionAi": "AI",
             "aiTools": "Tools",
-            "integrations": "Integrations"
+            "integrations": "Integrations",
+            "aiPrices": "Prices"
         },
         "profile": {
             "breadcrumb": "Profile settings",
@@ -479,7 +480,11 @@
                 "push.rejected": "Pushes were rejected for a missing, unknown, revoked or disabled token, again and again within an hour. A leaked or forgotten token?",
                 "project.created": "A project was created.",
                 "project.deleted": "A project was deleted.",
-                "project.disabled": "A project was disabled."
+                "project.disabled": "A project was disabled.",
+                "ai.budget_warning": "A project's estimated AI spend this month reached 80 % of its budget (set on its AI tab).",
+                "ai.budget_exceeded": "A project's estimated AI spend this month reached its budget.",
+                "ai.spend_spike": "Today's estimated AI spend is above the threshold share of the 7-day average.",
+                "ai.error_rate": "The share of failed AI calls in the last hour is above the threshold."
             },
             "runtimeRulesTitle": "Runtime alert rules",
             "runtimeRulesDescription": "Optional alerts from the runtime data the projects push, checked every 15 minutes over the last hour. Empty turns a rule off.",
@@ -494,7 +499,41 @@
             "emailDescription": "Every user who can see projects turns alert emails on for themselves in their profile, with their own minimum severity, events and projects. Mails use the app's mail settings and need a queue worker.",
             "emailLink": "Open your profile",
             "severitiesTitle": "Default severities",
-            "severitiesDescription": "The severity of each event that does not take one from a finding. The minimum severity of every channel and subscription is compared with it."
+            "severitiesDescription": "The severity of each event that does not take one from a finding. The minimum severity of every channel and subscription is compared with it.",
+            "aiRulesTitle": "AI usage alert rules",
+            "aiRulesDescription": "Optional alerts from the AI usage the projects push (Laravel AI SDK), with costs estimated from Settings → AI prices. Monthly budgets are set per project on its AI tab. Empty turns a rule off.",
+            "aiSpendSpike": "Today's AI spend above (% of the 7-day average)",
+            "aiSpendSpikeHint": "Alert once a day when a project's estimated AI spend today reaches this share of its average day over the 7 days before, from $1. 300 means three times the average.",
+            "aiErrorRate": "AI error rate above (%)",
+            "aiErrorRateHint": "Alert when more than this share of the AI calls of the last hour failed, with at least 20 calls."
+        },
+        "aiPrices": {
+            "breadcrumb": "AI prices",
+            "head": "AI prices",
+            "title": "AI prices",
+            "description": "Prices per provider and model that turn the AI usage of your projects into estimated costs. The provider is the name in the project's config/ai.php. A dated model name (gpt-4o-2024-08-06) uses the row of its model (gpt-4o). Models without a row show tokens without a cost.",
+            "estimates": "These are estimates, not your bill: verify them against your provider. Table dated {{date}}; the defaults were last checked on {{defaultsDate}}.",
+            "add": "Add model",
+            "restore": "Restore defaults",
+            "provider": "Provider",
+            "model": "Model",
+            "providerOf": "Provider of row {{row}}",
+            "modelOf": "Model of row {{row}}",
+            "priceOf": "{{field}} for {{model}}",
+            "remove": "Remove",
+            "removeRow": "Remove {{model}}",
+            "units": "USD. Tokens per 1M; audio per second; search units per unit. Empty cache prices use the input price; an empty reasoning price counts reasoning as part of the output (as OpenAI and Anthropic report it).",
+            "fields": {
+                "input": "Input",
+                "cache_read": "Cache read",
+                "cache_write": "Cache write",
+                "output": "Output",
+                "reasoning": "Reasoning",
+                "image_input": "Image in",
+                "image_output": "Image out",
+                "audio_second": "Audio / s",
+                "search_unit": "Search unit"
+            }
         }
     },
     "activityLog": {
@@ -740,7 +779,8 @@
             "exceptions": "Exceptions",
             "schedule": "Schedule",
             "alerts": "Alerts",
-            "licenses": "Licenses"
+            "licenses": "Licenses",
+            "ai": "AI"
         },
         "support": {
             "supported": "Supported",
@@ -1148,7 +1188,57 @@
     "ai": {
         "fabDescription": "Quick assistant drawer. Open the full page for history.",
         "fabTitle": "New chat",
-        "openFullPage": "Open full page"
+        "openFullPage": "Open full page",
+        "emptyTitle": "No AI usage yet",
+        "emptyDescription": "Projects with laravel/ai and excubia-core 1.0.0-beta.4 or later send their AI calls when runtime.ai.enabled (and runtime.aiTools.enabled for tool calls) is on in excubia.json.",
+        "privacy": "Excubia never receives prompts, instructions, attachments, responses, reasoning, tool arguments or results: only counts, token usage, durations and agent, tool, provider and model names.",
+        "spend": "Estimated spend",
+        "estimate": "Estimate from the price table",
+        "calls": "Calls",
+        "errors": "Errors",
+        "failures": "Failures",
+        "errorRate": "{{rate}}% failed",
+        "failovers": "Failovers",
+        "failoversHint": "Failed attempts moved to the next provider",
+        "p95": "p95 latency",
+        "allCalls": "All calls",
+        "slowest": "Slowest",
+        "spendOverTime": "Spend over time",
+        "spendOverTimeDescription": "Estimated spend {{bucket}} {{during}}.",
+        "chartLabel": "Bar chart: estimated AI spend {{bucket}} {{during}}, {{cost}} in total.",
+        "month": "This month",
+        "monthDescription": "Estimated spend since the 1st (UTC) against the monthly budget, which alerts at 80 % and 100 %.",
+        "noBudget": "No budget",
+        "ofBudget": "of {{budget}}",
+        "budgetUsed": "{{percent}}% of the budget used",
+        "budget": "Monthly budget (USD)",
+        "budgetHint": "Empty turns the budget alerts off.",
+        "tokens": "Tokens",
+        "tokensDescription": "Input without the cached part, cache reads and writes, output and reasoning.",
+        "inputTokens": "Input",
+        "cachedTokens": "Cached",
+        "cacheReadTokens": "Cache read",
+        "cacheWriteTokens": "Cache write",
+        "outputTokens": "Output",
+        "reasoningTokens": "Reasoning",
+        "cost": "Cost",
+        "noPrice": "No price",
+        "unpricedHint": "Some models have no price, so their cost is not counted.",
+        "byModel": "By model",
+        "byProvider": "By provider",
+        "byAgent": "By agent",
+        "pricesNote": "Estimated with the price table of {{date}}.",
+        "pricesLink": "Edit the AI prices",
+        "tools": "Tool calls",
+        "toolsDescription": "Calls per agent tool and their failures, timed in the tool handler.",
+        "operation": {
+            "agent": "Agent",
+            "image": "Images",
+            "embeddings": "Embeddings",
+            "transcription": "Transcription",
+            "reranking": "Reranking",
+            "audio": "Text to speech"
+        }
     },
     "files": {
         "card": {

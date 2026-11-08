@@ -21,7 +21,8 @@ use Illuminate\Support\Facades\DB;
  * only one side has one), also across batches. Entries of a type this app does not know are
  * skipped and counted on the project (`skipped_runtime_aggregates`), so a newer core never loses
  * the rest of its batch. A repeated `batchId` stores nothing and returns false. The same
- * transaction adds the entries to their hourly rollups (#137), which the dashboard totals read.
+ * transaction adds the entries to their hourly rollups (#137), which the dashboard totals read,
+ * and the `ai` entries to the daily AI usage (#129).
  * After a new batch with `health` samples (#115) the health alerts are evaluated.
  *
  * ponytail: one read and one write per aggregate inside the transaction; batch the upserts if
@@ -33,6 +34,7 @@ class StorePushedRuntimeAction
         private StoreScheduledTaskRunsAction $scheduledTaskRuns,
         private StoreRuntimeRollupsAction $rollups,
         private EvaluateHealthAlertsAction $healthAlerts,
+        private StoreAiUsageDaysAction $aiUsageDays,
     ) {}
 
     /**
@@ -61,6 +63,9 @@ class StorePushedRuntimeAction
                 }
 
                 $this->rollups->execute($minutes);
+
+                // Daily AI usage per provider and model (#129), for the monthly budget and the digest.
+                $this->aiUsageDays->execute($project, array_values(array_filter($aggregates, fn (array $aggregate): bool => ($aggregate['type'] ?? null) === RuntimeTypeEnum::Ai->value)));
 
                 // Runs per scheduled task for schedule monitoring (#110).
                 $this->scheduledTaskRuns->execute($project, $aggregates);

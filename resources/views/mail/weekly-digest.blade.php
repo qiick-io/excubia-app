@@ -46,6 +46,16 @@
 @endforeach
 
 @endif
+@if (($project['aiCost'] ?? null) !== null)
+**{{ __('AI spend (estimate)') }}**
+
+- {{ __('$:week in the last 7 days, $:previous in the 7 days before', ['week' => number_format($project['aiCost']['week'], 2), 'previous' => number_format($project['aiCost']['previousWeek'], 2)]) }}{{ $project['aiCost']['change'] === null ? '' : sprintf(' (%+d%%)', $project['aiCost']['change']) }}
+
+@if ($project['aiCost']['hasUnpriced'])
+- {{ __('Some models have no price in Settings → AI prices and are not counted.') }}
+@endif
+
+@endif
 @endforeach
 
 {{ __('You get this email because the weekly digest is on in your profile settings.') }}

@@ -51,6 +51,8 @@ class ProjectIntegrationsSettingsController extends Controller
                 'alert_cache_hit_ratio_below' => $this->settings->alertCacheHitRatioBelow(),
                 'alert_delivery_failures_enabled' => $this->settings->shouldAlertDeliveryFailures(),
                 'alert_log_spike_per_hour' => $this->settings->alertLogSpikePerHour(),
+                'alert_ai_spend_spike_percent' => $this->settings->alertAiSpendSpikePercent(),
+                'alert_ai_error_rate_above' => $this->settings->alertAiErrorRateAbove(),
             ],
             'events' => AlertEventEnum::selectableValues(),
             'severities' => SeverityEnum::values(),

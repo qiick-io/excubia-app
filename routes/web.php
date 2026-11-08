@@ -58,6 +58,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('projects/{project}/alert-mutes/{alertMute}', [ProjectAlertsController::class, 'destroyMute'])->name('projects.alert-mutes.destroy');
     Route::post('projects/{project}/maintenance-windows', [ProjectAlertsController::class, 'storeWindow'])->name('projects.maintenance-windows.store');
     Route::delete('projects/{project}/maintenance-windows/{maintenanceWindow}', [ProjectAlertsController::class, 'destroyWindow'])->name('projects.maintenance-windows.destroy');
+    // Monthly AI budget on the project's AI tab (#129).
+    Route::put('projects/{project}/ai-budget', [ProjectAlertsController::class, 'updateAiBudget'])->name('projects.ai-budget.update');
 
     // Fleet views across the visible projects (#19, #20, #23).
     Route::get('fleet', [FleetController::class, 'show'])->name('fleet.show');
