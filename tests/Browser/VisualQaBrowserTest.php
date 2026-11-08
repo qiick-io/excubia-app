@@ -229,6 +229,7 @@ it('screenshots every authenticated page and project tab', function () {
         'settings-ai-prices' => [route('ai-prices.edit', absolute: false)],
         'settings-project' => [route('project.edit', absolute: false)],
         'settings-integrations' => [route('project.integrations.edit', absolute: false)],
+        'settings-integrations-events' => [route('project.integrations.edit', absolute: false), fn (mixed $page): mixed => $page->click('#channels-slack--events-selected')->wait(0.4)],
         'settings-localization' => [route('project.localization.edit', absolute: false)],
         'settings-project-security' => [route('project.security.edit', absolute: false)],
         'settings-system' => [route('system.index', absolute: false)],
