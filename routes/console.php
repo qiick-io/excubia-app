@@ -39,7 +39,8 @@ Schedule::command('excubia:alert-eol')->daily();
 // health alerts (#143) that need a clock: servers that stopped sending health samples.
 Schedule::command('excubia:evaluate-schedules')->everyMinute()->withoutOverlapping();
 
-// Optional runtime alert rules (#107, #114): cache hit ratio, failed mails and notifications, log spikes.
+// Optional runtime alert rules (#107, #114): cache hit ratio, failed mails and notifications, log
+// spikes; and the AI usage rules (#129): monthly budget, spend spike, error rate.
 Schedule::command('excubia:evaluate-runtime-alerts')->everyFifteenMinutes()->withoutOverlapping();
 
 // Weekly email digest (#114) for the users who turned it on.

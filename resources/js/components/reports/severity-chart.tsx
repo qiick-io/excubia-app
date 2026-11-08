@@ -44,6 +44,7 @@ export function StackedBarChart({
     label,
     markers = [],
     formatLabel,
+    formatValue,
 }: {
     data: ({ label: string } & Record<string, number | string>)[];
     series: ChartSeries[];
@@ -51,6 +52,8 @@ export function StackedBarChart({
     label: string;
     markers?: ChartMarker[];
     formatLabel?: (label: string) => string;
+    /** Axis and tooltip text of a value, for decimal series such as a cost; whole numbers otherwise. */
+    formatValue?: (value: number) => string;
 }) {
     const order = series.map((item) => item.key);
     const last = order[order.length - 1];
@@ -75,7 +78,8 @@ export function StackedBarChart({
                         tickFormatter={formatLabel}
                     />
                     <YAxis
-                        allowDecimals={false}
+                        allowDecimals={formatValue !== undefined}
+                        tickFormatter={formatValue}
                         tick={{
                             fontSize: 11,
                             fill: 'var(--color-muted-foreground)',
@@ -110,6 +114,14 @@ export function StackedBarChart({
                         itemStyle={{
                             color: 'var(--color-popover-foreground)',
                         }}
+                        formatter={
+                            formatValue
+                                ? (value) =>
+                                      typeof value === 'number'
+                                          ? formatValue(value)
+                                          : value
+                                : undefined
+                        }
                     />
                     <Legend
                         iconType="square"

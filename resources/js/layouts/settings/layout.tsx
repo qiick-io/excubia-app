@@ -12,6 +12,7 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { PermissionEnum } from '@/enums/permission-enum';
+import aiPricesRoutes from '@/routes/ai-prices';
 import aiSettings from '@/routes/ai-settings';
 import integrationsRoutes from '@/routes/project/integrations';
 import { useCan } from '@/hooks/use-can';
@@ -153,15 +154,27 @@ export default function SettingsLayout({
     ];
 
     // AI group, as externa-core's (Settings → AI tools).
-    const aiNavItems: NavItem[] = can(PermissionEnum.CanManageProjectSettings)
-        ? [
-              {
-                  title: t('settings.layout.aiTools'),
-                  href: aiSettings.edit.url(),
-                  icon: null,
-              },
-          ]
-        : [];
+    // The AI price table (#129) feeds the budgets and alerts, so it needs `can-manage-alerts`.
+    const aiNavItems: NavItem[] = [
+        ...(can(PermissionEnum.CanManageProjectSettings)
+            ? [
+                  {
+                      title: t('settings.layout.aiTools'),
+                      href: aiSettings.edit.url(),
+                      icon: null,
+                  },
+              ]
+            : []),
+        ...(can(PermissionEnum.CanManageAlerts)
+            ? [
+                  {
+                      title: t('settings.layout.aiPrices'),
+                      href: aiPricesRoutes.edit.url(),
+                      icon: null,
+                  },
+              ]
+            : []),
+    ];
 
     const reportBugUrl =
         projectSettings.reportBugUrl?.trim() || DEFAULT_REPORT_BUG_URL;

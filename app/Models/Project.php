@@ -35,6 +35,7 @@ use Spatie\Activitylog\Support\LogOptions;
  * @property string|null $environment Laravel `app.env` last reported by a report or runtime batch (core #203)
  * @property Carbon|null $stale_alerted_at
  * @property int $skipped_runtime_aggregates runtime entries of unknown types skipped on ingest (#111)
+ * @property float|null $ai_monthly_budget estimated AI spend per month (USD) that alerts at 80 % and 100 % (#129)
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
@@ -102,6 +103,16 @@ class Project extends Model
     }
 
     /**
+     * AI usage per day, provider and model (#129).
+     *
+     * @return HasMany<AiUsageDay, $this>
+     */
+    public function aiUsageDays(): HasMany
+    {
+        return $this->hasMany(AiUsageDay::class);
+    }
+
+    /**
      * Schedule inventory (#110), in schedule order.
      *
      * @return HasMany<ScheduledTask, $this>
@@ -146,6 +157,7 @@ class Project extends Model
             'visibility' => ProjectVisibilityEnum::class,
             'last_report_at' => 'datetime',
             'stale_alerted_at' => 'datetime',
+            'ai_monthly_budget' => 'float',
         ];
     }
 }

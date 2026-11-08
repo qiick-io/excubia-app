@@ -52,6 +52,8 @@ type IntegrationsSettings = {
     alert_cache_hit_ratio_below: number | null;
     alert_delivery_failures_enabled: boolean;
     alert_log_spike_per_hour: number | null;
+    alert_ai_spend_spike_percent: number | null;
+    alert_ai_error_rate_above: number | null;
     webhook_last_success: Delivery;
     webhook_last_error: Delivery;
 };
@@ -88,6 +90,12 @@ export default function ProjectIntegrationsSettings({
         ),
         alert_log_spike_per_hour: String(
             project.alert_log_spike_per_hour ?? '',
+        ),
+        alert_ai_spend_spike_percent: String(
+            project.alert_ai_spend_spike_percent ?? '',
+        ),
+        alert_ai_error_rate_above: String(
+            project.alert_ai_error_rate_above ?? '',
         ),
     });
     const [testing, setTesting] = useState<Channel | null>(null);
@@ -574,6 +582,64 @@ export default function ProjectIntegrationsSettings({
                                         )}
                                         defaultChecked={
                                             project.alert_delivery_failures_enabled
+                                        }
+                                    />
+                                </FieldGroup>
+                            </div>
+
+                            <Separator />
+
+                            <div className="space-y-6">
+                                <Heading
+                                    variant="small"
+                                    title={t(
+                                        'settings.integrations.aiRulesTitle',
+                                    )}
+                                    description={t(
+                                        'settings.integrations.aiRulesDescription',
+                                    )}
+                                />
+                                <FieldGroup className="gap-6">
+                                    <TextField
+                                        name="alert_ai_spend_spike_percent"
+                                        type="number"
+                                        label={t(
+                                            'settings.integrations.aiSpendSpike',
+                                        )}
+                                        hint={t(
+                                            'settings.integrations.aiSpendSpikeHint',
+                                        )}
+                                        placeholder="300"
+                                        value={
+                                            form.alert_ai_spend_spike_percent
+                                        }
+                                        error={
+                                            errors.alert_ai_spend_spike_percent
+                                        }
+                                        onChange={(value) =>
+                                            setValue(
+                                                'alert_ai_spend_spike_percent',
+                                                value,
+                                            )
+                                        }
+                                    />
+                                    <TextField
+                                        name="alert_ai_error_rate_above"
+                                        type="number"
+                                        label={t(
+                                            'settings.integrations.aiErrorRate',
+                                        )}
+                                        hint={t(
+                                            'settings.integrations.aiErrorRateHint',
+                                        )}
+                                        placeholder="10"
+                                        value={form.alert_ai_error_rate_above}
+                                        error={errors.alert_ai_error_rate_above}
+                                        onChange={(value) =>
+                                            setValue(
+                                                'alert_ai_error_rate_above',
+                                                value,
+                                            )
                                         }
                                     />
                                 </FieldGroup>

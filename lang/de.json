@@ -28,5 +28,10 @@
     "Test email queued. It needs a queue worker.": "Test-E-Mail eingereiht. Dafür braucht es einen Queue-Worker.",
     "Verify your email address first.": "Bestätige zuerst deine E-Mail-Adresse.",
     ":count alerts": ":count Alarme",
-    "This report raised :count alerts.": "Dieser Bericht hat :count Alarme ausgelöst."
+    "This report raised :count alerts.": "Dieser Bericht hat :count Alarme ausgelöst.",
+    "AI spend (estimate)": "KI-Kosten (Schätzung)",
+    "$:week in the last 7 days, $:previous in the 7 days before": "$:week in den letzten 7 Tagen, $:previous in den 7 Tagen davor",
+    "Some models have no price in Settings → AI prices and are not counted.": "Einige Modelle haben keinen Preis unter Einstellungen → KI-Preise und werden nicht gezählt.",
+    "AI prices saved.": "KI-Preise gespeichert.",
+    "AI budget saved.": "KI-Budget gespeichert."
 }

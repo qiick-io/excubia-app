@@ -18,6 +18,7 @@ use App\Models\ExceptionGroup;
 use App\Models\Finding;
 use App\Models\HealthReport;
 use App\Models\Project;
+use App\Services\AiUsageService;
 use App\Services\FindingLifecycleService;
 use App\Services\FixSuggestionService;
 use App\Services\HealthStatusService;
@@ -38,8 +39,8 @@ use Inertia\Response;
 /**
  * Project page (`/projects/{slug}`): the findings, health summary, licenses and upgrade plan of
  * the latest report, and the summaries of the reports kept in the history. The system project
- * (#70) can be refreshed from here. The runtime, exceptions and schedule tabs cover the time
- * range of `?range=` (#113); the overview keeps the default range and every exception group.
+ * (#70) can be refreshed from here. The runtime, AI (#129), exceptions and schedule tabs cover
+ * the time range of `?range=` (#113); the overview keeps the default range and every exception group.
  */
 class ProjectReportController extends Controller
 {
@@ -48,10 +49,10 @@ class ProjectReportController extends Controller
      *
      * @var list<string>
      */
-    public const VIEWS = ['findings', 'licenses', 'runtime', 'exceptions', 'schedule', 'alerts', 'plan', 'history'];
+    public const VIEWS = ['findings', 'licenses', 'runtime', 'ai', 'exceptions', 'schedule', 'alerts', 'plan', 'history'];
 
     /** The tabs with a time range picker (#113). */
-    public const RANGE_VIEWS = ['runtime', 'exceptions', 'schedule'];
+    public const RANGE_VIEWS = ['runtime', 'ai', 'exceptions', 'schedule'];
 
     public function show(Request $request, Project $project, ReportFindingsService $findings, FixSuggestionService $fixes, ProjectRuntimeService $runtime, ProjectTelemetryService $telemetry, TimeSeriesService $timeSeries, ReportHealthService $health, ?string $view = null): Response|RedirectResponse
     {
@@ -109,7 +110,9 @@ class ProjectReportController extends Controller
             // Minute-level status per check and server (#115), on the overview, which polls it.
             'liveHealth' => fn (): array => $view === null ? app(HealthStatusService::class)->forPage($project, $now) : [],
             'range' => $range->value,
-            'runtime' => fn (): ?array => $runtime->summary($project, $range),
+            'runtime' => fn (): ?array => $view === 'ai' ? null : $runtime->summary($project, $range),
+            // AI usage and estimated cost (#129), only on its tab.
+            'ai' => fn (): ?array => $view === 'ai' ? app(AiUsageService::class)->summary($project, $range) : null,
             'exceptions' => fn (): array => $telemetry->exceptions($project, $view === 'exceptions' ? $range : null, $now),
             // Tells "none in this range" from "none yet" on the Exceptions tab.
             'hasExceptions' => fn (): bool => $view === 'exceptions' && $project->exceptionGroups()->exists(),

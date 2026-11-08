@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions;
 
+use App\Models\AiUsageDay;
 use App\Models\AlertLog;
 use App\Models\AlertMute;
 use App\Models\ExceptionGroup;
@@ -20,10 +21,15 @@ use Illuminate\Support\Facades\Date;
  * scheduled-task runs (#110) older than the runtime retention, exception groups not seen within
  * the exceptions retention (and older occurrences of the others, #113), the batch ids and the alert history (#114) older than the
  * longer of the two (a retry that late would be a new batch anyway), the mutes that ended, and the
- * push rejection counters (#117) older than two days.
+ * push rejection counters (#117) older than two days. The daily AI usage (#129) is kept for the
+ * longer of the runtime retention and AI_USAGE_DAYS, so the monthly budget and the digest see
+ * the current and the previous month.
  */
 class PruneTelemetryAction
 {
+    /** Days of daily AI usage kept at least: this month and the previous one. */
+    public const AI_USAGE_DAYS = 62;
+
     /**
      * @return array{runtime: int, exceptions: int}
      */
@@ -37,6 +43,7 @@ class PruneTelemetryAction
         PushedBatch::query()->where('received_at', '<', Date::now()->subDays(max($runtimeDays, $exceptionDays)))->delete();
         AlertLog::query()->where('created_at', '<', Date::now()->subDays(max($runtimeDays, $exceptionDays)))->delete();
         AlertMute::query()->where('until', '<=', Date::now())->delete();
+        AiUsageDay::query()->where('day', '<', Date::now()->subDays(max($runtimeDays, self::AI_USAGE_DAYS))->toDateString())->delete();
         IngestRejection::query()->where('bucket', '<', Date::now()->subDays(2))->delete();
 
         return ['runtime' => $runtime, 'exceptions' => $exceptions];

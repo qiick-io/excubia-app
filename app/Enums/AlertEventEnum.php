@@ -38,6 +38,12 @@ enum AlertEventEnum: string
     case CacheHitRatioLow = 'runtime.cache_hit_ratio_low';
     case DeliveryFailed = 'runtime.delivery_failed';
     case LogSpike = 'runtime.log_spike';
+    // AI usage (#129): estimated monthly spend at 80 % and 100 % of the project's budget, a
+    // spend spike against the 7-day average and an error rate above the threshold; off by default.
+    case AiBudgetWarning = 'ai.budget_warning';
+    case AiBudgetExceeded = 'ai.budget_exceeded';
+    case AiSpendSpike = 'ai.spend_spike';
+    case AiErrorRate = 'ai.error_rate';
     // PHP, Laravel or Node security support ends within a lead time, or has ended (#157).
     case EolApproaching = 'eol.approaching';
     case EolReached = 'eol.reached';
@@ -67,8 +73,8 @@ enum AlertEventEnum: string
     {
         return match ($this) {
             self::InfrastructureFailed => SeverityEnum::Critical,
-            self::ProjectStale, self::HealthStale, self::ScheduleMissed, self::CacheHitRatioLow, self::EolApproaching => SeverityEnum::Medium,
-            self::FindingNew, self::HealthFailed, self::ProjectWorsened, self::ScheduleFailed, self::SchedulerDown, self::DeliveryFailed, self::LogSpike, self::PushRejected, self::EolReached => SeverityEnum::High,
+            self::ProjectStale, self::HealthStale, self::ScheduleMissed, self::CacheHitRatioLow, self::EolApproaching, self::AiBudgetWarning, self::AiSpendSpike => SeverityEnum::Medium,
+            self::FindingNew, self::HealthFailed, self::ProjectWorsened, self::ScheduleFailed, self::SchedulerDown, self::DeliveryFailed, self::LogSpike, self::PushRejected, self::EolReached, self::AiBudgetExceeded, self::AiErrorRate => SeverityEnum::High,
             self::ReportChecksSkipped => SeverityEnum::Low,
             default => SeverityEnum::Info,
         };

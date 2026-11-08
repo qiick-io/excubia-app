@@ -353,6 +353,50 @@ export type RuntimeSummary = {
     deploys: RuntimeDeploy[];
 };
 
+/** Estimated AI calls, failures, latency and token split of some `ai` series (#129). */
+export type AiUsageTotals = {
+    count: number;
+    errors: number;
+    failovers: number;
+    /** Failed share of the calls, in percent; null without calls. */
+    errorRate: number | null;
+    averageMs: number | null;
+    uncachedInputTokens: number;
+    cacheReadTokens: number;
+    cacheWriteTokens: number;
+    outputTokens: number;
+    reasoningTokens: number;
+    /** Estimated USD of the priced models; null when no model of the rows has a price. */
+    cost: number | null;
+    /** Some of the usage is of a model without a price, so `cost` leaves it out. */
+    hasUnpriced: boolean;
+} & RuntimePercentiles;
+
+/**
+ * The AI tab of a project over a time range (#129): estimated spend per chart bucket, totals,
+ * breakdowns by model, provider and agent, tool calls, and the month to date against the budget.
+ */
+export type AiUsageSummary = {
+    range: TimeRange;
+    isSampled: boolean;
+    /** The day the price table was last saved, or the defaults' date. */
+    pricesUpdatedOn: string;
+    totals: AiUsageTotals;
+    timeline: { at: string; cost: number; count: number }[];
+    models: (AiUsageTotals & { provider: string; model: string })[];
+    providers: (AiUsageTotals & { provider: string })[];
+    /** `agent` is null for operations other than agent runs (embeddings, images…). */
+    agents: (AiUsageTotals & { agent: string | null; operation: string })[];
+    tools: RuntimeRow[];
+    month: {
+        cost: number;
+        calls: number;
+        hasUnpriced: boolean;
+        /** The project's monthly budget (USD), or null when off. */
+        budget: number | null;
+    };
+};
+
 /** A deploy marker: a report sent by `excubia push --deploy` (#106). */
 export type RuntimeDeploy = {
     release: string | null;

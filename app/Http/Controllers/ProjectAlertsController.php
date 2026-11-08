@@ -8,8 +8,10 @@ use App\Actions\CreateMaintenanceWindowAction;
 use App\Actions\DeleteMaintenanceWindowAction;
 use App\Actions\MuteAlertAction;
 use App\Actions\UnmuteAlertAction;
+use App\Actions\UpdateAiBudgetAction;
 use App\Http\Requests\StoreAlertMuteRequest;
 use App\Http\Requests\StoreMaintenanceWindowRequest;
+use App\Http\Requests\UpdateAiBudgetRequest;
 use App\Models\AlertMute;
 use App\Models\MaintenanceWindow;
 use App\Models\Project;
@@ -19,7 +21,8 @@ use Inertia\Inertia;
 
 /**
  * Alert controls of the project's Alerts tab (#114): mute or unmute a rule or an issue, add or
- * remove a maintenance window. Needs `can-manage-alerts` and a project the user can see (#22).
+ * remove a maintenance window; and the monthly AI budget of the AI tab (#129). Needs
+ * `can-manage-alerts` and a project the user can see (#22).
  */
 class ProjectAlertsController extends Controller
 {
@@ -57,6 +60,13 @@ class ProjectAlertsController extends Controller
         $delete->execute($maintenanceWindow);
 
         return $this->done(__('Maintenance window removed.'));
+    }
+
+    public function updateAiBudget(UpdateAiBudgetRequest $request, Project $project, UpdateAiBudgetAction $update): RedirectResponse
+    {
+        $update->execute($project, $request->budget());
+
+        return $this->done(__('AI budget saved.'));
     }
 
     private function done(string $message): RedirectResponse
