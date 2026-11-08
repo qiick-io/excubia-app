@@ -220,6 +220,17 @@ class SettingsRepositoryService
         $this->values = null;
     }
 
+    /**
+     * Deletes the given keys; their defaults apply again.
+     *
+     * @param  list<string>  $keys
+     */
+    public function forget(array $keys): void
+    {
+        Setting::query()->whereIn('key', $keys)->delete();
+        $this->values = null;
+    }
+
     public function appName(): string
     {
         $name = $this->all()['app_name'];
