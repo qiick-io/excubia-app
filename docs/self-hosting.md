@@ -4,9 +4,10 @@ Excubia App is in **beta** (`1.0.0-beta`). The ingest API and the excubia-core c
 
 - [Requirements](#requirements)
 - [Install with Docker](#install-with-docker)
-- [Install on a server (Forge, Ploi or by hand)](#install-on-a-server-forge-ploi-or-by-hand)
+- [Install on a server (Composer, Forge, Ploi or by hand)](#install-on-a-server-composer-forge-ploi-or-by-hand)
 - [First run](#first-run)
 - [Scheduler and queue](#scheduler-and-queue)
+- [Health probes](#health-probes)
 - [Backups](#backups)
 - [Upgrades](#upgrades)
 - [Excubia watches itself](#excubia-watches-itself)
@@ -31,7 +32,7 @@ cd excubia-app
 docker compose up -d --build
 ```
 
-Open `http://localhost:8080/setup` and follow the [first run](#first-run). The `app` container is healthy once `/up` answers; `queue` and `scheduler` start after it.
+Open `http://localhost:8080/setup` and follow the [first run](#first-run). The `app` container is healthy once `/health/ready` answers (see [Health probes](#health-probes)); `queue` and `scheduler` start after it.
 
 On start, the `app` container:
 
@@ -63,17 +64,45 @@ Put a TLS reverse proxy (Caddy, Traefik, nginx) in front of port 8080, set `APP_
 ### Image without compose
 
 ```bash
-docker build -t excubia-app .
-docker run -d -p 8080:8080 -v excubia-storage:/app/storage --name excubia excubia-app
+docker run -d -p 8080:8080 -v excubia-storage:/app/storage --name excubia ghcr.io/qiick-io/excubia-app:1.0.0
 ```
+
+Every release tag publishes `ghcr.io/qiick-io/excubia-app` (amd64 and arm64) with its exact version (`1.0.0`, `1.0.0-beta.2`), `MAJOR.MINOR` for stable releases, and `latest` for the newest stable one. Pin an exact version in production. To build the image yourself instead: `docker build -t excubia-app .` from the tag you want.
 
 The container then serves the web only: run the scheduler and the queue with the same image and volume (`docker run … excubia-app php artisan schedule:work` and `… php artisan queue:work`, both with `-e EXCUBIA_RUN_MIGRATIONS=false`), or set `QUEUE_CONNECTION=sync` and call `php artisan schedule:run` every minute with `docker exec`.
 
-A published image on GHCR is planned; until then, build it from the tag you want to run.
-
-## Install on a server (Forge, Ploi or by hand)
+## Install on a server (Composer, Forge, Ploi or by hand)
 
 Requirements: PHP 8.4 with `pdo_sqlite` (or the driver of your database), Composer 2, Node 24 and npm (to build the frontend), and a web server pointing to `public/`.
+
+### With Composer (recommended)
+
+```bash
+composer create-project qiick/excubia-app excubia
+cd excubia
+nvm use   # Node 24
+php artisan excubia:install
+```
+
+`composer create-project` copies the app once, copies `.env` from `.env.example` and generates `APP_KEY`; it runs no migration. `php artisan excubia:install` then asks for:
+
+1. the app name and the public URL (`APP_NAME`, `APP_URL`);
+2. the database: SQLite (default), PostgreSQL, MySQL or MariaDB, with host, port, name, user and password for the last three;
+3. whether to seed the permissions and the system project (yes by default).
+
+It writes `.env`, keeps a valid `APP_KEY`, migrates, seeds, links storage and builds the frontend (`--no-npm` skips the build). It refuses to run where `APP_ENV` is `production` unless you pass `--force`, and asks before overwriting an existing `.env`. Pin a release with `qiick/excubia-app:1.0.0`.
+
+**Scripts and CI:** every answer is an option, so `-n` installs without questions:
+
+```bash
+php artisan excubia:install -n --force \
+  --name=Excubia --url=https://excubia.example.com \
+  --db=pgsql --db-host=127.0.0.1 --db-port=5432 --db-database=excubia --db-username=excubia --db-password=secret
+```
+
+The installer creates no user: open `APP_URL/setup` to create the admin and the first project ([First run](#first-run)). Then add the cron entry and the queue worker ([Scheduler and queue](#scheduler-and-queue)).
+
+> **Install only, not the update channel.** Composer copies the app once and never updates it. To upgrade, follow [Upgrades](#upgrades).
 
 ### Laravel Forge or Ploi
 
@@ -87,11 +116,8 @@ Requirements: PHP 8.4 with `pdo_sqlite` (or the driver of your database), Compos
     git pull origin $FORGE_SITE_BRANCH
     composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
     npm ci && npm run build
-    php artisan migrate --force
-    php artisan db:seed --class=PermissionSeeder --force
-    php artisan db:seed --class=SystemProjectSeeder --force
+    php artisan excubia:upgrade --force   # migrate, permissions, system project, caches, queue restart
     php artisan optimize
-    php artisan queue:restart
     ```
 
 5. Enable the scheduler (Forge: **Scheduler** → `php artisan schedule:run` every minute; Ploi: **Cronjobs** or the Laravel scheduler toggle).
@@ -102,21 +128,13 @@ Requirements: PHP 8.4 with `pdo_sqlite` (or the driver of your database), Compos
 ```bash
 git clone https://github.com/qiick-io/excubia-app.git
 cd excubia-app
+git checkout v1.0.0   # the release you want
 composer install --no-dev --optimize-autoloader
 cp .env.example .env
-php artisan key:generate
+php artisan excubia:install
 ```
 
-Edit `.env` (`APP_ENV=production`, `APP_DEBUG=false`, `APP_URL`), then:
-
-```bash
-touch database/database.sqlite   # SQLite only
-php artisan migrate --force
-php artisan db:seed --class=PermissionSeeder --force
-php artisan db:seed --class=SystemProjectSeeder --force
-npm ci && npm run build
-php artisan optimize
-```
+Then set `APP_ENV=production` and `APP_DEBUG=false` in `.env` and run `php artisan optimize`.
 
 Add the cron entry and a queue worker as in [Scheduler and queue](#scheduler-and-queue).
 
@@ -208,6 +226,15 @@ A JSON `POST` to the HTTPS URL, retried 3 times with backoff (10, 30, 60 seconds
 
 `data` holds the event's details and is an empty object when there are none. Fields may be added to the payload and to `data`, never removed or renamed; the webhook stays one request per alert even when the other channels group a report's alerts. Headers: `X-Excubia-Event` (the event), `X-Excubia-Event-Id` (the `id`), `X-Excubia-Timestamp` (Unix seconds) and `X-Excubia-Signature: sha256=<hex>`, the HMAC-SHA256 of `<timestamp>.<raw body>` with the webhook secret. Check the signature on the raw body and reject old timestamps. The test event is `ping`, with `project: null`.
 
+## Health probes
+
+Two endpoints answer without signing in, for load balancers, Docker and uptime monitors (as in externa-core):
+
+- `GET /health/live`: `{"status":"ok"}` while PHP answers. No dependency is checked.
+- `GET /health/ready`: `{"status":"ok","checks":{"database":"ok"}}` with 200 when the database answers (and Redis, when the queue, cache, session or broadcast driver uses it); `"status":"fail"` with 503 otherwise. The Docker image uses it as its `HEALTHCHECK`.
+
+Laravel's `/up` still answers too. The scheduler, the queue worker and the pushes are on the [System page](#system-page).
+
 ## Backups
 
 Back up the database and, with Docker, the application key. Everything else (code, vendor, built assets) comes back from the repository.
@@ -244,28 +271,84 @@ Keep the `APP_KEY` with the backups: without it, the OIDC client secret and the 
 
 ## Upgrades
 
-Read the [changelog](../CHANGELOG.md) first, back up, then:
+Read the [changelog](../CHANGELOG.md) first: every version has **Upgrade notes** (breaking changes, new settings, steps). Then back up the database, `.env` and `storage/` ([Backups](#backups)).
+
+### How updates reach you
+
+| Fact                          | Meaning                                                                                                                                                                                                                                  |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `composer create-project`     | **Install once.** It copies the app into a new directory. It is not how later releases reach you.                                                                                                                                        |
+| Your git remote               | Once you push that tree to **your** repository, it tracks your commits. It does not follow `qiick-io/excubia-app` by itself.                                                                                                             |
+| Recommended update channel    | **Git:** check out or merge a release tag `vX.Y.Z` (Path A).                                                                                                                                                                             |
+| `php artisan excubia:upgrade` | Runs after the code is on the new release: `migrate --force`, the permission and system project sync, `optimize:clear`, `queue:restart`. It runs no `composer` or `npm`. Opt-in: `--sync-upstream=vX.Y.Z` merges the official tag first. |
+| Docker                        | Pull a newer GHCR image tag and keep the volume (Path C). The container migrates on start.                                                                                                                                               |
+
+Migrations are forward-only once released: every release upgrades from the one before with `php artisan migrate`. Upgrading one release at a time, in order, is the safest path.
+
+### Path A: Git tag (recommended)
+
+**You cloned `qiick-io/excubia-app`:**
 
 ```bash
-# Docker
-git fetch --tags && git checkout v1.0.0-beta.2   # the version you want
-docker compose up -d --build
-
-# Server (or the Forge / Ploi deploy script above)
 php artisan down
-git pull
+git fetch --tags origin
+git checkout v1.0.1   # the release you want
 composer install --no-dev --optimize-autoloader
 npm ci && npm run build
-php artisan migrate --force
-php artisan db:seed --class=PermissionSeeder --force
-php artisan db:seed --class=SystemProjectSeeder --force
+php artisan excubia:upgrade --force
 php artisan optimize
-php artisan queue:restart
 php artisan up
 ```
 
-- **During the beta,** migrations can change between betas. Upgrade one beta at a time, in order, and always with a backup. From 1.0.0 on, migrations are forward-only and every release upgrades from the previous one.
-- **Monitored projects** do not need to upgrade with the app: the app accepts reports, runtime and exception pushes from every excubia-core 1.x, and stores runtime types it does not know yet without failing (see [compatibility.md](./compatibility.md)). Upgrade excubia-core in the projects when you want the newer checks.
+**You used create-project and pushed to your own remote:** add Excubia as `upstream` once and merge the release tag, then run the same `composer`, `npm` and `excubia:upgrade` steps:
+
+```bash
+git remote add upstream https://github.com/qiick-io/excubia-app.git   # once
+git fetch --tags upstream
+git merge v1.0.1   # resolve conflicts if you changed app code
+```
+
+### Assisted sync (`--sync-upstream`)
+
+Opt-in: plain `excubia:upgrade` never pulls code. With `--sync-upstream=vX.Y.Z` the command:
+
+1. needs a git working tree, clean unless `--force`;
+2. adds the remote `upstream` → `https://github.com/qiick-io/excubia-app.git` if missing, fetches the tags and checks the tag exists;
+3. lists the files that change (`git diff --name-status HEAD vX.Y.Z`); with `--dry-run` it stops here;
+4. asks for confirmation (skip it with `--yes`), merges the tag (`git merge --no-edit`) and stops on a conflict, before migrating;
+5. then runs the usual upgrade steps.
+
+```bash
+php artisan excubia:upgrade --sync-upstream=v1.0.1 --dry-run   # preview only
+php artisan excubia:upgrade --sync-upstream=v1.0.1             # merge, then upgrade
+```
+
+It may overwrite files you changed: on a heavily customised tree, merge by hand (Path A). It still runs no `composer` or `npm`: install the dependencies after the merge, before `excubia:upgrade`.
+
+### Path B: replace the tree
+
+If the site is not under git: back up, `composer create-project qiick/excubia-app:1.0.1 /tmp/excubia-new`, copy `.env` (and `storage/` if it is not on a shared path) into it, run `php artisan excubia:upgrade --force` there with the same database, then switch the web root. `composer update` never refreshes the application code.
+
+### Path C: Docker
+
+Keep the volume, pin the new tag and recreate the containers:
+
+```bash
+docker pull ghcr.io/qiick-io/excubia-app:1.0.1
+docker compose up -d   # with the image set to ghcr.io/qiick-io/excubia-app:1.0.1
+```
+
+The `app` container migrates and seeds on start. Building from source instead: `git checkout v1.0.1 && docker compose up -d --build`.
+
+### Smoke checklist
+
+- [ ] `GET /health/ready` answers 200
+- [ ] Sign in and open the dashboard and one project
+- [ ] Settings → System: the scheduler and the queue worker beat, the last pushes are recent
+
+### Good to know
+
+- **Monitored projects** do not need to upgrade with the app: it accepts reports, runtime and exception pushes from every excubia-core 1.x and stores runtime types it does not know yet (see [compatibility.md](./compatibility.md)). Upgrade excubia-core in the projects when you want the newer checks.
 - **Rollback:** restore the backup taken before the upgrade and run the previous version.
 
 ## Excubia watches itself
