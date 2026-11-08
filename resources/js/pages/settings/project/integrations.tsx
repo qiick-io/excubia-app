@@ -54,6 +54,9 @@ type IntegrationsSettings = {
     alert_log_spike_per_hour: number | null;
     alert_ai_spend_spike_percent: number | null;
     alert_ai_error_rate_above: number | null;
+    alert_billing_webhook_failures_per_hour: number | null;
+    alert_billing_payment_failed_enabled: boolean;
+    alert_auth_failed_logins_per_hour: number | null;
     webhook_last_success: Delivery;
     webhook_last_error: Delivery;
 };
@@ -96,6 +99,12 @@ export default function ProjectIntegrationsSettings({
         ),
         alert_ai_error_rate_above: String(
             project.alert_ai_error_rate_above ?? '',
+        ),
+        alert_billing_webhook_failures_per_hour: String(
+            project.alert_billing_webhook_failures_per_hour ?? '',
+        ),
+        alert_auth_failed_logins_per_hour: String(
+            project.alert_auth_failed_logins_per_hour ?? '',
         ),
     });
     const [testing, setTesting] = useState<Channel | null>(null);
@@ -582,6 +591,61 @@ export default function ProjectIntegrationsSettings({
                                         )}
                                         defaultChecked={
                                             project.alert_delivery_failures_enabled
+                                        }
+                                    />
+                                    <TextField
+                                        name="alert_billing_webhook_failures_per_hour"
+                                        type="number"
+                                        label={t(
+                                            'settings.integrations.billingWebhookFailures',
+                                        )}
+                                        hint={t(
+                                            'settings.integrations.billingWebhookFailuresHint',
+                                        )}
+                                        placeholder="5"
+                                        value={
+                                            form.alert_billing_webhook_failures_per_hour
+                                        }
+                                        error={
+                                            errors.alert_billing_webhook_failures_per_hour
+                                        }
+                                        onChange={(value) =>
+                                            setValue(
+                                                'alert_billing_webhook_failures_per_hour',
+                                                value,
+                                            )
+                                        }
+                                    />
+                                    <BooleanField
+                                        name="alert_billing_payment_failed_enabled"
+                                        label={t(
+                                            'settings.integrations.billingPaymentFailures',
+                                        )}
+                                        defaultChecked={
+                                            project.alert_billing_payment_failed_enabled
+                                        }
+                                    />
+                                    <TextField
+                                        name="alert_auth_failed_logins_per_hour"
+                                        type="number"
+                                        label={t(
+                                            'settings.integrations.authFailedLogins',
+                                        )}
+                                        hint={t(
+                                            'settings.integrations.authFailedLoginsHint',
+                                        )}
+                                        placeholder="50"
+                                        value={
+                                            form.alert_auth_failed_logins_per_hour
+                                        }
+                                        error={
+                                            errors.alert_auth_failed_logins_per_hour
+                                        }
+                                        onChange={(value) =>
+                                            setValue(
+                                                'alert_auth_failed_logins_per_hour',
+                                                value,
+                                            )
                                         }
                                     />
                                 </FieldGroup>

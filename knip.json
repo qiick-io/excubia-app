@@ -12,5 +12,6 @@
         "resources/js/lib/live-announcer.ts",
         "resources/js/lib/toast.ts"
     ],
-    "ignoreDependencies": ["concurrently", "eslint-plugin-i18next"]
+    "ignoreDependencies": ["concurrently"],
+    "ignoreBinaries": ["oxlint"]
 }

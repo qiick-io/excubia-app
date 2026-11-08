@@ -25,6 +25,11 @@ pest()->extend(TestCase::class)
 
 pest()->browser()->timeout(10_000);
 
+// The installer rewrites .env and switches the database connection itself, so its tests boot
+// the app without RefreshDatabase (as in externa-core) and use their own SQLite file.
+pest()->extend(TestCase::class)
+    ->in('Unit/Console');
+
 /*
 |--------------------------------------------------------------------------
 | Expectations

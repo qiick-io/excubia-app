@@ -996,6 +996,91 @@
           }
         }
       ]
+    },
+    {
+      "checkId": "laravel-cashier",
+      "name": "Laravel Cashier",
+      "status": "warn",
+      "findings": [
+        {
+          "checkId": "laravel-cashier",
+          "severity": "info",
+          "status": "pass",
+          "subject": "stripe",
+          "message": "Cashier (Stripe) verifies webhook signatures and receives webhooks on its route.",
+          "fixHint": "No action needed.",
+          "evidenceUrl": null,
+          "fingerprint": "21ed5b5ebbe1d72d0896c949d3e9e7000fca089286a2d0cbe6ac35301e8e9394",
+          "details": {
+            "provider": "stripe",
+            "isWebhookSecretConfigured": true,
+            "isWebhookRouteRegistered": true,
+            "hasTestKeys": false
+          }
+        },
+        {
+          "checkId": "laravel-cashier",
+          "severity": "medium",
+          "status": "warn",
+          "subject": "paddle.webhook-route",
+          "message": "No route uses Cashier Paddle's webhook controller: Paddle webhooks are not handled.",
+          "fixHint": "Keep the route Cashier registers (cashier.webhook), or point your own route at Cashier's WebhookController or a subclass.",
+          "evidenceUrl": "https://laravel.com/docs/cashier-paddle#handling-paddle-webhooks",
+          "fingerprint": "670cc018a48f5a7ebfa681da57a89577dff9b894fdca2803c192c5946b72f18b",
+          "details": {
+            "provider": "paddle",
+            "isWebhookSecretConfigured": true,
+            "isWebhookRouteRegistered": false,
+            "hasTestKeys": false
+          }
+        }
+      ]
+    },
+    {
+      "checkId": "laravel-api-tokens",
+      "name": "API tokens",
+      "status": "warn",
+      "findings": [
+        {
+          "checkId": "laravel-api-tokens",
+          "severity": "medium",
+          "status": "warn",
+          "subject": "sanctum.expiration",
+          "message": "Sanctum tokens never expire: sanctum.expiration is null and 4 valid tokens have no expires_at.",
+          "fixHint": "Set sanctum.expiration (minutes) or create tokens with an expiration date.",
+          "evidenceUrl": "https://laravel.com/docs/sanctum#token-expiration",
+          "fingerprint": "40dbd57a6e5ecac22e1f6b84c10d22d68282e0f46514417031c1acd5c8e359b7",
+          "details": {
+            "provider": "sanctum",
+            "expirationMinutes": null,
+            "hasStatefulWildcard": false,
+            "isStatefulEmpty": false,
+            "tokenCount": 5,
+            "nonExpiringTokenCount": 4,
+            "staleTokenCount": 2,
+            "neverUsedTokenCount": 3
+          }
+        },
+        {
+          "checkId": "laravel-api-tokens",
+          "severity": "info",
+          "status": "pass",
+          "subject": "passport",
+          "message": "Passport keys are present and token lifetimes are within limits.",
+          "fixHint": "No action needed.",
+          "evidenceUrl": null,
+          "fingerprint": "419184d471e44b70df929e7dc373e3e283b0464a6c050a44792cca8fc926e953",
+          "details": {
+            "provider": "passport",
+            "hasKeys": true,
+            "isPrivateKeyTooOpen": false,
+            "accessTokenLifetimeMinutes": 43200,
+            "refreshTokenLifetimeMinutes": 525600,
+            "personalAccessTokenLifetimeMinutes": 525600,
+            "personalAccessClientCount": 1
+          }
+        }
+      ]
     }
   ],
   "upgradePlan": [

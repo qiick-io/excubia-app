@@ -352,6 +352,45 @@ export type RuntimeReverbRow = {
     lastAt: string | null;
 };
 
+/** The payment signals of Laravel Cashier webhooks (#178), estimated. */
+type RuntimeBillingSignals = {
+    paymentFailed: number;
+    paymentActionRequired: number;
+    subscriptionCanceled: number;
+};
+
+/**
+ * Laravel Cashier webhooks of one provider and event type (#178). Counts are estimated;
+ * `errorRate` is the failed share in %, null without webhooks.
+ */
+export type RuntimeBillingRow = {
+    provider: string;
+    eventType: string;
+    count: number;
+    handled: number;
+    errors: number;
+    errorRate: number | null;
+    averageMs: number | null;
+    maxMs: number | null;
+    lastAt: string | null;
+} & RuntimePercentiles &
+    RuntimeBillingSignals;
+
+/**
+ * Laravel authentication of one guard (#180). Counts are estimated; `count` is every event
+ * recorded, `failureRate` the failed share of login attempts in %, null without any.
+ */
+export type RuntimeAuthRow = {
+    guard: string;
+    count: number;
+    logins: number;
+    failed: number;
+    failureRate: number | null;
+    lockouts: number;
+    tokenAuthentications: number;
+    lastAt: string | null;
+};
+
 /** A time range of the runtime, exceptions and schedule tabs (#113), `TimeRangeEnum`. */
 export type TimeRange = '1h' | '6h' | '24h' | '7d' | '14d';
 
@@ -414,6 +453,13 @@ export type RuntimeSummary = {
         check: { isReachable: boolean; latencyMs: number | null } | null;
         rows: RuntimeReverbRow[];
     };
+    /** Laravel Cashier webhooks (#178) and the payment signals of the whole range. */
+    billing: {
+        totals: RuntimeBillingSignals;
+        rows: RuntimeBillingRow[];
+    };
+    /** Laravel authentication per guard (#180). */
+    auth: RuntimeAuthRow[];
     /** Deploys of the range, oldest first (#106); `bucket` matches a `timeline` point. */
     deploys: RuntimeDeploy[];
 };

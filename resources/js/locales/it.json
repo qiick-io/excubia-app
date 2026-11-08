@@ -484,7 +484,10 @@
                 "ai.budget_warning": "La spesa AI stimata del mese di un progetto ha raggiunto l'80 % del budget (impostato nella scheda AI).",
                 "ai.budget_exceeded": "La spesa AI stimata del mese di un progetto ha raggiunto il budget.",
                 "ai.spend_spike": "La spesa AI stimata di oggi supera la soglia rispetto alla media di 7 giorni.",
-                "ai.error_rate": "La quota di chiamate AI fallite nell'ultima ora supera la soglia."
+                "ai.error_rate": "La quota di chiamate AI fallite nell'ultima ora supera la soglia.",
+                "billing.webhook_failures": "I webhook di fatturazione di un provider sono falliti (5xx, ritentati dal provider) almeno quanto la soglia nell'ultima ora.",
+                "billing.payment_failed": "Un provider di fatturazione ha segnalato pagamenti falliti nell'ultima ora.",
+                "auth.failed_login_spike": "Una guard di autenticazione ha registrato almeno la soglia di login falliti nell'ultima ora (brute force o credential stuffing)."
             },
             "runtimeRulesTitle": "Regole di avviso runtime",
             "runtimeRulesDescription": "Avvisi opzionali dai dati runtime inviati dai progetti, controllati ogni 15 minuti sull'ultima ora. Vuoto disattiva la regola.",
@@ -493,6 +496,11 @@
             "logSpike": "Voci di log di errore per canale e ora",
             "logSpikeHint": "Avvisa quando un canale di log scrive almeno questo numero di voci error, critical, alert o emergency nell'ultima ora.",
             "deliveryFailures": "Avvisa quando email o notifiche falliscono",
+            "billingWebhookFailures": "Webhook di fatturazione falliti per provider e ora",
+            "billingWebhookFailuresHint": "Avvisa quando i webhook di Laravel Cashier di un provider falliscono almeno questo numero di volte nell'ultima ora (il provider li ritenta).",
+            "billingPaymentFailures": "Avvisa quando un provider di fatturazione segnala pagamenti falliti",
+            "authFailedLogins": "Login falliti per guard e ora",
+            "authFailedLoginsHint": "Avvisa quando una guard di autenticazione registra almeno questo numero di login falliti nell'ultima ora.",
             "projects": "Progetti",
             "projectsHint": "Lascia tutte le caselle vuote per inviare gli avvisi di ogni progetto.",
             "emailTitle": "Email",
@@ -1144,7 +1152,21 @@
         "reverbErrors": "Errori",
         "channelsCreated": "Canali creati",
         "channelsRemoved": "Canali rimossi",
-        "peakConnections": "Picco connessioni"
+        "peakConnections": "Picco connessioni",
+        "billing": "Webhook di fatturazione",
+        "billingDescription": "Webhook di Laravel Cashier per provider e tipo di evento. Quelli falliti sono terminati con un errore server (5xx) e il provider li ritenta; i tipi di evento senza handler di Cashier non sono né gestiti né falliti. Arriva solo il tipo di evento: mai importi, clienti o altri dati del payload.",
+        "billingTotals": "Segnali di pagamento in questo intervallo",
+        "received": "Ricevuti",
+        "handled": "Gestiti",
+        "failedRate": "Falliti (tasso)",
+        "paymentFailed": "Pagamenti falliti",
+        "paymentActionRequired": "Pagamenti da confermare",
+        "subscriptionCanceled": "Abbonamenti annullati",
+        "auth": "Autenticazione",
+        "authDescription": "Login di Laravel per guard: login riusciti e falliti con il tasso di fallimento, blocchi del rate limiter dei login e richieste autenticate da un personal access token di Sanctum. Le richieste con token Passport non sono contate. Mai utenti, email, credenziali, token o indirizzi IP.",
+        "logins": "Login",
+        "lockouts": "Blocchi",
+        "tokenAuthentications": "Autenticazioni token"
     },
     "exceptions": {
         "emptyTitle": "Nessuna eccezione",
@@ -1577,6 +1599,14 @@
         "laravel-reverb": {
             "label": "Server Reverb",
             "description": "Se il server Reverb della connessione di broadcast risponde a una connessione TCP entro 2 s, e in quanto tempo."
+        },
+        "laravel-cashier": {
+            "label": "Laravel Cashier",
+            "description": "Per pacchetto Cashier (Stripe, Paddle): il secret dei webhook, le chiavi di test in produzione e la route verso il controller dei webhook."
+        },
+        "laravel-api-tokens": {
+            "label": "Token API",
+            "description": "Configurazione dei token di Laravel Sanctum e Passport: token che non scadono o inutilizzati, domini stateful, chiavi Passport e i loro permessi, durata dei token."
         }
     },
     "details": {

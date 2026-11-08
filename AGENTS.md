@@ -252,7 +252,7 @@ Run them before every push.
 ## Excubia App rules
 
 - Never reimplement or copy a check, parser, data-source client or renderer: they live in `qiick/excubia-core`.
-- Migrations: until 1.0.0 is released, keep one clean `create_*` migration per table and change it in place (no `add_*` / `remove_*` / alter migrations; local databases run `migrate:fresh --seed`). After the 1.0.0 release they are forward-only, as in the standard.
+- Migrations: until the **first release** of this app (any version, betas included, because customers install them), keep one clean `create_*` migration per table and change it in place (no `add_*` / `remove_*` / alter migrations; local databases need a fresh database and `migrate --seed`). From the first release on they are forward-only, as in the standard: never edit or delete a released migration, add a new one, and every update must apply with `php artisan migrate` on a customer database. Check for a release first: `gh release list` and `git tag`.
 - Tests: no real network and no real CLI run: fake HTTP and `Process`.
 - Privacy: no telemetry. Only package names and versions leave the server, through `qiick/excubia-core`. The AI assistant (#17) is off by default, and its tools are read-only. A tool never returns push tokens, user data or file paths (covered by a test). Tests fake the provider: no real AI call.
 - Extra role suffixes (`App\Ai\Agents` → `Agent`, `App\Ai\Tools` → `Tool`) and the scaffolding the architecture test skips: `tests/Arch/naming-architecture.php`.

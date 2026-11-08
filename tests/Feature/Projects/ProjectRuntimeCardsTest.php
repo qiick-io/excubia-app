@@ -77,7 +77,9 @@ it('sends every card, empty, to a project whose core sends only the default type
         ->where('runtime.duplicateQueries', [])
         ->where('runtime.servers', [])
         ->where('runtime.octane', ['config' => null, 'leakGrowthMb' => ProjectRuntimeService::OCTANE_LEAK_GROWTH_MB, 'rows' => []])
-        ->where('runtime.reverb', ['check' => null, 'rows' => []]));
+        ->where('runtime.reverb', ['check' => null, 'rows' => []])
+        ->where('runtime.billing', ['totals' => ['paymentFailed' => 0, 'paymentActionRequired' => 0, 'subscriptionCanceled' => 0], 'rows' => []])
+        ->where('runtime.auth', []));
 });
 
 it('shows the skipped aggregates of unknown types, even before any known type arrives', function () {
@@ -360,4 +362,64 @@ it('shows an unreachable Reverb server from the latest report, also without runt
 
     runtimePage($this->viewer, $this->project)->assertInertia(fn (Assert $page) => $page
         ->where('runtime.reverb', ['check' => ['isReachable' => false, 'latencyMs' => null], 'rows' => []]));
+});
+
+it('shows billing webhooks per provider and event type with the payment signal totals (#178)', function () {
+    $billing = fn (array $metrics): array => ['handledCount' => 0, 'paymentFailedCount' => 0, 'paymentActionRequiredCount' => 0, 'subscriptionCanceledCount' => 0, ...$metrics];
+
+    cardRow($this->project, 'billingWebhook', ['provider' => 'stripe', 'eventType' => 'invoice.payment_failed'], [
+        'count' => 10, 'error_count' => 2, 'total_ms' => 500, 'max_ms' => 120, 'histogram' => [0, 0, 5, 3, 2, 0, 0, 0, 0, 0, 0, 0],
+        'metrics' => $billing(['handledCount' => 8, 'paymentFailedCount' => 10]),
+    ]);
+    // Sampled at 50 %: the counts and the signals are estimated.
+    cardRow($this->project, 'billingWebhook', ['provider' => 'stripe', 'eventType' => 'customer.subscription.deleted'], [
+        'sample_rate' => 0.5, 'count' => 3, 'total_ms' => 30, 'max_ms' => 15, 'metrics' => $billing(['handledCount' => 3, 'subscriptionCanceledCount' => 3]),
+    ]);
+    // A provider this app does not know yet (#169) is shown as sent; an event type without a Cashier handler is neither handled nor failed.
+    cardRow($this->project, 'billingWebhook', ['provider' => 'futureProvider', 'eventType' => 'unknown'], [
+        'count' => 1, 'total_ms' => 2, 'max_ms' => 2, 'metrics' => $billing([]),
+    ]);
+
+    runtimePage($this->viewer, $this->project)->assertInertia(fn (Assert $page) => $page
+        ->where('runtime.billing.totals', ['paymentFailed' => 10, 'paymentActionRequired' => 0, 'subscriptionCanceled' => 6])
+        ->has('runtime.billing.rows', 3)
+        ->where('runtime.billing.rows.0', [
+            'provider' => 'stripe', 'eventType' => 'invoice.payment_failed',
+            'count' => 10, 'errors' => 2, 'averageMs' => 50, 'maxMs' => 120, 'p50' => 25, 'p95' => 87.5, 'p99' => 97.5,
+            'handled' => 8, 'errorRate' => 20, 'paymentFailed' => 10, 'paymentActionRequired' => 0, 'subscriptionCanceled' => 0,
+            'lastAt' => '2026-11-05T11:58:00Z',
+        ])
+        ->where('runtime.billing.rows.1.eventType', 'customer.subscription.deleted')
+        ->where('runtime.billing.rows.1.count', 6)
+        ->where('runtime.billing.rows.1.handled', 6)
+        ->where('runtime.billing.rows.1.subscriptionCanceled', 6)
+        ->where('runtime.billing.rows.1.p95', null)
+        ->where('runtime.billing.rows.2.provider', 'futureProvider')
+        ->where('runtime.billing.rows.2.handled', 0)
+        ->where('runtime.billing.rows.2.errorRate', 0));
+});
+
+it('shows authentication per guard with the failure rate, lockouts and token authentications (#180)', function () {
+    $auth = fn (array $metrics): array => ['loginCount' => 0, 'lockoutCount' => 0, 'tokenAuthenticationCount' => 0, ...$metrics];
+
+    cardRow($this->project, 'auth', ['guard' => 'web'], ['count' => 21, 'error_count' => 5, 'metrics' => $auth(['loginCount' => 15, 'lockoutCount' => 1])]);
+    // Sampled at 50 %: every count is estimated.
+    cardRow($this->project, 'auth', ['guard' => 'web'], ['bucket' => '2026-11-05 11:30:00', 'sample_rate' => 0.5, 'count' => 2, 'error_count' => 1, 'metrics' => $auth(['loginCount' => 1])]);
+    // Sanctum token authentications only: no login attempt, so no failure rate.
+    cardRow($this->project, 'auth', ['guard' => 'sanctum'], ['count' => 40, 'metrics' => $auth(['tokenAuthenticationCount' => 40])]);
+    // A guard name this app does not know (#169) is shown as sent.
+    cardRow($this->project, 'auth', ['guard' => 'unknown'], ['count' => 1, 'error_count' => 1, 'metrics' => $auth([])]);
+
+    runtimePage($this->viewer, $this->project)->assertInertia(fn (Assert $page) => $page
+        ->has('runtime.auth', 3)
+        ->where('runtime.auth.0', [
+            'guard' => 'sanctum', 'count' => 40, 'logins' => 0, 'failed' => 0, 'failureRate' => null, 'lockouts' => 0, 'tokenAuthentications' => 40,
+            'lastAt' => '2026-11-05T11:58:00Z',
+        ])
+        ->where('runtime.auth.1', [
+            'guard' => 'web', 'count' => 25, 'logins' => 17, 'failed' => 7, 'failureRate' => 29.2, 'lockouts' => 1, 'tokenAuthentications' => 0,
+            'lastAt' => '2026-11-05T11:58:00Z',
+        ])
+        ->where('runtime.auth.2.guard', 'unknown')
+        ->where('runtime.auth.2.failureRate', 100));
 });

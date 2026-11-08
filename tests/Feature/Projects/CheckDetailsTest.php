@@ -21,7 +21,7 @@ use Inertia\Testing\AssertableInertia as Assert;
  * dashboard, the license inventory, and the immediate infrastructure alerts.
  *
  * `tests/Fixtures/core/report-schema.json` is a copy of excubia-core `develop` at
- * 5e67a99d4bf70fa8fb50b1277f2a225e904f0eed (2026-11-08, core #216: `laravel-reverb`). `report-every-check.json` holds one
+ * a77172d09996e3d8e777d70366493414607055ce (2026-11-08, core #220: `laravel-api-tokens`). `report-every-check.json` holds one
  * check per contract id, and one finding per `details` shape of the schema. Refresh both when
  * core adds a check id.
  */
@@ -40,7 +40,7 @@ const CONTRACT_CHECK_IDS = [
     'laravel-storage', 'laravel-disk-space', 'laravel-queue-backlog', 'php-platform-requirements', 'env-example-sync',
     'composer-outdated', 'laravel-queue-workers', 'npm-outdated', 'laravel-backups', 'laravel-database-connections',
     'laravel-database-size', 'laravel-redis-memory', 'php-opcache', 'php-production-ini',
-    'laravel-octane-config', 'laravel-reverb',
+    'laravel-octane-config', 'laravel-reverb', 'laravel-cashier', 'laravel-api-tokens',
 ];
 
 /**
@@ -84,6 +84,11 @@ it('covers every contract check id and every details shape of the core schema', 
 
         foreach ((array) ($checkId['const'] ?? $checkId['enum']) as $id) {
             $definitions[$id] = array_map(fn (array $reference): string => substr($reference['$ref'], strlen('#/$defs/')), $details['oneOf'] ?? [$details]);
+            // A details definition that is itself a oneOf (`laravelApiTokensDetails`, core #219): its variants.
+            $definitions[$id] = array_merge(...array_map(fn (string $definition): array => array_map(
+                fn (array $reference): string => substr($reference['$ref'], strlen('#/$defs/')),
+                $schema['$defs'][$definition]['oneOf'] ?? [['$ref' => "#/\$defs/{$definition}"]],
+            ), $definitions[$id]));
         }
     }
 

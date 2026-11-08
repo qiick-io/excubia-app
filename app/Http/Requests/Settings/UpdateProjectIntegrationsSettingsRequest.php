@@ -61,6 +61,11 @@ class UpdateProjectIntegrationsSettingsRequest extends FormRequest
             // AI usage rules (#129); empty turns a rule off.
             'alert_ai_spend_spike_percent' => ['nullable', 'integer', 'min:101', 'max:100000'],
             'alert_ai_error_rate_above' => ['nullable', 'integer', 'min:1', 'max:99'],
+            // Billing webhook rules (#178); empty / unchecked turns a rule off.
+            'alert_billing_webhook_failures_per_hour' => ['nullable', 'integer', 'min:1', 'max:1000000'],
+            'alert_billing_payment_failed_enabled' => ['sometimes', 'boolean'],
+            // Failed-login rule (#180); empty turns it off.
+            'alert_auth_failed_logins_per_hour' => ['nullable', 'integer', 'min:1', 'max:1000000'],
         ];
     }
 
@@ -90,6 +95,9 @@ class UpdateProjectIntegrationsSettingsRequest extends FormRequest
             'alert_log_spike_per_hour' => $this->filled('alert_log_spike_per_hour') ? $this->integer('alert_log_spike_per_hour') : null,
             'alert_ai_spend_spike_percent' => $this->filled('alert_ai_spend_spike_percent') ? $this->integer('alert_ai_spend_spike_percent') : null,
             'alert_ai_error_rate_above' => $this->filled('alert_ai_error_rate_above') ? $this->integer('alert_ai_error_rate_above') : null,
+            'alert_billing_webhook_failures_per_hour' => $this->filled('alert_billing_webhook_failures_per_hour') ? $this->integer('alert_billing_webhook_failures_per_hour') : null,
+            'alert_billing_payment_failed_enabled' => $this->boolean('alert_billing_payment_failed_enabled'),
+            'alert_auth_failed_logins_per_hour' => $this->filled('alert_auth_failed_logins_per_hour') ? $this->integer('alert_auth_failed_logins_per_hour') : null,
         ];
     }
 

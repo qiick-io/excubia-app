@@ -232,6 +232,47 @@ jobs:
       - name: End-to-end contract test
         run: scripts/e2e/core-contract.sh '${{ matrix.core }}'
 
+  # Install and upgrade as an operator does it (qiick standards, as externa-core):
+  # create-project from this checkout, `excubia:install -n`, the health probes, `excubia:upgrade`,
+  # and, once a release tag exists, an upgrade from the previous release.
+  install-upgrade:
+    name: Install and upgrade
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The release tags, for the upgrade from the previous release.
+          fetch-depth: 0
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php-version: '8.4'
+          extensions: pdo_sqlite, sqlite3
+          coverage: none
+          tools: composer:v2
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+
+      - name: Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Composer packages
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-install-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-install-${{ runner.os }}-
+
+      - name: Install and upgrade smoke test
+        run: scripts/e2e/install-upgrade.sh
+
   # Axe smoke (#112), as in externa-core: pull requests to `develop` run only the smoke test ("lite");
   # pushes and pull requests to `main` run every browser test. Not part of `php artisan test`.
   accessibility:

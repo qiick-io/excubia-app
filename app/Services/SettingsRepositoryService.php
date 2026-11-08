@@ -119,6 +119,11 @@ class SettingsRepositoryService
             // AI usage alert rules (#129): null is off.
             'alert_ai_spend_spike_percent' => null,
             'alert_ai_error_rate_above' => null,
+            // Billing webhook alert rules (#178): null / false is off.
+            'alert_billing_webhook_failures_per_hour' => null,
+            'alert_billing_payment_failed_enabled' => false,
+            // Failed-login alert rule (#180): null is off.
+            'alert_auth_failed_logins_per_hour' => null,
             // AI price table (#129): null uses AiPriceService::defaults().
             'ai_prices' => null,
             'ai_prices_updated_on' => null,
@@ -544,6 +549,24 @@ class SettingsRepositoryService
     public function alertAiErrorRateAbove(): ?int
     {
         return $this->positiveInteger('alert_ai_error_rate_above');
+    }
+
+    /** Failed billing webhooks per provider and hour from which a project alerts (#178); null when off. */
+    public function alertBillingWebhookFailuresPerHour(): ?int
+    {
+        return $this->positiveInteger('alert_billing_webhook_failures_per_hour');
+    }
+
+    /** Whether failed payments reported by billing webhooks alert (#178). */
+    public function shouldAlertBillingPaymentFailures(): bool
+    {
+        return (bool) $this->all()['alert_billing_payment_failed_enabled'];
+    }
+
+    /** Failed logins per auth guard and hour from which a project alerts (#180); null when off. */
+    public function alertAuthFailedLoginsPerHour(): ?int
+    {
+        return $this->positiveInteger('alert_auth_failed_logins_per_hour');
     }
 
     private function positiveInteger(string $key): ?int

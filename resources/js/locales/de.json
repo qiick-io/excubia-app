@@ -484,7 +484,10 @@
                 "ai.budget_warning": "Die geschätzten KI-Kosten eines Projekts in diesem Monat haben 80 % seines Budgets erreicht (im KI-Tab festgelegt).",
                 "ai.budget_exceeded": "Die geschätzten KI-Kosten eines Projekts in diesem Monat haben sein Budget erreicht.",
                 "ai.spend_spike": "Die geschätzten KI-Kosten von heute liegen über dem Schwellenwert des 7-Tage-Durchschnitts.",
-                "ai.error_rate": "Der Anteil fehlgeschlagener KI-Aufrufe in der letzten Stunde liegt über dem Schwellenwert."
+                "ai.error_rate": "Der Anteil fehlgeschlagener KI-Aufrufe in der letzten Stunde liegt über dem Schwellenwert.",
+                "billing.webhook_failures": "Billing-Webhooks eines Anbieters sind in der letzten Stunde mindestens so oft wie der Schwellenwert fehlgeschlagen (5xx, vom Anbieter wiederholt).",
+                "billing.payment_failed": "Ein Billing-Anbieter hat in der letzten Stunde fehlgeschlagene Zahlungen gemeldet.",
+                "auth.failed_login_spike": "Ein Auth-Guard hat in der letzten Stunde mindestens so viele fehlgeschlagene Logins wie der Schwellenwert gezählt (Brute Force oder Credential Stuffing)."
             },
             "runtimeRulesTitle": "Runtime-Alarmregeln",
             "runtimeRulesDescription": "Optionale Alarme aus den Runtime-Daten der Projekte, alle 15 Minuten über die letzte Stunde geprüft. Leer schaltet eine Regel ab.",
@@ -493,6 +496,11 @@
             "logSpike": "Fehler-Logeinträge pro Kanal und Stunde",
             "logSpikeHint": "Alarm, wenn ein Log-Kanal in der letzten Stunde mindestens so viele Einträge der Stufen error, critical, alert oder emergency schreibt.",
             "deliveryFailures": "Alarm bei fehlgeschlagenen Mails oder Benachrichtigungen",
+            "billingWebhookFailures": "Fehlgeschlagene Billing-Webhooks pro Anbieter und Stunde",
+            "billingWebhookFailuresHint": "Alarmieren, wenn die Laravel-Cashier-Webhooks eines Anbieters in der letzten Stunde mindestens so oft fehlschlagen (der Anbieter wiederholt sie).",
+            "billingPaymentFailures": "Alarmieren, wenn ein Billing-Anbieter fehlgeschlagene Zahlungen meldet",
+            "authFailedLogins": "Fehlgeschlagene Logins pro Guard und Stunde",
+            "authFailedLoginsHint": "Alarmieren, wenn ein Auth-Guard in der letzten Stunde mindestens so viele fehlgeschlagene Logins zählt.",
             "projects": "Projekte",
             "projectsHint": "Alle Kästchen leer lassen, um die Warnungen aller Projekte zu senden.",
             "emailTitle": "E-Mail",
@@ -1144,7 +1152,21 @@
         "reverbErrors": "Fehler",
         "channelsCreated": "Kanäle erstellt",
         "channelsRemoved": "Kanäle entfernt",
-        "peakConnections": "Max. Verbindungen"
+        "peakConnections": "Max. Verbindungen",
+        "billing": "Billing-Webhooks",
+        "billingDescription": "Laravel-Cashier-Webhooks pro Anbieter und Ereignistyp. Fehlgeschlagene endeten mit einem Serverfehler (5xx), der Anbieter wiederholt sie; Ereignistypen ohne Cashier-Handler sind weder verarbeitet noch fehlgeschlagen. Nur der Ereignistyp kommt an: nie Beträge, Kunden oder andere Payload-Daten.",
+        "billingTotals": "Zahlungssignale in diesem Zeitraum",
+        "received": "Empfangen",
+        "handled": "Verarbeitet",
+        "failedRate": "Fehlgeschlagen (Quote)",
+        "paymentFailed": "Fehlgeschlagene Zahlungen",
+        "paymentActionRequired": "Zahlungen mit nötiger Aktion",
+        "subscriptionCanceled": "Gekündigte Abonnements",
+        "auth": "Authentifizierung",
+        "authDescription": "Laravel-Logins pro Auth-Guard: erfolgreiche und fehlgeschlagene Logins mit der Fehlerquote, Sperren durch den Login-Rate-Limiter und Anfragen, die ein Sanctum-Personal-Access-Token authentifiziert hat. Passport-Token-Anfragen werden nicht gezählt. Nie Benutzer, E-Mails, Zugangsdaten, Tokens oder IP-Adressen.",
+        "logins": "Logins",
+        "lockouts": "Sperren",
+        "tokenAuthentications": "Token-Authentifizierungen"
     },
     "exceptions": {
         "emptyTitle": "Keine Exceptions",
@@ -1577,6 +1599,14 @@
         "laravel-reverb": {
             "label": "Reverb-Server",
             "description": "Ob der Reverb-Server der Broadcast-Verbindung innerhalb von 2 s eine TCP-Verbindung annimmt, und wie schnell."
+        },
+        "laravel-cashier": {
+            "label": "Laravel Cashier",
+            "description": "Pro Cashier-Paket (Stripe, Paddle): das Webhook-Secret, Testschlüssel in Produktion und die Route zum Webhook-Controller."
+        },
+        "laravel-api-tokens": {
+            "label": "API-Tokens",
+            "description": "Token-Konfiguration von Laravel Sanctum und Passport: Tokens ohne Ablauf oder ungenutzt, Stateful-Domains, Passport-Schlüssel und ihre Dateirechte sowie Token-Laufzeiten."
         }
     },
     "details": {
