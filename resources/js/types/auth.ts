@@ -10,6 +10,8 @@ export type User = {
     email_verified_at: string | null;
     locale?: string;
     two_factor_enabled?: boolean;
+    /** Weekly email digest (#114). */
+    has_weekly_digest?: boolean;
     created_at: string;
     updated_at: string;
     [key: string]: unknown;
@@ -30,15 +32,4 @@ export type Passkey = {
     authenticator: string | null;
     created_at_diff: string;
     last_used_at_diff: string | null;
-};
-
-/** QR code payload returned during two-factor enrollment. */
-export type TwoFactorSetupData = {
-    svg: string;
-    url: string;
-};
-
-/** Manual TOTP secret key for authenticator apps. */
-export type TwoFactorSecretKey = {
-    secretKey: string;
 };

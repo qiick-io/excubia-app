@@ -2,9 +2,13 @@
 
 namespace App\Http\Controllers\Settings;
 
+use App\Data\AlertFilterData;
+use App\Enums\AlertEventEnum;
+use App\Enums\SeverityEnum;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\ProfileDeleteRequest;
 use App\Http\Requests\Settings\ProfileUpdateRequest;
+use App\Models\Project;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -19,9 +23,19 @@ class ProfileController extends Controller
      */
     public function edit(Request $request): Response
     {
+        $user = $request->user();
+
         return Inertia::render('settings/profile', [
-            'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
+            'mustVerifyEmail' => $user instanceof MustVerifyEmail,
             'status' => $request->session()->get('status'),
+            // Alert emails (#22), for users who can see projects.
+            'alertSubscription' => $user->can('viewAny', Project::class) ? [
+                'has_alert_emails' => (bool) $user->has_alert_emails,
+                'filter' => AlertFilterData::fromStored($user->alert_email_filters, SeverityEnum::High)->toArray(),
+                'events' => AlertEventEnum::selectableValues(),
+                'severities' => SeverityEnum::values(),
+                'projects' => Project::query()->visibleTo($user)->orderBy('name')->get(['id', 'name'])->map(fn (Project $project): array => ['id' => $project->id, 'name' => $project->name])->all(),
+            ] : null,
         ]);
     }
 

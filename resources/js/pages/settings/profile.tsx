@@ -1,6 +1,15 @@
-import { Form, Head, Link, usePage } from '@inertiajs/react';
+import { Form, Head, Link, router, usePage } from '@inertiajs/react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import AlertSubscriptionController from '@/actions/App/Http/Controllers/Settings/AlertSubscriptionController';
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
+import BooleanField from '@/components/boolean-field';
+import AlertFilterFields from '@/components/settings/alert-filter-fields';
+import type {
+    AlertFilter,
+    AlertFilterProject,
+} from '@/components/settings/alert-filter-fields';
+import { Button } from '@/components/ui/button';
 import DeleteUser from '@/components/delete-user';
 import Heading from '@/components/heading';
 import { SettingsFormActions } from '@/components/settings-form-actions';
@@ -18,15 +27,26 @@ import { edit } from '@/routes/profile';
 import { send } from '@/routes/verification';
 import type { BreadcrumbItem } from '@/types';
 
+/** The signed-in user's alert emails (#22), from ProfileController::edit(). */
+type AlertSubscription = {
+    has_alert_emails: boolean;
+    filter: AlertFilter;
+    events: string[];
+    severities: string[];
+    projects: AlertFilterProject[];
+};
+
 /**
- * User profile settings page.
+ * User profile settings page, with the user's alert emails (#22) when they can see projects.
  */
 export default function Profile({
     mustVerifyEmail,
     status,
+    alertSubscription,
 }: {
     mustVerifyEmail: boolean;
     status?: string;
+    alertSubscription: AlertSubscription | null;
 }) {
     const { t } = useTranslation();
     const { auth } = usePage().props;
@@ -182,6 +202,16 @@ export default function Profile({
                                                 {errors.email}
                                             </FieldError>
                                         </Field>
+
+                                        <BooleanField
+                                            name="has_weekly_digest"
+                                            label={t(
+                                                'settings.profile.weeklyDigest',
+                                            )}
+                                            defaultChecked={Boolean(
+                                                user.has_weekly_digest,
+                                            )}
+                                        />
                                     </FieldGroup>
 
                                     {mustVerifyEmail &&
@@ -223,11 +253,94 @@ export default function Profile({
                         </Form>
                     </div>
 
+                    {alertSubscription !== null ? (
+                        <>
+                            <Separator />
+                            <AlertEmails subscription={alertSubscription} />
+                        </>
+                    ) : null}
+
                     <Separator />
 
                     <DeleteUser />
                 </div>
             </SettingsLayout>
         </AppLayout>
+    );
+}
+
+/**
+ * Alert emails of the signed-in user (#22): on or off, their own filters, and a test mail.
+ */
+function AlertEmails({ subscription }: { subscription: AlertSubscription }) {
+    const { t } = useTranslation();
+    const [filter, setFilter] = useState(subscription.filter);
+    const [isTesting, setIsTesting] = useState(false);
+
+    const sendTest = (): void => {
+        setIsTesting(true);
+        router.post(
+            AlertSubscriptionController.sendTest.url(),
+            {},
+            { preserveScroll: true, onFinish: () => setIsTesting(false) },
+        );
+    };
+
+    return (
+        <div className="space-y-6">
+            <Heading
+                variant="small"
+                title={t('settings.profile.alertsTitle')}
+                description={t('settings.profile.alertsDescription')}
+            />
+
+            <Form
+                {...AlertSubscriptionController.update.form()}
+                options={{ preserveScroll: true }}
+                className="space-y-6"
+                noValidate
+            >
+                {({ processing, recentlySuccessful, errors }) => (
+                    <>
+                        <BooleanField
+                            name="has_alert_emails"
+                            label={t('settings.profile.alertsEnabled')}
+                            defaultChecked={subscription.has_alert_emails}
+                        />
+
+                        <AlertFilterFields
+                            name="alerts"
+                            errorKey="alerts"
+                            value={filter}
+                            onChange={setFilter}
+                            events={subscription.events}
+                            severities={subscription.severities}
+                            projects={subscription.projects}
+                            errors={errors}
+                        />
+
+                        <SettingsFormActions
+                            processing={processing}
+                            recentlySuccessful={recentlySuccessful}
+                            data-test="update-alert-emails-button"
+                        />
+                    </>
+                )}
+            </Form>
+
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <Button
+                    type="button"
+                    variant="secondary"
+                    disabled={isTesting || !subscription.has_alert_emails}
+                    onClick={sendTest}
+                >
+                    {t('settings.profile.alertsTest')}
+                </Button>
+                <p className="text-sm text-muted-foreground">
+                    {t('settings.profile.alertsTestHint')}
+                </p>
+            </div>
+        </div>
     );
 }

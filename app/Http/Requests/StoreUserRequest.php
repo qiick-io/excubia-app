@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
-use App\Enums\RoleEnum;
 use App\Models\User;
-use App\Services\EffectivePermissionResolverService;
+use App\Services\RoleGrantService;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -14,7 +13,7 @@ use Illuminate\Validation\Rules\Password;
 use Spatie\Permission\Models\Role;
 
 /**
- * Validates a new dashboard user. Only a super-admin may grant the super-admin role.
+ * Validates a new dashboard user. The actor may only grant roles they hold (#151).
  */
 class StoreUserRequest extends FormRequest
 {
@@ -39,19 +38,14 @@ class StoreUserRequest extends FormRequest
     }
 
     /**
-     * Role names the actor may assign; the user pages show the same list.
+     * Role names the actor may assign (RoleGrantService: only what they hold); the user and
+     * group pages show the same list.
      *
      * @return list<string>
      */
     public static function assignableRolesFor(?User $actor): array
     {
-        $roles = Role::query()->orderBy('name')->pluck('name')->all();
-
-        if ($actor !== null && app(EffectivePermissionResolverService::class)->isSuperAdmin($actor)) {
-            return array_values($roles);
-        }
-
-        return array_values(array_diff($roles, [RoleEnum::SuperAdmin->value]));
+        return $actor === null ? [] : app(RoleGrantService::class)->grantableRoleNames($actor);
     }
 
     /**

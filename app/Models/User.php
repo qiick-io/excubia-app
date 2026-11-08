@@ -28,6 +28,10 @@ use Spatie\Permission\Traits\HasRoles;
  * @property Carbon|null $email_verified_at
  * @property string|null $password
  * @property bool $is_active
+ * @property string $locale
+ * @property bool $has_weekly_digest weekly email digest (#114)
+ * @property bool $has_alert_emails alert emails (#22)
+ * @property array<string, mixed>|null $alert_email_filters see AlertFilterData
  * @property string|null $two_factor_secret
  * @property string|null $two_factor_recovery_codes
  * @property Carbon|null $two_factor_confirmed_at
@@ -35,7 +39,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['first_name', 'last_name', 'email', 'password'])]
+#[Fillable(['first_name', 'last_name', 'email', 'password', 'has_weekly_digest'])]
 #[Hidden(['password', 'oidc_sub', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
 {
@@ -48,6 +52,21 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
      * @var list<string>
      */
     protected $appends = ['name'];
+
+    /**
+     * The column defaults a freshly created user does not read back from the
+     * database (same values as the users migration): strict models throw on a
+     * missing attribute.
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'is_active' => true,
+        'locale' => 'en',
+        'has_weekly_digest' => false,
+        'has_alert_emails' => false,
+        'alert_email_filters' => null,
+    ];
 
     /**
      * Activity log options excluding sensitive credential fields.
@@ -87,6 +106,9 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_active' => 'boolean',
+            'has_weekly_digest' => 'boolean',
+            'has_alert_emails' => 'boolean',
+            'alert_email_filters' => 'array',
             'two_factor_confirmed_at' => 'datetime',
         ];
     }

@@ -6,17 +6,19 @@ namespace App\Policies;
 
 use App\Enums\PermissionEnum;
 use App\Models\User;
-use App\Services\EffectivePermissionResolverService;
+use App\Services\RoleGrantService;
 use App\Services\SuperAdminGuardService;
 
 /**
- * Users are managed with `can-*-users`. Only a super-admin may manage another super-admin,
- * nobody may delete themselves, and the last active super-admin cannot be deleted.
+ * Users are managed with `can-*-users`, but only users whose roles the actor could grant
+ * (RoleGrantService, #151): nobody edits, resets or deletes a more powerful account, so only a
+ * super-admin manages super-admins. Nobody may delete themselves, and the last active
+ * super-admin cannot be deleted.
  */
 class UserPolicy
 {
     public function __construct(
-        private EffectivePermissionResolverService $permissionResolver,
+        private RoleGrantService $roleGrants,
         private SuperAdminGuardService $superAdminGuard,
     ) {}
 
@@ -53,9 +55,9 @@ class UserPolicy
             && ! $this->superAdminGuard->isLastSuperAdmin($target);
     }
 
-    /** Only a super-admin may change another super-admin. */
+    /** The target holds no role the actor could not grant (super-admins pass). */
     private function canTouch(User $actor, User $target): bool
     {
-        return $this->permissionResolver->isSuperAdmin($actor) || ! $this->permissionResolver->isSuperAdmin($target);
+        return $this->roleGrants->isAtOrBelow($actor, $target);
     }
 }

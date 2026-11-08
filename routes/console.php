@@ -1,5 +1,6 @@
 <?php
 
+use App\Jobs\RecordQueueHeartbeatJob;
 use App\Services\SettingsRepositoryService;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
@@ -30,3 +31,20 @@ Schedule::command('excubia:system-telemetry')->everyMinute()->when(fn (): bool =
 
 // Alerts (#22): one project.stale per project that stopped reporting.
 Schedule::command('excubia:alert-stale')->hourly();
+
+// End-of-life alerts (#157): thresholds crossed by the calendar, not by a new report.
+Schedule::command('excubia:alert-eol')->daily();
+
+// Schedule monitoring (#110): late, missed and failed scheduled tasks of the projects; and the
+// health alerts (#143) that need a clock: servers that stopped sending health samples.
+Schedule::command('excubia:evaluate-schedules')->everyMinute()->withoutOverlapping();
+
+// Optional runtime alert rules (#107, #114): cache hit ratio, failed mails and notifications, log
+// spikes; and the AI usage rules (#129): monthly budget, spend spike, error rate.
+Schedule::command('excubia:evaluate-runtime-alerts')->everyFifteenMinutes()->withoutOverlapping();
+
+// Weekly email digest (#114) for the users who turned it on.
+Schedule::command('excubia:send-digests')->weeklyOn(1, '08:00');
+
+// Queue worker heartbeat for the System page (#117); the scheduler's own is excubia-core's excubia:heartbeat.
+Schedule::job(new RecordQueueHeartbeatJob)->everyMinute();

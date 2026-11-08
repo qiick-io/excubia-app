@@ -1,45 +1,91 @@
-import { Check, ChevronsUpDown, Loader2, X } from 'lucide-react';
+import { Check, ChevronsUpDown, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { UIEvent } from 'react';
 import { useTranslation } from 'react-i18next';
+import { getInitials } from '@/components/admin/user-avatar';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
+import {
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+    CommandSeparator,
+} from '@/components/ui/command';
 import {
     Popover,
     PopoverContent,
     PopoverTrigger,
 } from '@/components/ui/popover';
-import { useInitials } from '@/hooks/use-initials';
+import { Spinner } from '@/components/ui/spinner';
+import { avatarToneClass } from '@/lib/avatar-tone';
 import { cn } from '@/lib/utils';
-import type { AdminSelectOption, Paginated } from '@/types/admin';
+
+/** One option: a record id and its label; the name parts and email are for user rows. */
+export type PickerOption = {
+    id: number;
+    label: string;
+    first_name?: string;
+    last_name?: string | null;
+    email?: string;
+};
+
+/** The Laravel paginator page the picker reads (`paginate()` JSON or a resource collection with `meta`). */
+type PickerPage = {
+    data: PickerOption[];
+    current_page: number;
+    last_page: number;
+};
+
+/** Field chrome shared with the qiick inputs: 3px focus ring, primary border while open. */
+const FIELD_FOCUS_RING =
+    'focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30';
+const FIELD_OPEN_BORDER =
+    'aria-expanded:border-ring data-[state=open]:border-ring';
+
+/** Display name from name parts, as `UserAvatar` and `UserInfo` show it. */
+function formatUserDisplayName(
+    firstName: string,
+    lastName?: string | null,
+): string {
+    return [firstName, lastName].filter(Boolean).join(' ').trim();
+}
 
 export type PaginatedMultiSelectProps = {
     value?: number[];
     onChange?: (value: number[]) => void;
-    /** JSON index endpoint returning a Laravel paginator; ignored when `options` is set. */
-    fetchUrl?: string;
-    /** Static options filtered locally instead of fetched (short lists such as roles). */
-    options?: AdminSelectOption[];
+    fetchUrl: string;
     placeholder?: string;
     disabled?: boolean;
     multiple?: boolean;
     /** Pre-loaded labels for selected IDs (edit mode) */
-    initialOptions?: AdminSelectOption[];
+    initialOptions?: PickerOption[];
     perPage?: number;
     className?: string;
     /** Avatar + name / email below for user options */
     showUserDetails?: boolean;
+    /**
+     * Accessible name of the trigger. A `combobox` takes no name from its content, so it falls
+     * back to the placeholder; pass the field label when the picker has no visible label.
+     */
+    'aria-label'?: string;
 };
 
-function mapResponse(data: unknown): Paginated<AdminSelectOption> {
-    const payload = data as Paginated<{
-        id: number;
-        name?: string;
-        label?: string;
-        email?: string;
-    }> & {
+function mapResponse(data: unknown): PickerPage {
+    const payload = data as {
+        data: Array<{
+            id: number;
+            name?: string;
+            label?: string;
+            first_name?: string;
+            last_name?: string | null;
+            email?: string;
+        }>;
+        current_page?: number;
+        last_page?: number;
         meta?: { current_page?: number; last_page?: number };
     };
 
@@ -47,31 +93,49 @@ function mapResponse(data: unknown): Paginated<AdminSelectOption> {
     const lastPage = payload.last_page ?? payload.meta?.last_page ?? 1;
 
     return {
-        ...payload,
         current_page: currentPage,
         last_page: lastPage,
         data: payload.data.map((row) => {
+            const firstName = row.first_name ?? '';
+            const lastName = row.last_name ?? null;
             const email = row.email;
-            const displayName = row.name || email || String(row.id);
+            const displayName =
+                formatUserDisplayName(firstName, lastName) ||
+                row.name ||
+                email ||
+                String(row.id);
 
             return {
                 id: row.id,
                 label:
                     row.label ??
                     (email ? `${displayName} (${email})` : displayName),
-                name: row.name,
+                first_name: firstName || undefined,
+                last_name: lastName,
                 email,
             };
         }),
     };
 }
 
-function optionDisplayName(option: AdminSelectOption): string {
-    return option.name || option.label;
+function optionDisplayName(option: PickerOption): string {
+    if (option.first_name) {
+        return (
+            formatUserDisplayName(option.first_name, option.last_name) ||
+            option.label
+        );
+    }
+
+    return option.label;
 }
 
 /**
- * Reusable multi-select with server-side pagination.
+ * Server-searched picker on the shadcn combobox pattern: Popover + Command
+ * (`shouldFilter={false}`, the server filters), Badge chips in the trigger.
+ * Search is debounced (300 ms); the list loads the next page when scrolled
+ * near its end. `multiple={false}` keeps at most one id: the single-select
+ * picker. `fetchUrl` answers `?search=&page=&per_page=` with a Laravel
+ * paginator of `{ id, label | name | first_name + last_name, email? }` rows.
  * @param {*} props - Component props.
  * @returns {JSX.Element}
  */
@@ -79,26 +143,24 @@ export function PaginatedMultiSelect({
     value = [],
     onChange,
     fetchUrl,
-    options: staticOptions,
-    placeholder = 'Select…',
+    placeholder,
     disabled = false,
     multiple = true,
     initialOptions = [],
     perPage = 20,
     className,
     showUserDetails = false,
+    'aria-label': ariaLabel,
 }: PaginatedMultiSelectProps) {
     const { t } = useTranslation();
-    const getInitials = useInitials();
     const [open, setOpen] = useState(false);
     const [search, setSearch] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
-    const [options, setOptions] = useState<AdminSelectOption[]>(initialOptions);
+    const [options, setOptions] = useState<PickerOption[]>(initialOptions);
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(true);
     const [loading, setLoading] = useState(false);
     const fetchingRef = useRef(false);
-    const listRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -125,20 +187,7 @@ export function PaginatedMultiSelect({
 
     const fetchPage = useCallback(
         async (targetPage: number, reset: boolean) => {
-            if (staticOptions) {
-                const query = debouncedSearch.trim().toLowerCase();
-
-                setOptions(
-                    staticOptions.filter((option) =>
-                        option.label.toLowerCase().includes(query),
-                    ),
-                );
-                setHasMore(false);
-
-                return;
-            }
-
-            if (fetchingRef.current || !fetchUrl) {
+            if (fetchingRef.current) {
                 return;
             }
 
@@ -186,7 +235,7 @@ export function PaginatedMultiSelect({
                 setLoading(false);
             }
         },
-        [debouncedSearch, fetchUrl, perPage, staticOptions],
+        [debouncedSearch, fetchUrl, perPage],
     );
 
     useEffect(() => {
@@ -210,14 +259,14 @@ export function PaginatedMultiSelect({
         onChange?.(next);
     };
 
-    const handleScroll = (): void => {
-        const el = listRef.current;
+    const handleListScroll = (event: UIEvent<HTMLDivElement>): void => {
+        const list = event.currentTarget;
 
-        if (!el || loading || !hasMore) {
+        if (loading || !hasMore) {
             return;
         }
 
-        if (el.scrollTop + el.clientHeight >= el.scrollHeight - 24) {
+        if (list.scrollTop + list.clientHeight >= list.scrollHeight - 24) {
             void fetchPage(page + 1, false);
         }
     };
@@ -230,22 +279,29 @@ export function PaginatedMultiSelect({
                     variant="outline"
                     role="combobox"
                     aria-expanded={open}
+                    aria-label={
+                        ariaLabel ?? placeholder ?? t('picker.placeholder')
+                    }
                     disabled={disabled}
                     className={cn(
-                        'w-full justify-between font-normal',
-                        multiple ? 'h-auto min-h-9' : 'h-9 overflow-hidden',
+                        'w-full justify-between font-normal focus-visible:ring-offset-0',
+                        FIELD_FOCUS_RING,
+                        FIELD_OPEN_BORDER,
+                        multiple
+                            ? 'h-auto min-h-control'
+                            : 'h-control overflow-hidden',
                         className,
                     )}
                 >
                     <span className="flex flex-1 flex-wrap gap-1 text-left">
                         {value.length === 0 ? (
                             <span className="text-muted-foreground">
-                                {placeholder}
+                                {placeholder ?? t('picker.placeholder')}
                             </span>
                         ) : (
-                            selectedLabels.map((label, i) => (
+                            selectedLabels.map((label, index) => (
                                 <Badge
-                                    key={`${value[i]}-${label}`}
+                                    key={`${value[index]}-${label}`}
                                     variant="secondary"
                                     className="font-normal"
                                 >
@@ -261,108 +317,116 @@ export function PaginatedMultiSelect({
                 className="w-(--radix-popover-trigger-width) p-0"
                 align="start"
             >
-                <div className="flex items-center gap-2 border-b p-2">
-                    <Input
+                <Command shouldFilter={false}>
+                    <CommandInput
                         value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        placeholder="Search…"
+                        onValueChange={setSearch}
+                        placeholder={t('picker.search')}
                         aria-label={t('a11y.search')}
-                        className="h-8"
                     />
-                    {value.length > 0 && (
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="size-8 shrink-0"
-                            aria-label={t('a11y.clearSelection')}
-                            onClick={() => onChange?.([])}
-                        >
-                            <X className="size-4" />
-                        </Button>
-                    )}
-                </div>
-                <div
-                    ref={listRef}
-                    className="max-h-60 overflow-y-auto p-1"
-                    onScroll={handleScroll}
-                >
-                    {options.length === 0 && !loading && (
-                        <p className="p-3 text-sm text-muted-foreground">
-                            No results.
-                        </p>
-                    )}
-                    {options.map((option) => {
-                        const checked = value.includes(option.id);
-                        const name = optionDisplayName(option);
-                        const initials = getInitials(name);
+                    <CommandList onScroll={handleListScroll}>
+                        {!loading && (
+                            <CommandEmpty>{t('picker.noResults')}</CommandEmpty>
+                        )}
+                        {options.length > 0 && (
+                            <CommandGroup>
+                                {options.map((option) => {
+                                    const isSelected = value.includes(
+                                        option.id,
+                                    );
+                                    const name = optionDisplayName(option);
 
-                        return (
-                            <div
-                                key={option.id}
-                                role="option"
-                                aria-selected={checked}
-                                tabIndex={0}
-                                className={cn(
-                                    'flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-2 text-sm hover:bg-accent',
-                                    checked && 'bg-accent/50',
-                                )}
-                                onClick={() => toggle(option.id)}
-                                onKeyDown={(event) => {
-                                    if (
-                                        event.key === 'Enter' ||
-                                        event.key === ' '
-                                    ) {
-                                        event.preventDefault();
-                                        toggle(option.id);
-                                    }
-                                }}
-                            >
-                                <Checkbox
-                                    checked={checked}
-                                    tabIndex={-1}
-                                    onCheckedChange={() => toggle(option.id)}
-                                    onClick={(event) => event.stopPropagation()}
-                                />
-                                {showUserDetails ? (
-                                    <>
-                                        <Avatar
-                                            userId={option.id}
-                                            className="size-8"
+                                    return (
+                                        <CommandItem
+                                            key={option.id}
+                                            value={String(option.id)}
+                                            onSelect={() => toggle(option.id)}
+                                            data-checked={isSelected}
                                         >
-                                            <AvatarFallback className="text-xs font-medium">
-                                                {initials || '?'}
-                                            </AvatarFallback>
-                                        </Avatar>
-                                        <span className="min-w-0 flex-1 text-left">
-                                            <span className="block truncate font-medium">
-                                                {name}
-                                            </span>
-                                            {option.email ? (
-                                                <span className="block truncate text-xs text-muted-foreground">
-                                                    {option.email}
+                                            {multiple && (
+                                                <span
+                                                    aria-hidden
+                                                    className={cn(
+                                                        'flex size-4 shrink-0 items-center justify-center rounded-[4px] border border-input',
+                                                        isSelected &&
+                                                            'border-primary bg-primary text-primary-foreground',
+                                                    )}
+                                                >
+                                                    {isSelected && (
+                                                        <Check className="size-3.5 text-primary-foreground" />
+                                                    )}
                                                 </span>
-                                            ) : null}
-                                        </span>
-                                    </>
-                                ) : (
-                                    <span className="flex-1 truncate text-left">
-                                        {option.label}
-                                    </span>
-                                )}
-                                {checked && (
-                                    <Check className="size-4 shrink-0 text-primary" />
-                                )}
+                                            )}
+                                            {showUserDetails ? (
+                                                <>
+                                                    <Avatar className="size-8">
+                                                        <AvatarFallback
+                                                            className={cn(
+                                                                avatarToneClass(
+                                                                    option.id,
+                                                                ),
+                                                                'text-xs font-medium',
+                                                            )}
+                                                        >
+                                                            {getInitials(
+                                                                name,
+                                                                option.email,
+                                                            )}
+                                                        </AvatarFallback>
+                                                    </Avatar>
+                                                    <span className="min-w-0 flex-1">
+                                                        <span className="block truncate font-medium">
+                                                            {name}
+                                                        </span>
+                                                        {option.email ? (
+                                                            <span className="block truncate text-xs text-muted-foreground">
+                                                                {option.email}
+                                                            </span>
+                                                        ) : null}
+                                                    </span>
+                                                </>
+                                            ) : (
+                                                <span className="flex-1 truncate">
+                                                    {option.label}
+                                                </span>
+                                            )}
+                                            {!multiple && (
+                                                <Check
+                                                    className={cn(
+                                                        'ml-auto text-primary',
+                                                        !isSelected &&
+                                                            'opacity-0',
+                                                    )}
+                                                />
+                                            )}
+                                        </CommandItem>
+                                    );
+                                })}
+                            </CommandGroup>
+                        )}
+                        {loading && (
+                            <div className="flex items-center justify-center gap-2 py-3 text-sm text-muted-foreground">
+                                <Spinner aria-hidden />
+                                {t('picker.loading')}
                             </div>
-                        );
-                    })}
-                    {loading && (
-                        <div className="flex items-center justify-center gap-2 py-3 text-sm text-muted-foreground">
-                            <Loader2 className="size-4 animate-spin" />
-                            Loading…
-                        </div>
-                    )}
-                </div>
+                        )}
+                        {value.length > 0 && (
+                            <>
+                                <CommandSeparator />
+                                <CommandGroup>
+                                    <CommandItem
+                                        value="__clear-selection__"
+                                        onSelect={() => onChange?.([])}
+                                        className="justify-center text-center"
+                                    >
+                                        <X />
+                                        {t('picker.clearSelection')}
+                                    </CommandItem>
+                                </CommandGroup>
+                            </>
+                        )}
+                    </CommandList>
+                </Command>
             </PopoverContent>
         </Popover>
     );

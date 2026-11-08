@@ -1,3 +1,4 @@
+import type { ColumnDef } from '@tanstack/react-table';
 import { Head, Link, router } from '@inertiajs/react';
 import {
     FolderKanban,
@@ -10,31 +11,20 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { DataTable } from '@/components/admin/data-table';
+import { ButtonGroup } from '@/components/ui/button-group';
 import { DataTableToolbar } from '@/components/admin/data-table-toolbar';
 import { HeaderIconButton } from '@/components/admin/header-icon-button';
 import { NameSlugCell } from '@/components/admin/name-slug-cell';
 import { PageEmptyState } from '@/components/admin/page-empty-state';
 import { ConfirmDestructiveDialog } from '@/components/confirm-destructive-dialog';
 import { EmptyStatus } from '@/components/empty-status';
-import {
-    hasTablePaginationFooter,
-    PageLayout,
-    TablePaginationFooter,
-    TablePanel,
-} from '@/components/layout/page-layout';
+import { PageLayout } from '@/components/layout/page-layout';
 import { ProjectFormDrawer } from '@/components/projects/project-form-drawer';
 import { PushTokenDialog } from '@/components/projects/push-token-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Drawer } from '@/components/ui/drawer';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
 import { PermissionEnum } from '@/enums/permission-enum';
 import { useCan } from '@/hooks/use-can';
 import { useDebouncedServerSearch } from '@/hooks/use-debounced-server-search';
@@ -160,6 +150,172 @@ export default function ProjectsIndex({
     const isListEmpty = projects.data.length === 0;
     const hideListChrome = isListEmpty && !hasActiveFilters;
 
+    const columns: ColumnDef<ProjectRow>[] = [
+        {
+            id: 'name',
+            header: t('common.name'),
+            meta: { cellClassName: 'max-w-[16rem]' },
+            cell: ({ row }) => (
+                // A real link too, for the keyboard and "open in new tab".
+                <Link
+                    href={projectsRoutes.show.url(row.original.slug)}
+                    className="block rounded-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                    onClick={(event) => event.stopPropagation()}
+                >
+                    <NameSlugCell
+                        name={row.original.name}
+                        slug={row.original.slug}
+                    />
+                </Link>
+            ),
+        },
+        {
+            id: 'status',
+            header: t('projects.status'),
+            cell: ({ row }) => {
+                const project = row.original;
+
+                return (
+                    <div className="flex flex-wrap gap-1">
+                        {project.is_enabled ? (
+                            <Badge variant="success" className="gap-1.5">
+                                <span
+                                    className="size-1.5 rounded-full bg-success"
+                                    aria-hidden
+                                />
+                                {t('projects.enabled')}
+                            </Badge>
+                        ) : (
+                            <Badge variant="muted" className="gap-1.5">
+                                <span
+                                    className="size-1.5 rounded-full bg-muted-foreground"
+                                    aria-hidden
+                                />
+                                {t('projects.disabled')}
+                            </Badge>
+                        )}
+                        {project.is_system ? (
+                            <Badge variant="info">{t('projects.system')}</Badge>
+                        ) : null}
+                        {project.visibility === 'admins' ? (
+                            <Badge variant="outline">
+                                {t('projects.visibility.admins')}
+                            </Badge>
+                        ) : null}
+                        {project.has_push_token || project.is_system ? null : (
+                            <Badge variant="warning">
+                                {t('projects.noToken')}
+                            </Badge>
+                        )}
+                    </div>
+                );
+            },
+        },
+        {
+            id: 'last_report_at',
+            header: t('projects.lastReport'),
+            cell: ({ row }) => (
+                <span
+                    className={
+                        row.original.is_stale
+                            ? 'text-muted-foreground tabular-nums'
+                            : 'tabular-nums'
+                    }
+                >
+                    {row.original.last_report_at
+                        ? new Date(row.original.last_report_at).toLocaleString()
+                        : t('projects.never')}
+                </span>
+            ),
+        },
+        ...(hasRowActions
+            ? [
+                  {
+                      id: 'actions',
+                      header: t('projects.actions'),
+                      meta: {
+                          headerClassName: 'w-[1%] text-right',
+                          cellClassName: 'text-right',
+                          isRowClickIgnored: true,
+                      },
+                      cell: ({ row }) => {
+                          const project = row.original;
+
+                          return (
+                              <ButtonGroup
+                                  aria-label={t('projects.actions')}
+                                  className="ml-auto"
+                              >
+                                  {canEdit ? (
+                                      <HeaderIconButton
+                                          type="button"
+                                          variant="outline"
+                                          size="icon-sm"
+                                          label={t('projects.editProject')}
+                                          onClick={() => openDrawer(project)}
+                                      >
+                                          <Pencil className="size-3.5" />
+                                      </HeaderIconButton>
+                                  ) : null}
+                                  {canEdit && !project.is_system ? (
+                                      <HeaderIconButton
+                                          type="button"
+                                          variant="outline"
+                                          size="icon-sm"
+                                          label={t('projects.token.rotate')}
+                                          onClick={() =>
+                                              setPending({
+                                                  kind: 'rotate',
+                                                  project,
+                                              })
+                                          }
+                                      >
+                                          <KeyRound className="size-3.5" />
+                                      </HeaderIconButton>
+                                  ) : null}
+                                  {canEdit &&
+                                  !project.is_system &&
+                                  project.has_push_token ? (
+                                      <HeaderIconButton
+                                          type="button"
+                                          variant="outline"
+                                          size="icon-sm"
+                                          label={t('projects.token.revoke')}
+                                          onClick={() =>
+                                              setPending({
+                                                  kind: 'revoke',
+                                                  project,
+                                              })
+                                          }
+                                      >
+                                          <ShieldOff className="size-3.5" />
+                                      </HeaderIconButton>
+                                  ) : null}
+                                  {canDelete && !project.is_system ? (
+                                      <HeaderIconButton
+                                          type="button"
+                                          variant="outline"
+                                          size="icon-sm"
+                                          className="text-destructive hover:text-destructive"
+                                          label={t('common.delete')}
+                                          onClick={() =>
+                                              setPending({
+                                                  kind: 'delete',
+                                                  project,
+                                              })
+                                          }
+                                      >
+                                          <Trash2 className="size-3.5" />
+                                      </HeaderIconButton>
+                                  ) : null}
+                              </ButtonGroup>
+                          );
+                      },
+                  } satisfies ColumnDef<ProjectRow>,
+              ]
+            : []),
+    ];
+
     return (
         <AppLayout
             breadcrumbs={breadcrumbs}
@@ -234,217 +390,20 @@ export default function ProjectsIndex({
                             }
                         />
                     ) : (
-                        <TablePanel
-                            footer={
-                                hasTablePaginationFooter(projects) ? (
-                                    <TablePaginationFooter
-                                        pagination={projects}
-                                    />
-                                ) : undefined
+                        <DataTable
+                            columns={columns}
+                            data={projects.data}
+                            getRowId={(project) => String(project.id)}
+                            pagination={projects}
+                            onRowClick={(project) =>
+                                router.visit(
+                                    projectsRoutes.show.url(project.slug),
+                                )
                             }
-                        >
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>
-                                            {t('common.name')}
-                                        </TableHead>
-                                        <TableHead>
-                                            {t('projects.status')}
-                                        </TableHead>
-                                        <TableHead>
-                                            {t('projects.lastReport')}
-                                        </TableHead>
-                                        {hasRowActions ? (
-                                            <TableHead className="w-[1%] text-right">
-                                                {t('projects.actions')}
-                                            </TableHead>
-                                        ) : null}
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {projects.data.map((project) => (
-                                        <TableRow
-                                            key={project.id}
-                                            className="cursor-pointer"
-                                            onClick={() =>
-                                                router.visit(
-                                                    projectsRoutes.show.url(
-                                                        project.slug,
-                                                    ),
-                                                )
-                                            }
-                                        >
-                                            <TableCell className="max-w-[16rem]">
-                                                {/* A real link too, for the keyboard and "open in new tab". */}
-                                                <Link
-                                                    href={projectsRoutes.show.url(
-                                                        project.slug,
-                                                    )}
-                                                    className="block rounded-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-                                                    onClick={(event) =>
-                                                        event.stopPropagation()
-                                                    }
-                                                >
-                                                    <NameSlugCell
-                                                        name={project.name}
-                                                        slug={project.slug}
-                                                    />
-                                                </Link>
-                                            </TableCell>
-                                            <TableCell>
-                                                <div className="flex flex-wrap gap-1">
-                                                    {project.is_enabled ? (
-                                                        <Badge
-                                                            variant="success"
-                                                            className="gap-1.5"
-                                                        >
-                                                            <span
-                                                                className="size-1.5 rounded-full bg-success"
-                                                                aria-hidden
-                                                            />
-                                                            {t(
-                                                                'projects.enabled',
-                                                            )}
-                                                        </Badge>
-                                                    ) : (
-                                                        <Badge
-                                                            variant="muted"
-                                                            className="gap-1.5"
-                                                        >
-                                                            <span
-                                                                className="size-1.5 rounded-full bg-muted-foreground"
-                                                                aria-hidden
-                                                            />
-                                                            {t(
-                                                                'projects.disabled',
-                                                            )}
-                                                        </Badge>
-                                                    )}
-                                                    {project.is_system ? (
-                                                        <Badge variant="info">
-                                                            {t(
-                                                                'projects.system',
-                                                            )}
-                                                        </Badge>
-                                                    ) : null}
-                                                    {project.visibility ===
-                                                    'admins' ? (
-                                                        <Badge variant="outline">
-                                                            {t(
-                                                                'projects.visibility.admins',
-                                                            )}
-                                                        </Badge>
-                                                    ) : null}
-                                                    {project.has_push_token ||
-                                                    project.is_system ? null : (
-                                                        <Badge variant="warning">
-                                                            {t(
-                                                                'projects.noToken',
-                                                            )}
-                                                        </Badge>
-                                                    )}
-                                                </div>
-                                            </TableCell>
-                                            <TableCell
-                                                className={
-                                                    project.is_stale
-                                                        ? 'text-muted-foreground tabular-nums'
-                                                        : 'tabular-nums'
-                                                }
-                                            >
-                                                {project.last_report_at
-                                                    ? new Date(
-                                                          project.last_report_at,
-                                                      ).toLocaleString()
-                                                    : t('projects.never')}
-                                            </TableCell>
-                                            {hasRowActions ? (
-                                                <TableCell
-                                                    className="text-right whitespace-nowrap"
-                                                    onClick={(event) =>
-                                                        event.stopPropagation()
-                                                    }
-                                                >
-                                                    {canEdit ? (
-                                                        <HeaderIconButton
-                                                            type="button"
-                                                            size="icon-sm"
-                                                            label={t(
-                                                                'projects.editProject',
-                                                            )}
-                                                            onClick={() =>
-                                                                openDrawer(
-                                                                    project,
-                                                                )
-                                                            }
-                                                        >
-                                                            <Pencil className="size-3.5" />
-                                                        </HeaderIconButton>
-                                                    ) : null}
-                                                    {canEdit &&
-                                                    !project.is_system ? (
-                                                        <HeaderIconButton
-                                                            type="button"
-                                                            size="icon-sm"
-                                                            label={t(
-                                                                'projects.token.rotate',
-                                                            )}
-                                                            onClick={() =>
-                                                                setPending({
-                                                                    kind: 'rotate',
-                                                                    project,
-                                                                })
-                                                            }
-                                                        >
-                                                            <KeyRound className="size-3.5" />
-                                                        </HeaderIconButton>
-                                                    ) : null}
-                                                    {canEdit &&
-                                                    !project.is_system &&
-                                                    project.has_push_token ? (
-                                                        <HeaderIconButton
-                                                            type="button"
-                                                            size="icon-sm"
-                                                            label={t(
-                                                                'projects.token.revoke',
-                                                            )}
-                                                            onClick={() =>
-                                                                setPending({
-                                                                    kind: 'revoke',
-                                                                    project,
-                                                                })
-                                                            }
-                                                        >
-                                                            <ShieldOff className="size-3.5" />
-                                                        </HeaderIconButton>
-                                                    ) : null}
-                                                    {canDelete &&
-                                                    !project.is_system ? (
-                                                        <HeaderIconButton
-                                                            type="button"
-                                                            variant="destructive-ghost"
-                                                            size="icon-sm"
-                                                            label={t(
-                                                                'common.delete',
-                                                            )}
-                                                            onClick={() =>
-                                                                setPending({
-                                                                    kind: 'delete',
-                                                                    project,
-                                                                })
-                                                            }
-                                                        >
-                                                            <Trash2 className="size-3.5" />
-                                                        </HeaderIconButton>
-                                                    ) : null}
-                                                </TableCell>
-                                            ) : null}
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </TablePanel>
+                            getRowProps={() => ({
+                                className: 'cursor-pointer',
+                            })}
+                        />
                     )}
                 </PageLayout>
 

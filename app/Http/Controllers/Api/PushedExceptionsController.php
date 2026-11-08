@@ -24,7 +24,8 @@ class PushedExceptionsController extends Controller
         /** @var list<array<string, mixed>> $groups */
         $groups = $request->json('exceptions.groups');
 
-        $isNew = $storeExceptions->execute($project, $request->string('batchId')->toString(), $groups);
+        $release = $request->json('exceptions.release');
+        $isNew = $storeExceptions->execute($project, $request->string('batchId')->toString(), $groups, is_string($release) ? $release : null);
 
         return response()->json(['status' => $isNew ? 'stored' : 'duplicate'], $isNew ? 201 : 200);
     }

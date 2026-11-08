@@ -7,6 +7,7 @@ namespace App\Http\Resources;
 use App\Enums\SeverityEnum;
 use App\Models\HealthReport;
 use App\Services\ReportFindingsService;
+use App\Services\ReportHealthService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -14,7 +15,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * Summary of a stored report: when it arrived, its worst severity and the count per severity
  * of the findings that warn or fail, the checks per status, the worst finding, and (reports from
  * excubia-core 1.0) the core version and the PHP / Laravel / Node versions with their support
- * windows. The report body is sent separately, on the project page.
+ * windows, the release and, for a deploy (#106), when it was deployed. The report body is sent
+ * separately, on the project page.
  *
  * @mixin HealthReport
  */
@@ -32,6 +34,8 @@ class HealthReportResource extends JsonResource
             'id' => $report->id,
             'received_at' => $report->received_at->toIso8601String(),
             'generated_at' => $report->generated_at->toIso8601String(),
+            'release' => $report->release,
+            'deployed_at' => $report->deployed_at?->toIso8601String(),
             'worst_severity' => $report->worst_severity?->value,
             'counts' => [
                 'critical' => $report->critical_count,
@@ -44,6 +48,8 @@ class HealthReportResource extends JsonResource
             'runtime' => $this->runtime($report),
             'checks' => $this->checkCounts($report),
             'top_finding' => $this->topFinding($report),
+            // Worst status of the infrastructure checks, for the fleet column (#109); null when none ran.
+            'infrastructure' => app(ReportHealthService::class)->infrastructureStatus($report->report),
         ];
     }
 

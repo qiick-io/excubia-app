@@ -2,6 +2,8 @@ import { getInitials } from '@/components/admin/user-avatar';
 import { ConnectionDot } from '@/components/realtime/connection-dot';
 import type { ConnectionState } from '@/components/realtime/connection-dot';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { avatarToneClass } from '@/lib/avatar-tone';
+import { cn } from '@/lib/utils';
 
 /** The signed-in user, as the sidebar user menu shows it. */
 export type NavUserData = {
@@ -14,7 +16,7 @@ export type NavUserData = {
 
 /**
  * Avatar plus display name (and optional email) for the signed-in user. With
- * `connectionState`, the realtime connection dot sits on the avatar.
+ * `connectionState`, the realtime connection badge sits bottom-right.
  */
 export function UserInfo({
     user,
@@ -27,22 +29,25 @@ export function UserInfo({
 }) {
     return (
         <>
-            <span className="relative shrink-0">
-                <Avatar
-                    userId={user.id}
-                    className="h-8 w-8 overflow-hidden rounded-full"
-                >
-                    {user.avatar ? (
-                        <AvatarImage src={user.avatar} alt={user.name} />
-                    ) : null}
-                    <AvatarFallback className="rounded-lg text-xs font-medium">
-                        {getInitials(user.name, user.email)}
-                    </AvatarFallback>
-                </Avatar>
-                {connectionState ? (
-                    <ConnectionDot state={connectionState} />
+            <Avatar>
+                {user.avatar ? (
+                    <AvatarImage src={user.avatar} alt={user.name} />
                 ) : null}
-            </span>
+                <AvatarFallback
+                    className={cn(
+                        avatarToneClass(user.id),
+                        'text-xs font-medium',
+                    )}
+                >
+                    {getInitials(user.name, user.email)}
+                </AvatarFallback>
+                {connectionState ? (
+                    <ConnectionDot
+                        state={connectionState}
+                        className="ring-sidebar"
+                    />
+                ) : null}
+            </Avatar>
             <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">{user.name}</span>
                 {showEmail && (

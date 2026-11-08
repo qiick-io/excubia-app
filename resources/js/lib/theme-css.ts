@@ -24,7 +24,7 @@ const FALLBACK_RING_LIGHT = 'var(--color-teal-600)';
 const FALLBACK_RING_DARK = 'var(--color-teal-400)';
 
 /** Id of the theme `<style>` element rendered by `app.blade.php`. */
-export const THEME_STYLE_ELEMENT_ID = 'excubia-theme-css';
+const THEME_STYLE_ELEMENT_ID = 'excubia-theme-css';
 
 /** Rejects values that could close the declaration block (`;`, `{`, `}`, `<`). */
 const SAFE_CSS_VALUE = /^[^;{}<>]+$/;
