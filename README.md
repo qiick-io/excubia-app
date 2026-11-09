@@ -109,6 +109,18 @@ PHP 8.4, Laravel 13, Inertia, React 19, TypeScript, Tailwind CSS v4, Pest, Pint,
 
 Open or pick an issue first; one issue per pull request, branches from `develop`, Conventional Commits. See [`CONTRIBUTING.md`](./CONTRIBUTING.md).
 
+### Local development
+
+```bash
+git clone https://github.com/qiick-io/excubia-app.git && cd excubia-app
+composer install && npm ci
+cp .env.example .env && php artisan key:generate
+touch database/database.sqlite && php artisan migrate
+composer run dev
+```
+
+Open `/setup` to create your account. Or set `INITIAL_SUPER_ADMIN_PASSWORD` in `.env` and run `php artisan db:seed`: it creates the super-admin `INITIAL_SUPER_ADMIN_EMAIL` with that password, in `local` and `testing` only (never on a server).
+
 ### Checks
 
 CI (`.github/workflows/ci.yml`) runs on every pull request and push to `develop` and `main`:

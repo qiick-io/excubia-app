@@ -1051,6 +1051,12 @@
             "sampled": "{{type}} (campionato al {{percent}}%)",
             "unknown": "Nomi sconosciuti in EXCUBIA_SELF_MONITORING_TYPES: {{names}}"
         },
+        "exampleAdmin": {
+            "title": "Account admin di esempio",
+            "defaultPassword": "Il super-admin di esempio superadmin@example.com esiste con la password \"password\": chiunque può accedere. Eliminalo o cambiane subito email e password.",
+            "exists": "Il super-admin di esempio superadmin@example.com esiste: cambiane l'email o eliminalo.",
+            "none": "Nessun account admin di esempio."
+        },
         "version": {
             "title": "Versione e compatibilità",
             "app": "Excubia App",

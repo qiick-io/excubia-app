@@ -1051,6 +1051,12 @@
             "sampled": "{{type}} (sampled {{percent}}%)",
             "unknown": "Unknown names in EXCUBIA_SELF_MONITORING_TYPES: {{names}}"
         },
+        "exampleAdmin": {
+            "title": "Example admin account",
+            "defaultPassword": "The example super-admin superadmin@example.com exists with the password \"password\": anyone can log in. Delete it or change its email and password now.",
+            "exists": "The example super-admin superadmin@example.com exists: change its email or delete it.",
+            "none": "No example admin account."
+        },
         "version": {
             "title": "Version and compatibility",
             "app": "Excubia App",

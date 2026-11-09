@@ -1051,6 +1051,12 @@
             "sampled": "{{type}} ({{percent}} % Stichprobe)",
             "unknown": "Unbekannte Namen in EXCUBIA_SELF_MONITORING_TYPES: {{names}}"
         },
+        "exampleAdmin": {
+            "title": "Beispiel-Admin-Konto",
+            "defaultPassword": "Der Beispiel-Super-Admin superadmin@example.com existiert mit dem Passwort \"password\": jeder kann sich anmelden. Lösche ihn oder ändere sofort E-Mail und Passwort.",
+            "exists": "Der Beispiel-Super-Admin superadmin@example.com existiert: ändere seine E-Mail oder lösche ihn.",
+            "none": "Kein Beispiel-Admin-Konto."
+        },
         "version": {
             "title": "Version und Kompatibilität",
             "app": "Excubia App",

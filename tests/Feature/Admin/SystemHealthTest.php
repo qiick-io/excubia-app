@@ -190,3 +190,31 @@ it('shows the self-monitoring runtime types and warns about unknown names (#219)
             ->where('selfMonitoring.unknown', ['queuewait'])
             ->where('selfMonitoring.types', fn ($types): bool => collect($types)->where('isEnabled', true)->pluck('type')->all() === ['server', 'health']));
 });
+
+it('flags the example super-admin on a server, as an error while it keeps the password "password"', function () {
+    $viewer = systemPageUser(RoleEnum::SuperAdmin);
+    $example = User::factory()->create(['email' => 'superadmin@example.com', 'password' => 'password']);
+    $page = fn () => $this->actingAs($viewer)->get(route('system.index'));
+
+    $page()->assertInertia(fn (Assert $page) => $page
+        ->where('exampleAdmin.status', 'ok')
+        ->where('exampleAdmin.exists', false)
+        ->where('exampleAdmin.hint', 'example-admin-account'));
+
+    app()->detectEnvironment(fn (): string => 'production');
+
+    $page()->assertInertia(fn (Assert $page) => $page
+        ->where('exampleAdmin.status', 'error')
+        ->where('exampleAdmin.hasDefaultPassword', true));
+
+    $example->forceFill(['password' => 'a-changed-long-password'])->save();
+
+    $page()->assertInertia(fn (Assert $page) => $page
+        ->where('exampleAdmin.status', 'warning')
+        ->where('exampleAdmin.exists', true)
+        ->where('exampleAdmin.hasDefaultPassword', false));
+
+    $example->delete();
+
+    $page()->assertInertia(fn (Assert $page) => $page->where('exampleAdmin.status', 'ok'));
+});
