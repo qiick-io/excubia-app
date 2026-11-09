@@ -8,6 +8,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { StackedBarChart } from '@/components/reports/severity-chart';
 import {
     useRangeTexts,
+    useZoomToRange,
     deployMarkers,
     TimeRangePicker,
 } from '@/components/reports/time-range-picker';
@@ -72,6 +73,7 @@ export function ScheduleView({
     const { t } = useTranslation();
 
     const rangeTexts = useRangeTexts(range);
+    const zoom = useZoomToRange(slug, 'schedule');
 
     if (tasks.length === 0) {
         return (
@@ -225,6 +227,7 @@ export function ScheduleView({
                                 skipped: point.skipped,
                             }))}
                             formatLabel={rangeTexts.bucketText}
+                            onZoom={zoom}
                             markers={deployMarkers(
                                 deploys,
                                 t('runtime.deploy'),

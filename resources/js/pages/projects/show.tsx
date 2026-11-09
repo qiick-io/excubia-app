@@ -302,10 +302,11 @@ export default function ProjectShow({
                     {view === 'history' ? (
                         <HistoryView reports={reports} />
                     ) : view === 'runtime' ? (
-                        <RuntimeView runtime={runtime} />
+                        <RuntimeView runtime={runtime} slug={project.slug} />
                     ) : view === 'ai' ? (
                         <AiUsageView
                             projectId={project.id}
+                            slug={project.slug}
                             ai={ai}
                             canManage={canManageAlerts}
                         />

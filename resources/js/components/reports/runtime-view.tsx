@@ -6,10 +6,14 @@ import {
     StackedBarChart,
     TimeLineChart,
 } from '@/components/reports/severity-chart';
-import type { ChartMarker } from '@/components/reports/severity-chart';
+import type {
+    ChartMarker,
+    ChartZoomHandler,
+} from '@/components/reports/severity-chart';
 import {
     DEFAULT_TIME_RANGE,
     useRangeTexts,
+    useZoomToRange,
     deployMarkers,
 } from '@/components/reports/time-range-picker';
 import { StatCard } from '@/components/stat-card';
@@ -72,10 +76,17 @@ type Formatters = {
  * data names the `runtime.*` key of excubia.json that turns it on. Estimated counts carry a `~`
  * when the project samples. Deploys of the range (#106) are dashed markers on the charts.
  */
-export function RuntimeView({ runtime }: { runtime: RuntimeSummary | null }) {
+export function RuntimeView({
+    runtime,
+    slug,
+}: {
+    runtime: RuntimeSummary | null;
+    slug: string;
+}) {
     const { t } = useTranslation();
 
     const rangeTexts = useRangeTexts(runtime?.range ?? DEFAULT_TIME_RANGE);
+    const zoom = useZoomToRange(slug, 'runtime');
 
     if (runtime === null) {
         return (
@@ -194,6 +205,7 @@ export function RuntimeView({ runtime }: { runtime: RuntimeSummary | null }) {
                             }))}
                             formatLabel={bucketText}
                             markers={markers}
+                            onZoom={zoom}
                             totalLabel={t('runtime.total')}
                             series={[
                                 {
@@ -246,6 +258,7 @@ export function RuntimeView({ runtime }: { runtime: RuntimeSummary | null }) {
                             formatLabel={bucketText}
                             formatValue={(value) => format.ms(value)}
                             markers={markers}
+                            onZoom={zoom}
                             series={[
                                 {
                                     key: 'averageMs',
@@ -516,6 +529,7 @@ export function RuntimeView({ runtime }: { runtime: RuntimeSummary | null }) {
                 bucketText={bucketText}
                 markers={markers}
                 range={range}
+                onZoom={zoom}
             />
 
             <RuntimeCard
@@ -1275,6 +1289,7 @@ function LogLevelsCard({
     bucketText,
     markers,
     range,
+    onZoom,
 }: {
     logLevels: RuntimeSummary['logLevels'];
     format: Formatters;
@@ -1282,6 +1297,7 @@ function LogLevelsCard({
     /** The bucket and range phrases of the chart texts. */
     range: { bucket: string; during: string };
     markers: ChartMarker[];
+    onZoom: ChartZoomHandler;
 }) {
     const { t } = useTranslation();
     const errors = logLevels.timeline.reduce(
@@ -1320,6 +1336,7 @@ function LogLevelsCard({
                         </div>
                         <div className="h-48">
                             <StackedBarChart
+                                onZoom={onZoom}
                                 data={logLevels.timeline.map((point) => ({
                                     label: point.at,
                                     errors: point.count,

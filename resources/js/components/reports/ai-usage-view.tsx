@@ -7,6 +7,7 @@ import { StackedBarChart } from '@/components/reports/severity-chart';
 import {
     DEFAULT_TIME_RANGE,
     useRangeTexts,
+    useZoomToRange,
 } from '@/components/reports/time-range-picker';
 import { StatCard } from '@/components/stat-card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -59,16 +60,19 @@ type Column<Row> = {
  */
 export function AiUsageView({
     projectId,
+    slug,
     ai,
     canManage,
 }: {
     projectId: number;
+    slug: string;
     ai: AiUsageSummary | null;
     canManage: boolean;
 }) {
     const { t } = useTranslation();
 
     const rangeTexts = useRangeTexts(ai?.range ?? DEFAULT_TIME_RANGE);
+    const zoom = useZoomToRange(slug, 'ai');
 
     if (ai === null) {
         return (
@@ -195,6 +199,7 @@ export function AiUsageView({
                             }))}
                             formatLabel={bucketText}
                             formatValue={(value) => money(value)}
+                            onZoom={zoom}
                             series={[
                                 {
                                     key: 'cost',

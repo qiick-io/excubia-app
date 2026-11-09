@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
     Bar,
@@ -6,6 +7,7 @@ import {
     Legend,
     Line,
     LineChart,
+    ReferenceArea,
     ReferenceLine,
     ResponsiveContainer,
     Tooltip,
@@ -16,6 +18,7 @@ import {
     SEVERITIES,
     SEVERITY_SCALE,
 } from '@/components/reports/severity-badge';
+import { cn } from '@/lib/utils';
 import type { Severity } from '@/types';
 
 export type SeverityChartPoint = { label: string } & Record<Severity, number>;
@@ -38,6 +41,86 @@ function bucketText(
     }
 
     return typeof value === 'number' ? value.toLocaleString() : '';
+}
+
+/** Called with the labels of the first and last bucket of a span dragged across a chart. */
+export type ChartZoomHandler = (fromLabel: string, toLabel: string) => void;
+
+type DragHandlerState = { activeLabel?: string | number };
+
+/**
+ * Drag to zoom (#248): mouse down on a bucket starts a selection, moving extends it (drawn as a
+ * ReferenceArea), mouse up hands the first and last bucket to `onZoom`; Escape or leaving the
+ * chart cancels, and a selection of one bucket is ignored. Mouse only: keyboard and screen
+ * reader users pick the same range with the time range picker.
+ */
+function useDragZoom(onZoom: ChartZoomHandler | undefined) {
+    const [start, setStart] = useState<string | null>(null);
+    const [end, setEnd] = useState<string | null>(null);
+    const cancel = (): void => {
+        setStart(null);
+        setEnd(null);
+    };
+
+    useEffect(() => {
+        if (start === null) {
+            return;
+        }
+
+        const onKeyDown = (event: KeyboardEvent): void => {
+            if (event.key === 'Escape') {
+                cancel();
+            }
+        };
+
+        window.addEventListener('keydown', onKeyDown);
+
+        return () => window.removeEventListener('keydown', onKeyDown);
+    }, [start]);
+
+    if (onZoom === undefined) {
+        return { chartProps: {}, area: null, className: '' };
+    }
+
+    const labelOf = (state: DragHandlerState): string | null =>
+        state.activeLabel === undefined ? null : String(state.activeLabel);
+
+    return {
+        chartProps: {
+            onMouseDown: (state: DragHandlerState) => {
+                setStart(labelOf(state));
+                setEnd(null);
+            },
+            onMouseMove: (state: DragHandlerState) => {
+                if (start !== null) {
+                    setEnd(labelOf(state));
+                }
+            },
+            onMouseUp: () => {
+                if (start !== null && end !== null && start !== end) {
+                    const [first, last] =
+                        start < end ? [start, end] : [end, start];
+                    onZoom(first, last);
+                }
+
+                cancel();
+            },
+            onMouseLeave: cancel,
+        },
+        area:
+            start !== null && end !== null ? (
+                <ReferenceArea
+                    x1={start}
+                    x2={end}
+                    fill="var(--color-primary)"
+                    fillOpacity={0.15}
+                    stroke="var(--color-primary)"
+                    strokeOpacity={0.4}
+                    ifOverflow="extendDomain"
+                />
+            ) : null,
+        className: 'cursor-crosshair select-none',
+    };
 }
 
 export type ChartSeries = {
@@ -63,6 +146,7 @@ export function StackedBarChart({
     formatLabel,
     formatValue,
     totalLabel,
+    onZoom,
 }: {
     data: ({ label: string } & Record<string, number | string>)[];
     series: ChartSeries[];
@@ -74,14 +158,21 @@ export function StackedBarChart({
     formatValue?: (value: number) => string;
     /** When set, the tooltip title adds the bucket's total under this name (#251). */
     totalLabel?: string;
+    /** Drag across buckets to zoom the page into them (#248); the labels must be bucket times. */
+    onZoom?: ChartZoomHandler;
 }) {
     const order = series.map((item) => item.key);
     const last = order[order.length - 1];
+    const zoom = useDragZoom(onZoom);
 
     return (
-        <div role="img" aria-label={label} className="h-full w-full">
+        <div
+            role="img"
+            aria-label={label}
+            className={cn('h-full w-full', zoom.className)}
+        >
             <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data}>
+                <BarChart data={data} {...zoom.chartProps}>
                     <CartesianGrid
                         strokeDasharray="3 3"
                         vertical={false}
@@ -178,6 +269,7 @@ export function StackedBarChart({
                             radius={item.key === last ? [4, 4, 0, 0] : 0}
                         />
                     ))}
+                    {zoom.area}
                     {markers.map((marker) => (
                         <ReferenceLine
                             key={marker.at}
@@ -210,6 +302,7 @@ export function TimeLineChart({
     markers = [],
     formatLabel,
     formatValue,
+    onZoom,
 }: {
     data: ({ label: string } & Record<string, number | string | null>)[];
     series: ChartSeries[];
@@ -219,13 +312,20 @@ export function TimeLineChart({
     formatLabel?: (label: string) => string;
     /** Axis and tooltip text of a value, such as a duration. */
     formatValue: (value: number) => string;
+    /** Drag across buckets to zoom the page into them (#248). */
+    onZoom?: ChartZoomHandler;
 }) {
     const order = series.map((item) => item.key);
+    const zoom = useDragZoom(onZoom);
 
     return (
-        <div role="img" aria-label={label} className="h-full w-full">
+        <div
+            role="img"
+            aria-label={label}
+            className={cn('h-full w-full', zoom.className)}
+        >
             <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={data}>
+                <LineChart data={data} {...zoom.chartProps}>
                     <CartesianGrid
                         strokeDasharray="3 3"
                         vertical={false}
@@ -330,6 +430,7 @@ export function TimeLineChart({
                             isAnimationActive={false}
                         />
                     ))}
+                    {zoom.area}
                     {markers.map((marker) => (
                         <ReferenceLine
                             key={marker.at}
