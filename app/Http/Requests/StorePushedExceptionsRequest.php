@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests;
 
 use App\Models\Project;
+use App\Traits\BuildsPerIndexRulesTrait;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -17,6 +18,8 @@ use Illuminate\Validation\Rule;
  */
 class StorePushedExceptionsRequest extends FormRequest
 {
+    use BuildsPerIndexRulesTrait;
+
     private const TIMESTAMP = 'regex:/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/';
 
     public function authorize(): bool
@@ -25,11 +28,13 @@ class StorePushedExceptionsRequest extends FormRequest
     }
 
     /**
+     * The group rules are built per index of the pushed groups (BuildsPerIndexRulesTrait, #238).
+     *
      * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
-        return [
+        return $this->perIndexRules([
             'protocolVersion' => ['required', 'integer', Rule::in(StorePushedReportRequest::PROTOCOL_VERSIONS)],
             'type' => ['required', 'in:exceptions'],
             'batchId' => ['required', 'string', 'regex:/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/'],
@@ -56,7 +61,7 @@ class StorePushedExceptionsRequest extends FormRequest
             'exceptions.groups.*.count' => ['required', 'integer', 'min:1'],
             'exceptions.groups.*.firstSeen' => ['required', 'string', self::TIMESTAMP],
             'exceptions.groups.*.lastSeen' => ['required', 'string', self::TIMESTAMP],
-        ];
+        ]);
     }
 
     /**
