@@ -65,9 +65,9 @@ class StorePushedRuntimeAction
             $series = [];
 
             foreach ($aggregates as $aggregate) {
-                $type = RuntimeTypeEnum::tryFrom((string) ($aggregate['type'] ?? ''));
+                $type = $this->storedType($aggregate);
 
-                if ($type === null || $this->isUnreadable($type, $aggregate)) {
+                if ($type === null) {
                     $skipped++;
 
                     continue;
@@ -102,6 +102,29 @@ class StorePushedRuntimeAction
         }
 
         return true;
+    }
+
+    /**
+     * The entries of a batch this app skips instead of storing: unknown types and `health`
+     * samples it cannot rank. Pure, so a duplicate answers the same count as the first push.
+     *
+     * @param  list<array<string, mixed>>  $aggregates  validated by StorePushedRuntimeRequest
+     */
+    public function skippedCount(array $aggregates): int
+    {
+        return count(array_filter($aggregates, fn (array $aggregate): bool => $this->storedType($aggregate) === null));
+    }
+
+    /**
+     * The known type of an entry the app stores, or null when it skips the entry.
+     *
+     * @param  array<string, mixed>  $aggregate
+     */
+    private function storedType(array $aggregate): ?RuntimeTypeEnum
+    {
+        $type = RuntimeTypeEnum::tryFrom((string) ($aggregate['type'] ?? ''));
+
+        return $type === null || $this->isUnreadable($type, $aggregate) ? null : $type;
     }
 
     /**
