@@ -153,6 +153,18 @@ it('counts push rejections per endpoint, status and reason, without body, token 
             ->where('rejections.rows.0', ['endpoint' => 'runtime', 'status' => 401, 'reason' => 'token', 'count' => 2]));
 });
 
+it('counts throttled pushes, which the rate limit answers before the token check (#244)', function () {
+    config(['excubia.push_requests_per_minute' => 1]);
+    $token = app(RotateProjectTokenAction::class)->execute(Project::factory()->create());
+
+    $this->postJson('/api/runtime', [], ['Authorization' => "Bearer {$token}"])->assertUnprocessable();
+    $this->postJson('/api/runtime', [], ['Authorization' => "Bearer {$token}"])->assertTooManyRequests();
+    $this->postJson('/api/runtime', [], ['Authorization' => "Bearer {$token}"])->assertTooManyRequests();
+
+    expect(IngestRejection::query()->where('reason', 'throttled')->get(['endpoint', 'status', 'reason', 'count'])->toArray())
+        ->toBe([['endpoint' => 'runtime', 'status' => 429, 'reason' => 'throttled', 'count' => 2]]);
+});
+
 it('prunes rejection counters older than two days and reads only the last 24 hours', function () {
     IngestRejection::query()->create(['endpoint' => 'reports', 'status' => 401, 'reason' => 'token', 'bucket' => Date::now()->subDays(3), 'count' => 7]);
     IngestRejection::query()->create(['endpoint' => 'reports', 'status' => 401, 'reason' => 'token', 'bucket' => Date::now()->subHours(30), 'count' => 2]);
