@@ -149,6 +149,8 @@ Open `/setup` (the login page links to it while no account exists):
 
 On a server without a browser at hand, `php artisan excubia:create-user` creates an account from the CLI instead (the first one becomes super-admin).
 
+Never run `php artisan db:seed` or `migrate --seed` to get a login on a server: the default seeder creates the development super-admin only where `APP_ENV` is `local` or `testing` and `INITIAL_SUPER_ADMIN_PASSWORD` is set, and skips it everywhere else. The install paths (`excubia:install`, `excubia:upgrade`, the Docker entrypoint) seed only the permissions and the system project.
+
 ## Scheduler and queue
 
 The app runs scheduled tasks:
@@ -485,6 +487,10 @@ Alerts of the last 24 hours that a channel failed to deliver. Check the channel 
 ### Runtime rollups
 
 The dashboard totals read hourly rollups. When runtime from before the rollups is stored, run `php artisan excubia:backfill-runtime-rollups` once (Docker: `docker compose exec app php artisan excubia:backfill-runtime-rollups`).
+
+### Example admin account
+
+Outside `local` and `testing`, an error when the user `superadmin@example.com` exists with the password `password` (the development seeder's account of earlier `.env.example` files, for example after `migrate --seed` on a server), a warning when that user exists with another password. Log in as another super-admin and delete it under **Users**, or change its email and password under **Settings → Profile**. If it is the only account, create your own first with `php artisan excubia:create-user --role=super-admin`.
 
 ### Version and compatibility
 
