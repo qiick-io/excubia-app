@@ -37,6 +37,10 @@ upgrade from the version before (see [docs/self-hosting.md](docs/self-hosting.md
 
 - The app runs on qiick/excubia-core 1.0.0-beta.3 (was beta.2, #221), so self-monitoring can produce the `health` runtime type for the system project. Settings → System shows the new core version.
 
+### Fixed
+
+- A fresh install's system report no longer has 39 `env-example-sync` findings about Excubia's own code (#222): `.env.example` now lists, commented out with their defaults, every key `config/*.php` reads (SQLite tuning, passkeys, activity log, the AI cloud providers, push limits and the Checks defaults), and `EnvExampleSyncTest` runs the core check on the app so it stays clean.
+
 ### Security
 
 - Security review before the beta (#51): `docs/SECURITY-MODEL.md` (every data flow: what is received, stored, kept and who sees it) and the supported 1.x versions in `SECURITY.md`. Fixed: the push rate limit is keyed by project or IP instead of the presented token; alert deliveries refuse IPv6 and IPv4-mapped private addresses and hosts that do not resolve, connect to the checked address, and never quote the URL in errors; the Slack incoming-webhook URL is stored encrypted and write-only; evidence links must be `http(s)`; the weekly digest escapes Markdown from pushed strings; the session cookie is `Secure` by default when `APP_URL` is https. A test walks every named route as a reader and as a non-admin user with every permission.
