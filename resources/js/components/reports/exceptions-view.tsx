@@ -11,8 +11,10 @@ import { PageLayout } from '@/components/layout/page-layout';
 import { useCopyWithToast } from '@/components/reports/fix-actions';
 import { ReleaseLabel, shortRelease } from '@/components/reports/release-label';
 import { StackedBarChart } from '@/components/reports/severity-chart';
+import type { ChartZoomHandler } from '@/components/reports/severity-chart';
 import {
     useRangeTexts,
+    useZoomToRange,
     deployMarkers,
     TimeRangePicker,
 } from '@/components/reports/time-range-picker';
@@ -69,6 +71,7 @@ export function ExceptionsView({
 }) {
     const { t } = useTranslation();
     const rangeTexts = useRangeTexts(range);
+    const zoom = useZoomToRange(slug, 'exceptions');
     const [search, setSearch] = useState('');
     const [status, setStatus] = useState<StatusFilter>('open');
     const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -328,6 +331,7 @@ export function ExceptionsView({
                     range={range}
                     deploys={deploys}
                     canManage={canManage}
+                    onZoom={zoom}
                 />
             ) : null}
         </Drawer>
@@ -344,12 +348,14 @@ function ExceptionDrawer({
     range,
     deploys,
     canManage,
+    onZoom,
 }: {
     projectId: number;
     group: ExceptionGroupRow;
     range: TimeRange;
     deploys: RuntimeDeploy[];
     canManage: boolean;
+    onZoom: ChartZoomHandler;
 }) {
     const { t } = useTranslation();
     const rangeTexts = useRangeTexts(range);
@@ -397,6 +403,7 @@ function ExceptionDrawer({
                                 count: point.count,
                             }))}
                             formatLabel={rangeTexts.bucketText}
+                            onZoom={onZoom}
                             markers={deployMarkers(
                                 deploys,
                                 t('runtime.deploy'),

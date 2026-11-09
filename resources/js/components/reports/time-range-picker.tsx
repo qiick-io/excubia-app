@@ -118,6 +118,26 @@ export function TimeRangePicker({
 }
 
 /**
+ * Drag to zoom (#248) on the charts of a range tab: the dragged buckets, from the start of the
+ * first to the end of the last, become the page's custom range. The server bounds it like any
+ * custom range (retention, 14 days, now).
+ */
+export function useZoomToRange(
+    slug: string,
+    view: RangeView,
+): (fromLabel: string, toLabel: string) => void {
+    const { rangeWindow } = usePage<{ rangeWindow: TimeRangeWindow }>().props;
+
+    return (fromLabel, toLabel) =>
+        visitRange(slug, view, {
+            from: new Date(fromLabel).toISOString(),
+            to: new Date(
+                new Date(toLabel).getTime() + rangeWindow.bucketSeconds * 1000,
+            ).toISOString(),
+        });
+}
+
+/**
  * The axis and tooltip text of a chart bucket: the date for daily buckets, the date and time
  * when the window spans more than a day, else the time.
  */
