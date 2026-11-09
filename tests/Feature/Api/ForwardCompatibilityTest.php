@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use App\Actions\RotateProjectTokenAction;
 use App\Enums\RuntimeTypeEnum;
+use App\Http\Requests\StorePushedExceptionsRequest;
+use App\Http\Requests\StorePushedReportRequest;
 use App\Http\Requests\StorePushedRuntimeRequest;
 use App\Models\Project;
 use Illuminate\Support\Facades\Date;
@@ -165,6 +167,20 @@ function forwardCompatTimedPost(string $endpoint, string $token, string $body): 
     return [$response, (hrtime(true) - $startedAt) / 1e9];
 }
 
+/**
+ * The rule keys under `$prefix` the request builds for the body that contain a wildcard: each one
+ * would make the validator flatten the whole list it covers, unknown fields included (#195, #238).
+ *
+ * @param  class-string<StorePushedReportRequest|StorePushedExceptionsRequest|StorePushedRuntimeRequest>  $requestClass
+ * @return list<string>
+ */
+function forwardCompatWildcardRuleKeys(string $requestClass, string $body, string $prefix): array
+{
+    $ruleKeys = array_keys($requestClass::create('/api/push', 'POST', server: ['CONTENT_TYPE' => 'application/json'], content: $body)->rules());
+
+    return array_values(array_filter($ruleKeys, fn (string $key): bool => str_starts_with($key, $prefix) && str_contains($key, '*')));
+}
+
 it('stores the known entries of a batch and skips and counts the entries of future types', function () {
     [$project, $token] = forwardCompatProject();
     $future = forwardCompatFutureAggregates();
@@ -283,4 +299,80 @@ it('accepts 1 MB of future fields on an exceptions batch without walking them', 
         ->and($project->exceptionGroups()->count())->toBe(1);
 
     Exceptions::assertNothingReported();
+});
+
+it('validates 1 MB of future fields inside report checks without walking them', function () {
+    config(['excubia.push_max_kilobytes' => 1100]);
+    [$project, $token] = forwardCompatProject();
+    $finding = ['checkId' => 'composer-audit', 'severity' => 'high', 'status' => 'fail', 'subject' => 'acme/package', 'message' => 'Advisory', 'fixHint' => 'Update', 'evidenceUrl' => null, 'advisoryId' => null, 'score' => 7.5, 'tags' => []];
+    $checks = [
+        ['checkId' => 'composer-audit', 'name' => 'Composer audit', 'status' => 'fail', 'findings' => [$finding], 'traces' => forwardCompatUnknownAggregatesOf(1024)],
+        ['checkId' => 'debug-mode', 'name' => 'Debug mode', 'status' => 'pass', 'findings' => [], 'durationMs' => 1.5, 'isCached' => true],
+    ];
+    $envelope = [
+        'protocolVersion' => 1, 'batchId' => (string) Str::uuid(), 'sentAt' => '2026-11-06T11:59:00Z',
+        'report' => ['schemaVersion' => 1, 'checks' => $checks, 'upgradePlan' => [['stepNumber' => 1, 'message' => 'Update acme/package']]],
+    ];
+    $body = json_encode($envelope, JSON_THROW_ON_ERROR);
+
+    [$response, $seconds] = forwardCompatTimedPost('reports', $token, $body);
+
+    $response->assertCreated()->assertJson(['status' => 'stored']);
+
+    expect(strlen($body))->toBeGreaterThan(1000 * 1024)
+        ->and($seconds)->toBeLessThan(FORWARD_COMPAT_BUDGET_SECONDS)
+        ->and(forwardCompatWildcardRuleKeys(StorePushedReportRequest::class, $body, 'report.checks'))->toBe([])
+        ->and($project->healthReports()->count())->toBe(1);
+
+    Exceptions::assertNothingReported();
+});
+
+it('validates 1 MB of future fields inside exception groups without walking them', function () {
+    config(['excubia.push_max_kilobytes' => 1100]);
+    [$project, $token] = forwardCompatProject();
+    $group = [
+        'class' => 'RuntimeException', 'fingerprint' => str_repeat('a', 64), 'message' => 'Masked [redacted]',
+        'frames' => [['file' => 'app/Actions/CreateUserAction.php', 'line' => 42, 'function' => 'execute', 'inApp' => true, 'column' => null]],
+        'previous' => ['LogicException'], 'context' => ['kind' => 'trace', 'name' => 'users.store', 'spanId' => 'abc'],
+        'environment' => 'production', 'count' => 2, 'firstSeen' => '2026-11-06T11:00:00Z', 'lastSeen' => '2026-11-06T11:30:00Z',
+    ];
+    $envelope = [
+        'protocolVersion' => 1, 'type' => 'exceptions', 'batchId' => (string) Str::uuid(), 'sentAt' => '2026-11-06T11:59:00Z',
+        'exceptions' => ['groups' => [[...$group, 'breadcrumbs' => forwardCompatUnknownAggregatesOf(1024)], [...$group, 'fingerprint' => str_repeat('b', 64)]]],
+    ];
+    $body = json_encode($envelope, JSON_THROW_ON_ERROR);
+
+    [$response, $seconds] = forwardCompatTimedPost('exceptions', $token, $body);
+
+    $response->assertCreated()->assertJson(['status' => 'stored']);
+
+    expect(strlen($body))->toBeGreaterThan(1000 * 1024)
+        ->and($seconds)->toBeLessThan(FORWARD_COMPAT_BUDGET_SECONDS)
+        ->and(forwardCompatWildcardRuleKeys(StorePushedExceptionsRequest::class, $body, 'exceptions.groups'))->toBe([])
+        ->and($project->exceptionGroups()->count())->toBe(2);
+
+    Exceptions::assertNothingReported();
+});
+
+it('rejects an invalid check or group with the errors and messages of the wildcard rules', function () {
+    [, $token] = forwardCompatProject();
+    $report = ['protocolVersion' => 1, 'batchId' => (string) Str::uuid(), 'sentAt' => '2026-11-06T11:59:00Z', 'report' => ['schemaVersion' => 1, 'checks' => [['checkId' => 'debug-mode', 'name' => 'Debug mode', 'status' => 'pass', 'findings' => [['checkId' => 'debug-mode']]]], 'upgradePlan' => []]];
+    $exceptions = ['protocolVersion' => 1, 'type' => 'exceptions', 'batchId' => (string) Str::uuid(), 'sentAt' => '2026-11-06T11:59:00Z', 'exceptions' => ['groups' => [['class' => 'RuntimeException', 'fingerprint' => str_repeat('a', 64), 'message' => '', 'frames' => [], 'previous' => [], 'context' => ['kind' => 'http', 'name' => 'home'], 'environment' => 'production', 'count' => 1, 'firstSeen' => '2026-11-06T11:00:00Z']]]];
+
+    // Keys built from a wildcard are named raw in messages (`fixHint`, not `fix hint`), as before #238.
+    forwardCompatPost('reports', $token, json_encode($report, JSON_THROW_ON_ERROR))
+        ->assertUnprocessable()
+        ->assertJsonPath('message', 'The report.checks.0.findings.0.severity field is required. (and 5 more errors)')
+        ->assertJsonPath('errors', [
+            'report.checks.0.findings.0.severity' => ['The report.checks.0.findings.0.severity field is required.'],
+            'report.checks.0.findings.0.status' => ['The report.checks.0.findings.0.status field is required.'],
+            'report.checks.0.findings.0.subject' => ['The report.checks.0.findings.0.subject field must be present.'],
+            'report.checks.0.findings.0.message' => ['The report.checks.0.findings.0.message field must be present.'],
+            'report.checks.0.findings.0.fixHint' => ['The report.checks.0.findings.0.fixHint field must be present.'],
+            'report.checks.0.findings.0.evidenceUrl' => ['The report.checks.0.findings.0.evidenceUrl field must be present.'],
+        ]);
+
+    forwardCompatPost('exceptions', $token, json_encode($exceptions, JSON_THROW_ON_ERROR))
+        ->assertUnprocessable()
+        ->assertExactJson(['message' => 'The exceptions.groups.0.lastSeen field is required.', 'errors' => ['exceptions.groups.0.lastSeen' => ['The exceptions.groups.0.lastSeen field is required.']]]);
 });

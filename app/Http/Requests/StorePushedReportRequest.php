@@ -6,6 +6,7 @@ namespace App\Http\Requests;
 
 use App\Enums\SeverityEnum;
 use App\Models\Project;
+use App\Traits\BuildsPerIndexRulesTrait;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -17,6 +18,8 @@ use Illuminate\Validation\Rule;
  */
 class StorePushedReportRequest extends FormRequest
 {
+    use BuildsPerIndexRulesTrait;
+
     public const PROTOCOL_VERSIONS = [1];
 
     private const STATUSES = ['pass', 'warn', 'fail', 'skipped'];
@@ -27,6 +30,9 @@ class StorePushedReportRequest extends FormRequest
     }
 
     /**
+     * The check rules are built per index of the pushed checks (BuildsPerIndexRulesTrait, #238).
+     * The schedule keeps its wildcards: `distinct` compares the entries of one wildcard.
+     *
      * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
@@ -42,20 +48,6 @@ class StorePushedReportRequest extends FormRequest
             'report.release' => ['sometimes', 'nullable', 'string', 'max:100'],
             'report.deployedAt' => ['sometimes', 'nullable', 'date'],
             'report.checks' => ['present', 'list'],
-            'report.checks.*' => ['array'],
-            'report.checks.*.checkId' => ['required', 'string'],
-            'report.checks.*.name' => ['required', 'string'],
-            'report.checks.*.status' => ['required', Rule::in(self::STATUSES)],
-            'report.checks.*.findings' => ['present', 'list'],
-            'report.checks.*.findings.*' => ['array'],
-            'report.checks.*.findings.*.checkId' => ['required', 'string'],
-            'report.checks.*.findings.*.severity' => ['required', Rule::in(SeverityEnum::values())],
-            'report.checks.*.findings.*.status' => ['required', Rule::in(self::STATUSES)],
-            'report.checks.*.findings.*.subject' => ['present', 'string'],
-            'report.checks.*.findings.*.message' => ['present', 'string'],
-            'report.checks.*.findings.*.fixHint' => ['present', 'string'],
-            'report.checks.*.findings.*.evidenceUrl' => ['present', 'nullable', 'string'],
-            'report.checks.*.findings.*.advisoryId' => ['nullable', 'string'],
             'report.upgradePlan' => ['present', 'list'],
             'report.upgradePlan.*.stepNumber' => ['required', 'integer', 'min:1'],
             'report.upgradePlan.*.message' => ['required', 'string'],
@@ -72,6 +64,23 @@ class StorePushedReportRequest extends FormRequest
             'report.schedule.*.environments' => ['present', 'list'],
             'report.schedule.*.environments.*' => ['string', 'max:64'],
             'report.schedule.*.lateAfterMinutes' => ['sometimes', 'integer', 'min:1'],
+            // Last, where the validator appends the keys of a wildcard, so errors keep their order.
+            ...$this->perIndexRules([
+                'report.checks.*' => ['array'],
+                'report.checks.*.checkId' => ['required', 'string'],
+                'report.checks.*.name' => ['required', 'string'],
+                'report.checks.*.status' => ['required', Rule::in(self::STATUSES)],
+                'report.checks.*.findings' => ['present', 'list'],
+                'report.checks.*.findings.*' => ['array'],
+                'report.checks.*.findings.*.checkId' => ['required', 'string'],
+                'report.checks.*.findings.*.severity' => ['required', Rule::in(SeverityEnum::values())],
+                'report.checks.*.findings.*.status' => ['required', Rule::in(self::STATUSES)],
+                'report.checks.*.findings.*.subject' => ['present', 'string'],
+                'report.checks.*.findings.*.message' => ['present', 'string'],
+                'report.checks.*.findings.*.fixHint' => ['present', 'string'],
+                'report.checks.*.findings.*.evidenceUrl' => ['present', 'nullable', 'string'],
+                'report.checks.*.findings.*.advisoryId' => ['nullable', 'string'],
+            ]),
         ];
     }
 
