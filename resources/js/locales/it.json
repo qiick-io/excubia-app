@@ -1041,6 +1041,16 @@
             "pending": "Il runtime salvato prima delle aggregazioni orarie manca dai totali della dashboard: esegui il backfill una volta.",
             "done": "Le aggregazioni orarie coprono il runtime salvato."
         },
+        "selfMonitoring": {
+            "title": "Auto-monitoraggio",
+            "off": "L'auto-monitoraggio è disattivato (EXCUBIA_SELF_MONITORING=false).",
+            "default": "Il progetto di sistema registra ogni tipo di runtime supportato dall'excubia-core installato. Sceglili con EXCUBIA_SELF_MONITORING_TYPES.",
+            "environment": "Il progetto di sistema registra i tipi di runtime di EXCUBIA_SELF_MONITORING_TYPES.",
+            "enabledTypes": "Attivi",
+            "disabledTypes": "Disattivati",
+            "sampled": "{{type}} (campionato al {{percent}}%)",
+            "unknown": "Nomi sconosciuti in EXCUBIA_SELF_MONITORING_TYPES: {{names}}"
+        },
         "exampleAdmin": {
             "title": "Account admin di esempio",
             "defaultPassword": "Il super-admin di esempio superadmin@example.com esiste con la password \"password\": chiunque può accedere. Eliminalo o cambiane subito email e password.",

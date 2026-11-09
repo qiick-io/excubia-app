@@ -62,6 +62,12 @@ type SystemHealthProps = {
         }[];
     };
     rollups: HealthItem & { isBackfillPending: boolean };
+    selfMonitoring: HealthItem & {
+        isEnabled: boolean;
+        source: 'default' | 'environment';
+        types: { type: string; isEnabled: boolean; sampleRate: number }[];
+        unknown: string[];
+    };
     exampleAdmin: HealthItem & { exists: boolean; hasDefaultPassword: boolean };
     version: HealthItem & {
         app: string;
@@ -126,8 +132,8 @@ function HealthSection({
 
 /**
  * `/settings/system` (#117): the health of this Excubia install (scheduler, queue worker,
- * pushes, rejections, skipped runtime types, alert delivery, rollups, example admin account,
- * version). Behind
+ * pushes, rejections, skipped runtime types, alert delivery, rollups, self-monitoring, example
+ * admin account, version). Behind
  * `can-show-system`; read-only.
  */
 export default function SystemIndex(props: SystemHealthProps) {
@@ -140,6 +146,7 @@ export default function SystemIndex(props: SystemHealthProps) {
         skippedRuntime,
         alertFailures,
         rollups,
+        selfMonitoring,
         exampleAdmin,
         version,
     } = props;
@@ -469,6 +476,80 @@ export default function SystemIndex(props: SystemHealthProps) {
                                     ? t('system.rollups.pending')
                                     : t('system.rollups.done')}
                             </p>
+                        </HealthSection>
+
+                        <HealthSection
+                            id="system-self-monitoring"
+                            title={t('system.selfMonitoring.title')}
+                            item={selfMonitoring}
+                            docsUrl={docsUrl}
+                        >
+                            {selfMonitoring.isEnabled ? (
+                                <>
+                                    <p className="text-sm text-muted-foreground">
+                                        {t(
+                                            `system.selfMonitoring.${selfMonitoring.source}`,
+                                        )}
+                                    </p>
+                                    <dl className="grid gap-3 text-sm sm:grid-cols-2">
+                                        {[true, false].map((isEnabled) => (
+                                            <div
+                                                key={String(isEnabled)}
+                                                className="grid gap-1"
+                                            >
+                                                <dt className="text-muted-foreground">
+                                                    {t(
+                                                        isEnabled
+                                                            ? 'system.selfMonitoring.enabledTypes'
+                                                            : 'system.selfMonitoring.disabledTypes',
+                                                    )}
+                                                </dt>
+                                                <dd className="font-mono">
+                                                    {selfMonitoring.types
+                                                        .filter(
+                                                            (type) =>
+                                                                type.isEnabled ===
+                                                                isEnabled,
+                                                        )
+                                                        .map((type) =>
+                                                            isEnabled &&
+                                                            type.sampleRate < 1
+                                                                ? t(
+                                                                      'system.selfMonitoring.sampled',
+                                                                      {
+                                                                          type: type.type,
+                                                                          percent:
+                                                                              Math.round(
+                                                                                  type.sampleRate *
+                                                                                      100,
+                                                                              ),
+                                                                      },
+                                                                  )
+                                                                : type.type,
+                                                        )
+                                                        .join(', ') || '—'}
+                                                </dd>
+                                            </div>
+                                        ))}
+                                    </dl>
+                                    {selfMonitoring.unknown.length > 0 && (
+                                        <p className="text-sm text-warning">
+                                            {t(
+                                                'system.selfMonitoring.unknown',
+                                                {
+                                                    names: selfMonitoring.unknown.join(
+                                                        ', ',
+                                                    ),
+                                                },
+                                            )}
+                                        </p>
+                                    )}
+                                </>
+                            ) : (
+                                <p className="text-sm text-muted-foreground">
+                                    {t('system.selfMonitoring.off')}
+                                </p>
+                            )}
                         </HealthSection>
 
                         <HealthSection

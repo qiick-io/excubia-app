@@ -166,6 +166,31 @@ it('prunes rejection counters older than two days and reads only the last 24 hou
         ->assertInertia(fn (Assert $page) => $page->where('rejections.total', 0)->where('rejections.status', 'ok'));
 });
 
+it('shows the self-monitoring runtime types and warns about unknown names (#219)', function () {
+    config(['excubia.self_monitoring' => true, 'excubia.self_monitoring_types' => null]);
+
+    $this->actingAs(systemPageUser(RoleEnum::SuperAdmin))
+        ->get(route('system.index'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('selfMonitoring.status', 'ok')
+            ->where('selfMonitoring.hint', 'self-monitoring')
+            ->where('selfMonitoring.isEnabled', true)
+            ->where('selfMonitoring.source', 'default')
+            ->where('selfMonitoring.unknown', [])
+            ->where('selfMonitoring.types', fn ($types): bool => collect($types)->every(fn (array $type): bool => $type['isEnabled'])
+                && collect($types)->firstWhere('type', 'health') !== null));
+
+    config(['excubia.self_monitoring_types' => 'server,health,queuewait']);
+
+    $this->actingAs(systemPageUser(RoleEnum::SuperAdmin))
+        ->get(route('system.index'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('selfMonitoring.status', 'warning')
+            ->where('selfMonitoring.source', 'environment')
+            ->where('selfMonitoring.unknown', ['queuewait'])
+            ->where('selfMonitoring.types', fn ($types): bool => collect($types)->where('isEnabled', true)->pluck('type')->all() === ['server', 'health']));
+});
+
 it('flags the example super-admin on a server, as an error while it keeps the password "password"', function () {
     $viewer = systemPageUser(RoleEnum::SuperAdmin);
     $example = User::factory()->create(['email' => 'superadmin@example.com', 'password' => 'password']);

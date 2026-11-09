@@ -58,6 +58,7 @@ class SystemHealthService
     public function __construct(
         private ProjectStalenessService $staleness,
         private SettingsRepositoryService $settings,
+        private SelfMonitoringService $selfMonitoring,
     ) {}
 
     /**
@@ -76,6 +77,7 @@ class SystemHealthService
             'skippedRuntime' => $this->skippedRuntime($viewer),
             'alertFailures' => $this->alertFailures($viewer),
             'rollups' => $this->rollups(),
+            'selfMonitoring' => $this->selfMonitoring(),
             'exampleAdmin' => $this->exampleAdmin(),
             'version' => $this->version(),
         ];
@@ -265,6 +267,25 @@ class SystemHealthService
             || Carbon::parse((string) $oldestAggregate)->lt(Carbon::parse((string) $oldestRollup)->subHour()));
 
         return ['status' => $isPending ? 'warning' : 'ok', 'hint' => 'runtime-rollups', 'isBackfillPending' => $isPending];
+    }
+
+    /**
+     * The runtime types the system project records (#219), from `EXCUBIA_SELF_MONITORING_TYPES`
+     * or the defaults of the installed core. A name of that variable that matches no type is a
+     * warning: it is a typo, or a type this app or core does not have yet.
+     *
+     * @return array{status: Status, hint: string, isEnabled: bool, source: 'default'|'environment', types: list<array{type: string, isEnabled: bool, sampleRate: float}>, unknown: list<string>}
+     */
+    private function selfMonitoring(): array
+    {
+        $selection = $this->selfMonitoring->typeSelection();
+
+        return [
+            'status' => $selection['unknown'] === [] ? 'ok' : 'warning',
+            'hint' => 'self-monitoring',
+            'isEnabled' => $this->selfMonitoring->isEnabled(),
+            ...$selection,
+        ];
     }
 
     /**

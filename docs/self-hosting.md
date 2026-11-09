@@ -450,6 +450,16 @@ The **Excubia** system project runs the `qiick/excubia-core` checks on this inst
 
 It also records this install's own runtime and exceptions: excubia-core's collectors run on the app, and `excubia:system-telemetry` moves them to the system project, with no push token or HTTP call. Turn it off with `EXCUBIA_SELF_MONITORING=false`.
 
+**Runtime types.** By default the system project records every runtime type the installed `qiick/excubia-core` collects and this app stores (requests, slow queries, jobs, scheduled tasks, outgoing HTTP, memory, queue wait, mail, notifications, log levels, deprecations, duplicate queries, Artisan commands, server, live health and the newer types of the core), with `cache` sampled at one event in ten. Types of packages this install does not use (Octane, Reverb, Cashier, Scout, Pennant) simply stay empty. To choose them, list their `excubia.json` keys in `.env`, for example:
+
+```dotenv
+EXCUBIA_SELF_MONITORING_TYPES=requests,slowQueries,jobs,scheduler,outgoingHttp,queueWait,server,health
+```
+
+`all` turns on every available type. The setting lives in `.env`, not in the shipped `resources/excubia/self-monitoring.json`, so `git pull`, `excubia:upgrade --sync-upstream` and a new Docker image keep it; run `php artisan config:clear` (or `optimize`) after a change when the config is cached. **Settings → System → [Self-monitoring](#self-monitoring)** shows which types are on.
+
+Every minute `excubia:system-telemetry` also takes this machine's `server` sample (CPU, memory, disk) and, at most once a minute, the `health` samples of the core's local checks (database, cache, storage, disk, queue, scheduler, Redis), as `excubia:push-runtime` does in a monitored project, so the system project has a **Servers** row and the **Live health** card. The server is named by `EXCUBIA_SERVER_NAME`, else a hashed id.
+
 ## System page
 
 **Settings → System** shows the health of this install. Super-admins see it; give other roles the `can-show-system` permission. Each item links to its section below.
@@ -487,6 +497,10 @@ Alerts of the last 24 hours that a channel failed to deliver. Check the channel 
 ### Runtime rollups
 
 The dashboard totals read hourly rollups. When runtime from before the rollups is stored, run `php artisan excubia:backfill-runtime-rollups` once (Docker: `docker compose exec app php artisan excubia:backfill-runtime-rollups`).
+
+### Self-monitoring
+
+The runtime types the system project records ([Excubia watches itself](#excubia-watches-itself)): the defaults of the installed excubia-core, or the list in `EXCUBIA_SELF_MONITORING_TYPES`. A name in that variable that matches no type is a warning: check its spelling against the `excubia.json` keys (`queueWait`, `notifications`, `logLevels`), or upgrade the app when the type is newer than it.
 
 ### Example admin account
 
