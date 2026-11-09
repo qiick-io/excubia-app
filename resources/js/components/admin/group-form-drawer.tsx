@@ -1,10 +1,12 @@
 import { useForm } from '@inertiajs/react';
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     RoleMultiSelect,
     withSelectedRoles,
 } from '@/components/admin/role-multi-select';
 import { UserMultiSelect } from '@/components/admin/user-multi-select';
+import { IdCheckboxGrid } from '@/components/settings/alert-filter-fields';
 import { Button } from '@/components/ui/button';
 import {
     DrawerBody,
@@ -31,12 +33,17 @@ const EMPTY_GROUP_FORM = {
     description: '',
     roles: [] as string[],
     users: [] as number[],
+    project_groups: [] as number[],
 };
 
 export type GroupFormDrawerProps = {
     editing: AdminGroupRow | null;
     /** Roles the current user may assign. */
     roles: AdminRoleRef[];
+    /** Project groups the group may be scoped to (#253). */
+    projectGroups?: { id: number; name: string }[];
+    /** Only admins change the project scope; the server enforces it too. */
+    canChangeProjectScope?: boolean;
     readOnly?: boolean;
     open?: boolean;
     onCancel?: () => void;
@@ -51,11 +58,14 @@ export type GroupFormDrawerProps = {
 export function GroupFormDrawer({
     editing,
     roles,
+    projectGroups = [],
+    canChangeProjectScope = false,
     readOnly = false,
     open = true,
     onCancel,
     onSuccess,
 }: GroupFormDrawerProps) {
+    const { t } = useTranslation();
     const form = useForm({ ...EMPTY_GROUP_FORM });
     // Only a super-admin changes their own access (#151); the server enforces it too.
     const isRolesLocked = editing !== null && !editing.can_change_roles;
@@ -73,6 +83,8 @@ export function GroupFormDrawer({
                 description: editing.description ?? '',
                 roles: editing.roles.map((role) => role.name),
                 users: editing.users?.map((user) => user.id) ?? [],
+                project_groups:
+                    editing.project_groups?.map((group) => group.id) ?? [],
             };
             form.setData(payload);
             form.setDefaults({ ...payload });
@@ -228,6 +240,29 @@ export function GroupFormDrawer({
                                 {form.errors.users}
                             </FieldError>
                         </Field>
+
+                        {projectGroups.length > 0 && (
+                            <IdCheckboxGrid
+                                id="group_project_groups"
+                                name="project_groups"
+                                label={t('groups.projectScope.label')}
+                                hint={
+                                    canChangeProjectScope
+                                        ? t('groups.projectScope.hint')
+                                        : t('groups.projectScope.adminsOnly')
+                                }
+                                options={projectGroups}
+                                selected={form.data.project_groups}
+                                onChange={(selected) =>
+                                    form.setData('project_groups', selected)
+                                }
+                                error={
+                                    form.errors.project_groups ??
+                                    form.errors['project_groups.0']
+                                }
+                                disabled={readOnly || !canChangeProjectScope}
+                            />
+                        )}
                     </FieldGroup>
                 </DrawerBody>
 

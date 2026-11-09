@@ -65,6 +65,8 @@ export type AdminGroupRow = {
     can_update: boolean;
     /** False on a group you belong to unless you are a super-admin (#151). */
     can_change_roles: boolean;
+    /** Project groups whose projects the members see (#253). */
+    project_groups?: { id: number; name: string }[];
     created_at: string;
     updated_at: string;
 };

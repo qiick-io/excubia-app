@@ -5,14 +5,15 @@ declare(strict_types=1);
 namespace App\Policies;
 
 use App\Enums\PermissionEnum;
-use App\Enums\ProjectVisibilityEnum;
 use App\Models\Project;
 use App\Models\User;
 use App\Services\EffectivePermissionResolverService;
 
 /**
  * Projects are listed with `can-show-projects` and created, edited, deleted and given push tokens
- * with `can-*-projects`. A project visible to admins only is hidden from everyone else. The
+ * with `can-*-projects`. Permissions say what, scope says where (#253): a project visible to
+ * admins only is hidden from everyone else, unless it sits in a project group linked to one of
+ * their user groups (Project::visibleTo() holds the rule). The
  * system project (#70) is never deleted and has no push token; only admins change visibility.
  * Its alert mutes and maintenance windows need `can-manage-alerts`.
  */
@@ -28,7 +29,7 @@ class ProjectPolicy
     public function view(User $actor, Project $project): bool
     {
         return $this->viewAny($actor)
-            && ($project->visibility === ProjectVisibilityEnum::Everyone || $this->permissions->isAdmin($actor));
+            && $project->isVisibleTo($actor);
     }
 
     public function create(User $actor): bool

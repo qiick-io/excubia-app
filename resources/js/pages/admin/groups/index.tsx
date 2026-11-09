@@ -66,10 +66,15 @@ export default function AdminGroupsIndex({
     groups: groupsProp,
     filters = {},
     roles,
+    projectGroups = [],
+    canChangeProjectScope = false,
 }: {
     groups: LaravelPaginated<AdminGroupRow> | Paginated<AdminGroupRow>;
     filters?: Filters;
     roles: AdminRoleRef[];
+    /** Project groups a group may be scoped to (#253). */
+    projectGroups?: { id: number; name: string }[];
+    canChangeProjectScope?: boolean;
 }) {
     const groups = normalizePaginated(groupsProp);
     const { t } = useTranslation();
@@ -370,6 +375,8 @@ export default function AdminGroupsIndex({
                 <GroupFormDrawer
                     editing={editing}
                     roles={roles}
+                    projectGroups={projectGroups}
+                    canChangeProjectScope={canChangeProjectScope}
                     open={drawerOpen}
                     readOnly={
                         editing

@@ -12,7 +12,8 @@ use Illuminate\Support\Carbon;
 use Spatie\Permission\Models\Role;
 
 /**
- * Named group of users that carries roles. Every member inherits the group's roles.
+ * Named group of users that carries roles. Every member inherits the group's roles, and also
+ * sees the projects of the project groups linked to the group (#253), admin-only ones included.
  *
  * @property int $id
  * @property string $name
@@ -39,5 +40,16 @@ class UserGroup extends Model
     public function roles(): BelongsToMany
     {
         return $this->belongsToMany(Role::class, 'user_group_role')->withTimestamps();
+    }
+
+    /**
+     * Project groups whose projects the members see (#253). The pivot has its own id for a
+     * later per-scope role.
+     *
+     * @return BelongsToMany<ProjectGroup, $this>
+     */
+    public function projectGroups(): BelongsToMany
+    {
+        return $this->belongsToMany(ProjectGroup::class, 'user_group_project_group')->withTimestamps();
     }
 }

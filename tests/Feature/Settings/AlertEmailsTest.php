@@ -12,7 +12,9 @@ use App\Models\AlertLog;
 use App\Models\AlertMute;
 use App\Models\MaintenanceWindow;
 use App\Models\Project;
+use App\Models\ProjectGroup;
 use App\Models\User;
+use App\Models\UserGroup;
 use App\Services\AlertDispatcherService;
 use App\Services\SettingsRepositoryService;
 use Database\Seeders\PermissionSeeder;
@@ -211,6 +213,22 @@ it('queues one email per subscriber whose filters take the alert and who can see
     Queue::fake();
     staleAlert($hidden);
     expect(queuedChannels())->toBe(['email:'.$admin->id]);
+});
+
+it('emails a member of a user group scoped to an admin-only project (#253)', function () {
+    Queue::fake();
+    $hidden = Project::factory()->create(['visibility' => ProjectVisibilityEnum::Admins]);
+    $member = subscribe(emailUser());
+    subscribe(emailUser());
+
+    $projectGroup = ProjectGroup::query()->create(['name' => 'Client A']);
+    $projectGroup->projects()->sync([$hidden->id]);
+    $userGroup = UserGroup::query()->create(['name' => 'Client A team']);
+    $userGroup->users()->sync([$member->id]);
+    $userGroup->projectGroups()->sync([$projectGroup->id]);
+
+    staleAlert($hidden);
+    expect(queuedChannels())->toBe(['email:'.$member->id]);
 });
 
 it('mails the alert in the user\'s locale and records the delivery per user', function () {

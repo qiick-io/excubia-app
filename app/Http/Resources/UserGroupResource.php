@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Resources;
 
+use App\Models\ProjectGroup;
 use App\Models\User;
 use App\Models\UserGroup;
 use App\Services\EffectivePermissionResolverService;
@@ -14,7 +15,8 @@ use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
 
 /**
- * A user group with its roles and members for the admin list and the group drawer.
+ * A user group with its roles, members and project scope (#253) for the admin list and the
+ * group drawer.
  *
  * @mixin UserGroup
  */
@@ -42,6 +44,10 @@ class UserGroupResource extends JsonResource
                 ->all(), []),
             'users' => $this->whenLoaded('users', fn (): array => $group->users
                 ->map(fn (User $user): array => ['id' => $user->id, 'name' => $user->name, 'email' => $user->email])
+                ->values()
+                ->all(), []),
+            'project_groups' => $this->whenLoaded('projectGroups', fn (): array => $group->projectGroups
+                ->map(fn (ProjectGroup $projectGroup): array => ['id' => $projectGroup->id, 'name' => $projectGroup->name])
                 ->values()
                 ->all(), []),
             'can_update' => $canUpdate,
