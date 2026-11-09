@@ -4,6 +4,8 @@ import {
     BarChart,
     CartesianGrid,
     Legend,
+    Line,
+    LineChart,
     ReferenceLine,
     ResponsiveContainer,
     Tooltip,
@@ -25,6 +27,18 @@ export type ChartMarker = {
     /** Short text drawn at the top of the line, so colour is not the only signal. */
     name: string;
 };
+
+/** The tooltip title of a bucket: its label through `formatLabel`, a number as is. */
+function bucketText(
+    value: unknown,
+    formatLabel?: (label: string) => string,
+): string {
+    if (typeof value === 'string') {
+        return formatLabel ? formatLabel(value) : value;
+    }
+
+    return typeof value === 'number' ? value.toLocaleString() : '';
+}
 
 export type ChartSeries = {
     key: string;
@@ -48,6 +62,7 @@ export function StackedBarChart({
     markers = [],
     formatLabel,
     formatValue,
+    totalLabel,
 }: {
     data: ({ label: string } & Record<string, number | string>)[];
     series: ChartSeries[];
@@ -57,6 +72,8 @@ export function StackedBarChart({
     formatLabel?: (label: string) => string;
     /** Axis and tooltip text of a value, for decimal series such as a cost; whole numbers otherwise. */
     formatValue?: (value: number) => string;
+    /** When set, the tooltip title adds the bucket's total under this name (#251). */
+    totalLabel?: string;
 }) {
     const order = series.map((item) => item.key);
     const last = order[order.length - 1];
@@ -106,14 +123,20 @@ export function StackedBarChart({
                         labelStyle={{
                             color: 'var(--color-popover-foreground)',
                         }}
-                        labelFormatter={
-                            formatLabel
-                                ? (value) =>
-                                      typeof value === 'string'
-                                          ? formatLabel(value)
-                                          : value
-                                : undefined
-                        }
+                        labelFormatter={(value, payload) => {
+                            const text = bucketText(value, formatLabel);
+
+                            if (totalLabel === undefined) {
+                                return text;
+                            }
+
+                            const total = payload.reduce(
+                                (sum, item) => sum + Number(item.value ?? 0),
+                                0,
+                            );
+
+                            return `${text} · ${totalLabel} ${formatValue ? formatValue(total) : total.toLocaleString()}`;
+                        }}
                         // Same order as the legend; text in a text token, not the series colour.
                         itemSorter={(item) =>
                             order.indexOf(String(item.dataKey))
@@ -170,6 +193,158 @@ export function StackedBarChart({
                         />
                     ))}
                 </BarChart>
+            </ResponsiveContainer>
+        </div>
+    );
+}
+
+/**
+ * Lines over the same buckets as StackedBarChart (#246), in its style: dashed grid, theme tokens,
+ * legend and tooltip in series order with text in a text token, deploy markers. A null value is
+ * a gap in the line, never a zero, so a bucket without data reads as missing.
+ */
+export function TimeLineChart({
+    data,
+    series,
+    label,
+    markers = [],
+    formatLabel,
+    formatValue,
+}: {
+    data: ({ label: string } & Record<string, number | string | null>)[];
+    series: ChartSeries[];
+    /** Accessible summary of what the chart shows. */
+    label: string;
+    markers?: ChartMarker[];
+    formatLabel?: (label: string) => string;
+    /** Axis and tooltip text of a value, such as a duration. */
+    formatValue: (value: number) => string;
+}) {
+    const order = series.map((item) => item.key);
+
+    return (
+        <div role="img" aria-label={label} className="h-full w-full">
+            <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={data}>
+                    <CartesianGrid
+                        strokeDasharray="3 3"
+                        vertical={false}
+                        stroke="var(--color-border)"
+                    />
+                    <XAxis
+                        dataKey="label"
+                        tick={{
+                            fontSize: 11,
+                            fill: 'var(--color-muted-foreground)',
+                        }}
+                        stroke="var(--color-border)"
+                        minTickGap={12}
+                        tickFormatter={formatLabel}
+                    />
+                    <YAxis
+                        tickFormatter={formatValue}
+                        tick={{
+                            fontSize: 11,
+                            fill: 'var(--color-muted-foreground)',
+                        }}
+                        stroke="var(--color-border)"
+                        width={64}
+                    />
+                    <Tooltip
+                        cursor={{ stroke: 'var(--color-border)' }}
+                        contentStyle={{
+                            background: 'var(--color-popover)',
+                            border: '1px solid var(--color-border)',
+                            borderRadius: 'var(--radius-md)',
+                            color: 'var(--color-popover-foreground)',
+                            fontSize: 12,
+                        }}
+                        labelStyle={{
+                            color: 'var(--color-popover-foreground)',
+                        }}
+                        labelFormatter={(value) =>
+                            bucketText(value, formatLabel)
+                        }
+                        itemSorter={(item) =>
+                            order.indexOf(String(item.dataKey))
+                        }
+                        itemStyle={{
+                            color: 'var(--color-popover-foreground)',
+                        }}
+                        formatter={(value) =>
+                            typeof value === 'number'
+                                ? formatValue(value)
+                                : value
+                        }
+                    />
+                    <Legend
+                        iconType="plainline"
+                        iconSize={12}
+                        itemSorter={(item) =>
+                            order.indexOf(String(item.dataKey))
+                        }
+                        formatter={(value) => (
+                            <span className="text-muted-foreground">
+                                {value}
+                            </span>
+                        )}
+                        wrapperStyle={{ fontSize: 12 }}
+                    />
+                    {series.map((item) => (
+                        <Line
+                            key={item.key}
+                            type="monotone"
+                            dataKey={item.key}
+                            name={item.label}
+                            stroke={item.color}
+                            strokeWidth={2}
+                            // A bucket between two gaps has no segment: a dot keeps it visible.
+                            dot={(dot: {
+                                cx?: number;
+                                cy?: number;
+                                index?: number;
+                            }) => {
+                                const index = dot.index ?? 0;
+                                const isIsolated =
+                                    (data[index - 1]?.[item.key] ?? null) ===
+                                        null &&
+                                    (data[index + 1]?.[item.key] ?? null) ===
+                                        null;
+
+                                return isIsolated &&
+                                    dot.cx !== undefined &&
+                                    dot.cy !== undefined ? (
+                                    <circle
+                                        key={`${item.key}-${index}`}
+                                        cx={dot.cx}
+                                        cy={dot.cy}
+                                        r={3}
+                                        fill={item.color}
+                                    />
+                                ) : (
+                                    <g key={`${item.key}-${index}`} />
+                                );
+                            }}
+                            activeDot={{ r: 4 }}
+                            connectNulls={false}
+                            isAnimationActive={false}
+                        />
+                    ))}
+                    {markers.map((marker) => (
+                        <ReferenceLine
+                            key={marker.at}
+                            x={marker.at}
+                            stroke="var(--color-primary)"
+                            strokeDasharray="4 3"
+                            label={{
+                                value: marker.name,
+                                position: 'insideTopLeft',
+                                fontSize: 11,
+                                fill: 'var(--color-foreground)',
+                            }}
+                        />
+                    ))}
+                </LineChart>
             </ResponsiveContainer>
         </div>
     );

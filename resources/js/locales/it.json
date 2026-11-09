@@ -1118,7 +1118,6 @@
         "allRoutes": "Tutte le route",
         "successful": "Riuscite",
         "serverErrors": "5xx",
-        "chartLabel": "Grafico a barre impilate delle richieste {{bucket}}: {{count}} richieste, {{errors}} errori server {{during}}.",
         "routes": "Route",
         "outgoingHttp": "HTTP in uscita",
         "slowQueries": "Query lente",
@@ -1191,7 +1190,7 @@
         "deployMarkersHint": "Le linee tratteggiate segnano i deploy.",
         "deploysLabel_one": "{{count}} deploy: {{releases}}.",
         "deploysLabel_other": "{{count}} deploy: {{releases}}.",
-        "requestsOverTimeDescription": "Richieste riuscite ed errori server (5xx) {{bucket}} {{during}}.",
+        "requestsOverTimeDescription": "Richieste per stato: 1/2/3xx, 4xx e 5xx {{bucket}} {{during}}.",
         "requestsOverTime": "Richieste nel tempo",
         "octane": "Worker Octane",
         "octaneDescription": "Per server e tipo di worker. La memoria è letta dopo ogni richiesta; una crescita oltre {{threshold}} MB dalla prima richiesta di un worker può essere un leak.",
@@ -1250,7 +1249,15 @@
         "pennantActiveInactive": "Attive / inattive",
         "pennantActiveShare": "Quota attiva",
         "pennantResolved": "Risoluzioni",
-        "pennantUnknown": "Non definite"
+        "pennantUnknown": "Non definite",
+        "statusOk": "1/2/3xx",
+        "statusClientErrors": "4xx",
+        "statusServerErrors": "5xx",
+        "total": "Totale",
+        "duration": "Durata",
+        "statusChartLabel": "Grafico a barre impilate delle richieste {{bucket}}: {{count}} richieste {{during}}, {{ok}} 1/2/3xx, {{clientErrors}} 4xx e {{serverErrors}} 5xx.",
+        "durationSummary": "Media e p95 per intervallo. Nel periodo: media {{average}}, p95 {{p95}}, più lenta {{max}}.",
+        "durationChartLabel": "Grafico a linee della durata media e p95 delle richieste {{bucket}} {{during}}: media {{average}}, p95 {{p95}}, più lenta {{max}}."
     },
     "exceptions": {
         "emptyTitle": "Nessuna eccezione",

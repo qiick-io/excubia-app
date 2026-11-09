@@ -123,10 +123,7 @@ class ProjectRuntimeService
             'skippedAggregates' => $project->skipped_runtime_aggregates,
             'requests' => [
                 ...$this->totals($requests),
-                'timeline' => array_map(
-                    fn (array $point): array => ['at' => $point['at'], 'ok' => (int) $point['count'] - (int) $point['errors'], 'errors' => $point['errors']],
-                    $this->timeline($this->window($project, RuntimeTypeEnum::Request, $from), $range, $now),
-                ),
+                'timeline' => $this->requestTimeline($project, $from, $range, $now),
                 'routes' => $this->timedTable($requests, ['route', 'method']),
             ],
             'slowQueries' => $this->timedTable($of(RuntimeTypeEnum::SlowQuery), ['sql', 'connection']),
@@ -175,6 +172,66 @@ class ProjectRuntimeService
     {
         /** @var list<array{at: string, count: int, errors: int}> */
         return $this->timeSeries->points($query, 'bucket', ['count' => '1.0 * count / sample_rate', 'errors' => '1.0 * error_count / sample_rate'], $range, $now);
+    }
+
+    /**
+     * Requests per bucket of the range (#251, #246): estimated 1/2/3xx, 4xx and 5xx counts from
+     * each series' `statusClass`, and the average and p95 duration of the bucket. The average is
+     * the recorded total over the recorded count (sampling cancels out); p95 comes from the
+     * bucket's summed histograms like percentiles(), capped at the bucket's slowest request.
+     * A bucket without requests has null durations, so the chart draws a gap, not a zero.
+     *
+     * @return list<array{at: string, ok: int, clientErrors: int, serverErrors: int, averageMs: float|null, p95Ms: float|null}>
+     */
+    private function requestTimeline(Project $project, CarbonImmutable $from, TimeRangeEnum $range, CarbonImmutable $now): array
+    {
+        $query = $this->window($project, RuntimeTypeEnum::Request, $from);
+        $driver = (new RuntimeAggregate)->getConnection()->getDriverName();
+        $statusClass = $this->jsonText($driver, 'dimensions', 'statusClass');
+        $sums = [
+            'count' => '1.0 * count / sample_rate',
+            'clientErrors' => "case when {$statusClass} = '4xx' then 1.0 * count / sample_rate else 0 end",
+            'serverErrors' => "case when {$statusClass} = '5xx' then 1.0 * count / sample_rate else 0 end",
+            'recordedCount' => 'count',
+            'recordedMs' => 'coalesce(total_ms, 0)',
+        ];
+
+        foreach (self::HISTOGRAM_INDEXES as $i) {
+            $sums['histogram'.$i] = 'coalesce('.$this->jsonNumber($driver, 'histogram', $i).', 0) * 1000 / sample_rate';
+        }
+
+        $points = $this->timeSeries->points($query, 'bucket', $sums, $range, $now, maxes: ['maxMs' => 'max_ms']);
+
+        return array_map(function (array $point): array {
+            $recordedCount = (int) $point['recordedCount'];
+            // Histogram counts were scaled by 1000 before rounding, so sampled fractions survive.
+            $histogram = array_map(fn (int $i): float => (int) $point['histogram'.$i] / 1000, self::HISTOGRAM_INDEXES);
+
+            return [
+                'at' => (string) $point['at'],
+                'ok' => max(0, (int) $point['count'] - (int) $point['clientErrors'] - (int) $point['serverErrors']),
+                'clientErrors' => (int) $point['clientErrors'],
+                'serverErrors' => (int) $point['serverErrors'],
+                'averageMs' => $recordedCount > 0 ? round((int) $point['recordedMs'] / $recordedCount, 1) : null,
+                'p95Ms' => $recordedCount > 0 ? $this->histogramPercentiles($histogram, (float) $point['maxMs'])['p95'] : null,
+            ];
+        }, $points);
+    }
+
+    /**
+     * Text inside a JSON column as SQL (a dimension such as `statusClass`); missing is NULL.
+     *
+     * @param  'dimensions'  $column
+     * @param  literal-string  $key
+     * @return literal-string
+     */
+    private function jsonText(string $driver, string $column, string $key): string
+    {
+        return match ($driver) {
+            'mysql', 'mariadb' => "json_unquote(json_extract({$column}, '$.\"{$key}\"'))",
+            'pgsql' => "({$column}->>'{$key}')",
+            default => "json_extract({$column}, '$.\"{$key}\"')",
+        };
     }
 
     /**
@@ -324,8 +381,20 @@ class ProjectRuntimeService
             }
         }
 
+        return $this->histogramPercentiles($buckets, (float) $withHistogram->max('maxMs'));
+    }
+
+    /**
+     * p50, p95 and p99 of summed histogram buckets (core `$defs.histogram`): linear interpolation
+     * inside the bucket that holds the rank, never above `$max`, the slowest duration. All null
+     * when the buckets are empty.
+     *
+     * @param  array<int, float>  $buckets  by HISTOGRAM_INDEXES
+     * @return array{p50: float|null, p95: float|null, p99: float|null}
+     */
+    private function histogramPercentiles(array $buckets, float $max): array
+    {
         $total = array_sum($buckets);
-        $max = (float) $withHistogram->max('maxMs');
         $result = ['p50' => null, 'p95' => null, 'p99' => null];
 
         if ($total <= 0) {
@@ -344,7 +413,7 @@ class ProjectRuntimeService
                     continue;
                 }
 
-                $lower = $i === 0 ? 0 : self::HISTOGRAM_BOUNDS[$i - 1];
+                $lower = $i === 0 ? 0 : (self::HISTOGRAM_BOUNDS[$i - 1] ?? 0);
                 $upper = self::HISTOGRAM_BOUNDS[$i] ?? max($max, 10000);
                 $result[$key] = round(min($lower + ($upper - $lower) * ($rank - $previous) / $value, $max), 1);
 

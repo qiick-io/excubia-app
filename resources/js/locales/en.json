@@ -1118,7 +1118,6 @@
         "allRoutes": "All routes",
         "successful": "Successful",
         "serverErrors": "5xx",
-        "chartLabel": "Stacked bar chart of requests {{bucket}}: {{count}} requests, {{errors}} server errors {{during}}.",
         "routes": "Routes",
         "outgoingHttp": "Outgoing HTTP",
         "slowQueries": "Slow queries",
@@ -1191,7 +1190,7 @@
         "deployMarkersHint": "Dashed lines mark deploys.",
         "deploysLabel_one": "{{count}} deploy: {{releases}}.",
         "deploysLabel_other": "{{count}} deploys: {{releases}}.",
-        "requestsOverTimeDescription": "Successful requests and server errors (5xx) {{bucket}} {{during}}.",
+        "requestsOverTimeDescription": "Requests by status: 1/2/3xx, 4xx and 5xx {{bucket}} {{during}}.",
         "requestsOverTime": "Requests over time",
         "octane": "Octane workers",
         "octaneDescription": "Per server and worker type. Memory is read after each request; growth above {{threshold}} MB since a worker's first request may be a leak.",
@@ -1250,7 +1249,15 @@
         "pennantActiveInactive": "Active / inactive",
         "pennantActiveShare": "Active share",
         "pennantResolved": "Resolutions",
-        "pennantUnknown": "Undefined"
+        "pennantUnknown": "Undefined",
+        "statusOk": "1/2/3xx",
+        "statusClientErrors": "4xx",
+        "statusServerErrors": "5xx",
+        "total": "Total",
+        "duration": "Duration",
+        "statusChartLabel": "Stacked bar chart of requests {{bucket}}: {{count}} requests {{during}}, {{ok}} 1/2/3xx, {{clientErrors}} 4xx and {{serverErrors}} 5xx.",
+        "durationSummary": "Average and p95 per bucket. Over the range: average {{average}}, p95 {{p95}}, slowest {{max}}.",
+        "durationChartLabel": "Line chart of the average and p95 request duration {{bucket}} {{during}}: average {{average}}, p95 {{p95}}, slowest {{max}}."
     },
     "exceptions": {
         "emptyTitle": "No exceptions",

@@ -46,6 +46,28 @@ function rangeRequest(Project $project, string $bucket, int $count, int $errors 
 }
 
 /**
+ * One request series of a status class with a latency histogram (#251, #246).
+ *
+ * @param  list<int>  $histogram  counts per core histogram bucket (≤5, ≤10, ≤25, ≤50, ≤100 ms, …)
+ */
+function rangeStatusRequest(Project $project, string $bucket, string $statusClass, int $count, int $totalMs, int $maxMs, array $histogram, float $sampleRate = 1): void
+{
+    RuntimeAggregate::query()->create([
+        'project_id' => $project->id,
+        'type' => 'request',
+        'bucket' => $bucket,
+        'sample_rate' => $sampleRate,
+        'dimension_key' => hash('sha256', $bucket.$statusClass.$sampleRate),
+        'dimensions' => ['route' => 'home', 'method' => 'GET', 'statusClass' => $statusClass],
+        'count' => $count,
+        'error_count' => $statusClass === '5xx' ? $count : 0,
+        'total_ms' => $totalMs,
+        'max_ms' => $maxMs,
+        'histogram' => array_pad($histogram, 12, 0),
+    ]);
+}
+
+/**
  * An exceptions group as excubia-core pushes it.
  *
  * @return array<string, mixed>
@@ -96,11 +118,34 @@ it('sums each bucket in SQL across minutes and sample rates and keeps the totals
         ->assertInertia(fn (Assert $page) => $page
             ->where('runtime.requests.count', 27)
             ->where('runtime.requests.errors', 10)
-            ->where('runtime.requests.timeline.10', ['at' => '2026-11-01T00:00:00Z', 'ok' => 10, 'errors' => 10])
+            ->where('runtime.requests.timeline.10', ['at' => '2026-11-01T00:00:00Z', 'ok' => 10, 'clientErrors' => 0, 'serverErrors' => 10, 'averageMs' => 10, 'p95Ms' => null])
             ->where('runtime.requests.timeline.12.ok', 7));
 
     $this->get(route('projects.view', ['shop', 'runtime', 'range' => '1h']))
         ->assertInertia(fn (Assert $page) => $page->where('runtime.requests.count', 0));
+});
+
+it('splits each bucket into 1/2/3xx, 4xx and 5xx with the average and p95 duration (#251, #246)', function () {
+    // The 12:00 bucket of the 24 h range: 60 successful, 20 client and 5 server errors (estimated).
+    rangeStatusRequest($this->project, '2026-11-05 12:01:00', '2xx', 40, 1600, 90, [0, 0, 20, 20]);
+    rangeStatusRequest($this->project, '2026-11-05 12:02:00', '3xx', 20, 200, 10, [0, 20]);
+    // Sampled at 0.5: 10 recorded 4xx stand for 20.
+    rangeStatusRequest($this->project, '2026-11-05 12:03:00', '4xx', 10, 100, 10, [0, 10], 0.5);
+    rangeStatusRequest($this->project, '2026-11-05 12:04:00', '5xx', 5, 4000, 900, [0, 0, 0, 0, 0, 0, 0, 5]);
+
+    $this->get(route('projects.view', ['shop', 'runtime', 'range' => '24h']))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('runtime.requests.timeline.24.ok', 60)
+            ->where('runtime.requests.timeline.24.clientErrors', 20)
+            ->where('runtime.requests.timeline.24.serverErrors', 5)
+            // (1600 + 200 + 100 + 4000) ms over 75 recorded requests.
+            ->where('runtime.requests.timeline.24.averageMs', 78.7)
+            // 85 estimated requests, cumulative 40 (≤10 ms), 60 (≤25), 80 (≤50), 85 (≤1000): rank
+            // 80.75 lies in the 500–1000 ms bucket, 0.75 of its 5 requests in: 500 + 500 × 0.15.
+            ->where('runtime.requests.timeline.24.p95Ms', 575)
+            // An hour without requests is a gap, not a zero.
+            ->where('runtime.requests.timeline.23.averageMs', null)
+            ->where('runtime.requests.timeline.23.p95Ms', null));
 });
 
 it('marks the deploys of the range on the bucket they fall in', function () {

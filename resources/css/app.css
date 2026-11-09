@@ -29,12 +29,15 @@
 }
 
 /*
- * Requests chart (successful vs 5xx): errors take the critical severity colour, successes a
- * blue that stays apart from it in light and dark.
+ * Requests chart (1/2/3xx, 4xx, 5xx; #251): 5xx take the critical severity colour, 4xx the high
+ * (warning) one, successes a blue that stays apart from both in light and dark. The duration
+ * chart (#246) draws the average in that blue and p95 in a chart token apart from it.
  */
 :root {
     --runtime-chart-ok: var(--color-blue-600);
+    --runtime-chart-client-error: var(--severity-high);
     --runtime-chart-error: var(--severity-critical);
+    --runtime-chart-p95: var(--chart-3);
 }
 
 .dark {
