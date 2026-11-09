@@ -4,6 +4,7 @@ use App\Http\Middleware\EnsureTwoFactorIsEnabledMiddleware;
 use App\Http\Middleware\EnsureUserIsActiveMiddleware;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\RecordIngestRejectionMiddleware;
 use App\Http\Middleware\SecurityHeadersMiddleware;
 use App\Http\Middleware\SetLocaleMiddleware;
 use Illuminate\Foundation\Application;
@@ -11,6 +12,7 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Middleware\ThrottleRequests;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -27,6 +29,11 @@ return Application::configure(basePath: dirname(__DIR__))
         // Pushed reports are stored as sent, so their strings are neither trimmed nor nulled.
         $middleware->trimStrings(except: [fn (Request $request) => $request->is('api/*')]);
         $middleware->convertEmptyStringsToNull(except: [fn (Request $request) => $request->is('api/*')]);
+
+        // The throttle is in Laravel's priority list and would be sorted ahead of the rejection
+        // recorder, so its 429s were never counted (#244). Rate-limited pushes still cost one
+        // counter upsert per endpoint, status, reason and hour, never a row per request.
+        $middleware->prependToPriorityList(ThrottleRequests::class, RecordIngestRejectionMiddleware::class);
 
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state', 'locale', 'accessibility_high_contrast', 'accessibility_reduce_motion']);
 
