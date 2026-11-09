@@ -1041,6 +1041,16 @@
             "pending": "Runtime stored before the hourly rollups is missing from the dashboard totals: run the backfill once.",
             "done": "The hourly rollups cover the stored runtime."
         },
+        "selfMonitoring": {
+            "title": "Self-monitoring",
+            "off": "Self-monitoring is off (EXCUBIA_SELF_MONITORING=false).",
+            "default": "The system project records every runtime type the installed excubia-core supports. Choose them with EXCUBIA_SELF_MONITORING_TYPES.",
+            "environment": "The system project records the runtime types of EXCUBIA_SELF_MONITORING_TYPES.",
+            "enabledTypes": "On",
+            "disabledTypes": "Off",
+            "sampled": "{{type}} (sampled {{percent}}%)",
+            "unknown": "Unknown names in EXCUBIA_SELF_MONITORING_TYPES: {{names}}"
+        },
         "version": {
             "title": "Version and compatibility",
             "app": "Excubia App",

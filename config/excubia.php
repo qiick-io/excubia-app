@@ -76,6 +76,12 @@ return [
     // stays in this database, masked by excubia-core like any project's.
     'self_monitoring' => (bool) env('EXCUBIA_SELF_MONITORING', true),
 
+    // The runtime types the system project records (#219), comma-separated `excubia.json` keys
+    // (`requests,queueWait,server,health`) or `all`. Empty: every type the installed excubia-core
+    // and this app support, with `cache` sampled (SelfMonitoringService). Kept out of the shipped
+    // `resources/excubia/self-monitoring.json`, so an upgrade never resets it.
+    'self_monitoring_types' => env('EXCUBIA_SELF_MONITORING_TYPES'),
+
     // Reverse proxies whose X-Forwarded-* headers are trusted (#116), comma-separated IPs or
     // CIDR ranges, or `*` for any. Empty trusts none. Set it when a TLS proxy sits in front of
     // the app (Docker), so URLs and push snippets use https and the client IP is the real one.

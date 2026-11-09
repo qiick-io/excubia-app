@@ -37,6 +37,11 @@ upgrade from the version before (see [docs/self-hosting.md](docs/self-hosting.md
 
 - The app runs on qiick/excubia-core 1.0.0-beta.3 (was beta.2, #221), so self-monitoring can produce the `health` runtime type for the system project. Settings → System shows the new core version.
 
+### Fixed
+
+- **Self-monitoring runtime types** (#219): the system project's runtime types are no longer limited to the five defaults of the shipped `resources/excubia/self-monitoring.json`. By default it records every type the installed excubia-core collects and the app stores (`cache` sampled at 10 %); `EXCUBIA_SELF_MONITORING_TYPES` (comma-separated `excubia.json` keys, or `all`) chooses them in `.env`, so upgrades keep the choice. Settings → System shows them under **Self-monitoring** and warns about unknown names.
+- **Self-monitoring server and health samples** (#220): `excubia:system-telemetry` now takes this machine's `server` sample every minute and the core's `health` samples at most once a minute, through the same core services as `excubia:push-runtime`, so the system project has a Servers row and the Live health card.
+
 ### Security
 
 - Security review before the beta (#51): `docs/SECURITY-MODEL.md` (every data flow: what is received, stored, kept and who sees it) and the supported 1.x versions in `SECURITY.md`. Fixed: the push rate limit is keyed by project or IP instead of the presented token; alert deliveries refuse IPv6 and IPv4-mapped private addresses and hosts that do not resolve, connect to the checked address, and never quote the URL in errors; the Slack incoming-webhook URL is stored encrypted and write-only; evidence links must be `http(s)`; the weekly digest escapes Markdown from pushed strings; the session cookie is `Secure` by default when `APP_URL` is https. A test walks every named route as a reader and as a non-admin user with every permission.
