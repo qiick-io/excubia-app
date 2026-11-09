@@ -46,4 +46,12 @@ return [
         'Ai\\Agents' => 'Agent',
         'Ai\\Tools' => 'Tool',
     ],
+
+    // Thin controllers (app-ui v0.2.0): existing debt, a ratchet. Lower an entry when the
+    // controller shrinks; never raise it.
+    'controllerPublicMethods' => [
+        'App\Http\Controllers\ProjectController' => 6,
+        'App\Http\Controllers\RoleController' => 6,
+        'App\Http\Controllers\UserController' => 6,
+    ],
 ];
