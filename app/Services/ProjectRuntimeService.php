@@ -130,6 +130,11 @@ class ProjectRuntimeService
             ],
             'slowQueries' => $this->timedTable($of(RuntimeTypeEnum::SlowQuery), ['sql', 'connection']),
             'jobs' => $this->timedTable($of(RuntimeTypeEnum::Job), ['job', 'queue']),
+            // Processed vs failed per bucket (#250); `released` attempts are not in core's payload.
+            'jobTimeline' => $this->timeSeries->points($this->window($project, RuntimeTypeEnum::Job, $range->from, $range->until), 'bucket', [
+                'processed' => "case when {$this->jsonText($this->driver(), 'dimensions', 'outcome')} = 'failed' then 0 else 1.0 * count / sample_rate end",
+                'failed' => "case when {$this->jsonText($this->driver(), 'dimensions', 'outcome')} = 'failed' then 1.0 * count / sample_rate else 0 end",
+            ], $range),
             'scheduledTasks' => $this->timedTable($of(RuntimeTypeEnum::ScheduledTask), ['task']),
             'outgoingHttp' => $this->timedTable($of(RuntimeTypeEnum::OutgoingHttp), ['host']),
             'queueWait' => $this->timedTable($of(RuntimeTypeEnum::QueueWait), ['job', 'queue']),
@@ -190,8 +195,7 @@ class ProjectRuntimeService
     private function requestTimeline(Project $project, TimeRangeData $range): array
     {
         $query = $this->window($project, RuntimeTypeEnum::Request, $range->from, $range->until);
-        $driver = (new RuntimeAggregate)->getConnection()->getDriverName();
-        $statusClass = $this->jsonText($driver, 'dimensions', 'statusClass');
+        $statusClass = $this->jsonText($this->driver(), 'dimensions', 'statusClass');
         $sums = [
             'count' => '1.0 * count / sample_rate',
             'clientErrors' => "case when {$statusClass} = '4xx' then 1.0 * count / sample_rate else 0 end",
@@ -201,7 +205,7 @@ class ProjectRuntimeService
         ];
 
         foreach (self::HISTOGRAM_INDEXES as $i) {
-            $sums['histogram'.$i] = 'coalesce('.$this->jsonNumber($driver, 'histogram', $i).', 0) * 1000 / sample_rate';
+            $sums['histogram'.$i] = 'coalesce('.$this->jsonNumber($this->driver(), 'histogram', $i).', 0) * 1000 / sample_rate';
         }
 
         $points = $this->timeSeries->points($query, 'bucket', $sums, $range, maxes: ['maxMs' => 'max_ms']);
@@ -220,6 +224,12 @@ class ProjectRuntimeService
                 'p95Ms' => $recordedCount > 0 ? $this->histogramPercentiles($histogram, (float) $point['maxMs'])['p95'] : null,
             ];
         }, $points);
+    }
+
+    /** The database driver of the runtime tables, for the JSON expressions. */
+    private function driver(): string
+    {
+        return (new RuntimeAggregate)->getConnection()->getDriverName();
     }
 
     /**

@@ -66,6 +66,35 @@ class ProjectTelemetryService
     }
 
     /**
+     * The exceptions of the overview's Application section (#250): occurrences of all groups per
+     * bucket of the range, and the five groups seen most in it.
+     *
+     * @return array{timeline: list<array{at: string, count: int}>, top: list<array<string, mixed>>}
+     */
+    public function exceptionsOverview(Project $project, TimeRangeData $range): array
+    {
+        /** @var list<array{at: string, count: int}> $timeline */
+        $timeline = $this->timeSeries->points(
+            ExceptionOccurrence::query()
+                ->whereIn('exception_group_id', $project->exceptionGroups()->select('id'))
+                ->where('bucket', '>=', $range->from)
+                ->where('bucket', '<=', $range->until)
+                ->toBase(),
+            'bucket',
+            ['count' => 'count'],
+            $range,
+        );
+        $top = array_values(collect($this->exceptions($project, $range))
+            ->filter(fn (array $group): bool => $group['range_count'] > 0)
+            ->sortByDesc('range_count')
+            ->take(5)
+            ->map(fn (array $group): array => array_diff_key($group, ['timeline' => true]))
+            ->all());
+
+        return ['timeline' => $timeline, 'top' => $top];
+    }
+
+    /**
      * The scheduled tasks (#110) with their estimated runs per outcome in the range, and the runs
      * of all tasks per bucket and outcome for the chart.
      *

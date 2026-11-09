@@ -43,7 +43,8 @@ use Inertia\Response;
  * Project page (`/projects/{slug}`): the findings, health summary, licenses and upgrade plan of
  * the latest report, and the summaries of the reports kept in the history. The system project
  * (#70) can be refreshed from here. The runtime, AI (#129), exceptions and schedule tabs cover
- * the time range of `?range=` (#113); the overview keeps the default range and every exception group.
+ * the time range of `?range=` (#113); the overview's Application section (#250) too, while its
+ * attention list keeps every exception group.
  */
 class ProjectReportController extends Controller
 {
@@ -68,7 +69,8 @@ class ProjectReportController extends Controller
 
         // Loaded by the first prop that needs it, so the poll does not read the report.
         $report = fn (): ?HealthReport => $project->loadMissing('latestReport')->latestReport;
-        $hasRange = in_array($view, self::RANGE_VIEWS, true);
+        // The overview's Application section (#250) follows `?range=` too.
+        $hasRange = $view === null || in_array($view, self::RANGE_VIEWS, true);
         $now = CarbonImmutable::instance(Date::now());
         // A custom span (`?from=&to=`, #247) is bounded by the runtime retention and its rows.
         $range = $hasRange
@@ -129,6 +131,8 @@ class ProjectReportController extends Controller
             // AI usage and estimated cost (#129), only on its tab.
             'ai' => fn (): ?array => $view === 'ai' ? app(AiUsageService::class)->summary($project, $range) : null,
             'exceptions' => fn (): array => $telemetry->exceptions($project, $view === 'exceptions' ? $range : null),
+            // Exceptions of the overview's Application section (#250).
+            'exceptionsOverview' => fn (): ?array => $view === null ? $telemetry->exceptionsOverview($project, $range) : null,
             // Tells "none in this range" from "none yet" on the Exceptions tab.
             'hasExceptions' => fn (): bool => $view === 'exceptions' && $project->exceptionGroups()->exists(),
             // Schedule inventory, status and runs (#110), only on its tab.

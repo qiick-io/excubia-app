@@ -30,6 +30,7 @@ import { EmptyStatus } from '@/components/empty-status';
 import { DataTableToolbar } from '@/components/admin/data-table-toolbar';
 import { PageLayout } from '@/components/layout/page-layout';
 import { AiUsageView } from '@/components/reports/ai-usage-view';
+import { ApplicationSection } from '@/components/reports/application-section';
 import { AlertsView } from '@/components/reports/alerts-view';
 import {
     CHECK_CATEGORIES,
@@ -116,6 +117,7 @@ import type {
     BreadcrumbItem,
     CheckCategory,
     ExceptionGroupRow,
+    ExceptionsOverview,
     HealthReportBody,
     HealthReportSummary,
     IssueRow,
@@ -169,6 +171,7 @@ export default function ProjectShow({
     runtime = null,
     ai = null,
     exceptions = [],
+    exceptionsOverview = null,
     hasExceptions = false,
     schedule = [],
     scheduleTimeline = [],
@@ -187,6 +190,8 @@ export default function ProjectShow({
     /** AI usage and estimated cost (#129), on the AI tab only. */
     ai?: AiUsageSummary | null;
     exceptions?: ExceptionGroupRow[];
+    /** Exceptions of the overview's Application section (#250). */
+    exceptionsOverview?: ExceptionsOverview | null;
     hasExceptions?: boolean;
     /** Scheduled tasks and their status (#110), on the Schedule tab only. */
     schedule?: ScheduledTaskRow[];
@@ -338,6 +343,7 @@ export default function ProjectShow({
                             fixes={findingFixes}
                             runtime={runtime}
                             exceptions={exceptions}
+                            exceptionsOverview={exceptionsOverview}
                         />
                     )}
                 </PageLayout>
@@ -460,6 +466,7 @@ function OverviewView({
     fixes,
     runtime,
     exceptions,
+    exceptionsOverview,
 }: {
     project: ProjectRow;
     latest: HealthReportSummary;
@@ -472,6 +479,7 @@ function OverviewView({
     fixes: Record<string, FindingFix>;
     runtime: RuntimeSummary | null;
     exceptions: ExceptionGroupRow[];
+    exceptionsOverview: ExceptionsOverview | null;
 }) {
     const { t, i18n } = useTranslation();
 
@@ -738,6 +746,12 @@ function OverviewView({
                     />
                 </section>
             ) : null}
+
+            <ApplicationSection
+                slug={project.slug}
+                runtime={runtime}
+                exceptions={exceptionsOverview}
+            />
 
             {/* The checks list is long: the runtimes card keeps its own height (#194). */}
             <section className="grid grid-cols-1 items-start gap-4 xl:grid-cols-12">

@@ -1969,5 +1969,25 @@
         "viewRoutes": "View routes",
         "viewModels": "View models",
         "viewTasks": "View tasks"
+    },
+    "application": {
+        "title": "Application",
+        "exceptions": "Exceptions",
+        "exceptionsDescription": "{{formattedCount}} occurrences {{during}}, {{bucket}}.",
+        "occurrences": "Occurrences",
+        "topExceptions": "Seen most",
+        "viewExceptions": "View exceptions",
+        "exceptionsChartLabel": "Bar chart of exception occurrences {{bucket}}: {{count}} {{during}}.",
+        "routes": "Routes",
+        "routesDescription": "The slowest routes by p95 and the routes with the most server errors {{during}}.",
+        "slowestRoutes": "Slowest (p95)",
+        "failingRoutes": "Most 5xx",
+        "noFailingRoutes": "No server errors in this range.",
+        "jobs": "Jobs",
+        "jobsDescription": "{{processed}} processed and {{failed}} failed {{during}}, {{bucket}}.",
+        "processed": "Processed",
+        "failed": "Failed",
+        "viewJobs": "View jobs",
+        "jobsChartLabel": "Stacked bar chart of jobs {{bucket}}: {{processed}} processed and {{failed}} failed {{during}}."
     }
 }
