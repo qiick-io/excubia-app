@@ -64,7 +64,7 @@ class SelfMonitoringService
     }
 
     /**
-     * The shipped configuration with the runtime types of this install (runtimeConfiguration()).
+     * The shipped configuration; its runtime types are replaced by runtimeConfiguration().
      * Null when the shipped file is invalid.
      */
     public function configuration(Application $application): ?ExcubiaConfigurationData
