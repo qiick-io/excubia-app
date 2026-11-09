@@ -11,6 +11,7 @@ use App\Http\Controllers\Settings\Concerns\LogsProjectSettingsUpdateTrait;
 use App\Http\Requests\Settings\UpdateProjectIntegrationsSettingsRequest;
 use App\Jobs\DeliverAlertJob;
 use App\Models\Project;
+use App\Models\ProjectGroup;
 use App\Services\AlertDispatcherService;
 use App\Services\SettingsRepositoryService;
 use Illuminate\Http\RedirectResponse;
@@ -61,6 +62,7 @@ class ProjectIntegrationsSettingsController extends Controller
             'events' => AlertEventEnum::selectableValues(),
             'severities' => SeverityEnum::values(),
             'projects' => Project::query()->visibleTo($request->user())->orderBy('name')->get(['id', 'name'])->map(fn (Project $project): array => ['id' => $project->id, 'name' => $project->name])->all(),
+            'projectGroups' => ProjectGroup::query()->orderBy('name')->get(['id', 'name'])->map(fn (ProjectGroup $projectGroup): array => ['id' => $projectGroup->id, 'name' => $projectGroup->name])->all(),
         ]);
     }
 

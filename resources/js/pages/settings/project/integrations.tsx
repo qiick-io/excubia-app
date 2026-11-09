@@ -9,6 +9,7 @@ import AlertFilterFields from '@/components/settings/alert-filter-fields';
 import type {
     AlertFilter,
     AlertFilterProject,
+    AlertFilterProjectGroup,
 } from '@/components/settings/alert-filter-fields';
 import { Button } from '@/components/ui/button';
 import {
@@ -76,11 +77,13 @@ export default function ProjectIntegrationsSettings({
     events,
     severities,
     projects,
+    projectGroups,
 }: {
     project: IntegrationsSettings;
     events: string[];
     severities: string[];
     projects: AlertFilterProject[];
+    projectGroups: AlertFilterProjectGroup[];
 }) {
     const { t } = useTranslation();
     const [form, setForm] = useState({
@@ -131,6 +134,7 @@ export default function ProjectIntegrationsSettings({
             events={events}
             severities={severities}
             projects={projects}
+            projectGroups={projectGroups}
             errors={errors}
         />
     );

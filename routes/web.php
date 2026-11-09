@@ -11,6 +11,7 @@ use App\Http\Controllers\JobMonitorController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\ProjectAlertsController;
 use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\ProjectGroupController;
 use App\Http\Controllers\ProjectReportController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SystemHealthController;
@@ -43,6 +44,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Projects are created and edited in a drawer on the list page.
     Route::resource('projects', ProjectController::class)->only(['index', 'store', 'update', 'destroy']);
+    Route::resource('project-groups', ProjectGroupController::class)->only(['index', 'store', 'update', 'destroy']);
     Route::get('projects/{project:slug}', [ProjectReportController::class, 'show'])->name('projects.show');
     // The project's tabs as their own URLs, so links, back and bookmarks work.
     Route::get('projects/{project:slug}/{view}', [ProjectReportController::class, 'show'])

@@ -181,7 +181,7 @@ it('lets a user subscribe to alert emails with their own filters, limited to the
     ])->assertRedirect(route('profile.edit'));
 
     expect($reader->fresh()->has_alert_emails)->toBeTrue()
-        ->and($reader->fresh()->alert_email_filters)->toEqual(['minimum_severity' => 'medium', 'event_types' => ['project.stale'], 'project_ids' => [$public->id]]);
+        ->and($reader->fresh()->alert_email_filters)->toEqual(['minimum_severity' => 'medium', 'event_types' => ['project.stale'], 'project_ids' => [$public->id], 'project_group_ids' => []]);
 
     // Users who cannot see projects have no subscription.
     Role::create(['name' => 'nobody']);

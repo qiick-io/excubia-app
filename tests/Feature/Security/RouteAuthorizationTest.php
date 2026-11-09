@@ -16,6 +16,7 @@ use App\Models\ExceptionGroup;
 use App\Models\Finding;
 use App\Models\MaintenanceWindow;
 use App\Models\Project;
+use App\Models\ProjectGroup;
 use App\Models\User;
 use App\Models\UserGroup;
 use Database\Seeders\PermissionSeeder;
@@ -91,6 +92,8 @@ beforeEach(function () {
         'title' => 'Admin chat about '.HIDDEN_PROJECT_NAME,
     ]);
     $this->group = UserGroup::query()->create(['name' => 'Ops']);
+    $this->projectGroup = ProjectGroup::query()->create(['name' => 'Vault clients']);
+    $this->projectGroup->projects()->attach($this->hidden->id);
     $this->customRole = Role::query()->create(['name' => 'auditor', 'guard_name' => 'web']);
 });
 
@@ -147,6 +150,7 @@ function hiddenTargetUrl(array $entry, Project $routeProject): string
         'maintenanceWindow' => $test->children['maintenanceWindow']->id,
         'user' => $test->admin->id,
         'group' => $test->group->id,
+        'project_group' => $test->projectGroup->id,
         'role' => $test->customRole->id,
         'conversation' => $test->conversation->id,
         'uuid' => (string) Str::uuid(),

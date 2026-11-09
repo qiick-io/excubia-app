@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
@@ -66,6 +67,16 @@ class Project extends Model
     public function getActivitylogOptions(): LogOptions
     {
         return $this->applicationActivityLogOptions()->logExcept(['push_token_hash', 'last_report_at', 'environment', 'stale_alerted_at', 'skipped_runtime_aggregates']);
+    }
+
+    /**
+     * The project groups this project belongs to (#252).
+     *
+     * @return BelongsToMany<ProjectGroup, $this>
+     */
+    public function projectGroups(): BelongsToMany
+    {
+        return $this->belongsToMany(ProjectGroup::class, 'project_group_project')->withTimestamps();
     }
 
     /**

@@ -70,6 +70,7 @@
         "platform": "Platform",
         "dashboard": "Dashboard",
         "projects": "Projects",
+        "projectGroups": "Project groups",
         "fleet": "Fleet",
         "assistant": "Assistant",
         "activityLog": "Activity Log",
@@ -299,6 +300,7 @@
             "modules": {
                 "dashboard": "Dashboard",
                 "projects": "Projects",
+                "project-groups": "Project groups",
                 "fleet": "Fleet",
                 "assistant": "Assistant",
                 "files": "Files",
@@ -513,6 +515,8 @@
             "scoutIndexFailuresHint": "Alert when the queued Laravel Scout index or remove jobs of a model fail at least this many times in the last hour.",
             "projects": "Projects",
             "projectsHint": "Leave every box empty to send the alerts of every project.",
+            "projectGroups": "Project groups",
+            "projectGroupsHint": "A project in a checked group is included, also when it joins the group later.",
             "emailTitle": "Email",
             "emailDescription": "Every user who can see projects turns alert emails on for themselves in their profile, with their own minimum severity, events and projects. Mails use the app's mail settings and need a queue worker.",
             "emailLink": "Open your profile",
@@ -663,6 +667,32 @@
         },
         "empty": "No groups yet."
     },
+    "projectGroups": {
+        "title": "Project groups",
+        "newGroup": "New project group",
+        "editGroup": "Edit project group",
+        "formDescription": "Group projects by client, team, product line or environment. A project can sit in several groups.",
+        "searchPlaceholder": "Search project groups…",
+        "sortBy": "Sort by",
+        "name": "Name",
+        "description": "Description",
+        "projects": "Projects",
+        "projectsPlaceholder": "Select projects…",
+        "projectsHint": "Only projects you can see are listed.",
+        "create": "Create",
+        "save": "Save",
+        "cancel": "Cancel",
+        "columns": {
+            "name": "Name",
+            "projects": "Projects",
+            "actions": "Actions"
+        },
+        "empty": "No project groups yet.",
+        "confirm": {
+            "deleteTitle": "Delete project group “{{name}}”?",
+            "deleteDescription": "The projects stay; dashboard and alert filters on this group stop matching them. This cannot be undone."
+        }
+    },
     "projects": {
         "title": "Projects",
         "newProject": "New project",
@@ -727,7 +757,9 @@
         "scope": {
             "project": "Project",
             "allProjects": "All projects ({{count}})",
-            "openProject": "Open project"
+            "openProject": "Open project",
+            "group": "Project group",
+            "allGroups": "All groups"
         },
         "period": {
             "label": "Period",
@@ -1899,5 +1931,12 @@
         "ignoreRuleHint": "Add it to the project's excubia.json to leave the finding out of the report itself.",
         "noResolved": "No resolved findings yet",
         "noResolvedDescription": "Findings show up here once a later report runs their check without them."
+    },
+    "picker": {
+        "clearSelection": "Clear selection",
+        "loading": "Loading…",
+        "noResults": "No results.",
+        "placeholder": "Select…",
+        "search": "Search…"
     }
 }

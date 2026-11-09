@@ -73,6 +73,7 @@ it('has no critical or serious axe issues on the main authenticated pages in lig
         route('system.index', absolute: false),
         // Admin lists on the registry DataTable (app-ui wave 2).
         route('users.index', absolute: false),
+        route('project-groups.index', absolute: false),
         route('groups.index', absolute: false),
         route('roles.index', absolute: false),
         route('permissions.index', absolute: false),
