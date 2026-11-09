@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
+use Illuminate\Testing\TestResponse;
 use Inertia\Testing\AssertableInertia as Assert;
 
 /**
@@ -78,9 +79,9 @@ function healthProject(): array
 /**
  * @param  list<array<string, mixed>>  $entries
  */
-function pushHealth(array $headers, array $entries): void
+function pushHealth(array $headers, array $entries): TestResponse
 {
-    test()->postJson(route('api.runtime.store'), [
+    return test()->postJson(route('api.runtime.store'), [
         'protocolVersion' => 1,
         'type' => 'runtime',
         'batchId' => (string) Str::uuid(),
@@ -145,7 +146,7 @@ it('accepts unknown check ids, skips and counts unknown statuses and severities,
         healthEntry('2026-11-07T09:59:00Z', 'down'),
         healthEntry('2026-11-07T09:59:00Z', 'pass', ['severity' => 'urgent', 'checkId' => 'laravel-cache']),
         healthEntry('2026-11-07T09:59:00Z', 'warn', ['checkId' => 'laravel-storage']),
-    ]);
+    ])->assertJsonPath('capabilities.skipped', 2);
 
     expect(RuntimeAggregate::query()->pluck('dimensions')->pluck('checkId')->all())->toEqualCanonicalizing(['laravel-future-probe', 'laravel-storage'])
         ->and($project->fresh()?->skipped_runtime_aggregates)->toBe(2);

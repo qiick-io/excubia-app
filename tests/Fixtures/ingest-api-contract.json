@@ -115,13 +115,75 @@
             "stored": {
                 "status": 201,
                 "body": {
-                    "status": "stored"
+                    "status": "stored",
+                    "capabilities": {
+                        "privacyLevel": "aggregate",
+                        "types": [
+                            "request",
+                            "slowQuery",
+                            "job",
+                            "scheduledTask",
+                            "outgoingHttp",
+                            "requestMemory",
+                            "jobMemory",
+                            "queueWait",
+                            "cache",
+                            "mail",
+                            "notification",
+                            "logLevel",
+                            "deprecation",
+                            "duplicateQuery",
+                            "server",
+                            "command",
+                            "health",
+                            "ai",
+                            "aiTool",
+                            "octane",
+                            "reverb",
+                            "billingWebhook",
+                            "auth",
+                            "scout",
+                            "pennant"
+                        ],
+                        "skipped": 0
+                    }
                 }
             },
             "duplicate": {
                 "status": 200,
                 "body": {
-                    "status": "duplicate"
+                    "status": "duplicate",
+                    "capabilities": {
+                        "privacyLevel": "aggregate",
+                        "types": [
+                            "request",
+                            "slowQuery",
+                            "job",
+                            "scheduledTask",
+                            "outgoingHttp",
+                            "requestMemory",
+                            "jobMemory",
+                            "queueWait",
+                            "cache",
+                            "mail",
+                            "notification",
+                            "logLevel",
+                            "deprecation",
+                            "duplicateQuery",
+                            "server",
+                            "command",
+                            "health",
+                            "ai",
+                            "aiTool",
+                            "octane",
+                            "reverb",
+                            "billingWebhook",
+                            "auth",
+                            "scout",
+                            "pennant"
+                        ],
+                        "skipped": 0
+                    }
                 }
             },
             "missing_token": {
@@ -204,7 +266,38 @@
             "unknown_runtime_type": {
                 "status": 201,
                 "body": {
-                    "status": "stored"
+                    "status": "stored",
+                    "capabilities": {
+                        "privacyLevel": "aggregate",
+                        "types": [
+                            "request",
+                            "slowQuery",
+                            "job",
+                            "scheduledTask",
+                            "outgoingHttp",
+                            "requestMemory",
+                            "jobMemory",
+                            "queueWait",
+                            "cache",
+                            "mail",
+                            "notification",
+                            "logLevel",
+                            "deprecation",
+                            "duplicateQuery",
+                            "server",
+                            "command",
+                            "health",
+                            "ai",
+                            "aiTool",
+                            "octane",
+                            "reverb",
+                            "billingWebhook",
+                            "auth",
+                            "scout",
+                            "pennant"
+                        ],
+                        "skipped": 1
+                    }
                 }
             },
             "wrong_method": {
@@ -225,13 +318,75 @@
             "stored": {
                 "status": 201,
                 "body": {
-                    "status": "stored"
+                    "status": "stored",
+                    "capabilities": {
+                        "privacyLevel": "aggregate",
+                        "types": [
+                            "request",
+                            "slowQuery",
+                            "job",
+                            "scheduledTask",
+                            "outgoingHttp",
+                            "requestMemory",
+                            "jobMemory",
+                            "queueWait",
+                            "cache",
+                            "mail",
+                            "notification",
+                            "logLevel",
+                            "deprecation",
+                            "duplicateQuery",
+                            "server",
+                            "command",
+                            "health",
+                            "ai",
+                            "aiTool",
+                            "octane",
+                            "reverb",
+                            "billingWebhook",
+                            "auth",
+                            "scout",
+                            "pennant"
+                        ],
+                        "skipped": 0
+                    }
                 }
             },
             "duplicate": {
                 "status": 200,
                 "body": {
-                    "status": "duplicate"
+                    "status": "duplicate",
+                    "capabilities": {
+                        "privacyLevel": "aggregate",
+                        "types": [
+                            "request",
+                            "slowQuery",
+                            "job",
+                            "scheduledTask",
+                            "outgoingHttp",
+                            "requestMemory",
+                            "jobMemory",
+                            "queueWait",
+                            "cache",
+                            "mail",
+                            "notification",
+                            "logLevel",
+                            "deprecation",
+                            "duplicateQuery",
+                            "server",
+                            "command",
+                            "health",
+                            "ai",
+                            "aiTool",
+                            "octane",
+                            "reverb",
+                            "billingWebhook",
+                            "auth",
+                            "scout",
+                            "pennant"
+                        ],
+                        "skipped": 0
+                    }
                 }
             },
             "missing_token": {
