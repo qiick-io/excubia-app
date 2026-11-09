@@ -454,7 +454,15 @@ export type RuntimeSummary = {
         errors: number;
         averageMs: number | null;
         maxMs: number | null;
-        timeline: { at: string; ok: number; errors: number }[];
+        /** Per bucket (#251, #246): estimated counts by status class, durations null without requests. */
+        timeline: {
+            at: string;
+            ok: number;
+            clientErrors: number;
+            serverErrors: number;
+            averageMs: number | null;
+            p95Ms: number | null;
+        }[];
         routes: RuntimeRow[];
     } & RuntimePercentiles;
     slowQueries: RuntimeRow[];

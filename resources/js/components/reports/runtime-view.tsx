@@ -2,7 +2,10 @@ import { Gauge, Info } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PageEmptyState } from '@/components/admin/page-empty-state';
-import { StackedBarChart } from '@/components/reports/severity-chart';
+import {
+    StackedBarChart,
+    TimeLineChart,
+} from '@/components/reports/severity-chart';
 import type { ChartMarker } from '@/components/reports/severity-chart';
 import {
     bucketLabel,
@@ -63,7 +66,8 @@ type Formatters = {
 
 /**
  * The runtime of a project over a time range (#24, #107, #113), Pulse-style: key numbers,
- * requests per chart bucket (successful vs 5xx), then one card per runtime type. A card without
+ * requests per chart bucket split into 1/2/3xx, 4xx and 5xx (#251) next to the average and p95
+ * duration per bucket (#246), then one card per runtime type. A card without
  * data names the `runtime.*` key of excubia.json that turns it on. Estimated counts carry a `~`
  * when the project samples. Deploys of the range (#106) are dashed markers on the charts.
  */
@@ -102,6 +106,14 @@ export function RuntimeView({ runtime }: { runtime: RuntimeSummary | null }) {
         bucket: t(`timeRange.bucket.${runtime.range}`),
         during: t(`timeRange.during.${runtime.range}`),
     };
+    const statusTotals = requests.timeline.reduce(
+        (totals, point) => ({
+            ok: totals.ok + point.ok,
+            clientErrors: totals.clientErrors + point.clientErrors,
+            serverErrors: totals.serverErrors + point.serverErrors,
+        }),
+        { ok: 0, clientErrors: 0, serverErrors: 0 },
+    );
     const markers = deployMarkers(runtime.deploys, t('runtime.deploy'));
     const deploysLabel =
         markers.length > 0
@@ -127,9 +139,12 @@ export function RuntimeView({ runtime }: { runtime: RuntimeSummary | null }) {
                     label={t('runtime.requests')}
                     value={format.count(requests.count)}
                     headline={t(`timeRange.last.${runtime.range}`)}
-                    context={
-                        runtime.isSampled ? t('runtime.sampled') : undefined
-                    }
+                    context={[
+                        `${t('runtime.statusOk')} ${format.count(statusTotals.ok)} · ${t('runtime.statusClientErrors')} ${format.count(statusTotals.clientErrors)} · ${t('runtime.statusServerErrors')} ${format.count(statusTotals.serverErrors)}`,
+                        runtime.isSampled ? t('runtime.sampled') : null,
+                    ]
+                        .filter(Boolean)
+                        .join(' · ')}
                 />
                 <StatCard
                     className="xl:col-span-3"
@@ -158,47 +173,103 @@ export function RuntimeView({ runtime }: { runtime: RuntimeSummary | null }) {
                 />
             </section>
 
-            <Card>
-                <CardHeader className="pb-3">
-                    <CardTitle>{t('runtime.requestsOverTime')}</CardTitle>
-                    <CardDescription>
-                        {t('runtime.requestsOverTimeDescription', range)}
-                        {markers.length > 0
-                            ? ` ${t('runtime.deployMarkersHint')}`
-                            : null}
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="h-56">
-                    <StackedBarChart
-                        data={requests.timeline.map((point) => ({
-                            label: point.at,
-                            ok: point.ok,
-                            errors: point.errors,
-                        }))}
-                        formatLabel={bucketText}
-                        markers={markers}
-                        series={[
-                            {
-                                key: 'ok',
-                                label: t('runtime.successful'),
-                                color: 'var(--runtime-chart-ok)',
-                            },
-                            {
-                                key: 'errors',
-                                label: t('runtime.serverErrors'),
-                                color: 'var(--runtime-chart-error)',
-                            },
-                        ]}
-                        label={
-                            t('runtime.chartLabel', {
-                                count: requests.count,
-                                errors: requests.errors,
-                                ...range,
-                            }) + deploysLabel
-                        }
-                    />
-                </CardContent>
-            </Card>
+            <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+                <Card>
+                    <CardHeader className="pb-3">
+                        <CardTitle>{t('runtime.requestsOverTime')}</CardTitle>
+                        <CardDescription>
+                            {t('runtime.requestsOverTimeDescription', range)}
+                            {markers.length > 0
+                                ? ` ${t('runtime.deployMarkersHint')}`
+                                : null}
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="h-56">
+                        <StackedBarChart
+                            data={requests.timeline.map((point) => ({
+                                label: point.at,
+                                ok: point.ok,
+                                clientErrors: point.clientErrors,
+                                serverErrors: point.serverErrors,
+                            }))}
+                            formatLabel={bucketText}
+                            markers={markers}
+                            totalLabel={t('runtime.total')}
+                            series={[
+                                {
+                                    key: 'ok',
+                                    label: t('runtime.statusOk'),
+                                    color: 'var(--runtime-chart-ok)',
+                                },
+                                {
+                                    key: 'clientErrors',
+                                    label: t('runtime.statusClientErrors'),
+                                    color: 'var(--runtime-chart-client-error)',
+                                },
+                                {
+                                    key: 'serverErrors',
+                                    label: t('runtime.statusServerErrors'),
+                                    color: 'var(--runtime-chart-error)',
+                                },
+                            ]}
+                            label={
+                                t('runtime.statusChartLabel', {
+                                    count: requests.count,
+                                    ok: statusTotals.ok,
+                                    clientErrors: statusTotals.clientErrors,
+                                    serverErrors: statusTotals.serverErrors,
+                                    ...range,
+                                }) + deploysLabel
+                            }
+                        />
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader className="pb-3">
+                        <CardTitle>{t('runtime.duration')}</CardTitle>
+                        <CardDescription>
+                            {t('runtime.durationSummary', {
+                                average: format.ms(requests.averageMs),
+                                p95: format.ms(requests.p95),
+                                max: format.ms(requests.maxMs),
+                            })}
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="h-56">
+                        <TimeLineChart
+                            data={requests.timeline.map((point) => ({
+                                label: point.at,
+                                averageMs: point.averageMs,
+                                p95Ms: point.p95Ms,
+                            }))}
+                            formatLabel={bucketText}
+                            formatValue={(value) => format.ms(value)}
+                            markers={markers}
+                            series={[
+                                {
+                                    key: 'averageMs',
+                                    label: t('runtime.average'),
+                                    color: 'var(--runtime-chart-ok)',
+                                },
+                                {
+                                    key: 'p95Ms',
+                                    label: 'p95',
+                                    color: 'var(--runtime-chart-p95)',
+                                },
+                            ]}
+                            label={
+                                t('runtime.durationChartLabel', {
+                                    average: format.ms(requests.averageMs),
+                                    p95: format.ms(requests.p95),
+                                    max: format.ms(requests.maxMs),
+                                    ...range,
+                                }) + deploysLabel
+                            }
+                        />
+                    </CardContent>
+                </Card>
+            </section>
 
             {/* Timed tables (count, errors, average, p50 to p99, max) need the full width: side
                 by side, their percentiles scroll out of sight even at 1440px (#194). */}

@@ -1118,7 +1118,6 @@
         "allRoutes": "Alle Routen",
         "successful": "Erfolgreich",
         "serverErrors": "5xx",
-        "chartLabel": "Gestapeltes Balkendiagramm der Anfragen {{bucket}}: {{count}} Anfragen, {{errors}} Serverfehler {{during}}.",
         "routes": "Routen",
         "outgoingHttp": "Ausgehendes HTTP",
         "slowQueries": "Langsame Abfragen",
@@ -1191,7 +1190,7 @@
         "deployMarkersHint": "Gestrichelte Linien markieren Deploys.",
         "deploysLabel_one": "{{count}} Deploy: {{releases}}.",
         "deploysLabel_other": "{{count}} Deploys: {{releases}}.",
-        "requestsOverTimeDescription": "Erfolgreiche Anfragen und Serverfehler (5xx) {{bucket}} {{during}}.",
+        "requestsOverTimeDescription": "Anfragen nach Status: 1/2/3xx, 4xx und 5xx {{bucket}} {{during}}.",
         "requestsOverTime": "Anfragen im Zeitverlauf",
         "octane": "Octane-Worker",
         "octaneDescription": "Pro Server und Worker-Typ. Der Speicher wird nach jeder Anfrage gelesen; ein Anstieg über {{threshold}} MB seit der ersten Anfrage eines Workers kann ein Leck sein.",
@@ -1250,7 +1249,15 @@
         "pennantActiveInactive": "Aktiv / inaktiv",
         "pennantActiveShare": "Aktiver Anteil",
         "pennantResolved": "Auflösungen",
-        "pennantUnknown": "Nicht definiert"
+        "pennantUnknown": "Nicht definiert",
+        "statusOk": "1/2/3xx",
+        "statusClientErrors": "4xx",
+        "statusServerErrors": "5xx",
+        "total": "Gesamt",
+        "duration": "Dauer",
+        "statusChartLabel": "Gestapeltes Balkendiagramm der Anfragen {{bucket}}: {{count}} Anfragen {{during}}, {{ok}} 1/2/3xx, {{clientErrors}} 4xx und {{serverErrors}} 5xx.",
+        "durationSummary": "Durchschnitt und p95 pro Intervall. Im Zeitraum: Durchschnitt {{average}}, p95 {{p95}}, langsamste {{max}}.",
+        "durationChartLabel": "Liniendiagramm der durchschnittlichen und p95-Anfragedauer {{bucket}} {{during}}: Durchschnitt {{average}}, p95 {{p95}}, langsamste {{max}}."
     },
     "exceptions": {
         "emptyTitle": "Keine Exceptions",

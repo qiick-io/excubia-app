@@ -30,9 +30,10 @@ class TimeSeriesService
      * @param  literal-string|null  $groupColumn
      * @param  list<int|string>  $groups  values of `$groupColumn` to return even without rows
      * @param  array<literal-string, literal-string>  $sums  point key => SQL expression to sum, e.g. `count / sample_rate`
+     * @param  array<literal-string, literal-string>  $maxes  point key => SQL expression whose largest value per bucket is kept
      * @return ($groupColumn is null ? list<array<string, int|string>> : array<int|string, list<array<string, int|string>>>)
      */
-    public function points(Builder $query, string $column, array $sums, TimeRangeEnum $range, CarbonImmutable $now, ?string $groupColumn = null, array $groups = []): array
+    public function points(Builder $query, string $column, array $sums, TimeRangeEnum $range, CarbonImmutable $now, ?string $groupColumn = null, array $groups = [], array $maxes = []): array
     {
         $step = $range->bucketSeconds();
         $selects = [$this->bucketSql($query, $column, $range).' as bucket_at'];
@@ -40,6 +41,12 @@ class TimeSeriesService
         foreach ($sums as $key => $expression) {
             $selects[] = "sum({$expression}) as sum_{$key}";
         }
+
+        foreach ($maxes as $key => $expression) {
+            $selects[] = "max({$expression}) as sum_{$key}";
+        }
+
+        $sums = [...$sums, ...$maxes];
 
         $rows = $query
             ->select(array_map(fn (string $select): Expression => new Expression($select), $selects))
