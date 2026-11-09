@@ -62,6 +62,7 @@ type SystemHealthProps = {
         }[];
     };
     rollups: HealthItem & { isBackfillPending: boolean };
+    exampleAdmin: HealthItem & { exists: boolean; hasDefaultPassword: boolean };
     version: HealthItem & {
         app: string;
         core: string | null;
@@ -125,7 +126,8 @@ function HealthSection({
 
 /**
  * `/settings/system` (#117): the health of this Excubia install (scheduler, queue worker,
- * pushes, rejections, skipped runtime types, alert delivery, rollups, version). Behind
+ * pushes, rejections, skipped runtime types, alert delivery, rollups, example admin account,
+ * version). Behind
  * `can-show-system`; read-only.
  */
 export default function SystemIndex(props: SystemHealthProps) {
@@ -138,6 +140,7 @@ export default function SystemIndex(props: SystemHealthProps) {
         skippedRuntime,
         alertFailures,
         rollups,
+        exampleAdmin,
         version,
     } = props;
     const { t } = useTranslation();
@@ -465,6 +468,21 @@ export default function SystemIndex(props: SystemHealthProps) {
                                 {rollups.isBackfillPending
                                     ? t('system.rollups.pending')
                                     : t('system.rollups.done')}
+                            </p>
+                        </HealthSection>
+
+                        <HealthSection
+                            id="system-example-admin"
+                            title={t('system.exampleAdmin.title')}
+                            item={exampleAdmin}
+                            docsUrl={docsUrl}
+                        >
+                            <p className="text-sm text-muted-foreground">
+                                {exampleAdmin.hasDefaultPassword
+                                    ? t('system.exampleAdmin.defaultPassword')
+                                    : exampleAdmin.exists
+                                      ? t('system.exampleAdmin.exists')
+                                      : t('system.exampleAdmin.none')}
                             </p>
                         </HealthSection>
 

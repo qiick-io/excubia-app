@@ -6,17 +6,17 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Initial super-admin (CreateSuperAdminSeeder)
+    | Development super-admin (CreateSuperAdminSeeder)
     |--------------------------------------------------------------------------
     |
-    | Used only by `db:seed` to create the first login user. Set a strong
-    | password in .env before seeding a server; change it after the first login.
+    | Used only by `db:seed` in `local` and `testing`, and only when a password
+    | is set (#225). Servers create the first admin at /setup instead.
     |
     */
 
     'first_name' => env('INITIAL_SUPER_ADMIN_FIRST_NAME', 'Super'),
     'last_name' => env('INITIAL_SUPER_ADMIN_LAST_NAME', 'Admin'),
     'email' => env('INITIAL_SUPER_ADMIN_EMAIL', 'superadmin@example.com'),
-    'password' => env('INITIAL_SUPER_ADMIN_PASSWORD', 'password'),
+    'password' => env('INITIAL_SUPER_ADMIN_PASSWORD'),
 
 ];
