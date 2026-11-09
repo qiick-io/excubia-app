@@ -1963,5 +1963,11 @@
         "startTime": "Startzeit",
         "endTime": "Endzeit",
         "apply": "Anwenden"
+    },
+    "charts": {
+        "view": "Ansehen",
+        "viewRoutes": "Routen ansehen",
+        "viewModels": "Modelle ansehen",
+        "viewTasks": "Tasks ansehen"
     }
 }

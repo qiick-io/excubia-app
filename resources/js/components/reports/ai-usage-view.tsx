@@ -8,6 +8,7 @@ import {
     DEFAULT_TIME_RANGE,
     useRangeTexts,
     useZoomToRange,
+    ChartRowsLink,
 } from '@/components/reports/time-range-picker';
 import { StatCard } from '@/components/stat-card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -58,6 +59,9 @@ type Column<Row> = {
  * Costs are estimates from Settings → AI prices; a model without a price shows its tokens only.
  * The tab says that prompts and responses are never collected.
  */
+/** Anchor of the models table, the rows behind the spend chart (#249). */
+const MODELS_ID = 'ai-models';
+
 export function AiUsageView({
     projectId,
     slug,
@@ -72,7 +76,7 @@ export function AiUsageView({
     const { t } = useTranslation();
 
     const rangeTexts = useRangeTexts(ai?.range ?? DEFAULT_TIME_RANGE);
-    const zoom = useZoomToRange(slug, 'ai');
+    const zoom = useZoomToRange(slug, 'ai', MODELS_ID);
 
     if (ai === null) {
         return (
@@ -187,6 +191,10 @@ export function AiUsageView({
                 <Card className="xl:col-span-8">
                     <CardHeader className="pb-3">
                         <CardTitle>{t('ai.spendOverTime')}</CardTitle>
+                        <ChartRowsLink
+                            rowsId={MODELS_ID}
+                            label={t('charts.viewModels')}
+                        />
                         <CardDescription>
                             {t('ai.spendOverTimeDescription', range)}
                         </CardDescription>
@@ -224,6 +232,7 @@ export function AiUsageView({
             </section>
 
             <BreakdownCard
+                id={MODELS_ID}
                 title={t('ai.byModel')}
                 description={t('ai.pricesNote', {
                     date: ai.pricesUpdatedOn,
@@ -501,6 +510,7 @@ function BudgetCard({
 
 /** A breakdown table: a name column and right-aligned numeric columns, or "none in range". */
 function BreakdownCard<Row>({
+    id,
     title,
     description,
     footer,
@@ -509,6 +519,8 @@ function BreakdownCard<Row>({
     columns,
     className,
 }: {
+    /** Anchor of the card, for the spend chart's View link and bucket click (#249). */
+    id?: string;
     title: string;
     description?: string;
     footer?: ReactNode;
@@ -520,7 +532,7 @@ function BreakdownCard<Row>({
     const { t } = useTranslation();
 
     return (
-        <Card className={className}>
+        <Card id={id} className={cn('scroll-mt-4', className)}>
             <CardHeader className="pb-3">
                 <CardTitle>{title}</CardTitle>
                 {description ? (

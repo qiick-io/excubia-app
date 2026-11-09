@@ -14,6 +14,7 @@ import {
     DEFAULT_TIME_RANGE,
     useRangeTexts,
     useZoomToRange,
+    ChartRowsLink,
     deployMarkers,
 } from '@/components/reports/time-range-picker';
 import { StatCard } from '@/components/stat-card';
@@ -53,6 +54,10 @@ const RUNTIME_GUIDE_URL =
     'https://github.com/qiick-io/excubia-core/blob/main/docs/guides/runtime-monitoring.md';
 
 /** Log levels that count as errors, as in ProjectRuntimeService. */
+/** Anchors of the tables behind the charts (#249). */
+const ROUTES_ID = 'runtime-routes';
+const LOG_LEVELS_ID = 'runtime-log-levels';
+
 const ERROR_LOG_LEVELS = ['emergency', 'alert', 'critical', 'error'];
 
 /** One column of a runtime card: a header and a right-aligned numeric cell. */
@@ -86,7 +91,8 @@ export function RuntimeView({
     const { t } = useTranslation();
 
     const rangeTexts = useRangeTexts(runtime?.range ?? DEFAULT_TIME_RANGE);
-    const zoom = useZoomToRange(slug, 'runtime');
+    const zoom = useZoomToRange(slug, 'runtime', ROUTES_ID);
+    const logZoom = useZoomToRange(slug, 'runtime', LOG_LEVELS_ID);
 
     if (runtime === null) {
         return (
@@ -188,6 +194,10 @@ export function RuntimeView({
                 <Card>
                     <CardHeader className="pb-3">
                         <CardTitle>{t('runtime.requestsOverTime')}</CardTitle>
+                        <ChartRowsLink
+                            rowsId={ROUTES_ID}
+                            label={t('charts.viewRoutes')}
+                        />
                         <CardDescription>
                             {t('runtime.requestsOverTimeDescription', range)}
                             {markers.length > 0
@@ -240,6 +250,10 @@ export function RuntimeView({
                 <Card>
                     <CardHeader className="pb-3">
                         <CardTitle>{t('runtime.duration')}</CardTitle>
+                        <ChartRowsLink
+                            rowsId={ROUTES_ID}
+                            label={t('charts.viewRoutes')}
+                        />
                         <CardDescription>
                             {t('runtime.durationSummary', {
                                 average: format.ms(requests.averageMs),
@@ -288,6 +302,7 @@ export function RuntimeView({
                 by side, their percentiles scroll out of sight even at 1440px (#194). */}
             <section className="grid grid-cols-1 gap-4">
                 <RuntimeCard
+                    id={ROUTES_ID}
                     title={t('runtime.routes')}
                     configKey="runtime.requests"
                     rows={requests.routes}
@@ -529,7 +544,7 @@ export function RuntimeView({
                 bucketText={bucketText}
                 markers={markers}
                 range={range}
-                onZoom={zoom}
+                onZoom={logZoom}
             />
 
             <RuntimeCard
@@ -1195,6 +1210,7 @@ function NoData({ configKey }: { configKey: string }) {
  * optional summary), or the empty state naming its `runtime.*` key.
  */
 function RuntimeCard<Row extends Record<string, unknown>>({
+    id,
     title,
     description,
     configKey,
@@ -1204,6 +1220,8 @@ function RuntimeCard<Row extends Record<string, unknown>>({
     summary,
     className,
 }: {
+    /** Anchor of the card, for a chart's View link and bucket click (#249). */
+    id?: string;
     title: string;
     description?: string;
     /** Shown above the table when there are rows, e.g. the totals of the card. */
@@ -1218,7 +1236,7 @@ function RuntimeCard<Row extends Record<string, unknown>>({
     const { t } = useTranslation();
 
     return (
-        <Card className={className}>
+        <Card id={id} className={cn('scroll-mt-4', className)}>
             <CardHeader className="pb-3">
                 <CardTitle>{title}</CardTitle>
                 {description ? (
@@ -1306,7 +1324,7 @@ function LogLevelsCard({
     );
 
     return (
-        <Card>
+        <Card id={LOG_LEVELS_ID} className="scroll-mt-4">
             <CardHeader className="pb-3">
                 <CardTitle>{t('runtime.logLevels')}</CardTitle>
                 <CardDescription>
