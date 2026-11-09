@@ -56,17 +56,19 @@ Every 4xx is counted per hour on Settings → System (endpoint, status and a rea
 
 Success bodies are JSON objects; excubia-core decodes them and fails a push whose 2xx body is not a JSON object or list.
 
-| Status | When                                      | Body                                                                                               |
-| ------ | ----------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| `201`  | new `batchId`, stored                     | `{"status": "stored"}`; `/api/reports` adds `"reportId": <integer>`                                |
-| `200`  | `batchId` already received                | `{"status": "duplicate"}`; `/api/reports` adds the `reportId` of the stored report                 |
-| `401`  | missing, unknown or revoked token         | `{"message": "Missing, unknown or revoked project token."}`                                        |
-| `403`  | the project is disabled in the app        | `{"message": "This project is disabled in Excubia."}`                                              |
-| `405`  | any method other than `POST`              | `{"message": "The GET method is not supported for route api/reports. Supported methods: POST."}`   |
-| `413`  | body above `EXCUBIA_PUSH_MAX_KILOBYTES`   | `{"message": "The body is larger than 1024 KB."}` (the configured value)                           |
-| `422`  | invalid envelope or payload, invalid JSON | `{"message": "<first error>[ (and N more errors)]", "errors": {"<field path>": ["<message>", …]}}` |
-| `429`  | rate limit                                | `{"message": "Too Many Attempts."}` with `Retry-After`                                             |
-| `5xx`  | server error                              | `{"message": "Server Error"}` (with `APP_DEBUG` off); excubia-core keeps batches and retries       |
+| Status | When                                      | Body                                                                                                                                        |
+| ------ | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `201`  | new `batchId`, stored                     | `{"status": "stored"}`; `/api/reports` adds `"reportId": <integer>`, `/api/runtime` and `/api/exceptions` add `capabilities`                |
+| `200`  | `batchId` already received                | `{"status": "duplicate"}`; `/api/reports` adds the `reportId` of the stored report, `/api/runtime` and `/api/exceptions` add `capabilities` |
+| `401`  | missing, unknown or revoked token         | `{"message": "Missing, unknown or revoked project token."}`                                                                                 |
+| `403`  | the project is disabled in the app        | `{"message": "This project is disabled in Excubia."}`                                                                                       |
+| `405`  | any method other than `POST`              | `{"message": "The GET method is not supported for route api/reports. Supported methods: POST."}`                                            |
+| `413`  | body above `EXCUBIA_PUSH_MAX_KILOBYTES`   | `{"message": "The body is larger than 1024 KB."}` (the configured value)                                                                    |
+| `422`  | invalid envelope or payload, invalid JSON | `{"message": "<first error>[ (and N more errors)]", "errors": {"<field path>": ["<message>", …]}}`                                          |
+| `429`  | rate limit                                | `{"message": "Too Many Attempts."}` with `Retry-After`                                                                                      |
+| `5xx`  | server error                              | `{"message": "Server Error"}` (with `APP_DEBUG` off); excubia-core keeps batches and retries                                                |
+
+Clients must ignore keys of a success body they do not know: within 1.x the app may add keys to success bodies (see the versioning policy). excubia-core decodes the body as a JSON object and reads no key of it up to 1.0.
 
 Every error body has a `message` string. With `APP_DEBUG=true` (never in production) framework errors such as `405`, `429` and `5xx` also carry `exception`, `file`, `line` and `trace`. A `422` also has `errors`: the keys are field paths of the envelope with list indexes as numbers (`runtime.aggregates.0.count`), the values lists of messages. An unsupported protocol version answers:
 
@@ -84,6 +86,27 @@ Every error body has a `message` string. With `APP_DEBUG=true` (never in product
 and an unsupported report schema version answers the same way under `report.schemaVersion` (`Unsupported report schemaVersion. This Excubia app accepts: 1.`).
 
 excubia-core maps the status to its exit code (`3` for every non-2xx) and prints `excubia-app rejected the project token (HTTP 401)` for `401` / `403`, `excubia-app did not accept the report (HTTP <status>)` otherwise.
+
+### Capabilities
+
+From app 1.0 the `201` and `200` answers of `/api/runtime` and `/api/exceptions` carry `capabilities` (#239, excubia-core design 1.1 §6.4). A newer core reads them to stop sending runtime types this app drops (and to tell the operator to upgrade the app), and to agree on how much personal data it may send. A core that finds no `capabilities` (an older app) treats it as `privacyLevel` `aggregate` and sends every type.
+
+```json
+{
+    "status": "stored",
+    "capabilities": {
+        "privacyLevel": "aggregate",
+        "types": ["request", "slowQuery", "job", "…", "pennant"],
+        "skipped": 0
+    }
+}
+```
+
+| Key            | Type            | Meaning                                                                                                                                                                                           |
+| -------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `privacyLevel` | string          | The most personal data the app accepts. Always `aggregate` in this version: no personal fields (users only as counts, routes by name, no URL, IP, headers or payload). Later levels are additive. |
+| `types`        | list of strings | Every runtime aggregate type this app stores, the same on both endpoints. An entry of a type not listed is skipped and counted (see below).                                                       |
+| `skipped`      | integer         | The entries of this batch the app does not store: unknown runtime types and `health` samples it cannot rank. The same on a duplicate as on the first push. Always `0` on `/api/exceptions`.       |
 
 ### Unknown fields and types
 
@@ -129,7 +152,7 @@ Envelope (`$defs.runtimeEnvelope`): `protocolVersion`, `type: "runtime"`, `batch
 }
 ```
 
-Answers `201 {"status": "stored"}` or `200 {"status": "duplicate"}`.
+Answers `201 {"status": "stored", "capabilities": {…}}` or `200 {"status": "duplicate", "capabilities": {…}}` ([capabilities](#capabilities)).
 
 ## `POST /api/exceptions`
 
@@ -145,7 +168,7 @@ Envelope (`$defs.exceptionsEnvelope`): `protocolVersion`, `type: "exceptions"`, 
 }
 ```
 
-Answers `201 {"status": "stored"}` or `200 {"status": "duplicate"}`.
+Answers `201 {"status": "stored", "capabilities": {…}}` or `200 {"status": "duplicate", "capabilities": {…}}` ([capabilities](#capabilities)).
 
 ## Versioning policy
 

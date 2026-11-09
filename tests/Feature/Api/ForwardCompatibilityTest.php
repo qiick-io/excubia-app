@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Actions\RotateProjectTokenAction;
+use App\Enums\RuntimeTypeEnum;
 use App\Http\Requests\StorePushedRuntimeRequest;
 use App\Models\Project;
 use Illuminate\Support\Facades\Date;
@@ -170,8 +171,11 @@ it('stores the known entries of a batch and skips and counts the entries of futu
     [$request, $job] = forwardCompatKnownAggregates();
     $body = json_encode(forwardCompatRuntimeEnvelope([$future['trace'], $request, $future['logEntry'], $job, $future['users']]), JSON_THROW_ON_ERROR);
 
-    forwardCompatPost('runtime', $token, $body)->assertCreated()->assertExactJson(['status' => 'stored']);
-    forwardCompatPost('runtime', $token, $body)->assertOk()->assertExactJson(['status' => 'duplicate']);
+    $capabilities = ['privacyLevel' => 'aggregate', 'types' => RuntimeTypeEnum::values(), 'skipped' => 3];
+
+    // The capabilities (#239) tell a newer core which types it may stop sending; a duplicate answers the same.
+    forwardCompatPost('runtime', $token, $body)->assertCreated()->assertExactJson(['status' => 'stored', 'capabilities' => $capabilities]);
+    forwardCompatPost('runtime', $token, $body)->assertOk()->assertExactJson(['status' => 'duplicate', 'capabilities' => $capabilities]);
 
     expect($project->runtimeAggregates()->orderBy('id')->get()->map(fn ($row): array => [$row->type->value, $row->count])->all())
         ->toBe([['request', 4], ['job', 4]])
@@ -272,7 +276,7 @@ it('accepts 1 MB of future fields on an exceptions batch without walking them', 
 
     [$response, $seconds] = forwardCompatTimedPost('exceptions', $token, $body);
 
-    $response->assertCreated()->assertExactJson(['status' => 'stored']);
+    $response->assertCreated()->assertExactJson(['status' => 'stored', 'capabilities' => ['privacyLevel' => 'aggregate', 'types' => RuntimeTypeEnum::values(), 'skipped' => 0]]);
 
     expect(strlen($body))->toBeGreaterThan(1000 * 1024)
         ->and($seconds)->toBeLessThan(FORWARD_COMPAT_BUDGET_SECONDS)
