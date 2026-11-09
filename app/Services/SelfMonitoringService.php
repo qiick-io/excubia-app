@@ -231,6 +231,9 @@ class SelfMonitoringService
         foreach (RuntimeTypeEnum::cases() as $storedType) {
             $coreType = CoreRuntimeTypeEnum::tryFrom($storedType->value);
 
+            // Always true with the locked core (1.0.0-beta.4 has every type the app stores), but the app
+            // adds a type before the core release that sends it, and an unreleased type has no case yet.
+            // @phpstan-ignore notIdentical.alwaysTrue
             if ($coreType !== null) {
                 $types[] = $coreType;
             }
