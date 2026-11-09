@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Data\TimeRangeData;
 use App\Enums\RuntimeTypeEnum;
-use App\Enums\TimeRangeEnum;
 use App\Models\Project;
 use App\Models\RuntimeAggregate;
 use Carbon\CarbonImmutable;
@@ -42,7 +42,7 @@ class AiUsageService
     /**
      * @return array<string, mixed>|null null when the project never pushed AI usage
      */
-    public function summary(Project $project, TimeRangeEnum $range): ?array
+    public function summary(Project $project, TimeRangeData $range): ?array
     {
         $hasUsage = RuntimeAggregate::query()->where('project_id', $project->id)->whereIn('type', [RuntimeTypeEnum::Ai->value, RuntimeTypeEnum::AiTool->value])->exists()
             || $project->aiUsageDays()->exists();
@@ -52,18 +52,17 @@ class AiUsageService
         }
 
         $now = CarbonImmutable::instance(Date::now());
-        $from = $range->start($now);
-        $series = $this->seriesByPricePeriod($project, $from)->groupBy('type');
+        $series = $this->seriesByPricePeriod($project, $range)->groupBy('type');
         $calls = $series->get(RuntimeTypeEnum::Ai->value, collect());
         $tools = $series->get(RuntimeTypeEnum::AiTool->value, collect());
         $monthStart = $now->startOfMonth();
 
         return [
-            'range' => $range->value,
+            'range' => $range->value(),
             'isSampled' => $series->flatten(1)->contains(fn (array $one): bool => $one['sampleRate'] < 1),
             'pricesUpdatedOn' => $this->prices->updatedOn(),
             'totals' => [...$this->totals($calls), ...$this->runtime->percentiles($calls)],
-            'timeline' => $this->timeline($project, $calls, $range, $now),
+            'timeline' => $this->timeline($project, $calls, $range),
             'models' => $this->breakdown($calls, fn (array $one): array => ['provider' => $one['dimensions']['provider'] ?? '', 'model' => $one['dimensions']['model'] ?? '']),
             'providers' => $this->breakdown($calls, fn (array $one): array => ['provider' => $one['dimensions']['provider'] ?? '']),
             // Operations other than agent runs have no agent: they are listed by operation.
@@ -79,28 +78,28 @@ class AiUsageService
     }
 
     /**
-     * The `ai` and `aiTool` series from a moment to now, summed apart for each price period
+     * The `ai` and `aiTool` series of the range, summed apart for each price period
      * (AiPriceService::changeDays()), so a range across a price change prices each side at its
      * own row (#202). Without a change day in the range this is one query.
      *
      * @return Collection<int, Series>
      */
-    private function seriesByPricePeriod(Project $project, CarbonImmutable $from): Collection
+    private function seriesByPricePeriod(Project $project, TimeRangeData $range): Collection
     {
         $types = [RuntimeTypeEnum::Ai, RuntimeTypeEnum::AiTool];
         $boundaries = array_map(
             fn (string $day): CarbonImmutable => CarbonImmutable::parse($day, 'UTC'),
-            array_filter($this->prices->changeDays(), fn (string $day): bool => $day > $from->toDateString() && $day <= Date::now()->toDateString()),
+            array_filter($this->prices->changeDays(), fn (string $day): bool => $day > $range->from->toDateString() && $day <= $range->until->toDateString()),
         );
         $series = collect();
-        $start = $from;
+        $start = $range->from;
 
         foreach ($boundaries as $boundary) {
             $series = $series->concat($this->runtime->series($project, $start, $types, $boundary));
             $start = $boundary;
         }
 
-        return $series->concat($this->runtime->series($project, $start, $types))->values();
+        return $series->concat($this->runtime->series($project, $start, $types, $range->until->addSecond()))->values();
     }
 
     /**
@@ -193,7 +192,7 @@ class AiUsageService
      * @param  Collection<int, Series>  $calls
      * @return list<array{at: string, cost: float, count: int}>
      */
-    private function timeline(Project $project, Collection $calls, TimeRangeEnum $range, CarbonImmutable $now): array
+    private function timeline(Project $project, Collection $calls, TimeRangeData $range): array
     {
         $driver = (new RuntimeAggregate)->getConnection()->getDriverName();
         $sums = ['count' => '1.0 * count / sample_rate'];
@@ -206,14 +205,15 @@ class AiUsageService
         $window = fn () => RuntimeAggregate::query()
             ->where('project_id', $project->id)
             ->where('type', RuntimeTypeEnum::Ai->value)
-            ->where('bucket', '>=', $range->start($now))
+            ->where('bucket', '>=', $range->from)
+            ->where('bucket', '<=', $range->until)
             ->toBase();
         /** @var array<string, list<array<string, int|string>>> $byKey */
-        $byKey = $this->timeSeries->points($window(), 'bucket', $sums, $range, $now, 'dimension_key');
+        $byKey = $this->timeSeries->points($window(), 'bucket', $sums, $range, 'dimension_key');
 
         if ($byKey === []) {
             /** @var list<array{at: string, count: int}> $empty */
-            $empty = $this->timeSeries->points($window(), 'bucket', ['count' => 'count'], $range, $now);
+            $empty = $this->timeSeries->points($window(), 'bucket', ['count' => 'count'], $range);
 
             return array_map(fn (array $point): array => ['at' => $point['at'], 'cost' => 0.0, 'count' => 0], $empty);
         }

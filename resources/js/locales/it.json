@@ -1522,6 +1522,19 @@
             "24h": "per ora",
             "7d": "ogni 6 ore",
             "14d": "al giorno"
+        },
+        "custom": {
+            "label": "Intervallo personalizzato",
+            "placeholder": "Intervallo personalizzato",
+            "clear": "Cancella",
+            "during": "nel periodo {{span}}"
+        },
+        "bucketSeconds": {
+            "60": "al minuto",
+            "600": "ogni 10 minuti",
+            "3600": "per ora",
+            "21600": "ogni 6 ore",
+            "86400": "al giorno"
         }
     },
     "checks": {
@@ -1945,5 +1958,10 @@
         "noResults": "Nessun risultato.",
         "placeholder": "Seleziona…",
         "search": "Cerca…"
+    },
+    "dateRangePicker": {
+        "startTime": "Ora di inizio",
+        "endTime": "Ora di fine",
+        "apply": "Applica"
     }
 }

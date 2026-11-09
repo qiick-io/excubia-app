@@ -12,7 +12,7 @@ import { useCopyWithToast } from '@/components/reports/fix-actions';
 import { ReleaseLabel, shortRelease } from '@/components/reports/release-label';
 import { StackedBarChart } from '@/components/reports/severity-chart';
 import {
-    bucketLabel,
+    useRangeTexts,
     deployMarkers,
     TimeRangePicker,
 } from '@/components/reports/time-range-picker';
@@ -68,6 +68,7 @@ export function ExceptionsView({
     canManage: boolean;
 }) {
     const { t } = useTranslation();
+    const rangeTexts = useRangeTexts(range);
     const [search, setSearch] = useState('');
     const [status, setStatus] = useState<StatusFilter>('open');
     const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -98,7 +99,7 @@ export function ExceptionsView({
                         icon={SearchX}
                         title={t('exceptions.emptyRangeTitle')}
                         description={t('exceptions.emptyRangeDescription', {
-                            during: t(`timeRange.during.${range}`),
+                            during: rangeTexts.during,
                         })}
                     />
                 ) : (
@@ -351,10 +352,8 @@ function ExceptionDrawer({
     canManage: boolean;
 }) {
     const { t } = useTranslation();
-    const phrases = {
-        bucket: t(`timeRange.bucket.${range}`),
-        during: t(`timeRange.during.${range}`),
-    };
+    const rangeTexts = useRangeTexts(range);
+    const phrases = { bucket: rangeTexts.bucket, during: rangeTexts.during };
     const copyWithToast = useCopyWithToast();
 
     const setStatus = (status: ExceptionGroupRow['status']): void => {
@@ -397,7 +396,7 @@ function ExceptionDrawer({
                                 label: point.at,
                                 count: point.count,
                             }))}
-                            formatLabel={bucketLabel(range)}
+                            formatLabel={rangeTexts.bucketText}
                             markers={deployMarkers(
                                 deploys,
                                 t('runtime.deploy'),

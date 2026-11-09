@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Enums\TimeRangeEnum;
+use App\Data\TimeRangeData;
 use App\Models\HealthReport;
 use App\Models\Project;
 use Carbon\CarbonImmutable;
@@ -21,7 +21,7 @@ use Illuminate\Database\Query\Expression;
 class TimeSeriesService
 {
     /**
-     * Sums per bucket of the range, one point per bucket from the start of the range to now.
+     * Sums per bucket of the range, one point per bucket from the start of the range to its end (now for a preset, #247).
      * With `$groupColumn` the sums are per value of that column too, keyed by it: the values
      * that have rows and every one of `$groups`.
      *
@@ -33,9 +33,9 @@ class TimeSeriesService
      * @param  array<literal-string, literal-string>  $maxes  point key => SQL expression whose largest value per bucket is kept
      * @return ($groupColumn is null ? list<array<string, int|string>> : array<int|string, list<array<string, int|string>>>)
      */
-    public function points(Builder $query, string $column, array $sums, TimeRangeEnum $range, CarbonImmutable $now, ?string $groupColumn = null, array $groups = [], array $maxes = []): array
+    public function points(Builder $query, string $column, array $sums, TimeRangeData $range, ?string $groupColumn = null, array $groups = [], array $maxes = []): array
     {
-        $step = $range->bucketSeconds();
+        $step = $range->bucketSeconds;
         $selects = [$this->bucketSql($query, $column, $range).' as bucket_at'];
 
         foreach ($sums as $key => $expression) {
@@ -65,10 +65,10 @@ class TimeSeriesService
             }
         }
 
-        $fill = function (array $buckets) use ($sums, $range, $now, $step): array {
+        $fill = function (array $buckets) use ($sums, $range, $step): array {
             $points = [];
 
-            for ($at = $range->start($now)->getTimestamp(); $at <= $now->getTimestamp(); $at += $step) {
+            for ($at = $range->from->getTimestamp(); $at <= $range->until->getTimestamp(); $at += $step) {
                 $points[] = ['at' => CarbonImmutable::createFromTimestampUTC($at)->toIso8601ZuluString(), ...array_map(fn (string $expression): int => 0, $sums), ...($buckets[$at] ?? [])];
             }
 
@@ -87,13 +87,14 @@ class TimeSeriesService
      *
      * @return list<array{release: string|null, deployedAt: string, bucket: string}>
      */
-    public function deploys(Project $project, TimeRangeEnum $range, CarbonImmutable $now): array
+    public function deploys(Project $project, TimeRangeData $range): array
     {
-        $from = $range->start($now);
+        $from = $range->from;
 
         return array_values($project->healthReports()
             ->deploys()
             ->where('deployed_at', '>=', $from)
+            ->where('deployed_at', '<=', $range->until)
             ->orderBy('deployed_at')
             ->get(['release', 'deployed_at'])
             ->map(function (HealthReport $report) use ($from, $range): array {
@@ -117,7 +118,7 @@ class TimeSeriesService
      * @param  literal-string  $column
      * @return literal-string
      */
-    private function bucketSql(Builder $query, string $column, TimeRangeEnum $range): string
+    private function bucketSql(Builder $query, string $column, TimeRangeData $range): string
     {
         $connection = $query->getConnection();
         $epoch = match ($connection instanceof Connection ? $connection->getDriverName() : 'sqlite') {
@@ -126,7 +127,7 @@ class TimeSeriesService
             default => "cast(strftime('%s', {$column}) as integer)",
         };
 
-        $step = $range->bucketSeconds();
+        $step = $range->bucketSeconds;
 
         return "(({$epoch}) - ({$epoch}) % {$step})";
     }

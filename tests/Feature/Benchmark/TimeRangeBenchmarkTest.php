@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Data\TimeRangeData;
 use App\Enums\TimeRangeEnum;
 use App\Models\Project;
 use App\Services\DashboardOverviewService;
@@ -128,11 +129,12 @@ it('serves the dashboard and the runtime, exceptions and schedule tabs under 300
     $results = [];
     $results['home dashboard 14d'] = benchmarkTime(fn () => app(DashboardOverviewService::class)->overview(Project::query()->with('latestReport')->get(), 14));
 
-    foreach (TimeRangeEnum::cases() as $range) {
-        $results["runtime {$range->value}"] = benchmarkTime(fn () => app(ProjectRuntimeService::class)->summary($project, $range));
-        $results["exceptions {$range->value}"] = benchmarkTime(fn () => app(ProjectTelemetryService::class)->exceptions($project, $range, $now));
-        $results["schedule {$range->value}"] = benchmarkTime(fn () => app(ProjectTelemetryService::class)->schedule($project, $range, $now));
-        $results["deploys {$range->value}"] = benchmarkTime(fn () => app(TimeSeriesService::class)->deploys($project, $range, $now));
+    foreach (TimeRangeEnum::cases() as $preset) {
+        $range = TimeRangeData::fromPreset($preset, $now);
+        $results["runtime {$preset->value}"] = benchmarkTime(fn () => app(ProjectRuntimeService::class)->summary($project, $range));
+        $results["exceptions {$preset->value}"] = benchmarkTime(fn () => app(ProjectTelemetryService::class)->exceptions($project, $range));
+        $results["schedule {$preset->value}"] = benchmarkTime(fn () => app(ProjectTelemetryService::class)->schedule($project, $range));
+        $results["deploys {$preset->value}"] = benchmarkTime(fn () => app(TimeSeriesService::class)->deploys($project, $range));
     }
 
     $lines = ['', 'Benchmark #113 ('.DB::connection()->getDriverName().', '.DB::table('runtime_aggregates')->count().' runtime rows, '.DB::table('runtime_hourly_rollups')->count().' hourly rollups backfilled in '.round($backfill, 1).' s):'];

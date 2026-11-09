@@ -7,7 +7,7 @@ import { PageLayout } from '@/components/layout/page-layout';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { StackedBarChart } from '@/components/reports/severity-chart';
 import {
-    bucketLabel,
+    useRangeTexts,
     deployMarkers,
     TimeRangePicker,
 } from '@/components/reports/time-range-picker';
@@ -71,6 +71,8 @@ export function ScheduleView({
 }) {
     const { t } = useTranslation();
 
+    const rangeTexts = useRangeTexts(range);
+
     if (tasks.length === 0) {
         return (
             <PageLayout>
@@ -89,10 +91,7 @@ export function ScheduleView({
     const isSchedulerDown =
         heartbeat !== null &&
         (heartbeat.status === 'late' || heartbeat.status === 'missed');
-    const phrases = {
-        bucket: t(`timeRange.bucket.${range}`),
-        during: t(`timeRange.during.${range}`),
-    };
+    const phrases = { bucket: rangeTexts.bucket, during: rangeTexts.during };
     const totals = { finished: 0, failed: 0, skipped: 0 };
 
     for (const point of timeline) {
@@ -225,7 +224,7 @@ export function ScheduleView({
                                 failed: point.failed,
                                 skipped: point.skipped,
                             }))}
-                            formatLabel={bucketLabel(range)}
+                            formatLabel={rangeTexts.bucketText}
                             markers={deployMarkers(
                                 deploys,
                                 t('runtime.deploy'),

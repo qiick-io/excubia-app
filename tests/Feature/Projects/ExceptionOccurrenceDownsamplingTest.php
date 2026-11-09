@@ -6,6 +6,7 @@ use App\Actions\DownsampleExceptionOccurrencesAction;
 use App\Actions\DownsampleRuntimeAction;
 use App\Actions\PruneTelemetryAction;
 use App\Actions\StorePushedExceptionsAction;
+use App\Data\TimeRangeData;
 use App\Enums\RoleEnum;
 use App\Enums\TimeRangeEnum;
 use App\Models\ExceptionGroup;
@@ -85,7 +86,7 @@ function occurrenceViews(Project $project, User $reader): array
     $views = [];
 
     foreach (TimeRangeEnum::cases() as $range) {
-        $views[$range->value] = app(ProjectTelemetryService::class)->exceptions($project->refresh(), $range);
+        $views[$range->value] = app(ProjectTelemetryService::class)->exceptions($project->refresh(), TimeRangeData::fromPreset($range, CarbonImmutable::instance(Date::now())));
     }
 
     $views['groups'] = ExceptionGroup::query()->orderBy('id')->get(['count', 'first_seen_at', 'last_seen_at', 'first_release', 'last_release'])->toArray();

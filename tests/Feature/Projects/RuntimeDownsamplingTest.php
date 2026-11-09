@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Actions\DownsampleRuntimeAction;
 use App\Actions\PruneTelemetryAction;
 use App\Actions\StorePushedRuntimeAction;
+use App\Data\TimeRangeData;
 use App\Enums\TimeRangeEnum;
 use App\Models\Project;
 use App\Models\PushedBatch;
@@ -81,8 +82,8 @@ function downsampledViews(Project $project): array
 
     foreach ([TimeRangeEnum::Day, TimeRangeEnum::Week, TimeRangeEnum::TwoWeeks] as $range) {
         $views[$range->value] = [
-            'runtime' => app(ProjectRuntimeService::class)->summary($project, $range),
-            'ai' => app(AiUsageService::class)->summary($project, $range),
+            'runtime' => app(ProjectRuntimeService::class)->summary($project, TimeRangeData::fromPreset($range, CarbonImmutable::instance(Date::now()))),
+            'ai' => app(AiUsageService::class)->summary($project, TimeRangeData::fromPreset($range, CarbonImmutable::instance(Date::now()))),
         ];
     }
 

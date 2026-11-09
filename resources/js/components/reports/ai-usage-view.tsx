@@ -4,7 +4,10 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PageEmptyState } from '@/components/admin/page-empty-state';
 import { StackedBarChart } from '@/components/reports/severity-chart';
-import { bucketLabel } from '@/components/reports/time-range-picker';
+import {
+    DEFAULT_TIME_RANGE,
+    useRangeTexts,
+} from '@/components/reports/time-range-picker';
 import { StatCard } from '@/components/stat-card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -65,6 +68,8 @@ export function AiUsageView({
 }) {
     const { t } = useTranslation();
 
+    const rangeTexts = useRangeTexts(ai?.range ?? DEFAULT_TIME_RANGE);
+
     if (ai === null) {
         return (
             <div className="flex flex-col gap-4">
@@ -94,11 +99,8 @@ export function AiUsageView({
     const ms = (value: number | null): string =>
         value === null ? '—' : `${Math.round(value).toLocaleString()} ms`;
     const { totals } = ai;
-    const bucketText = bucketLabel(ai.range);
-    const range = {
-        bucket: t(`timeRange.bucket.${ai.range}`),
-        during: t(`timeRange.during.${ai.range}`),
-    };
+    const { bucketText } = rangeTexts;
+    const range = { bucket: rangeTexts.bucket, during: rangeTexts.during };
 
     const usageColumns: Column<AiUsageTotals>[] = [
         { label: t('ai.calls'), cell: (row) => count(row.count) },
@@ -140,7 +142,7 @@ export function AiUsageView({
                     className="xl:col-span-3"
                     label={t('ai.spend')}
                     value={money(totals.cost ?? 0)}
-                    headline={t(`timeRange.last.${ai.range}`)}
+                    headline={rangeTexts.headline}
                     context={
                         totals.hasUnpriced
                             ? t('ai.unpricedHint')

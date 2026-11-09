@@ -6,6 +6,8 @@ namespace App\Http\Controllers;
 
 use App\Actions\UpdateExceptionStatusAction;
 use App\Actions\UpdateFindingDismissalAction;
+use App\Console\Commands\DownsampleRuntimeCommand;
+use App\Data\TimeRangeData;
 use App\Enums\ExceptionStatusEnum;
 use App\Enums\PermissionEnum;
 use App\Enums\TimeRangeEnum;
@@ -27,6 +29,7 @@ use App\Services\ProjectRuntimeService;
 use App\Services\ProjectTelemetryService;
 use App\Services\ReportFindingsService;
 use App\Services\ReportHealthService;
+use App\Services\SettingsRepositoryService;
 use App\Services\TimeSeriesService;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
@@ -66,12 +69,22 @@ class ProjectReportController extends Controller
         // Loaded by the first prop that needs it, so the poll does not read the report.
         $report = fn (): ?HealthReport => $project->loadMissing('latestReport')->latestReport;
         $hasRange = in_array($view, self::RANGE_VIEWS, true);
-        $range = $hasRange ? ($request->enum('range', TimeRangeEnum::class) ?? TimeRangeEnum::DEFAULT) : TimeRangeEnum::DEFAULT;
         $now = CarbonImmutable::instance(Date::now());
+        // A custom span (`?from=&to=`, #247) is bounded by the runtime retention and its rows.
+        $range = $hasRange
+            ? TimeRangeData::fromQuery(
+                $request->query('range') === null ? null : $request->string('range')->toString(),
+                $request->query('from') === null ? null : $request->string('from')->toString(),
+                $request->query('to') === null ? null : $request->string('to')->toString(),
+                $now,
+                app(SettingsRepositoryService::class)->runtimeRetentionDays(),
+                max(DownsampleRuntimeCommand::MINIMUM_MINUTE_HOURS, (int) config('excubia.runtime_minute_hours')),
+            )
+            : TimeRangeData::fromPreset(TimeRangeEnum::DEFAULT, $now);
         $scheduleData = null;
         // Shared by `schedule` and `scheduleTimeline`, computed once.
-        $schedule = function () use (&$scheduleData, $view, $telemetry, $project, $range, $now): array {
-            return $scheduleData ??= $view === 'schedule' ? $telemetry->schedule($project, $range, $now) : ['tasks' => [], 'timeline' => []];
+        $schedule = function () use (&$scheduleData, $view, $telemetry, $project, $range): array {
+            return $scheduleData ??= $view === 'schedule' ? $telemetry->schedule($project, $range) : ['tasks' => [], 'timeline' => []];
         };
         // The Findings tab lists the lifecycle (#18): every open finding, also from checks the
         // latest report did not run, and the latest resolved ones.
@@ -109,18 +122,20 @@ class ProjectReportController extends Controller
             'health' => fn (): ?array => ($latest = $report()) === null ? null : $health->summary($latest->report),
             // Minute-level status per check and server (#115), on the overview, which polls it.
             'liveHealth' => fn (): array => $view === null ? app(HealthStatusService::class)->forPage($project, $now) : [],
-            'range' => $range->value,
+            'range' => $range->value(),
+            // The window of the range for the picker and the chart texts (#247).
+            'rangeWindow' => [...$range->toArray(), 'earliest' => $now->subDays(app(SettingsRepositoryService::class)->runtimeRetentionDays())->toIso8601ZuluString()],
             'runtime' => fn (): ?array => $view === 'ai' ? null : $runtime->summary($project, $range),
             // AI usage and estimated cost (#129), only on its tab.
             'ai' => fn (): ?array => $view === 'ai' ? app(AiUsageService::class)->summary($project, $range) : null,
-            'exceptions' => fn (): array => $telemetry->exceptions($project, $view === 'exceptions' ? $range : null, $now),
+            'exceptions' => fn (): array => $telemetry->exceptions($project, $view === 'exceptions' ? $range : null),
             // Tells "none in this range" from "none yet" on the Exceptions tab.
             'hasExceptions' => fn (): bool => $view === 'exceptions' && $project->exceptionGroups()->exists(),
             // Schedule inventory, status and runs (#110), only on its tab.
             'schedule' => fn (): array => $schedule()['tasks'],
             'scheduleTimeline' => fn (): array => $schedule()['timeline'],
             // Chart markers of the exceptions and schedule tabs; the runtime has its own.
-            'deploys' => fn (): array => in_array($view, ['exceptions', 'schedule'], true) ? $timeSeries->deploys($project, $range, $now) : [],
+            'deploys' => fn (): array => in_array($view, ['exceptions', 'schedule'], true) ? $timeSeries->deploys($project, $range) : [],
             // Alert history, mutes and maintenance windows (#114), only on its tab.
             'alerts' => fn (): ?array => $view === 'alerts' ? app(ProjectAlertsService::class)->forPage($project) : null,
             'canManageAlerts' => fn (): bool => (bool) $request->user()?->can('manageAlerts', $project),

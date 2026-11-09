@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Actions\PruneTelemetryAction;
 use App\Actions\StorePushedExceptionsAction;
+use App\Data\TimeRangeData;
 use App\Enums\RoleEnum;
 use App\Models\ExceptionGroup;
 use App\Models\ExceptionOccurrence;
@@ -12,6 +13,7 @@ use App\Models\RuntimeAggregate;
 use App\Models\ScheduledTask;
 use App\Models\ScheduledTaskRun;
 use App\Models\User;
+use Carbon\CarbonImmutable;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Str;
@@ -256,4 +258,53 @@ it('tells an exceptions tab without groups in the range from a project without e
 
     $this->get(route('projects.view', ['shop', 'exceptions', 'range' => '24h']))
         ->assertInertia(fn (Assert $page) => $page->has('exceptions', 0)->where('hasExceptions', true));
+});
+
+it('reads a custom range from the URL with its window and bucket (#247)', function () {
+    // Now is 2026-11-05 12:30 UTC; per-minute rows are kept 48 hours.
+    rangeRequest($this->project, '2026-11-05 09:15:00', 4);
+    rangeRequest($this->project, '2026-11-05 11:59:00', 6);
+    rangeRequest($this->project, '2026-11-05 12:05:00', 100);
+
+    $this->get(route('projects.view', ['shop', 'runtime', 'from' => '2026-11-05T09:00:00Z', 'to' => '2026-11-05T12:00:00Z']))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('range', 'custom')
+            ->where('rangeWindow', ['value' => 'custom', 'from' => '2026-11-05T09:00:00Z', 'to' => '2026-11-05T12:00:00Z', 'bucketSeconds' => 600, 'earliest' => '2026-10-22T12:30:00Z'])
+            // 3 hours by 10 minutes; the request at 12:05, after `to`, is left out.
+            ->has('runtime.requests.timeline', 18)
+            ->where('runtime.requests.count', 10)
+            ->where('runtime.hours', 3));
+});
+
+it('picks the custom bucket by length, hourly beyond the per-minute window (#247)', function (string $from, string $to, int $bucketSeconds) {
+    $now = CarbonImmutable::parse('2026-11-05 12:30:00', 'UTC');
+
+    expect(TimeRangeData::custom($from, $to, $now, 14, 48)?->bucketSeconds)->toBe($bucketSeconds);
+})->with([
+    '1 hour by minute' => ['2026-11-05T10:00:00Z', '2026-11-05T11:00:00Z', 60],
+    '6 hours by 10 minutes' => ['2026-11-05T04:00:00Z', '2026-11-05T10:00:00Z', 600],
+    '1 day by hour' => ['2026-11-04T10:00:00Z', '2026-11-05T10:00:00Z', 3600],
+    '1 hour 3 days ago is hourly' => ['2026-11-02T10:00:00Z', '2026-11-02T11:00:00Z', 3600],
+    '7 days by 6 hours' => ['2026-10-29T10:00:00Z', '2026-11-05T10:00:00Z', 21600],
+    '10 days by day' => ['2026-10-26T10:00:00Z', '2026-11-05T10:00:00Z', 86400],
+]);
+
+it('falls back to the preset for an invalid custom range (#247)', function (array $query) {
+    $this->get(route('projects.view', ['shop', 'runtime', 'range' => '6h', ...$query]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('range', '6h')
+            ->where('rangeWindow.value', '6h'));
+})->with([
+    'to before from' => [['from' => '2026-11-05T10:00:00Z', 'to' => '2026-11-05T09:00:00Z']],
+    'longer than 14 days' => [['from' => '2026-10-20T00:00:00Z', 'to' => '2026-11-05T00:00:00Z']],
+    'before the retention' => [['from' => '2026-10-01T00:00:00Z', 'to' => '2026-10-02T00:00:00Z']],
+    'not a date' => [['from' => 'yesterday-ish', 'to' => 'nope']],
+    'only from' => [['from' => '2026-11-05T10:00:00Z']],
+]);
+
+it('clamps a custom range ending in the future to now (#247)', function () {
+    $range = TimeRangeData::custom('2026-11-05T11:00:00Z', '2026-11-06T00:00:00Z', CarbonImmutable::parse('2026-11-05 12:30:00', 'UTC'), 14, 48);
+
+    expect($range?->until->toIso8601ZuluString())->toBe('2026-11-05T12:29:59Z')
+        ->and($range?->bucketSeconds)->toBe(60);
 });

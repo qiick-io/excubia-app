@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Data\TimeRangeData;
 use App\Enums\RuntimeTypeEnum;
 use App\Enums\TimeRangeEnum;
 use App\Models\Project;
@@ -103,27 +104,28 @@ class ProjectRuntimeService
     /**
      * @return array<string, mixed>|null null when the project never pushed runtime data
      */
-    public function summary(Project $project, TimeRangeEnum $range = TimeRangeEnum::DEFAULT): ?array
+    public function summary(Project $project, ?TimeRangeData $range = null): ?array
     {
         if ($project->skipped_runtime_aggregates === 0 && ! $project->runtimeAggregates()->exists()) {
             return null;
         }
 
         $now = CarbonImmutable::instance(Date::now());
-        $from = $range->start($now);
-        $series = $this->series($project, $from, array_filter(RuntimeTypeEnum::cases(), fn (RuntimeTypeEnum $type): bool => ! in_array($type, self::AI_TYPES, true)));
+        $range ??= TimeRangeData::fromPreset(TimeRangeEnum::DEFAULT, $now);
+        $from = $range->from;
+        $series = $this->series($project, $from, array_filter(RuntimeTypeEnum::cases(), fn (RuntimeTypeEnum $type): bool => ! in_array($type, self::AI_TYPES, true)), $range->until->addSecond());
         $byType = $series->groupBy('type');
         $of = fn (RuntimeTypeEnum $type): Collection => $byType->get($type->value, collect());
         $requests = $of(RuntimeTypeEnum::Request);
 
         return [
-            'range' => $range->value,
+            'range' => $range->value(),
             'hours' => intdiv($range->seconds(), 3600),
             'isSampled' => $series->contains(fn (array $one): bool => $one['sampleRate'] < 1),
             'skippedAggregates' => $project->skipped_runtime_aggregates,
             'requests' => [
                 ...$this->totals($requests),
-                'timeline' => $this->requestTimeline($project, $from, $range, $now),
+                'timeline' => $this->requestTimeline($project, $range),
                 'routes' => $this->timedTable($requests, ['route', 'method']),
             ],
             'slowQueries' => $this->timedTable($of(RuntimeTypeEnum::SlowQuery), ['sql', 'connection']),
@@ -137,7 +139,7 @@ class ProjectRuntimeService
             'cache' => $this->cache($of(RuntimeTypeEnum::Cache)),
             'mail' => $this->countTable($of(RuntimeTypeEnum::Mail), ['mailable', 'mailer']),
             'notifications' => $this->countTable($of(RuntimeTypeEnum::Notification), ['notification', 'channel']),
-            'logLevels' => $this->logLevels($project, $of(RuntimeTypeEnum::LogLevel), $range, $now),
+            'logLevels' => $this->logLevels($project, $of(RuntimeTypeEnum::LogLevel), $range),
             'deprecations' => $this->countTable($of(RuntimeTypeEnum::Deprecation), ['source', 'message', 'phpVersion']),
             'duplicateQueries' => $this->duplicateQueries($of(RuntimeTypeEnum::DuplicateQuery)),
             'servers' => $this->servers($project, $of(RuntimeTypeEnum::Server)),
@@ -147,19 +149,21 @@ class ProjectRuntimeService
             'auth' => $this->auth($of(RuntimeTypeEnum::Auth)),
             'scout' => $this->scout($of(RuntimeTypeEnum::Scout)),
             'pennant' => $this->pennant($project, $of(RuntimeTypeEnum::Pennant), $now),
-            'deploys' => $this->timeSeries->deploys($project, $range, $now),
+            'deploys' => $this->timeSeries->deploys($project, $range),
         ];
     }
 
     /**
-     * The project's aggregates of one type (or all) since the start of the window, as a base query.
+     * The project's aggregates of one type (or all) from the start of the window, up to `$through`
+     * (included) when the window ends before now (#247), as a base query.
      */
-    private function window(Project $project, ?RuntimeTypeEnum $type, CarbonImmutable $from): Builder
+    private function window(Project $project, ?RuntimeTypeEnum $type, CarbonImmutable $from, ?CarbonImmutable $through = null): Builder
     {
         return RuntimeAggregate::query()
             ->where('project_id', $project->id)
             ->when($type !== null, fn ($query) => $query->where('type', $type?->value))
             ->where('bucket', '>=', $from)
+            ->when($through !== null, fn ($query) => $query->where('bucket', '<=', $through))
             ->toBase();
     }
 
@@ -168,10 +172,10 @@ class ProjectRuntimeService
      *
      * @return list<array{at: string, count: int, errors: int}>
      */
-    private function timeline(Builder $query, TimeRangeEnum $range, CarbonImmutable $now): array
+    private function timeline(Builder $query, TimeRangeData $range): array
     {
         /** @var list<array{at: string, count: int, errors: int}> */
-        return $this->timeSeries->points($query, 'bucket', ['count' => '1.0 * count / sample_rate', 'errors' => '1.0 * error_count / sample_rate'], $range, $now);
+        return $this->timeSeries->points($query, 'bucket', ['count' => '1.0 * count / sample_rate', 'errors' => '1.0 * error_count / sample_rate'], $range);
     }
 
     /**
@@ -183,9 +187,9 @@ class ProjectRuntimeService
      *
      * @return list<array{at: string, ok: int, clientErrors: int, serverErrors: int, averageMs: float|null, p95Ms: float|null}>
      */
-    private function requestTimeline(Project $project, CarbonImmutable $from, TimeRangeEnum $range, CarbonImmutable $now): array
+    private function requestTimeline(Project $project, TimeRangeData $range): array
     {
-        $query = $this->window($project, RuntimeTypeEnum::Request, $from);
+        $query = $this->window($project, RuntimeTypeEnum::Request, $range->from, $range->until);
         $driver = (new RuntimeAggregate)->getConnection()->getDriverName();
         $statusClass = $this->jsonText($driver, 'dimensions', 'statusClass');
         $sums = [
@@ -200,7 +204,7 @@ class ProjectRuntimeService
             $sums['histogram'.$i] = 'coalesce('.$this->jsonNumber($driver, 'histogram', $i).', 0) * 1000 / sample_rate';
         }
 
-        $points = $this->timeSeries->points($query, 'bucket', $sums, $range, $now, maxes: ['maxMs' => 'max_ms']);
+        $points = $this->timeSeries->points($query, 'bucket', $sums, $range, maxes: ['maxMs' => 'max_ms']);
 
         return array_map(function (array $point): array {
             $recordedCount = (int) $point['recordedCount'];
@@ -550,7 +554,7 @@ class ProjectRuntimeService
      * @param  Collection<int, Series>  $series
      * @return array{levels: list<array{level: string, count: int}>, rows: list<array<string, mixed>>, timeline: list<array{at: string, count: int}>}
      */
-    private function logLevels(Project $project, Collection $series, TimeRangeEnum $range, CarbonImmutable $now): array
+    private function logLevels(Project $project, Collection $series, TimeRangeData $range): array
     {
         $byLevel = $series->groupBy(fn (array $one): string => $one['dimensions']['level'] ?? 'unknown');
         $levels = [];
@@ -567,9 +571,8 @@ class ProjectRuntimeService
         }
 
         $timeline = $series->isEmpty() ? [] : $this->timeline(
-            $this->window($project, RuntimeTypeEnum::LogLevel, $range->start($now))->whereIn('dimensions->level', self::ERROR_LOG_LEVELS),
+            $this->window($project, RuntimeTypeEnum::LogLevel, $range->from, $range->until)->whereIn('dimensions->level', self::ERROR_LOG_LEVELS),
             $range,
-            $now,
         );
 
         return [
