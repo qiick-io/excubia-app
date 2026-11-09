@@ -16,6 +16,7 @@ use App\Http\Requests\UpdateProjectRequest;
 use App\Http\Resources\ProjectResource;
 use App\Models\Project;
 use App\Services\EffectivePermissionResolverService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -32,7 +33,11 @@ class ProjectController extends Controller
      */
     private const SORTABLE_COLUMNS = ['name', 'last_report_at', 'created_at'];
 
-    public function index(ListQueryRequest $request, EffectivePermissionResolverService $permissions): Response
+    /**
+     * The project list, or as JSON (`expectsJson`) the paginator the registry picker of the
+     * project group drawer reads (#252).
+     */
+    public function index(ListQueryRequest $request, EffectivePermissionResolverService $permissions): Response|JsonResponse
     {
         Gate::authorize('viewAny', Project::class);
 
@@ -44,6 +49,10 @@ class ProjectController extends Controller
             ->orderBy('id')
             ->paginate($request->perPage())
             ->withQueryString();
+
+        if ($request->expectsJson()) {
+            return ProjectResource::collection($projects)->response($request);
+        }
 
         return Inertia::render('projects/index', [
             'projects' => ProjectResource::collection($projects),

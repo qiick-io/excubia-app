@@ -7,11 +7,13 @@ namespace App\Http\Requests\Settings\Concerns;
 use App\Data\AlertFilterData;
 use App\Enums\AlertEventEnum;
 use App\Enums\SeverityEnum;
+use App\Models\ProjectGroup;
 use Illuminate\Validation\Rule;
 
 /**
  * Validation of an alert filter (#22) under a key (`channels.slack`, `alerts`): a required
- * minimum severity, the event types (none checked: no event) and the projects (none: all).
+ * minimum severity, the event types (none checked: no event), and the projects and project groups
+ * (#252; neither picked: every project).
  */
 trait ValidatesAlertFiltersTrait
 {
@@ -27,6 +29,8 @@ trait ValidatesAlertFiltersTrait
             "{$key}.event_types.*" => ['string', 'distinct', Rule::in(AlertEventEnum::selectableValues())],
             "{$key}.project_ids" => ['nullable', 'array'],
             "{$key}.project_ids.*" => ['integer', 'distinct', Rule::in($projectIds)],
+            "{$key}.project_group_ids" => ['nullable', 'array'],
+            "{$key}.project_group_ids.*" => ['integer', 'distinct', Rule::exists(ProjectGroup::class, 'id')],
         ];
     }
 
@@ -36,6 +40,7 @@ trait ValidatesAlertFiltersTrait
             SeverityEnum::from($this->string("{$key}.minimum_severity")->toString()),
             array_values(array_map('strval', (array) $this->input("{$key}.event_types", []))),
             array_values(array_map('intval', (array) $this->input("{$key}.project_ids", []))),
+            array_values(array_map('intval', (array) $this->input("{$key}.project_group_ids", []))),
         );
     }
 }

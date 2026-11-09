@@ -29,9 +29,13 @@ export type AlertFilter = {
     minimum_severity: string;
     event_types: string[];
     project_ids: number[];
+    project_group_ids: number[];
 };
 
 export type AlertFilterProject = { id: number; name: string };
+
+/** A project group an alert filter may pick (#252). */
+export type AlertFilterProjectGroup = { id: number; name: string };
 
 /**
  * The group of an event by its prefix (`finding.new` → findings), so the picker reads as a few
@@ -86,10 +90,77 @@ function toggle<T>(items: T[], item: T, isChecked: boolean): T[] {
 }
 
 /**
+ * A checkbox grid of named records (projects, project groups) posted as `<name>[]` hidden
+ * inputs, for the project scope of an alert filter.
+ */
+function IdCheckboxGrid({
+    id,
+    name,
+    label,
+    hint,
+    options,
+    selected,
+    onChange,
+    error,
+}: {
+    id: string;
+    name: string;
+    label: string;
+    hint: string;
+    options: { id: number; name: string }[];
+    selected: number[];
+    onChange: (selected: number[]) => void;
+    error?: string;
+}) {
+    return (
+        <Field data-invalid={error ? true : undefined}>
+            <div className="space-y-1">
+                <FieldLabel>{label}</FieldLabel>
+                <FieldDescription>{hint}</FieldDescription>
+            </div>
+            {selected.map((selectedId) => (
+                <input
+                    key={selectedId}
+                    type="hidden"
+                    name={`${name}[]`}
+                    value={selectedId}
+                />
+            ))}
+            <div className="grid gap-2 sm:grid-cols-2">
+                {options.map((option) => (
+                    <label
+                        key={option.id}
+                        htmlFor={`${id}-${option.id}`}
+                        className="flex cursor-pointer items-center gap-3 rounded-md border border-border/60 p-3 text-sm"
+                    >
+                        <Checkbox
+                            id={`${id}-${option.id}`}
+                            checked={selected.includes(option.id)}
+                            onCheckedChange={(isChecked) =>
+                                onChange(
+                                    toggle(
+                                        selected,
+                                        option.id,
+                                        isChecked === true,
+                                    ),
+                                )
+                            }
+                        />
+                        <span className="min-w-0 truncate">{option.name}</span>
+                    </label>
+                ))}
+            </div>
+            <FieldError>{error}</FieldError>
+        </Field>
+    );
+}
+
+/**
  * The filters of one alert channel or of a user's alert emails (#22): minimum severity, event
- * types and projects (none checked: every project). Controlled; the values are posted through
- * hidden inputs named `<name>[minimum_severity]`, `<name>[event_types][]` and
- * `<name>[project_ids][]`, and the errors read under the dotted `errorKey`.
+ * types, and projects and project groups (#252; none checked: every project). Controlled; the
+ * values are posted through hidden inputs named `<name>[minimum_severity]`,
+ * `<name>[event_types][]`, `<name>[project_group_ids][]` and `<name>[project_ids][]`, and the
+ * errors read under the dotted `errorKey`.
  */
 export default function AlertFilterFields({
     name,
@@ -99,6 +170,7 @@ export default function AlertFilterFields({
     events,
     severities,
     projects,
+    projectGroups = [],
     errors,
 }: {
     name: string;
@@ -108,6 +180,7 @@ export default function AlertFilterFields({
     events: string[];
     severities: string[];
     projects: AlertFilterProject[];
+    projectGroups?: AlertFilterProjectGroup[];
     errors: Record<string, string | undefined>;
 }) {
     const { t } = useTranslation();
@@ -169,55 +242,37 @@ export default function AlertFilterFields({
                 error={errorOf('event_types')}
             />
 
+            {projectGroups.length > 0 ? (
+                <IdCheckboxGrid
+                    id={`${id}-project-group`}
+                    name={`${name}[project_group_ids]`}
+                    label={t('settings.integrations.projectGroups')}
+                    hint={t('settings.integrations.projectGroupsHint')}
+                    options={projectGroups}
+                    selected={value.project_group_ids}
+                    onChange={(projectGroupIds) =>
+                        onChange({
+                            ...value,
+                            project_group_ids: projectGroupIds,
+                        })
+                    }
+                    error={errorOf('project_group_ids')}
+                />
+            ) : null}
+
             {projects.length > 0 ? (
-                <Field data-invalid={errorOf('project_ids') ? true : undefined}>
-                    <div className="space-y-1">
-                        <FieldLabel>
-                            {t('settings.integrations.projects')}
-                        </FieldLabel>
-                        <FieldDescription>
-                            {t('settings.integrations.projectsHint')}
-                        </FieldDescription>
-                    </div>
-                    {value.project_ids.map((projectId) => (
-                        <input
-                            key={projectId}
-                            type="hidden"
-                            name={`${name}[project_ids][]`}
-                            value={projectId}
-                        />
-                    ))}
-                    <div className="grid gap-2 sm:grid-cols-2">
-                        {projects.map((project) => (
-                            <label
-                                key={project.id}
-                                htmlFor={`${id}-project-${project.id}`}
-                                className="flex cursor-pointer items-center gap-3 rounded-md border border-border/60 p-3 text-sm"
-                            >
-                                <Checkbox
-                                    id={`${id}-project-${project.id}`}
-                                    checked={value.project_ids.includes(
-                                        project.id,
-                                    )}
-                                    onCheckedChange={(isChecked) =>
-                                        onChange({
-                                            ...value,
-                                            project_ids: toggle(
-                                                value.project_ids,
-                                                project.id,
-                                                isChecked === true,
-                                            ),
-                                        })
-                                    }
-                                />
-                                <span className="min-w-0 truncate">
-                                    {project.name}
-                                </span>
-                            </label>
-                        ))}
-                    </div>
-                    <FieldError>{errorOf('project_ids')}</FieldError>
-                </Field>
+                <IdCheckboxGrid
+                    id={`${id}-project`}
+                    name={`${name}[project_ids]`}
+                    label={t('settings.integrations.projects')}
+                    hint={t('settings.integrations.projectsHint')}
+                    options={projects}
+                    selected={value.project_ids}
+                    onChange={(projectIds) =>
+                        onChange({ ...value, project_ids: projectIds })
+                    }
+                    error={errorOf('project_ids')}
+                />
             ) : null}
         </div>
     );

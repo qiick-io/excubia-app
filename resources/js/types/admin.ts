@@ -69,6 +69,26 @@ export type AdminGroupRow = {
     updated_at: string;
 };
 
+/** A project as a project group lists it. */
+type AdminProjectRef = {
+    id: number;
+    name: string;
+};
+
+/** One row of `App\Http\Resources\ProjectGroupResource` (#252). */
+export type AdminProjectGroupRow = {
+    id: number;
+    name: string;
+    slug: string;
+    description: string | null;
+    /** Only the projects the current user can see. */
+    projects: AdminProjectRef[];
+    can_update: boolean;
+    can_delete: boolean;
+    created_at: string;
+    updated_at: string;
+};
+
 /** One row of `App\Http\Resources\RoleResource`. */
 export type AdminRoleRow = {
     id: number;

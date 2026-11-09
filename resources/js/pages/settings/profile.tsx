@@ -8,6 +8,7 @@ import AlertFilterFields from '@/components/settings/alert-filter-fields';
 import type {
     AlertFilter,
     AlertFilterProject,
+    AlertFilterProjectGroup,
 } from '@/components/settings/alert-filter-fields';
 import { Button } from '@/components/ui/button';
 import DeleteUser from '@/components/delete-user';
@@ -34,6 +35,7 @@ type AlertSubscription = {
     events: string[];
     severities: string[];
     projects: AlertFilterProject[];
+    projectGroups: AlertFilterProjectGroup[];
 };
 
 /**
@@ -317,6 +319,7 @@ function AlertEmails({ subscription }: { subscription: AlertSubscription }) {
                             events={subscription.events}
                             severities={subscription.severities}
                             projects={subscription.projects}
+                            projectGroups={subscription.projectGroups}
                             errors={errors}
                         />
 

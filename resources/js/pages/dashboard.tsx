@@ -166,6 +166,7 @@ type Overview = {
 export default function Dashboard({
     canViewProjects,
     projects,
+    projectGroups,
     scope,
     overview,
     trend,
@@ -173,7 +174,9 @@ export default function Dashboard({
 }: {
     canViewProjects: boolean;
     projects: ProjectRow[];
-    scope: { project: string | null; period: number };
+    /** Project groups holding a project the user can see (#252). */
+    projectGroups: { id: number; name: string }[];
+    scope: { project: string | null; group: number | null; period: number };
     overview: Overview | null;
     trend: TrendPoint[];
     /** Project slug → live health, for the projects that send health samples (#143). */
@@ -185,16 +188,19 @@ export default function Dashboard({
 
     const visit = (next: {
         project?: string | null;
+        group?: number | null;
         period?: number;
     }): void => {
         const project =
             next.project !== undefined ? next.project : scope.project;
+        const group = next.group !== undefined ? next.group : scope.group;
         const period = next.period ?? scope.period;
 
         router.get(
             dashboard.url({
                 query: {
                     project: project ?? undefined,
+                    group: group ?? undefined,
                     period: period === DEFAULT_PERIOD ? undefined : period,
                 },
             }),
@@ -259,36 +265,77 @@ export default function Dashboard({
             <PageLayout
                 scrollContent
                 filters={
-                    <Select
-                        value={scope.project ?? ALL_PROJECTS}
-                        onValueChange={(value) =>
-                            visit({
-                                project: value === ALL_PROJECTS ? null : value,
-                            })
-                        }
-                    >
-                        <SelectTrigger
-                            aria-label={t('dashboard.scope.project')}
-                            className="w-64"
-                        >
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value={ALL_PROJECTS}>
-                                {t('dashboard.scope.allProjects', {
-                                    count: projects.length,
-                                })}
-                            </SelectItem>
-                            {projects.map((project) => (
-                                <SelectItem
-                                    key={project.slug}
-                                    value={project.slug}
+                    <div className="flex items-center gap-1.5">
+                        {projectGroups.length > 0 ? (
+                            <Select
+                                value={
+                                    scope.group === null
+                                        ? ALL_PROJECTS
+                                        : String(scope.group)
+                                }
+                                onValueChange={(value) =>
+                                    visit({
+                                        group:
+                                            value === ALL_PROJECTS
+                                                ? null
+                                                : Number(value),
+                                        project: null,
+                                    })
+                                }
+                            >
+                                <SelectTrigger
+                                    aria-label={t('dashboard.scope.group')}
+                                    className="w-48"
                                 >
-                                    {project.name}
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value={ALL_PROJECTS}>
+                                        {t('dashboard.scope.allGroups')}
+                                    </SelectItem>
+                                    {projectGroups.map((projectGroup) => (
+                                        <SelectItem
+                                            key={projectGroup.id}
+                                            value={String(projectGroup.id)}
+                                        >
+                                            {projectGroup.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        ) : null}
+                        <Select
+                            value={scope.project ?? ALL_PROJECTS}
+                            onValueChange={(value) =>
+                                visit({
+                                    project:
+                                        value === ALL_PROJECTS ? null : value,
+                                })
+                            }
+                        >
+                            <SelectTrigger
+                                aria-label={t('dashboard.scope.project')}
+                                className="w-64"
+                            >
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value={ALL_PROJECTS}>
+                                    {t('dashboard.scope.allProjects', {
+                                        count: projects.length,
+                                    })}
                                 </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                                {projects.map((project) => (
+                                    <SelectItem
+                                        key={project.slug}
+                                        value={project.slug}
+                                    >
+                                        {project.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
                 }
                 filtersRight={
                     <div className="flex items-center gap-1.5">

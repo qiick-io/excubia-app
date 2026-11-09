@@ -70,6 +70,7 @@
         "platform": "Plattform",
         "dashboard": "Dashboard",
         "projects": "Projekte",
+        "projectGroups": "Projektgruppen",
         "fleet": "Flotte",
         "assistant": "Assistent",
         "activityLog": "Aktivitätsprotokoll",
@@ -299,6 +300,7 @@
             "modules": {
                 "dashboard": "Dashboard",
                 "projects": "Projekte",
+                "project-groups": "Projektgruppen",
                 "fleet": "Flotte",
                 "assistant": "Assistent",
                 "files": "Dateien",
@@ -513,6 +515,8 @@
             "scoutIndexFailuresHint": "Alarmieren, wenn die Laravel-Scout-Index- oder -Entfernungsjobs in der Queue eines Modells in der letzten Stunde mindestens so oft fehlschlagen.",
             "projects": "Projekte",
             "projectsHint": "Alle Kästchen leer lassen, um die Warnungen aller Projekte zu senden.",
+            "projectGroups": "Projektgruppen",
+            "projectGroupsHint": "Ein Projekt einer markierten Gruppe ist enthalten, auch wenn es der Gruppe später beitritt.",
             "emailTitle": "E-Mail",
             "emailDescription": "Jede Person, die Projekte sehen darf, schaltet Alarm-E-Mails in ihrem Profil selbst ein, mit eigenem Mindestschweregrad, eigenen Ereignissen und Projekten. Die Mails nutzen die Mail-Einstellungen der App und benötigen einen Queue-Worker.",
             "emailLink": "Profil öffnen",
@@ -663,6 +667,32 @@
         },
         "empty": "Noch keine Gruppen."
     },
+    "projectGroups": {
+        "title": "Projektgruppen",
+        "newGroup": "Neue Projektgruppe",
+        "editGroup": "Projektgruppe bearbeiten",
+        "formDescription": "Gruppiere Projekte nach Kunde, Team, Produktlinie oder Umgebung. Ein Projekt kann in mehreren Gruppen sein.",
+        "searchPlaceholder": "Projektgruppen suchen…",
+        "sortBy": "Sortieren nach",
+        "name": "Name",
+        "description": "Beschreibung",
+        "projects": "Projekte",
+        "projectsPlaceholder": "Projekte auswählen…",
+        "projectsHint": "Es werden nur Projekte angezeigt, die du sehen kannst.",
+        "create": "Erstellen",
+        "save": "Speichern",
+        "cancel": "Abbrechen",
+        "columns": {
+            "name": "Name",
+            "projects": "Projekte",
+            "actions": "Aktionen"
+        },
+        "empty": "Noch keine Projektgruppen.",
+        "confirm": {
+            "deleteTitle": "Projektgruppe „{{name}}“ löschen?",
+            "deleteDescription": "Die Projekte bleiben; Dashboard- und Alarmfilter auf diese Gruppe erfassen sie nicht mehr. Dies kann nicht rückgängig gemacht werden."
+        }
+    },
     "projects": {
         "title": "Projekte",
         "newProject": "Neues Projekt",
@@ -727,7 +757,9 @@
         "scope": {
             "project": "Projekt",
             "allProjects": "Alle Projekte ({{count}})",
-            "openProject": "Projekt öffnen"
+            "openProject": "Projekt öffnen",
+            "group": "Projektgruppe",
+            "allGroups": "Alle Gruppen"
         },
         "period": {
             "label": "Zeitraum",
@@ -1899,5 +1931,12 @@
         "ignoreRuleHint": "Füge sie der excubia.json des Projekts hinzu, um den Befund aus dem Bericht selbst herauszunehmen.",
         "noResolved": "Noch keine behobenen Befunde",
         "noResolvedDescription": "Befunde erscheinen hier, sobald ein späterer Bericht ihre Prüfung ohne sie ausführt."
+    },
+    "picker": {
+        "clearSelection": "Auswahl aufheben",
+        "loading": "Wird geladen…",
+        "noResults": "Keine Ergebnisse.",
+        "placeholder": "Auswählen…",
+        "search": "Suchen…"
     }
 }

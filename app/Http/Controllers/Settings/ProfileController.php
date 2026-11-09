@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\ProfileDeleteRequest;
 use App\Http\Requests\Settings\ProfileUpdateRequest;
 use App\Models\Project;
+use App\Models\ProjectGroup;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -35,6 +36,7 @@ class ProfileController extends Controller
                 'events' => AlertEventEnum::selectableValues(),
                 'severities' => SeverityEnum::values(),
                 'projects' => Project::query()->visibleTo($user)->orderBy('name')->get(['id', 'name'])->map(fn (Project $project): array => ['id' => $project->id, 'name' => $project->name])->all(),
+                'projectGroups' => ProjectGroup::query()->whereHas('projects', fn ($groupProjects) => $groupProjects->visibleTo($user))->orderBy('name')->get(['id', 'name'])->map(fn (ProjectGroup $projectGroup): array => ['id' => $projectGroup->id, 'name' => $projectGroup->name])->all(),
             ] : null,
         ]);
     }

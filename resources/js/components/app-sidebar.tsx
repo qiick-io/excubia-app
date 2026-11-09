@@ -3,6 +3,7 @@ import {
     BookOpen,
     FolderGit2,
     FolderKanban,
+    FolderTree,
     Layers,
     LayoutGrid,
     PanelRight,
@@ -44,6 +45,7 @@ import activityLogs from '@/routes/activity-logs';
 import ai from '@/routes/ai';
 import fleet from '@/routes/fleet';
 import groups from '@/routes/groups';
+import projectGroups from '@/routes/project-groups';
 import projects from '@/routes/projects';
 import { edit as editProfile } from '@/routes/profile';
 import users from '@/routes/users';
@@ -91,6 +93,13 @@ export function AppSidebar() {
                 href: projects.index.url(),
                 icon: FolderKanban,
                 permission: PermissionEnum.CanShowProjects,
+            },
+            'project-groups': {
+                id: 'project-groups',
+                titleKey: 'nav.projectGroups',
+                href: projectGroups.index.url(),
+                icon: FolderTree,
+                permission: PermissionEnum.CanShowProjectGroups,
             },
             fleet: {
                 id: 'fleet',

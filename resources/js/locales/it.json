@@ -70,6 +70,7 @@
         "platform": "Piattaforma",
         "dashboard": "Dashboard",
         "projects": "Progetti",
+        "projectGroups": "Gruppi di progetti",
         "fleet": "Flotta",
         "assistant": "Assistente",
         "activityLog": "Activity Log",
@@ -299,6 +300,7 @@
             "modules": {
                 "dashboard": "Dashboard",
                 "projects": "Progetti",
+                "project-groups": "Gruppi di progetti",
                 "fleet": "Flotta",
                 "assistant": "Assistente",
                 "files": "File",
@@ -513,6 +515,8 @@
             "scoutIndexFailuresHint": "Avvisa quando i job in coda di indicizzazione o rimozione di Laravel Scout di un modello falliscono almeno questo numero di volte nell'ultima ora.",
             "projects": "Progetti",
             "projectsHint": "Lascia tutte le caselle vuote per inviare gli avvisi di ogni progetto.",
+            "projectGroups": "Gruppi di progetti",
+            "projectGroupsHint": "Un progetto di un gruppo selezionato è incluso, anche se entra nel gruppo più tardi.",
             "emailTitle": "Email",
             "emailDescription": "Ogni utente che vede i progetti attiva gli avvisi via email per sé nel proprio profilo, con la sua gravità minima, i suoi eventi e i suoi progetti. Le email usano le impostazioni mail dell'app e servono un queue worker.",
             "emailLink": "Apri il tuo profilo",
@@ -663,6 +667,32 @@
         },
         "empty": "Ancora nessun gruppo."
     },
+    "projectGroups": {
+        "title": "Gruppi di progetti",
+        "newGroup": "Nuovo gruppo di progetti",
+        "editGroup": "Modifica gruppo di progetti",
+        "formDescription": "Raggruppa i progetti per cliente, team, linea di prodotto o ambiente. Un progetto può stare in più gruppi.",
+        "searchPlaceholder": "Cerca gruppi di progetti…",
+        "sortBy": "Ordina per",
+        "name": "Nome",
+        "description": "Descrizione",
+        "projects": "Progetti",
+        "projectsPlaceholder": "Seleziona progetti…",
+        "projectsHint": "Sono elencati solo i progetti che puoi vedere.",
+        "create": "Crea",
+        "save": "Salva",
+        "cancel": "Annulla",
+        "columns": {
+            "name": "Nome",
+            "projects": "Progetti",
+            "actions": "Azioni"
+        },
+        "empty": "Ancora nessun gruppo di progetti.",
+        "confirm": {
+            "deleteTitle": "Eliminare il gruppo di progetti “{{name}}”?",
+            "deleteDescription": "I progetti restano; i filtri della dashboard e degli avvisi su questo gruppo smettono di includerli. L’operazione è irreversibile."
+        }
+    },
     "projects": {
         "title": "Progetti",
         "newProject": "Nuovo progetto",
@@ -727,7 +757,9 @@
         "scope": {
             "project": "Progetto",
             "allProjects": "Tutti i progetti ({{count}})",
-            "openProject": "Apri progetto"
+            "openProject": "Apri progetto",
+            "group": "Gruppo di progetti",
+            "allGroups": "Tutti i gruppi"
         },
         "period": {
             "label": "Periodo",
@@ -1899,5 +1931,12 @@
         "ignoreRuleHint": "Aggiungila all'excubia.json del progetto per escludere il problema dal report stesso.",
         "noResolved": "Ancora nessun problema risolto",
         "noResolvedDescription": "I problemi compaiono qui quando un report successivo esegue il loro controllo senza trovarli."
+    },
+    "picker": {
+        "clearSelection": "Cancella selezione",
+        "loading": "Caricamento…",
+        "noResults": "Nessun risultato.",
+        "placeholder": "Seleziona…",
+        "search": "Cerca…"
     }
 }

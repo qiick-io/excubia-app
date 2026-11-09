@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use App\Enums\RoleEnum;
+use App\Models\Project;
+use App\Models\ProjectGroup;
 use App\Models\User;
 use Database\Seeders\PermissionSeeder;
 
@@ -49,5 +51,30 @@ it('selects findings with the registry select column and the toolbar counts them
         ->assertSee('1 selected')
         ->click('thead [role="checkbox"]')
         ->assertDontSee('1 selected')
+        ->assertNoJavaScriptErrors();
+});
+
+it('creates a project group with the project picker and narrows the dashboard to it', function () {
+    $this->actingAs(User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value));
+    Project::factory()->create(['name' => 'Acme Shop']);
+    Project::factory()->create(['name' => 'Blog']);
+
+    visit(route('project-groups.index', absolute: false))
+        ->click('New project group')
+        ->fill('#project_group_name', 'Acme')
+        ->click('[role="combobox"][aria-label="Projects"]')
+        ->click('[role="option"]:has-text("Acme Shop")')
+        ->click('#project_group_description')
+        ->click('button[type="submit"]')
+        ->waitForText('Project group created.')
+        // The drawer closes with an animation; the list behind it is inert until then.
+        ->wait(1)
+        ->assertSeeIn('tbody tr:first-child', 'Acme Shop')
+        ->assertNoJavaScriptErrors();
+
+    $acme = ProjectGroup::query()->where('name', 'Acme')->sole();
+
+    visit(route('dashboard', ['group' => $acme->id], false))
+        ->assertSee('All projects (1)')
         ->assertNoJavaScriptErrors();
 });

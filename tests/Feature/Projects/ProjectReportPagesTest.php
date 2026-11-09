@@ -219,7 +219,7 @@ it('builds the issue-first overview for all projects or one, with the previous p
 
     $this->actingAs(reportReader())->get(route('dashboard'))
         ->assertInertia(fn (Assert $page) => $page
-            ->where('scope', ['project' => null, 'period' => 14])
+            ->where('scope', ['project' => null, 'group' => null, 'period' => 14])
             ->where('overview.kpis.findings.total', 4)
             ->where('overview.kpis.findings.previous', 1)
             ->where('overview.kpis.atRisk.value', 2)
@@ -237,9 +237,9 @@ it('builds the issue-first overview for all projects or one, with the previous p
             ->has('overview.configuration', 2)
             ->where('overview.configuration.0.checkId', 'laravel-debug-mode'));
 
-    $this->actingAs(reportReader())->get(route('dashboard', ['project' => 'blog', 'period' => 7]))
+    $this->actingAs(reportReader())->get(route('dashboard', ['project' => 'blog', 'group' => null, 'period' => 7]))
         ->assertInertia(fn (Assert $page) => $page
-            ->where('scope', ['project' => 'blog', 'period' => 7])
+            ->where('scope', ['project' => 'blog', 'group' => null, 'period' => 7])
             ->has('projects', 2)
             ->where('overview.kpis.findings.total', 2)
             ->where('overview.kpis.findings.previous', null)
@@ -248,7 +248,7 @@ it('builds the issue-first overview for all projects or one, with the previous p
             ->has('trend', 7));
 
     $this->actingAs(reportReader())->get(route('dashboard', ['project' => 'nope', 'period' => 5]))
-        ->assertInertia(fn (Assert $page) => $page->where('scope', ['project' => null, 'period' => 14]));
+        ->assertInertia(fn (Assert $page) => $page->where('scope', ['project' => null, 'group' => null, 'period' => 14]));
 });
 
 it('sends a ready fix per finding to the project page and the dashboard', function () {

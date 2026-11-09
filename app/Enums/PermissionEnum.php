@@ -17,6 +17,12 @@ enum PermissionEnum: string
     case CanEditProjects = 'can-edit-projects';
     case CanDeleteProjects = 'can-delete-projects';
 
+    // Project groups
+    case CanShowProjectGroups = 'can-show-project-groups';
+    case CanCreateProjectGroups = 'can-create-project-groups';
+    case CanEditProjectGroups = 'can-edit-project-groups';
+    case CanDeleteProjectGroups = 'can-delete-project-groups';
+
     // Project data
     case CanRunChecks = 'can-run-checks';
     case CanManageExceptions = 'can-manage-exceptions';
