@@ -161,6 +161,31 @@ export function useZoomToRange(
 }
 
 /**
+ * The URL of a range tab with the page's range (#250): `?range=` for a preset other than the
+ * default, `?from=&to=` for a custom range, plus an optional anchor.
+ */
+export function useRangeTabUrl(): (
+    slug: string,
+    view: RangeView,
+    anchor?: string,
+) => string {
+    const { rangeWindow } = usePage<{ rangeWindow: TimeRangeWindow }>().props;
+    const query =
+        rangeWindow.value === 'custom'
+            ? { from: rangeWindow.from, to: rangeWindow.to }
+            : {
+                  range:
+                      rangeWindow.value === DEFAULT_TIME_RANGE
+                          ? undefined
+                          : rangeWindow.value,
+              };
+
+    return (slug, view, anchor) =>
+        projectsRoutes.view.url({ project: slug, view }, { query }) +
+        (anchor === undefined ? '' : `#${anchor}`);
+}
+
+/**
  * "View ↗" in a chart card (#249): a link to the table of the rows behind the chart on the same
  * page, so the URL and its range stay; the keyboard path next to a click on a bucket.
  */

@@ -57,6 +57,7 @@ const RUNTIME_GUIDE_URL =
 /** Anchors of the tables behind the charts (#249). */
 const ROUTES_ID = 'runtime-routes';
 const LOG_LEVELS_ID = 'runtime-log-levels';
+const JOBS_ID = 'runtime-jobs';
 
 const ERROR_LOG_LEVELS = ['emergency', 'alert', 'critical', 'error'];
 
@@ -376,6 +377,7 @@ export function RuntimeView({
 
             <section className="grid grid-cols-1 gap-4">
                 <RuntimeCard
+                    id={JOBS_ID}
                     title={t('runtime.jobs')}
                     configKey="runtime.jobs"
                     rows={runtime.jobs}
@@ -1194,7 +1196,7 @@ function Name({
  * What a runtime card shows without data: none in the range, and the excubia.json key
  * that turns the type on.
  */
-function NoData({ configKey }: { configKey: string }) {
+export function NoData({ configKey }: { configKey: string }) {
     const { t } = useTranslation();
 
     return (

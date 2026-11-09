@@ -475,6 +475,8 @@ export type RuntimeSummary = {
         routes: RuntimeRow[];
     } & RuntimePercentiles;
     slowQueries: RuntimeRow[];
+    /** Jobs per bucket by outcome (#250). */
+    jobTimeline: { at: string; processed: number; failed: number }[];
     jobs: RuntimeRow[];
     scheduledTasks: RuntimeRow[];
     outgoingHttp: RuntimeRow[];
@@ -726,4 +728,10 @@ export type ProjectAlerts = {
     mutes: AlertMuteRow[];
     windows: MaintenanceWindowRow[];
     isInMaintenanceMode: boolean;
+};
+
+/** `ProjectTelemetryService::exceptionsOverview()` (#250). */
+export type ExceptionsOverview = {
+    timeline: { at: string; count: number }[];
+    top: ExceptionGroupRow[];
 };

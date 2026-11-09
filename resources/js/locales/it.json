@@ -1969,5 +1969,25 @@
         "viewRoutes": "Vedi le route",
         "viewModels": "Vedi i modelli",
         "viewTasks": "Vedi i task"
+    },
+    "application": {
+        "title": "Applicazione",
+        "exceptions": "Eccezioni",
+        "exceptionsDescription": "{{formattedCount}} occorrenze {{during}}, {{bucket}}.",
+        "occurrences": "Occorrenze",
+        "topExceptions": "Più frequenti",
+        "viewExceptions": "Vedi le eccezioni",
+        "exceptionsChartLabel": "Grafico a barre delle occorrenze di eccezioni {{bucket}}: {{count}} {{during}}.",
+        "routes": "Route",
+        "routesDescription": "Le route più lente per p95 e quelle con più errori del server {{during}}.",
+        "slowestRoutes": "Più lente (p95)",
+        "failingRoutes": "Più 5xx",
+        "noFailingRoutes": "Nessun errore del server in questo periodo.",
+        "jobs": "Job",
+        "jobsDescription": "{{processed}} elaborati e {{failed}} falliti {{during}}, {{bucket}}.",
+        "processed": "Elaborati",
+        "failed": "Falliti",
+        "viewJobs": "Vedi i job",
+        "jobsChartLabel": "Grafico a barre impilate dei job {{bucket}}: {{processed}} elaborati e {{failed}} falliti {{during}}."
     }
 }

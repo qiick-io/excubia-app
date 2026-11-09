@@ -308,3 +308,41 @@ it('clamps a custom range ending in the future to now (#247)', function () {
     expect($range?->until->toIso8601ZuluString())->toBe('2026-11-05T12:29:59Z')
         ->and($range?->bucketSeconds)->toBe(60);
 });
+
+it('gives the overview its Application data over the range (#250)', function () {
+    $store = app(StorePushedExceptionsAction::class);
+    $store->execute($this->project, (string) Str::uuid(), [rangeExceptionGroup('a', 3, '2026-11-05T12:10:20Z'), rangeExceptionGroup('b', 1, '2026-11-05T11:05:00Z')]);
+    $store->execute($this->project, (string) Str::uuid(), [rangeExceptionGroup('c', 7, '2026-11-01T08:00:00Z')]);
+
+    foreach ([['processed', 12], ['failed', 2]] as [$outcome, $count]) {
+        RuntimeAggregate::query()->create([
+            'project_id' => $this->project->id,
+            'type' => 'job',
+            'bucket' => '2026-11-05 12:05:00',
+            'sample_rate' => 1,
+            'dimension_key' => hash('sha256', $outcome),
+            'dimensions' => ['job' => 'App\\Jobs\\SendInvoiceJob', 'queue' => 'default', 'connection' => 'redis', 'outcome' => $outcome],
+            'count' => $count,
+            'error_count' => $outcome === 'failed' ? $count : 0,
+            'total_ms' => $count * 100,
+            'max_ms' => 300,
+        ]);
+    }
+
+    $this->get(route('projects.show', 'shop'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('rangeWindow.value', '24h')
+            // 24 h by hour: the 12:00 bucket is the last of 25.
+            ->has('exceptionsOverview.timeline', 25)
+            ->where('exceptionsOverview.timeline.24.count', 3)
+            ->where('exceptionsOverview.timeline.23.count', 1)
+            // Seen most in the range first; the group of 1 Nov is outside it.
+            ->has('exceptionsOverview.top', 2)
+            ->where('exceptionsOverview.top.0.range_count', 3)
+            ->missing('exceptionsOverview.top.0.timeline')
+            ->where('runtime.jobTimeline.24', ['at' => '2026-11-05T12:00:00Z', 'processed' => 12, 'failed' => 2]));
+
+    // The tabs do not compute it.
+    $this->get(route('projects.view', ['shop', 'runtime']))
+        ->assertInertia(fn (Assert $page) => $page->where('exceptionsOverview', null));
+});
