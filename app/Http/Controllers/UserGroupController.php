@@ -10,8 +10,10 @@ use App\Http\Requests\ListQueryRequest;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UserGroupRequest;
 use App\Http\Resources\UserGroupResource;
+use App\Models\ProjectGroup;
 use App\Models\User;
 use App\Models\UserGroup;
+use App\Services\EffectivePermissionResolverService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -29,7 +31,8 @@ class UserGroupController extends Controller
     private const SORTABLE_COLUMNS = ['name', 'created_at', 'updated_at'];
 
     /**
-     * Lists groups with search, sort and pagination, plus the roles the actor may assign.
+     * Lists groups with search, sort and pagination, plus the roles the actor may assign and the
+     * project groups a group may be scoped to.
      */
     public function index(ListQueryRequest $request): Response
     {
@@ -40,7 +43,7 @@ class UserGroupController extends Controller
         $direction = $request->sortDirection('asc');
 
         $groups = $request->applySearch(UserGroup::query(), ['name', 'description'])
-            ->with(['roles:id,name', 'users:id,first_name,last_name,email'])
+            ->with(['roles:id,name', 'users:id,first_name,last_name,email', 'projectGroups:id,name'])
             ->withCount('users')
             ->orderBy($sort, $direction)
             ->orderBy('id')
@@ -51,6 +54,11 @@ class UserGroupController extends Controller
             'groups' => UserGroupResource::collection($groups),
             'filters' => $request->filters($sort, $direction),
             'roles' => StoreUserRequest::assignableRoleOptionsFor($actor instanceof User ? $actor : null),
+            // Only admins change a group's project scope (#253); others see it read-only.
+            'projectGroups' => ProjectGroup::query()->orderBy('name')->get(['id', 'name'])
+                ->map(fn (ProjectGroup $projectGroup): array => ['id' => $projectGroup->id, 'name' => $projectGroup->name])
+                ->all(),
+            'canChangeProjectScope' => $actor instanceof User && app(EffectivePermissionResolverService::class)->isAdmin($actor),
         ]);
     }
 
@@ -93,6 +101,7 @@ class UserGroupController extends Controller
             $description === '' ? null : $description,
             $request->roles(),
             $request->userIds(),
+            $request->projectGroupIds(),
         );
     }
 }

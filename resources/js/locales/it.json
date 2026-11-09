@@ -665,7 +665,12 @@
             "members": "Membri",
             "actions": "Azioni"
         },
-        "empty": "Ancora nessun gruppo."
+        "empty": "Ancora nessun gruppo.",
+        "projectScope": {
+            "label": "Ambito progetti",
+            "hint": "I membri vedono anche i progetti di questi gruppi di progetti, compresi quelli solo admin. I loro ruoli decidono comunque cosa possono farci.",
+            "adminsOnly": "Solo gli admin cambiano quali progetti vede un gruppo."
+        }
     },
     "projectGroups": {
         "title": "Gruppi di progetti",
@@ -736,7 +741,7 @@
             "label": "Visibilità",
             "everyone": "Tutti con accesso ai progetti",
             "admins": "Solo admin",
-            "hint": "Admin e super-admin vedono sempre tutti i progetti."
+            "hint": "Admin e super-admin vedono sempre tutti i progetti; un progetto solo admin è visibile anche ai gruppi utenti con accesso a uno dei suoi gruppi di progetti."
         }
     },
     "dashboard": {

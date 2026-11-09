@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
+use App\Models\ProjectGroup;
 use App\Models\User;
 use App\Models\UserGroup;
 use App\Services\EffectivePermissionResolverService;
@@ -13,10 +14,13 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
 /**
- * Validates a group with its roles and members, for both create and update (route `group` on update).
+ * Validates a group with its roles, members and project scope, for both create and update (route
+ * `group` on update). Only admins change the project scope (#253): it grants access to projects,
+ * admin-only ones included, as changing a project's visibility does.
  * The roles a user may grant follow StoreUserRequest::assignableRolesFor() (only what they
  * hold, #151). Unless they are a super-admin, nobody may join or leave a group that carries
- * roles, nor change the roles of a group they belong to: both would change their own access.
+ * roles or a project scope, nor change the roles of a group they belong to: both would change
+ * their own access.
  */
 class UserGroupRequest extends FormRequest
 {
@@ -44,6 +48,8 @@ class UserGroupRequest extends FormRequest
             'roles.*' => ['string', 'distinct', Rule::in(StoreUserRequest::assignableRolesFor($actor instanceof User ? $actor : null))],
             'users' => ['array'],
             'users.*' => ['integer', 'distinct', Rule::exists(User::class, 'id')],
+            'project_groups' => ['array'],
+            'project_groups.*' => ['integer', 'distinct', Rule::exists(ProjectGroup::class, 'id')],
         ];
     }
 
@@ -55,18 +61,32 @@ class UserGroupRequest extends FormRequest
         return [function (Validator $validator): void {
             $actor = $this->user();
 
-            if (! $actor instanceof User || app(EffectivePermissionResolverService::class)->isSuperAdmin($actor)) {
+            if (! $actor instanceof User) {
                 return;
             }
 
+            $permissions = app(EffectivePermissionResolverService::class);
             $group = $this->route('group');
+            $currentProjectGroupIds = $group instanceof UserGroup ? self::projectGroupIdsOf($group) : [];
+            $requestedProjectGroupIds = collect($this->projectGroupIds())->unique()->sort()->values()->all();
+
+            if ($currentProjectGroupIds !== $requestedProjectGroupIds && ! $permissions->isAdmin($actor)) {
+                $validator->errors()->add('project_groups', __('Only admins change which projects a group sees.'));
+            }
+
+            if ($permissions->isSuperAdmin($actor)) {
+                return;
+            }
+
             $currentRoles = $group instanceof UserGroup ? $group->roles()->orderBy('name')->pluck('name')->all() : [];
             $requestedRoles = collect($this->roles())->unique()->sort()->values()->all();
             $wasMember = $group instanceof UserGroup && $group->users()->whereKey($actor->getKey())->exists();
             $willBeMember = in_array((int) $actor->getKey(), $this->userIds(), true);
 
-            if ($wasMember !== $willBeMember && ($currentRoles !== [] || $requestedRoles !== [])) {
-                $validator->errors()->add('users', __('You cannot join or leave a group that carries roles.'));
+            $grantsAccess = $currentRoles !== [] || $requestedRoles !== [] || $currentProjectGroupIds !== [] || $requestedProjectGroupIds !== [];
+
+            if ($wasMember !== $willBeMember && $grantsAccess) {
+                $validator->errors()->add('users', __('You cannot join or leave a group that carries roles or projects.'));
             }
 
             if (($wasMember || $willBeMember) && $currentRoles !== $requestedRoles) {
@@ -89,5 +109,31 @@ class UserGroupRequest extends FormRequest
     public function userIds(): array
     {
         return array_values(array_map(intval(...), array_filter($this->array('users'), is_numeric(...))));
+    }
+
+    /**
+     * The requested project scope; a request without `project_groups` keeps the group's own.
+     *
+     * @return list<int>
+     */
+    public function projectGroupIds(): array
+    {
+        $group = $this->route('group');
+
+        if (! $this->has('project_groups')) {
+            return $group instanceof UserGroup ? self::projectGroupIdsOf($group) : [];
+        }
+
+        return array_values(array_map(intval(...), array_filter($this->array('project_groups'), is_numeric(...))));
+    }
+
+    /**
+     * The group's current project scope, sorted, to compare with the request.
+     *
+     * @return list<int>
+     */
+    public static function projectGroupIdsOf(UserGroup $group): array
+    {
+        return array_values(array_map(intval(...), $group->projectGroups()->orderBy('project_groups.id')->pluck('project_groups.id')->all()));
     }
 }

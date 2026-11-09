@@ -665,7 +665,12 @@
             "members": "Members",
             "actions": "Actions"
         },
-        "empty": "No groups yet."
+        "empty": "No groups yet.",
+        "projectScope": {
+            "label": "Project scope",
+            "hint": "Members also see the projects of these project groups, admin-only ones included. Their roles still decide what they can do there.",
+            "adminsOnly": "Only admins change which projects a group sees."
+        }
     },
     "projectGroups": {
         "title": "Project groups",
@@ -736,7 +741,7 @@
             "label": "Visibility",
             "everyone": "Everyone with project access",
             "admins": "Admins only",
-            "hint": "Admins and super-admins always see every project."
+            "hint": "Admins and super-admins always see every project; an admin-only project is also seen by the user groups scoped to one of its project groups."
         }
     },
     "dashboard": {

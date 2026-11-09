@@ -91,9 +91,9 @@ function toggle<T>(items: T[], item: T, isChecked: boolean): T[] {
 
 /**
  * A checkbox grid of named records (projects, project groups) posted as `<name>[]` hidden
- * inputs, for the project scope of an alert filter.
+ * inputs, for the project scope of an alert filter or of a user group (#253).
  */
-function IdCheckboxGrid({
+export function IdCheckboxGrid({
     id,
     name,
     label,
@@ -102,6 +102,7 @@ function IdCheckboxGrid({
     selected,
     onChange,
     error,
+    disabled = false,
 }: {
     id: string;
     name: string;
@@ -111,6 +112,7 @@ function IdCheckboxGrid({
     selected: number[];
     onChange: (selected: number[]) => void;
     error?: string;
+    disabled?: boolean;
 }) {
     return (
         <Field data-invalid={error ? true : undefined}>
@@ -136,6 +138,7 @@ function IdCheckboxGrid({
                         <Checkbox
                             id={`${id}-${option.id}`}
                             checked={selected.includes(option.id)}
+                            disabled={disabled}
                             onCheckedChange={(isChecked) =>
                                 onChange(
                                     toggle(

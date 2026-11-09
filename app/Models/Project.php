@@ -17,7 +17,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Spatie\Activitylog\Support\LogOptions;
 
 /**
@@ -142,8 +144,9 @@ class Project extends Model
     }
 
     /**
-     * Projects the user may see: all of them for admins and super-admins, otherwise only those
-     * visible to everyone.
+     * Projects the user may see: all of them for admins and super-admins, otherwise those visible
+     * to everyone plus those in a project group linked to one of the user's groups (#253). The
+     * single access filter: lists, policies, alert recipients and AI tools all go through it.
      *
      * @param  Builder<self>  $query
      */
@@ -154,7 +157,37 @@ class Project extends Model
             return;
         }
 
-        $query->where('visibility', ProjectVisibilityEnum::Everyone->value);
+        if ($user === null) {
+            $query->where('visibility', ProjectVisibilityEnum::Everyone->value);
+
+            return;
+        }
+
+        $query->where(fn (Builder $visible) => $visible
+            ->where('visibility', ProjectVisibilityEnum::Everyone->value)
+            ->orWhereIn('id', self::scopedProjectIds($user)));
+    }
+
+    /**
+     * Whether the user may see this project: one query with the same rules as visibleTo(), for
+     * the policies and the alert recipients.
+     */
+    public function isVisibleTo(?User $user): bool
+    {
+        return self::query()->whereKey($this->getKey())->visibleTo($user)->exists();
+    }
+
+    /**
+     * The ids of the projects in a project group linked to one of the user's groups (#253), as a
+     * subquery: no extra round trip for visibleTo().
+     */
+    private static function scopedProjectIds(User $user): QueryBuilder
+    {
+        return DB::table('project_group_project')
+            ->select('project_group_project.project_id')
+            ->join('user_group_project_group', 'user_group_project_group.project_group_id', '=', 'project_group_project.project_group_id')
+            ->join('user_group_user', 'user_group_user.user_group_id', '=', 'user_group_project_group.user_group_id')
+            ->where('user_group_user.user_id', $user->getKey());
     }
 
     /**
