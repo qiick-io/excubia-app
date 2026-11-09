@@ -437,7 +437,16 @@ type RuntimePennantStaleFeature = {
 };
 
 /** A time range of the runtime, exceptions and schedule tabs (#113), `TimeRangeEnum`. */
-export type TimeRange = '1h' | '6h' | '24h' | '7d' | '14d';
+export type TimeRange = '1h' | '6h' | '24h' | '7d' | '14d' | 'custom';
+
+/** `TimeRangeData::toArray()` plus the earliest start a custom range may have (#247). */
+export type TimeRangeWindow = {
+    value: TimeRange;
+    from: string;
+    to: string;
+    bucketSeconds: number;
+    earliest: string;
+};
 
 /**
  * The runtime of a project over a time range (#24, #107, #113). Counts are estimated real

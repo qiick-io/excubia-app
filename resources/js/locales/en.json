@@ -1522,6 +1522,19 @@
             "24h": "per hour",
             "7d": "per 6 hours",
             "14d": "per day"
+        },
+        "custom": {
+            "label": "Custom range",
+            "placeholder": "Custom range",
+            "clear": "Clear",
+            "during": "from {{span}}"
+        },
+        "bucketSeconds": {
+            "60": "per minute",
+            "600": "per 10 minutes",
+            "3600": "per hour",
+            "21600": "per 6 hours",
+            "86400": "per day"
         }
     },
     "checks": {
@@ -1945,5 +1958,10 @@
         "noResults": "No results.",
         "placeholder": "Select…",
         "search": "Search…"
+    },
+    "dateRangePicker": {
+        "startTime": "Start time",
+        "endTime": "End time",
+        "apply": "Apply"
     }
 }

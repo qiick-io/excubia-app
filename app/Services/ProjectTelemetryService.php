@@ -4,16 +4,14 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Data\TimeRangeData;
 use App\Enums\ExceptionStatusEnum;
-use App\Enums\TimeRangeEnum;
 use App\Http\Resources\ExceptionGroupResource;
 use App\Http\Resources\ScheduledTaskResource;
 use App\Models\ExceptionGroup;
 use App\Models\ExceptionOccurrence;
 use App\Models\Project;
 use App\Models\ScheduledTaskRun;
-use Carbon\CarbonImmutable;
-use Illuminate\Support\Facades\Date;
 
 /**
  * The exceptions and schedule tabs of a project over a time range (#113): the exception groups
@@ -34,14 +32,15 @@ class ProjectTelemetryService
      *
      * @return list<array<string, mixed>>
      */
-    public function exceptions(Project $project, ?TimeRangeEnum $range = null, ?CarbonImmutable $now = null): array
+    public function exceptions(Project $project, ?TimeRangeData $range = null): array
     {
-        $now ??= CarbonImmutable::instance(Date::now());
-        $from = $range?->start($now);
+        $from = $range?->from;
+        $until = $range?->until;
         $groups = $project->exceptionGroups()
             ->when($from !== null, fn ($query) => $query
                 ->where('last_seen_at', '>=', $from)
-                ->withSum(['occurrences as range_count' => fn ($occurrences) => $occurrences->where('bucket', '>=', $from)], 'count'))
+                ->where('first_seen_at', '<=', $until)
+                ->withSum(['occurrences as range_count' => fn ($occurrences) => $occurrences->where('bucket', '>=', $from)->where('bucket', '<=', $until)], 'count'))
             ->orderByRaw('case status when ? then 0 when ? then 1 else 2 end', [ExceptionStatusEnum::Open->value, ExceptionStatusEnum::Resolved->value])
             ->orderByDesc('last_seen_at')
             ->limit(100)
@@ -51,11 +50,10 @@ class ProjectTelemetryService
         }
 
         $timelines = $this->timeSeries->points(
-            ExceptionOccurrence::query()->whereIn('exception_group_id', $groups->modelKeys())->where('bucket', '>=', $from)->toBase(),
+            ExceptionOccurrence::query()->whereIn('exception_group_id', $groups->modelKeys())->where('bucket', '>=', $from)->where('bucket', '<=', $range->until)->toBase(),
             'bucket',
             ['count' => 'count'],
             $range,
-            $now,
             'exception_group_id',
             array_values($groups->modelKeys()),
         );
@@ -73,10 +71,9 @@ class ProjectTelemetryService
      *
      * @return array{tasks: list<array<string, mixed>>, timeline: list<array<string, int|string>>}
      */
-    public function schedule(Project $project, TimeRangeEnum $range, ?CarbonImmutable $now = null): array
+    public function schedule(Project $project, TimeRangeData $range): array
     {
-        $now ??= CarbonImmutable::instance(Date::now());
-        $runs = fn () => ScheduledTaskRun::query()->where('project_id', $project->id)->where('bucket', '>=', $range->start($now))->toBase();
+        $runs = fn () => ScheduledTaskRun::query()->where('project_id', $project->id)->where('bucket', '>=', $range->from)->where('bucket', '<=', $range->until)->toBase();
         $sums = [];
 
         foreach (ScheduledTaskRun::OUTCOMES as $outcome) {
@@ -98,6 +95,6 @@ class ProjectTelemetryService
             ];
         }
 
-        return ['tasks' => $tasks, 'timeline' => $this->timeSeries->points($runs(), 'bucket', $sums, $range, $now)];
+        return ['tasks' => $tasks, 'timeline' => $this->timeSeries->points($runs(), 'bucket', $sums, $range)];
     }
 }

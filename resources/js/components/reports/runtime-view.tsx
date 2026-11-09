@@ -8,7 +8,8 @@ import {
 } from '@/components/reports/severity-chart';
 import type { ChartMarker } from '@/components/reports/severity-chart';
 import {
-    bucketLabel,
+    DEFAULT_TIME_RANGE,
+    useRangeTexts,
     deployMarkers,
 } from '@/components/reports/time-range-picker';
 import { StatCard } from '@/components/stat-card';
@@ -74,6 +75,8 @@ type Formatters = {
 export function RuntimeView({ runtime }: { runtime: RuntimeSummary | null }) {
     const { t } = useTranslation();
 
+    const rangeTexts = useRangeTexts(runtime?.range ?? DEFAULT_TIME_RANGE);
+
     if (runtime === null) {
         return (
             <PageEmptyState
@@ -101,11 +104,8 @@ export function RuntimeView({ runtime }: { runtime: RuntimeSummary | null }) {
     const { requests } = runtime;
     const errorRate =
         requests.count > 0 ? (requests.errors / requests.count) * 100 : 0;
-    const bucketText = bucketLabel(runtime.range);
-    const range = {
-        bucket: t(`timeRange.bucket.${runtime.range}`),
-        during: t(`timeRange.during.${runtime.range}`),
-    };
+    const { bucketText } = rangeTexts;
+    const range = { bucket: rangeTexts.bucket, during: rangeTexts.during };
     const statusTotals = requests.timeline.reduce(
         (totals, point) => ({
             ok: totals.ok + point.ok,
@@ -138,7 +138,7 @@ export function RuntimeView({ runtime }: { runtime: RuntimeSummary | null }) {
                     className="xl:col-span-3"
                     label={t('runtime.requests')}
                     value={format.count(requests.count)}
-                    headline={t(`timeRange.last.${runtime.range}`)}
+                    headline={rangeTexts.headline}
                     context={[
                         `${t('runtime.statusOk')} ${format.count(statusTotals.ok)} · ${t('runtime.statusClientErrors')} ${format.count(statusTotals.clientErrors)} · ${t('runtime.statusServerErrors')} ${format.count(statusTotals.serverErrors)}`,
                         runtime.isSampled ? t('runtime.sampled') : null,
