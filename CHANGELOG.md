@@ -41,6 +41,7 @@ upgrade from the version before (see [docs/self-hosting.md](docs/self-hosting.md
 
 - **Self-monitoring runtime types** (#219): the system project's runtime types are no longer limited to the five defaults of the shipped `resources/excubia/self-monitoring.json`. By default it records every type the installed excubia-core collects and the app stores (`cache` sampled at 10 %); `EXCUBIA_SELF_MONITORING_TYPES` (comma-separated `excubia.json` keys, or `all`) chooses them in `.env`, so upgrades keep the choice. Settings → System shows them under **Self-monitoring** and warns about unknown names.
 - **Self-monitoring server and health samples** (#220): `excubia:system-telemetry` now takes this machine's `server` sample every minute and the core's `health` samples at most once a minute, through the same core services as `excubia:push-runtime`, so the system project has a Servers row and the Live health card.
+- A fresh install's system report no longer has 39 `env-example-sync` findings about Excubia's own code (#222): `.env.example` now lists, commented out with their defaults, every key `config/*.php` reads (SQLite tuning, passkeys, activity log, the AI cloud providers, push limits and the Checks defaults), and `EnvExampleSyncTest` runs the core check on the app so it stays clean.
 
 ### Security
 
