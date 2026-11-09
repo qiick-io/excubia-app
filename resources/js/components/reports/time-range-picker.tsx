@@ -1,9 +1,12 @@
 import { router, usePage } from '@inertiajs/react';
+import { ArrowUpRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { DateRangePicker } from '@/components/admin/date-range-picker';
 import type { DateRangeValue } from '@/components/admin/date-range-picker';
 import { shortRelease } from '@/components/reports/release-label';
 import type { ChartMarker } from '@/components/reports/severity-chart';
+import { Button } from '@/components/ui/button';
+import { CardAction } from '@/components/ui/card';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import projectsRoutes from '@/routes/projects';
 import type { RuntimeDeploy, TimeRange, TimeRangeWindow } from '@/types';
@@ -31,11 +34,23 @@ function visitRange(
     slug: string,
     view: RangeView,
     query: { range?: string; from?: string; to?: string },
+    scrollToId?: string,
 ): void {
     router.get(
         projectsRoutes.view.url({ project: slug, view }, { query }),
         {},
-        { preserveScroll: true, preserveState: true, replace: true },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            replace: true,
+            onSuccess: () => {
+                if (scrollToId !== undefined) {
+                    document
+                        .getElementById(scrollToId)
+                        ?.scrollIntoView({ block: 'start' });
+                }
+            },
+        },
     );
 }
 
@@ -119,22 +134,56 @@ export function TimeRangePicker({
 
 /**
  * Drag to zoom (#248) on the charts of a range tab: the dragged buckets, from the start of the
- * first to the end of the last, become the page's custom range. The server bounds it like any
- * custom range (retention, 14 days, now).
+ * first to the end of the last, become the page's custom range. A click on one bucket (#249)
+ * narrows the page to it and scrolls to `rowsId`, the table of the rows behind the chart. The
+ * server bounds the range like any custom range (retention, 14 days, now).
  */
 export function useZoomToRange(
     slug: string,
     view: RangeView,
+    rowsId?: string,
 ): (fromLabel: string, toLabel: string) => void {
     const { rangeWindow } = usePage<{ rangeWindow: TimeRangeWindow }>().props;
 
     return (fromLabel, toLabel) =>
-        visitRange(slug, view, {
-            from: new Date(fromLabel).toISOString(),
-            to: new Date(
-                new Date(toLabel).getTime() + rangeWindow.bucketSeconds * 1000,
-            ).toISOString(),
-        });
+        visitRange(
+            slug,
+            view,
+            {
+                from: new Date(fromLabel).toISOString(),
+                to: new Date(
+                    new Date(toLabel).getTime() +
+                        rangeWindow.bucketSeconds * 1000,
+                ).toISOString(),
+            },
+            fromLabel === toLabel ? rowsId : undefined,
+        );
+}
+
+/**
+ * "View ↗" in a chart card (#249): a link to the table of the rows behind the chart on the same
+ * page, so the URL and its range stay; the keyboard path next to a click on a bucket.
+ */
+export function ChartRowsLink({
+    rowsId,
+    label,
+}: {
+    rowsId: string;
+    /** Accessible name, e.g. "View routes". */
+    label: string;
+}) {
+    const { t } = useTranslation();
+
+    return (
+        <CardAction>
+            <Button variant="outline" size="sm" asChild>
+                <a href={`#${rowsId}`} aria-label={label}>
+                    {t('charts.view')}
+                    <ArrowUpRight className="size-3.5" />
+                </a>
+            </Button>
+        </CardAction>
+    );
 }
 
 /**

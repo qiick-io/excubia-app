@@ -50,9 +50,10 @@ type DragHandlerState = { activeLabel?: string | number };
 
 /**
  * Drag to zoom (#248): mouse down on a bucket starts a selection, moving extends it (drawn as a
- * ReferenceArea), mouse up hands the first and last bucket to `onZoom`; Escape or leaving the
- * chart cancels, and a selection of one bucket is ignored. Mouse only: keyboard and screen
- * reader users pick the same range with the time range picker.
+ * ReferenceArea), mouse up hands the first and last bucket to `onZoom`; a click without a drag
+ * hands the clicked bucket twice (#249). Escape or leaving the chart cancels. Mouse only:
+ * keyboard and screen reader users pick the same range with the time range picker and reach the
+ * rows with the card's View link.
  */
 function useDragZoom(onZoom: ChartZoomHandler | undefined) {
     const [start, setStart] = useState<string | null>(null);
@@ -97,10 +98,11 @@ function useDragZoom(onZoom: ChartZoomHandler | undefined) {
                 }
             },
             onMouseUp: () => {
-                if (start !== null && end !== null && start !== end) {
-                    const [first, last] =
-                        start < end ? [start, end] : [end, start];
-                    onZoom(first, last);
+                if (start !== null) {
+                    const last = end ?? start;
+                    const [first, final] =
+                        start < last ? [start, last] : [last, start];
+                    onZoom(first, final);
                 }
 
                 cancel();

@@ -9,6 +9,7 @@ import { StackedBarChart } from '@/components/reports/severity-chart';
 import {
     useRangeTexts,
     useZoomToRange,
+    ChartRowsLink,
     deployMarkers,
     TimeRangePicker,
 } from '@/components/reports/time-range-picker';
@@ -51,6 +52,9 @@ function formatTime(value: string | null): string {
     return value === null ? '—' : new Date(value).toLocaleString();
 }
 
+/** Anchor of the tasks table, the rows behind the runs chart (#249). */
+const TASKS_ID = 'schedule-tasks';
+
 /**
  * The project's scheduled tasks (#110), in schedule order: each task with its expression and
  * timezone, its runs in the time range (#113), its last run, its next due time and its status,
@@ -73,7 +77,7 @@ export function ScheduleView({
     const { t } = useTranslation();
 
     const rangeTexts = useRangeTexts(range);
-    const zoom = useZoomToRange(slug, 'schedule');
+    const zoom = useZoomToRange(slug, 'schedule', TASKS_ID);
 
     if (tasks.length === 0) {
         return (
@@ -214,6 +218,10 @@ export function ScheduleView({
                 <Card>
                     <CardHeader className="pb-3">
                         <CardTitle>{t('schedule.runsOverTime')}</CardTitle>
+                        <ChartRowsLink
+                            rowsId={TASKS_ID}
+                            label={t('charts.viewTasks')}
+                        />
                         <CardDescription>
                             {t('schedule.runsOverTimeDescription', phrases)}
                         </CardDescription>
@@ -256,11 +264,13 @@ export function ScheduleView({
                         />
                     </CardContent>
                 </Card>
-                <DataTable
-                    columns={taskColumns}
-                    data={tasks}
-                    getRowId={(task) => String(task.id)}
-                />
+                <div id={TASKS_ID} className="scroll-mt-4">
+                    <DataTable
+                        columns={taskColumns}
+                        data={tasks}
+                        getRowId={(task) => String(task.id)}
+                    />
+                </div>
             </div>
         </PageLayout>
     );
