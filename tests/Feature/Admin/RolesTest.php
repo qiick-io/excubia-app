@@ -20,6 +20,8 @@ function userWithRole(RoleEnum|string $role): User
 }
 
 it('gives a fresh migrate --seed a super-admin who can log in', function () {
+    config(['super_admin.password' => 'a-local-dev-password']);
+
     $this->seed();
     $this->seed();
 

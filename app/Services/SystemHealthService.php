@@ -15,10 +15,12 @@ use App\Models\RuntimeHourlyRollup;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Composer\InstalledVersions;
+use Database\Seeders\CreateSuperAdminSeeder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Queue;
 use Qiick\Excubia\Laravel\ExcubiaHeartbeatCommand;
 use Throwable;
@@ -48,6 +50,11 @@ class SystemHealthService
 
     private const ALERT_FAILURES_SHOWN = 10;
 
+    /** The login of the development super-admin that `.env.example` used to seed with "password" (#225). */
+    private const EXAMPLE_ADMIN_EMAIL = 'superadmin@example.com';
+
+    private const EXAMPLE_ADMIN_PASSWORD = 'password';
+
     public function __construct(
         private ProjectStalenessService $staleness,
         private SettingsRepositoryService $settings,
@@ -69,6 +76,7 @@ class SystemHealthService
             'skippedRuntime' => $this->skippedRuntime($viewer),
             'alertFailures' => $this->alertFailures($viewer),
             'rollups' => $this->rollups(),
+            'exampleAdmin' => $this->exampleAdmin(),
             'version' => $this->version(),
         ];
     }
@@ -257,6 +265,32 @@ class SystemHealthService
             || Carbon::parse((string) $oldestAggregate)->lt(Carbon::parse((string) $oldestRollup)->subHour()));
 
         return ['status' => $isPending ? 'warning' : 'ok', 'hint' => 'runtime-rollups', 'isBackfillPending' => $isPending];
+    }
+
+    /**
+     * Whether the example super-admin of the development seeder exists on a server (#225): an
+     * error while it still has the password "password", a warning otherwise (a guessable login).
+     * Local and testing installs are expected to have it.
+     *
+     * @return array{status: Status, hint: string, exists: bool, hasDefaultPassword: bool}
+     */
+    private function exampleAdmin(): array
+    {
+        $user = app()->environment(CreateSuperAdminSeeder::ENVIRONMENTS)
+            ? null
+            : User::query()->where('email', self::EXAMPLE_ADMIN_EMAIL)->first();
+        $hasDefaultPassword = is_string($user?->password) && Hash::check(self::EXAMPLE_ADMIN_PASSWORD, $user->password);
+
+        return [
+            'status' => match (true) {
+                $hasDefaultPassword => 'error',
+                $user !== null => 'warning',
+                default => 'ok',
+            },
+            'hint' => 'example-admin-account',
+            'exists' => $user !== null,
+            'hasDefaultPassword' => $hasDefaultPassword,
+        ];
     }
 
     /**
