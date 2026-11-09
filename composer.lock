@@ -4457,16 +4457,16 @@
         },
         {
             "name": "qiick/excubia-core",
-            "version": "v1.0.0-beta.3",
+            "version": "v1.0.0-beta.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/qiick-io/excubia-core.git",
-                "reference": "1ae72e954820140504005f3eb1445a56f291e546"
+                "reference": "911e52f33c6099c5aa026c6bccae87bd1f251367"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/qiick-io/excubia-core/zipball/1ae72e954820140504005f3eb1445a56f291e546",
-                "reference": "1ae72e954820140504005f3eb1445a56f291e546",
+                "url": "https://api.github.com/repos/qiick-io/excubia-core/zipball/911e52f33c6099c5aa026c6bccae87bd1f251367",
+                "reference": "911e52f33c6099c5aa026c6bccae87bd1f251367",
                 "shasum": ""
             },
             "require": {
@@ -4478,6 +4478,7 @@
             "require-dev": {
                 "justinrainbow/json-schema": "^6.14",
                 "larastan/larastan": "^3.3.1",
+                "laravel/ai": "^1.3",
                 "laravel/pint": "^1.30.4 <1.31.0",
                 "nunomaduro/collision": "^8.5",
                 "orchestra/testbench": "^10.0|^11.0",
@@ -4530,8 +4531,8 @@
                 "issues": "https://github.com/qiick-io/excubia-core/issues",
                 "source": "https://github.com/qiick-io/excubia-core"
             },
-            "time": "2026-11-07T18:40:45+00:00",
-            "published-time": "2026-11-07T18:41:05+00:00"
+            "time": "2026-11-09T10:19:32+00:00",
+            "published-time": "2026-11-09T10:19:38+00:00"
         },
         {
             "name": "ramsey/collection",
