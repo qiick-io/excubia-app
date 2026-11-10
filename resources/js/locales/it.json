@@ -25,7 +25,13 @@
         "clearFilters": "Cancella filtri",
         "back": "Indietro",
         "offline": "Offline",
-        "online": "Online"
+        "online": "Online",
+        "create": "Crea",
+        "description": "Descrizione",
+        "close": "Chiudi",
+        "confirm": "Conferma",
+        "generateSecurePassword": "Genera password sicura",
+        "passwordStrength": "Robustezza della password"
     },
     "emptyState": {
         "users": {
@@ -64,7 +70,13 @@
         "systemBadge": "Sistema",
         "deleteTitle": "Eliminare il ruolo “{{name}}”?",
         "deleteDescription": "L’operazione non può essere annullata.",
-        "deleteFallback": "L'operazione non può essere annullata."
+        "deleteFallback": "L'operazione non può essere annullata.",
+        "form": {
+            "editTitle": "Modifica ruolo",
+            "editHead": "Modifica {{name}}",
+            "readOnlyHint": "Ruolo predefinito, in sola lettura: i suoi permessi sono forniti da Excubia.",
+            "adminPermissions": "Permessi di amministrazione"
+        }
     },
     "nav": {
         "platform": "Piattaforma",
@@ -561,6 +573,42 @@
                 "audio_second": "Audio / s",
                 "search_unit": "Unità ricerca"
             }
+        },
+        "deleteAccount": {
+            "title": "Elimina account",
+            "description": "Elimina il tuo account e tutte le sue risorse",
+            "warningTitle": "Attenzione",
+            "warningDescription": "Procedi con cautela: l'operazione non può essere annullata.",
+            "confirmTitle": "Vuoi davvero eliminare il tuo account?",
+            "confirmDescription": "Una volta eliminato l’account, anche tutte le sue risorse e i suoi dati verranno eliminati definitivamente. Inserisci la password per confermare che vuoi eliminare definitivamente il tuo account."
+        },
+        "twoFactor": {
+            "title": "Autenticazione a due fattori",
+            "description": "Gestisci le impostazioni dell'autenticazione a due fattori",
+            "enabledDescription": "All'accesso ti verrà chiesto un PIN sicuro e casuale, che puoi leggere nell'app compatibile TOTP sul tuo telefono.",
+            "disabledDescription": "Quando attivi l'autenticazione a due fattori, all'accesso ti verrà chiesto un PIN sicuro. Puoi leggere il PIN in un'app compatibile TOTP sul tuo telefono.",
+            "enable": "Attiva 2FA",
+            "disable": "Disattiva 2FA",
+            "continueSetup": "Continua la configurazione",
+            "recoveryCodes": {
+                "title": "Codici di recupero 2FA",
+                "description": "I codici di recupero ti permettono di riottenere l’accesso se perdi il dispositivo 2FA. Conservali in un password manager sicuro.",
+                "view": "Mostra i codici di recupero",
+                "hide": "Nascondi i codici di recupero",
+                "regenerate": "Rigenera i codici",
+                "listLabel": "Codici di recupero",
+                "loading": "Caricamento dei codici di recupero",
+                "regenerateHint": "Ogni codice di recupero può essere usato una sola volta per accedere al tuo account e viene poi rimosso. Se te ne servono altri, fai clic su <bold>Rigenera i codici</bold> qui sopra."
+            },
+            "setup": {
+                "manualEntry": "oppure inserisci il codice manualmente",
+                "enabledTitle": "Autenticazione a due fattori attivata",
+                "enabledDescription": "L'autenticazione a due fattori ora è attiva. Scansiona il codice QR o inserisci la chiave di configurazione nella tua app di autenticazione.",
+                "verifyTitle": "Verifica il codice di autenticazione",
+                "verifyDescription": "Inserisci il codice a 6 cifre della tua app di autenticazione",
+                "enableTitle": "Attiva l’autenticazione a due fattori",
+                "enableDescription": "Per completare l'attivazione dell'autenticazione a due fattori, scansiona il codice QR o inserisci la chiave di configurazione nella tua app di autenticazione"
+            }
         }
     },
     "activityLog": {
@@ -617,7 +665,8 @@
             "ai": "AI",
             "chat": "Chat",
             "settings": "Impostazioni"
-        }
+        },
+        "ipAddress": "IP"
     },
     "confirmDestructive": {
         "typeToConfirm": "Digita \"{{name}}\" per confermare"
@@ -648,6 +697,20 @@
         "status": {
             "active": "Attivo",
             "inactive": "Disattivato"
+        },
+        "form": {
+            "editTitle": "Modifica utente",
+            "editDescription": "Aggiorna profilo, stato e ruoli diretti. Lascia la password vuota per mantenerla.",
+            "createDescription": "Crea un utente e assegna i ruoli diretti. L'email è considerata verificata. Preferisci i gruppi quando molti utenti condividono gli stessi ruoli.",
+            "requiredHint": "I campi contrassegnati con * sono obbligatori.",
+            "firstNameRequired": "Nome *",
+            "emailRequired": "Email *",
+            "emailHint": "Usa un indirizzo email valido, ad esempio",
+            "newPasswordOptional": "Nuova password (facoltativa)",
+            "passwordRequired": "Password *",
+            "rolesRequired": "Ruoli *",
+            "rolesPlaceholder": "Seleziona almeno un ruolo",
+            "rolesLocked": "Non puoi cambiare i tuoi ruoli."
         }
     },
     "groups": {
@@ -670,6 +733,13 @@
             "label": "Ambito progetti",
             "hint": "I membri vedono anche i progetti di questi gruppi di progetti, compresi quelli solo admin. I loro ruoli decidono comunque cosa possono farci.",
             "adminsOnly": "Solo gli admin cambiano quali progetti vede un gruppo."
+        },
+        "form": {
+            "editTitle": "Modifica gruppo",
+            "description": "I membri ereditano i ruoli scelti qui. Con molti membri usa i gruppi invece di assegnare i ruoli a ogni singolo utente.",
+            "rolesHint": "I membri ereditano i permessi di questi ruoli.",
+            "rolesLocked": "Non puoi cambiare i ruoli di un gruppo di cui fai parte.",
+            "users": "Utenti"
         }
     },
     "projectGroups": {
@@ -2012,5 +2082,11 @@
         "hint": "Chi se ne occupa. Sono elencati solo gli utenti che vedono questo progetto.",
         "mine": "Assegnati a me",
         "column": "Assegnatario"
+    },
+    "errorBoundary": {
+        "title": "Qualcosa è andato storto",
+        "description": "L'interfaccia ha incontrato un errore imprevisto. Prova a ricaricare la pagina.",
+        "retry": "Riprova",
+        "reload": "Ricarica la pagina"
     }
 }

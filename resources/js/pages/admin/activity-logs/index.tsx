@@ -372,7 +372,7 @@ export default function AdminActivityLogsIndex({
                                 </div>
                                 <div>
                                     <span className="text-muted-foreground">
-                                        IP:
+                                        {t('activityLog.ipAddress')}:
                                     </span>{' '}
                                     {row.properties.ip ?? '—'}
                                 </div>

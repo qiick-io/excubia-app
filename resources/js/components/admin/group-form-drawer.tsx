@@ -112,15 +112,14 @@ export function GroupFormDrawer({
         }
     };
 
-    const title = editing ? 'Edit group' : 'New group';
+    const title = editing ? t('groups.form.editTitle') : t('groups.newGroup');
 
     return (
         <DrawerContent>
             <DrawerHeader>
                 <DrawerTitle>{title}</DrawerTitle>
                 <DrawerDescription>
-                    Members inherit the roles you pick here. Prefer groups for
-                    large memberships instead of assigning roles user-by-user.
+                    {t('groups.form.description')}
                 </DrawerDescription>
             </DrawerHeader>
 
@@ -140,7 +139,9 @@ export function GroupFormDrawer({
                         <Field
                             data-invalid={form.errors.name ? true : undefined}
                         >
-                            <FieldLabel htmlFor="group_name">Name</FieldLabel>
+                            <FieldLabel htmlFor="group_name">
+                                {t('common.name')}
+                            </FieldLabel>
                             <Input
                                 id="group_name"
                                 value={form.data.name}
@@ -170,7 +171,7 @@ export function GroupFormDrawer({
                             }
                         >
                             <FieldLabel htmlFor="group_description">
-                                Description
+                                {t('common.description')}
                             </FieldLabel>
                             <Input
                                 id="group_description"
@@ -204,7 +205,7 @@ export function GroupFormDrawer({
                                     : undefined
                             }
                         >
-                            <FieldLabel>Roles</FieldLabel>
+                            <FieldLabel>{t('groups.columns.roles')}</FieldLabel>
                             <RoleMultiSelect
                                 value={form.data.roles}
                                 onChange={(selectedRoles) =>
@@ -214,12 +215,11 @@ export function GroupFormDrawer({
                                 disabled={readOnly || isRolesLocked}
                             />
                             <FieldDescription id="group-roles-hint">
-                                Members inherit these roles’ permissions.
+                                {t('groups.form.rolesHint')}
                             </FieldDescription>
                             {isRolesLocked && !readOnly && (
                                 <FieldDescription id="group-roles-locked-hint">
-                                    You cannot change the roles of a group you
-                                    belong to.
+                                    {t('groups.form.rolesLocked')}
                                 </FieldDescription>
                             )}
                             <FieldError id="group-roles-error">
@@ -230,7 +230,7 @@ export function GroupFormDrawer({
                         <Field
                             data-invalid={form.errors.users ? true : undefined}
                         >
-                            <FieldLabel>Users</FieldLabel>
+                            <FieldLabel>{t('groups.form.users')}</FieldLabel>
                             <UserMultiSelect
                                 value={form.data.users}
                                 onChange={(userIds) =>
@@ -275,11 +275,11 @@ export function GroupFormDrawer({
                         variant="outline"
                         onClick={() => onCancel?.()}
                     >
-                        Cancel
+                        {t('common.cancel')}
                     </Button>
                     {!readOnly && (
                         <Button type="submit" disabled={form.processing}>
-                            {editing ? 'Save' : 'Create'}
+                            {editing ? t('common.save') : t('common.create')}
                         </Button>
                     )}
                 </DrawerFooter>

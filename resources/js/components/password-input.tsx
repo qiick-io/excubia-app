@@ -67,7 +67,7 @@ export default function PasswordInput({
     className,
     ref,
     showGenerateButton = false,
-    generateLabel = 'Generate secure password',
+    generateLabel,
     onGenerated,
     showStrength = false,
     strengthPolicy = 'medium',
@@ -75,6 +75,8 @@ export default function PasswordInput({
     ...props
 }: PasswordInputProps) {
     const { t } = useTranslation();
+    const generateButtonLabel =
+        generateLabel ?? t('common.generateSecurePassword');
     const [showPassword, setShowPassword] = useState(false);
     const value =
         typeof props.value === 'string'
@@ -115,8 +117,8 @@ export default function PasswordInput({
                         type="button"
                         onClick={() => onGenerated?.(generateSecurePassword())}
                         className="absolute inset-y-0 right-10 flex items-center px-2 text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
-                        aria-label={generateLabel}
-                        title={generateLabel}
+                        aria-label={generateButtonLabel}
+                        title={generateButtonLabel}
                     >
                         <WandSparkles className="size-4" />
                     </button>
@@ -140,7 +142,7 @@ export default function PasswordInput({
                 <div id={strengthId} className="space-y-1">
                     <div className="flex items-center justify-between text-xs">
                         <span className="text-muted-foreground">
-                            Password strength
+                            {t('common.passwordStrength')}
                         </span>
                         <span className={cn('font-medium', strengthLabelColor)}>
                             {t(
