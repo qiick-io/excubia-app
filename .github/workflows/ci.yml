@@ -100,6 +100,11 @@ jobs:
       - name: Hard-coded UI strings (ratchet)
         run: npm run lint:i18n
 
+      # The qiick ratcheted rules (#258) in Oxlint: restricted imports, navigator.clipboard,
+      # id-length. The type-aware boolean prefix rule waits for typescript-eslint on TypeScript 7.
+      - name: qiick standards rules (ratchet)
+        run: npm run lint:standards
+
   # The full suite on the other supported databases (#136); the `tests` job covers SQLite.
   databases:
     name: ${{ matrix.name }}
@@ -364,6 +369,16 @@ jobs:
       - name: Browser tests
         if: github.event_name != 'pull_request' || github.base_ref != 'develop'
         run: vendor/bin/pest tests/Browser
+
+  # Theme tokens and the WCAG 2.2 AA contrast of the installed theme, from app-ui at the pinned
+  # ref (#258). The browser tests stay in the Accessibility job above (full suite on main).
+  ui-quality:
+    uses: qiick-io/app-ui/.github/workflows/ui-quality.yml@v0.2.0
+
+  # The shared forward-only migration check (#258). It runs next to the `Migrations frozen` job
+  # until the required checks name it; then the local job and scripts/migrations-frozen.sh go.
+  shared-migrations-frozen:
+    uses: qiick-io/app-ui/.github/workflows/migrations-frozen.yml@v0.2.0
 
   # The @qiick UI registry copies and the qiick standards pack (agent files,
   # architecture test, kebab-case file names) must match app-ui.

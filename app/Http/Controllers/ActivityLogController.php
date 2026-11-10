@@ -9,6 +9,7 @@ use App\Http\Requests\ActivityLogRequest;
 use App\Http\Resources\ActivityLogResource;
 use App\Models\User;
 use App\Services\ActivityLogService;
+use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -20,14 +21,14 @@ use Spatie\Activitylog\Models\Activity;
  */
 class ActivityLogController extends Controller
 {
-    public function index(ActivityLogRequest $request, ActivityLogService $activityLogs): Response
+    public function index(ActivityLogRequest $request, ActivityLogService $activityLogs, #[CurrentUser] User $viewer): Response
     {
         Gate::authorize('viewAny', Activity::class);
 
         $filters = $request->activityFilters();
 
         return Inertia::render('admin/activity-logs/index', [
-            'activityLogs' => ActivityLogResource::collection($activityLogs->filteredQuery($filters, $request->user())
+            'activityLogs' => ActivityLogResource::collection($activityLogs->filteredQuery($filters, $viewer)
                 ->paginate($request->perPage())
                 ->withQueryString()),
             // Labels for the selected users of the user filter; the picker searches the rest.

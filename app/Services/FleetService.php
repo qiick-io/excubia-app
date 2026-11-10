@@ -47,8 +47,9 @@ class FleetService
         $findings = $this->openFindings($projects, [ReportHealthService::UPGRADE_BLOCKER_CHECK]);
 
         foreach ($projects as $project) {
-            [$dismissed, $active] = $findings->get($project->id, new EloquentCollection)
-                ->partition(fn (Finding $finding): bool => $this->lifecycle->isDismissed($finding));
+            $projectFindings = $findings->get($project->id) ?? new EloquentCollection;
+            $dismissed = $projectFindings->filter(fn (Finding $finding): bool => $this->lifecycle->isDismissed($finding));
+            $active = $projectFindings->reject(fn (Finding $finding): bool => $this->lifecycle->isDismissed($finding));
             $readiness = $project->latestReport === null
                 ? ['laravelVersion' => null, 'targetMajor' => null, 'status' => 'unknown', 'blockers' => [], 'uncheckedPackages' => 0]
                 : $this->health->upgradeReadiness($project->latestReport->report, array_values($active->map(fn (Finding $finding): array => $finding->finding)->all()));

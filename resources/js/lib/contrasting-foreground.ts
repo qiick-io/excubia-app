@@ -45,8 +45,12 @@ function parseHex(
     ];
 }
 
-function relativeLuminance(r: number, g: number, b: number): number {
-    return 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b);
+function relativeLuminance(red: number, green: number, blue: number): number {
+    return (
+        0.2126 * toLinear(red) +
+        0.7152 * toLinear(green) +
+        0.0722 * toLinear(blue)
+    );
 }
 
 function toLinear(channel: number): number {
