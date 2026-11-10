@@ -15,6 +15,8 @@ use App\Http\Requests\UpdateAiBudgetRequest;
 use App\Models\AlertMute;
 use App\Models\MaintenanceWindow;
 use App\Models\Project;
+use App\Models\User;
+use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -26,9 +28,9 @@ use Inertia\Inertia;
  */
 class ProjectAlertsController extends Controller
 {
-    public function storeMute(StoreAlertMuteRequest $request, Project $project, MuteAlertAction $mute): RedirectResponse
+    public function storeMute(StoreAlertMuteRequest $request, Project $project, MuteAlertAction $mute, #[CurrentUser] User $user): RedirectResponse
     {
-        $mute->execute($request->alert(), $request->input('scope') === 'issue', $request->string('duration')->toString(), $request->user());
+        $mute->execute($request->alert(), $request->input('scope') === 'issue', $request->string('duration')->toString(), $user);
 
         return $this->done(__('Alert muted.'));
     }
