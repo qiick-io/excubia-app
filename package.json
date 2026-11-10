@@ -12,9 +12,9 @@
         "knip": "knip",
         "lint": "vp check && node scripts/check-ui-tokens.mjs",
         "lint:i18n": "oxlint -c .oxlintrc.i18n.json -A all -f json resources/js | node scripts/qiick-ratchet.mjs lint --rule i18next/no-literal-string --baseline i18n-literal-baseline.json",
+        "lint:standards": "oxlint -c .oxlintrc.standards.json -f json resources/js | node scripts/qiick-ratchet.mjs lint --rule eslint/no-restricted-imports,eslint/no-restricted-properties,eslint/id-length --baseline qiick-lint-baseline.json",
         "types": "tsc --noEmit",
-        "lint:ui-tokens": "node scripts/check-ui-tokens.mjs",
-        "a11y:contrast": "node scripts/a11y-contrast.mjs"
+        "lint:ui-tokens": "node scripts/check-ui-tokens.mjs"
     },
     "dependencies": {
         "@fontsource-variable/geist": "^5.3.0",

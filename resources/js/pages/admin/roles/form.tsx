@@ -110,8 +110,8 @@ export default function AdminRoleForm({
                     <form
                         className="flex w-full flex-col gap-6"
                         noValidate
-                        onSubmit={(e) => {
-                            e.preventDefault();
+                        onSubmit={(event) => {
+                            event.preventDefault();
 
                             if (!isReadOnly) {
                                 submit();
@@ -159,8 +159,8 @@ export default function AdminRoleForm({
                                 <Input
                                     id="role_name"
                                     value={form.data.name}
-                                    onChange={(e) =>
-                                        form.setData('name', e.target.value)
+                                    onChange={(event) =>
+                                        form.setData('name', event.target.value)
                                     }
                                     required
                                     maxLength={100}
@@ -201,10 +201,12 @@ export default function AdminRoleForm({
                                                 id={`section-${group.section}`}
                                                 checked={allChecked}
                                                 disabled={isReadOnly}
-                                                onCheckedChange={(c) =>
+                                                onCheckedChange={(
+                                                    checkedState,
+                                                ) =>
                                                     toggleGroup(
                                                         group,
-                                                        c === true,
+                                                        checkedState === true,
                                                     )
                                                 }
                                             />
@@ -234,10 +236,13 @@ export default function AdminRoleForm({
                                                             name,
                                                         )}
                                                         disabled={isReadOnly}
-                                                        onCheckedChange={(c) =>
+                                                        onCheckedChange={(
+                                                            checkedState,
+                                                        ) =>
                                                             togglePermission(
                                                                 name,
-                                                                c === true,
+                                                                checkedState ===
+                                                                    true,
                                                             )
                                                         }
                                                     />

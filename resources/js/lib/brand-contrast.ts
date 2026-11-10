@@ -77,9 +77,9 @@ function pickForeground(hex: string): string | null {
         : FOREGROUND_DARK;
 }
 
-function contrastRatio(a: string, b: string): number {
-    const l1 = relativeLuminance(a);
-    const l2 = relativeLuminance(b);
+function contrastRatio(firstHex: string, secondHex: string): number {
+    const l1 = relativeLuminance(firstHex);
+    const l2 = relativeLuminance(secondHex);
 
     if (l1 === null || l2 === null) {
         return 0;
