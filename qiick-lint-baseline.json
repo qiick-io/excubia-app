@@ -1,0 +1,8 @@
+{
+    "eslint/no-restricted-imports": {},
+    "eslint/no-restricted-properties": {},
+    "eslint/id-length": {
+        "resources/js/components/admin/data-table-toolbar.tsx": 1,
+        "resources/js/components/admin/paginated-multi-select.tsx": 1
+    }
+}

@@ -109,7 +109,7 @@ export default function AdminUsersIndex({
 
     const deepLink = useDrawerDeepLink({
         onEdit: (id) => {
-            const row = users.data.find((u) => String(u.id) === id);
+            const row = users.data.find((user) => String(user.id) === id);
 
             if (!row?.can_update) {
                 return;

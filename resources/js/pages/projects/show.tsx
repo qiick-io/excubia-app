@@ -557,9 +557,9 @@ function OverviewView({
     );
     const nextEnd = usedRuntimes
         .filter((item) => item.version.security_support_ends_on)
-        .sort((a, b) =>
-            String(a.version.security_support_ends_on).localeCompare(
-                String(b.version.security_support_ends_on),
+        .sort((first, second) =>
+            String(first.version.security_support_ends_on).localeCompare(
+                String(second.version.security_support_ends_on),
             ),
         )[0];
 
