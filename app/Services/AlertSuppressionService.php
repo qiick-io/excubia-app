@@ -129,10 +129,17 @@ class AlertSuppressionService
             return false;
         }
 
-        return AlertLog::query()
+        $sentAlerts = AlertLog::query()
             ->where('project_id', $project->id)
-            ->where('event', $event->value)
-            ->when($subject === null, fn ($query) => $query->whereNull('subject'), fn ($query) => $query->where('subject', mb_substr($subject, 0, 255)))
+            ->where('event', $event->value);
+
+        if ($subject === null) {
+            $sentAlerts->whereNull('subject');
+        } else {
+            $sentAlerts->where('subject', mb_substr($subject, 0, 255));
+        }
+
+        return $sentAlerts
             ->whereIn('status', [AlertLog::QUEUED, AlertLog::SENT, AlertLog::FAILED])
             ->where('created_at', '>=', Date::now()->subMinutes($minutes))
             ->get(['severity', 'fingerprints'])

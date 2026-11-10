@@ -33,12 +33,18 @@ class FindingsTrendService
             ->where('received_at', '>=', $from)
             ->orderBy('received_at')
             ->get()
-            ->concat($projects->map(fn (Project $project): ?HealthReport => $project->healthReports()
-                ->where('received_at', '<', $from)
-                ->orderByDesc('received_at')
-                ->first())->filter())
+            // The last report before the period of each project, for the projects that have one.
+            ->concat($projects->flatMap(function (Project $project) use ($from): array {
+                $lastBefore = $project->healthReports()
+                    ->where('received_at', '<', $from)
+                    ->orderByDesc('received_at')
+                    ->first();
+
+                return $lastBefore === null ? [] : [$lastBefore];
+            }))
             ->sortBy('received_at')
-            ->values();
+            ->values()
+            ->all();
 
         $latestByProject = [];
         $trend = [];
@@ -47,7 +53,7 @@ class FindingsTrendService
         for ($day = $from; $day->lte($today); $day = $day->addDay()) {
             $endOfDay = $day->endOfDay();
 
-            while ($cursor < $reports->count() && $reports[$cursor]->received_at->lte($endOfDay)) {
+            while ($cursor < count($reports) && $reports[$cursor]->received_at->lte($endOfDay)) {
                 $latestByProject[$reports[$cursor]->project_id] = $reports[$cursor];
                 $cursor++;
             }
