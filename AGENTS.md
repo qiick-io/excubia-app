@@ -368,6 +368,7 @@ vendor/bin/pint --test # code style
 vendor/bin/phpstan analyse
 npm run lint && npm run types && npm run build
 npm run knip && npm run lint:i18n   # dead code, hard-coded UI strings (ratchet)
+npm run lint:standards   # qiick ratcheted rules in Oxlint: restricted imports, navigator.clipboard, id-length (#258)
 node scripts/qiick-ratchet.mjs phpstan   # Larastan baseline only shrinks
 ```
 

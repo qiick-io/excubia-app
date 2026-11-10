@@ -98,7 +98,7 @@ export default function AdminGroupsIndex({
 
     const deepLink = useDrawerDeepLink({
         onEdit: (id) => {
-            const row = groups.data.find((g) => String(g.id) === id);
+            const row = groups.data.find((group) => String(group.id) === id);
 
             if (!row?.can_update) {
                 return;

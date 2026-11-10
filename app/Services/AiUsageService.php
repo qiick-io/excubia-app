@@ -178,7 +178,7 @@ class AiUsageService
     {
         return array_values($series
             ->groupBy(fn (array $one): string => (string) json_encode($key($one)))
-            ->map(fn (Collection $group): array => [...$key($group->first()), ...$this->totals($group), ...$this->runtime->percentiles($group)])
+            ->map(fn (Collection $group): array => [...$key($group->firstOrFail()), ...$this->totals($group), ...$this->runtime->percentiles($group)])
             ->sort(fn (array $left, array $right): int => [$right['cost'] ?? -1, $right['count']] <=> [$left['cost'] ?? -1, $left['count']])
             ->take(self::TABLE_LIMIT)
             ->all());

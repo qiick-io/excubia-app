@@ -126,8 +126,8 @@ export function GroupFormDrawer({
             <form
                 className="flex min-h-0 flex-1 flex-col overflow-hidden"
                 noValidate
-                onSubmit={(e) => {
-                    e.preventDefault();
+                onSubmit={(event) => {
+                    event.preventDefault();
 
                     if (!readOnly) {
                         submit();
@@ -145,8 +145,8 @@ export function GroupFormDrawer({
                             <Input
                                 id="group_name"
                                 value={form.data.name}
-                                onChange={(e) =>
-                                    form.setData('name', e.target.value)
+                                onChange={(event) =>
+                                    form.setData('name', event.target.value)
                                 }
                                 required
                                 maxLength={STRING_LIMITS.GROUP_NAME}
@@ -176,8 +176,11 @@ export function GroupFormDrawer({
                             <Input
                                 id="group_description"
                                 value={form.data.description}
-                                onChange={(e) =>
-                                    form.setData('description', e.target.value)
+                                onChange={(event) =>
+                                    form.setData(
+                                        'description',
+                                        event.target.value,
+                                    )
                                 }
                                 maxLength={STRING_LIMITS.DESCRIPTION}
                                 disabled={readOnly}

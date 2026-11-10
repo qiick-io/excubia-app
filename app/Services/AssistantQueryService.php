@@ -132,9 +132,12 @@ class AssistantQueryService
 
         $reports = $project->healthReports()->orderByDesc('received_at')->orderByDesc('id');
         $to = $toReportId === null ? (clone $reports)->first() : (clone $reports)->find($toReportId);
-        $from = $fromReportId === null
-            ? (clone $reports)->when($to !== null, fn ($query) => $query->where('id', '!=', $to->id)->where('received_at', '<=', $to->received_at))->first()
-            : (clone $reports)->find($fromReportId);
+        // Without a "from", the report before "to" (none when there is no "to" either).
+        $from = match (true) {
+            $fromReportId !== null => (clone $reports)->find($fromReportId),
+            $to instanceof HealthReport => (clone $reports)->where('id', '!=', $to->id)->where('received_at', '<=', $to->received_at)->first(),
+            default => null,
+        };
 
         if (! $to instanceof HealthReport || ! $from instanceof HealthReport) {
             return null;

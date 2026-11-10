@@ -10,7 +10,8 @@ use App\Http\Requests\Settings\ProfileDeleteRequest;
 use App\Http\Requests\Settings\ProfileUpdateRequest;
 use App\Models\Project;
 use App\Models\ProjectGroup;
-use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Models\User;
+use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -22,12 +23,12 @@ class ProfileController extends Controller
     /**
      * Show the user's profile settings page.
      */
-    public function edit(Request $request): Response
+    public function edit(Request $request, #[CurrentUser] User $user): Response
     {
-        $user = $request->user();
 
         return Inertia::render('settings/profile', [
-            'mustVerifyEmail' => $user instanceof MustVerifyEmail,
+            // User implements MustVerifyEmail: every account confirms its email.
+            'mustVerifyEmail' => true,
             'status' => $request->session()->get('status'),
             // Alert emails (#22), for users who can see projects.
             'alertSubscription' => $user->can('viewAny', Project::class) ? [
@@ -44,15 +45,15 @@ class ProfileController extends Controller
     /**
      * Update the user's profile information.
      */
-    public function update(ProfileUpdateRequest $request): RedirectResponse
+    public function update(ProfileUpdateRequest $request, #[CurrentUser] User $user): RedirectResponse
     {
-        $request->user()->fill($request->validated());
+        $user->fill($request->validated());
 
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
+        if ($user->isDirty('email')) {
+            $user->email_verified_at = null;
         }
 
-        $request->user()->save();
+        $user->save();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Profile updated.')]);
 
@@ -62,9 +63,8 @@ class ProfileController extends Controller
     /**
      * Delete the user's profile.
      */
-    public function destroy(ProfileDeleteRequest $request): RedirectResponse
+    public function destroy(ProfileDeleteRequest $request, #[CurrentUser] User $user): RedirectResponse
     {
-        $user = $request->user();
 
         Auth::logout();
 

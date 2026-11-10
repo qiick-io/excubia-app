@@ -127,8 +127,8 @@ export function UserFormDrawer({
             <form
                 className="flex min-h-0 flex-1 flex-col overflow-hidden"
                 noValidate
-                onSubmit={(e) => {
-                    e.preventDefault();
+                onSubmit={(event) => {
+                    event.preventDefault();
 
                     if (!readOnly) {
                         submit();
@@ -152,10 +152,10 @@ export function UserFormDrawer({
                                 <Input
                                     id="user_first_name"
                                     value={form.data.first_name}
-                                    onChange={(e) =>
+                                    onChange={(event) =>
                                         form.setData(
                                             'first_name',
-                                            e.target.value,
+                                            event.target.value,
                                         )
                                     }
                                     required
@@ -187,10 +187,10 @@ export function UserFormDrawer({
                                 <Input
                                     id="user_last_name"
                                     value={form.data.last_name}
-                                    onChange={(e) =>
+                                    onChange={(event) =>
                                         form.setData(
                                             'last_name',
-                                            e.target.value,
+                                            event.target.value,
                                         )
                                     }
                                     maxLength={STRING_LIMITS.NAME}
@@ -221,8 +221,8 @@ export function UserFormDrawer({
                                 type="email"
                                 inputMode="email"
                                 value={form.data.email}
-                                onChange={(e) =>
-                                    form.setData('email', e.target.value)
+                                onChange={(event) =>
+                                    form.setData('email', event.target.value)
                                 }
                                 required
                                 maxLength={STRING_LIMITS.EMAIL}
@@ -259,8 +259,8 @@ export function UserFormDrawer({
                             <PasswordInput
                                 id="user_password"
                                 value={form.data.password}
-                                onChange={(e) =>
-                                    form.setData('password', e.target.value)
+                                onChange={(event) =>
+                                    form.setData('password', event.target.value)
                                 }
                                 required={isCreate}
                                 disabled={readOnly}
@@ -292,10 +292,10 @@ export function UserFormDrawer({
                                     type="checkbox"
                                     className="size-4 rounded border"
                                     checked={form.data.is_active}
-                                    onChange={(e) =>
+                                    onChange={(event) =>
                                         form.setData(
                                             'is_active',
-                                            e.target.checked,
+                                            event.target.checked,
                                         )
                                     }
                                     disabled={readOnly}

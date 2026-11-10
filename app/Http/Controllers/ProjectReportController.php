@@ -20,6 +20,7 @@ use App\Models\ExceptionGroup;
 use App\Models\Finding;
 use App\Models\HealthReport;
 use App\Models\Project;
+use App\Models\User;
 use App\Services\AiUsageService;
 use App\Services\FindingLifecycleService;
 use App\Services\FixSuggestionService;
@@ -33,6 +34,7 @@ use App\Services\ReportHealthService;
 use App\Services\SettingsRepositoryService;
 use App\Services\TimeSeriesService;
 use Carbon\CarbonImmutable;
+use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
@@ -170,14 +172,14 @@ class ProjectReportController extends Controller
     /**
      * Dismisses a finding with a reason and an optional last day, or removes the dismissal (#18).
      */
-    public function updateFinding(UpdateFindingDismissalRequest $request, Project $project, Finding $finding, UpdateFindingDismissalAction $updateDismissal): RedirectResponse
+    public function updateFinding(UpdateFindingDismissalRequest $request, Project $project, Finding $finding, UpdateFindingDismissalAction $updateDismissal, #[CurrentUser] User $actor): RedirectResponse
     {
         $isDismissed = $request->boolean('is_dismissed');
         $until = $request->date('until', 'Y-m-d');
 
         $updateDismissal->execute(
             $finding,
-            $request->user(),
+            $actor,
             $isDismissed ? $request->string('reason')->trim()->toString() : null,
             $isDismissed ? $until : null,
         );
