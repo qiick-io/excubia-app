@@ -37,5 +37,8 @@
     "AI budget saved.": "Budget AI salvato.",
     "Project group created.": "Gruppo di progetti creato.",
     "Project group updated.": "Gruppo di progetti aggiornato.",
-    "Project group deleted.": "Gruppo di progetti eliminato."
+    "Project group deleted.": "Gruppo di progetti eliminato.",
+    "Unassigned.": "Assegnazione rimossa.",
+    "Assigned to :name.": "Assegnato a :name.",
+    "This user cannot see the project.": "Questo utente non può vedere il progetto."
 }

@@ -38,6 +38,12 @@ import {
     checkLabel,
     FindingDrawer,
 } from '@/components/reports/check-details';
+import {
+    AssignedToMeToggle,
+    isAssignedToMeLinked,
+    useCurrentUserId,
+    type AssigneeOption,
+} from '@/components/reports/assignee-select';
 import { ExceptionsView } from '@/components/reports/exceptions-view';
 import {
     formatDateTime,
@@ -179,8 +185,11 @@ export default function ProjectShow({
     alerts = null,
     canManageAlerts = false,
     canManageExceptions = false,
+    assignees = [],
     canRefreshReport = false,
 }: {
+    /** Who an exception group or a finding may be assigned to (#254). */
+    assignees?: AssigneeOption[];
     /** The time range of the runtime, exceptions and schedule tabs (#113). */
     range?: TimeRange;
     /** Alert history, mutes and maintenance windows (#114), on the Alerts tab only. */
@@ -265,6 +274,7 @@ export default function ProjectShow({
                     projectId={project.id}
                     latestReceivedAt={latest?.received_at ?? null}
                     canDismiss={canDismissFindings}
+                    assignees={assignees}
                 />
             ) : view === 'schedule' ? (
                 <ScheduleView
@@ -289,6 +299,7 @@ export default function ProjectShow({
                     range={range}
                     deploys={deploys}
                     canManage={canManageExceptions}
+                    assignees={assignees}
                 />
             ) : (
                 <PageLayout
@@ -1239,15 +1250,19 @@ function FindingsView({
     projectId,
     latestReceivedAt,
     canDismiss,
+    assignees,
 }: {
     rows: LifecycleRow[];
     fixes: Record<string, FindingFix>;
     projectId: number;
     latestReceivedAt: string | null;
     canDismiss: boolean;
+    assignees: AssigneeOption[];
 }) {
     const { t, i18n } = useTranslation();
     const [status, setStatus] = useState<FindingStatusFilter>('open');
+    const currentUserId = useCurrentUserId();
+    const [isMine, setIsMine] = useState(isAssignedToMeLinked);
     const copyWithToast = useCopyWithToast();
     const [selected, setSelected] = useState<string[]>([]);
     const [search, setSearch] = useState('');
@@ -1281,6 +1296,7 @@ function FindingsView({
     const filtered = rows.filter(
         (row) =>
             (status === 'all' || row.lifecycle.status === status) &&
+            (!isMine || row.lifecycle.assignee?.id === currentUserId) &&
             (severity === 'all' || row.severity === severity) &&
             (category === 'all' || row.category === category) &&
             (checkId === 'all' || row.checkId === checkId) &&
@@ -1292,6 +1308,7 @@ function FindingsView({
     const hasActiveFilters =
         needle !== '' ||
         (status !== 'open' && status !== 'resolved') ||
+        isMine ||
         severity !== 'all' ||
         category !== 'all' ||
         checkId !== 'all';
@@ -1400,6 +1417,14 @@ function FindingsView({
 
                 return <>{row.fixHint}</>;
             },
+        },
+        {
+            id: 'assignee',
+            header: t('assignee.column'),
+            meta: { cellClassName: 'min-w-[8rem] text-sm' },
+            cell: ({ row: tableRow }) => (
+                <>{tableRow.original.lifecycle.assignee?.name ?? '—'}</>
+            ),
         },
         {
             id: 'firstSeen',
@@ -1536,6 +1561,10 @@ function FindingsView({
                                     </ToggleGroupItem>
                                 ))}
                             </ToggleGroup>
+                            <AssignedToMeToggle
+                                isPressed={isMine}
+                                onPressedChange={setIsMine}
+                            />
                             <Select
                                 value={severity}
                                 onValueChange={(value) =>
@@ -1632,6 +1661,7 @@ function FindingsView({
                                     type="button"
                                     onClick={() => {
                                         setSearch('');
+                                        setIsMine(false);
                                         setStatus('open');
                                         setSeverity('all');
                                         setCategory('all');
@@ -1673,6 +1703,7 @@ function FindingsView({
                     lifecycle={openFinding.lifecycle}
                     projectId={projectId}
                     canDismiss={canDismiss}
+                    assignees={assignees}
                 />
             ) : null}
         </Drawer>

@@ -71,7 +71,7 @@ class FindingLifecycleService
         $resolved = $project->findings()->where('status', FindingStatusEnum::Resolved->value)
             ->orderByDesc('resolved_at')->orderByDesc('id')->limit(self::RESOLVED_ROWS)->get();
         $all = $open->concat($resolved);
-        $all->load(['dismisser:id,first_name,last_name', 'events.healthReport:id,release', 'events.user:id,first_name,last_name']);
+        $all->load(['dismisser:id,first_name,last_name', 'assignee:id,first_name,last_name', 'events.healthReport:id,release', 'events.user:id,first_name,last_name', 'events.assignee:id,first_name,last_name']);
 
         return $this->findings->prioritize(array_values($all->map(fn (Finding $finding): array => [
             ...$finding->finding,
@@ -118,6 +118,7 @@ class FindingLifecycleService
                 'by' => $finding->dismisser?->name,
                 'at' => $finding->dismissed_at?->toIso8601String(),
             ] : null,
+            'assignee' => $finding->assignee === null ? null : ['id' => $finding->assignee->id, 'name' => $finding->assignee->name],
             'history' => $finding->events->map(fn (FindingEvent $event): array => [
                 'event' => $event->event->value,
                 'occurredAt' => $event->occurred_at->toIso8601String(),
@@ -125,6 +126,7 @@ class FindingLifecycleService
                 'by' => $event->user?->name,
                 'reason' => $event->reason,
                 'until' => $event->until?->toDateString(),
+                'assignee' => $event->assignee?->name,
             ])->values()->all(),
         ];
     }

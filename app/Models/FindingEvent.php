@@ -12,7 +12,8 @@ use Illuminate\Support\Carbon;
 
 /**
  * One step of a finding's history (#18): the report that opened, resolved or reopened it, or the
- * user who dismissed it (with reason and expiry) or removed the dismissal.
+ * user who dismissed it (with reason and expiry), removed the dismissal, or assigned it to
+ * `assigned_user_id` (#254).
  *
  * @property int $id
  * @property int $finding_id
@@ -22,8 +23,9 @@ use Illuminate\Support\Carbon;
  * @property string|null $reason
  * @property Carbon|null $until
  * @property Carbon $occurred_at
+ * @property int|null $assigned_user_id
  */
-#[Fillable(['event', 'health_report_id', 'user_id', 'reason', 'until', 'occurred_at'])]
+#[Fillable(['event', 'health_report_id', 'user_id', 'reason', 'until', 'occurred_at', 'assigned_user_id'])]
 class FindingEvent extends Model
 {
     public $timestamps = false;
@@ -50,6 +52,16 @@ class FindingEvent extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * The user the finding was assigned to by this event (#254).
+     *
+     * @return BelongsTo<User, $this>
+     */
+    public function assignee(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_user_id');
     }
 
     /**

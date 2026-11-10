@@ -8,6 +8,13 @@ import { DataTableToolbar } from '@/components/admin/data-table-toolbar';
 import { PageEmptyState } from '@/components/admin/page-empty-state';
 import { EmptyStatus } from '@/components/empty-status';
 import { PageLayout } from '@/components/layout/page-layout';
+import {
+    AssignedToMeToggle,
+    AssigneeSelect,
+    isAssignedToMeLinked,
+    useCurrentUserId,
+    type AssigneeOption,
+} from '@/components/reports/assignee-select';
 import { useCopyWithToast } from '@/components/reports/fix-actions';
 import { ReleaseLabel, shortRelease } from '@/components/reports/release-label';
 import { StackedBarChart } from '@/components/reports/severity-chart';
@@ -48,8 +55,9 @@ const STATUS_VARIANTS = {
 /**
  * Exceptions of a project grouped into issues (#26), as an admin list (app-ui
  * `docs/list-page.md`): search on the left, status and time range (#113) segmented controls on
- * the right, a table of the groups seen in the range, and a detail drawer with the occurrences
- * over the range, the stack and the actions (resolve, ignore, reopen, copy a fix prompt).
+ * the right, a table of the groups seen in the range, and a detail drawer with the assignee
+ * (#254), the occurrences over the range, the stack and the actions (resolve, ignore, reopen,
+ * copy a fix prompt). "Assigned to me" narrows the list to the groups the user is on.
  */
 export function ExceptionsView({
     projectId,
@@ -59,6 +67,7 @@ export function ExceptionsView({
     range,
     deploys,
     canManage,
+    assignees = [],
 }: {
     projectId: number;
     slug: string;
@@ -68,12 +77,16 @@ export function ExceptionsView({
     range: TimeRange;
     deploys: RuntimeDeploy[];
     canManage: boolean;
+    /** Who a group may be assigned to (#254). */
+    assignees?: AssigneeOption[];
 }) {
     const { t } = useTranslation();
     const rangeTexts = useRangeTexts(range);
     const zoom = useZoomToRange(slug, 'exceptions');
     const [search, setSearch] = useState('');
     const [status, setStatus] = useState<StatusFilter>('open');
+    const currentUserId = useCurrentUserId();
+    const [isMine, setIsMine] = useState(isAssignedToMeLinked);
     const [selectedId, setSelectedId] = useState<number | null>(null);
     const selected = groups.find((group) => group.id === selectedId) ?? null;
 
@@ -83,12 +96,13 @@ export function ExceptionsView({
         return groups.filter(
             (group) =>
                 (status === 'all' || group.status === status) &&
+                (!isMine || group.assignee?.id === currentUserId) &&
                 (needle === '' ||
                     `${group.class} ${group.message} ${group.context.name}`
                         .toLowerCase()
                         .includes(needle)),
         );
-    }, [groups, search, status]);
+    }, [groups, search, status, isMine, currentUserId]);
 
     const picker = (
         <TimeRangePicker slug={slug} view="exceptions" range={range} />
@@ -118,7 +132,8 @@ export function ExceptionsView({
         );
     }
 
-    const hasActiveFilters = search.trim() !== '' || status !== 'open';
+    const hasActiveFilters =
+        search.trim() !== '' || status !== 'open' || isMine;
 
     const exceptionColumns: ColumnDef<ExceptionGroupRow>[] = [
         {
@@ -197,6 +212,12 @@ export function ExceptionsView({
 
                 return <>{group.count.toLocaleString()}</>;
             },
+        },
+        {
+            id: 'assignee',
+            header: t('assignee.column'),
+            meta: { cellClassName: 'max-w-[10rem] truncate text-sm' },
+            cell: ({ row }) => <>{row.original.assignee?.name ?? '—'}</>,
         },
         {
             id: 'lastSeen',
@@ -286,6 +307,10 @@ export function ExceptionsView({
                                 </ToggleGroupItem>
                             ))}
                         </ToggleGroup>
+                        <AssignedToMeToggle
+                            isPressed={isMine}
+                            onPressedChange={setIsMine}
+                        />
                         {picker}
                     </div>
                 }
@@ -305,6 +330,7 @@ export function ExceptionsView({
                                     type="button"
                                     onClick={() => {
                                         setSearch('');
+                                        setIsMine(false);
                                         setStatus('all');
                                     }}
                                 >
@@ -331,6 +357,7 @@ export function ExceptionsView({
                     range={range}
                     deploys={deploys}
                     canManage={canManage}
+                    assignees={assignees}
                     onZoom={zoom}
                 />
             ) : null}
@@ -348,6 +375,7 @@ function ExceptionDrawer({
     range,
     deploys,
     canManage,
+    assignees,
     onZoom,
 }: {
     projectId: number;
@@ -355,6 +383,7 @@ function ExceptionDrawer({
     range: TimeRange;
     deploys: RuntimeDeploy[];
     canManage: boolean;
+    assignees: AssigneeOption[];
     onZoom: ChartZoomHandler;
 }) {
     const { t } = useTranslation();
@@ -389,6 +418,16 @@ function ExceptionDrawer({
                 </DrawerDescription>
             </DrawerHeader>
             <DrawerBody className="gap-4">
+                <AssigneeSelect
+                    id={`exception-assignee-${group.id}`}
+                    url={projectsRoutes.exceptions.assignee.url({
+                        project: projectId,
+                        exceptionGroup: group.id,
+                    })}
+                    assignee={group.assignee}
+                    options={assignees}
+                    canAssign={canManage}
+                />
                 <section className="flex flex-col gap-1">
                     <h3 className="text-sm font-medium">
                         {t('exceptions.occurrences')}

@@ -10,6 +10,7 @@ use App\Http\Controllers\FleetController;
 use App\Http\Controllers\JobMonitorController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\ProjectAlertsController;
+use App\Http\Controllers\ProjectAssigneeController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ProjectGroupController;
 use App\Http\Controllers\ProjectReportController;
@@ -55,6 +56,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('projects/{project}/system-report', [ProjectReportController::class, 'refresh'])->name('projects.system-report');
     Route::patch('projects/{project}/exceptions/{exceptionGroup}', [ProjectReportController::class, 'updateException'])->name('projects.exceptions.update');
     Route::patch('projects/{project}/findings/{finding}', [ProjectReportController::class, 'updateFinding'])->name('projects.findings.update');
+    // Who is on an exception group or a finding (#254).
+    Route::put('projects/{project}/exceptions/{exceptionGroup}/assignee', [ProjectAssigneeController::class, 'exception'])->name('projects.exceptions.assignee');
+    Route::put('projects/{project}/findings/{finding}/assignee', [ProjectAssigneeController::class, 'finding'])->name('projects.findings.assignee');
     // Alert controls on the project's Alerts tab (#114).
     Route::post('projects/{project}/alert-mutes', [ProjectAlertsController::class, 'storeMute'])->name('projects.alert-mutes.store');
     Route::delete('projects/{project}/alert-mutes/{alertMute}', [ProjectAlertsController::class, 'destroyMute'])->name('projects.alert-mutes.destroy');

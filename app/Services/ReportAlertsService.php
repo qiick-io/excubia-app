@@ -8,6 +8,7 @@ use App\Data\FindingChangesData;
 use App\Enums\AlertEventEnum;
 use App\Enums\CheckCategoryEnum;
 use App\Enums\SeverityEnum;
+use App\Models\Finding;
 use App\Models\HealthReport;
 use App\Models\Project;
 
@@ -25,6 +26,8 @@ use App\Models\Project;
  * source failed in this report and not in the previous one raises `report.checks_skipped`.
  * The end-of-life alerts of the report's runtimes (#157) follow, also on the first report.
  * All of a report's alerts go out as one message per Slack, Telegram and email channel.
+ * A finding alert of an assigned finding (#254) names the assignee in its summary and data, so
+ * the channel tells who is on it.
  */
 class ReportAlertsService
 {
@@ -62,6 +65,7 @@ class ReportAlertsService
         }
 
         $new = $changes->new;
+        $assignees = $this->assigneesByFingerprint($project, [...$new, ...$changes->resolved]);
         $isImmediate = fn (array $finding): bool => ($finding['status'] ?? null) === 'fail'
             && in_array($finding['checkId'] ?? null, CheckCategoryEnum::IMMEDIATE_ALERT_CHECK_IDS, true);
 
@@ -74,11 +78,11 @@ class ReportAlertsService
         }
 
         foreach (array_slice(array_values(array_filter($new, fn (array $finding): bool => ! $isImmediate($finding))), 0, self::FINDINGS_LIMIT) as $finding) {
-            $this->alerts->dispatch(AlertEventEnum::FindingNew, $project, $this->summary($finding), $this->details($finding), SeverityEnum::tryFrom((string) ($finding['severity'] ?? '')), $this->findings->identity($finding));
+            $this->alerts->dispatch(AlertEventEnum::FindingNew, $project, $this->summary($finding, $assignees), $this->details($finding, $assignees), SeverityEnum::tryFrom((string) ($finding['severity'] ?? '')), $this->findings->identity($finding));
         }
 
         foreach (array_slice($changes->resolved, 0, self::FINDINGS_LIMIT) as $finding) {
-            $this->alerts->dispatch(AlertEventEnum::FindingResolved, $project, $this->summary($finding), $this->details($finding), subject: $this->findings->identity($finding));
+            $this->alerts->dispatch(AlertEventEnum::FindingResolved, $project, $this->summary($finding, $assignees), $this->details($finding, $assignees), subject: $this->findings->identity($finding));
         }
 
         $before = $changes->worstBefore?->rank() ?? count(SeverityEnum::cases());
@@ -92,19 +96,63 @@ class ReportAlertsService
     }
 
     /**
-     * @param  array<string, mixed>  $finding
+     * The assignee names of the project's findings among `$findings`, keyed by fingerprint (#254):
+     * one query for the whole report.
+     *
+     * @param  list<array<string, mixed>>  $findings
+     * @return array<string, string>
      */
-    private function summary(array $finding): string
+    private function assigneesByFingerprint(Project $project, array $findings): array
     {
-        return trim(($finding['subject'] ?? '').': '.($finding['message'] ?? ''), ': ');
+        $fingerprints = array_values(array_filter(array_column($findings, 'fingerprint'), is_string(...)));
+
+        if ($fingerprints === []) {
+            return [];
+        }
+
+        return $project->findings()
+            ->whereIn('fingerprint', $fingerprints)
+            ->whereNotNull('assigned_user_id')
+            ->with('assignee:id,first_name,last_name')
+            ->get()
+            ->filter(fn (Finding $finding): bool => $finding->assignee !== null)
+            ->mapWithKeys(fn (Finding $finding): array => [$finding->fingerprint => (string) $finding->assignee?->name])
+            ->all();
     }
 
     /**
      * @param  array<string, mixed>  $finding
+     * @param  array<string, string>  $assignees
+     */
+    private function summary(array $finding, array $assignees = []): string
+    {
+        $summary = trim(($finding['subject'] ?? '').': '.($finding['message'] ?? ''), ': ');
+        $assignee = $this->assigneeOf($finding, $assignees);
+
+        return $assignee === null ? $summary : "{$summary} (assigned to {$assignee})";
+    }
+
+    /**
+     * @param  array<string, mixed>  $finding
+     * @param  array<string, string>  $assignees
      * @return array<string, mixed>
      */
-    private function details(array $finding): array
+    private function details(array $finding, array $assignees = []): array
     {
-        return array_intersect_key($finding, array_flip(['checkId', 'checkName', 'severity', 'subject', 'message', 'advisoryId', 'fixHint']));
+        $details = array_intersect_key($finding, array_flip(['checkId', 'checkName', 'severity', 'subject', 'message', 'advisoryId', 'fixHint']));
+        $assignee = $this->assigneeOf($finding, $assignees);
+
+        return $assignee === null ? $details : [...$details, 'assignee' => $assignee];
+    }
+
+    /**
+     * @param  array<string, mixed>  $finding
+     * @param  array<string, string>  $assignees
+     */
+    private function assigneeOf(array $finding, array $assignees): ?string
+    {
+        $fingerprint = $finding['fingerprint'] ?? null;
+
+        return is_string($fingerprint) ? ($assignees[$fingerprint] ?? null) : null;
     }
 }

@@ -171,7 +171,10 @@ export default function Dashboard({
     overview,
     trend,
     liveHealth,
+    assignedToMe = [],
 }: {
+    /** Open exception groups and findings assigned to the user, per project (#254). */
+    assignedToMe?: AssignedRow[];
     canViewProjects: boolean;
     projects: ProjectRow[];
     /** Project groups holding a project the user can see (#252). */
@@ -437,6 +440,10 @@ export default function Dashboard({
                         />
                     </section>
 
+                    {assignedToMe.length > 0 ? (
+                        <AssignedToYouCard rows={assignedToMe} />
+                    ) : null}
+
                     {overview.runtime || overview.exceptions ? (
                         <TelemetryRow
                             runtime={overview.runtime}
@@ -597,6 +604,83 @@ function TelemetryRow({
 /**
  * The grouped findings across projects, worst first: the Sentry "issues" of Excubia.
  */
+/** A project's open items assigned to the signed-in user (#254). */
+type AssignedRow = {
+    slug: string;
+    name: string;
+    exceptions: number;
+    findings: number;
+};
+
+/**
+ * "Assigned to you" (#254): per project, the open exception groups and findings the user is on,
+ * each count linking to its tab with the "Assigned to me" filter on (`?assigned=me`). Shown
+ * only when something is assigned.
+ */
+function AssignedToYouCard({ rows }: { rows: AssignedRow[] }) {
+    const { t } = useTranslation();
+    const mine = { query: { assigned: 'me' } };
+
+    return (
+        <Card>
+            <CardHeader className="pb-3">
+                <CardTitle>{t('dashboard.assigned.title')}</CardTitle>
+                <CardDescription>
+                    {t('dashboard.assigned.description')}
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <ul className="flex flex-col divide-y divide-border text-sm">
+                    {rows.map((row) => (
+                        <li
+                            key={row.slug}
+                            className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 py-2"
+                        >
+                            <span className="min-w-0 truncate font-medium">
+                                {row.name}
+                            </span>
+                            <span className="flex gap-4">
+                                {row.exceptions > 0 ? (
+                                    <Link
+                                        className="text-primary underline-offset-4 hover:underline"
+                                        href={projectsRoutes.view.url(
+                                            {
+                                                project: row.slug,
+                                                view: 'exceptions',
+                                            },
+                                            mine,
+                                        )}
+                                    >
+                                        {t('dashboard.assigned.exceptions', {
+                                            count: row.exceptions,
+                                        })}
+                                    </Link>
+                                ) : null}
+                                {row.findings > 0 ? (
+                                    <Link
+                                        className="text-primary underline-offset-4 hover:underline"
+                                        href={projectsRoutes.view.url(
+                                            {
+                                                project: row.slug,
+                                                view: 'findings',
+                                            },
+                                            mine,
+                                        )}
+                                    >
+                                        {t('dashboard.assigned.findings', {
+                                            count: row.findings,
+                                        })}
+                                    </Link>
+                                ) : null}
+                            </span>
+                        </li>
+                    ))}
+                </ul>
+            </CardContent>
+        </Card>
+    );
+}
+
 function TopIssuesCard({
     issues,
     total,

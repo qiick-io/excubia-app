@@ -34,6 +34,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $regressed_release release a resolved group came back in
  * @property ExceptionStatusEnum $status
  * @property Carbon|null $resolved_at
+ * @property int|null $assigned_user_id who is on it (#254)
  * @property int|null $range_count occurrences in the time range, when loaded (#113)
  */
 #[Fillable(['project_id', 'fingerprint', 'environment', 'class', 'message', 'frames', 'previous', 'context_kind', 'context_name', 'count', 'first_seen_at', 'last_seen_at', 'first_release', 'last_release', 'regressed_release', 'status', 'resolved_at'])]
@@ -41,6 +42,16 @@ class ExceptionGroup extends Model
 {
     /** Context kinds of excubia-core (`docs/exception-schema.json`); any other is stored as `unknown` (#169). */
     public const CONTEXT_KINDS = ['request', 'job', 'command', 'unknown'];
+
+    /**
+     * Who is on it (#254); null when nobody is.
+     *
+     * @return BelongsTo<User, $this>
+     */
+    public function assignee(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_user_id');
+    }
 
     /**
      * @return BelongsTo<Project, $this>

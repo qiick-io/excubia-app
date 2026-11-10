@@ -814,6 +814,14 @@
             "topExceptions": "Neueste offene Exceptions",
             "noOpenExceptions": "Keine offenen Exceptions.",
             "openExceptionsContext": "Nach Fingerprint gruppiert"
+        },
+        "assigned": {
+            "title": "Dir zugewiesen",
+            "description": "Offene Ausnahmegruppen und Befunde, um die du dich kümmerst.",
+            "exceptions_one": "{{count}} Ausnahme",
+            "exceptions_other": "{{count}} Ausnahmen",
+            "findings_one": "{{count}} Befund",
+            "findings_other": "{{count}} Befunde"
         }
     },
     "report": {
@@ -1935,7 +1943,9 @@
             "resolved": "Behoben",
             "reopened": "Wieder aufgetreten",
             "dismissed": "Ausgeblendet",
-            "undismissed": "Ausblendung aufgehoben"
+            "undismissed": "Ausblendung aufgehoben",
+            "assigned": "Zugewiesen",
+            "unassigned": "Zuweisung entfernt"
         },
         "inRelease": "in {{release}}",
         "byUser": "von {{name}}",
@@ -1955,7 +1965,8 @@
         "ignoreRule": "Ignore-Regel für excubia.json",
         "ignoreRuleHint": "Füge sie der excubia.json des Projekts hinzu, um den Befund aus dem Bericht selbst herauszunehmen.",
         "noResolved": "Noch keine behobenen Befunde",
-        "noResolvedDescription": "Befunde erscheinen hier, sobald ein späterer Bericht ihre Prüfung ohne sie ausführt."
+        "noResolvedDescription": "Befunde erscheinen hier, sobald ein späterer Bericht ihre Prüfung ohne sie ausführt.",
+        "toUser": "an {{name}}"
     },
     "picker": {
         "clearSelection": "Auswahl aufheben",
@@ -1994,5 +2005,12 @@
         "failed": "Fehlgeschlagen",
         "viewJobs": "Jobs ansehen",
         "jobsChartLabel": "Gestapeltes Balkendiagramm der Jobs {{bucket}}: {{processed}} verarbeitet und {{failed}} fehlgeschlagen {{during}}."
+    },
+    "assignee": {
+        "label": "Zuständig",
+        "none": "Nicht zugewiesen",
+        "hint": "Wer sich darum kümmert. Nur Benutzer, die dieses Projekt sehen, sind aufgeführt.",
+        "mine": "Mir zugewiesen",
+        "column": "Zuständig"
     }
 }

@@ -3,6 +3,10 @@ import { BellOff, Undo2 } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CopySnippet } from '@/components/projects/copy-snippet';
+import {
+    AssigneeSelect,
+    type AssigneeOption,
+} from '@/components/reports/assignee-select';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -67,7 +71,7 @@ export function LifecycleBadges({
 }
 
 /**
- * The lifecycle part of the finding drawer (#18): first and last seen, when a report fixed it,
+ * The lifecycle part of the finding drawer (#18): who is on it (#254), first and last seen, when a report fixed it,
  * the active dismissal with its excubia.json ignore rule, the history, and (with
  * `can-dismiss-findings`) an inline form to dismiss it with a reason and an optional last day,
  * or a button to remove the dismissal.
@@ -77,11 +81,14 @@ export function FindingLifecycleSection({
     lifecycle,
     projectId,
     canDismiss,
+    assignees = [],
 }: {
     finding: IssueRow;
     lifecycle: FindingLifecycle;
     projectId: number;
     canDismiss: boolean;
+    /** Who the finding may be assigned to (#254). */
+    assignees?: AssigneeOption[];
 }) {
     const { t, i18n } = useTranslation();
     const locale = i18n.language;
@@ -112,6 +119,16 @@ export function FindingLifecycleSection({
 
     return (
         <>
+            <AssigneeSelect
+                id={`finding-assignee-${lifecycle.id}`}
+                url={projectsRoutes.findings.assignee.url({
+                    project: projectId,
+                    finding: lifecycle.id,
+                })}
+                assignee={lifecycle.assignee}
+                options={assignees}
+                canAssign={canDismiss}
+            />
             <section className="flex flex-col gap-2">
                 <h3 className="text-sm font-medium">
                     {t('findings.lifecycle')}
@@ -318,6 +335,7 @@ export function FindingLifecycleSection({
                                 </time>
                             </div>
                             {event.release !== null ||
+                            event.assignee !== null ||
                             event.by !== null ||
                             event.until !== null ||
                             event.reason !== null ? (
@@ -326,6 +344,11 @@ export function FindingLifecycleSection({
                                         event.release !== null
                                             ? t('findings.inRelease', {
                                                   release: event.release,
+                                              })
+                                            : null,
+                                        event.assignee !== null
+                                            ? t('findings.toUser', {
+                                                  name: event.assignee,
                                               })
                                             : null,
                                         event.by !== null

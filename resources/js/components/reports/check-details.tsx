@@ -2,6 +2,7 @@ import type { TFunction } from 'i18next';
 import { BookOpen, ExternalLink } from 'lucide-react';
 import { Fragment } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { AssigneeOption } from '@/components/reports/assignee-select';
 import { FindingLifecycleSection } from '@/components/reports/finding-lifecycle';
 import type { FindingFix } from '@/components/reports/fix-actions';
 import { FixActions } from '@/components/reports/fix-actions';
@@ -181,12 +182,15 @@ export function FindingDrawer({
     lifecycle,
     projectId,
     canDismiss = false,
+    assignees = [],
 }: {
     finding: IssueRow;
     fix: FindingFix | undefined;
     lifecycle?: FindingLifecycle;
     projectId?: number;
     canDismiss?: boolean;
+    /** Who the finding may be assigned to (#254). */
+    assignees?: AssigneeOption[];
 }) {
     const { t } = useTranslation();
 
@@ -271,6 +275,7 @@ export function FindingDrawer({
                         lifecycle={lifecycle}
                         projectId={projectId}
                         canDismiss={canDismiss}
+                        assignees={assignees}
                     />
                 ) : null}
             </DrawerBody>
