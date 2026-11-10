@@ -814,6 +814,14 @@
             "topExceptions": "Ultime eccezioni aperte",
             "noOpenExceptions": "Nessuna eccezione aperta.",
             "openExceptionsContext": "Raggruppate per fingerprint"
+        },
+        "assigned": {
+            "title": "Assegnati a te",
+            "description": "Gruppi di eccezioni e problemi aperti di cui ti occupi.",
+            "exceptions_one": "{{count}} eccezione",
+            "exceptions_other": "{{count}} eccezioni",
+            "findings_one": "{{count}} problema",
+            "findings_other": "{{count}} problemi"
         }
     },
     "report": {
@@ -1935,7 +1943,9 @@
             "resolved": "Risolto",
             "reopened": "Tornato",
             "dismissed": "Ignorato",
-            "undismissed": "Ignora rimosso"
+            "undismissed": "Ignora rimosso",
+            "assigned": "Assegnato",
+            "unassigned": "Assegnazione rimossa"
         },
         "inRelease": "in {{release}}",
         "byUser": "da {{name}}",
@@ -1955,7 +1965,8 @@
         "ignoreRule": "Regola ignore di excubia.json",
         "ignoreRuleHint": "Aggiungila all'excubia.json del progetto per escludere il problema dal report stesso.",
         "noResolved": "Ancora nessun problema risolto",
-        "noResolvedDescription": "I problemi compaiono qui quando un report successivo esegue il loro controllo senza trovarli."
+        "noResolvedDescription": "I problemi compaiono qui quando un report successivo esegue il loro controllo senza trovarli.",
+        "toUser": "a {{name}}"
     },
     "picker": {
         "clearSelection": "Cancella selezione",
@@ -1994,5 +2005,12 @@
         "failed": "Falliti",
         "viewJobs": "Vedi i job",
         "jobsChartLabel": "Grafico a barre impilate dei job {{bucket}}: {{processed}} elaborati e {{failed}} falliti {{during}}."
+    },
+    "assignee": {
+        "label": "Assegnatario",
+        "none": "Non assegnato",
+        "hint": "Chi se ne occupa. Sono elencati solo gli utenti che vedono questo progetto.",
+        "mine": "Assegnati a me",
+        "column": "Assegnatario"
     }
 }

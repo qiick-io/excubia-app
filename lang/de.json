@@ -37,5 +37,8 @@
     "AI budget saved.": "KI-Budget gespeichert.",
     "Project group created.": "Projektgruppe erstellt.",
     "Project group updated.": "Projektgruppe aktualisiert.",
-    "Project group deleted.": "Projektgruppe gelöscht."
+    "Project group deleted.": "Projektgruppe gelöscht.",
+    "Unassigned.": "Zuweisung entfernt.",
+    "Assigned to :name.": ":name zugewiesen.",
+    "This user cannot see the project.": "Dieser Benutzer kann das Projekt nicht sehen."
 }

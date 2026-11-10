@@ -10,6 +10,7 @@ use App\Models\ProjectGroup;
 use App\Services\DashboardOverviewService;
 use App\Services\FindingsTrendService;
 use App\Services\HealthStatusService;
+use App\Services\ProjectAssigneeService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -45,6 +46,7 @@ class DashboardController extends Controller
                 'overview' => null,
                 'trend' => [],
                 'liveHealth' => (object) [],
+                'assignedToMe' => [],
             ]);
         }
 
@@ -69,6 +71,8 @@ class DashboardController extends Controller
             'overview' => fn (): array => $overview->overview($scoped(), $period),
             'trend' => fn (): array => $trend->daily($scoped(), $period),
             'liveHealth' => fn (): object => (object) $health->summaries($projects),
+            // Open exception groups and findings assigned to the user, per project (#254).
+            'assignedToMe' => fn (): array => app(ProjectAssigneeService::class)->assignedTo($request->user(), $projects),
         ]);
     }
 }

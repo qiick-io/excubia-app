@@ -814,6 +814,14 @@
             "topExceptions": "Latest open exceptions",
             "noOpenExceptions": "No open exceptions.",
             "openExceptionsContext": "Grouped by fingerprint"
+        },
+        "assigned": {
+            "title": "Assigned to you",
+            "description": "Open exception groups and findings you are on.",
+            "exceptions_one": "{{count}} exception",
+            "exceptions_other": "{{count}} exceptions",
+            "findings_one": "{{count}} finding",
+            "findings_other": "{{count}} findings"
         }
     },
     "report": {
@@ -1935,7 +1943,9 @@
             "resolved": "Fixed",
             "reopened": "Came back",
             "dismissed": "Dismissed",
-            "undismissed": "Dismissal removed"
+            "undismissed": "Dismissal removed",
+            "assigned": "Assigned",
+            "unassigned": "Unassigned"
         },
         "inRelease": "in {{release}}",
         "byUser": "by {{name}}",
@@ -1955,7 +1965,8 @@
         "ignoreRule": "excubia.json ignore rule",
         "ignoreRuleHint": "Add it to the project's excubia.json to leave the finding out of the report itself.",
         "noResolved": "No resolved findings yet",
-        "noResolvedDescription": "Findings show up here once a later report runs their check without them."
+        "noResolvedDescription": "Findings show up here once a later report runs their check without them.",
+        "toUser": "to {{name}}"
     },
     "picker": {
         "clearSelection": "Clear selection",
@@ -1994,5 +2005,12 @@
         "failed": "Failed",
         "viewJobs": "View jobs",
         "jobsChartLabel": "Stacked bar chart of jobs {{bucket}}: {{processed}} processed and {{failed}} failed {{during}}."
+    },
+    "assignee": {
+        "label": "Assignee",
+        "none": "Unassigned",
+        "hint": "Who is on it. Only users who can see this project are listed.",
+        "mine": "Assigned to me",
+        "column": "Assignee"
     }
 }

@@ -12,7 +12,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
 /**
  * An exception group for the project page (#26): the masked message, the frames with relative
  * paths, the context, the counts and status, the first, last and regressed release (#106), and
- * a ready prompt to fix it.
+ * a ready prompt to fix it, and who is on it (#254; `assignee` loaded by the caller).
  *
  * @mixin ExceptionGroup
  */
@@ -43,6 +43,7 @@ class ExceptionGroupResource extends JsonResource
             'regressed_release' => $group->regressed_release,
             'status' => $group->status->value,
             'resolved_at' => $group->resolved_at?->toIso8601String(),
+            'assignee' => $group->assignee === null ? null : ['id' => $group->assignee->id, 'name' => $group->assignee->name],
             'fix' => app(FixSuggestionService::class)->forException($group),
         ];
     }

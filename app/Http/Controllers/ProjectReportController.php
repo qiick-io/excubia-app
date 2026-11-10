@@ -25,6 +25,7 @@ use App\Services\FindingLifecycleService;
 use App\Services\FixSuggestionService;
 use App\Services\HealthStatusService;
 use App\Services\ProjectAlertsService;
+use App\Services\ProjectAssigneeService;
 use App\Services\ProjectRuntimeService;
 use App\Services\ProjectTelemetryService;
 use App\Services\ReportFindingsService;
@@ -144,6 +145,8 @@ class ProjectReportController extends Controller
             'alerts' => fn (): ?array => $view === 'alerts' ? app(ProjectAlertsService::class)->forPage($project) : null,
             'canManageAlerts' => fn (): bool => (bool) $request->user()?->can('manageAlerts', $project),
             'canManageExceptions' => fn (): bool => (bool) $request->user()?->can(PermissionEnum::CanManageExceptions->value),
+            // Who an exception group or a finding may be assigned to (#254), on those two tabs.
+            'assignees' => fn (): array => in_array($view, ['exceptions', 'findings'], true) ? app(ProjectAssigneeService::class)->optionsFor($project) : [],
             'reports' => fn (): array => HealthReportResource::collection(
                 $project->healthReports()->orderByDesc('received_at')->orderByDesc('id')->get(),
             )->resolve(),

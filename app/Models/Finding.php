@@ -34,6 +34,7 @@ use Illuminate\Support\Facades\Date;
  * @property Carbon|null $dismissed_until
  * @property string|null $dismissed_reason
  * @property int|null $dismissed_by_user_id
+ * @property int|null $assigned_user_id who is on it (#254)
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
@@ -62,6 +63,16 @@ class Finding extends Model
     {
         $query->where('status', FindingStatusEnum::Open->value)
             ->where(fn (Builder $query) => $query->whereNull('dismissed_at')->orWhereDate('dismissed_until', '<', Date::today()));
+    }
+
+    /**
+     * Who is on it (#254); null when nobody is.
+     *
+     * @return BelongsTo<User, $this>
+     */
+    public function assignee(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_user_id');
     }
 
     /**

@@ -37,6 +37,7 @@ class ProjectTelemetryService
         $from = $range?->from;
         $until = $range?->until;
         $groups = $project->exceptionGroups()
+            ->with('assignee:id,first_name,last_name')
             ->when($from !== null, fn ($query) => $query
                 ->where('last_seen_at', '>=', $from)
                 ->where('first_seen_at', '<=', $until)

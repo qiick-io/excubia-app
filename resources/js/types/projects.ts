@@ -151,12 +151,21 @@ export type IssueRow = ReportFinding & {
 
 /** One step of a finding's history (#18). */
 type FindingHistoryEvent = {
-    event: 'opened' | 'resolved' | 'reopened' | 'dismissed' | 'undismissed';
+    event:
+        | 'opened'
+        | 'resolved'
+        | 'reopened'
+        | 'dismissed'
+        | 'undismissed'
+        | 'assigned'
+        | 'unassigned';
     occurredAt: string;
     release: string | null;
     by: string | null;
     reason: string | null;
     until: string | null;
+    /** Who the finding was assigned to by this event (#254). */
+    assignee: string | null;
 };
 
 /** A finding across reports (`FindingLifecycleService::forPage`, #18). */
@@ -174,6 +183,8 @@ export type FindingLifecycle = {
         by: string | null;
         at: string | null;
     } | null;
+    /** Who is on it (#254). */
+    assignee: { id: number; name: string } | null;
     history: FindingHistoryEvent[];
 };
 
@@ -618,6 +629,8 @@ export type ExceptionGroupRow = {
     regressed_release: string | null;
     status: 'open' | 'resolved' | 'ignored';
     resolved_at: string | null;
+    /** Who is on it (#254). */
+    assignee: { id: number; name: string } | null;
     fix: { command: string | null; prompt: string };
     /** On the Exceptions tab (#113): occurrences in the range and per chart bucket. */
     range_count?: number;
