@@ -1,15 +1,1 @@
-{
-    "resources/js/components/admin/group-form-drawer.tsx": 8,
-    "resources/js/components/admin/user-form-drawer.tsx": 10,
-    "resources/js/components/app-error-boundary.tsx": 4,
-    "resources/js/components/app-sidebar.tsx": 1,
-    "resources/js/components/delete-user.tsx": 8,
-    "resources/js/components/manage-two-factor.tsx": 5,
-    "resources/js/components/password-input.tsx": 1,
-    "resources/js/components/reports/runtime-view.tsx": 1,
-    "resources/js/components/two-factor-recovery-codes.tsx": 7,
-    "resources/js/components/two-factor-setup-modal.tsx": 3,
-    "resources/js/pages/admin/activity-logs/index.tsx": 1,
-    "resources/js/pages/admin/roles/form.tsx": 4,
-    "resources/js/pages/admin/system/index.tsx": 1
-}
+{}

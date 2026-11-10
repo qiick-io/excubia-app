@@ -25,7 +25,13 @@
         "clearFilters": "Clear filters",
         "back": "Back",
         "offline": "Offline",
-        "online": "Online"
+        "online": "Online",
+        "create": "Create",
+        "description": "Description",
+        "close": "Close",
+        "confirm": "Confirm",
+        "generateSecurePassword": "Generate secure password",
+        "passwordStrength": "Password strength"
     },
     "emptyState": {
         "users": {
@@ -64,7 +70,13 @@
         "systemBadge": "System",
         "deleteTitle": "Delete role “{{name}}”?",
         "deleteDescription": "This cannot be undone.",
-        "deleteFallback": "This cannot be undone."
+        "deleteFallback": "This cannot be undone.",
+        "form": {
+            "editTitle": "Edit role",
+            "editHead": "Edit {{name}}",
+            "readOnlyHint": "Built-in role — read-only; its permissions come with Excubia.",
+            "adminPermissions": "Admin permissions"
+        }
     },
     "nav": {
         "platform": "Platform",
@@ -561,6 +573,42 @@
                 "audio_second": "Audio / s",
                 "search_unit": "Search unit"
             }
+        },
+        "deleteAccount": {
+            "title": "Delete account",
+            "description": "Delete your account and all of its resources",
+            "warningTitle": "Warning",
+            "warningDescription": "Please proceed with caution, this cannot be undone.",
+            "confirmTitle": "Are you sure you want to delete your account?",
+            "confirmDescription": "Once your account is deleted, all of its resources and data will also be permanently deleted. Please enter your password to confirm you would like to permanently delete your account."
+        },
+        "twoFactor": {
+            "title": "Two-factor authentication",
+            "description": "Manage your two-factor authentication settings",
+            "enabledDescription": "You will be prompted for a secure, random pin during login, which you can retrieve from the TOTP-supported application on your phone.",
+            "disabledDescription": "When you enable two-factor authentication, you will be prompted for a secure pin during login. This pin can be retrieved from a TOTP-supported application on your phone.",
+            "enable": "Enable 2FA",
+            "disable": "Disable 2FA",
+            "continueSetup": "Continue setup",
+            "recoveryCodes": {
+                "title": "2FA recovery codes",
+                "description": "Recovery codes let you regain access if you lose your 2FA device. Store them in a secure password manager.",
+                "view": "View recovery codes",
+                "hide": "Hide recovery codes",
+                "regenerate": "Regenerate codes",
+                "listLabel": "Recovery codes",
+                "loading": "Loading recovery codes",
+                "regenerateHint": "Each recovery code can be used once to access your account and will be removed after use. If you need more, click <bold>Regenerate codes</bold> above."
+            },
+            "setup": {
+                "manualEntry": "or, enter the code manually",
+                "enabledTitle": "Two-factor authentication enabled",
+                "enabledDescription": "Two-factor authentication is now enabled. Scan the QR code or enter the setup key in your authenticator app.",
+                "verifyTitle": "Verify authentication code",
+                "verifyDescription": "Enter the 6-digit code from your authenticator app",
+                "enableTitle": "Enable two-factor authentication",
+                "enableDescription": "To finish enabling two-factor authentication, scan the QR code or enter the setup key in your authenticator app"
+            }
         }
     },
     "activityLog": {
@@ -617,7 +665,8 @@
             "ai": "AI",
             "chat": "Chat",
             "settings": "Settings"
-        }
+        },
+        "ipAddress": "IP"
     },
     "confirmDestructive": {
         "typeToConfirm": "Type \"{{name}}\" to confirm"
@@ -648,6 +697,20 @@
         "status": {
             "active": "Active",
             "inactive": "Inactive"
+        },
+        "form": {
+            "editTitle": "Edit user",
+            "editDescription": "Update profile, status and direct roles. Leave the password empty to keep it.",
+            "createDescription": "Create a user and assign direct roles. The email counts as verified. Prefer groups when many users share the same role set.",
+            "requiredHint": "Fields marked with * are required.",
+            "firstNameRequired": "First name *",
+            "emailRequired": "Email *",
+            "emailHint": "Use a valid email address, for example",
+            "newPasswordOptional": "New password (optional)",
+            "passwordRequired": "Password *",
+            "rolesRequired": "Roles *",
+            "rolesPlaceholder": "Select at least one role",
+            "rolesLocked": "You cannot change your own roles."
         }
     },
     "groups": {
@@ -670,6 +733,13 @@
             "label": "Project scope",
             "hint": "Members also see the projects of these project groups, admin-only ones included. Their roles still decide what they can do there.",
             "adminsOnly": "Only admins change which projects a group sees."
+        },
+        "form": {
+            "editTitle": "Edit group",
+            "description": "Members inherit the roles you pick here. Prefer groups for large memberships instead of assigning roles user-by-user.",
+            "rolesHint": "Members inherit these roles’ permissions.",
+            "rolesLocked": "You cannot change the roles of a group you belong to.",
+            "users": "Users"
         }
     },
     "projectGroups": {
@@ -2012,5 +2082,11 @@
         "hint": "Who is on it. Only users who can see this project are listed.",
         "mine": "Assigned to me",
         "column": "Assignee"
+    },
+    "errorBoundary": {
+        "title": "Something went wrong",
+        "description": "The interface hit an unexpected error. You can try reloading the page.",
+        "retry": "Try again",
+        "reload": "Reload page"
     }
 }

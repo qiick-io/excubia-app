@@ -1202,7 +1202,7 @@ export function NoData({ configKey }: { configKey: string }) {
     return (
         <p className="text-sm text-muted-foreground">
             {t('runtime.noData')} {t('runtime.enableHint')}{' '}
-            <code className="font-mono text-xs">{configKey}.enabled</code>
+            <code className="font-mono text-xs">{`${configKey}.enabled`}</code>
         </p>
     );
 }

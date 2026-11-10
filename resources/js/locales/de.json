@@ -25,7 +25,13 @@
         "clearFilters": "Filter zurücksetzen",
         "back": "Zurück",
         "offline": "Offline",
-        "online": "Online"
+        "online": "Online",
+        "create": "Erstellen",
+        "description": "Beschreibung",
+        "close": "Schließen",
+        "confirm": "Bestätigen",
+        "generateSecurePassword": "Sicheres Passwort erzeugen",
+        "passwordStrength": "Passwortstärke"
     },
     "emptyState": {
         "users": {
@@ -64,7 +70,13 @@
         "systemBadge": "System",
         "deleteTitle": "Rolle „{{name}}“ löschen?",
         "deleteDescription": "Das kann nicht rückgängig gemacht werden.",
-        "deleteFallback": "Dies kann nicht rückgängig gemacht werden."
+        "deleteFallback": "Dies kann nicht rückgängig gemacht werden.",
+        "form": {
+            "editTitle": "Rolle bearbeiten",
+            "editHead": "{{name}} bearbeiten",
+            "readOnlyHint": "Integrierte Rolle, schreibgeschützt: Ihre Berechtigungen kommen mit Excubia.",
+            "adminPermissions": "Admin-Berechtigungen"
+        }
     },
     "nav": {
         "platform": "Plattform",
@@ -561,6 +573,42 @@
                 "audio_second": "Audio / s",
                 "search_unit": "Sucheinheit"
             }
+        },
+        "deleteAccount": {
+            "title": "Konto löschen",
+            "description": "Ihr Konto und alle zugehörigen Ressourcen löschen",
+            "warningTitle": "Warnung",
+            "warningDescription": "Bitte gehen Sie vorsichtig vor, dies kann nicht rückgängig gemacht werden.",
+            "confirmTitle": "Möchten Sie Ihr Konto wirklich löschen?",
+            "confirmDescription": "Wenn Ihr Konto gelöscht ist, werden auch alle zugehörigen Ressourcen und Daten endgültig gelöscht. Geben Sie Ihr Passwort ein, um zu bestätigen, dass Sie Ihr Konto endgültig löschen möchten."
+        },
+        "twoFactor": {
+            "title": "Zwei-Faktor-Authentifizierung",
+            "description": "Einstellungen der Zwei-Faktor-Authentifizierung verwalten",
+            "enabledDescription": "Bei der Anmeldung werden Sie nach einer sicheren, zufälligen PIN gefragt, die Sie in der TOTP-fähigen App auf Ihrem Telefon abrufen.",
+            "disabledDescription": "Wenn Sie die Zwei-Faktor-Authentifizierung aktivieren, werden Sie bei der Anmeldung nach einer sicheren PIN gefragt. Diese PIN rufen Sie in einer TOTP-fähigen App auf Ihrem Telefon ab.",
+            "enable": "2FA aktivieren",
+            "disable": "2FA deaktivieren",
+            "continueSetup": "Einrichtung fortsetzen",
+            "recoveryCodes": {
+                "title": "2FA-Wiederherstellungscodes",
+                "description": "Mit Wiederherstellungscodes erhalten Sie wieder Zugriff, wenn Sie Ihr 2FA-Gerät verlieren. Bewahren Sie sie in einem sicheren Passwortmanager auf.",
+                "view": "Wiederherstellungscodes anzeigen",
+                "hide": "Wiederherstellungscodes ausblenden",
+                "regenerate": "Codes neu erzeugen",
+                "listLabel": "Wiederherstellungscodes",
+                "loading": "Wiederherstellungscodes werden geladen",
+                "regenerateHint": "Jeder Wiederherstellungscode kann einmal für den Zugriff auf Ihr Konto verwendet werden und wird danach entfernt. Wenn Sie weitere benötigen, klicken Sie oben auf <bold>Codes neu erzeugen</bold>."
+            },
+            "setup": {
+                "manualEntry": "oder geben Sie den Code manuell ein",
+                "enabledTitle": "Zwei-Faktor-Authentifizierung aktiviert",
+                "enabledDescription": "Die Zwei-Faktor-Authentifizierung ist jetzt aktiviert. Scannen Sie den QR-Code oder geben Sie den Einrichtungsschlüssel in Ihrer Authenticator-App ein.",
+                "verifyTitle": "Authentifizierungscode bestätigen",
+                "verifyDescription": "Geben Sie den 6-stelligen Code aus Ihrer Authenticator-App ein",
+                "enableTitle": "Zwei-Faktor-Authentifizierung aktivieren",
+                "enableDescription": "Um die Zwei-Faktor-Authentifizierung zu aktivieren, scannen Sie den QR-Code oder geben Sie den Einrichtungsschlüssel in Ihrer Authenticator-App ein"
+            }
         }
     },
     "activityLog": {
@@ -617,7 +665,8 @@
             "ai": "KI",
             "chat": "Chat",
             "settings": "Einstellungen"
-        }
+        },
+        "ipAddress": "IP"
     },
     "confirmDestructive": {
         "typeToConfirm": "Tippe „{{name}}“ zur Bestätigung"
@@ -648,6 +697,20 @@
         "status": {
             "active": "Aktiv",
             "inactive": "Inaktiv"
+        },
+        "form": {
+            "editTitle": "Benutzer bearbeiten",
+            "editDescription": "Profil, Status und direkte Rollen aktualisieren. Lassen Sie das Passwort leer, um es beizubehalten.",
+            "createDescription": "Legen Sie einen Benutzer an und weisen Sie direkte Rollen zu. Die E-Mail-Adresse gilt als bestätigt. Verwenden Sie Gruppen, wenn viele Benutzer dieselben Rollen teilen.",
+            "requiredHint": "Mit * markierte Felder sind Pflichtfelder.",
+            "firstNameRequired": "Vorname *",
+            "emailRequired": "E-Mail *",
+            "emailHint": "Verwenden Sie eine gültige E-Mail-Adresse, zum Beispiel",
+            "newPasswordOptional": "Neues Passwort (optional)",
+            "passwordRequired": "Passwort *",
+            "rolesRequired": "Rollen *",
+            "rolesPlaceholder": "Mindestens eine Rolle auswählen",
+            "rolesLocked": "Sie können Ihre eigenen Rollen nicht ändern."
         }
     },
     "groups": {
@@ -670,6 +733,13 @@
             "label": "Projektbereich",
             "hint": "Mitglieder sehen auch die Projekte dieser Projektgruppen, auch die nur für Admins. Ihre Rollen bestimmen weiterhin, was sie dort tun dürfen.",
             "adminsOnly": "Nur Admins ändern, welche Projekte eine Gruppe sieht."
+        },
+        "form": {
+            "editTitle": "Gruppe bearbeiten",
+            "description": "Mitglieder erben die hier gewählten Rollen. Verwenden Sie für große Mitgliederzahlen Gruppen, statt Rollen Benutzer für Benutzer zuzuweisen.",
+            "rolesHint": "Mitglieder erben die Berechtigungen dieser Rollen.",
+            "rolesLocked": "Sie können die Rollen einer Gruppe, der Sie angehören, nicht ändern.",
+            "users": "Benutzer"
         }
     },
     "projectGroups": {
@@ -2012,5 +2082,11 @@
         "hint": "Wer sich darum kümmert. Nur Benutzer, die dieses Projekt sehen, sind aufgeführt.",
         "mine": "Mir zugewiesen",
         "column": "Zuständig"
+    },
+    "errorBoundary": {
+        "title": "Etwas ist schiefgelaufen",
+        "description": "In der Oberfläche ist ein unerwarteter Fehler aufgetreten. Laden Sie die Seite neu.",
+        "retry": "Erneut versuchen",
+        "reload": "Seite neu laden"
     }
 }

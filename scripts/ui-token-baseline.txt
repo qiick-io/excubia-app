@@ -3,14 +3,6 @@
 # Ratchet (#452): counts must match the scan exactly; remove or lower entries once debt is paid.
 # Format: path:kind:token:count
 # Excluded: components/ui/*, pages/welcome.tsx, components/app-logo-icon.tsx
-resources/js/components/delete-user.tsx:palette:bg-red-50:1
-resources/js/components/delete-user.tsx:palette:bg-red-700/10:1
-resources/js/components/delete-user.tsx:palette:border-red-100:1
-resources/js/components/delete-user.tsx:palette:border-red-200/10:1
-resources/js/components/delete-user.tsx:palette:text-red-100:1
-resources/js/components/delete-user.tsx:palette:text-red-600:1
-resources/js/components/input-error.tsx:palette:text-red-400:1
-resources/js/components/input-error.tsx:palette:text-red-600:1
 resources/js/components/nav-footer.tsx:palette:text-neutral-100:1
 resources/js/components/nav-footer.tsx:palette:text-neutral-300:1
 resources/js/components/nav-footer.tsx:palette:text-neutral-600:1

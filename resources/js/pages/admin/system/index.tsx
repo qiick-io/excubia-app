@@ -262,7 +262,7 @@ export default function SystemIndex(props: SystemHealthProps) {
             cell: ({ row: tableRow }) => {
                 const row = tableRow.original;
 
-                return <>/api/{row.endpoint}</>;
+                return <>{`/api/${row.endpoint}`}</>;
             },
         },
         {
