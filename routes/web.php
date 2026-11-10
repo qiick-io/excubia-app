@@ -14,10 +14,13 @@ use App\Http\Controllers\ProjectAssigneeController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ProjectGroupController;
 use App\Http\Controllers\ProjectReportController;
+use App\Http\Controllers\ProjectTokenController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\RoleFormController;
 use App\Http\Controllers\SystemHealthController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserGroupController;
+use App\Http\Controllers\UserPasswordResetController;
 use App\Services\SettingsRepositoryService;
 use Illuminate\Support\Facades\Route;
 
@@ -51,8 +54,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('projects/{project:slug}/{view}', [ProjectReportController::class, 'show'])
         ->whereIn('view', ProjectReportController::VIEWS)
         ->name('projects.view');
-    Route::post('projects/{project}/token', [ProjectController::class, 'rotateToken'])->name('projects.token.rotate');
-    Route::delete('projects/{project}/token', [ProjectController::class, 'revokeToken'])->name('projects.token.revoke');
+    Route::post('projects/{project}/token', [ProjectTokenController::class, 'store'])->name('projects.token.rotate');
+    Route::delete('projects/{project}/token', [ProjectTokenController::class, 'destroy'])->name('projects.token.revoke');
     Route::post('projects/{project}/system-report', [ProjectReportController::class, 'refresh'])->name('projects.system-report');
     Route::patch('projects/{project}/exceptions/{exceptionGroup}', [ProjectReportController::class, 'updateException'])->name('projects.exceptions.update');
     Route::patch('projects/{project}/findings/{finding}', [ProjectReportController::class, 'updateFinding'])->name('projects.findings.update');
@@ -89,13 +92,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('users/assignable-roles', [UserController::class, 'assignableRoles'])->name('users.assignable-roles');
     Route::resource('users', UserController::class)->only(['index', 'store', 'update', 'destroy']);
     Route::resource('groups', UserGroupController::class)->only(['index', 'store', 'update', 'destroy']);
-    Route::post('users/{user}/password-reset', [UserController::class, 'sendPasswordReset'])
+    Route::post('users/{user}/password-reset', UserPasswordResetController::class)
         ->middleware('throttle:6,1')
         ->name('users.password-reset');
 
     // Access settings, as in externa-core: roles, permissions and jobs live under /settings.
     Route::prefix('settings')->group(function () {
-        Route::resource('roles', RoleController::class)->except('show');
+        Route::resource('roles', RoleController::class)->except(['show', 'create', 'edit']);
+        Route::get('roles/create', [RoleFormController::class, 'create'])->name('roles.create');
+        Route::get('roles/{role}/edit', [RoleFormController::class, 'edit'])->name('roles.edit');
 
         Route::get('permissions', [PermissionController::class, 'index'])->name('permissions.index');
         Route::post('permissions/sync', [PermissionController::class, 'sync'])->name('permissions.sync');
