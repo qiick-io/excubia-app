@@ -15,7 +15,6 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Password;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -133,21 +132,5 @@ class UserController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => __('User deleted.')]);
 
         return to_route('users.index');
-    }
-
-    /**
-     * Sends Fortify's password-reset email. Without mail, `excubia:create-user` stays the way in.
-     */
-    public function sendPasswordReset(User $user): RedirectResponse
-    {
-        Gate::authorize('update', $user);
-
-        $status = Password::sendResetLink(['email' => $user->email]);
-
-        Inertia::flash('toast', $status === Password::RESET_LINK_SENT
-            ? ['type' => 'success', 'message' => __('Password reset email sent.')]
-            : ['type' => 'error', 'message' => __($status)]);
-
-        return back();
     }
 }

@@ -6,7 +6,6 @@ namespace App\Http\Controllers;
 
 use App\Actions\CreateProjectAction;
 use App\Actions\DeleteProjectAction;
-use App\Actions\RevokeProjectTokenAction;
 use App\Actions\RotateProjectTokenAction;
 use App\Actions\UpdateProjectAction;
 use App\Enums\ProjectVisibilityEnum;
@@ -16,6 +15,7 @@ use App\Http\Requests\UpdateProjectRequest;
 use App\Http\Resources\ProjectResource;
 use App\Models\Project;
 use App\Services\EffectivePermissionResolverService;
+use App\Traits\FlashesPushTokenTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Gate;
@@ -24,10 +24,13 @@ use Inertia\Response;
 
 /**
  * Project registration (ProjectPolicy). Create and edit happen in a drawer on the list page.
- * A new push token is flashed once as `pushToken` and never stored in plain text.
+ * A new push token is flashed once as `pushToken` and never stored in plain text; issuing a new
+ * one later and revoking it live in ProjectTokenController.
  */
 class ProjectController extends Controller
 {
+    use FlashesPushTokenTrait;
+
     /**
      * @var list<string>
      */
@@ -100,37 +103,5 @@ class ProjectController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Project deleted.')]);
 
         return to_route('projects.index');
-    }
-
-    public function rotateToken(Project $project, RotateProjectTokenAction $rotateToken): RedirectResponse
-    {
-        Gate::authorize('manageToken', $project);
-
-        $this->flashToken($project, $rotateToken->execute($project));
-
-        return to_route('projects.index');
-    }
-
-    public function revokeToken(Project $project, RevokeProjectTokenAction $revokeToken): RedirectResponse
-    {
-        Gate::authorize('manageToken', $project);
-
-        $revokeToken->execute($project);
-
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('Push token revoked.')]);
-
-        return to_route('projects.index');
-    }
-
-    /**
-     * Flashes the plain token for one response only, with the URL the project pushes to.
-     */
-    private function flashToken(Project $project, string $token): void
-    {
-        Inertia::flash('pushToken', [
-            'project' => $project->name,
-            'token' => $token,
-            'url' => url('/'),
-        ]);
     }
 }
