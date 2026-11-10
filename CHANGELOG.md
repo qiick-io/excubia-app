@@ -44,6 +44,7 @@ upgrade from the version before (see [docs/self-hosting.md](docs/self-hosting.md
 
 ### Changed
 
+- **Larastan baseline at zero** (#259): the 26 level-8 errors of the adoption baseline are fixed and `phpstan-baseline.neon` is gone. Authenticated controllers take the signed-in user through `#[CurrentUser] User` instead of the nullable `$request->user()`; a user without a password (no local login) is refused before the hash check; the trend, fleet, assistant, AI usage and alert throttle services no longer read possibly missing values.
 - The app runs on qiick/excubia-core 1.0.0-beta.4 (was beta.3), the first core release that sends the AI, Octane, Reverb, billing webhook, authentication, Scout and Pennant runtime types, the reported app environment and the license `kind`; `docs/compatibility.md` now names 1.0.0-beta.4 for those features instead of "next core release". The ingest contract is unchanged.
 - The app runs on qiick/excubia-core 1.0.0-beta.3 (was beta.2, #221), so self-monitoring can produce the `health` runtime type for the system project. Settings → System shows the new core version.
 - `POST /api/reports` and `/api/exceptions` build the rules of report checks and exception groups per index, as `/api/runtime` does (#238): unknown fields a later excubia-core nests inside a check or a group are no longer walked by the validator (1 MB inside a check: about 355 ms → 75 ms, inside a group: about 470 ms → 45 ms, locally). Same answers, error keys and messages.
