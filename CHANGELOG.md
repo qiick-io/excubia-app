@@ -44,6 +44,7 @@ upgrade from the version before (see [docs/self-hosting.md](docs/self-hosting.md
 
 ### Changed
 
+- The last hard-coded UI strings (user and group drawers, role form, account deletion, two-factor setup and recovery codes, the error boundary) are translated in English, Italian and German, and the delete-account and input-error styles use theme tokens instead of raw red palette classes (#259).
 - The app runs on qiick/excubia-core 1.0.0-beta.4 (was beta.3), the first core release that sends the AI, Octane, Reverb, billing webhook, authentication, Scout and Pennant runtime types, the reported app environment and the license `kind`; `docs/compatibility.md` now names 1.0.0-beta.4 for those features instead of "next core release". The ingest contract is unchanged.
 - The app runs on qiick/excubia-core 1.0.0-beta.3 (was beta.2, #221), so self-monitoring can produce the `health` runtime type for the system project. Settings → System shows the new core version.
 - `POST /api/reports` and `/api/exceptions` build the rules of report checks and exception groups per index, as `/api/runtime` does (#238): unknown fields a later excubia-core nests inside a check or a group are no longer walked by the validator (1 MB inside a check: about 355 ms → 75 ms, inside a group: about 470 ms → 45 ms, locally). Same answers, error keys and messages.

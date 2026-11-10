@@ -60,7 +60,9 @@ export default function AdminRoleForm({
                 href: rolesRoutes.index.url(),
             },
             {
-                title: isEdit ? 'Edit role' : 'New role',
+                title: isEdit
+                    ? t('roles.form.editTitle')
+                    : t('roles.actions.newRole'),
                 href: isEdit
                     ? rolesRoutes.edit.url(role!.id)
                     : rolesRoutes.create.url(),
@@ -103,7 +105,13 @@ export default function AdminRoleForm({
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={isEdit ? `Edit ${role?.name}` : 'New role'} />
+            <Head
+                title={
+                    isEdit
+                        ? t('roles.form.editHead', { name: role?.name })
+                        : t('roles.actions.newRole')
+                }
+            />
 
             <SettingsLayout wide>
                 <div className="flex min-h-0 flex-1 flex-col gap-6">
@@ -121,19 +129,20 @@ export default function AdminRoleForm({
                         <div className="flex flex-wrap items-center justify-between gap-4">
                             <div>
                                 <h1 className="text-xl font-semibold tracking-tight">
-                                    {isEdit ? 'Edit role' : 'New role'}
+                                    {isEdit
+                                        ? t('roles.form.editTitle')
+                                        : t('roles.actions.newRole')}
                                 </h1>
                                 {isReadOnly && (
                                     <p className="mt-1 text-sm text-muted-foreground">
-                                        Built-in role — read-only; its
-                                        permissions come with Excubia.
+                                        {t('roles.form.readOnlyHint')}
                                     </p>
                                 )}
                             </div>
                             <div className="flex gap-2">
                                 <Button variant="outline" asChild>
                                     <Link href={rolesRoutes.index.url()}>
-                                        Cancel
+                                        {t('common.cancel')}
                                     </Link>
                                 </Button>
                                 {!isReadOnly && (
@@ -141,7 +150,9 @@ export default function AdminRoleForm({
                                         type="submit"
                                         disabled={form.processing}
                                     >
-                                        {isEdit ? 'Save' : 'Create'}
+                                        {isEdit
+                                            ? t('common.save')
+                                            : t('common.create')}
                                     </Button>
                                 )}
                             </div>
@@ -154,7 +165,7 @@ export default function AdminRoleForm({
                                 }
                             >
                                 <FieldLabel htmlFor="role_name">
-                                    Name
+                                    {t('common.name')}
                                 </FieldLabel>
                                 <Input
                                     id="role_name"
@@ -182,7 +193,7 @@ export default function AdminRoleForm({
 
                         <div className="space-y-6">
                             <h2 className="text-lg font-medium">
-                                Admin permissions
+                                {t('roles.form.adminPermissions')}
                             </h2>
                             {permissionGroups.map((group) => {
                                 const allChecked =

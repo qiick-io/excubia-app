@@ -274,7 +274,7 @@ export function AppSidebar() {
                     <AppNavUser />
                     {appVersion ? (
                         <p className="truncate px-2 text-center text-xs leading-none text-muted-foreground group-data-[collapsible=icon]:hidden">
-                            v{appVersion}
+                            {`v${appVersion}`}
                         </p>
                     ) : null}
                 </SidebarFooter>

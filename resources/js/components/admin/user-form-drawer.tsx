@@ -1,5 +1,6 @@
 import { useForm } from '@inertiajs/react';
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     RoleMultiSelect,
     withSelectedRoles,
@@ -58,6 +59,7 @@ export function UserFormDrawer({
     onCancel,
     onSuccess,
 }: UserFormDrawerProps) {
+    const { t } = useTranslation();
     const form = useForm({ ...EMPTY_USER_FORM });
     const isCreate = editing === null;
     // Only a super-admin changes their own access (#151); the server enforces it too.
@@ -109,7 +111,7 @@ export function UserFormDrawer({
         }
     };
 
-    const title = editing ? 'Edit user' : 'New user';
+    const title = editing ? t('users.form.editTitle') : t('users.newUser');
 
     return (
         <DrawerContent>
@@ -117,8 +119,8 @@ export function UserFormDrawer({
                 <DrawerTitle>{title}</DrawerTitle>
                 <DrawerDescription>
                     {editing
-                        ? 'Update profile, status and direct roles. Leave the password empty to keep it.'
-                        : 'Create a user and assign direct roles. The email counts as verified. Prefer groups when many users share the same role set.'}
+                        ? t('users.form.editDescription')
+                        : t('users.form.createDescription')}
                 </DrawerDescription>
             </DrawerHeader>
 
@@ -135,7 +137,7 @@ export function UserFormDrawer({
             >
                 <DrawerBody>
                     <p className="mb-4 text-sm text-muted-foreground">
-                        Fields marked with * are required.
+                        {t('users.form.requiredHint')}
                     </p>
                     <FieldGroup className="gap-4">
                         <div className="grid gap-4 sm:grid-cols-2">
@@ -145,7 +147,7 @@ export function UserFormDrawer({
                                 }
                             >
                                 <FieldLabel htmlFor="user_first_name">
-                                    First name *
+                                    {t('users.form.firstNameRequired')}
                                 </FieldLabel>
                                 <Input
                                     id="user_first_name"
@@ -180,7 +182,7 @@ export function UserFormDrawer({
                                 }
                             >
                                 <FieldLabel htmlFor="user_last_name">
-                                    Last name
+                                    {t('common.lastName')}
                                 </FieldLabel>
                                 <Input
                                     id="user_last_name"
@@ -212,7 +214,7 @@ export function UserFormDrawer({
                             data-invalid={form.errors.email ? true : undefined}
                         >
                             <FieldLabel htmlFor="user_email">
-                                Email *
+                                {t('users.form.emailRequired')}
                             </FieldLabel>
                             <Input
                                 id="user_email"
@@ -236,8 +238,8 @@ export function UserFormDrawer({
                                 }
                             />
                             <FieldDescription id="user_email_hint">
-                                Use a valid email address, for example{' '}
-                                <code>name@example.com</code>.
+                                {t('users.form.emailHint')}{' '}
+                                <code>{'name@example.com'}</code>.
                             </FieldDescription>
                             <FieldError id="user-email-error">
                                 {form.errors.email}
@@ -251,8 +253,8 @@ export function UserFormDrawer({
                         >
                             <FieldLabel htmlFor="user_password">
                                 {editing
-                                    ? 'New password (optional)'
-                                    : 'Password *'}
+                                    ? t('users.form.newPasswordOptional')
+                                    : t('users.form.passwordRequired')}
                             </FieldLabel>
                             <PasswordInput
                                 id="user_password"
@@ -264,7 +266,6 @@ export function UserFormDrawer({
                                 disabled={readOnly}
                                 autoComplete="new-password"
                                 showGenerateButton={isCreate}
-                                generateLabel="Generate secure password"
                                 onGenerated={(password) =>
                                     form.setData('password', password)
                                 }
@@ -303,7 +304,7 @@ export function UserFormDrawer({
                                     htmlFor="user_is_active"
                                     className="font-normal"
                                 >
-                                    Active
+                                    {t('users.status.active')}
                                 </FieldLabel>
                             </div>
                             <FieldError id="user-is-active-error">
@@ -318,7 +319,9 @@ export function UserFormDrawer({
                                     : undefined
                             }
                         >
-                            <FieldLabel>Roles *</FieldLabel>
+                            <FieldLabel>
+                                {t('users.form.rolesRequired')}
+                            </FieldLabel>
                             <RoleMultiSelect
                                 value={form.data.roles}
                                 onChange={(selectedRoles) =>
@@ -326,11 +329,11 @@ export function UserFormDrawer({
                                 }
                                 roles={roleOptions}
                                 disabled={readOnly || isRolesLocked}
-                                placeholder="Select at least one role"
+                                placeholder={t('users.form.rolesPlaceholder')}
                             />
                             {isRolesLocked && !readOnly && (
                                 <FieldDescription id="user-roles-locked-hint">
-                                    You cannot change your own roles.
+                                    {t('users.form.rolesLocked')}
                                 </FieldDescription>
                             )}
                             <FieldError id="user-roles-error">
@@ -346,11 +349,11 @@ export function UserFormDrawer({
                         variant="outline"
                         onClick={() => onCancel?.()}
                     >
-                        Cancel
+                        {t('common.cancel')}
                     </Button>
                     {!readOnly && (
                         <Button type="submit" disabled={form.processing}>
-                            {editing ? 'Save' : 'Create'}
+                            {editing ? t('common.save') : t('common.create')}
                         </Button>
                     )}
                 </DrawerFooter>
