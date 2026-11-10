@@ -601,9 +601,6 @@ function TelemetryRow({
     );
 }
 
-/**
- * The grouped findings across projects, worst first: the Sentry "issues" of Excubia.
- */
 /** A project's open items assigned to the signed-in user (#254). */
 type AssignedRow = {
     slug: string;
@@ -681,6 +678,7 @@ function AssignedToYouCard({ rows }: { rows: AssignedRow[] }) {
     );
 }
 
+/** The grouped findings across projects, worst first. */
 function TopIssuesCard({
     issues,
     total,
