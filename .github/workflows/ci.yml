@@ -377,7 +377,7 @@ jobs:
 
   # The shared forward-only migration check (#258). It runs next to the `Migrations frozen` job
   # until the required checks name it; then the local job and scripts/migrations-frozen.sh go.
-  migrations-frozen:
+  shared-migrations-frozen:
     uses: qiick-io/app-ui/.github/workflows/migrations-frozen.yml@v0.2.0
 
   # The @qiick UI registry copies and the qiick standards pack (agent files,
