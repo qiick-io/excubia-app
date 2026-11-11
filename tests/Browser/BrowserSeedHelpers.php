@@ -44,6 +44,10 @@ function seededA11yProject(): Project
 {
     $project = Project::factory()->create(['name' => 'Shop', 'slug' => 'shop']);
     $now = now();
+    // Five minutes ago, but never before the current hour: the time-range tests click the
+    // chart's last (current-hour) bucket, which missed these rows in the first five minutes
+    // of every hour.
+    $recentBucket = $now->copy()->subMinutes(5)->max($now->copy()->startOfHour())->startOfMinute();
     $coreReport = json_decode((string) file_get_contents(base_path('tests/Fixtures/core/report-every-check.json')), true, flags: JSON_THROW_ON_ERROR);
 
     $report = $project->healthReports()->create([
@@ -77,7 +81,7 @@ function seededA11yProject(): Project
     RuntimeAggregate::query()->create([
         'project_id' => $project->id,
         'type' => 'request',
-        'bucket' => $now->copy()->subMinutes(5)->startOfMinute(),
+        'bucket' => $recentBucket,
         'sample_rate' => 1,
         'dimension_key' => str_repeat('b', 64),
         'dimensions' => ['route' => 'checkout.store', 'method' => 'POST', 'statusClass' => '2xx'],
@@ -92,7 +96,7 @@ function seededA11yProject(): Project
         RuntimeAggregate::query()->create([
             'project_id' => $project->id,
             'type' => $type,
-            'bucket' => $now->copy()->subMinutes(5)->startOfMinute(),
+            'bucket' => $recentBucket,
             'sample_rate' => 1,
             'dimension_key' => hash('sha256', $type),
             'dimensions' => $dimensions,
