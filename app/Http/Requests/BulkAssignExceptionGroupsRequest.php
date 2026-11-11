@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
-use App\Http\Requests\Concerns\TargetsProjectExceptionGroupsTrait;
+use App\Enums\PermissionEnum;
+use App\Http\Requests\Concerns\TargetsProjectItemsTrait;
+use App\Models\ExceptionGroup;
 use App\Models\Project;
 use App\Models\User;
 use App\Services\ProjectAssigneeService;
@@ -18,7 +20,18 @@ use Illuminate\Validation\Validator;
  */
 class BulkAssignExceptionGroupsRequest extends FormRequest
 {
-    use TargetsProjectExceptionGroupsTrait;
+    /** @use TargetsProjectItemsTrait<ExceptionGroup> */
+    use TargetsProjectItemsTrait;
+
+    protected function itemModel(): string
+    {
+        return ExceptionGroup::class;
+    }
+
+    protected function itemPermission(): string
+    {
+        return PermissionEnum::CanManageExceptions->value;
+    }
 
     /**
      * @return array<string, ValidationRule|array<mixed>|string>

@@ -24,7 +24,7 @@ class ProjectExceptionBulkController extends Controller
     public function status(BulkUpdateExceptionStatusRequest $request, #[CurrentUser] User $user, Project $project, BulkUpdateExceptionStatusAction $updateStatus): RedirectResponse
     {
         $status = $request->enum('status', ExceptionStatusEnum::class) ?? ExceptionStatusEnum::Open;
-        $changed = $updateStatus->execute($request->exceptionGroups(), $status, $user);
+        $changed = $updateStatus->execute($request->selectedItems(), $status, $user);
         Inertia::flash('toast', ['type' => 'success', 'message' => trans_choice(':count exception updated.|:count exceptions updated.', $changed, ['count' => $changed])]);
 
         return back();
@@ -32,7 +32,7 @@ class ProjectExceptionBulkController extends Controller
 
     public function assignee(BulkAssignExceptionGroupsRequest $request, #[CurrentUser] User $user, Project $project, BulkAssignProjectItemsAction $assign): RedirectResponse
     {
-        $groups = $request->exceptionGroups();
+        $groups = $request->selectedItems();
         $assign->execute($groups, $user, $request->assignee());
         Inertia::flash('toast', ['type' => 'success', 'message' => trans_choice(':count exception assigned.|:count exceptions assigned.', $groups->count(), ['count' => $groups->count()])]);
 

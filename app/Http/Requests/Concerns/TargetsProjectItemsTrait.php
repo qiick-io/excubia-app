@@ -4,21 +4,31 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Concerns;
 
-use App\Enums\PermissionEnum;
-use App\Models\ExceptionGroup;
 use App\Models\Project;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\Validator;
 
 /**
- * The selection of a bulk action on the Exceptions tab (#276): up to 200 exception group ids
- * of the project in the route. Handling them takes the same right as handling one
- * (`can-manage-exceptions` on a project the user may see), and an id of another project fails
- * the whole request rather than being skipped.
+ * The selection of a bulk action on an inbox list of a project (#276): up to 200 ids of the
+ * request's item model in the project of the route. Handling them takes the same right as
+ * handling one (the list's permission on a project the user may see), and an id of another
+ * project fails the whole request rather than being skipped.
+ *
+ * The using request names the model and the permission.
+ *
+ * @template TItem of Model
  */
-trait TargetsProjectExceptionGroupsTrait
+trait TargetsProjectItemsTrait
 {
-    public const int MAX_SELECTED_GROUPS = 200;
+    public const int MAX_SELECTED_ITEMS = 200;
+
+    /**
+     * @return class-string<TItem>
+     */
+    abstract protected function itemModel(): string;
+
+    abstract protected function itemPermission(): string;
 
     public function authorize(): bool
     {
@@ -28,7 +38,7 @@ trait TargetsProjectExceptionGroupsTrait
         return $user !== null
             && $project instanceof Project
             && $user->can('view', $project)
-            && $user->can(PermissionEnum::CanManageExceptions->value);
+            && $user->can($this->itemPermission());
     }
 
     /**
@@ -37,7 +47,7 @@ trait TargetsProjectExceptionGroupsTrait
     protected function selectionRules(): array
     {
         return [
-            'ids' => ['required', 'array', 'min:1', 'max:'.self::MAX_SELECTED_GROUPS],
+            'ids' => ['required', 'array', 'min:1', 'max:'.self::MAX_SELECTED_ITEMS],
             'ids.*' => ['integer', 'distinct'],
         ];
     }
@@ -48,19 +58,20 @@ trait TargetsProjectExceptionGroupsTrait
             return;
         }
 
-        if ($this->exceptionGroups()->count() !== count($this->selectedIds())) {
-            $validator->errors()->add('ids', __('Some selected exceptions are not in this project.'));
+        if ($this->selectedItems()->count() !== count($this->selectedIds())) {
+            $validator->errors()->add('ids', __('Some selected items are not in this project.'));
         }
     }
 
     /**
-     * @return Collection<int, ExceptionGroup>
+     * @return Collection<int, TItem>
      */
-    public function exceptionGroups(): Collection
+    public function selectedItems(): Collection
     {
         $project = $this->route('project');
+        $model = $this->itemModel();
 
-        return ExceptionGroup::query()
+        return $model::query()
             ->where('project_id', $project instanceof Project ? $project->id : 0)
             ->whereIn('id', $this->selectedIds())
             ->get();

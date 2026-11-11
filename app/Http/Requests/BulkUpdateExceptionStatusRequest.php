@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Http\Requests;
 
 use App\Enums\ExceptionStatusEnum;
-use App\Http\Requests\Concerns\TargetsProjectExceptionGroupsTrait;
+use App\Enums\PermissionEnum;
+use App\Http\Requests\Concerns\TargetsProjectItemsTrait;
+use App\Models\ExceptionGroup;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -16,7 +18,18 @@ use Illuminate\Validation\Validator;
  */
 class BulkUpdateExceptionStatusRequest extends FormRequest
 {
-    use TargetsProjectExceptionGroupsTrait;
+    /** @use TargetsProjectItemsTrait<ExceptionGroup> */
+    use TargetsProjectItemsTrait;
+
+    protected function itemModel(): string
+    {
+        return ExceptionGroup::class;
+    }
+
+    protected function itemPermission(): string
+    {
+        return PermissionEnum::CanManageExceptions->value;
+    }
 
     /**
      * @return array<string, ValidationRule|array<mixed>|string>
