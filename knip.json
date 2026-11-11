@@ -1,11 +1,7 @@
 {
     "$schema": "https://unpkg.com/knip@6/schema.json",
-    "entry": [
-        "resources/js/pages/**/*.tsx"
-    ],
-    "project": [
-        "resources/js/**/*.{ts,tsx}"
-    ],
+    "entry": ["resources/js/pages/**/*.tsx"],
+    "project": ["resources/js/**/*.{ts,tsx}"],
     "ignore": [
         "resources/js/components/ui/**",
         "resources/js/components/admin/data-table-faceted-filter.tsx",
@@ -18,10 +14,6 @@
         "resources/js/components/keyboard-shortcuts.tsx",
         "resources/js/lib/shortcut-keys.ts"
     ],
-    "ignoreDependencies": [
-        "concurrently"
-    ],
-    "ignoreBinaries": [
-        "oxlint"
-    ]
+    "ignoreDependencies": ["concurrently"],
+    "ignoreBinaries": ["oxlint"]
 }
