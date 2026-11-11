@@ -2088,5 +2088,40 @@
         "description": "The interface hit an unexpected error. You can try reloading the page.",
         "retry": "Try again",
         "reload": "Reload page"
+    },
+    "shortcuts": {
+        "description": "Shortcuts active on this screen.",
+        "groupGeneral": "General",
+        "groupList": "List",
+        "groupNavigation": "Navigation",
+        "showHelp": "Show keyboard shortcuts",
+        "singleKeyOff": "Single-key shortcuts are off in your settings; ⌘ / Ctrl shortcuts still work.",
+        "title": "Keyboard shortcuts"
+    },
+    "commandPalette": {
+        "description": "Search pages, records and actions.",
+        "empty": "No results.",
+        "open": "Open the command palette",
+        "placeholder": "Search or jump to…",
+        "recent": "Recent",
+        "searchFailed": "Search failed. Showing local results only.",
+        "searching": "Searching…",
+        "title": "Command palette",
+        "trigger": "Search"
+    },
+    "palette": {
+        "groups": {
+            "navigation": "Navigation",
+            "actions": "Actions",
+            "projects": "Projects",
+            "projectGroups": "Project groups",
+            "users": "Users",
+            "groups": "Groups"
+        },
+        "actions": {
+            "assistantPanel": "Open the assistant panel",
+            "darkMode": "Switch to dark mode",
+            "lightMode": "Switch to light mode"
+        }
     }
 }

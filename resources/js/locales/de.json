@@ -2088,5 +2088,40 @@
         "description": "In der Oberfläche ist ein unerwarteter Fehler aufgetreten. Laden Sie die Seite neu.",
         "retry": "Erneut versuchen",
         "reload": "Seite neu laden"
+    },
+    "shortcuts": {
+        "description": "Auf dieser Seite aktive Tastenkürzel.",
+        "groupGeneral": "Allgemein",
+        "groupList": "Liste",
+        "groupNavigation": "Navigation",
+        "showHelp": "Tastenkürzel anzeigen",
+        "singleKeyOff": "Einzeltasten-Kürzel sind in deinen Einstellungen deaktiviert; Kürzel mit ⌘ / Strg funktionieren weiterhin.",
+        "title": "Tastenkürzel"
+    },
+    "commandPalette": {
+        "description": "Seiten, Datensätze und Aktionen suchen.",
+        "empty": "Keine Ergebnisse.",
+        "open": "Befehlspalette öffnen",
+        "placeholder": "Suchen oder springen zu…",
+        "recent": "Zuletzt geöffnet",
+        "searchFailed": "Suche fehlgeschlagen. Nur lokale Ergebnisse werden angezeigt.",
+        "searching": "Suche läuft…",
+        "title": "Befehlspalette",
+        "trigger": "Suchen"
+    },
+    "palette": {
+        "groups": {
+            "navigation": "Navigation",
+            "actions": "Aktionen",
+            "projects": "Projekte",
+            "projectGroups": "Projektgruppen",
+            "users": "Benutzer",
+            "groups": "Gruppen"
+        },
+        "actions": {
+            "assistantPanel": "Assistenten-Bereich öffnen",
+            "darkMode": "Zum dunklen Design wechseln",
+            "lightMode": "Zum hellen Design wechseln"
+        }
     }
 }

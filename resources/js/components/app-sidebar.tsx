@@ -1,20 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import {
-    BookOpen,
-    FolderGit2,
-    FolderKanban,
-    FolderTree,
-    Layers,
-    LayoutGrid,
-    PanelRight,
-    ScrollText,
-    Settings,
-    Sparkles,
-    Users,
-    UsersRound,
-} from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
-import { useMemo } from 'react';
+import { BookOpen, FolderGit2, PanelRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
@@ -36,32 +21,16 @@ import {
     TooltipContent,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { PermissionEnum } from '@/enums/permission-enum';
-import { useCan } from '@/hooks/use-can';
+import {
+    PINNED_SIDEBAR_MODULE_IDS,
+    useNavModules,
+} from '@/hooks/use-nav-modules';
+import type { ModuleDef } from '@/hooks/use-nav-modules';
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import { toggleAiAssistant } from '@/lib/ai-open';
 import { dashboard } from '@/routes';
-import activityLogs from '@/routes/activity-logs';
 import ai from '@/routes/ai';
-import fleet from '@/routes/fleet';
-import groups from '@/routes/groups';
-import projectGroups from '@/routes/project-groups';
-import projects from '@/routes/projects';
-import { edit as editProfile } from '@/routes/profile';
-import users from '@/routes/users';
 import type { NavItem } from '@/types';
-
-type ModuleDef = {
-    id: string;
-    titleKey: string;
-    href: NavItem['href'];
-    icon: LucideIcon;
-    permission?: PermissionEnum;
-    accent?: boolean;
-};
-
-/** Always first in the nav, regardless of persisted module order. */
-const PINNED_SIDEBAR_MODULE_IDS = ['assistant'] as const;
 
 /** Keyboard shortcut hint for the AI assistant panel (handled in the panel). */
 const AI_PANEL_SHORTCUT =
@@ -75,86 +44,10 @@ const AI_PANEL_SHORTCUT =
  */
 export function AppSidebar() {
     const { t } = useTranslation();
-    const { can } = useCan();
     const { isCurrentUrl } = useCurrentUrl();
-    const { projectSettings, isAssistantEnabled, appVersion } = usePage().props;
+    const { appVersion } = usePage().props;
 
-    const moduleDefs = useMemo<Record<string, ModuleDef>>(
-        () => ({
-            dashboard: {
-                id: 'dashboard',
-                titleKey: 'nav.dashboard',
-                href: dashboard(),
-                icon: LayoutGrid,
-            },
-            projects: {
-                id: 'projects',
-                titleKey: 'nav.projects',
-                href: projects.index.url(),
-                icon: FolderKanban,
-                permission: PermissionEnum.CanShowProjects,
-            },
-            'project-groups': {
-                id: 'project-groups',
-                titleKey: 'nav.projectGroups',
-                href: projectGroups.index.url(),
-                icon: FolderTree,
-                permission: PermissionEnum.CanShowProjectGroups,
-            },
-            fleet: {
-                id: 'fleet',
-                titleKey: 'nav.fleet',
-                href: fleet.show.url(),
-                icon: Layers,
-                permission: PermissionEnum.CanShowProjects,
-            },
-            assistant: {
-                id: 'assistant',
-                titleKey: 'nav.assistant',
-                href: ai.index.url(),
-                icon: Sparkles,
-                permission: PermissionEnum.CanUseAi,
-                accent: true,
-            },
-            activity: {
-                id: 'activity',
-                titleKey: 'nav.activityLog',
-                href: activityLogs.index.url(),
-                icon: ScrollText,
-                permission: PermissionEnum.CanShowActivityLogs,
-            },
-            users: {
-                id: 'users',
-                titleKey: 'nav.users',
-                href: users.index.url(),
-                icon: Users,
-                permission: PermissionEnum.CanShowUsers,
-            },
-            groups: {
-                id: 'groups',
-                titleKey: 'nav.groups',
-                href: groups.index.url(),
-                icon: UsersRound,
-                permission: PermissionEnum.CanShowGroups,
-            },
-            settings: {
-                id: 'settings',
-                titleKey: 'nav.settings',
-                href: editProfile(),
-                icon: Settings,
-            },
-        }),
-        [],
-    );
-
-    const visibleModules = pinModulesFirst(
-        projectSettings.sidebarModules
-            .filter((module) => module.enabled)
-            .map((module) => moduleDefs[module.id])
-            .filter((def): def is ModuleDef => !!def)
-            .filter((def) => def.id !== 'assistant' || isAssistantEnabled)
-            .filter((def) => !def.permission || can(def.permission)),
-    );
+    const visibleModules = useNavModules();
 
     const pinnedIds = new Set<string>(PINNED_SIDEBAR_MODULE_IDS);
     const pinnedModules = visibleModules.filter((item) =>
@@ -281,13 +174,4 @@ export function AppSidebar() {
             </nav>
         </Sidebar>
     );
-}
-
-function pinModulesFirst<T extends { id: string }>(items: T[]): T[] {
-    const pinnedIds = new Set<string>(PINNED_SIDEBAR_MODULE_IDS);
-    const pinned = PINNED_SIDEBAR_MODULE_IDS.map((id) =>
-        items.find((item) => item.id === id),
-    ).filter((item): item is T => !!item);
-
-    return [...pinned, ...items.filter((item) => !pinnedIds.has(item.id))];
 }
