@@ -44,5 +44,6 @@
     "Unpin a project first: the sidebar keeps :count.": "Togli prima un progetto dai fissati: la sidebar ne tiene :count.",
     ":count exception updated.|:count exceptions updated.": ":count eccezione aggiornata.|:count eccezioni aggiornate.",
     ":count exception assigned.|:count exceptions assigned.": ":count eccezione assegnata.|:count eccezioni assegnate.",
-    "Some selected items are not in this project.": "Alcuni elementi selezionati non sono in questo progetto."
+    "Some selected items are not in this project.": "Alcuni elementi selezionati non sono in questo progetto.",
+    ":count finding assigned.|:count findings assigned.": ":count finding assegnato.|:count finding assegnati."
 }

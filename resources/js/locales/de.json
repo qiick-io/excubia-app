@@ -2052,7 +2052,13 @@
         "ignoreRuleHint": "Füge sie der excubia.json des Projekts hinzu, um den Befund aus dem Bericht selbst herauszunehmen.",
         "noResolved": "Noch keine behobenen Befunde",
         "noResolvedDescription": "Befunde erscheinen hier, sobald ein späterer Bericht ihre Prüfung ohne sie ausführt.",
-        "toUser": "an {{name}}"
+        "toUser": "an {{name}}",
+        "views": {
+            "open": "Offen",
+            "mine": "Mir zugewiesen",
+            "new": "Neu in 24 Std."
+        },
+        "assignToMe": "Mir zuweisen"
     },
     "picker": {
         "clearSelection": "Auswahl aufheben",

@@ -28,6 +28,7 @@ import {
     locationPageUrl,
     patchLocationQuery,
 } from '@/lib/admin-query-params';
+import { isFirstSeenWithinLastDay, savedViewHref } from '@/lib/inbox-views';
 import {
     AssignedToMeToggle,
     AssigneeSelect,
@@ -66,17 +67,6 @@ const EXCEPTIONS_GUIDE_URL =
 
 type StatusFilter = ExceptionGroupRow['status'] | 'all';
 
-/** "New in 24h": groups first seen in the last day. */
-const NEW_WINDOW_MILLISECONDS = 24 * 60 * 60 * 1000;
-
-/** Whether a group was first seen within the "New in 24h" window. */
-function isNewSince(group: ExceptionGroupRow): boolean {
-    return (
-        Date.now() - new Date(group.first_seen_at).getTime() <=
-        NEW_WINDOW_MILLISECONDS
-    );
-}
-
 const STATUS_FILTERS: readonly StatusFilter[] = [
     'open',
     'resolved',
@@ -91,27 +81,6 @@ function statusFromUrl(): StatusFilter {
     return STATUS_FILTERS.includes(value as StatusFilter)
         ? (value as StatusFilter)
         : 'open';
-}
-
-/**
- * The URL of a saved view: the current page and its time range, with the view's filters only
- * (an Inertia visit, so the list reloads with them).
- */
-function savedViewHref(filters: Record<string, string>): string {
-    const url = new URL(
-        locationPageUrl() || window.location.href,
-        window.location.origin,
-    );
-
-    for (const key of ['status', 'assigned', 'new', 'exception']) {
-        url.searchParams.delete(key);
-    }
-
-    for (const [key, value] of Object.entries(filters)) {
-        url.searchParams.set(key, value);
-    }
-
-    return `${url.pathname}${url.search}`;
 }
 
 const STATUS_VARIANTS = {
@@ -191,7 +160,7 @@ export function ExceptionsView({
             (group) =>
                 (status === 'all' || group.status === status) &&
                 (!isMine || group.assignee?.id === currentUserId) &&
-                (!isNewOnly || isNewSince(group)) &&
+                (!isNewOnly || isFirstSeenWithinLastDay(group.first_seen_at)) &&
                 (needle === '' ||
                     `${group.class} ${group.message} ${group.context.name}`
                         .toLowerCase()
@@ -250,7 +219,9 @@ export function ExceptionsView({
             id: 'new',
             label: t('exceptions.views.new'),
             href: savedViewHref({ new: '24h' }),
-            count: openGroups.filter(isNewSince).length,
+            count: openGroups.filter((group) =>
+                isFirstSeenWithinLastDay(group.first_seen_at),
+            ).length,
         },
     ];
     const activeSavedViewId =
