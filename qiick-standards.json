@@ -9,6 +9,7 @@
     "patterns": [
         "command-palette",
         "grouped-tabs:sub-menu",
+        "inbox-list:side-panel",
         "keyboard-shortcuts",
         "sidebar-entities"
     ]

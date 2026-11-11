@@ -14,7 +14,8 @@
         "resources/js/components/keyboard-shortcuts.tsx",
         "resources/js/lib/shortcut-keys.ts",
         "resources/js/components/grouped-view-tabs.tsx",
-        "resources/js/components/sidebar-entity-list.tsx"
+        "resources/js/components/sidebar-entity-list.tsx",
+        "resources/js/components/inbox-list.tsx"
     ],
     "ignoreDependencies": ["concurrently"],
     "ignoreBinaries": ["oxlint"]

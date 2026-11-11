@@ -11,6 +11,11 @@ upgrade from the version before (see [docs/self-hosting.md](docs/self-hosting.md
 
 ### Added
 
+- **Exceptions as an inbox** (#276, app-ui optional pattern `inbox-list`, variant `side-panel`). The Exceptions tab gains three saved views above the filters, with their counts: **Unresolved**, **Assigned to me** and **New in 24h**. Its filters now live in the URL (`?status=`, `?assigned=me`, `?new=24h`), so a view can be shared.
+    - `?exception=<id>` opens a group's drawer, and the command palette finds recent exception groups (last 14 days) by class or message and opens them there.
+    - With `can-manage-exceptions`, rows can be selected for bulk **Resolve**, **Ignore**, **Reopen** and **Assign to me** (`PATCH /projects/{project}/exceptions/bulk/status`, `PUT …/bulk/assignee`, up to 200 groups, all of the project). Each group is authorized, changed and logged on its own.
+    - A status change made by a user is now logged as a `status_changed` activity, from the drawer too.
+
 - **Pinned and troubled projects in the sidebar** (#273, app-ui optional pattern `sidebar-entities`). Under **Projects** the sidebar lists two groups:
     - the projects the user starred, in the order they pinned them, up to eight;
     - **Needs attention**: up to five other projects with open exceptions or active findings, critical first, hidden when there are none.

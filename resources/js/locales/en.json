@@ -1393,7 +1393,15 @@
         "inRange": "In range",
         "emptyRangeDescription": "No exception group was seen {{during}}. Pick a longer range to see older groups.",
         "occurrencesChartLabel": "Bar chart of occurrences {{bucket}}: {{count}} {{during}}.",
-        "emptyRangeTitle": "No exceptions in this range"
+        "emptyRangeTitle": "No exceptions in this range",
+        "views": {
+            "unresolved": "Unresolved",
+            "mine": "Assigned to me",
+            "new": "New in 24h"
+        },
+        "assignToMe": "Assign to me",
+        "selectAll": "Select all exceptions",
+        "selectRow": "Select {{name}}"
     },
     "schedule": {
         "description": "The scheduled tasks of the latest report, each with its last run, next due time and status. Checked every minute against the runs pushed with runtime monitoring.",
@@ -2124,7 +2132,8 @@
             "projects": "Projects",
             "projectGroups": "Project groups",
             "users": "Users",
-            "groups": "Groups"
+            "groups": "Groups",
+            "exceptions": "Exceptions"
         },
         "actions": {
             "assistantPanel": "Open the assistant panel",
@@ -2152,5 +2161,11 @@
         },
         "unpin": "Unpin {{name}}",
         "viewAll": "View all"
+    },
+    "inbox": {
+        "detailDescription": "Item details and actions.",
+        "nextStep": "What to do",
+        "openFullPage": "Open full page",
+        "savedViews": "Saved views"
     }
 }

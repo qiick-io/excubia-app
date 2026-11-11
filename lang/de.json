@@ -41,5 +41,8 @@
     "Unassigned.": "Zuweisung entfernt.",
     "Assigned to :name.": ":name zugewiesen.",
     "This user cannot see the project.": "Dieser Benutzer kann das Projekt nicht sehen.",
-    "Unpin a project first: the sidebar keeps :count.": "Löse zuerst ein angeheftetes Projekt: die Seitenleiste behält :count."
+    "Unpin a project first: the sidebar keeps :count.": "Löse zuerst ein angeheftetes Projekt: die Seitenleiste behält :count.",
+    ":count exception updated.|:count exceptions updated.": ":count Ausnahme aktualisiert.|:count Ausnahmen aktualisiert.",
+    ":count exception assigned.|:count exceptions assigned.": ":count Ausnahme zugewiesen.|:count Ausnahmen zugewiesen.",
+    "Some selected items are not in this project.": "Einige ausgewählte Einträge gehören nicht zu diesem Projekt."
 }

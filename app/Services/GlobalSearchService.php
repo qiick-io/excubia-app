@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Data\GlobalSearchResultData;
+use App\Models\ExceptionGroup;
 use App\Models\Project;
 use App\Models\ProjectGroup;
 use App\Models\User;
 use App\Models\UserGroup;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Date;
 
 /**
  * Finds records by name for the command palette (#274, app-ui optional pattern
@@ -33,6 +35,7 @@ final class GlobalSearchService
         $pattern = "%{$query}%";
         $groups = [
             'projects' => $user->can('viewAny', Project::class) ? $this->projects($user, $pattern) : [],
+            'exceptions' => $user->can('viewAny', Project::class) ? $this->exceptionGroups($user, $pattern) : [],
             'projectGroups' => $user->can('viewAny', ProjectGroup::class) ? $this->projectGroups($pattern) : [],
             'users' => $user->can('viewAny', User::class) ? $this->users($pattern) : [],
             'groups' => $user->can('viewAny', UserGroup::class) ? $this->userGroups($pattern) : [],
@@ -61,6 +64,44 @@ final class GlobalSearchService
                 url: route('projects.show', $project->slug, false),
             ))
             ->all());
+    }
+
+    /**
+     * Exception groups seen in the last 14 days (the longest range of the Exceptions tab), by
+     * class or message, in the projects the user may see; each opens its drawer (#276).
+     *
+     * @return list<GlobalSearchResultData>
+     */
+    private function exceptionGroups(User $user, string $pattern): array
+    {
+        $groups = ExceptionGroup::query()
+            ->whereIn('project_id', Project::query()->visibleTo($user)->select('id'))
+            ->where('last_seen_at', '>=', Date::now()->subDays(14))
+            ->where(fn (Builder $query) => $query
+                ->whereLike('class', $pattern)
+                ->orWhereLike('message', $pattern))
+            ->with('project:id,name,slug')
+            ->orderByDesc('last_seen_at')
+            ->limit(self::LIMIT_PER_GROUP)
+            ->get(['id', 'project_id', 'class', 'message']);
+        $results = [];
+
+        foreach ($groups as $group) {
+            $project = $group->project;
+
+            if ($project === null) {
+                continue;
+            }
+
+            $results[] = new GlobalSearchResultData(
+                id: "exception:{$group->id}",
+                label: $group->class,
+                description: "{$project->name} · {$group->message}",
+                url: route('projects.view', ['project' => $project->slug, 'view' => 'exceptions', 'range' => '14d', 'status' => 'all', 'exception' => $group->id], false),
+            );
+        }
+
+        return $results;
     }
 
     /**

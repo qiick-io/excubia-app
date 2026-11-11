@@ -1393,7 +1393,15 @@
         "inRange": "Im Zeitraum",
         "emptyRangeDescription": "Keine Exception-Gruppe wurde {{during}} gesehen. Wähle einen längeren Zeitraum für ältere Gruppen.",
         "occurrencesChartLabel": "Balkendiagramm der Vorkommen {{bucket}}: {{count}} {{during}}.",
-        "emptyRangeTitle": "Keine Exceptions in diesem Zeitraum"
+        "emptyRangeTitle": "Keine Exceptions in diesem Zeitraum",
+        "views": {
+            "unresolved": "Ungelöst",
+            "mine": "Mir zugewiesen",
+            "new": "Neu in 24 Std."
+        },
+        "assignToMe": "Mir zuweisen",
+        "selectAll": "Alle Ausnahmen auswählen",
+        "selectRow": "{{name}} auswählen"
     },
     "schedule": {
         "description": "Die geplanten Aufgaben des letzten Berichts, jeweils mit letztem Lauf, nächster Fälligkeit und Status. Jede Minute mit den Läufen aus dem Runtime-Monitoring abgeglichen.",
@@ -2124,7 +2132,8 @@
             "projects": "Projekte",
             "projectGroups": "Projektgruppen",
             "users": "Benutzer",
-            "groups": "Gruppen"
+            "groups": "Gruppen",
+            "exceptions": "Ausnahmen"
         },
         "actions": {
             "assistantPanel": "Assistenten-Bereich öffnen",
@@ -2152,5 +2161,11 @@
         },
         "unpin": "{{name}} lösen",
         "viewAll": "Alle anzeigen"
+    },
+    "inbox": {
+        "detailDescription": "Details und Aktionen des Eintrags.",
+        "nextStep": "Was zu tun ist",
+        "openFullPage": "Ganze Seite öffnen",
+        "savedViews": "Gespeicherte Ansichten"
     }
 }

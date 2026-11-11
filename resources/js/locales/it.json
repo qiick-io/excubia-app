@@ -1393,7 +1393,15 @@
         "inRange": "Nell’intervallo",
         "emptyRangeDescription": "Nessun gruppo di eccezioni visto {{during}}. Scegli un intervallo più lungo per vedere i gruppi più vecchi.",
         "occurrencesChartLabel": "Grafico a barre delle occorrenze {{bucket}}: {{count}} {{during}}.",
-        "emptyRangeTitle": "Nessuna eccezione in questo intervallo"
+        "emptyRangeTitle": "Nessuna eccezione in questo intervallo",
+        "views": {
+            "unresolved": "Non risolte",
+            "mine": "Assegnate a me",
+            "new": "Nuove nelle 24h"
+        },
+        "assignToMe": "Assegna a me",
+        "selectAll": "Seleziona tutte le eccezioni",
+        "selectRow": "Seleziona {{name}}"
     },
     "schedule": {
         "description": "I task pianificati dell'ultimo report, ognuno con l'ultima esecuzione, la prossima scadenza e lo stato. Controllati ogni minuto con le esecuzioni inviate dal monitoraggio runtime.",
@@ -2124,7 +2132,8 @@
             "projects": "Progetti",
             "projectGroups": "Gruppi di progetti",
             "users": "Utenti",
-            "groups": "Gruppi"
+            "groups": "Gruppi",
+            "exceptions": "Eccezioni"
         },
         "actions": {
             "assistantPanel": "Apri il pannello dell'assistente",
@@ -2152,5 +2161,11 @@
         },
         "unpin": "Togli {{name}} dai fissati",
         "viewAll": "Vedi tutti"
+    },
+    "inbox": {
+        "detailDescription": "Dettagli e azioni dell'elemento.",
+        "nextStep": "Cosa fare",
+        "openFullPage": "Apri a pagina intera",
+        "savedViews": "Viste salvate"
     }
 }

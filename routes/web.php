@@ -13,6 +13,7 @@ use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\ProjectAlertsController;
 use App\Http\Controllers\ProjectAssigneeController;
 use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\ProjectExceptionBulkController;
 use App\Http\Controllers\ProjectGroupController;
 use App\Http\Controllers\ProjectPinController;
 use App\Http\Controllers\ProjectReportController;
@@ -65,6 +66,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('projects/{project}/token', [ProjectTokenController::class, 'store'])->name('projects.token.rotate');
     Route::delete('projects/{project}/token', [ProjectTokenController::class, 'destroy'])->name('projects.token.revoke');
     Route::post('projects/{project}/system-report', [ProjectReportController::class, 'refresh'])->name('projects.system-report');
+    // Bulk actions on the selected exception groups (#276).
+    Route::patch('projects/{project}/exceptions/bulk/status', [ProjectExceptionBulkController::class, 'status'])->name('projects.exceptions.bulk.status');
+    Route::put('projects/{project}/exceptions/bulk/assignee', [ProjectExceptionBulkController::class, 'assignee'])->name('projects.exceptions.bulk.assignee');
     Route::patch('projects/{project}/exceptions/{exceptionGroup}', [ProjectReportController::class, 'updateException'])->name('projects.exceptions.update');
     Route::patch('projects/{project}/findings/{finding}', [ProjectReportController::class, 'updateFinding'])->name('projects.findings.update');
     // Who is on an exception group or a finding (#254).
