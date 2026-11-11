@@ -56,9 +56,10 @@ it('never returns a project the user cannot see', function () {
 });
 
 it('returns users and groups only to who may list them', function () {
-    $admin = User::factory()->create(['first_name' => 'Ada', 'last_name' => 'Admin'])->assignRole(RoleEnum::Admin->value);
-    $reader = User::factory()->create(['first_name' => 'Rita', 'last_name' => 'Reader'])->assignRole(RoleEnum::Reader->value);
-    User::factory()->create(['first_name' => 'Ada', 'last_name' => 'Lovelace']);
+    $admin = User::factory()->create(['first_name' => 'Ada', 'last_name' => 'Admin', 'email' => 'admin@example.com'])->assignRole(RoleEnum::Admin->value);
+    $reader = User::factory()->create(['first_name' => 'Rita', 'last_name' => 'Reader', 'email' => 'rita@example.com'])->assignRole(RoleEnum::Reader->value);
+    // Fixed emails: a random one could contain the query and match another user.
+    User::factory()->create(['first_name' => 'Ada', 'last_name' => 'Lovelace', 'email' => 'lovelace@example.com']);
     UserGroup::query()->create(['name' => 'Ada team']);
     ProjectGroup::query()->create(['name' => 'Ada clients']);
 
