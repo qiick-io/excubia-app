@@ -1,7 +1,7 @@
 import type { ProjectAppearance } from '@/types/appearance';
 import type { Auth } from '@/types/auth';
 import type { SharedProjectSettings } from '@/types/project-settings';
-import type { PushTokenFlash } from '@/types/projects';
+import type { PushTokenFlash, SidebarProjects } from '@/types/projects';
 import type { FlashToast } from '@/types/ui';
 
 declare module 'react' {
@@ -22,6 +22,8 @@ declare module '@inertiajs/core' {
             isAssistantEnabled: boolean;
             projectSettings: SharedProjectSettings;
             projectAppearance: ProjectAppearance;
+            /** Pinned and needs-attention projects under "Projects" in the sidebar (#273). */
+            sidebarProjects: SidebarProjects;
             [key: string]: unknown;
         };
         flashDataType: {

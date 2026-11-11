@@ -2137,5 +2137,20 @@
             "critical": "Hat kritische Probleme",
             "warning": "Hat Warnungen"
         }
+    },
+    "sidebarEntities": {
+        "filter": "Navigation filtern",
+        "filterPlaceholder": "Filtern…",
+        "needsAttention": "Braucht Aufmerksamkeit",
+        "pin": "{{name}} anheften",
+        "pinHint": "Hefte ein Projekt mit dem Stern an, um es hier zu behalten.",
+        "pinned": "Angeheftet",
+        "status": {
+            "good": "Gesund",
+            "warning": "Hat Warnungen",
+            "critical": "Hat kritische Probleme"
+        },
+        "unpin": "{{name}} lösen",
+        "viewAll": "Alle anzeigen"
     }
 }

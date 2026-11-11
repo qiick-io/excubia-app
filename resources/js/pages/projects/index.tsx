@@ -12,6 +12,7 @@ import {
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DataTable } from '@/components/admin/data-table';
+import { ProjectPinButton } from '@/components/project-pin-button';
 import { ButtonGroup } from '@/components/ui/button-group';
 import { DataTableToolbar } from '@/components/admin/data-table-toolbar';
 import { HeaderIconButton } from '@/components/admin/header-icon-button';
@@ -60,7 +61,6 @@ export default function ProjectsIndex({
     const canCreate = can(PermissionEnum.CanCreateProjects);
     const canEdit = can(PermissionEnum.CanEditProjects);
     const canDelete = can(PermissionEnum.CanDeleteProjects);
-    const hasRowActions = canEdit || canDelete;
     const [search, setSearch] = useState(filters.search ?? '');
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [editing, setEditing] = useState<ProjectRow | null>(null);
@@ -228,92 +228,90 @@ export default function ProjectsIndex({
                 </span>
             ),
         },
-        ...(hasRowActions
-            ? [
-                  {
-                      id: 'actions',
-                      header: t('projects.actions'),
-                      meta: {
-                          headerClassName: 'w-[1%] text-right',
-                          cellClassName: 'text-right',
-                          isRowClickIgnored: true,
-                      },
-                      cell: ({ row }) => {
-                          const project = row.original;
+        {
+            id: 'actions',
+            header: t('projects.actions'),
+            meta: {
+                headerClassName: 'w-[1%] text-right',
+                cellClassName: 'text-right',
+                isRowClickIgnored: true,
+            },
+            cell: ({ row }) => {
+                const project = row.original;
 
-                          return (
-                              <ButtonGroup
-                                  aria-label={t('projects.actions')}
-                                  className="ml-auto"
-                              >
-                                  {canEdit ? (
-                                      <HeaderIconButton
-                                          type="button"
-                                          variant="outline"
-                                          size="icon-sm"
-                                          label={t('projects.editProject')}
-                                          onClick={() => openDrawer(project)}
-                                      >
-                                          <Pencil className="size-3.5" />
-                                      </HeaderIconButton>
-                                  ) : null}
-                                  {canEdit && !project.is_system ? (
-                                      <HeaderIconButton
-                                          type="button"
-                                          variant="outline"
-                                          size="icon-sm"
-                                          label={t('projects.token.rotate')}
-                                          onClick={() =>
-                                              setPending({
-                                                  kind: 'rotate',
-                                                  project,
-                                              })
-                                          }
-                                      >
-                                          <KeyRound className="size-3.5" />
-                                      </HeaderIconButton>
-                                  ) : null}
-                                  {canEdit &&
-                                  !project.is_system &&
-                                  project.has_push_token ? (
-                                      <HeaderIconButton
-                                          type="button"
-                                          variant="outline"
-                                          size="icon-sm"
-                                          label={t('projects.token.revoke')}
-                                          onClick={() =>
-                                              setPending({
-                                                  kind: 'revoke',
-                                                  project,
-                                              })
-                                          }
-                                      >
-                                          <ShieldOff className="size-3.5" />
-                                      </HeaderIconButton>
-                                  ) : null}
-                                  {canDelete && !project.is_system ? (
-                                      <HeaderIconButton
-                                          type="button"
-                                          variant="outline"
-                                          size="icon-sm"
-                                          className="text-destructive hover:text-destructive"
-                                          label={t('common.delete')}
-                                          onClick={() =>
-                                              setPending({
-                                                  kind: 'delete',
-                                                  project,
-                                              })
-                                          }
-                                      >
-                                          <Trash2 className="size-3.5" />
-                                      </HeaderIconButton>
-                                  ) : null}
-                              </ButtonGroup>
-                          );
-                      },
-                  } satisfies ColumnDef<ProjectRow>,
-              ]
-            : []),
+                return (
+                    <ButtonGroup
+                        aria-label={t('projects.actions')}
+                        className="ml-auto"
+                    >
+                        {/* Everyone may pin a project they see (#273). */}
+                        <ProjectPinButton project={project} />
+                        {canEdit ? (
+                            <HeaderIconButton
+                                type="button"
+                                variant="outline"
+                                size="icon-sm"
+                                label={t('projects.editProject')}
+                                onClick={() => openDrawer(project)}
+                            >
+                                <Pencil className="size-3.5" />
+                            </HeaderIconButton>
+                        ) : null}
+                        {canEdit && !project.is_system ? (
+                            <HeaderIconButton
+                                type="button"
+                                variant="outline"
+                                size="icon-sm"
+                                label={t('projects.token.rotate')}
+                                onClick={() =>
+                                    setPending({
+                                        kind: 'rotate',
+                                        project,
+                                    })
+                                }
+                            >
+                                <KeyRound className="size-3.5" />
+                            </HeaderIconButton>
+                        ) : null}
+                        {canEdit &&
+                        !project.is_system &&
+                        project.has_push_token ? (
+                            <HeaderIconButton
+                                type="button"
+                                variant="outline"
+                                size="icon-sm"
+                                label={t('projects.token.revoke')}
+                                onClick={() =>
+                                    setPending({
+                                        kind: 'revoke',
+                                        project,
+                                    })
+                                }
+                            >
+                                <ShieldOff className="size-3.5" />
+                            </HeaderIconButton>
+                        ) : null}
+                        {canDelete && !project.is_system ? (
+                            <HeaderIconButton
+                                type="button"
+                                variant="outline"
+                                size="icon-sm"
+                                className="text-destructive hover:text-destructive"
+                                label={t('common.delete')}
+                                onClick={() =>
+                                    setPending({
+                                        kind: 'delete',
+                                        project,
+                                    })
+                                }
+                            >
+                                <Trash2 className="size-3.5" />
+                            </HeaderIconButton>
+                        ) : null}
+                    </ButtonGroup>
+                );
+            },
+        } satisfies ColumnDef<ProjectRow>,
     ];
 
     return (

@@ -11,6 +11,12 @@ upgrade from the version before (see [docs/self-hosting.md](docs/self-hosting.md
 
 ### Added
 
+- **Pinned and troubled projects in the sidebar** (#273, app-ui optional pattern `sidebar-entities`). Under **Projects** the sidebar lists two groups:
+    - the projects the user starred, in the order they pinned them, up to eight;
+    - **Needs attention**: up to five other projects with open exceptions or active findings, critical first, hidden when there are none.
+      Each shows its status (healthy, warnings, critical) as an icon with a label, and "View all" opens the list. In the icon-only sidebar the Projects item opens the same lists as a menu.
+      The star sits in the project header and in the projects list's row actions (`POST` / `DELETE /projects/{slug}/pin`). Only projects the user may view count, and a pin of a project that becomes hidden drops out. The lists are a shared prop cached per user for 30 seconds, and pinning clears the cache. New table `user_project_pins` (unique user and project, cascades on delete).
+
 - **Grouped project tabs** (#275, app-ui optional pattern `grouped-tabs`, variant `sub-menu`): the project page's ten views now sit in one row of six, grouped by question. Overview, **Issues** (Exceptions, Findings), **Health** (Runtime, Schedule, AI), **Dependencies** (Licenses, Upgrade plan), Alerts and History. A group opens a menu of its views and shows the open one ("Issues: Exceptions"). Exceptions and Findings carry their open count (open exception groups; active, undismissed findings) and a severity marker, icon plus label: open exceptions and high or critical findings are critical, other findings a warning. The group sums its views. The counts come from two small queries on every tab (`viewCounts`). Every view keeps its URL, and below `sm` the tabs are one select.
 
 - **Command palette** (#274, app-ui optional patterns `command-palette` and `keyboard-shortcuts`): ⌘K / Ctrl+K or the **Search** field in the header opens one dialog that reaches any page and record by name.

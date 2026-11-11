@@ -40,5 +40,6 @@
     "Project group deleted.": "Projektgruppe gelöscht.",
     "Unassigned.": "Zuweisung entfernt.",
     "Assigned to :name.": ":name zugewiesen.",
-    "This user cannot see the project.": "Dieser Benutzer kann das Projekt nicht sehen."
+    "This user cannot see the project.": "Dieser Benutzer kann das Projekt nicht sehen.",
+    "Unpin a project first: the sidebar keeps :count.": "Löse zuerst ein angeheftetes Projekt: die Seitenleiste behält :count."
 }

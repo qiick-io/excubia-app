@@ -748,3 +748,16 @@ export type ExceptionsOverview = {
     timeline: { at: string; count: number }[];
     top: ExceptionGroupRow[];
 };
+
+/** A project under "Projects" in the sidebar (#273, `SidebarProjectsService`). */
+export type SidebarProject = {
+    slug: string;
+    name: string;
+    status: 'good' | 'warning' | 'critical';
+};
+
+/** The shared `sidebarProjects` prop: the user's pins, then up to five troubled projects. */
+export type SidebarProjects = {
+    pinned: SidebarProject[];
+    needsAttention: SidebarProject[];
+};

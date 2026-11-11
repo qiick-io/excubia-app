@@ -116,6 +116,7 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { GroupedViewTabs } from '@/components/grouped-view-tabs';
+import { ProjectPinButton } from '@/components/project-pin-button';
 import type {
     ViewTabGroup,
     ViewTabSeverity,
@@ -255,6 +256,7 @@ export default function ProjectShow({
             breadcrumbs={breadcrumbs}
             headerActions={
                 <>
+                    <ProjectPinButton project={project} />
                     {project.is_system ? <SystemProjectBadge /> : null}
                     {canRefreshReport ? (
                         <Button
