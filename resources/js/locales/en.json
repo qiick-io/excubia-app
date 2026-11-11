@@ -937,6 +937,14 @@
             "licenses": "Licenses",
             "ai": "AI"
         },
+        "viewGroups": {
+            "overview": "Overview",
+            "issues": "Issues",
+            "health": "Health",
+            "dependencies": "Dependencies",
+            "alerts": "Alerts",
+            "history": "History"
+        },
         "support": {
             "supported": "Supported",
             "ending": "Ends soon",
@@ -2122,6 +2130,12 @@
             "assistantPanel": "Open the assistant panel",
             "darkMode": "Switch to dark mode",
             "lightMode": "Switch to light mode"
+        }
+    },
+    "viewTabs": {
+        "severity": {
+            "critical": "Has critical problems",
+            "warning": "Has warnings"
         }
     }
 }

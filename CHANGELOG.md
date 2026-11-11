@@ -11,6 +11,8 @@ upgrade from the version before (see [docs/self-hosting.md](docs/self-hosting.md
 
 ### Added
 
+- **Grouped project tabs** (#275, app-ui optional pattern `grouped-tabs`, variant `sub-menu`): the project page's ten views now sit in one row of six, grouped by question. Overview, **Issues** (Exceptions, Findings), **Health** (Runtime, Schedule, AI), **Dependencies** (Licenses, Upgrade plan), Alerts and History. A group opens a menu of its views and shows the open one ("Issues: Exceptions"). Exceptions and Findings carry their open count (open exception groups; active, undismissed findings) and a severity marker, icon plus label: open exceptions and high or critical findings are critical, other findings a warning. The group sums its views. The counts come from two small queries on every tab (`viewCounts`). Every view keeps its URL, and below `sm` the tabs are one select.
+
 - **Command palette** (#274, app-ui optional patterns `command-palette` and `keyboard-shortcuts`): ⌘K / Ctrl+K or the **Search** field in the header opens one dialog that reaches any page and record by name.
     - It lists the sidebar's modules (the same ones the nav shows), plus actions: open the assistant panel, switch light or dark.
     - From two characters, the new `GET /search` endpoint (throttled to 60 a minute) finds projects, project groups, users and groups. It returns only what the user may open: projects through their policy and `Project::visibleTo()` (#253 scope included), the others only with their list permission.
