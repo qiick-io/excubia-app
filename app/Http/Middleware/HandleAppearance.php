@@ -28,6 +28,7 @@ class HandleAppearance
         // ponytail: a11y cookies mirror appearance — Blade stamps classes pre-paint (FOUC)
         View::share('accessibilityHighContrast', $request->cookie('accessibility_high_contrast') === '1');
         View::share('accessibilityReduceMotion', $request->cookie('accessibility_reduce_motion') === '1');
+        View::share('tableDensityCompact', $request->cookie('table_density_compact') === '1');
         View::share('projectThemeCss', app(ThemePresetService::class)->current());
         View::share('projectFaviconUrl', app(SettingsRepositoryService::class)->brandingUrls()['faviconUrl']);
 

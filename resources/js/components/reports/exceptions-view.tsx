@@ -23,6 +23,7 @@ import { InboxSavedViews } from '@/components/inbox-list';
 import type { InboxSavedView } from '@/components/inbox-list';
 import { PageLayout } from '@/components/layout/page-layout';
 import { useDrawerDeepLink } from '@/hooks/use-drawer-deep-link';
+import { useListShortcuts } from '@/hooks/use-list-shortcuts';
 import {
     getQueryParam,
     locationPageUrl,
@@ -167,6 +168,55 @@ export function ExceptionsView({
                         .includes(needle)),
         );
     }, [groups, search, status, isMine, isNewOnly, currentUserId]);
+
+    // Keyboard triage (#277): j / k, Enter, x, e resolve, a assign to me.
+    const listShortcuts = useListShortcuts({
+        rows: filtered,
+        getRowId: (group) => String(group.id),
+        isEnabled: selected === null,
+        onOpen: (group) => {
+            setSelectedId(group.id);
+            deepLink.syncEdit(group.id);
+        },
+        onToggleSelect: canManage
+            ? (group) =>
+                  setRowSelection((current) => ({
+                      ...current,
+                      [String(group.id)]: !current[String(group.id)],
+                  }))
+            : undefined,
+        primaryAction: {
+            keys: 'e',
+            description: t('exceptions.resolve'),
+            isEnabled: canManage,
+            handler: (group) =>
+                router.patch(
+                    projectsRoutes.exceptions.update.url({
+                        project: projectId,
+                        exceptionGroup: group.id,
+                    }),
+                    { status: 'resolved' },
+                    { preserveScroll: true, preserveState: true },
+                ),
+        },
+        secondaryAction: {
+            keys: 'a',
+            description: t('exceptions.assignToMe'),
+            isEnabled:
+                canManage &&
+                currentUserId !== null &&
+                assignees.some((option) => option.id === currentUserId),
+            handler: (group) =>
+                router.put(
+                    projectsRoutes.exceptions.assignee.url({
+                        project: projectId,
+                        exceptionGroup: group.id,
+                    }),
+                    { assigned_user_id: currentUserId },
+                    { preserveScroll: true, preserveState: true },
+                ),
+        },
+    });
 
     const picker = (
         <TimeRangePicker slug={slug} view="exceptions" range={range} />
@@ -535,7 +585,18 @@ export function ExceptionsView({
                             setSelectedId(group.id);
                             deepLink.syncEdit(group.id);
                         }}
-                        getRowProps={() => ({ className: 'cursor-pointer' })}
+                        getRowProps={(group) => {
+                            const activeRowProps =
+                                listShortcuts.getActiveRowProps(group);
+
+                            return {
+                                ...activeRowProps,
+                                className: cn(
+                                    'cursor-pointer',
+                                    activeRowProps.className,
+                                ),
+                            };
+                        }}
                     />
                 )}
             </PageLayout>

@@ -125,6 +125,7 @@ import type {
 import { InboxSavedViews } from '@/components/inbox-list';
 import type { InboxSavedView } from '@/components/inbox-list';
 import { useDrawerDeepLink } from '@/hooks/use-drawer-deep-link';
+import { useListShortcuts } from '@/hooks/use-list-shortcuts';
 import {
     getQueryParam,
     locationPageUrl,
@@ -1430,6 +1431,41 @@ function FindingsView({
             : !isMine && !isNewOnly
               ? 'open'
               : undefined;
+    // Keyboard triage (#277): j / k, Enter, x, a assign to me.
+    const listShortcuts = useListShortcuts({
+        rows: filtered,
+        getRowId: findingKey,
+        isEnabled: openFinding === null,
+        onOpen: (row) => {
+            setOpenKey(findingKey(row));
+            syncEdit(findingKey(row));
+        },
+        onToggleSelect: (row) => {
+            const key = findingKey(row);
+            setSelected((current) =>
+                current.includes(key)
+                    ? current.filter((item) => item !== key)
+                    : [...current, key],
+            );
+        },
+        secondaryAction: {
+            keys: 'a',
+            description: t('findings.assignToMe'),
+            isEnabled:
+                canDismiss &&
+                currentUserId !== null &&
+                assignees.some((option) => option.id === currentUserId),
+            handler: (row) =>
+                router.put(
+                    projectsRoutes.findings.assignee.url({
+                        project: projectId,
+                        finding: row.lifecycle.id,
+                    }),
+                    { assigned_user_id: currentUserId },
+                    { preserveScroll: true, preserveState: true },
+                ),
+        },
+    });
     const selectedFindingIds = rows
         .filter((row) => selected.includes(findingKey(row)))
         .map((row) => row.lifecycle.id);
@@ -1838,6 +1874,7 @@ function FindingsView({
                         columns={findingColumns}
                         data={filtered}
                         getRowId={findingKey}
+                        getRowProps={listShortcuts.getActiveRowProps}
                         rowSelection={Object.fromEntries(
                             selected.map((key) => [key, true]),
                         )}

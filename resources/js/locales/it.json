@@ -101,7 +101,9 @@
         "accessibilityOnCount": "{{count}} attive",
         "highContrast": "Alto contrasto",
         "reduceMotion": "Riduci movimento",
-        "logOut": "Esci"
+        "logOut": "Esci",
+        "compactTables": "Tabelle compatte",
+        "singleKeyShortcuts": "Scorciatoie a un tasto"
     },
     "a11y": {
         "skipToContent": "Vai al contenuto",
@@ -2173,5 +2175,11 @@
         "nextStep": "Cosa fare",
         "openFullPage": "Apri a pagina intera",
         "savedViews": "Viste salvate"
+    },
+    "listShortcuts": {
+        "next": "Riga successiva",
+        "previous": "Riga precedente",
+        "open": "Apri la riga",
+        "select": "Seleziona la riga"
     }
 }

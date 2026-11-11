@@ -3,6 +3,10 @@ import { useSyncExternalStore } from 'react';
 type AccessibilityPreferences = {
     readonly highContrastEnabled: boolean;
     readonly reduceMotionEnabled: boolean;
+    /** Compact table rows (#277, app-ui optional pattern `table-density`). */
+    readonly compactTablesEnabled: boolean;
+    /** Single-key shortcuts (`j`, `e`, `?`) turned off (#277, WCAG 2.1.4); ⌘ / Ctrl ones still work. */
+    readonly singleKeyShortcutsDisabled: boolean;
 };
 
 export type UseAccessibilityPreferencesReturn = AccessibilityPreferences & {
@@ -11,21 +15,30 @@ export type UseAccessibilityPreferencesReturn = AccessibilityPreferences & {
     readonly updateReduceMotion: (enabled: boolean) => void;
     readonly toggleHighContrast: () => void;
     readonly toggleReduceMotion: () => void;
+    readonly toggleCompactTables: () => void;
+    readonly toggleSingleKeyShortcuts: () => void;
 };
 
 const HIGH_CONTRAST_STORAGE_KEY = 'accessibility_high_contrast';
 const REDUCE_MOTION_STORAGE_KEY = 'accessibility_reduce_motion';
 const HIGH_CONTRAST_COOKIE = 'accessibility_high_contrast';
 const REDUCE_MOTION_COOKIE = 'accessibility_reduce_motion';
+const COMPACT_TABLES_STORAGE_KEY = 'table_density_compact';
+const SINGLE_KEY_SHORTCUTS_OFF_STORAGE_KEY = 'shortcuts_single_key_off';
+const COMPACT_TABLES_COOKIE = 'table_density_compact';
 const HIGH_CONTRAST_CLASS = 'high-contrast';
 const REDUCE_MOTION_CLASS = 'reduce-motion';
 
 const listeners = new Set<() => void>();
 
-let currentPreferences: AccessibilityPreferences = {
+const DEFAULT_PREFERENCES: AccessibilityPreferences = {
     highContrastEnabled: false,
     reduceMotionEnabled: false,
+    compactTablesEnabled: false,
+    singleKeyShortcutsDisabled: false,
 };
+
+let currentPreferences: AccessibilityPreferences = DEFAULT_PREFERENCES;
 
 const setCookie = (name: string, value: string, days = 365): void => {
     if (typeof document === 'undefined') {
@@ -59,10 +72,15 @@ const applyClasses = (preferences: AccessibilityPreferences): void => {
         REDUCE_MOTION_CLASS,
         preferences.reduceMotionEnabled,
     );
+    // The theme tightens table rows under `data-density="compact"` (app-ui `table-density`).
+    document.documentElement.setAttribute(
+        'data-density',
+        preferences.compactTablesEnabled ? 'compact' : 'comfortable',
+    );
 };
 
 const persistFlag = (
-    cookieName: string,
+    cookieName: string | null,
     storageKey: string,
     enabled: boolean,
 ): void => {
@@ -72,10 +90,13 @@ const persistFlag = (
 
     if (enabled) {
         localStorage.setItem(storageKey, '1');
-        setCookie(cookieName, '1');
     } else {
         localStorage.removeItem(storageKey);
-        setCookie(cookieName, '0');
+    }
+
+    // Only the flags Blade stamps before paint need a cookie.
+    if (cookieName !== null) {
+        setCookie(cookieName, enabled ? '1' : '0');
     }
 };
 
@@ -105,6 +126,10 @@ export function initializeAccessibilityPreferences(): void {
     setPreferences({
         highContrastEnabled: readFlag(HIGH_CONTRAST_STORAGE_KEY),
         reduceMotionEnabled: readFlag(REDUCE_MOTION_STORAGE_KEY),
+        compactTablesEnabled: readFlag(COMPACT_TABLES_STORAGE_KEY),
+        singleKeyShortcutsDisabled: readFlag(
+            SINGLE_KEY_SHORTCUTS_OFF_STORAGE_KEY,
+        ),
     });
 }
 
@@ -116,11 +141,7 @@ export function useAccessibilityPreferences(): UseAccessibilityPreferencesReturn
     const preferences = useSyncExternalStore(
         subscribe,
         () => currentPreferences,
-        () =>
-            ({
-                highContrastEnabled: false,
-                reduceMotionEnabled: false,
-            }) as const,
+        () => DEFAULT_PREFERENCES,
     );
 
     const updateHighContrast = (enabled: boolean): void => {
@@ -139,6 +160,22 @@ export function useAccessibilityPreferences(): UseAccessibilityPreferencesReturn
         });
     };
 
+    const updateCompactTables = (enabled: boolean): void => {
+        persistFlag(COMPACT_TABLES_COOKIE, COMPACT_TABLES_STORAGE_KEY, enabled);
+        setPreferences({
+            ...currentPreferences,
+            compactTablesEnabled: enabled,
+        });
+    };
+
+    const updateSingleKeyShortcutsDisabled = (disabled: boolean): void => {
+        persistFlag(null, SINGLE_KEY_SHORTCUTS_OFF_STORAGE_KEY, disabled);
+        setPreferences({
+            ...currentPreferences,
+            singleKeyShortcutsDisabled: disabled,
+        });
+    };
+
     const enabledCount =
         Number(preferences.highContrastEnabled) +
         Number(preferences.reduceMotionEnabled);
@@ -146,6 +183,8 @@ export function useAccessibilityPreferences(): UseAccessibilityPreferencesReturn
     return {
         highContrastEnabled: preferences.highContrastEnabled,
         reduceMotionEnabled: preferences.reduceMotionEnabled,
+        compactTablesEnabled: preferences.compactTablesEnabled,
+        singleKeyShortcutsDisabled: preferences.singleKeyShortcutsDisabled,
         enabledCount,
         updateHighContrast,
         updateReduceMotion,
@@ -153,5 +192,11 @@ export function useAccessibilityPreferences(): UseAccessibilityPreferencesReturn
             updateHighContrast(!currentPreferences.highContrastEnabled),
         toggleReduceMotion: () =>
             updateReduceMotion(!currentPreferences.reduceMotionEnabled),
+        toggleCompactTables: () =>
+            updateCompactTables(!currentPreferences.compactTablesEnabled),
+        toggleSingleKeyShortcuts: () =>
+            updateSingleKeyShortcutsDisabled(
+                !currentPreferences.singleKeyShortcutsDisabled,
+            ),
     } as const;
 }
