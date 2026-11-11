@@ -29,6 +29,7 @@ use App\Services\ProjectAlertsService;
 use App\Services\ProjectAssigneeService;
 use App\Services\ProjectRuntimeService;
 use App\Services\ProjectTelemetryService;
+use App\Services\ProjectViewCountsService;
 use App\Services\ReportFindingsService;
 use App\Services\ReportHealthService;
 use App\Services\SettingsRepositoryService;
@@ -116,6 +117,8 @@ class ProjectReportController extends Controller
         return Inertia::render('projects/show', [
             'project' => fn (): array => (new ProjectResource($project->loadMissing('latestReport')))->resolve(),
             'view' => $view ?? 'overview',
+            // Counts and severity markers on the grouped tabs (#275), on every tab.
+            'viewCounts' => fn (): array => app(ProjectViewCountsService::class)->forProject($project),
             'canRefreshReport' => fn (): bool => (bool) $request->user()?->can('refreshReport', $project),
             'report' => fn (): ?array => $report()?->report,
             'findingFixes' => $findingFixes,

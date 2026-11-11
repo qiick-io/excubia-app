@@ -13,12 +13,14 @@ import {
     LayoutGrid,
     ListChecks,
     ListOrdered,
+    Package,
     RefreshCw,
     Rocket,
     Scale,
     SearchX,
     Sparkles,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -107,13 +109,17 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import {
     Tooltip,
     TooltipContent,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { GroupedViewTabs } from '@/components/grouped-view-tabs';
+import type {
+    ViewTabGroup,
+    ViewTabSeverity,
+} from '@/components/grouped-view-tabs';
 import { useDrawerDeepLink } from '@/hooks/use-drawer-deep-link';
 import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
@@ -187,7 +193,10 @@ export default function ProjectShow({
     canManageExceptions = false,
     assignees = [],
     canRefreshReport = false,
+    viewCounts,
 }: {
+    /** Open items behind the Exceptions and Findings tabs (#275), for the tab markers. */
+    viewCounts?: ProjectViewCounts;
     /** Who an exception group or a finding may be assigned to (#254). */
     assignees?: AssigneeOption[];
     /** The time range of the runtime, exceptions and schedule tabs (#113). */
@@ -266,7 +275,7 @@ export default function ProjectShow({
             }
         >
             <Head title={project.name} />
-            <ProjectTabs slug={project.slug} view={view} />
+            <ProjectTabs slug={project.slug} view={view} counts={viewCounts} />
             {view === 'findings' && report !== null ? (
                 <FindingsView
                     rows={findings}
@@ -400,51 +409,76 @@ function SystemProjectBadge() {
     );
 }
 
+type ProjectViewCounts = {
+    exceptions: { count: number; severity: ViewTabSeverity | null };
+    findings: { count: number; severity: ViewTabSeverity | null };
+};
+
 /**
- * The project's tabs (shadcn `Tabs`, `line` variant) as links to their own URLs, under the
- * header and above the view.
+ * The project's ten views grouped by the question they answer (#275, app-ui optional pattern
+ * `grouped-tabs`, variant `sub-menu`): one row under the header, each view still its own URL.
+ * Exceptions and Findings carry their open count and severity, so the tabs say where to look.
  */
-function ProjectTabs({ slug, view }: { slug: string; view: ProjectView }) {
+const VIEW_GROUPS: { id: string; views: readonly ProjectView[] }[] = [
+    { id: 'overview', views: ['overview'] },
+    { id: 'issues', views: ['exceptions', 'findings'] },
+    { id: 'health', views: ['runtime', 'schedule', 'ai'] },
+    { id: 'dependencies', views: ['licenses', 'plan'] },
+    { id: 'alerts', views: ['alerts'] },
+    { id: 'history', views: ['history'] },
+];
+
+const GROUP_ICONS: Record<string, LucideIcon> = {
+    issues: Bug,
+    health: Gauge,
+    dependencies: Package,
+};
+
+function ProjectTabs({
+    slug,
+    view,
+    counts,
+}: {
+    slug: string;
+    view: ProjectView;
+    counts?: ProjectViewCounts;
+}) {
     const { t } = useTranslation();
 
-    return (
-        <Tabs
-            value={view}
-            activationMode="manual"
-            className="overflow-x-auto border-b px-4"
-        >
-            <TabsList variant="line" aria-label={t('report.views.label')}>
-                {VIEWS.map((item) => {
-                    const Icon = VIEW_ICONS[item];
+    const groups: ViewTabGroup[] = VIEW_GROUPS.map((group) => ({
+        id: group.id,
+        label: t(`report.viewGroups.${group.id}`),
+        icon: GROUP_ICONS[group.id],
+        views: group.views.map((item) => {
+            const viewCount =
+                item === 'exceptions' || item === 'findings'
+                    ? counts?.[item]
+                    : undefined;
 
-                    return (
-                        <TabsTrigger
-                            key={item}
-                            value={item}
-                            // Each tab is a link to its own page: there is no TabsContent, so
-                            // Radix's aria-controls would point at a missing id (axe critical).
-                            aria-controls={undefined}
-                            asChild
-                        >
-                            <Link
-                                href={
-                                    item === 'overview'
-                                        ? projectsRoutes.show.url(slug)
-                                        : projectsRoutes.view.url({
-                                              project: slug,
-                                              view: item,
-                                          })
-                                }
-                                preserveScroll
-                            >
-                                <Icon />
-                                {t(`report.views.${item}`)}
-                            </Link>
-                        </TabsTrigger>
-                    );
-                })}
-            </TabsList>
-        </Tabs>
+            return {
+                id: item,
+                label: t(`report.views.${item}`),
+                icon: VIEW_ICONS[item],
+                href:
+                    item === 'overview'
+                        ? projectsRoutes.show.url(slug)
+                        : projectsRoutes.view.url({
+                              project: slug,
+                              view: item,
+                          }),
+                count: viewCount?.count,
+                severity: viewCount?.severity ?? undefined,
+            };
+        }),
+    }));
+
+    return (
+        <GroupedViewTabs
+            groups={groups}
+            activeViewId={view}
+            ariaLabel={t('report.views.label')}
+            variant="sub-menu"
+        />
     );
 }
 

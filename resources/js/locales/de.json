@@ -937,6 +937,14 @@
             "licenses": "Lizenzen",
             "ai": "KI"
         },
+        "viewGroups": {
+            "overview": "Übersicht",
+            "issues": "Probleme",
+            "health": "Zustand",
+            "dependencies": "Abhängigkeiten",
+            "alerts": "Alarme",
+            "history": "Verlauf"
+        },
         "support": {
             "supported": "Unterstützt",
             "ending": "Endet bald",
@@ -2122,6 +2130,12 @@
             "assistantPanel": "Assistenten-Bereich öffnen",
             "darkMode": "Zum dunklen Design wechseln",
             "lightMode": "Zum hellen Design wechseln"
+        }
+    },
+    "viewTabs": {
+        "severity": {
+            "critical": "Hat kritische Probleme",
+            "warning": "Hat Warnungen"
         }
     }
 }

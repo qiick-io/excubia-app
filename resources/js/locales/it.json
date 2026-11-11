@@ -937,6 +937,14 @@
             "licenses": "Licenze",
             "ai": "AI"
         },
+        "viewGroups": {
+            "overview": "Panoramica",
+            "issues": "Problemi",
+            "health": "Salute",
+            "dependencies": "Dipendenze",
+            "alerts": "Avvisi",
+            "history": "Cronologia"
+        },
         "support": {
             "supported": "Supportato",
             "ending": "In scadenza",
@@ -2122,6 +2130,12 @@
             "assistantPanel": "Apri il pannello dell'assistente",
             "darkMode": "Passa al tema scuro",
             "lightMode": "Passa al tema chiaro"
+        }
+    },
+    "viewTabs": {
+        "severity": {
+            "critical": "Ha problemi critici",
+            "warning": "Ha avvisi"
         }
     }
 }
