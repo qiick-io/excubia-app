@@ -19,6 +19,7 @@ import {
     Scale,
     SearchX,
     Sparkles,
+    UserCheck,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
@@ -121,7 +122,15 @@ import type {
     ViewTabGroup,
     ViewTabSeverity,
 } from '@/components/grouped-view-tabs';
+import { InboxSavedViews } from '@/components/inbox-list';
+import type { InboxSavedView } from '@/components/inbox-list';
 import { useDrawerDeepLink } from '@/hooks/use-drawer-deep-link';
+import {
+    getQueryParam,
+    locationPageUrl,
+    patchLocationQuery,
+} from '@/lib/admin-query-params';
+import { isFirstSeenWithinLastDay, savedViewHref } from '@/lib/inbox-views';
 import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
 import projectsRoutes from '@/routes/projects';
@@ -1273,6 +1282,22 @@ function relativeTime(iso: string, locale: string): string {
 
 type FindingStatusFilter = LifecycleRow['lifecycle']['status'] | 'all';
 
+const FINDING_STATUS_FILTERS: readonly FindingStatusFilter[] = [
+    'open',
+    'dismissed',
+    'resolved',
+    'all',
+];
+
+/** The Findings tab's status filter from `?status=` (#276), open by default. */
+function findingStatusFromUrl(): FindingStatusFilter {
+    const value = getQueryParam(locationPageUrl(), 'status');
+
+    return FINDING_STATUS_FILTERS.includes(value as FindingStatusFilter)
+        ? (value as FindingStatusFilter)
+        : 'open';
+}
+
 /**
  * The findings across reports (#18), problems first, as an admin list: search and filters
  * (lifecycle status, severity, group, check) on the left, the table in a TablePanel (app-ui
@@ -1296,9 +1321,22 @@ function FindingsView({
     assignees: AssigneeOption[];
 }) {
     const { t, i18n } = useTranslation();
-    const [status, setStatus] = useState<FindingStatusFilter>('open');
+    const [status, setStatusFilter] =
+        useState<FindingStatusFilter>(findingStatusFromUrl);
     const currentUserId = useCurrentUserId();
-    const [isMine, setIsMine] = useState(isAssignedToMeLinked);
+    const [isMine, setIsMineFilter] = useState(isAssignedToMeLinked);
+    const [isNewOnly, setIsNewOnly] = useState(
+        () => getQueryParam(locationPageUrl(), 'new') === '24h',
+    );
+    // The filters live in the URL (#276), so a saved view is a link and a view can be shared.
+    const setStatus = (value: FindingStatusFilter): void => {
+        setStatusFilter(value);
+        patchLocationQuery({ status: value === 'open' ? null : value });
+    };
+    const setIsMine = (value: boolean): void => {
+        setIsMineFilter(value);
+        patchLocationQuery({ assigned: value ? 'me' : null });
+    };
     const copyWithToast = useCopyWithToast();
     const [selected, setSelected] = useState<string[]>([]);
     const [search, setSearch] = useState('');
@@ -1333,6 +1371,8 @@ function FindingsView({
         (row) =>
             (status === 'all' || row.lifecycle.status === status) &&
             (!isMine || row.lifecycle.assignee?.id === currentUserId) &&
+            (!isNewOnly ||
+                isFirstSeenWithinLastDay(row.lifecycle.firstSeenAt)) &&
             (severity === 'all' || row.severity === severity) &&
             (category === 'all' || row.category === category) &&
             (checkId === 'all' || row.checkId === checkId) &&
@@ -1345,9 +1385,69 @@ function FindingsView({
         needle !== '' ||
         (status !== 'open' && status !== 'resolved') ||
         isMine ||
+        isNewOnly ||
         severity !== 'all' ||
         category !== 'all' ||
         checkId !== 'all';
+
+    const openRows = rows.filter((row) => row.lifecycle.status === 'open');
+    const savedViews: InboxSavedView[] = [
+        {
+            id: 'open',
+            label: t('findings.views.open'),
+            href: savedViewHref({}),
+            count: openRows.length,
+        },
+        {
+            id: 'mine',
+            label: t('findings.views.mine'),
+            href: savedViewHref({ assigned: 'me' }),
+            count: openRows.filter(
+                (row) => row.lifecycle.assignee?.id === currentUserId,
+            ).length,
+        },
+        {
+            id: 'new',
+            label: t('findings.views.new'),
+            href: savedViewHref({ new: '24h' }),
+            count: openRows.filter((row) =>
+                isFirstSeenWithinLastDay(row.lifecycle.firstSeenAt),
+            ).length,
+        },
+    ];
+    const hasOtherFilters =
+        status !== 'open' ||
+        needle !== '' ||
+        severity !== 'all' ||
+        category !== 'all' ||
+        checkId !== 'all';
+    const activeSavedViewId = hasOtherFilters
+        ? undefined
+        : isMine && !isNewOnly
+          ? 'mine'
+          : isNewOnly && !isMine
+            ? 'new'
+            : !isMine && !isNewOnly
+              ? 'open'
+              : undefined;
+    const selectedFindingIds = rows
+        .filter((row) => selected.includes(findingKey(row)))
+        .map((row) => row.lifecycle.id);
+    const canAssignToMe =
+        canDismiss &&
+        currentUserId !== null &&
+        assignees.some((option) => option.id === currentUserId);
+    const assignSelectionToMe = (): void => {
+        router.put(
+            projectsRoutes.findings.bulk.assignee.url(projectId),
+            { ids: selectedFindingIds, assigned_user_id: currentUserId },
+            {
+                preserveScroll: true,
+                preserveState: true,
+                onSuccess: () => setSelected([]),
+            },
+        );
+    };
     const selectedFixes = selected
         .map((key) => fixes[key])
         .filter((fix): fix is FindingFix => fix !== undefined);
@@ -1540,6 +1640,12 @@ function FindingsView({
             }}
         >
             <PageLayout
+                subheader={
+                    <InboxSavedViews
+                        views={savedViews}
+                        activeViewId={activeSavedViewId}
+                    />
+                }
                 filters={
                     <DataTableToolbar
                         search={search}
@@ -1548,21 +1654,37 @@ function FindingsView({
                         selectedCount={selected.length}
                         onClearSelection={() => setSelected([])}
                         bulkActions={
-                            <Button
-                                type="button"
-                                variant="outline"
-                                className="text-ai-text"
-                                onClick={() =>
-                                    void copyWithToast(
-                                        combinedPrompt(selectedFixes),
-                                    )
-                                }
-                            >
-                                <Sparkles className="size-4" />
-                                {t('fix.copyPromptForSelected', {
-                                    count: selectedFixes.length,
-                                })}
-                            </Button>
+                            <>
+                                {canAssignToMe ? (
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        data-test="bulk-assign-me"
+                                        onClick={assignSelectionToMe}
+                                    >
+                                        <UserCheck
+                                            className="size-4"
+                                            aria-hidden="true"
+                                        />
+                                        {t('findings.assignToMe')}
+                                    </Button>
+                                ) : null}
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="text-ai-text"
+                                    onClick={() =>
+                                        void copyWithToast(
+                                            combinedPrompt(selectedFixes),
+                                        )
+                                    }
+                                >
+                                    <Sparkles className="size-4" />
+                                    {t('fix.copyPromptForSelected', {
+                                        count: selectedFixes.length,
+                                    })}
+                                </Button>
+                            </>
                         }
                     />
                 }
@@ -1698,6 +1820,8 @@ function FindingsView({
                                     onClick={() => {
                                         setSearch('');
                                         setIsMine(false);
+                                        setIsNewOnly(false);
+                                        patchLocationQuery({ new: null });
                                         setStatus('open');
                                         setSeverity('all');
                                         setCategory('all');

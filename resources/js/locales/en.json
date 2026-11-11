@@ -2052,7 +2052,13 @@
         "ignoreRuleHint": "Add it to the project's excubia.json to leave the finding out of the report itself.",
         "noResolved": "No resolved findings yet",
         "noResolvedDescription": "Findings show up here once a later report runs their check without them.",
-        "toUser": "to {{name}}"
+        "toUser": "to {{name}}",
+        "views": {
+            "open": "Open",
+            "mine": "Assigned to me",
+            "new": "New in 24h"
+        },
+        "assignToMe": "Assign to me"
     },
     "picker": {
         "clearSelection": "Clear selection",

@@ -14,6 +14,7 @@ use App\Http\Controllers\ProjectAlertsController;
 use App\Http\Controllers\ProjectAssigneeController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ProjectExceptionBulkController;
+use App\Http\Controllers\ProjectFindingBulkController;
 use App\Http\Controllers\ProjectGroupController;
 use App\Http\Controllers\ProjectPinController;
 use App\Http\Controllers\ProjectReportController;
@@ -70,6 +71,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('projects/{project}/exceptions/bulk/status', [ProjectExceptionBulkController::class, 'status'])->name('projects.exceptions.bulk.status');
     Route::put('projects/{project}/exceptions/bulk/assignee', [ProjectExceptionBulkController::class, 'assignee'])->name('projects.exceptions.bulk.assignee');
     Route::patch('projects/{project}/exceptions/{exceptionGroup}', [ProjectReportController::class, 'updateException'])->name('projects.exceptions.update');
+    Route::put('projects/{project}/findings/bulk/assignee', ProjectFindingBulkController::class)->name('projects.findings.bulk.assignee');
     Route::patch('projects/{project}/findings/{finding}', [ProjectReportController::class, 'updateFinding'])->name('projects.findings.update');
     // Who is on an exception group or a finding (#254).
     Route::put('projects/{project}/exceptions/{exceptionGroup}/assignee', [ProjectAssigneeController::class, 'exception'])->name('projects.exceptions.assignee');

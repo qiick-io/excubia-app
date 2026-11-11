@@ -11,6 +11,8 @@ upgrade from the version before (see [docs/self-hosting.md](docs/self-hosting.md
 
 ### Added
 
+- **Findings as an inbox** (#276). The Findings tab gains the same saved views with counts: **Open**, **Assigned to me** and **New in 24h**. Its status, "Assigned to me" and "New in 24h" filters live in the URL, next to the existing `?finding=` link. With `can-dismiss-findings`, the selected rows can be assigned to yourself in one go (`PUT /projects/{project}/findings/bulk/assignee`): each finding is authorized, logged and gets its history event on its own. Dismissing stays per finding, as it needs a reason.
+
 - **Exceptions as an inbox** (#276, app-ui optional pattern `inbox-list`, variant `side-panel`). The Exceptions tab gains three saved views above the filters, with their counts: **Unresolved**, **Assigned to me** and **New in 24h**. Its filters now live in the URL (`?status=`, `?assigned=me`, `?new=24h`), so a view can be shared.
     - `?exception=<id>` opens a group's drawer, and the command palette finds recent exception groups (last 14 days) by class or message and opens them there.
     - With `can-manage-exceptions`, rows can be selected for bulk **Resolve**, **Ignore**, **Reopen** and **Assign to me** (`PATCH /projects/{project}/exceptions/bulk/status`, `PUT …/bulk/assignee`, up to 200 groups, all of the project). Each group is authorized, changed and logged on its own.

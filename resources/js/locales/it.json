@@ -2052,7 +2052,13 @@
         "ignoreRuleHint": "Aggiungila all'excubia.json del progetto per escludere il problema dal report stesso.",
         "noResolved": "Ancora nessun problema risolto",
         "noResolvedDescription": "I problemi compaiono qui quando un report successivo esegue il loro controllo senza trovarli.",
-        "toUser": "a {{name}}"
+        "toUser": "a {{name}}",
+        "views": {
+            "open": "Aperti",
+            "mine": "Assegnati a me",
+            "new": "Nuovi nelle 24h"
+        },
+        "assignToMe": "Assegna a me"
     },
     "picker": {
         "clearSelection": "Cancella selezione",
