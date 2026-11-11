@@ -11,6 +11,7 @@
         "grouped-tabs:sub-menu",
         "inbox-list:side-panel",
         "keyboard-shortcuts",
-        "sidebar-entities"
+        "sidebar-entities",
+        "table-density"
     ]
 }

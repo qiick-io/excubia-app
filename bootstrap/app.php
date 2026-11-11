@@ -35,7 +35,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // counter upsert per endpoint, status, reason and hour, never a row per request.
         $middleware->prependToPriorityList(ThrottleRequests::class, RecordIngestRejectionMiddleware::class);
 
-        $middleware->encryptCookies(except: ['appearance', 'sidebar_state', 'locale', 'accessibility_high_contrast', 'accessibility_reduce_motion']);
+        $middleware->encryptCookies(except: ['appearance', 'sidebar_state', 'locale', 'accessibility_high_contrast', 'accessibility_reduce_motion', 'table_density_compact']);
 
         $middleware->web(prepend: [SecurityHeadersMiddleware::class], append: [
             EnsureUserIsActiveMiddleware::class,

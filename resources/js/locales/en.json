@@ -101,7 +101,9 @@
         "accessibilityOnCount": "{{count}} on",
         "highContrast": "High contrast",
         "reduceMotion": "Reduce motion",
-        "logOut": "Log out"
+        "logOut": "Log out",
+        "compactTables": "Compact tables",
+        "singleKeyShortcuts": "Single-key shortcuts"
     },
     "a11y": {
         "skipToContent": "Skip to content",
@@ -2173,5 +2175,11 @@
         "nextStep": "What to do",
         "openFullPage": "Open full page",
         "savedViews": "Saved views"
+    },
+    "listShortcuts": {
+        "next": "Next row",
+        "previous": "Previous row",
+        "open": "Open the row",
+        "select": "Select the row"
     }
 }

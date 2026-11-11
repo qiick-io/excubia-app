@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html
         lang="{{ str_replace('_', '-', app()->getLocale()) }}"
+        data-density="{{ ($tableDensityCompact ?? false) ? 'compact' : 'comfortable' }}"
         @class([
             'dark' => ($appearance ?? 'system') == 'dark',
             'high-contrast' => $accessibilityHighContrast ?? false,

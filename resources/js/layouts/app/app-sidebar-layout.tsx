@@ -7,6 +7,7 @@ import { AppSidebar } from '@/components/app-sidebar';
 import { AppSidebarHeader } from '@/components/app-sidebar-header';
 import { CommandPaletteTrigger } from '@/components/command-palette';
 import { ShortcutsProvider } from '@/components/keyboard-shortcuts';
+import { useAccessibilityPreferences } from '@/hooks/use-accessibility-preferences';
 import { SkipToContent } from '@/components/skip-to-content';
 import type { AppLayoutProps } from '@/types';
 
@@ -25,9 +26,12 @@ export default function AppSidebarLayout({
     headerActions,
 }: AppLayoutProps) {
     const [isPaletteOpen, setIsPaletteOpen] = useState(false);
+    const { singleKeyShortcutsDisabled } = useAccessibilityPreferences();
 
     return (
-        <ShortcutsProvider>
+        <ShortcutsProvider
+            canUseSingleKeyShortcuts={!singleKeyShortcutsDisabled}
+        >
             <AppShell variant="sidebar">
                 <SkipToContent />
                 <AppSidebar />
