@@ -1,13 +1,33 @@
 import type { ColumnDef } from '@tanstack/react-table';
 import { router } from '@inertiajs/react';
-import { Bug, SearchX, Sparkles } from 'lucide-react';
+import {
+    Bug,
+    CheckCheck,
+    EyeOff,
+    RotateCcw,
+    SearchX,
+    Sparkles,
+    UserCheck,
+} from 'lucide-react';
+import type { RowSelectionState } from '@tanstack/react-table';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { DataTable } from '@/components/admin/data-table';
+import {
+    DataTable,
+    dataTableSelectColumn,
+} from '@/components/admin/data-table';
 import { DataTableToolbar } from '@/components/admin/data-table-toolbar';
 import { PageEmptyState } from '@/components/admin/page-empty-state';
 import { EmptyStatus } from '@/components/empty-status';
+import { InboxSavedViews } from '@/components/inbox-list';
+import type { InboxSavedView } from '@/components/inbox-list';
 import { PageLayout } from '@/components/layout/page-layout';
+import { useDrawerDeepLink } from '@/hooks/use-drawer-deep-link';
+import {
+    getQueryParam,
+    locationPageUrl,
+    patchLocationQuery,
+} from '@/lib/admin-query-params';
 import {
     AssignedToMeToggle,
     AssigneeSelect,
@@ -45,6 +65,54 @@ const EXCEPTIONS_GUIDE_URL =
     'https://github.com/qiick-io/excubia-core/blob/main/docs/guides/exception-capture.md';
 
 type StatusFilter = ExceptionGroupRow['status'] | 'all';
+
+/** "New in 24h": groups first seen in the last day. */
+const NEW_WINDOW_MILLISECONDS = 24 * 60 * 60 * 1000;
+
+/** Whether a group was first seen within the "New in 24h" window. */
+function isNewSince(group: ExceptionGroupRow): boolean {
+    return (
+        Date.now() - new Date(group.first_seen_at).getTime() <=
+        NEW_WINDOW_MILLISECONDS
+    );
+}
+
+const STATUS_FILTERS: readonly StatusFilter[] = [
+    'open',
+    'resolved',
+    'ignored',
+    'all',
+];
+
+/** The status filter from `?status=`, open by default. */
+function statusFromUrl(): StatusFilter {
+    const value = getQueryParam(locationPageUrl(), 'status');
+
+    return STATUS_FILTERS.includes(value as StatusFilter)
+        ? (value as StatusFilter)
+        : 'open';
+}
+
+/**
+ * The URL of a saved view: the current page and its time range, with the view's filters only
+ * (an Inertia visit, so the list reloads with them).
+ */
+function savedViewHref(filters: Record<string, string>): string {
+    const url = new URL(
+        locationPageUrl() || window.location.href,
+        window.location.origin,
+    );
+
+    for (const key of ['status', 'assigned', 'new', 'exception']) {
+        url.searchParams.delete(key);
+    }
+
+    for (const [key, value] of Object.entries(filters)) {
+        url.searchParams.set(key, value);
+    }
+
+    return `${url.pathname}${url.search}`;
+}
 
 const STATUS_VARIANTS = {
     open: 'destructive',
@@ -84,11 +152,37 @@ export function ExceptionsView({
     const rangeTexts = useRangeTexts(range);
     const zoom = useZoomToRange(slug, 'exceptions');
     const [search, setSearch] = useState('');
-    const [status, setStatus] = useState<StatusFilter>('open');
+    const [status, setStatusFilter] = useState<StatusFilter>(statusFromUrl);
     const currentUserId = useCurrentUserId();
-    const [isMine, setIsMine] = useState(isAssignedToMeLinked);
+    const [isMine, setIsMineFilter] = useState(isAssignedToMeLinked);
+    const [isNewOnly, setIsNewOnly] = useState(
+        () => getQueryParam(locationPageUrl(), 'new') === '24h',
+    );
     const [selectedId, setSelectedId] = useState<number | null>(null);
     const selected = groups.find((group) => group.id === selectedId) ?? null;
+    const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+    const selectedIds = Object.keys(rowSelection)
+        .filter((id) => rowSelection[id])
+        .map(Number);
+    // `?exception=<id>` opens a group's drawer, so the palette and links can point at one.
+    const deepLink = useDrawerDeepLink({
+        editParam: 'exception',
+        onEdit: (id) => setSelectedId(Number(id)),
+    });
+
+    // The filters live in the URL, so a saved view is a link and a view can be shared.
+    const setStatus = (value: StatusFilter): void => {
+        setStatusFilter(value);
+        patchLocationQuery({ status: value === 'open' ? null : value });
+    };
+    const setIsMine = (value: boolean): void => {
+        setIsMineFilter(value);
+        patchLocationQuery({ assigned: value ? 'me' : null });
+    };
+    const clearNewOnly = (): void => {
+        setIsNewOnly(false);
+        patchLocationQuery({ new: null });
+    };
 
     const filtered = useMemo(() => {
         const needle = search.trim().toLowerCase();
@@ -97,12 +191,13 @@ export function ExceptionsView({
             (group) =>
                 (status === 'all' || group.status === status) &&
                 (!isMine || group.assignee?.id === currentUserId) &&
+                (!isNewOnly || isNewSince(group)) &&
                 (needle === '' ||
                     `${group.class} ${group.message} ${group.context.name}`
                         .toLowerCase()
                         .includes(needle)),
         );
-    }, [groups, search, status, isMine, currentUserId]);
+    }, [groups, search, status, isMine, isNewOnly, currentUserId]);
 
     const picker = (
         <TimeRangePicker slug={slug} view="exceptions" range={range} />
@@ -133,9 +228,117 @@ export function ExceptionsView({
     }
 
     const hasActiveFilters =
-        search.trim() !== '' || status !== 'open' || isMine;
+        search.trim() !== '' || status !== 'open' || isMine || isNewOnly;
+
+    const openGroups = groups.filter((group) => group.status === 'open');
+    const savedViews: InboxSavedView[] = [
+        {
+            id: 'unresolved',
+            label: t('exceptions.views.unresolved'),
+            href: savedViewHref({}),
+            count: openGroups.length,
+        },
+        {
+            id: 'mine',
+            label: t('exceptions.views.mine'),
+            href: savedViewHref({ assigned: 'me' }),
+            count: openGroups.filter(
+                (group) => group.assignee?.id === currentUserId,
+            ).length,
+        },
+        {
+            id: 'new',
+            label: t('exceptions.views.new'),
+            href: savedViewHref({ new: '24h' }),
+            count: openGroups.filter(isNewSince).length,
+        },
+    ];
+    const activeSavedViewId =
+        status !== 'open' || search.trim() !== ''
+            ? undefined
+            : isMine && !isNewOnly
+              ? 'mine'
+              : isNewOnly && !isMine
+                ? 'new'
+                : !isMine && !isNewOnly
+                  ? 'unresolved'
+                  : undefined;
+
+    const changeStatus = (nextStatus: ExceptionGroupRow['status']): void => {
+        router.patch(
+            projectsRoutes.exceptions.bulk.status.url(projectId),
+            { ids: selectedIds, status: nextStatus },
+            {
+                preserveScroll: true,
+                preserveState: true,
+                onSuccess: () => setRowSelection({}),
+            },
+        );
+    };
+    const assignSelection = (assigneeId: number | null): void => {
+        router.put(
+            projectsRoutes.exceptions.bulk.assignee.url(projectId),
+            { ids: selectedIds, assigned_user_id: assigneeId },
+            {
+                preserveScroll: true,
+                preserveState: true,
+                onSuccess: () => setRowSelection({}),
+            },
+        );
+    };
+    const bulkActions = (
+        <>
+            <Button
+                type="button"
+                variant="outline"
+                onClick={() => changeStatus('resolved')}
+                data-test="bulk-resolved"
+            >
+                <CheckCheck className="size-4" aria-hidden="true" />
+                {t('exceptions.resolve')}
+            </Button>
+            <Button
+                type="button"
+                variant="outline"
+                onClick={() => changeStatus('ignored')}
+                data-test="bulk-ignored"
+            >
+                <EyeOff className="size-4" aria-hidden="true" />
+                {t('exceptions.ignore')}
+            </Button>
+            <Button
+                type="button"
+                variant="outline"
+                onClick={() => changeStatus('open')}
+                data-test="bulk-open"
+            >
+                <RotateCcw className="size-4" aria-hidden="true" />
+                {t('exceptions.reopen')}
+            </Button>
+            {currentUserId !== null &&
+            assignees.some((option) => option.id === currentUserId) ? (
+                <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => assignSelection(currentUserId)}
+                >
+                    <UserCheck className="size-4" aria-hidden="true" />
+                    {t('exceptions.assignToMe')}
+                </Button>
+            ) : null}
+        </>
+    );
 
     const exceptionColumns: ColumnDef<ExceptionGroupRow>[] = [
+        ...(canManage
+            ? [
+                  dataTableSelectColumn<ExceptionGroupRow>({
+                      selectAllLabel: t('exceptions.selectAll'),
+                      getRowLabel: (group) =>
+                          t('exceptions.selectRow', { name: group.class }),
+                  }),
+              ]
+            : []),
         {
             id: 'exception',
             header: t('exceptions.exception'),
@@ -271,15 +474,25 @@ export function ExceptionsView({
             onOpenChange={(open) => {
                 if (!open) {
                     setSelectedId(null);
+                    deepLink.syncClosed();
                 }
             }}
         >
             <PageLayout
+                subheader={
+                    <InboxSavedViews
+                        views={savedViews}
+                        activeViewId={activeSavedViewId}
+                    />
+                }
                 filters={
                     <DataTableToolbar
                         search={search}
                         onSearchChange={setSearch}
                         searchPlaceholder={t('exceptions.search')}
+                        selectedCount={selectedIds.length}
+                        onClearSelection={() => setRowSelection({})}
+                        bulkActions={bulkActions}
                     />
                 }
                 filtersRight={
@@ -331,6 +544,7 @@ export function ExceptionsView({
                                     onClick={() => {
                                         setSearch('');
                                         setIsMine(false);
+                                        clearNewOnly();
                                         setStatus('all');
                                     }}
                                 >
@@ -344,7 +558,12 @@ export function ExceptionsView({
                         columns={exceptionColumns}
                         data={filtered}
                         getRowId={(group) => String(group.id)}
-                        onRowClick={(group) => setSelectedId(group.id)}
+                        rowSelection={canManage ? rowSelection : undefined}
+                        onRowSelectionChange={setRowSelection}
+                        onRowClick={(group) => {
+                            setSelectedId(group.id);
+                            deepLink.syncEdit(group.id);
+                        }}
                         getRowProps={() => ({ className: 'cursor-pointer' })}
                     />
                 )}

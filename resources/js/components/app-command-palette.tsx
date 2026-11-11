@@ -1,5 +1,6 @@
 import { router, usePage } from '@inertiajs/react';
 import {
+    Bug,
     FolderKanban,
     FolderTree,
     MoonStar,
@@ -24,6 +25,7 @@ import { search as searchRoute } from '@/routes';
 /** Server result groups (`GlobalSearchService`) and how the palette shows them. */
 const SEARCH_GROUP_ICONS: Record<string, LucideIcon> = {
     projects: FolderKanban,
+    exceptions: Bug,
     projectGroups: FolderTree,
     users: User,
     groups: UsersRound,

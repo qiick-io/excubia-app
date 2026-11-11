@@ -197,7 +197,7 @@ class ProjectReportController extends Controller
      */
     public function updateException(UpdateExceptionStatusRequest $request, Project $project, ExceptionGroup $exceptionGroup, UpdateExceptionStatusAction $updateStatus): RedirectResponse
     {
-        $updateStatus->execute($exceptionGroup, $request->enum('status', ExceptionStatusEnum::class) ?? ExceptionStatusEnum::Open);
+        $updateStatus->execute($exceptionGroup, $request->enum('status', ExceptionStatusEnum::class) ?? ExceptionStatusEnum::Open, $request->user());
 
         return back();
     }

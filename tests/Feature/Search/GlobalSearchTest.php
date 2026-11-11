@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Enums\ProjectVisibilityEnum;
 use App\Enums\RoleEnum;
+use App\Models\ExceptionGroup;
 use App\Models\Project;
 use App\Models\ProjectGroup;
 use App\Models\User;
@@ -88,4 +89,25 @@ it('needs two characters and a signed-in user', function () {
     $this->actingAs($admin)->getJson(route('search', ['query' => 'a']))->assertUnprocessable();
     auth()->logout();
     $this->getJson(route('search', ['query' => 'billing']))->assertUnauthorized();
+});
+
+it('finds recent exception groups of visible projects, linking to their drawer', function () {
+    $reader = User::factory()->create()->assignRole(RoleEnum::Reader->value);
+    $visible = Project::factory()->create(['name' => 'Shop', 'slug' => 'shop']);
+    $hidden = Project::factory()->create(['slug' => 'hidden', 'visibility' => ProjectVisibilityEnum::Admins]);
+    $make = fn (Project $project, string $fingerprint, string $lastSeen) => ExceptionGroup::query()->create([
+        'project_id' => $project->id, 'fingerprint' => str_repeat($fingerprint, 64), 'environment' => 'production',
+        'class' => 'PaymentException', 'message' => 'Card declined', 'frames' => [], 'previous' => [],
+        'context_kind' => 'request', 'context_name' => 'checkout.store', 'count' => 1,
+        'first_seen_at' => $lastSeen, 'last_seen_at' => $lastSeen, 'status' => 'open',
+    ]);
+    $recent = $make($visible, 'a', now()->subDay()->toDateTimeString());
+    $make($visible, 'b', now()->subDays(20)->toDateTimeString());
+    $make($hidden, 'c', now()->toDateTimeString());
+
+    $answer = $this->actingAs($reader)->getJson(route('search', ['query' => 'payment']))->assertOk()->json();
+    $exceptions = collect($answer['groups'])->firstWhere('type', 'exceptions');
+
+    expect($exceptions['items'])->toHaveCount(1)
+        ->and($exceptions['items'][0]['url'])->toBe(route('projects.view', ['project' => 'shop', 'view' => 'exceptions', 'range' => '14d', 'status' => 'all', 'exception' => $recent->id], false));
 });
