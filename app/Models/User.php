@@ -88,6 +88,20 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
     }
 
     /**
+     * Projects pinned to the sidebar (#273), in pin order. Visibility is not checked here: the
+     * sidebar reads them through `Project::visibleTo()`.
+     *
+     * @return BelongsToMany<Project, $this>
+     */
+    public function pinnedProjects(): BelongsToMany
+    {
+        return $this->belongsToMany(Project::class, 'user_project_pins')
+            ->withPivot('position')
+            ->withTimestamps()
+            ->orderByPivot('position');
+    }
+
+    /**
      * Full display name from first and last name, as in externa-core.
      */
     public function getNameAttribute(): string

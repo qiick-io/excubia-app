@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Models\User;
 use App\Services\EffectivePermissionResolverService;
 use App\Services\SettingsRepositoryService;
+use App\Services\SidebarProjectsService;
 use App\Services\SystemHealthService;
 use App\Services\ThemePresetService;
 use Illuminate\Http\Request;
@@ -68,6 +69,10 @@ class HandleInertiaRequests extends Middleware
                     'themeCss' => array_intersect_key($theme, array_flip(['light', 'dark', 'brandPrimary', 'brandPrimaryDark', 'brandPrimaryForeground', 'brandPrimaryDarkForeground'])),
                 ];
             },
+            // Pinned and needs-attention projects under "Projects" (#273), cached per user.
+            'sidebarProjects' => fn (): array => $user instanceof User
+                ? app(SidebarProjectsService::class)->forUser($user)
+                : ['pinned' => [], 'needsAttention' => []],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
     }
