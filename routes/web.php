@@ -7,6 +7,7 @@ use App\Http\Controllers\Auth\SetupController;
 use App\Http\Controllers\BrandingController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FleetController;
+use App\Http\Controllers\GlobalSearchController;
 use App\Http\Controllers\JobMonitorController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\ProjectAlertsController;
@@ -45,6 +46,9 @@ Route::middleware(['guest', 'throttle:10,1'])->group(function () {
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // The command palette's server search (#274): JSON, scoped by access in the service.
+    Route::get('search', GlobalSearchController::class)->middleware('throttle:60,1')->name('search');
 
     // Projects are created and edited in a drawer on the list page.
     Route::resource('projects', ProjectController::class)->only(['index', 'store', 'update', 'destroy']);

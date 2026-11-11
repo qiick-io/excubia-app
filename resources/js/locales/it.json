@@ -2088,5 +2088,40 @@
         "description": "L'interfaccia ha incontrato un errore imprevisto. Prova a ricaricare la pagina.",
         "retry": "Riprova",
         "reload": "Ricarica la pagina"
+    },
+    "shortcuts": {
+        "description": "Scorciatoie attive in questa schermata.",
+        "groupGeneral": "Generale",
+        "groupList": "Lista",
+        "groupNavigation": "Navigazione",
+        "showHelp": "Mostra le scorciatoie da tastiera",
+        "singleKeyOff": "Le scorciatoie a un tasto sono disattivate nelle tue impostazioni; quelle con ⌘ / Ctrl funzionano ancora.",
+        "title": "Scorciatoie da tastiera"
+    },
+    "commandPalette": {
+        "description": "Cerca pagine, record e azioni.",
+        "empty": "Nessun risultato.",
+        "open": "Apri la palette dei comandi",
+        "placeholder": "Cerca o vai a…",
+        "recent": "Recenti",
+        "searchFailed": "Ricerca non riuscita. Mostro solo i risultati locali.",
+        "searching": "Ricerca in corso…",
+        "title": "Palette dei comandi",
+        "trigger": "Cerca"
+    },
+    "palette": {
+        "groups": {
+            "navigation": "Navigazione",
+            "actions": "Azioni",
+            "projects": "Progetti",
+            "projectGroups": "Gruppi di progetti",
+            "users": "Utenti",
+            "groups": "Gruppi"
+        },
+        "actions": {
+            "assistantPanel": "Apri il pannello dell'assistente",
+            "darkMode": "Passa al tema scuro",
+            "lightMode": "Passa al tema chiaro"
+        }
     }
 }
