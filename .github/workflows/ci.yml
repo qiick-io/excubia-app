@@ -298,7 +298,10 @@ jobs:
   # pushes and pull requests to `main` run every browser test. Not part of `php artisan test`.
   accessibility:
     name: Accessibility
-    runs-on: ubuntu-latest
+    # ponytail: pinned to 24.04 while ubuntu-latest (26.04) runners cannot resolve
+    # security.ubuntu.com for the Playwright system packages (2026-11-11); back to
+    # ubuntu-latest once its mirrors answer again.
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - name: Checkout
