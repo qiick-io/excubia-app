@@ -671,3 +671,18 @@ html.reduce-motion .animate-bounce,
 html.reduce-motion .animate-spin {
     animation: none !important;
 }
+
+/*
+ * Table density (optional pattern `table-density`, docs/optional/table-density.md).
+ * `data-density="compact"` on <html> (the user's preference, set like
+ * `high-contrast`) or on any container tightens table rows by 8px (a text row from 37px to 29px).
+ * Controls inside cells keep their own size, so targets stay at least 24px
+ * (WCAG 2.5.8).
+ */
+[data-density='compact'] [data-slot='table-head'] {
+    height: 2rem;
+}
+
+[data-density='compact'] [data-slot='table-cell'] {
+    padding-block: 0.25rem;
+}
