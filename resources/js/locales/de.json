@@ -827,7 +827,14 @@
         },
         "checksRatio": "{{failed}} / {{total}}",
         "failedChecksLabel": "{{failed}} von {{total}} Prüfungen fehlgeschlagen",
-        "stale": "Veraltet"
+        "stale": "Veraltet",
+        "logo": {
+            "label": "Logo",
+            "choose": "Datei auswählen",
+            "change": "Datei ändern",
+            "remove": "Logo entfernen",
+            "hint": "PNG, JPEG, WebP oder SVG, bis 256 KB. Ohne Logo zeigt das Projekt seine Initialen."
+        }
     },
     "dashboard": {
         "noAccess": "Du hast keinen Zugriff auf Projekte. Bitte einen Administrator um die Berechtigung projects.view.",

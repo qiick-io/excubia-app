@@ -827,7 +827,14 @@
         },
         "checksRatio": "{{failed}} / {{total}}",
         "failedChecksLabel": "{{failed}} of {{total}} checks failed",
-        "stale": "Stale"
+        "stale": "Stale",
+        "logo": {
+            "label": "Logo",
+            "choose": "Choose file",
+            "change": "Change file",
+            "remove": "Remove logo",
+            "hint": "PNG, JPEG, WebP or SVG, up to 256 KB. Without a logo, the project shows its initials."
+        }
     },
     "dashboard": {
         "noAccess": "You do not have access to projects. Ask an administrator for the projects.view permission.",

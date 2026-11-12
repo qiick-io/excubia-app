@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Concerns\ValidatesProjectLogoTrait;
 use App\Models\Project;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -12,10 +13,12 @@ use Illuminate\Validation\Rule;
 
 /**
  * Validates a new project. The slug is derived from the name and must be unique too, so
- * "Shop" and "shop" cannot both exist.
+ * "Shop" and "shop" cannot both exist. An optional logo comes with it (#287).
  */
 class StoreProjectRequest extends FormRequest
 {
+    use ValidatesProjectLogoTrait;
+
     public function authorize(): bool
     {
         return (bool) $this->user()?->can('create', Project::class);
@@ -30,6 +33,7 @@ class StoreProjectRequest extends FormRequest
             'name' => ['required', 'string', 'max:100', Rule::unique(Project::class)],
             'slug' => ['required', 'string', Rule::unique(Project::class)],
             'is_enabled' => ['boolean'],
+            ...$this->projectLogoRules(),
         ];
     }
 

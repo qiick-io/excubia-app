@@ -11,15 +11,16 @@ use App\Services\AlertDispatcherService;
 /**
  * Deletes a project; its push token stops working with it. `project.deleted` (#22) is raised
  * first, while the project row exists: its history row goes with the project, the deliveries
- * still go out (they carry the project's name and slug).
+ * still go out (they carry the project's name and slug). Its logo file (#287) goes too.
  */
 class DeleteProjectAction
 {
-    public function __construct(private AlertDispatcherService $alerts) {}
+    public function __construct(private AlertDispatcherService $alerts, private SaveProjectLogoAction $saveLogo) {}
 
     public function execute(Project $project): void
     {
         $this->alerts->dispatch(AlertEventEnum::ProjectDeleted, $project, 'project deleted');
         $project->delete();
+        $this->saveLogo->deleteFile($project);
     }
 }

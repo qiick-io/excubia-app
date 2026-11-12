@@ -1,6 +1,7 @@
 import { Link } from '@inertiajs/react';
 import type { InertiaLinkProps } from '@inertiajs/react';
 import { Fragment } from 'react';
+import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { TruncatedText } from '@/components/admin/truncated-text';
 import {
@@ -19,6 +20,8 @@ import {
 export type BreadcrumbItemType = {
     title: string;
     href: NonNullable<InertiaLinkProps['href']>;
+    /** A small decorative visual before the title, such as the record's avatar. */
+    leading?: ReactNode;
 };
 
 /**
@@ -49,7 +52,8 @@ export function Breadcrumbs({
                                 <Fragment key={index}>
                                     <BreadcrumbItem className="max-w-[9rem] min-w-0 shrink md:max-w-[12rem]">
                                         {isLast ? (
-                                            <BreadcrumbPage className="block max-w-full min-w-0">
+                                            <BreadcrumbPage className="flex max-w-full min-w-0 items-center gap-1.5">
+                                                {item.leading}
                                                 <TruncatedText
                                                     text={item.title}
                                                 />
@@ -61,8 +65,9 @@ export function Breadcrumbs({
                                             >
                                                 <Link
                                                     href={item.href}
-                                                    className="block max-w-full min-w-0"
+                                                    className="flex max-w-full min-w-0 items-center gap-1.5"
                                                 >
+                                                    {item.leading}
                                                     <TruncatedText
                                                         text={item.title}
                                                     />

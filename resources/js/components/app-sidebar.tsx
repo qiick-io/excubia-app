@@ -10,6 +10,7 @@ import {
 import type { SidebarEntity } from '@/components/sidebar-entity-list';
 import { NavFooter } from '@/components/nav-footer';
 import { AppNavUser } from '@/components/app-user-menu';
+import { ProjectAvatar } from '@/components/projects/project-avatar';
 import {
     Sidebar,
     SidebarContent,
@@ -66,6 +67,14 @@ export function AppSidebar() {
             label: project.name,
             href,
             status: project.status,
+            leading: (
+                <ProjectAvatar
+                    slug={project.slug}
+                    name={project.name}
+                    logoUrl={project.logo_url}
+                    size="xs"
+                />
+            ),
             isActive: isCurrentUrl(href, undefined, true),
         };
     };

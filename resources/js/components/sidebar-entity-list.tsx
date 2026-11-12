@@ -77,6 +77,8 @@ export type SidebarEntity = {
     label: string;
     href: string;
     status?: SidebarEntityStatus;
+    /** A small decorative visual before the label, such as the record's avatar. */
+    leading?: ReactNode;
     isActive?: boolean;
 };
 
@@ -394,6 +396,7 @@ function EntityRow({
                 aria-current={entity.isActive ? 'page' : undefined}
             >
                 <EntityStatus status={entity.status} />
+                {entity.leading}
                 <span>{entity.label}</span>
             </Link>
         </SidebarMenuSubButton>
@@ -514,6 +517,7 @@ export function SidebarEntityFlyout({
                                         }
                                     >
                                         <EntityStatus status={entity.status} />
+                                        {entity.leading}
                                         <span className="truncate">
                                             {entity.label}
                                         </span>

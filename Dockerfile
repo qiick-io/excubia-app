@@ -7,7 +7,8 @@
 ARG PHP_IMAGE=dunglas/frankenphp:1-php8.4-alpine
 
 FROM ${PHP_IMAGE} AS base
-RUN install-php-extensions intl pcntl pdo_mysql pdo_pgsql
+# gd squares uploaded project logos (#287).
+RUN install-php-extensions gd intl pcntl pdo_mysql pdo_pgsql
 WORKDIR /app
 
 # Composer dependencies without dev packages; the lock decides every version.

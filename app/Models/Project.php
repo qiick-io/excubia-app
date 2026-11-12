@@ -38,6 +38,7 @@ use Spatie\Activitylog\Support\LogOptions;
  * @property string|null $environment Laravel `app.env` last reported by a report or runtime batch (core #203)
  * @property Carbon|null $stale_alerted_at
  * @property int $skipped_runtime_aggregates runtime entries of unknown types skipped on ingest (#111)
+ * @property string|null $logo_path uploaded logo on the public disk (#287); null shows the initials avatar
  * @property float|null $ai_monthly_budget estimated AI spend per month (USD) that alerts at 80 % and 100 % (#129)
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -188,6 +189,19 @@ class Project extends Model
             ->join('user_group_project_group', 'user_group_project_group.project_group_id', '=', 'project_group_project.project_group_id')
             ->join('user_group_user', 'user_group_user.user_group_id', '=', 'user_group_project_group.user_group_id')
             ->where('user_group_user.user_id', $user->getKey());
+    }
+
+    /**
+     * The URL of the uploaded logo (#287), relative to the app; null without one. The stored
+     * file name is random per upload, so it versions the URL and the browser may cache it.
+     */
+    public function logoUrl(): ?string
+    {
+        if ($this->logo_path === null) {
+            return null;
+        }
+
+        return route('projects.logo', ['project' => $this->slug, 'v' => pathinfo($this->logo_path, PATHINFO_FILENAME)], false);
     }
 
     /**

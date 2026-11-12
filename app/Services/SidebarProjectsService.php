@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Cache;
 /**
  * The projects under "Projects" in the sidebar (#273, app-ui optional pattern
  * `sidebar-entities`): the user's pins in pin order, then up to five other projects with open
- * problems, worst first. Only projects the user may view (`Project::visibleTo()`, #253 scope
+ * problems, worst first, each with its logo URL for the avatar (#287). Only projects the user may view (`Project::visibleTo()`, #253 scope
  * included), so a pin the user can no longer see simply drops out.
  *
  * It is a shared prop on every page, so it costs three queries and is cached per user for a
@@ -34,7 +34,7 @@ final class SidebarProjectsService
     private const array CRITICAL_SEVERITIES = [SeverityEnum::Critical, SeverityEnum::High];
 
     /**
-     * @return array{pinned: list<array{slug: string, name: string, status: 'good'|'warning'|'critical'}>, needsAttention: list<array{slug: string, name: string, status: 'good'|'warning'|'critical'}>}
+     * @return array{pinned: list<array{slug: string, name: string, logo_url: string|null, status: 'good'|'warning'|'critical'}>, needsAttention: list<array{slug: string, name: string, logo_url: string|null, status: 'good'|'warning'|'critical'}>}
      */
     public function forUser(User $user): array
     {
@@ -57,7 +57,7 @@ final class SidebarProjectsService
     }
 
     /**
-     * @return array{pinned: list<array{slug: string, name: string, status: 'good'|'warning'|'critical'}>, needsAttention: list<array{slug: string, name: string, status: 'good'|'warning'|'critical'}>}
+     * @return array{pinned: list<array{slug: string, name: string, logo_url: string|null, status: 'good'|'warning'|'critical'}>, needsAttention: list<array{slug: string, name: string, logo_url: string|null, status: 'good'|'warning'|'critical'}>}
      */
     private function build(User $user): array
     {
@@ -81,7 +81,7 @@ final class SidebarProjectsService
         $pinned = $user->pinnedProjects()
             ->whereIn('projects.id', $visibleProjectIds)
             ->limit(self::PINNED_LIMIT)
-            ->get(['projects.id', 'projects.slug', 'projects.name']);
+            ->get(['projects.id', 'projects.slug', 'projects.name', 'projects.logo_path']);
         $pinnedIds = $pinned->modelKeys();
         $troubledIds = $openExceptionsByProject->keys()->merge($activeFindingsByProject->keys())
             ->map(fn (int|string $projectId): int => (int) $projectId)
@@ -90,13 +90,13 @@ final class SidebarProjectsService
         $troubledProjects = Project::query()
             ->whereIn('id', $troubledIds->all())
             ->orderBy('name')
-            ->get(['id', 'slug', 'name']);
+            ->get(['id', 'slug', 'name', 'logo_path']);
         $critical = [];
         $warning = [];
 
         foreach ($troubledProjects as $project) {
             $status = $this->statusOf($project->id, $openExceptionsByProject, $activeFindingsByProject);
-            $entry = ['slug' => $project->slug, 'name' => $project->name, 'status' => $status];
+            $entry = ['slug' => $project->slug, 'name' => $project->name, 'logo_url' => $project->logoUrl(), 'status' => $status];
 
             if ($status === 'critical') {
                 $critical[] = $entry;
@@ -111,6 +111,7 @@ final class SidebarProjectsService
             $pinnedEntries[] = [
                 'slug' => $project->slug,
                 'name' => $project->name,
+                'logo_url' => $project->logoUrl(),
                 'status' => $this->statusOf($project->id, $openExceptionsByProject, $activeFindingsByProject),
             ];
         }
