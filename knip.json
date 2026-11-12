@@ -1,11 +1,7 @@
 {
     "$schema": "https://unpkg.com/knip@6/schema.json",
-    "entry": [
-        "resources/js/pages/**/*.tsx"
-    ],
-    "project": [
-        "resources/js/**/*.{ts,tsx}"
-    ],
+    "entry": ["resources/js/pages/**/*.tsx"],
+    "project": ["resources/js/**/*.{ts,tsx}"],
     "ignore": [
         "resources/js/components/ui/**",
         "resources/js/components/admin/data-table-faceted-filter.tsx",
@@ -20,13 +16,11 @@
         "resources/js/components/grouped-view-tabs.tsx",
         "resources/js/components/sidebar-entity-list.tsx",
         "resources/js/components/inbox-list.tsx",
+        "resources/js/components/table-cell-details.tsx",
+        "resources/js/lib/table-cell-details.ts",
         "resources/js/components/sidebar-unread-badge.tsx",
         "resources/js/lib/notification-sound.ts"
     ],
-    "ignoreDependencies": [
-        "concurrently"
-    ],
-    "ignoreBinaries": [
-        "oxlint"
-    ]
+    "ignoreDependencies": ["concurrently"],
+    "ignoreBinaries": ["oxlint"]
 }
