@@ -2021,7 +2021,17 @@
                 "ready": "Ready for Laravel {{major}}",
                 "blocked": "Blocked for Laravel {{major}}",
                 "unknown": "Unknown"
-            }
+            },
+            "projectsTitle": "Projects",
+            "blockersSummary_one": "{{count}} package · {{first}}",
+            "blockersSummary_other": "{{count}} packages · {{first}} +{{others}}",
+            "showBlockers_one": "Show the package blocking the upgrade",
+            "showBlockers_other": "Show {{count}} packages blocking the upgrade",
+            "dismissedBlockers_one": "{{count}} dismissed",
+            "dismissedBlockers_other": "{{count}} dismissed",
+            "dismissedBlockersTitle": "Dismissed blockers",
+            "showDismissedBlockers_one": "Show the dismissed blocker",
+            "showDismissedBlockers_other": "Show {{count}} dismissed blockers"
         },
         "advisories": {
             "description": "Packages with known advisories, abandoned or stale, and the projects that lock them, from the open findings of each project. Dismissed findings are listed apart.",

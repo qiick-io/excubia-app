@@ -2021,7 +2021,17 @@
                 "ready": "Pronto per Laravel {{major}}",
                 "blocked": "Bloccato per Laravel {{major}}",
                 "unknown": "Sconosciuto"
-            }
+            },
+            "projectsTitle": "Progetti",
+            "blockersSummary_one": "{{count}} pacchetto · {{first}}",
+            "blockersSummary_other": "{{count}} pacchetti · {{first}} +{{others}}",
+            "showBlockers_one": "Mostra il pacchetto che blocca l'aggiornamento",
+            "showBlockers_other": "Mostra i {{count}} pacchetti che bloccano l'aggiornamento",
+            "dismissedBlockers_one": "{{count}} ignorato",
+            "dismissedBlockers_other": "{{count}} ignorati",
+            "dismissedBlockersTitle": "Blocchi ignorati",
+            "showDismissedBlockers_one": "Mostra il blocco ignorato",
+            "showDismissedBlockers_other": "Mostra i {{count}} blocchi ignorati"
         },
         "advisories": {
             "description": "Pacchetti con advisory note, abbandonati o non aggiornati, e i progetti che li usano, dai problemi aperti di ogni progetto. I problemi ignorati sono elencati a parte.",
