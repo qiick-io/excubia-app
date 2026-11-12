@@ -37,6 +37,7 @@ import type { ModuleDef } from '@/hooks/use-nav-modules';
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import { toggleAiAssistant } from '@/lib/ai-open';
 import { notificationsSource } from '@/lib/notifications';
+import { toggleProjectPin } from '@/lib/project-pins';
 import { toUrl } from '@/lib/utils';
 import { dashboard } from '@/routes';
 import ai from '@/routes/ai';
@@ -130,10 +131,16 @@ export function AppSidebar() {
         </SidebarMenuButton>
     );
 
+    const pinnedSlugs = new Set(
+        sidebarProjects.pinned.map((project) => project.slug),
+    );
     const projectEntities = (item: ModuleDef) => ({
         pinned: sidebarProjects.pinned.map(toSidebarEntity),
         needsAttention: sidebarProjects.needsAttention.map(toSidebarEntity),
         viewAllHref: toUrl(item.href),
+        // Pin and unpin from the rows (#294); the entity id is the project slug.
+        onTogglePin: (entity: SidebarEntity) =>
+            toggleProjectPin(entity.id, pinnedSlugs.has(entity.id)),
     });
 
     const renderModuleItem = (item: ModuleDef) => (
@@ -160,7 +167,12 @@ export function AppSidebar() {
                 renderModuleButton(item)
             )}
             {item.id === 'projects' && !isIconOnly ? (
-                <SidebarEntityList {...projectEntities(item)} />
+                // The pin hint lives on the projects list instead (#294), so an empty
+                // Pinned block takes no sidebar space.
+                <SidebarEntityList
+                    {...projectEntities(item)}
+                    shouldShowPinHint={false}
+                />
             ) : null}
             {/* The item goes to /assistant; this hover action opens the side panel in place
                 (the shortcut hint gives way to it on hover). */}

@@ -776,6 +776,7 @@
     },
     "projects": {
         "title": "Progetti",
+        "pinHint": "Fissa un progetto con la stella per tenerlo nella sidebar.",
         "newProject": "Nuovo progetto",
         "editProject": "Modifica progetto",
         "create": "Crea",

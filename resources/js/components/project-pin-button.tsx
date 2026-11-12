@@ -1,7 +1,7 @@
-import { router, usePage } from '@inertiajs/react';
+import { usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import { PinToggleButton } from '@/components/sidebar-entity-list';
-import projectsRoutes from '@/routes/projects';
+import { toggleProjectPin } from '@/lib/project-pins';
 import type { ProjectRow } from '@/types';
 
 /**
@@ -19,12 +19,6 @@ export function ProjectPinButton({
     const isPinned = sidebarProjects.pinned.some(
         (pinned) => pinned.slug === project.slug,
     );
-    const options = {
-        preserveScroll: true,
-        preserveState: true,
-        onStart: () => setIsSaving(true),
-        onFinish: () => setIsSaving(false),
-    };
 
     return (
         <PinToggleButton
@@ -32,16 +26,10 @@ export function ProjectPinButton({
             entityLabel={project.name}
             disabled={isSaving}
             onToggle={() =>
-                isPinned
-                    ? router.delete(
-                          projectsRoutes.pin.destroy.url(project.slug),
-                          options,
-                      )
-                    : router.post(
-                          projectsRoutes.pin.store.url(project.slug),
-                          {},
-                          options,
-                      )
+                toggleProjectPin(project.slug, isPinned, {
+                    onStart: () => setIsSaving(true),
+                    onFinish: () => setIsSaving(false),
+                })
             }
         />
     );

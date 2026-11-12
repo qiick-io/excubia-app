@@ -1,5 +1,5 @@
 import type { ColumnDef } from '@tanstack/react-table';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import {
     FolderKanban,
     KeyRound,
@@ -212,6 +212,11 @@ export default function ProjectsIndex({
     const hasActiveFilters = search.trim() !== '';
     const isListEmpty = projects.data.length === 0;
     const hideListChrome = isListEmpty && !hasActiveFilters;
+    // How to pin, once, while nothing is pinned (#294): the empty Pinned block in the sidebar
+    // no longer explains it.
+    const { sidebarProjects } = usePage().props;
+    const shouldShowPinHint =
+        !isListEmpty && sidebarProjects.pinned.length === 0;
 
     const columns: ColumnDef<ProjectRow>[] = [
         {
@@ -466,6 +471,9 @@ export default function ProjectsIndex({
                 }
             >
                 <PageLayout
+                    description={
+                        shouldShowPinHint ? t('projects.pinHint') : undefined
+                    }
                     filters={
                         hideListChrome ? undefined : (
                             <DataTableToolbar
