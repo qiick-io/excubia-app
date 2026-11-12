@@ -121,7 +121,8 @@
         "moreActions": "Weitere Aktionen",
         "notifications": "Benachrichtigungen",
         "notificationsUnread": "Benachrichtigungen, {{count}} ungelesen",
-        "unreadCount": "{{count}} ungelesen"
+        "unreadCount": "{{count}} ungelesen",
+        "scrollableTable": "Scrollbare Tabelle"
     },
     "auth": {
         "login": {

@@ -1,5 +1,5 @@
 {
-    "resources/js/components/sidebar-entity-list.tsx": "Adds an optional `leading` node to SidebarEntity, rendered after the status icon in the row and in the icon-only flyout, so project rows show their avatar or logo (#287). To be proposed upstream as a registry change; drop this entry when the registry has it.",
+    "resources/js/components/sidebar-entity-list.tsx": "Adds an optional `leading` node to SidebarEntity, rendered after the status icon in the row and in the icon-only flyout, so project rows show their avatar or logo (#287). To be proposed upstream as a registry change (qiick-io/app-ui#125); drop this entry when the registry has it.",
     "resources/js/components/breadcrumbs.tsx": "Adds an optional `leading` node to BreadcrumbItemType, rendered before the title, so the project page header shows the project's avatar or logo next to its name (#287). To be proposed upstream as a registry change; drop this entry when the registry has it.",
     "resources/js/components/stat-card.tsx": "Formats the trend delta with toLocaleString() so large changes show grouped digits (+1,234), like the value (#207). Proposed upstream in qiick-io/app-ui#123; drop this entry when the registry has it."
 }

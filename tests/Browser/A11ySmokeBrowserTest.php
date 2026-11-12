@@ -19,30 +19,33 @@ beforeEach(function (): void {
 
 it('has no critical or serious axe issues on login in light, dark and high contrast', function () {
     foreach (['light', 'dark', 'high-contrast'] as $mode) {
-        visitA11y('/login', $mode)
+        $page = visitA11y('/login', $mode)
             ->assertPresent('#main-content')
-            ->assertNoAccessibilityIssues(1)
-            ->assertNoJavaScriptErrors();
+            ->assertNoAccessibilityIssues(1);
+
+        assertAxeCheckedColorContrast($page)->assertNoJavaScriptErrors();
     }
 });
 
 it('has no critical or serious axe issues on the first-run wizard in light, dark and high contrast', function () {
     // Admin step: a fresh install without users (#116).
     foreach (['light', 'dark', 'high-contrast'] as $mode) {
-        visitA11y('/setup', $mode)
+        $page = visitA11y('/setup', $mode)
             ->assertPresent('#main-content')
-            ->assertNoAccessibilityIssues(1)
-            ->assertNoJavaScriptErrors();
+            ->assertNoAccessibilityIssues(1);
+
+        assertAxeCheckedColorContrast($page)->assertNoJavaScriptErrors();
     }
 
     // Project step: the new admin, no project yet.
     $this->actingAs(User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value));
 
     foreach (['light', 'dark'] as $mode) {
-        visitA11y('/setup', $mode)
+        $page = visitA11y('/setup', $mode)
             ->assertSee('Project name')
-            ->assertNoAccessibilityIssues(1)
-            ->assertNoJavaScriptErrors();
+            ->assertNoAccessibilityIssues(1);
+
+        assertAxeCheckedColorContrast($page)->assertNoJavaScriptErrors();
     }
 });
 
@@ -83,10 +86,11 @@ it('has no critical or serious axe issues on the main authenticated pages in lig
 
     foreach ($paths as $path) {
         foreach (['light', 'dark'] as $mode) {
-            visitA11y($path, $mode)
+            $page = visitA11y($path, $mode)
                 ->assertPresent('#main-content')
-                ->assertNoAccessibilityIssues(1)
-                ->assertNoJavaScriptErrors();
+                ->assertNoAccessibilityIssues(1);
+
+            assertAxeCheckedColorContrast($page)->assertNoJavaScriptErrors();
         }
     }
 });
@@ -95,8 +99,9 @@ it('has no critical or serious axe issues on the dashboard in high contrast', fu
     $this->actingAs(User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value));
     seededA11yProject();
 
-    visitA11y(route('dashboard', absolute: false), 'high-contrast')
+    $page = visitA11y(route('dashboard', absolute: false), 'high-contrast')
         ->assertPresent('#main-content')
-        ->assertNoAccessibilityIssues(1)
-        ->assertNoJavaScriptErrors();
+        ->assertNoAccessibilityIssues(1);
+
+    assertAxeCheckedColorContrast($page)->assertNoJavaScriptErrors();
 });

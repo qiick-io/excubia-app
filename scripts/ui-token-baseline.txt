@@ -3,7 +3,3 @@
 # Ratchet (#452): counts must match the scan exactly; remove or lower entries once debt is paid.
 # Format: path:kind:token:count
 # Excluded: components/ui/*, pages/welcome.tsx, components/app-logo-icon.tsx
-resources/js/components/nav-footer.tsx:palette:text-neutral-100:1
-resources/js/components/nav-footer.tsx:palette:text-neutral-300:1
-resources/js/components/nav-footer.tsx:palette:text-neutral-600:1
-resources/js/components/nav-footer.tsx:palette:text-neutral-800:1

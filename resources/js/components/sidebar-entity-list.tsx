@@ -347,11 +347,11 @@ function EntityBlock({
 
     return (
         <li className="grid gap-0.5">
-            <p className="px-2 pt-1 text-xs font-medium text-sidebar-foreground/70">
+            <p className="px-2 pt-1 text-xs font-medium text-sidebar-muted-foreground">
                 {heading}
             </p>
             {entities.length === 0 ? (
-                <p className="px-2 pb-1 text-xs text-sidebar-foreground/70">
+                <p className="px-2 pb-1 text-xs text-sidebar-muted-foreground">
                     {emptyText}
                 </p>
             ) : (
