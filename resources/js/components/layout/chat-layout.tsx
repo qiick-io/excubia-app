@@ -1,6 +1,11 @@
 import { ArrowUp } from 'lucide-react';
 import { useRef } from 'react';
-import type { FormEvent, KeyboardEvent, ReactNode } from 'react';
+import type {
+    ComponentProps,
+    FormEvent,
+    KeyboardEvent,
+    ReactNode,
+} from 'react';
 import { Button } from '@/components/ui/button';
 import { useAutosizeTextarea } from '@/hooks/use-autosize-textarea';
 import {
@@ -12,46 +17,90 @@ import {
 } from '@/lib/composer-chrome';
 import { cn } from '@/lib/utils';
 
-export type ChatLayoutProps = {
+/** `data-*` attributes (test ids) for one part of {@link ChatLayout}. */
+type ChatLayoutPartAttributes = { [key: `data-${string}`]: string | undefined };
+
+export type ChatLayoutProps = Omit<ComponentProps<'div'>, 'children'> & {
     /** Accessible name of the list column (`<aside>`). */
     listLabel: string;
     list: ReactNode;
     /** Centres the list content (empty state, loading). */
     isListCentered?: boolean;
+    /**
+     * Below `md` the list and the thread take turns, full width: `false`
+     * shows the list, `true` the open thread. Omit it to keep both columns
+     * side by side at every width.
+     */
+    isThreadOpen?: boolean;
+    /** Extra `data-*` attributes for the list column, the list and the thread. */
+    listColumnProps?: ChatLayoutPartAttributes;
+    listProps?: ChatLayoutPartAttributes;
+    threadProps?: ChatLayoutPartAttributes;
     children: ReactNode;
-    className?: string;
 };
 
 /**
  * Body of a chat page, as on externa-core `/ai` (Assistant) and `/chat`:
  * conversation list on the left, the open thread on the right. Render it as
  * the child of {@link PageLayout}, with the list search in `filters` and the
- * list actions in `filtersRight`.
+ * list actions in `filtersRight`. With `isThreadOpen` the page works on a
+ * phone: the list or the thread, full width, never both.
  */
 export function ChatLayout({
     listLabel,
     list,
     isListCentered = false,
+    isThreadOpen,
+    listColumnProps,
+    listProps,
+    threadProps,
     children,
     className,
+    ...props
 }: ChatLayoutProps) {
+    const isSplit = isThreadOpen !== undefined;
+
     return (
-        <div className={cn('flex min-h-0 flex-1 overflow-hidden', className)}>
+        <div
+            data-slot="chat-layout"
+            className={cn('flex min-h-0 flex-1 overflow-hidden', className)}
+            {...props}
+        >
             <aside
                 aria-label={listLabel}
-                className="flex w-64 shrink-0 flex-col border-r lg:w-80"
+                data-slot="chat-layout-list-column"
+                className={cn(
+                    isSplit
+                        ? [
+                              'w-full shrink-0 flex-col md:flex md:w-64 md:border-r lg:w-80',
+                              isThreadOpen ? 'hidden' : 'flex',
+                          ]
+                        : 'flex w-64 shrink-0 flex-col border-r lg:w-80',
+                )}
+                {...listColumnProps}
             >
                 <div
+                    data-slot="chat-layout-list"
                     className={cn(
                         'min-h-0 flex-1 overflow-y-auto p-2',
                         isListCentered &&
                             'flex flex-col items-center justify-center',
                     )}
+                    {...listProps}
                 >
                     {list}
                 </div>
             </aside>
-            <section className="relative flex min-h-0 min-w-0 flex-1 flex-col">
+            <section
+                data-slot="chat-layout-thread"
+                className={cn(
+                    'relative min-h-0 min-w-0 flex-1 flex-col',
+                    isSplit
+                        ? ['md:flex', isThreadOpen ? 'flex' : 'hidden']
+                        : 'flex',
+                )}
+                {...threadProps}
+            >
                 {children}
             </section>
         </div>

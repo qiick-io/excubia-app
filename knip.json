@@ -4,6 +4,7 @@
     "project": ["resources/js/**/*.{ts,tsx}"],
     "ignore": [
         "resources/js/components/ui/**",
+        "resources/js/components/admin/data-table.tsx",
         "resources/js/components/admin/data-table-faceted-filter.tsx",
         "resources/js/components/layout/page-layout.tsx",
         "resources/js/components/user-menu-content.tsx",
