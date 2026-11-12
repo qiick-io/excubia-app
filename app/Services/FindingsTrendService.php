@@ -15,10 +15,17 @@ use Illuminate\Support\Facades\Date;
  * Daily findings across projects for the dashboard trend: for each day, the severity counts
  * of every project's latest report received by the end of that day, summed. A project with no
  * report yet adds nothing.
+ *
+ * The trend starts at the first day with a report when that day falls inside the period, so a
+ * new install does not draw a chart of mostly empty days (#295). With no report at all the
+ * trend is empty.
  */
 class FindingsTrendService
 {
     /**
+     * One point per day from the start of the period, or from the first day with a report when
+     * that is later, up to today.
+     *
      * @param  Collection<int, Project>  $projects  the projects the user may see
      * @return list<array{date: string, critical: int, high: int, medium: int, low: int, info: int}>
      */
@@ -26,6 +33,20 @@ class FindingsTrendService
     {
         $today = CarbonImmutable::instance(Date::now())->startOfDay();
         $from = $today->subDays($days - 1);
+
+        $firstReportAt = HealthReport::query()
+            ->whereIn('project_id', $projects->pluck('id'))
+            ->min('received_at');
+
+        if ($firstReportAt === null) {
+            return [];
+        }
+
+        $firstReportDay = CarbonImmutable::parse($firstReportAt)->startOfDay();
+
+        if ($firstReportDay->gt($from)) {
+            $from = $firstReportDay;
+        }
 
         // Reports inside the window, plus the newest one before it so the first day is complete.
         $reports = HealthReport::query()
