@@ -183,7 +183,7 @@ it('sends the logo URL to the projects list, the sidebar and the search', functi
     $plain = Project::factory()->create(['name' => 'Billing worker', 'slug' => 'billing-worker']);
     updateProjectLogo($admin, $project, ['logo' => UploadedFile::fake()->image('logo.png', 32, 32)]);
     $logoUrl = $project->refresh()->logoUrl();
-    $admin->pinnedProjects()->attach([$project->id, $plain->id]);
+    $admin->pinnedProjects()->attach([$project->id => ['position' => 1], $plain->id => ['position' => 2]]);
 
     $this->actingAs($admin)->get(route('projects.index'))
         ->assertInertia(fn (Assert $page) => $page

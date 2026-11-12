@@ -24,7 +24,7 @@ it('shows the initials or the logo of a project everywhere it is named', functio
     $billing = Project::factory()->create(['name' => 'Billing API', 'slug' => 'billing-api']);
     $shop = Project::factory()->create(['name' => 'Shop', 'slug' => 'shop']);
     app(SaveProjectLogoAction::class)->execute($shop, UploadedFile::fake()->image('logo.png', 64, 32));
-    $admin->pinnedProjects()->attach([$billing->id, $shop->id]);
+    $admin->pinnedProjects()->attach([$billing->id => ['position' => 1], $shop->id => ['position' => 2]]);
     $this->actingAs($admin);
 
     $avatarTexts = "() => [...document.querySelectorAll(SELECTOR)].map((avatar) => avatar.querySelector('img') ? 'logo' : avatar.innerText.trim())";
