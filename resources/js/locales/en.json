@@ -814,7 +814,16 @@
             "everyone": "Everyone with project access",
             "admins": "Admins only",
             "hint": "Admins and super-admins always see every project; an admin-only project is also seen by the user groups scoped to one of its project groups."
-        }
+        },
+        "columns": {
+            "project": "Project",
+            "health": "Health",
+            "openFindings": "Open findings",
+            "failedChecks": "Failed checks"
+        },
+        "checksRatio": "{{failed}} / {{total}}",
+        "failedChecksLabel": "{{failed}} of {{total}} checks failed",
+        "stale": "Stale"
     },
     "dashboard": {
         "noAccess": "You do not have access to projects. Ask an administrator for the projects.view permission.",

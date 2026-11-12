@@ -8,6 +8,7 @@ use App\Enums\SeverityEnum;
 use App\Models\HealthReport;
 use App\Models\Project;
 use App\Services\ReportAlertsService;
+use App\Services\ReportHealthService;
 use Carbon\CarbonInterface;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\Date;
@@ -36,6 +37,7 @@ class StorePushedReportAction
         private ReportAlertsService $reportAlerts,
         private StoreScheduleInventoryAction $scheduleInventory,
         private SyncFindingLifecycleAction $findingLifecycle,
+        private ReportHealthService $reportHealth,
     ) {}
 
     /**
@@ -74,6 +76,7 @@ class StorePushedReportAction
                     'deployed_at' => is_string($report['deployedAt'] ?? null) ? Date::parse($report['deployedAt']) : null,
                     'report' => $report,
                     ...$this->summary($report),
+                    ...$this->reportHealth->checkSummary($report),
                 ]);
 
                 // A push without `schedule` (older cores, the standalone CLI) keeps the last inventory (#110).
