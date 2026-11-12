@@ -1,1 +1,0 @@
-O:23:"PHPStan\Cache\CacheItem":2:{s:11:"variableKey";s:74:"v2-0a3267552ebbcac5f0cd522dd10d96ad985595fd4f90d8566b449db2e060b385-8.4.27";s:4:"data";a:3:{s:7:"classes";a:1:{s:32:"psr\http\message\streaminterface";b:1;}s:9:"functions";a:0:{}s:9:"constants";a:0:{}}}

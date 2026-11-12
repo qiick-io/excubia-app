@@ -1,1 +1,0 @@
-O:23:"PHPStan\Cache\CacheItem":2:{s:11:"variableKey";s:74:"v2-2d342bede2f6d5379a1987704ac577863af0ec66cdee8fed2f1be605511b84bd-8.4.27";s:4:"data";a:3:{s:7:"classes";a:1:{s:59:"illuminate\http\middleware\addlinkheadersforpreloadedassets";b:1;}s:9:"functions";a:0:{}s:9:"constants";a:0:{}}}

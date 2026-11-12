@@ -1,1 +1,0 @@
-O:23:"PHPStan\Cache\CacheItem":2:{s:11:"variableKey";s:74:"v2-822b8b255f055d052b55b9a9d4991899824b5a2683d951a8a04a3b8166940314-8.4.27";s:4:"data";a:3:{s:7:"classes";a:1:{s:31:"illuminate\hashing\bcrypthasher";b:1;}s:9:"functions";a:0:{}s:9:"constants";a:0:{}}}

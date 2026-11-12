@@ -1,1 +1,0 @@
-O:23:"PHPStan\Cache\CacheItem":2:{s:11:"variableKey";s:74:"v2-13c4f29cf1ac4ccfa93c47c780010e369aaf76eb87754134e6f329b437388bc5-8.4.27";s:4:"data";a:3:{s:7:"classes";a:1:{s:33:"illuminate\hashing\argon2idhasher";b:1;}s:9:"functions";a:0:{}s:9:"constants";a:0:{}}}

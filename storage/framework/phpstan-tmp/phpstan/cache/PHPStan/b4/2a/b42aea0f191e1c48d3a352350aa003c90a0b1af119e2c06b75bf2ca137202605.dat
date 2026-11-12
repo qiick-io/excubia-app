@@ -1,1 +1,0 @@
-O:23:"PHPStan\Cache\CacheItem":2:{s:11:"variableKey";s:74:"v2-846a9a97c3d38f6c69d1cd46dc4c0de4f5c4b43ae4574b1e0174674f0f06e4a7-8.4.27";s:4:"data";a:3:{s:7:"classes";a:1:{s:39:"illuminate\http\middleware\trustproxies";b:1;}s:9:"functions";a:0:{}s:9:"constants";a:0:{}}}

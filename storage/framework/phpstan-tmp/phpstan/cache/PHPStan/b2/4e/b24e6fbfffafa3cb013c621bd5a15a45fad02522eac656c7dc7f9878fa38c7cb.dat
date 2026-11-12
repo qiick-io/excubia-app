@@ -1,1 +1,0 @@
-O:23:"PHPStan\Cache\CacheItem":2:{s:11:"variableKey";s:74:"v2-fca89bf4357713f91e9940e368f6d174aaae70a63a3b6f19ff5b877397ae1290-8.4.27";s:4:"data";a:3:{s:7:"classes";a:1:{s:46:"illuminate\routing\middleware\throttlerequests";b:1;}s:9:"functions";a:0:{}s:9:"constants";a:0:{}}}

@@ -1,1 +1,0 @@
-O:23:"PHPStan\Cache\CacheItem":2:{s:11:"variableKey";s:74:"v2-9363f1afd4c51475f0b8015eebeea2c2cdc11941adedb8b4ae53ca8aaea41ef5-8.4.27";s:4:"data";a:3:{s:7:"classes";a:1:{s:32:"illuminate\contracts\cache\store";b:1;}s:9:"functions";a:0:{}s:9:"constants";a:0:{}}}

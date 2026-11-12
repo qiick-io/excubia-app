@@ -1,1 +1,0 @@
-O:23:"PHPStan\Cache\CacheItem":2:{s:11:"variableKey";s:74:"v2-e8071ffdbb056a0fc629881e6db5392dd9a47b6ee9d51b77a12e0d03b63df6ad-8.4.27";s:4:"data";a:3:{s:7:"classes";a:1:{s:47:"illuminate\redis\connections\phpredisconnection";b:1;}s:9:"functions";a:0:{}s:9:"constants";a:0:{}}}

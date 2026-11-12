@@ -1,1 +1,0 @@
-O:23:"PHPStan\Cache\CacheItem":2:{s:11:"variableKey";s:74:"v2-d0c519358741629ed69f566f1337d92a2605c4039a6b873f1ff0e7d325d9bc8d-8.4.27";s:4:"data";a:3:{s:7:"classes";a:1:{s:77:"illuminate\database\eloquent\relations\concerns\supportspivotinverserelations";b:1;}s:9:"functions";a:0:{}s:9:"constants";a:0:{}}}

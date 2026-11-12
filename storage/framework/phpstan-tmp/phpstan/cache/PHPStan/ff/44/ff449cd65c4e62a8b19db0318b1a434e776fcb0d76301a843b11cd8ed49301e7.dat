@@ -1,1 +1,0 @@
-O:23:"PHPStan\Cache\CacheItem":2:{s:11:"variableKey";s:74:"v2-9b92f4ad92711668a09e4c475f024b23d0d0b8a687908eb59996c61a5ee24e28-8.4.27";s:4:"data";a:3:{s:7:"classes";a:1:{s:30:"psr\simplecache\cacheexception";b:1;}s:9:"functions";a:0:{}s:9:"constants";a:0:{}}}

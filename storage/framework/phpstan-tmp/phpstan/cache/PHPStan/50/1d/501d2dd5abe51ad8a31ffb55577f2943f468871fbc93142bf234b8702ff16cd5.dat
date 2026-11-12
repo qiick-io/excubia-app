@@ -1,1 +1,0 @@
-O:23:"PHPStan\Cache\CacheItem":2:{s:11:"variableKey";s:74:"v2-8c2bd54f8f3949c15f47b20f7fa9426b4063c0efa640c4cbc942ea590c550907-8.4.27";s:4:"data";a:3:{s:7:"classes";a:1:{s:35:"laravel\ai\contracts\conversational";b:1;}s:9:"functions";a:0:{}s:9:"constants";a:0:{}}}

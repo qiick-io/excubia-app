@@ -1,1 +1,0 @@
-O:23:"PHPStan\Cache\CacheItem":2:{s:11:"variableKey";s:74:"v2-593065d562b89e26df85c9835b06d5183028c016529f6d64f6b4f3b6cb6882a3-8.4.27";s:4:"data";a:3:{s:7:"classes";a:1:{s:48:"illuminate\contracts\encryption\decryptexception";b:1;}s:9:"functions";a:0:{}s:9:"constants";a:0:{}}}

@@ -1,1 +1,0 @@
-O:23:"PHPStan\Cache\CacheItem":2:{s:11:"variableKey";s:74:"v2-66af26ecdde442dca112fa8c092da7ddda2f79a3a174960c381c9394a0dfc63f-8.4.27";s:4:"data";a:3:{s:7:"classes";a:1:{s:32:"monolog\handler\syslogudphandler";b:1;}s:9:"functions";a:0:{}s:9:"constants";a:0:{}}}

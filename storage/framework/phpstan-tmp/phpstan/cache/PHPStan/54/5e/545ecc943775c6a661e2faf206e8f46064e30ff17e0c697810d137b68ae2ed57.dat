@@ -1,1 +1,0 @@
-O:23:"PHPStan\Cache\CacheItem":2:{s:11:"variableKey";s:74:"v2-df28a9d1ef8c74922e18ad84acb8eb5a0d9bf44025ba4b15cd51cb77c427d7e9-8.4.27";s:4:"data";a:3:{s:7:"classes";a:1:{s:48:"illuminate\redis\connections\packsphpredisvalues";b:1;}s:9:"functions";a:0:{}s:9:"constants";a:0:{}}}
