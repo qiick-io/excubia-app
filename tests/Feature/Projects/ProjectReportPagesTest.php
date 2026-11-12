@@ -195,7 +195,22 @@ it('leaves projects restricted to admins out of the trend', function () {
     pushedReport($hidden, '2026-11-05 07:00:00', SeverityEnum::Critical, ['critical_count' => 3]);
 
     $this->actingAs(reportReader())->get(route('dashboard'))
-        ->assertInertia(fn (Assert $page) => $page->has('trend', 14)->where('trend.13.critical', 0)->where('overview.kpis.findings.total', 0));
+        ->assertInertia(fn (Assert $page) => $page->has('trend', 0)->where('overview.kpis.findings.total', 0));
+});
+
+it('starts the dashboard trend at the first report inside the period', function () {
+    $shop = Project::factory()->create(['slug' => 'shop']);
+    pushedReport($shop, '2026-11-03 08:00:00', SeverityEnum::High, ['high_count' => 2]);
+    pushedReport($shop, '2026-11-05 08:00:00', SeverityEnum::Critical, ['critical_count' => 1]);
+
+    $this->actingAs(reportReader())->get(route('dashboard', ['period' => 30]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('trend', 3)
+            ->where('trend.0.date', '2026-11-03')
+            ->where('trend.0.high', 2)
+            ->where('trend.1.high', 2)
+            ->where('trend.2.date', '2026-11-05')
+            ->where('trend.2.critical', 1));
 });
 
 it('builds the issue-first overview for all projects or one, with the previous period', function () {
@@ -245,7 +260,8 @@ it('builds the issue-first overview for all projects or one, with the previous p
             ->where('overview.kpis.findings.previous', null)
             ->where('overview.topIssues.0.projects.0.slug', 'blog')
             ->has('overview.configuration', 1)
-            ->has('trend', 7));
+            // Blog's only report is today's, so its trend has a single day (#295).
+            ->has('trend', 1));
 
     $this->actingAs(reportReader())->get(route('dashboard', ['project' => 'nope', 'period' => 5]))
         ->assertInertia(fn (Assert $page) => $page->where('scope', ['project' => null, 'group' => null, 'period' => 14]));
