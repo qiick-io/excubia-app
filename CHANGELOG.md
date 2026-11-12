@@ -72,6 +72,8 @@ upgrade from the version before (see [docs/self-hosting.md](docs/self-hosting.md
 
 ### Changed
 
+- **app-ui v0.5.0:** the registry, the standards pack and the reusable workflows are pinned to app-ui v0.5.0, and the standards are re-synced (the core notifications row is renamed and the optional catalogue lists `table-cell-details`, not adopted here yet). `sidebar-entity-list` is re-pulled with its new optional pin action (`onTogglePin`, which also brings the `context-menu` primitive); the sidebar does not pass it yet, so it renders as before.
+
 - **app-ui v0.4.0:** the registry, the standards pack and the reusable workflows are pinned to app-ui v0.4.0, and the standards are re-synced. The UI rules now list the optional patterns this app adopts (none yet; #273–#277 adopt them). The theme gains the opt-in compact table density rules (`[data-density='compact']`), and nothing changes until it is turned on.
 
 - The app runs on qiick/excubia-core 1.0.0-rc.1 (was beta.4), fixes only with the contracts unchanged: exception capture now works behind a decorating handler such as nunomaduro/collision (core #241), so with dev dependencies installed the system project also gets the exception groups of failed queued jobs and of `report()` in commands and workers; a runtime batch answered 413 is split in halves (core #249), which the app's 413 above `EXCUBIA_PUSH_MAX_KILOBYTES` already triggers (covered by tests); a 429 with a long `Retry-After` is kept for the next run (core #256).
