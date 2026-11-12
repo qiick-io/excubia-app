@@ -776,6 +776,7 @@
     },
     "projects": {
         "title": "Projekte",
+        "pinHint": "Hefte ein Projekt mit dem Stern an, um es in der Seitenleiste zu behalten.",
         "newProject": "Neues Projekt",
         "editProject": "Projekt bearbeiten",
         "create": "Erstellen",

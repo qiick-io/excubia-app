@@ -776,6 +776,7 @@
     },
     "projects": {
         "title": "Projects",
+        "pinHint": "Pin a project with the star to keep it in the sidebar.",
         "newProject": "New project",
         "editProject": "Edit project",
         "create": "Create",
