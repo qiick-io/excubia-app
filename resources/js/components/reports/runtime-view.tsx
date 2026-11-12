@@ -50,7 +50,7 @@ import type {
     RuntimeSummary,
 } from '@/types';
 
-const RUNTIME_GUIDE_URL =
+export const RUNTIME_GUIDE_URL =
     'https://github.com/qiick-io/excubia-core/blob/main/docs/guides/runtime-monitoring.md';
 
 /** Log levels that count as errors, as in ProjectRuntimeService. */
@@ -1196,7 +1196,7 @@ function Name({
  * What a runtime card shows without data: none in the range, and the excubia.json key
  * that turns the type on.
  */
-export function NoData({ configKey }: { configKey: string }) {
+function NoData({ configKey }: { configKey: string }) {
     const { t } = useTranslation();
 
     return (

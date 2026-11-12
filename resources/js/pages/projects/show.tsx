@@ -137,6 +137,15 @@ export default function ProjectShow({
     );
 
     const latest = project.latest_report ?? null;
+    // The system project runs its checks on demand; other projects push their own reports.
+    const refreshReport = canRefreshReport
+        ? () =>
+              router.post(
+                  projectsRoutes.systemReport.url(project.id),
+                  {},
+                  { preserveScroll: true },
+              )
+        : null;
 
     return (
         <AppLayout
@@ -145,17 +154,8 @@ export default function ProjectShow({
                 <>
                     <ProjectPinButton project={project} />
                     {project.is_system ? <SystemProjectBadge /> : null}
-                    {canRefreshReport ? (
-                        <Button
-                            type="button"
-                            onClick={() =>
-                                router.post(
-                                    projectsRoutes.systemReport.url(project.id),
-                                    {},
-                                    { preserveScroll: true },
-                                )
-                            }
-                        >
+                    {refreshReport !== null ? (
+                        <Button type="button" onClick={refreshReport}>
                             <RefreshCw className="size-4" />
                             {t('report.refresh')}
                         </Button>
@@ -253,6 +253,7 @@ export default function ProjectShow({
                             runtime={runtime}
                             exceptions={exceptions}
                             exceptionsOverview={exceptionsOverview}
+                            onRefresh={refreshReport}
                         />
                     )}
                 </PageLayout>
