@@ -1037,6 +1037,15 @@
             "lastSample": "Letzte Probe",
             "serverStatus": "{{server}}: {{status}}",
             "serverStale": "{{server}}: keine Probe"
+        },
+        "findingGroup": {
+            "title_one": "{{count}} Befund",
+            "title_other": "{{count}} Befunde",
+            "blockers_one": "{{count}} Paket blockiert Laravel {{major}}",
+            "blockers_other": "{{count}} Pakete blockieren Laravel {{major}}",
+            "show_one": "Eintrag anzeigen",
+            "show_other": "Alle {{count}} anzeigen",
+            "upgradePlan": "Upgrade-Plan in Fleet"
         }
     },
     "assistant": {

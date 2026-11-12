@@ -25,3 +25,27 @@ export function relativeTime(iso: string, locale: string): string {
 export function findingKey(row: ReportFinding): string {
     return `${row.checkId}|${row.subject}|${row.advisoryId ?? ''}`;
 }
+
+/**
+ * Findings that share a check id and a message, as one display row (#291): "6 packages block
+ * Laravel 14" instead of six rows. Groups keep the order of their first (worst) finding, so a
+ * list sorted worst first stays sorted; each finding keeps its own key and state.
+ */
+export function groupFindings<Finding extends ReportFinding>(
+    findings: Finding[],
+): Finding[][] {
+    const groupsByCheckAndMessage = new Map<string, Finding[]>();
+
+    for (const finding of findings) {
+        const groupKey = `${finding.checkId}|${finding.message}`;
+        const group = groupsByCheckAndMessage.get(groupKey);
+
+        if (group === undefined) {
+            groupsByCheckAndMessage.set(groupKey, [finding]);
+        } else {
+            group.push(finding);
+        }
+    }
+
+    return [...groupsByCheckAndMessage.values()];
+}

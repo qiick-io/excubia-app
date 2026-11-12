@@ -18,10 +18,15 @@ export type TopIssue = {
     fixHint: string;
     advisoryId: string | null;
     evidenceUrl: string | null;
+    /** The next Laravel major of a `laravel-next-blocker` finding. */
+    targetMajor: number | null;
     installed: string[];
     fixedVersions: string[];
     projects: (ProjectRef & { installed: string | null })[];
-    fix: FindingFix;
+    /** Packages that share this check and message (#291); empty for a single package. */
+    packages: { key: string; package: string; projects: ProjectRef[] }[];
+    /** Null on a grouped row: each package has its own fix. */
+    fix: FindingFix | null;
 };
 
 export type EndOfSupportRow = {
