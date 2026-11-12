@@ -9,6 +9,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FleetController;
 use App\Http\Controllers\GlobalSearchController;
 use App\Http\Controllers\JobMonitorController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\ProjectAlertsController;
 use App\Http\Controllers\ProjectAssigneeController;
@@ -52,6 +53,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // The command palette's server search (#274): JSON, scoped by access in the service.
     Route::get('search', GlobalSearchController::class)->middleware('throttle:60,1')->name('search');
+
+    // The notification centre (#296): the sidebar bell and drawer read and mark the user's own rows.
+    Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('notifications/unread-count', [NotificationController::class, 'unreadCount'])->name('notifications.unread-count');
+    Route::post('notifications/read', [NotificationController::class, 'markRead'])->name('notifications.read');
+    Route::post('notifications/unread', [NotificationController::class, 'markUnread'])->name('notifications.unread');
 
     // Projects are created and edited in a drawer on the list page.
     Route::resource('projects', ProjectController::class)->only(['index', 'store', 'update', 'destroy']);

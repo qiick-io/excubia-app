@@ -7,6 +7,7 @@ namespace App\Jobs;
 use App\Actions\RecordAlertDeliveryAction;
 use App\Mail\AlertMail;
 use App\Models\User;
+use App\Notifications\AlertNotification;
 use App\Services\SettingsRepositoryService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -22,7 +23,8 @@ use Throwable;
  * - webhook: JSON body signed with HMAC-SHA256 of `timestamp.body` (`X-Excubia-Signature`);
  * - slack: an incoming-webhook message;
  * - telegram: a Bot API sendMessage;
- * - email:<user id>: an AlertMail to that user, in their locale (the user must still be active).
+ * - email:<user id>: an AlertMail to that user, in their locale (the user must still be active);
+ * - app:<user id>: an in-app AlertNotification for that user's bell (#296), same condition.
  * HTTPS only, no redirects, and hosts that resolve to private or reserved addresses are refused;
  * the connection goes to the checked address, and transport errors never quote the URL.
  * Retried 3 times with backoff; the webhook's last success and last error are kept for Settings,
@@ -42,6 +44,9 @@ class DeliverAlertJob implements ShouldQueue
 
     /** Prefix of the per-user email channel, `email:<user id>`. */
     public const EMAIL = 'email';
+
+    /** Prefix of the per-user in-app channel, `app:<user id>` (#296). */
+    public const APP = 'app';
 
     public int $tries = 3;
 
@@ -75,6 +80,14 @@ class DeliverAlertJob implements ShouldQueue
 
         if ($userId !== null) {
             $this->sendMail($settings, $userId);
+
+            return;
+        }
+
+        $userId = self::appUserId($this->channel);
+
+        if ($userId !== null) {
+            $this->storeNotification($settings, $userId);
 
             return;
         }
@@ -126,7 +139,23 @@ class DeliverAlertJob implements ShouldQueue
      */
     public static function emailUserId(string $channel): ?int
     {
-        return preg_match('/^'.self::EMAIL.':(\d+)$/', $channel, $matches) === 1 ? (int) $matches[1] : null;
+        return self::userId(self::EMAIL, $channel);
+    }
+
+    /**
+     * The user id of an `app:<user id>` channel, else null.
+     */
+    public static function appUserId(string $channel): ?int
+    {
+        return self::userId(self::APP, $channel);
+    }
+
+    /**
+     * The user id of a per-user channel (`<prefix>:<user id>`), else null.
+     */
+    private static function userId(string $prefix, string $channel): ?int
+    {
+        return preg_match('/^'.$prefix.':(\d+)$/', $channel, $matches) === 1 ? (int) $matches[1] : null;
     }
 
     /**
@@ -145,6 +174,24 @@ class DeliverAlertJob implements ShouldQueue
 
         Mail::to($user)->locale($user->locale)->send(new AlertMail($this->payload, $this->text, $this->alerts));
         $this->record($settings, true, 'sent');
+    }
+
+    /**
+     * Stores the in-app notification (a `notifications` row) for one user, synchronously inside
+     * this queued job like the mail, so the outcome lands on the alert's history row.
+     */
+    private function storeNotification(SettingsRepositoryService $settings, int $userId): void
+    {
+        $user = User::query()->whereKey($userId)->where('is_active', true)->first();
+
+        if ($user === null) {
+            $this->record($settings, false, 'Refused: the user is gone or disabled.');
+
+            return;
+        }
+
+        $user->notifyNow(new AlertNotification($this->payload, $this->text, $this->alerts));
+        $this->record($settings, true, 'stored');
     }
 
     public function failed(Throwable $exception): void

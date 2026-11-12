@@ -8,6 +8,7 @@ use App\Services\SettingsRepositoryService;
 use App\Services\SidebarProjectsService;
 use App\Services\SystemHealthService;
 use App\Services\ThemePresetService;
+use App\Services\UserNotificationsService;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -73,6 +74,11 @@ class HandleInertiaRequests extends Middleware
             'sidebarProjects' => fn (): array => $user instanceof User
                 ? app(SidebarProjectsService::class)->forUser($user)
                 : ['pinned' => [], 'needsAttention' => []],
+            // The bell's unread badge (#296): read on every visit, so it updates on navigation
+            // without broadcasting.
+            'notifications' => fn (): array => [
+                'unread_count' => $user instanceof User ? app(UserNotificationsService::class)->unreadCount($user) : 0,
+            ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
     }

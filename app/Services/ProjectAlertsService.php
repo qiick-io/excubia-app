@@ -91,21 +91,32 @@ class ProjectAlertsService
     }
 
     /**
-     * The outcome per channel, the `email:<user id>` channels folded into one `email` entry
-     * (failed if a mail failed, queued while one is queued), so no user id reaches the page.
+     * The outcome per channel, the `email:<user id>` channels folded into one `email` entry and
+     * the `app:<user id>` ones into one `app` entry (failed if one failed, queued while one is
+     * queued), so no user id reaches the page.
      *
      * @param  array<string, string>  $deliveries
      * @return array<string, string>
      */
     private function deliveries(array $deliveries): array
     {
-        $mails = array_filter($deliveries, fn (string $channel): bool => DeliverAlertJob::emailUserId($channel) !== null, ARRAY_FILTER_USE_KEY);
-        $folded = array_diff_key($deliveries, $mails);
+        $perUserChannels = [
+            DeliverAlertJob::EMAIL => fn (string $channel): bool => DeliverAlertJob::emailUserId($channel) !== null,
+            DeliverAlertJob::APP => fn (string $channel): bool => DeliverAlertJob::appUserId($channel) !== null,
+        ];
+        $folded = $deliveries;
 
-        if ($mails !== []) {
-            $folded[DeliverAlertJob::EMAIL] = match (true) {
-                in_array(AlertLog::FAILED, $mails, true) => AlertLog::FAILED,
-                in_array(AlertLog::QUEUED, $mails, true) => AlertLog::QUEUED,
+        foreach ($perUserChannels as $foldedChannel => $isUserChannel) {
+            $userDeliveries = array_filter($deliveries, $isUserChannel, ARRAY_FILTER_USE_KEY);
+
+            if ($userDeliveries === []) {
+                continue;
+            }
+
+            $folded = array_diff_key($folded, $userDeliveries);
+            $folded[$foldedChannel] = match (true) {
+                in_array(AlertLog::FAILED, $userDeliveries, true) => AlertLog::FAILED,
+                in_array(AlertLog::QUEUED, $userDeliveries, true) => AlertLog::QUEUED,
                 default => AlertLog::SENT,
             };
         }

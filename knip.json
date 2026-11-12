@@ -17,7 +17,9 @@
         "resources/js/components/sidebar-entity-list.tsx",
         "resources/js/components/inbox-list.tsx",
         "resources/js/components/table-cell-details.tsx",
-        "resources/js/lib/table-cell-details.ts"
+        "resources/js/lib/table-cell-details.ts",
+        "resources/js/components/sidebar-unread-badge.tsx",
+        "resources/js/lib/notification-sound.ts"
     ],
     "ignoreDependencies": ["concurrently"],
     "ignoreBinaries": ["oxlint"]

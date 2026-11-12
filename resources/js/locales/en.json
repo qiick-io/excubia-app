@@ -118,7 +118,10 @@
         "saving": "Saving",
         "reorder": "Reorder",
         "selectAll": "Select all",
-        "moreActions": "More actions"
+        "moreActions": "More actions",
+        "notifications": "Notifications",
+        "notificationsUnread": "Notifications, {{count}} unread",
+        "unreadCount": "{{count}} unread"
     },
     "auth": {
         "login": {
@@ -242,11 +245,12 @@
             "resend": "Click here to resend the verification email.",
             "linkSent": "A new verification link has been sent to your email address.",
             "weeklyDigest": "Send me a weekly email digest (new findings, regressions, EOL, top exceptions, schedule problems)",
-            "alertsTitle": "Alert emails",
-            "alertsDescription": "Get an email when an alert you care about fires, for the projects you can see.",
+            "alertsTitle": "Alerts",
+            "alertsDescription": "Get an email or a notification in the app when an alert you care about fires, for the projects you can see. Both use the filters below.",
             "alertsEnabled": "Send me alert emails",
             "alertsTest": "Send test email",
-            "alertsTestHint": "Save first. The mail goes to your address and needs a queue worker."
+            "alertsTestHint": "Save first. The mail goes to your address and needs a queue worker.",
+            "alertsInApp": "Show alerts in the app (bell in the sidebar)"
         },
         "security": {
             "head": "Security settings",
@@ -1586,7 +1590,8 @@
             "webhook": "Webhook",
             "slack": "Slack",
             "telegram": "Telegram",
-            "email": "Email"
+            "email": "Email",
+            "app": "In app"
         },
         "delivery": {
             "queued": "queued",
@@ -2236,5 +2241,24 @@
         "previous": "Previous row",
         "open": "Open the row",
         "select": "Select the row"
+    },
+    "notifications": {
+        "title": "Notifications",
+        "description": "Updates for you, newest first.",
+        "loading": "Loading…",
+        "empty": "No notifications yet.",
+        "loadFailed": "The notifications could not be loaded. Try again later.",
+        "updateFailed": "The notification could not be updated.",
+        "untitled": "Notification",
+        "markAllRead": "Mark all as read",
+        "markRead": "Mark as read",
+        "markUnread": "Mark as unread",
+        "alert": {
+            "single": "{{event}} in {{project}}",
+            "newFindings_one": "{{count}} new finding in {{project}}",
+            "newFindings_other": "{{count}} new findings in {{project}}",
+            "grouped_one": "{{count}} alert in {{project}}",
+            "grouped_other": "{{count}} alerts in {{project}}"
+        }
     }
 }

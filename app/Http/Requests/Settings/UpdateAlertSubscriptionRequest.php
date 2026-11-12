@@ -11,7 +11,8 @@ use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
- * The signed-in user's alert emails (#22): on or off, and their own filters under `alerts`,
+ * The signed-in user's alerts: emails (#22) and in-app notifications (#296) on or off, and their
+ * own filters under `alerts`, shared by both,
  * whose projects are limited to those the user can see. Needs `can-show-projects`.
  */
 class UpdateAlertSubscriptionRequest extends FormRequest
@@ -30,6 +31,7 @@ class UpdateAlertSubscriptionRequest extends FormRequest
     {
         return [
             'has_alert_emails' => ['sometimes', 'boolean'],
+            'has_alert_in_app' => ['sometimes', 'boolean'],
             ...$this->alertFilterRules('alerts', Project::query()->visibleTo($this->user())->pluck('id')->all()),
         ];
     }

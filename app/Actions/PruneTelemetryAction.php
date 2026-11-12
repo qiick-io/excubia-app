@@ -14,6 +14,7 @@ use App\Models\PushedBatch;
 use App\Models\RuntimeAggregate;
 use App\Models\RuntimeHourlyRollup;
 use App\Models\ScheduledTaskRun;
+use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Facades\Date;
 
 /**
@@ -26,7 +27,8 @@ use Illuminate\Support\Facades\Date;
  * the longer of the two retentions, the mutes that ended, and the
  * push rejection counters (#117) older than two days. The daily AI usage (#129) is kept for the
  * longer of the runtime retention and AI_USAGE_DAYS, so the monthly budget and the digest see
- * the current and the previous month.
+ * the current and the previous month. In-app notifications (#296) are kept NOTIFICATION_DAYS,
+ * read or not.
  */
 class PruneTelemetryAction
 {
@@ -39,6 +41,9 @@ class PruneTelemetryAction
      * retention the ids of a busy project took more disk than its folded runtime.
      */
     public const BATCH_ID_DAYS = 14;
+
+    /** Days an in-app notification (#296) is kept: the bell is for what is recent. */
+    public const NOTIFICATION_DAYS = 30;
 
     /** Days of exception occurrences kept by default: the longest time range (14 d, #214). */
     public const OCCURRENCE_DAYS = 14;
@@ -58,6 +63,7 @@ class PruneTelemetryAction
         AlertMute::query()->where('until', '<=', Date::now())->delete();
         AiUsageDay::query()->where('day', '<', Date::now()->subDays(max($runtimeDays, self::AI_USAGE_DAYS))->toDateString())->delete();
         IngestRejection::query()->where('bucket', '<', Date::now()->subDays(2))->delete();
+        DatabaseNotification::query()->where('created_at', '<', Date::now()->subDays(self::NOTIFICATION_DAYS))->delete();
 
         return ['runtime' => $runtime, 'exceptions' => $exceptions];
     }
