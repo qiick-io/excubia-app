@@ -2014,7 +2014,17 @@
                 "ready": "Bereit für Laravel {{major}}",
                 "blocked": "Blockiert für Laravel {{major}}",
                 "unknown": "Unbekannt"
-            }
+            },
+            "projectsTitle": "Projekte",
+            "blockersSummary_one": "{{count}} Paket · {{first}}",
+            "blockersSummary_other": "{{count}} Pakete · {{first}} +{{others}}",
+            "showBlockers_one": "Paket anzeigen, das das Upgrade blockiert",
+            "showBlockers_other": "{{count}} Pakete anzeigen, die das Upgrade blockieren",
+            "dismissedBlockers_one": "{{count}} ausgeblendet",
+            "dismissedBlockers_other": "{{count}} ausgeblendet",
+            "dismissedBlockersTitle": "Ausgeblendete Blocker",
+            "showDismissedBlockers_one": "Ausgeblendeten Blocker anzeigen",
+            "showDismissedBlockers_other": "{{count}} ausgeblendete Blocker anzeigen"
         },
         "advisories": {
             "description": "Pakete mit bekannten Advisories, aufgegebene oder veraltete Pakete und die Projekte, die sie sperren, aus den offenen Befunden jedes Projekts. Ausgeblendete Befunde stehen separat.",
