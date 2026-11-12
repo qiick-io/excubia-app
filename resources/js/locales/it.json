@@ -121,7 +121,8 @@
         "moreActions": "Altre azioni",
         "notifications": "Notifiche",
         "notificationsUnread": "Notifiche, {{count}} non lette",
-        "unreadCount": "{{count}} non lette"
+        "unreadCount": "{{count}} non lette",
+        "scrollableTable": "Tabella scorrevole"
     },
     "auth": {
         "login": {
