@@ -1927,7 +1927,19 @@
             "redis": "Memoria Redis",
             "redisValue": "{{connection}}: {{used}} di {{max}} MB",
             "backups": "Backup",
-            "backupValue": "{{disk}}: il più recente ha {{age}}, {{count}} backup"
+            "backupValue": "{{disk}}: il più recente ha {{age}}, {{count}} backup",
+            "databaseValue": "{{size}} · {{connection}}",
+            "largestTables": "Tabelle più grandi",
+            "showLargestTables_one": "Mostra la tabella più grande",
+            "showLargestTables_other": "Mostra le {{count}} tabelle più grandi",
+            "connectionsValue_one": "{{count}} connessione aperta",
+            "connectionsValue_other": "{{count}} connessioni aperte",
+            "showRedis_one": "Mostra {{count}} connessione Redis",
+            "showRedis_other": "Mostra {{count}} connessioni Redis",
+            "showBackups_one": "Mostra {{count}} disco di backup",
+            "showBackups_other": "Mostra {{count}} dischi di backup",
+            "notConfigured": "Non configurati: {{checks}}",
+            "notConfiguredDocs": "Come attivarli"
         },
         "dependencies": {
             "title": "Dipendenze",

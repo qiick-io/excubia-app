@@ -1927,7 +1927,19 @@
             "redis": "Redis-Speicher",
             "redisValue": "{{connection}}: {{used}} von {{max}} MB",
             "backups": "Backups",
-            "backupValue": "{{disk}}: neuestes {{age}} alt, {{count}} Backups"
+            "backupValue": "{{disk}}: neuestes {{age}} alt, {{count}} Backups",
+            "databaseValue": "{{size}} · {{connection}}",
+            "largestTables": "Größte Tabellen",
+            "showLargestTables_one": "Größte Tabelle anzeigen",
+            "showLargestTables_other": "{{count}} größte Tabellen anzeigen",
+            "connectionsValue_one": "{{count}} offene Verbindung",
+            "connectionsValue_other": "{{count}} offene Verbindungen",
+            "showRedis_one": "{{count}} Redis-Verbindung anzeigen",
+            "showRedis_other": "{{count}} Redis-Verbindungen anzeigen",
+            "showBackups_one": "{{count}} Backup-Datenträger anzeigen",
+            "showBackups_other": "{{count}} Backup-Datenträger anzeigen",
+            "notConfigured": "Nicht konfiguriert: {{checks}}",
+            "notConfiguredDocs": "So aktivieren Sie sie"
         },
         "dependencies": {
             "title": "Abhängigkeiten",
