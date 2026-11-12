@@ -1,7 +1,11 @@
 import { Link } from '@inertiajs/react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CHECK_STATUS_VARIANTS } from '@/components/reports/check-details';
+import {
+    CHECK_STATUS_VARIANTS,
+    CHECKS_DOCS_URL,
+} from '@/components/reports/check-details';
+import { TableCellDetails } from '@/components/table-cell-details';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -21,6 +25,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { cn } from '@/lib/utils';
 import projectsRoutes from '@/routes/projects';
 import type { CheckStatus, ReportHealth } from '@/types';
 
@@ -40,14 +45,35 @@ function statusOf(health: ReportHealth, checkId: string): CheckStatus | null {
     return null;
 }
 
-/** A label, its value and the check status that backs it. */
+/** A check that ran: its status is one the badge and the bar can show. */
+type RanCheckStatus = Exclude<CheckStatus, 'skipped'>;
+
+/**
+ * Colour of a progress bar backed by a check (#289): the bar and its track take the status
+ * colour of the badge next to it, so the colour and the badge always tell the same thing.
+ */
+const STATUS_PROGRESS_CLASSES = {
+    pass: 'bg-success/20 [&_[data-slot=progress-indicator]]:bg-success',
+    warn: 'bg-warning/20 [&_[data-slot=progress-indicator]]:bg-warning',
+    fail: 'bg-destructive/20 [&_[data-slot=progress-indicator]]:bg-destructive',
+} as const satisfies Record<RanCheckStatus, string>;
+
+/** One infrastructure number of the card: the check behind it, its label and its value. */
+type InfrastructureMetric = {
+    checkId: string;
+    label: string;
+    /** Null when the report has no number for it. */
+    value: ReactNode | null;
+};
+
+/** A label, its value and the check status that backs it, on at most two lines. */
 function MetricRow({
     label,
     status,
     children,
 }: {
     label: string;
-    status: CheckStatus | null;
+    status: RanCheckStatus;
     children: ReactNode;
 }) {
     const { t } = useTranslation();
@@ -55,26 +81,25 @@ function MetricRow({
     return (
         <TableRow>
             <TableCell className="font-medium">{label}</TableCell>
-            <TableCell className="whitespace-normal">{children}</TableCell>
+            <TableCell className="max-w-0 min-w-40 whitespace-normal">
+                {children}
+            </TableCell>
             <TableCell className="text-right">
-                {status === null ? (
-                    <span className="text-sm text-muted-foreground">
-                        {t('health.notChecked')}
-                    </span>
-                ) : (
-                    <Badge variant={CHECK_STATUS_VARIANTS[status]}>
-                        {t(`report.status.${status}`)}
-                    </Badge>
-                )}
+                <Badge variant={CHECK_STATUS_VARIANTS[status]}>
+                    {t(`report.status.${status}`)}
+                </Badge>
             </TableCell>
         </TableRow>
     );
 }
 
 /**
- * Infrastructure numbers of the latest report (#109): disk use, database size and largest
- * tables, open connections, queue backlog, Redis memory and backups, each with its check status.
- * A check that passed without numbers reads "within limits".
+ * Infrastructure numbers of the latest report (#109, compacted in #289): disk use, database size,
+ * open connections, queue backlog, Redis memory and backups, each with its check status. Every
+ * row stays within two lines: lists (largest tables, several Redis connections or backup disks)
+ * open in the `table-cell-details` popover, and a bar takes the colour of its check status.
+ * A check that passed without numbers reads "within limits"; checks that were skipped or are not
+ * in the report share one muted line with a link to the docs that turn them on.
  */
 export function InfrastructureCard({
     health,
@@ -85,8 +110,147 @@ export function InfrastructureCard({
 }) {
     const { t } = useTranslation();
     const infrastructure = health.infrastructure;
-    const fallback = (checkId: string) =>
-        statusOf(health, checkId) === 'pass' ? t('health.withinLimits') : '—';
+    const database = infrastructure.database;
+    const diskStatus = statusOf(health, 'laravel-disk-space');
+
+    const redisLabels = infrastructure.redis.map((redis) =>
+        t('health.infrastructure.redisValue', {
+            connection: redis.connection,
+            used: redis.usedMb.toLocaleString(),
+            max: redis.maxMb === null ? '∞' : redis.maxMb.toLocaleString(),
+        }),
+    );
+    const backupLabels = infrastructure.backups.map((backup) =>
+        t('health.infrastructure.backupValue', {
+            disk: backup.disk,
+            age:
+                backup.ageHours === null
+                    ? '—'
+                    : t('details.hours', { count: backup.ageHours }),
+            count: backup.count ?? 0,
+        }),
+    );
+
+    const metrics: InfrastructureMetric[] = [
+        {
+            checkId: 'laravel-disk-space',
+            label: t('health.infrastructure.disk'),
+            value:
+                infrastructure.diskUsedPercent === null ? null : (
+                    <div className="flex items-center gap-2">
+                        <Progress
+                            value={infrastructure.diskUsedPercent}
+                            className={cn(
+                                'max-w-40',
+                                diskStatus !== null && diskStatus !== 'skipped'
+                                    ? STATUS_PROGRESS_CLASSES[diskStatus]
+                                    : undefined,
+                            )}
+                            aria-label={t('health.infrastructure.disk')}
+                        />
+                        <span className="tabular-nums">
+                            {t('details.percent', {
+                                value: infrastructure.diskUsedPercent,
+                            })}
+                        </span>
+                    </div>
+                ),
+        },
+        {
+            checkId: 'laravel-database-size',
+            label: t('health.infrastructure.databaseSize'),
+            value:
+                database === null ? null : (
+                    <TableCellDetails
+                        variant="bar"
+                        summary={
+                            <span className="tabular-nums">
+                                {t('health.infrastructure.databaseValue', {
+                                    size: t('details.megabytes', {
+                                        value: database.sizeMb.toLocaleString(),
+                                    }),
+                                    connection: database.connection,
+                                })}
+                            </span>
+                        }
+                        title={t('health.infrastructure.largestTables')}
+                        triggerLabel={t(
+                            'health.infrastructure.showLargestTables',
+                            { count: database.largestTables.length },
+                        )}
+                        items={database.largestTables.map((table) => ({
+                            id: table.table,
+                            label: table.table,
+                            value: table.sizeMb,
+                            valueLabel: t('details.megabytes', {
+                                value: table.sizeMb.toLocaleString(),
+                            }),
+                        }))}
+                    />
+                ),
+        },
+        {
+            checkId: 'laravel-database-connections',
+            label: t('health.infrastructure.connections'),
+            value:
+                infrastructure.databaseConnections === null
+                    ? null
+                    : t('health.infrastructure.connectionsValue', {
+                          count: infrastructure.databaseConnections,
+                      }),
+        },
+        {
+            checkId: 'laravel-queue-backlog',
+            label: t('health.infrastructure.queueBacklog'),
+            value:
+                infrastructure.queueBacklog === null
+                    ? null
+                    : t('health.infrastructure.backlogValue', {
+                          count: infrastructure.queueBacklog.pendingCount,
+                          queues: infrastructure.queueBacklog.queues,
+                          minutes:
+                              infrastructure.queueBacklog.oldestAgeMinutes ??
+                              '—',
+                      }),
+        },
+        {
+            checkId: 'laravel-redis-memory',
+            label: t('health.infrastructure.redis'),
+            value: listValue(
+                redisLabels,
+                t('health.infrastructure.redis'),
+                t('health.infrastructure.showRedis', {
+                    count: redisLabels.length,
+                }),
+            ),
+        },
+        {
+            checkId: 'laravel-backups',
+            label: t('health.infrastructure.backups'),
+            value: listValue(
+                backupLabels,
+                t('health.infrastructure.backups'),
+                t('health.infrastructure.showBackups', {
+                    count: backupLabels.length,
+                }),
+            ),
+        },
+    ];
+
+    const ranMetrics = metrics.flatMap((metric) => {
+        const status = statusOf(health, metric.checkId);
+
+        return status === null || status === 'skipped'
+            ? []
+            : [{ ...metric, status }];
+    });
+    const notConfiguredLabels = metrics
+        .filter((metric) => {
+            const status = statusOf(health, metric.checkId);
+
+            return status === null || status === 'skipped';
+        })
+        .map((metric) => metric.label);
 
     return (
         <Card className={className}>
@@ -96,143 +260,69 @@ export function InfrastructureCard({
                     {t('health.infrastructure.description')}
                 </CardDescription>
             </CardHeader>
-            <CardContent>
-                <Table>
-                    <TableBody>
-                        <MetricRow
-                            label={t('health.infrastructure.disk')}
-                            status={statusOf(health, 'laravel-disk-space')}
+            <CardContent className="flex flex-col gap-3">
+                {ranMetrics.length > 0 ? (
+                    <Table>
+                        <TableBody>
+                            {ranMetrics.map((metric) => (
+                                <MetricRow
+                                    key={metric.checkId}
+                                    label={metric.label}
+                                    status={metric.status}
+                                >
+                                    {metric.value ??
+                                        (metric.status === 'pass'
+                                            ? t('health.withinLimits')
+                                            : '—')}
+                                </MetricRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                ) : null}
+                {notConfiguredLabels.length > 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                        {t('health.infrastructure.notConfigured', {
+                            checks: notConfiguredLabels.join(', '),
+                        })}{' '}
+                        <a
+                            href={CHECKS_DOCS_URL}
+                            target="_blank"
+                            rel="noreferrer noopener"
+                            className="text-primary underline-offset-4 hover:underline"
                         >
-                            {infrastructure.diskUsedPercent === null ? (
-                                fallback('laravel-disk-space')
-                            ) : (
-                                <div className="flex items-center gap-2">
-                                    <Progress
-                                        value={infrastructure.diskUsedPercent}
-                                        className="max-w-40"
-                                        aria-label={t(
-                                            'health.infrastructure.disk',
-                                        )}
-                                    />
-                                    <span className="tabular-nums">
-                                        {t('details.percent', {
-                                            value: infrastructure.diskUsedPercent,
-                                        })}
-                                    </span>
-                                </div>
-                            )}
-                        </MetricRow>
-                        <MetricRow
-                            label={t('health.infrastructure.databaseSize')}
-                            status={statusOf(health, 'laravel-database-size')}
-                        >
-                            {infrastructure.database === null ? (
-                                fallback('laravel-database-size')
-                            ) : (
-                                <div className="flex flex-col gap-0.5">
-                                    <span className="tabular-nums">
-                                        {t('details.megabytes', {
-                                            value: infrastructure.database.sizeMb.toLocaleString(),
-                                        })}{' '}
-                                        <span className="text-muted-foreground">
-                                            (
-                                            {infrastructure.database.connection}
-                                            )
-                                        </span>
-                                    </span>
-                                    {infrastructure.database.largestTables.map(
-                                        (table) => (
-                                            <span
-                                                key={table.table}
-                                                className="font-mono text-xs text-muted-foreground"
-                                            >
-                                                {table.table} ·{' '}
-                                                {t('details.megabytes', {
-                                                    value: table.sizeMb.toLocaleString(),
-                                                })}
-                                            </span>
-                                        ),
-                                    )}
-                                </div>
-                            )}
-                        </MetricRow>
-                        <MetricRow
-                            label={t('health.infrastructure.connections')}
-                            status={statusOf(
-                                health,
-                                'laravel-database-connections',
-                            )}
-                        >
-                            {infrastructure.databaseConnections === null
-                                ? fallback('laravel-database-connections')
-                                : infrastructure.databaseConnections.toLocaleString()}
-                        </MetricRow>
-                        <MetricRow
-                            label={t('health.infrastructure.queueBacklog')}
-                            status={statusOf(health, 'laravel-queue-backlog')}
-                        >
-                            {infrastructure.queueBacklog === null
-                                ? fallback('laravel-queue-backlog')
-                                : t('health.infrastructure.backlogValue', {
-                                      count: infrastructure.queueBacklog
-                                          .pendingCount,
-                                      queues: infrastructure.queueBacklog
-                                          .queues,
-                                      minutes:
-                                          infrastructure.queueBacklog
-                                              .oldestAgeMinutes ?? '—',
-                                  })}
-                        </MetricRow>
-                        <MetricRow
-                            label={t('health.infrastructure.redis')}
-                            status={statusOf(health, 'laravel-redis-memory')}
-                        >
-                            {infrastructure.redis.length === 0
-                                ? fallback('laravel-redis-memory')
-                                : infrastructure.redis.map((redis) => (
-                                      <div key={redis.connection}>
-                                          {t(
-                                              'health.infrastructure.redisValue',
-                                              {
-                                                  connection: redis.connection,
-                                                  used: redis.usedMb.toLocaleString(),
-                                                  max:
-                                                      redis.maxMb === null
-                                                          ? '∞'
-                                                          : redis.maxMb.toLocaleString(),
-                                              },
-                                          )}
-                                      </div>
-                                  ))}
-                        </MetricRow>
-                        <MetricRow
-                            label={t('health.infrastructure.backups')}
-                            status={statusOf(health, 'laravel-backups')}
-                        >
-                            {infrastructure.backups.length === 0
-                                ? fallback('laravel-backups')
-                                : infrastructure.backups.map((backup) => (
-                                      <div key={backup.disk}>
-                                          {t(
-                                              'health.infrastructure.backupValue',
-                                              {
-                                                  disk: backup.disk,
-                                                  age:
-                                                      backup.ageHours === null
-                                                          ? '—'
-                                                          : t('details.hours', {
-                                                                count: backup.ageHours,
-                                                            }),
-                                                  count: backup.count ?? 0,
-                                              },
-                                          )}
-                                      </div>
-                                  ))}
-                        </MetricRow>
-                    </TableBody>
-                </Table>
+                            {t('health.infrastructure.notConfiguredDocs')}
+                        </a>
+                    </p>
+                ) : null}
             </CardContent>
         </Card>
+    );
+}
+
+/**
+ * The value of a check that reports one line per connection or disk: the line itself when there
+ * is one, the first line and "+N" with the full list in the `table-cell-details` popover when
+ * there are more, null when there are none.
+ */
+function listValue(
+    labels: string[],
+    title: string,
+    triggerLabel: string,
+): ReactNode | null {
+    if (labels.length === 0) {
+        return null;
+    }
+
+    if (labels.length === 1) {
+        return labels[0];
+    }
+
+    return (
+        <TableCellDetails
+            title={title}
+            triggerLabel={triggerLabel}
+            items={labels.map((label) => ({ id: label, label }))}
+        />
     );
 }
 

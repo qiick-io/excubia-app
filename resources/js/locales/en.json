@@ -1934,7 +1934,19 @@
             "redis": "Redis memory",
             "redisValue": "{{connection}}: {{used}} of {{max}} MB",
             "backups": "Backups",
-            "backupValue": "{{disk}}: newest {{age}} old, {{count}} backups"
+            "backupValue": "{{disk}}: newest {{age}} old, {{count}} backups",
+            "databaseValue": "{{size}} · {{connection}}",
+            "largestTables": "Largest tables",
+            "showLargestTables_one": "Show the largest table",
+            "showLargestTables_other": "Show {{count}} largest tables",
+            "connectionsValue_one": "{{count}} open connection",
+            "connectionsValue_other": "{{count}} open connections",
+            "showRedis_one": "Show {{count}} Redis connection",
+            "showRedis_other": "Show {{count}} Redis connections",
+            "showBackups_one": "Show {{count}} backup disk",
+            "showBackups_other": "Show {{count}} backup disks",
+            "notConfigured": "Not configured: {{checks}}",
+            "notConfiguredDocs": "How to turn them on"
         },
         "dependencies": {
             "title": "Dependencies",
