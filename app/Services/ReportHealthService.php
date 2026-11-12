@@ -78,6 +78,29 @@ class ReportHealthService
     }
 
     /**
+     * The check summary stored with a report (#293): the worst status of the checks that ran
+     * (fail, warn, pass; null when none ran), how many ran and how many failed. Skipped checks
+     * do not count. The projects list sorts and shows it without reading the report JSON.
+     *
+     * @param  array<string, mixed>  $report
+     * @return array{worst_check_status: string|null, checks_count: int, failed_checks_count: int}
+     */
+    public function checkSummary(array $report): array
+    {
+        $statuses = array_values(array_filter(
+            array_column($this->checks($report), 'status'),
+            fn (string $status): bool => $status !== 'skipped' && array_key_exists($status, self::STATUS_RANK),
+        ));
+        $worst = $this->worst($statuses);
+
+        return [
+            'worst_check_status' => $worst === 'skipped' ? null : $worst,
+            'checks_count' => count($statuses),
+            'failed_checks_count' => count(array_keys($statuses, 'fail', true)),
+        ];
+    }
+
+    /**
      * The `dependency-licenses` findings that warn or fail: a denied license fails, a strong
      * copyleft one warns at medium, a missing or unknown one at low (core #134). The kind is the
      * finding's `details.kind` (core #204, from 1.0.0-beta.4); reports from older cores carry

@@ -814,7 +814,16 @@
             "everyone": "Alle mit Projektzugriff",
             "admins": "Nur Admins",
             "hint": "Admins und Super-Admins sehen immer alle Projekte; ein Admin-Projekt sehen auch die Benutzergruppen, die Zugriff auf eine seiner Projektgruppen haben."
-        }
+        },
+        "columns": {
+            "project": "Projekt",
+            "health": "Zustand",
+            "openFindings": "Offene Befunde",
+            "failedChecks": "Fehlgeschlagene Prüfungen"
+        },
+        "checksRatio": "{{failed}} / {{total}}",
+        "failedChecksLabel": "{{failed}} von {{total}} Prüfungen fehlgeschlagen",
+        "stale": "Veraltet"
     },
     "dashboard": {
         "noAccess": "Du hast keinen Zugriff auf Projekte. Bitte einen Administrator um die Berechtigung projects.view.",
