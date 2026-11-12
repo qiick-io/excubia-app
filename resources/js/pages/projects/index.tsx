@@ -12,6 +12,8 @@ import {
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DataTable } from '@/components/admin/data-table';
+import type { DataTableSort } from '@/components/admin/data-table';
+import { DataTableColumnHeader } from '@/components/admin/data-table-column-header';
 import { ProjectPinButton } from '@/components/project-pin-button';
 import { ButtonGroup } from '@/components/ui/button-group';
 import { DataTableToolbar } from '@/components/admin/data-table-toolbar';
@@ -23,9 +25,16 @@ import { EmptyStatus } from '@/components/empty-status';
 import { PageLayout } from '@/components/layout/page-layout';
 import { ProjectFormDrawer } from '@/components/projects/project-form-drawer';
 import { PushTokenDialog } from '@/components/projects/push-token-dialog';
+import { CHECK_STATUS_VARIANTS } from '@/components/reports/check-details';
+import { SeverityCounts } from '@/components/reports/severity-badge';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Drawer } from '@/components/ui/drawer';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { PermissionEnum } from '@/enums/permission-enum';
 import { useCan } from '@/hooks/use-can';
 import { useDebouncedServerSearch } from '@/hooks/use-debounced-server-search';
@@ -33,9 +42,33 @@ import AppLayout from '@/layouts/app-layout';
 import { listPerPageQuery } from '@/lib/list-per-page';
 import { normalizePaginated } from '@/lib/pagination';
 import type { LaravelPaginated } from '@/lib/pagination';
+import { relativeTime } from '@/lib/report-format';
 import { toast } from '@/lib/toast';
+import { cn } from '@/lib/utils';
 import projectsRoutes from '@/routes/projects';
 import type { BreadcrumbItem, Paginated, ProjectRow } from '@/types';
+
+/** Server sort fields of `ProjectListService::SORTABLE_COLUMNS` shown as column headers. */
+const PROJECT_SORT_FIELDS = [
+    'name',
+    'health',
+    'open_findings',
+    'last_report_at',
+] as const;
+
+type ProjectSortField = (typeof PROJECT_SORT_FIELDS)[number];
+
+type SortDirection = 'asc' | 'desc';
+
+type Filters = {
+    search?: string;
+    sort?: string;
+    direction?: SortDirection;
+};
+
+function isProjectSortField(value: string): value is ProjectSortField {
+    return (PROJECT_SORT_FIELDS as readonly string[]).includes(value);
+}
 
 type PendingAction = {
     kind: 'delete' | 'rotate' | 'revoke';
@@ -44,7 +77,9 @@ type PendingAction = {
 
 /**
  * Registered projects with search, pagination, a create / edit drawer and push token
- * actions. Rotating, revoking and deleting ask for confirmation first.
+ * actions. Rotating, revoking and deleting ask for confirmation first. Each row shows the
+ * project's health, open findings and failed checks (#293), so the list says which project
+ * to open first; health, open findings, name and last report sort on the server.
  */
 export default function ProjectsIndex({
     projects: projectsProp,
@@ -52,16 +87,21 @@ export default function ProjectsIndex({
     canChangeVisibility = false,
 }: {
     projects: LaravelPaginated<ProjectRow> | Paginated<ProjectRow>;
-    filters?: { search?: string };
+    filters?: Filters;
     canChangeVisibility?: boolean;
 }) {
     const projects = normalizePaginated(projectsProp);
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const { can } = useCan();
     const canCreate = can(PermissionEnum.CanCreateProjects);
     const canEdit = can(PermissionEnum.CanEditProjects);
     const canDelete = can(PermissionEnum.CanDeleteProjects);
     const [search, setSearch] = useState(filters.search ?? '');
+    const sort: ProjectSortField =
+        filters.sort !== undefined && isProjectSortField(filters.sort)
+            ? filters.sort
+            : 'name';
+    const direction: SortDirection = filters.direction ?? 'asc';
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [editing, setEditing] = useState<ProjectRow | null>(null);
     const [pending, setPending] = useState<PendingAction | null>(null);
@@ -78,12 +118,23 @@ export default function ProjectsIndex({
         setSearch(filters.search ?? '');
     }, [filters.search]);
 
-    const onDebouncedSearch = useCallback(
-        (value: string): void => {
+    const visit = useCallback(
+        (
+            overrides: {
+                search?: string;
+                sort?: ProjectSortField;
+                direction?: SortDirection;
+            } = {},
+        ): void => {
+            const nextSearch =
+                overrides.search !== undefined ? overrides.search : search;
+
             router.get(
                 projectsRoutes.index.url({
                     query: {
-                        search: value || undefined,
+                        search: nextSearch || undefined,
+                        sort: overrides.sort ?? sort,
+                        direction: overrides.direction ?? direction,
                         per_page: listPerPageQuery(projects.per_page),
                     },
                 }),
@@ -91,8 +142,19 @@ export default function ProjectsIndex({
                 { preserveState: true, preserveScroll: true },
             );
         },
-        [projects.per_page],
+        [direction, projects.per_page, search, sort],
     );
+
+    const onDebouncedSearch = useCallback(
+        (value: string): void => visit({ search: value }),
+        [visit],
+    );
+
+    const changeSort = (nextSort: DataTableSort): void => {
+        if (isProjectSortField(nextSort.id)) {
+            visit({ sort: nextSort.id, direction: nextSort.direction });
+        }
+    };
 
     useDebouncedServerSearch(search, filters.search ?? '', onDebouncedSearch);
 
@@ -152,81 +214,141 @@ export default function ProjectsIndex({
 
     const columns: ColumnDef<ProjectRow>[] = [
         {
-            id: 'name',
-            header: t('common.name'),
-            meta: { cellClassName: 'max-w-[16rem]' },
-            cell: ({ row }) => (
-                // A real link too, for the keyboard and "open in new tab".
-                <Link
-                    href={projectsRoutes.show.url(row.original.slug)}
-                    className="block rounded-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-                    onClick={(event) => event.stopPropagation()}
-                >
-                    <NameSlugCell
-                        name={row.original.name}
-                        slug={row.original.slug}
-                    />
-                </Link>
+            accessorKey: 'name',
+            enableSorting: true,
+            header: ({ column }) => (
+                <DataTableColumnHeader
+                    column={column}
+                    title={t('projects.columns.project')}
+                />
             ),
-        },
-        {
-            id: 'status',
-            header: t('projects.status'),
+            meta: { cellClassName: 'max-w-[16rem]' },
             cell: ({ row }) => {
                 const project = row.original;
 
                 return (
-                    <div className="flex flex-wrap gap-1">
-                        {project.is_enabled ? (
-                            <Badge variant="success" className="gap-1.5">
-                                <span
-                                    className="size-1.5 rounded-full bg-success"
-                                    aria-hidden
-                                />
-                                {t('projects.enabled')}
-                            </Badge>
-                        ) : (
-                            <Badge variant="muted" className="gap-1.5">
-                                <span
-                                    className="size-1.5 rounded-full bg-muted-foreground"
-                                    aria-hidden
-                                />
-                                {t('projects.disabled')}
-                            </Badge>
-                        )}
-                        {project.is_system ? (
-                            <Badge variant="info">{t('projects.system')}</Badge>
-                        ) : null}
-                        {project.visibility === 'admins' ? (
-                            <Badge variant="outline">
-                                {t('projects.visibility.admins')}
-                            </Badge>
-                        ) : null}
-                        {project.has_push_token || project.is_system ? null : (
-                            <Badge variant="warning">
-                                {t('projects.noToken')}
-                            </Badge>
-                        )}
-                    </div>
+                    // A real link too, for the keyboard and "open in new tab".
+                    <Link
+                        href={projectsRoutes.show.url(project.slug)}
+                        className="block rounded-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                        onClick={(event) => event.stopPropagation()}
+                    >
+                        {/* ponytail: the avatar / logo joins this cell with #287. */}
+                        <NameSlugCell
+                            name={project.name}
+                            slug={project.environment ?? project.slug}
+                            badge={<ProjectStateBadges project={project} />}
+                        />
+                    </Link>
                 );
             },
         },
         {
-            id: 'last_report_at',
-            header: t('projects.lastReport'),
-            cell: ({ row }) => (
-                <span
-                    className={
-                        row.original.is_stale
-                            ? 'text-muted-foreground tabular-nums'
-                            : 'tabular-nums'
-                    }
-                >
-                    {row.original.last_report_at
-                        ? new Date(row.original.last_report_at).toLocaleString()
-                        : t('projects.never')}
-                </span>
+            accessorKey: 'health',
+            enableSorting: true,
+            header: ({ column }) => (
+                <DataTableColumnHeader
+                    column={column}
+                    title={t('projects.columns.health')}
+                />
             ),
+            cell: ({ row }) =>
+                row.original.health ? (
+                    <Badge variant={CHECK_STATUS_VARIANTS[row.original.health]}>
+                        {t(`report.status.${row.original.health}`)}
+                    </Badge>
+                ) : (
+                    <span className="text-sm text-muted-foreground">—</span>
+                ),
+        },
+        {
+            accessorKey: 'open_findings',
+            enableSorting: true,
+            header: ({ column }) => (
+                <DataTableColumnHeader
+                    column={column}
+                    title={t('projects.columns.openFindings')}
+                />
+            ),
+            cell: ({ row }) => {
+                const openFindings = row.original.open_findings;
+
+                return openFindings &&
+                    Object.values(openFindings).some((count) => count > 0) ? (
+                    <SeverityCounts counts={openFindings} />
+                ) : (
+                    <span className="text-sm text-muted-foreground">—</span>
+                );
+            },
+        },
+        {
+            id: 'failed_checks',
+            header: t('projects.columns.failedChecks'),
+            cell: ({ row }) => {
+                const checks = row.original.checks;
+
+                return checks ? (
+                    <span
+                        className={cn(
+                            'text-sm tabular-nums',
+                            checks.failed > 0
+                                ? 'font-medium text-destructive'
+                                : 'text-muted-foreground',
+                        )}
+                        aria-label={t('projects.failedChecksLabel', checks)}
+                    >
+                        {t('projects.checksRatio', checks)}
+                    </span>
+                ) : (
+                    <span className="text-sm text-muted-foreground">—</span>
+                );
+            },
+        },
+        {
+            accessorKey: 'last_report_at',
+            enableSorting: true,
+            header: ({ column }) => (
+                <DataTableColumnHeader
+                    column={column}
+                    title={t('projects.lastReport')}
+                />
+            ),
+            cell: ({ row }) => {
+                const project = row.original;
+
+                return (
+                    <div className="flex items-center gap-1.5">
+                        {project.last_report_at ? (
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <time
+                                        dateTime={project.last_report_at}
+                                        tabIndex={0}
+                                        className="rounded-sm text-sm whitespace-nowrap tabular-nums focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                                    >
+                                        {relativeTime(
+                                            project.last_report_at,
+                                            i18n.language,
+                                        )}
+                                    </time>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    {new Date(
+                                        project.last_report_at,
+                                    ).toLocaleString(i18n.language)}
+                                </TooltipContent>
+                            </Tooltip>
+                        ) : (
+                            <span className="text-sm text-muted-foreground">
+                                {t('projects.never')}
+                            </span>
+                        )}
+                        {project.is_stale ? (
+                            <Badge variant="muted">{t('projects.stale')}</Badge>
+                        ) : null}
+                    </div>
+                );
+            },
         },
         {
             id: 'actions',
@@ -371,7 +493,7 @@ export default function ProjectsIndex({
                                         type="button"
                                         onClick={() => {
                                             setSearch('');
-                                            onDebouncedSearch('');
+                                            visit({ search: '' });
                                         }}
                                     >
                                         {t('common.clearFilters')}
@@ -392,6 +514,8 @@ export default function ProjectsIndex({
                             columns={columns}
                             data={projects.data}
                             getRowId={(project) => String(project.id)}
+                            sort={{ id: sort, direction }}
+                            onSortChange={changeSort}
                             pagination={projects}
                             onRowClick={(project) =>
                                 router.visit(
@@ -437,5 +561,33 @@ export default function ProjectsIndex({
 
             <PushTokenDialog />
         </AppLayout>
+    );
+}
+
+/**
+ * What sets a project apart from an enabled, everyone-visible one with a push token: disabled,
+ * the system project, admins only, no token. Next to the name, so the list needs no status
+ * column.
+ */
+function ProjectStateBadges({ project }: { project: ProjectRow }) {
+    const { t } = useTranslation();
+
+    return (
+        <>
+            {project.is_enabled ? null : (
+                <Badge variant="muted">{t('projects.disabled')}</Badge>
+            )}
+            {project.is_system ? (
+                <Badge variant="info">{t('projects.system')}</Badge>
+            ) : null}
+            {project.visibility === 'admins' ? (
+                <Badge variant="outline">
+                    {t('projects.visibility.admins')}
+                </Badge>
+            ) : null}
+            {project.has_push_token || project.is_system ? null : (
+                <Badge variant="warning">{t('projects.noToken')}</Badge>
+            )}
+        </>
     );
 }

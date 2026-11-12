@@ -18,6 +18,12 @@ export type ProjectRow = {
     is_stale: boolean;
     /** Present on the dashboard and the project page only. */
     latest_report?: HealthReportSummary | null;
+    /** Projects list only (#293): worst check status of the latest report, null without one. */
+    health?: Exclude<CheckStatus, 'skipped'> | null;
+    /** Projects list only: failed and run checks of the latest report, null without one. */
+    checks?: { failed: number; total: number } | null;
+    /** Projects list only: active findings per severity. */
+    open_findings?: Record<Severity, number>;
     created_at: string;
     updated_at: string;
 };
