@@ -250,6 +250,8 @@ npm run lint && npm run types && npm run build
 npm run knip && npm run lint:i18n   # dead code, hard-coded UI strings (ratchet)
 npm run lint:standards   # qiick ratcheted rules in Oxlint: restricted imports, navigator.clipboard, id-length (#258)
 node scripts/qiick-ratchet.mjs phpstan   # Larastan baseline only shrinks
+# Line coverage never below coverage-floor.txt (CI: php-quality, with pcov; locally pcov or Xdebug):
+vendor/bin/pest --coverage-clover=build/qiick-coverage.xml && node scripts/qiick-ratchet.mjs coverage --clover build/qiick-coverage.xml
 ```
 
 Run them before every push.
@@ -257,7 +259,7 @@ Run them before every push.
 ## Excubia App rules
 
 - Never reimplement or copy a check, parser, data-source client or renderer: they live in `qiick/excubia-core`.
-- Migrations are frozen from `1.0.0-beta.1` on (#193): every schema change is a **new forward-only migration**; never edit, rename or delete an existing one, not even before the tag is pushed. The pre-release rule of editing the `create_*` migrations in place has ended. A new migration must apply with `php artisan migrate --force` on a customer database with data (backfill what it needs, no `migrate:fresh`), on SQLite, MySQL and PostgreSQL. The `Migrations frozen` CI check fails when a PR touches a migration that exists on `main`, on the latest `v*` tag or in the freeze baseline `database/migrations/.frozen` (that list only grows; `scripts/migrations-frozen.sh`).
+- Migrations are frozen from `1.0.0-beta.1` on (#193): every schema change is a **new forward-only migration**; never edit, rename or delete an existing one, not even before the tag is pushed. The pre-release rule of editing the `create_*` migrations in place has ended. A new migration must apply with `php artisan migrate --force` on a customer database with data (backfill what it needs, no `migrate:fresh`), on SQLite, MySQL and PostgreSQL. The `migrations-frozen / migrations-frozen` CI check (app-ui's shared `migrations-frozen.yml`) fails when a PR touches a migration that exists on `main`, on the latest `v*` tag or in the freeze baseline `database/migrations/.frozen` (that list only grows).
 - Tests: no real network and no real CLI run: fake HTTP and `Process`.
 - Privacy: no telemetry. Only package names and versions leave the server, through `qiick/excubia-core`. The AI assistant (#17) is off by default, and its tools are read-only. A tool never returns push tokens, user data or file paths (covered by a test). Tests fake the provider: no real AI call.
 - Extra role suffixes (`App\Ai\Agents` → `Agent`, `App\Ai\Tools` → `Tool`) and the scaffolding the architecture test skips: `tests/Arch/naming-architecture.php`.

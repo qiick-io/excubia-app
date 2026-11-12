@@ -31,9 +31,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          # The Larastan ratchet compares the baseline with the base branch.
-          fetch-depth: 0
 
       - name: Setup PHP
         uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
@@ -78,12 +75,6 @@ jobs:
 
       - name: Pint
         run: vendor/bin/pint --test
-
-      - name: PHPStan
-        run: vendor/bin/phpstan analyse --memory-limit=1G --no-progress
-
-      - name: Larastan baseline only shrinks
-        run: node scripts/qiick-ratchet.mjs phpstan
 
       - name: Pest
         run: php artisan test
@@ -278,22 +269,6 @@ jobs:
       - name: Install and upgrade smoke test
         run: scripts/e2e/install-upgrade.sh
 
-  # Forward-only migrations (#193): a migration on `main`, on the latest `v*` tag or in the
-  # freeze baseline `database/migrations/.frozen` is never modified, renamed or deleted.
-  migrations-frozen:
-    name: Migrations frozen
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          # The release tags, `main` and the base branch.
-          fetch-depth: 0
-
-      - name: Check frozen migrations
-        run: scripts/migrations-frozen.sh "${{ github.base_ref && format('origin/{0}', github.base_ref) || '' }}"
-
   # Axe smoke (#112), as in externa-core: pull requests to `develop` run only the smoke test ("lite");
   # pushes and pull requests to `main` run every browser test. Not part of `php artisan test`.
   accessibility:
@@ -378,10 +353,15 @@ jobs:
   ui-quality:
     uses: qiick-io/app-ui/.github/workflows/ui-quality.yml@v0.6.0
 
-  # The shared forward-only migration check (#258). It runs next to the `Migrations frozen` job
-  # until the required checks name it; then the local job and scripts/migrations-frozen.sh go.
-  shared-migrations-frozen:
+  # Forward-only migrations (#193): a migration on `main`, on the latest `v*` tag or in the
+  # freeze baseline `database/migrations/.frozen` is never modified, renamed or deleted.
+  migrations-frozen:
     uses: qiick-io/app-ui/.github/workflows/migrations-frozen.yml@v0.6.0
+
+  # PHPStan at level 8 (the level never drops, the baseline only shrinks) and Pest with
+  # line coverage that never falls below `coverage-floor.txt` (app-ui v0.6.0, #259).
+  php-quality:
+    uses: qiick-io/app-ui/.github/workflows/php-quality.yml@v0.6.0
 
   # The @qiick UI registry copies and the qiick standards pack (agent files,
   # architecture test, kebab-case file names) must match app-ui.

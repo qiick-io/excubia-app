@@ -377,7 +377,7 @@ From `1.0.0-beta.1` on, migrations are **forward-only**: a released migration is
 2. Run the migrations: `php artisan excubia:upgrade --force` runs `php artisan migrate --force` for you (`--force` because `APP_ENV` is `production`). Docker runs them when the `app` container starts. Never `migrate:fresh` or `migrate:refresh` on an install you keep: they drop every table.
 3. Check that nothing is left: `php artisan migrate:status` lists no `Pending` migration.
 
-Upgrading one release at a time, in order, is the safest path. CI fails a pull request that changes a released migration (the `Migrations frozen` check), and the `Install and upgrade` job upgrades the previous release's database to the new code.
+Upgrading one release at a time, in order, is the safest path. CI fails a pull request that changes a released migration (the `migrations-frozen` check), and the `Install and upgrade` job upgrades the previous release's database to the new code.
 
 ### Path A: Git tag (recommended)
 
