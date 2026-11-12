@@ -829,7 +829,10 @@
         "trend": {
             "title": "Befunde im Zeitverlauf",
             "description": "Der letzte Bericht jedes Projekts an jedem der letzten {{count}} Tage, nach Schweregrad.",
-            "label": "Gestapeltes Balkendiagramm der täglichen Befunde nach Schweregrad der letzten {{count}} Tage; heute {{total}} Befunde."
+            "label": "Gestapeltes Balkendiagramm der täglichen Befunde nach Schweregrad der letzten {{count}} Tage; heute {{total}} Befunde.",
+            "sinceFirstReport_one": "Seit dem ersten Bericht vor {{count}} Tag.",
+            "sinceFirstReport_other": "Seit dem ersten Bericht vor {{count}} Tagen.",
+            "historyBuilding": "Der Verlauf entsteht, sobald Berichte eintreffen."
         },
         "scope": {
             "project": "Projekt",
