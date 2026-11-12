@@ -28,9 +28,10 @@ import { edit } from '@/routes/profile';
 import { send } from '@/routes/verification';
 import type { BreadcrumbItem } from '@/types';
 
-/** The signed-in user's alert emails (#22), from ProfileController::edit(). */
+/** The signed-in user's alert emails (#22) and in-app alerts (#296), from ProfileController::edit(). */
 type AlertSubscription = {
     has_alert_emails: boolean;
+    has_alert_in_app: boolean;
     filter: AlertFilter;
     events: string[];
     severities: string[];
@@ -273,7 +274,8 @@ export default function Profile({
 }
 
 /**
- * Alert emails of the signed-in user (#22): on or off, their own filters, and a test mail.
+ * Alerts of the signed-in user: emails (#22) and in-app notifications (#296) on or off, the
+ * filters both read, and a test mail.
  */
 function AlertEmails({ subscription }: { subscription: AlertSubscription }) {
     const { t } = useTranslation();
@@ -309,6 +311,12 @@ function AlertEmails({ subscription }: { subscription: AlertSubscription }) {
                             name="has_alert_emails"
                             label={t('settings.profile.alertsEnabled')}
                             defaultChecked={subscription.has_alert_emails}
+                        />
+
+                        <BooleanField
+                            name="has_alert_in_app"
+                            label={t('settings.profile.alertsInApp')}
+                            defaultChecked={subscription.has_alert_in_app}
                         />
 
                         <AlertFilterFields

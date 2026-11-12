@@ -18,8 +18,9 @@ use Throwable;
 /**
  * Sends an alert (#22) to the configured channels, as queued jobs: the signed webhook, Slack and
  * Telegram each take the events, minimum severity and projects chosen for them in Settings →
- * Integrations; every user who turned alert emails on gets a mail when their own filters take
- * it and they can see the project. Nothing is queued when no channel takes the alert. An event
+ * Integrations; every user who turned alert emails on gets a mail, and every user with in-app
+ * alerts on (the default, #296) a notification in the app, when their own filters take it and
+ * they can see the project. Nothing is queued when no channel takes the alert. An event
  * without a finding severity takes the admin's severity for it, else its default.
  *
  * Every alert passes through here, so this is where mutes, maintenance windows and maintenance
@@ -27,8 +28,8 @@ use Throwable;
  * The finding fingerprints of the alert are kept on that row, for the duplicate check and the
  * health re-alert (#143).
  *
- * Inside grouped(), the alerts raised together (one report push) go out as one Slack, Telegram
- * and email message per channel instead of one per alert; the webhook still gets one signed
+ * Inside grouped(), the alerts raised together (one report push) go out as one Slack, Telegram,
+ * email and in-app message per channel instead of one per alert; the webhook still gets one signed
  * request per alert, so its payload and event ids stay as they are. Every alert keeps its own
  * history row.
  */
@@ -156,13 +157,14 @@ class AlertDispatcherService
      */
     private function queue(string $channel, array $alerts): void
     {
-        $isEmail = DeliverAlertJob::emailUserId($channel) !== null;
+        // The per-user channels (mail, in-app) render the alerts themselves from the summaries.
+        $isPerUser = DeliverAlertJob::emailUserId($channel) !== null || DeliverAlertJob::appUserId($channel) !== null;
 
         if (count($alerts) === 1) {
             ['payload' => $payload, 'summary' => $summary] = $alerts[0];
             $body = match (true) {
                 $channel === DeliverAlertJob::WEBHOOK => '',
-                $isEmail => $summary,
+                $isPerUser => $summary,
                 default => $this->line($payload, $summary, true).PHP_EOL.$payload['url'],
             };
 
@@ -182,7 +184,7 @@ class AlertDispatcherService
 
         $text = '';
 
-        if (! $isEmail) {
+        if (! $isPerUser) {
             $lines = array_map(fn (array $alert): string => $this->line($alert['payload'], Str::limit($alert['summary'], 200), false), array_slice($alerts, 0, self::GROUPED_LINES));
             $hidden = count($alerts) - count($lines);
             $text = implode(PHP_EOL, [
@@ -209,8 +211,10 @@ class AlertDispatcherService
     }
 
     /**
-     * The configured channels whose filters take the alert, then one `email:<user id>` channel
-     * per subscribed, active and verified user whose filters take it and who can see the project.
+     * The configured channels whose filters take the alert, then per active user whose own
+     * filters take it and who can see the project: an `email:<user id>` channel when they
+     * subscribed to alert emails and verified their address, an `app:<user id>` channel when
+     * their in-app alerts are on (#296). Both read the same filters.
      *
      * @return list<string>
      */
@@ -231,15 +235,22 @@ class AlertDispatcherService
         // visible project ids per user if installs get hundreds of subscribers.
         $subscribers = User::query()
             ->where('is_active', true)
-            ->where('has_alert_emails', true)
-            ->whereNotNull('email_verified_at')
+            ->where(fn ($subscribed) => $subscribed
+                ->where('has_alert_in_app', true)
+                ->orWhere(fn ($mailed) => $mailed->where('has_alert_emails', true)->whereNotNull('email_verified_at')))
             ->orderBy('id')
             ->get()
             ->filter(fn (User $user): bool => AlertFilterData::fromStored($user->alert_email_filters, SeverityEnum::High)->accepts($event, $severity, $project)
                 && $user->can('view', $project));
 
         foreach ($subscribers as $user) {
-            $channels[] = DeliverAlertJob::EMAIL.':'.$user->id;
+            if ($user->has_alert_emails && $user->email_verified_at !== null) {
+                $channels[] = DeliverAlertJob::EMAIL.':'.$user->id;
+            }
+
+            if ($user->has_alert_in_app) {
+                $channels[] = DeliverAlertJob::APP.':'.$user->id;
+            }
         }
 
         return $channels;

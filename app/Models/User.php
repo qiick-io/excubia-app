@@ -31,7 +31,8 @@ use Spatie\Permission\Traits\HasRoles;
  * @property string $locale
  * @property bool $has_weekly_digest weekly email digest (#114)
  * @property bool $has_alert_emails alert emails (#22)
- * @property array<string, mixed>|null $alert_email_filters see AlertFilterData
+ * @property array<string, mixed>|null $alert_email_filters see AlertFilterData; the in-app alerts read them too
+ * @property bool $has_alert_in_app in-app alert notifications (#296), on by default
  * @property string|null $two_factor_secret
  * @property string|null $two_factor_recovery_codes
  * @property Carbon|null $two_factor_confirmed_at
@@ -65,6 +66,7 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
         'locale' => 'en',
         'has_weekly_digest' => false,
         'has_alert_emails' => false,
+        'has_alert_in_app' => true,
         'alert_email_filters' => null,
     ];
 
@@ -122,6 +124,7 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
             'is_active' => 'boolean',
             'has_weekly_digest' => 'boolean',
             'has_alert_emails' => 'boolean',
+            'has_alert_in_app' => 'boolean',
             'alert_email_filters' => 'array',
             'two_factor_confirmed_at' => 'datetime',
         ];

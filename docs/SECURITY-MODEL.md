@@ -86,6 +86,7 @@ Deleting a project deletes its reports, findings, telemetry, tasks, alerts, mute
 - **SSRF**: every delivery must be HTTPS without credentials in the URL; every IPv4 and IPv6 address of the host must be public (loopback, private, link-local, reserved and IPv4-mapped ranges are refused, as are hosts that do not resolve), the request connects to the address that was checked (`CURLOPT_RESOLVE`, no DNS rebinding), redirects are not followed, timeouts are 3 s to connect and 5 s in total. Slack URLs must start with `https://hooks.slack.com/`; Telegram goes to `api.telegram.org` only.
 - **Errors**: a failed delivery records only the channel, the HTTP status or the exception class. URLs (which carry the Slack secret or the Telegram token) never reach `failed_jobs`, the logs, the Jobs page or Settings.
 - **Alert emails** go to active, verified users who turned them on in their profile, only for projects they can see (checked when the alert is raised), with the same payload as the other channels. Markdown in pushed strings is escaped.
+- **In-app notifications** follow the same rule (active users who can see the project when the alert is raised). The notification endpoints only read and change the signed-in user's own rows.
 - **Weekly digest** emails go to users who opted in, with only the projects they can see: names, counts, package names, exception classes and their route or job (never the message), task names.
 
 ### 7. AI assistant (off by default)

@@ -8,12 +8,17 @@ use App\Data\AlertFilterData;
 use App\Models\User;
 
 /**
- * Turns a user's alert emails (#22) on or off and stores their filters.
+ * Turns a user's alert emails (#22) and in-app alerts (#296) on or off and stores the filters
+ * both read.
  */
 class SaveAlertSubscriptionAction
 {
-    public function execute(User $user, bool $isEnabled, AlertFilterData $filter): void
+    public function execute(User $user, bool $isEmailEnabled, bool $isInAppEnabled, AlertFilterData $filter): void
     {
-        $user->forceFill(['has_alert_emails' => $isEnabled, 'alert_email_filters' => $filter->toArray()])->save();
+        $user->forceFill([
+            'has_alert_emails' => $isEmailEnabled,
+            'has_alert_in_app' => $isInAppEnabled,
+            'alert_email_filters' => $filter->toArray(),
+        ])->save();
     }
 }

@@ -18,7 +18,7 @@ class PruneTelemetryCommand extends Command
 {
     protected $signature = 'excubia:prune-telemetry';
 
-    protected $description = 'Delete runtime aggregates and exception groups past their retention';
+    protected $description = 'Delete runtime aggregates, exception groups and in-app notifications past their retention';
 
     public function handle(PruneTelemetryAction $pruneTelemetry, SettingsRepositoryService $settings): int
     {

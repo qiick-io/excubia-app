@@ -118,7 +118,10 @@
         "saving": "Salvataggio",
         "reorder": "Riordina",
         "selectAll": "Seleziona tutto",
-        "moreActions": "Altre azioni"
+        "moreActions": "Altre azioni",
+        "notifications": "Notifiche",
+        "notificationsUnread": "Notifiche, {{count}} non lette",
+        "unreadCount": "{{count}} non lette"
     },
     "auth": {
         "login": {
@@ -242,11 +245,12 @@
             "resend": "Clicca qui per reinviare l'email di verifica.",
             "linkSent": "Un nuovo link di verifica è stato inviato al tuo indirizzo email.",
             "weeklyDigest": "Inviami un riepilogo settimanale via email (nuovi problemi, regressioni, EOL, eccezioni principali, problemi di schedule)",
-            "alertsTitle": "Avvisi via email",
-            "alertsDescription": "Ricevi un'email quando scatta un avviso che ti interessa, per i progetti che puoi vedere.",
+            "alertsTitle": "Avvisi",
+            "alertsDescription": "Ricevi un'email o una notifica nell'app quando scatta un avviso che ti interessa, per i progetti che puoi vedere. Entrambe usano i filtri qui sotto.",
             "alertsEnabled": "Inviami gli avvisi via email",
             "alertsTest": "Invia email di prova",
-            "alertsTestHint": "Salva prima. L'email arriva al tuo indirizzo e serve un queue worker."
+            "alertsTestHint": "Salva prima. L'email arriva al tuo indirizzo e serve un queue worker.",
+            "alertsInApp": "Mostra gli avvisi nell'app (campanella nella barra laterale)"
         },
         "security": {
             "head": "Impostazioni sicurezza",
@@ -1593,7 +1597,8 @@
             "webhook": "Webhook",
             "slack": "Slack",
             "telegram": "Telegram",
-            "email": "Email"
+            "email": "Email",
+            "app": "In app"
         },
         "delivery": {
             "queued": "in coda",
@@ -2243,5 +2248,24 @@
         "previous": "Riga precedente",
         "open": "Apri la riga",
         "select": "Seleziona la riga"
+    },
+    "notifications": {
+        "title": "Notifiche",
+        "description": "Aggiornamenti per te, dal più recente.",
+        "loading": "Caricamento…",
+        "empty": "Nessuna notifica.",
+        "loadFailed": "Impossibile caricare le notifiche. Riprova più tardi.",
+        "updateFailed": "Impossibile aggiornare la notifica.",
+        "untitled": "Notifica",
+        "markAllRead": "Segna tutte come lette",
+        "markRead": "Segna come letta",
+        "markUnread": "Segna come non letta",
+        "alert": {
+            "single": "{{event}} in {{project}}",
+            "newFindings_one": "{{count}} nuovo problema in {{project}}",
+            "newFindings_other": "{{count}} nuovi problemi in {{project}}",
+            "grouped_one": "{{count}} avviso in {{project}}",
+            "grouped_other": "{{count}} avvisi in {{project}}"
+        }
     }
 }

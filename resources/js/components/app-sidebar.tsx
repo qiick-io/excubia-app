@@ -2,6 +2,7 @@ import { Link, usePage } from '@inertiajs/react';
 import { BookOpen, FolderGit2, PanelRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import AppLogo from '@/components/app-logo';
+import { NotificationsBell } from '@/components/notifications/notifications-bell';
 import {
     SidebarEntityFlyout,
     SidebarEntityList,
@@ -35,6 +36,7 @@ import {
 import type { ModuleDef } from '@/hooks/use-nav-modules';
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import { toggleAiAssistant } from '@/lib/ai-open';
+import { notificationsSource } from '@/lib/notifications';
 import { toUrl } from '@/lib/utils';
 import { dashboard } from '@/routes';
 import ai from '@/routes/ai';
@@ -54,7 +56,7 @@ const AI_PANEL_SHORTCUT =
 export function AppSidebar() {
     const { t } = useTranslation();
     const { isCurrentUrl } = useCurrentUrl();
-    const { appVersion, sidebarProjects } = usePage().props;
+    const { appVersion, sidebarProjects, notifications } = usePage().props;
     const { state: sidebarState, isMobile } = useSidebar();
     const isIconOnly = sidebarState === 'collapsed' && !isMobile;
     const toSidebarEntity = (project: SidebarProject): SidebarEntity => {
@@ -202,6 +204,12 @@ export function AppSidebar() {
                             </SidebarMenuButton>
                         </SidebarMenuItem>
                     </SidebarMenu>
+                    {/* The notification centre (#296): the badge comes from the shared prop, so
+                        it updates on navigation; Excubia has no broadcasting for live updates. */}
+                    <NotificationsBell
+                        source={notificationsSource}
+                        unreadCount={notifications.unread_count}
+                    />
                 </SidebarHeader>
 
                 <SidebarContent>

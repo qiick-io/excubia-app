@@ -327,7 +327,7 @@ it('throttles only alerts that reached a channel, and can be turned off', functi
     // Nothing takes the alert: it reached no one, so the next one is not held back.
     $none = ['minimum_severity' => 'info', 'event_types' => []];
     app(SettingsRepositoryService::class)->save(['alert_channels' => ['webhook' => $none, 'slack' => $none, 'telegram' => $none]]);
-    $this->subscriber->forceFill(['has_alert_emails' => false])->save();
+    $this->subscriber->forceFill(['has_alert_emails' => false, 'has_alert_in_app' => false])->save();
     $stale();
     app(SettingsRepositoryService::class)->save(['alert_channels' => null]);
     $stale();
