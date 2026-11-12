@@ -41,8 +41,19 @@ it('opens the bell, follows a notification to the finding and marks it read', fu
         ->wait(1)
         ->assertPathIs(route('projects.view', ['project' => 'billing-api', 'view' => 'findings'], false))
         ->assertQueryStringHas('finding', 'composer-audit|laravel/framework|CVE-2026-0001')
-        ->assertPresent('[data-test="notifications-bell"][aria-label="Notifications"]')
         ->assertNoJavaScriptErrors();
 
+    // The read request runs alongside the navigation (keepalive), so it may land just after it.
+    $deadline = microtime(true) + 5;
+
+    while ($admin->unreadNotifications()->count() > 0 && microtime(true) < $deadline) {
+        usleep(100_000);
+    }
+
     expect($admin->unreadNotifications()->count())->toBe(0);
+
+    // The next page reads the new count: the badge is gone without broadcasting.
+    $page->navigate(route('dashboard', absolute: false))
+        ->assertPresent('[data-test="notifications-bell"][aria-label="Notifications"]')
+        ->assertNoJavaScriptErrors();
 })->with(['light', 'dark']);
