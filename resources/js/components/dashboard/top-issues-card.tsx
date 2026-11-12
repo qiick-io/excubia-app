@@ -2,6 +2,8 @@ import { Link } from '@inertiajs/react';
 import { CircleCheck } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { PageEmptyState } from '@/components/admin/page-empty-state';
+import { checkLabel } from '@/components/reports/check-details';
+import { FindingGroupSummary } from '@/components/reports/finding-group';
 import { FixActions } from '@/components/reports/fix-actions';
 import { SeverityBadge } from '@/components/reports/severity-badge';
 import { Badge } from '@/components/ui/badge';
@@ -23,7 +25,10 @@ import {
 import projectsRoutes from '@/routes/projects';
 import type { TopIssue } from '@/types/dashboard';
 
-/** The grouped findings across projects, worst first. */
+/**
+ * The grouped findings across projects, worst first; packages that repeat one check's message
+ * share a row (#291).
+ */
 export function TopIssuesCard({
     issues,
     total,
@@ -85,22 +90,71 @@ export function TopIssuesCard({
                                             />
                                         </TableCell>
                                         <TableCell className="max-w-[28rem] whitespace-normal">
-                                            <div className="font-medium">
-                                                {issue.package}
-                                            </div>
-                                            <div className="text-xs text-muted-foreground">
-                                                {issue.checkName ??
-                                                    issue.checkId}
-                                                {issue.advisoryId ? (
-                                                    <span className="font-mono">
-                                                        {' · '}
-                                                        {issue.advisoryId}
-                                                    </span>
-                                                ) : null}
-                                            </div>
-                                            <div className="mt-1 text-sm">
-                                                {issue.message}
-                                            </div>
+                                            {issue.packages.length > 0 ? (
+                                                <FindingGroupSummary
+                                                    checkId={issue.checkId}
+                                                    checkLabel={checkLabel(
+                                                        t,
+                                                        issue.checkId,
+                                                        issue.checkName,
+                                                    )}
+                                                    message={issue.message}
+                                                    targetMajor={
+                                                        issue.targetMajor
+                                                    }
+                                                    items={issue.packages.map(
+                                                        (member) => ({
+                                                            key: member.key,
+                                                            label: (
+                                                                <>
+                                                                    <span className="font-medium">
+                                                                        {
+                                                                            member.package
+                                                                        }
+                                                                    </span>
+                                                                    <span className="text-muted-foreground">
+                                                                        {' · '}
+                                                                        {member.projects
+                                                                            .map(
+                                                                                (
+                                                                                    project,
+                                                                                ) =>
+                                                                                    project.name,
+                                                                            )
+                                                                            .join(
+                                                                                ', ',
+                                                                            )}
+                                                                    </span>
+                                                                </>
+                                                            ),
+                                                        }),
+                                                    )}
+                                                />
+                                            ) : (
+                                                <>
+                                                    <div className="font-medium">
+                                                        {issue.package}
+                                                    </div>
+                                                    <div className="text-xs text-muted-foreground">
+                                                        {checkLabel(
+                                                            t,
+                                                            issue.checkId,
+                                                            issue.checkName,
+                                                        )}
+                                                        {issue.advisoryId ? (
+                                                            <span className="font-mono">
+                                                                {' · '}
+                                                                {
+                                                                    issue.advisoryId
+                                                                }
+                                                            </span>
+                                                        ) : null}
+                                                    </div>
+                                                    <div className="mt-1 text-sm">
+                                                        {issue.message}
+                                                    </div>
+                                                </>
+                                            )}
                                         </TableCell>
                                         <TableCell className="font-mono text-xs whitespace-normal">
                                             {issue.installed.join(', ') || '—'}
@@ -135,7 +189,9 @@ export function TopIssuesCard({
                                             </div>
                                         </TableCell>
                                         <TableCell className="text-right">
-                                            <FixActions fix={issue.fix} />
+                                            {issue.fix ? (
+                                                <FixActions fix={issue.fix} />
+                                            ) : null}
                                         </TableCell>
                                     </TableRow>
                                 ))}

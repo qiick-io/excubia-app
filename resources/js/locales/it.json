@@ -1040,6 +1040,15 @@
             "lastSample": "Ultimo campione",
             "serverStatus": "{{server}}: {{status}}",
             "serverStale": "{{server}}: nessun campione"
+        },
+        "findingGroup": {
+            "title_one": "{{count}} problema",
+            "title_other": "{{count}} problemi",
+            "blockers_one": "{{count}} pacchetto blocca Laravel {{major}}",
+            "blockers_other": "{{count}} pacchetti bloccano Laravel {{major}}",
+            "show_one": "Mostra l'elemento",
+            "show_other": "Mostra tutti i {{count}}",
+            "upgradePlan": "Piano di aggiornamento in Fleet"
         }
     },
     "assistant": {
