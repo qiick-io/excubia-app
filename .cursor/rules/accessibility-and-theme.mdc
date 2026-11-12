@@ -52,7 +52,7 @@ Tokens come from the `@qiick/theme` registry item: one shared base (surfaces, th
 | Empty states                                                     | https://github.com/qiick-io/app-ui/blob/develop/docs/empty-states.md        |
 | Destructive actions                                              | https://github.com/qiick-io/app-ui/blob/develop/docs/destructive-actions.md |
 | Dashboard cards                                                  | https://github.com/qiick-io/app-ui/blob/develop/docs/dashboard.md           |
-| Notifications and messages (toasts)                              | https://github.com/qiick-io/app-ui/blob/develop/docs/notifications.md       |
+| Notifications: toasts, bell and drawer                           | https://github.com/qiick-io/app-ui/blob/develop/docs/notifications.md       |
 | Chat and Assistant                                               | https://github.com/qiick-io/app-ui/blob/develop/docs/chat-and-assistant.md  |
 | Files grid                                                       | https://github.com/qiick-io/app-ui/blob/develop/docs/files-grid.md          |
 | Theme: tokens, presets, control scale                            | https://github.com/qiick-io/app-ui/blob/develop/docs/theme.md               |
@@ -68,4 +68,5 @@ Adopt one by adding its name (with its variant when it has variants) to `pattern
 | Inbox list: saved views, bulk actions, item detail      | `inbox-list:side-panel`, `inbox-list:full-page`  | https://github.com/qiick-io/app-ui/blob/develop/docs/optional/inbox-list.md         |
 | Keyboard shortcuts and the ? help dialog                | `keyboard-shortcuts`                             | https://github.com/qiick-io/app-ui/blob/develop/docs/optional/keyboard-shortcuts.md |
 | Sidebar filter, pinned and needs-attention entity lists | `sidebar-entities`                               | https://github.com/qiick-io/app-ui/blob/develop/docs/optional/sidebar-entities.md   |
+| Table cell details: lists inside table cells            | `table-cell-details`                             | https://github.com/qiick-io/app-ui/blob/develop/docs/optional/table-cell-details.md |
 | Table density preference                                | `table-density`                                  | https://github.com/qiick-io/app-ui/blob/develop/docs/optional/table-density.md      |

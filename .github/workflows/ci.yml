@@ -376,17 +376,17 @@ jobs:
   # Theme tokens and the WCAG 2.2 AA contrast of the installed theme, from app-ui at the pinned
   # ref (#258). The browser tests stay in the Accessibility job above (full suite on main).
   ui-quality:
-    uses: qiick-io/app-ui/.github/workflows/ui-quality.yml@v0.4.0
+    uses: qiick-io/app-ui/.github/workflows/ui-quality.yml@v0.5.0
 
   # The shared forward-only migration check (#258). It runs next to the `Migrations frozen` job
   # until the required checks name it; then the local job and scripts/migrations-frozen.sh go.
   shared-migrations-frozen:
-    uses: qiick-io/app-ui/.github/workflows/migrations-frozen.yml@v0.4.0
+    uses: qiick-io/app-ui/.github/workflows/migrations-frozen.yml@v0.5.0
 
   # The @qiick UI registry copies and the qiick standards pack (agent files,
   # architecture test, kebab-case file names) must match app-ui.
   app-ui-drift:
-    uses: qiick-io/app-ui/.github/workflows/drift-check.yml@v0.4.0
+    uses: qiick-io/app-ui/.github/workflows/drift-check.yml@v0.5.0
     with:
       standards: true
       # ponytail: the registry drift is already red on develop (data-table and
