@@ -37,9 +37,13 @@ beforeEach(function () {
     Date::setTestNow('2026-11-07 12:00:00');
 });
 
+/**
+ * A user for the email channel; their in-app alerts (#296, on by default) are off so the queued
+ * channels are the email ones. InAppAlertsTest covers the in-app channel.
+ */
 function emailUser(RoleEnum $role = RoleEnum::Reader, array $attributes = []): User
 {
-    return User::factory()->create($attributes)->assignRole($role->value);
+    return User::factory()->create(['has_alert_in_app' => false, ...$attributes])->assignRole($role->value);
 }
 
 /**

@@ -24,6 +24,8 @@ declare module '@inertiajs/core' {
             projectAppearance: ProjectAppearance;
             /** Pinned and needs-attention projects under "Projects" in the sidebar (#273). */
             sidebarProjects: SidebarProjects;
+            /** The bell's unread badge (#296), read on every visit. */
+            notifications: { unread_count: number };
             [key: string]: unknown;
         };
         flashDataType: {

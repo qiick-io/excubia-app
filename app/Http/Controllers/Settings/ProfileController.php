@@ -30,9 +30,10 @@ class ProfileController extends Controller
             // User implements MustVerifyEmail: every account confirms its email.
             'mustVerifyEmail' => true,
             'status' => $request->session()->get('status'),
-            // Alert emails (#22), for users who can see projects.
+            // Alert emails (#22) and in-app alerts (#296), for users who can see projects.
             'alertSubscription' => $user->can('viewAny', Project::class) ? [
                 'has_alert_emails' => (bool) $user->has_alert_emails,
+                'has_alert_in_app' => (bool) $user->has_alert_in_app,
                 'filter' => AlertFilterData::fromStored($user->alert_email_filters, SeverityEnum::High)->toArray(),
                 'events' => AlertEventEnum::selectableValues(),
                 'severities' => SeverityEnum::values(),

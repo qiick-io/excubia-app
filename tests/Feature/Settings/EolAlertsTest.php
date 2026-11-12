@@ -78,11 +78,16 @@ it('sends :dataset to the webhook, Slack, Telegram and every subscriber', functi
 
     foreach (Queue::pushedJobs()[DeliverAlertJob::class] ?? [] as $pushed) {
         $job = $pushed['job'];
-        $channel = DeliverAlertJob::emailUserId($job->channel) === null ? $job->channel : DeliverAlertJob::EMAIL;
+        $channel = match (true) {
+            DeliverAlertJob::emailUserId($job->channel) !== null => DeliverAlertJob::EMAIL,
+            DeliverAlertJob::appUserId($job->channel) !== null => DeliverAlertJob::APP,
+            default => $job->channel,
+        };
         $byChannel[$channel] = [...$byChannel[$channel] ?? [], ...($job->alerts === [] ? [(string) $job->payload['event']] : array_column($job->alerts, 'event'))];
     }
 
-    expect(array_keys($byChannel))->toEqualCanonicalizing([DeliverAlertJob::WEBHOOK, DeliverAlertJob::SLACK, DeliverAlertJob::TELEGRAM, DeliverAlertJob::EMAIL]);
+    // The subscriber's in-app alerts (#296) are on by default and read the same filters.
+    expect(array_keys($byChannel))->toEqualCanonicalizing([DeliverAlertJob::WEBHOOK, DeliverAlertJob::SLACK, DeliverAlertJob::TELEGRAM, DeliverAlertJob::EMAIL, DeliverAlertJob::APP]);
 
     foreach ($byChannel as $channel => $events) {
         expect(in_array($event, $events, true))->toBeTrue("{$event} did not reach {$channel}");

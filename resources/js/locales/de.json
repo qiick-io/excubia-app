@@ -118,7 +118,10 @@
         "saving": "Wird gespeichert",
         "reorder": "Neu ordnen",
         "selectAll": "Alle auswählen",
-        "moreActions": "Weitere Aktionen"
+        "moreActions": "Weitere Aktionen",
+        "notifications": "Benachrichtigungen",
+        "notificationsUnread": "Benachrichtigungen, {{count}} ungelesen",
+        "unreadCount": "{{count}} ungelesen"
     },
     "auth": {
         "login": {
@@ -242,11 +245,12 @@
             "resend": "Hier klicken, um die Bestätigungs-E-Mail erneut zu senden.",
             "linkSent": "Ein neuer Bestätigungslink wurde an Ihre E-Mail-Adresse gesendet.",
             "weeklyDigest": "Wöchentliche E-Mail-Zusammenfassung senden (neue Befunde, Regressionen, EOL, häufigste Exceptions, Schedule-Probleme)",
-            "alertsTitle": "Alarm-E-Mails",
-            "alertsDescription": "Erhalte eine E-Mail, wenn eine Warnung auslöst, die dich interessiert, für die Projekte, die du sehen darfst.",
+            "alertsTitle": "Alarme",
+            "alertsDescription": "Erhalte eine E-Mail oder eine Benachrichtigung in der App, wenn ein Alarm auslöst, der dich interessiert, für die Projekte, die du sehen darfst. Beide verwenden die Filter unten.",
             "alertsEnabled": "Alarm-E-Mails an mich senden",
             "alertsTest": "Test-E-Mail senden",
-            "alertsTestHint": "Zuerst speichern. Die Mail geht an deine Adresse und benötigt einen Queue-Worker."
+            "alertsTestHint": "Zuerst speichern. Die Mail geht an deine Adresse und benötigt einen Queue-Worker.",
+            "alertsInApp": "Alarme in der App anzeigen (Glocke in der Seitenleiste)"
         },
         "security": {
             "head": "Sicherheitseinstellungen",
@@ -1586,7 +1590,8 @@
             "webhook": "Webhook",
             "slack": "Slack",
             "telegram": "Telegram",
-            "email": "E-Mail"
+            "email": "E-Mail",
+            "app": "In der App"
         },
         "delivery": {
             "queued": "wartend",
@@ -2214,5 +2219,24 @@
         "previous": "Vorherige Zeile",
         "open": "Zeile öffnen",
         "select": "Zeile auswählen"
+    },
+    "notifications": {
+        "title": "Benachrichtigungen",
+        "description": "Neuigkeiten für Sie, die neuesten zuerst.",
+        "loading": "Laden…",
+        "empty": "Noch keine Benachrichtigungen.",
+        "loadFailed": "Die Benachrichtigungen konnten nicht geladen werden. Versuchen Sie es später erneut.",
+        "updateFailed": "Die Benachrichtigung konnte nicht aktualisiert werden.",
+        "untitled": "Benachrichtigung",
+        "markAllRead": "Alle als gelesen markieren",
+        "markRead": "Als gelesen markieren",
+        "markUnread": "Als ungelesen markieren",
+        "alert": {
+            "single": "{{event}} in {{project}}",
+            "newFindings_one": "{{count}} neues Problem in {{project}}",
+            "newFindings_other": "{{count}} neue Probleme in {{project}}",
+            "grouped_one": "{{count}} Alarm in {{project}}",
+            "grouped_other": "{{count}} Alarme in {{project}}"
+        }
     }
 }

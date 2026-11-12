@@ -17,8 +17,8 @@ use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 
 /**
- * Alert emails of the signed-in user (#22), in Settings → Profile: saves their filters and
- * queues a test mail to themselves.
+ * Alerts of the signed-in user, in Settings → Profile: saves their email (#22) and in-app (#296)
+ * toggles and their filters, and queues a test mail to themselves.
  */
 class AlertSubscriptionController extends Controller
 {
@@ -26,9 +26,9 @@ class AlertSubscriptionController extends Controller
     {
         /** @var User $user */
         $user = $request->user();
-        $save->execute($user, $request->boolean('has_alert_emails'), $request->filter());
+        $save->execute($user, $request->boolean('has_alert_emails'), $request->boolean('has_alert_in_app', $user->has_alert_in_app), $request->filter());
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('Alert emails saved.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Alert preferences saved.')]);
 
         return to_route('profile.edit');
     }
