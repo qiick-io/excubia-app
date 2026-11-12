@@ -351,21 +351,21 @@ jobs:
   # Theme tokens and the WCAG 2.2 AA contrast of the installed theme, from app-ui at the pinned
   # ref (#258). The browser tests stay in the Accessibility job above (full suite on main).
   ui-quality:
-    uses: qiick-io/app-ui/.github/workflows/ui-quality.yml@v0.6.0
+    uses: qiick-io/app-ui/.github/workflows/ui-quality.yml@v0.6.1
 
   # Forward-only migrations (#193): a migration on `main`, on the latest `v*` tag or in the
   # freeze baseline `database/migrations/.frozen` is never modified, renamed or deleted.
   migrations-frozen:
-    uses: qiick-io/app-ui/.github/workflows/migrations-frozen.yml@v0.6.0
+    uses: qiick-io/app-ui/.github/workflows/migrations-frozen.yml@v0.6.1
 
   # PHPStan at level 8 (the level never drops, the baseline only shrinks) and Pest with
   # line coverage that never falls below `coverage-floor.txt` (app-ui v0.6.0, #259).
   php-quality:
-    uses: qiick-io/app-ui/.github/workflows/php-quality.yml@v0.6.0
+    uses: qiick-io/app-ui/.github/workflows/php-quality.yml@v0.6.1
 
   # The @qiick UI registry copies and the qiick standards pack (agent files,
   # architecture test, kebab-case file names) must match app-ui.
   app-ui-drift:
-    uses: qiick-io/app-ui/.github/workflows/drift-check.yml@v0.6.0
+    uses: qiick-io/app-ui/.github/workflows/drift-check.yml@v0.6.1
     with:
       standards: true
