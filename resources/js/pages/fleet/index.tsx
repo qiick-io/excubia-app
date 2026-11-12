@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { Fragment, useMemo, useState } from 'react';
+import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import { DataTable } from '@/components/admin/data-table';
 import { PageEmptyState } from '@/components/admin/page-empty-state';
@@ -20,6 +21,8 @@ import {
 } from '@/components/reports/runtime-support';
 import { SeverityBadge } from '@/components/reports/severity-badge';
 import { StatCard } from '@/components/stat-card';
+import { TableCellDetails } from '@/components/table-cell-details';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
     NativeSelect,
@@ -231,17 +234,35 @@ function FleetTabs({ view }: { view: FleetView }) {
 }
 
 /** "Dismissed until 2026-12-31: reason", the reason only when given. */
+function dismissalText(t: TFunction, dismissal: Dismissal): string {
+    const status =
+        dismissal.until !== null
+            ? t('findings.dismissedUntil', { date: dismissal.until })
+            : t('findings.dismissedForGood');
+
+    return dismissal.reason !== null
+        ? `${status}: ${dismissal.reason}`
+        : status;
+}
+
 function DismissalText({ dismissal }: { dismissal: Dismissal }) {
     const { t } = useTranslation();
 
-    return (
-        <>
-            {dismissal.until !== null
-                ? t('findings.dismissedUntil', { date: dismissal.until })
-                : t('findings.dismissedForGood')}
-            {dismissal.reason !== null ? `: ${dismissal.reason}` : ''}
-        </>
-    );
+    return <>{dismissalText(t, dismissal)}</>;
+}
+
+/**
+ * One blocking package in the details popover (#290): its name, the locked version and, when
+ * only a pre-release allows the next major, that note. The popover items are plain text.
+ */
+function blockerLabel(t: TFunction, blocker: Blocker): string {
+    const label = [blocker.package, blocker.lockedVersion]
+        .filter((part) => part !== '')
+        .join(' ');
+
+    return blocker.isPreReleaseOnly
+        ? `${label} · ${t('fleet.readiness.preReleaseOnly')}`
+        : label;
 }
 
 function ProjectLink({ project }: { project: ProjectRef }) {
@@ -321,7 +342,7 @@ function ReadinessView({ readiness }: { readiness: Readiness }) {
         {
             id: 'blockers',
             header: t('fleet.readiness.blockers'),
-            meta: { cellClassName: 'align-top whitespace-normal' },
+            meta: { cellClassName: 'align-top max-w-0 min-w-56' },
             cell: ({ row: tableRow }) => {
                 const row = tableRow.original;
 
@@ -332,57 +353,64 @@ function ReadinessView({ readiness }: { readiness: Readiness }) {
                                 {row.hasReport ? '—' : t('dashboard.noReports')}
                             </span>
                         ) : (
-                            <ul className="space-y-1 text-sm">
-                                {row.blockers.map((blocker) => (
-                                    <li
-                                        key={blocker.package}
-                                        className="flex flex-wrap items-center gap-1"
-                                    >
-                                        <span className="font-mono text-xs">
-                                            {blocker.package}
-                                        </span>
-                                        <span className="font-mono text-xs text-muted-foreground">
-                                            {blocker.lockedVersion}
-                                        </span>
-                                        {blocker.isPreReleaseOnly ? (
-                                            <Badge variant="muted">
-                                                {t(
-                                                    'fleet.readiness.preReleaseOnly',
-                                                )}
-                                            </Badge>
-                                        ) : null}
-                                    </li>
-                                ))}
-                            </ul>
-                        )}
-                        {row.dismissedBlockers.length > 0 ? (
-                            <ul className="mt-1 space-y-1 text-xs text-muted-foreground">
-                                {row.dismissedBlockers.map((blocker) => (
-                                    <li
-                                        key={blocker.package}
-                                        className="flex flex-wrap items-center gap-1"
-                                    >
-                                        <Badge variant="muted">
-                                            {t('findings.status.dismissed')}
-                                        </Badge>
-                                        <span className="font-mono">
-                                            {blocker.package}
-                                        </span>
-                                        <span>
-                                            <DismissalText
-                                                dismissal={blocker.dismissal}
-                                            />
-                                        </span>
-                                    </li>
-                                ))}
-                            </ul>
-                        ) : null}
-                        {row.uncheckedPackages > 0 ? (
-                            <p className="mt-1 text-xs text-muted-foreground">
-                                {t('fleet.readiness.uncheckedPackages', {
-                                    count: row.uncheckedPackages,
+                            <TableCellDetails
+                                summary={t('fleet.readiness.blockersSummary', {
+                                    count: row.blockers.length,
+                                    first: row.blockers[0].package,
+                                    others: row.blockers.length - 1,
                                 })}
-                            </p>
+                                title={t('fleet.readiness.blockers')}
+                                triggerLabel={t(
+                                    'fleet.readiness.showBlockers',
+                                    { count: row.blockers.length },
+                                )}
+                                items={row.blockers.map((blocker) => ({
+                                    id: blocker.package,
+                                    label: blockerLabel(t, blocker),
+                                }))}
+                            />
+                        )}
+                        {row.dismissedBlockers.length > 0 ||
+                        row.uncheckedPackages > 0 ? (
+                            <div className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
+                                {row.dismissedBlockers.length > 0 ? (
+                                    <TableCellDetails
+                                        summary={t(
+                                            'fleet.readiness.dismissedBlockers',
+                                            {
+                                                count: row.dismissedBlockers
+                                                    .length,
+                                            },
+                                        )}
+                                        title={t(
+                                            'fleet.readiness.dismissedBlockersTitle',
+                                        )}
+                                        triggerLabel={t(
+                                            'fleet.readiness.showDismissedBlockers',
+                                            {
+                                                count: row.dismissedBlockers
+                                                    .length,
+                                            },
+                                        )}
+                                        items={row.dismissedBlockers.map(
+                                            (blocker) => ({
+                                                id: blocker.package,
+                                                label: `${blocker.package} · ${dismissalText(t, blocker.dismissal)}`,
+                                            }),
+                                        )}
+                                    />
+                                ) : null}
+                                {row.uncheckedPackages > 0 ? (
+                                    <span className="truncate">
+                                        {t(
+                                            'fleet.readiness.uncheckedPackages',
+                                            {
+                                                count: row.uncheckedPackages,
+                                            },
+                                        )}
+                                    </span>
+                                ) : null}
+                            </div>
                         ) : null}
                     </>
                 );
@@ -420,37 +448,51 @@ function ReadinessView({ readiness }: { readiness: Readiness }) {
 
     return (
         <div className="flex flex-col gap-4">
-            <p className="max-w-2xl text-sm text-muted-foreground">
-                {t('fleet.readiness.description')}
-            </p>
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                {readiness.targets.map((target) => (
-                    <StatCard
-                        key={target.targetMajor}
-                        label={t('fleet.readiness.target', {
-                            major: target.targetMajor,
-                        })}
-                        value={`${target.ready} / ${target.total}`}
-                        headline={t('fleet.readiness.canMove', {
-                            ready: target.ready,
-                            total: target.total,
-                            major: target.targetMajor,
-                        })}
-                    />
-                ))}
-                {readiness.unknown > 0 ? (
-                    <StatCard
-                        label={t('fleet.readiness.status.unknown')}
-                        value={readiness.unknown.toLocaleString()}
-                        context={t('fleet.readiness.unknownDescription')}
-                    />
-                ) : null}
+            {/* The description shares its row with the stat cards, so a lone card leaves no gap (#290). */}
+            <div className="flex flex-col gap-4 xl:flex-row xl:items-center">
+                <p className="max-w-2xl text-sm text-muted-foreground xl:flex-1">
+                    {t('fleet.readiness.description')}
+                </p>
+                <div className="grid gap-4 sm:grid-cols-2 xl:flex xl:shrink-0">
+                    {readiness.targets.map((target) => (
+                        <StatCard
+                            key={target.targetMajor}
+                            className="xl:w-64"
+                            label={t('fleet.readiness.target', {
+                                major: target.targetMajor,
+                            })}
+                            value={`${target.ready} / ${target.total}`}
+                            headline={t('fleet.readiness.canMove', {
+                                ready: target.ready,
+                                total: target.total,
+                                major: target.targetMajor,
+                            })}
+                        />
+                    ))}
+                    {readiness.unknown > 0 ? (
+                        <StatCard
+                            className="xl:w-64"
+                            label={t('fleet.readiness.status.unknown')}
+                            value={readiness.unknown.toLocaleString()}
+                            context={t('fleet.readiness.unknownDescription')}
+                        />
+                    ) : null}
+                </div>
             </div>
-            <DataTable
-                columns={readinessColumns}
-                data={readiness.projects}
-                getRowId={(row) => String(row.project.slug)}
-            />
+            <Card>
+                <CardHeader className="pb-3">
+                    <CardTitle>{t('fleet.readiness.projectsTitle')}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    {/* The sticky header takes the card surface, not the page one. */}
+                    <DataTable
+                        className="[&_thead]:bg-card!"
+                        columns={readinessColumns}
+                        data={readiness.projects}
+                        getRowId={(row) => String(row.project.slug)}
+                    />
+                </CardContent>
+            </Card>
         </div>
     );
 }

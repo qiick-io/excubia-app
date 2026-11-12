@@ -72,6 +72,8 @@ upgrade from the version before (see [docs/self-hosting.md](docs/self-hosting.md
 
 ### Changed
 
+- **Blocking packages as a count on Fleet → Upgrade readiness** (#290, app-ui optional pattern `table-cell-details`). Each project is one row: the cell reads "12 packages · larastan/larastan +11" and the full list (name, locked version, _Pre-release only_) opens in a popover from the mouse or the keyboard. Dismissed blockers fold into a muted "N dismissed" line with their own popover. The table sits in a **Projects** card, and the description shares its row with the stat cards.
+
 - **Compact Infrastructure card on the project overview** (#289, app-ui optional pattern `table-cell-details`). Every row stays within two lines: the database size reads "10.11 MB · pgsql" and its largest tables open in a popover as bars; several Redis connections or backup disks show the first one and "+N". The disk bar takes the colour of its check status (success, warning, destructive), like the badge next to it. Open connections show their number when the report has it. Checks that were skipped or are not in the report share one muted "Not configured" line with a link to the docs.
 
 - **app-ui v0.5.0:** the registry, the standards pack and the reusable workflows are pinned to app-ui v0.5.0, and the standards are re-synced (the core notifications row is renamed and the optional catalogue lists `table-cell-details`, not adopted here yet). `sidebar-entity-list` is re-pulled with its new optional pin action (`onTogglePin`, which also brings the `context-menu` primitive); the sidebar does not pass it yet, so it renders as before.
