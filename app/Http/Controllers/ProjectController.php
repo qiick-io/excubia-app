@@ -15,6 +15,7 @@ use App\Http\Requests\UpdateProjectRequest;
 use App\Http\Resources\ProjectResource;
 use App\Models\Project;
 use App\Services\EffectivePermissionResolverService;
+use App\Services\ProjectListService;
 use App\Traits\FlashesPushTokenTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -32,24 +33,18 @@ class ProjectController extends Controller
     use FlashesPushTokenTrait;
 
     /**
-     * @var list<string>
-     */
-    private const SORTABLE_COLUMNS = ['name', 'last_report_at', 'created_at'];
-
-    /**
      * The project list, or as JSON (`expectsJson`) the paginator the registry picker of the
-     * project group drawer reads (#252).
+     * project group drawer reads (#252). Each row carries its health, failed checks and open
+     * findings (#293), sortable on the server.
      */
-    public function index(ListQueryRequest $request, EffectivePermissionResolverService $permissions): Response|JsonResponse
+    public function index(ListQueryRequest $request, EffectivePermissionResolverService $permissions, ProjectListService $projectList): Response|JsonResponse
     {
         Gate::authorize('viewAny', Project::class);
 
-        $sort = $request->sortColumn(self::SORTABLE_COLUMNS, 'name');
+        $sort = $request->sortColumn(ProjectListService::SORTABLE_COLUMNS, 'name');
         $direction = $request->sortDirection('asc');
 
-        $projects = $request->applySearch(Project::query()->visibleTo($request->user()), ['name', 'slug'])
-            ->orderBy($sort, $direction)
-            ->orderBy('id')
+        $projects = $projectList->sort($request->applySearch($projectList->query($request->user()), ['name', 'slug']), $sort, $direction)
             ->paginate($request->perPage())
             ->withQueryString();
 

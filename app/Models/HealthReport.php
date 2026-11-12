@@ -29,11 +29,14 @@ use Illuminate\Support\Carbon;
  * @property int $medium_count
  * @property int $low_count
  * @property int $info_count
+ * @property string|null $worst_check_status worst status of the checks that ran: fail, warn or pass (#293)
+ * @property int $checks_count checks that ran (not skipped)
+ * @property int $failed_checks_count
  * @property array<string, mixed> $report
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['batch_id', 'received_at', 'generated_at', 'release', 'deployed_at', 'worst_severity', 'critical_count', 'high_count', 'medium_count', 'low_count', 'info_count', 'report'])]
+#[Fillable(['batch_id', 'received_at', 'generated_at', 'release', 'deployed_at', 'worst_severity', 'critical_count', 'high_count', 'medium_count', 'low_count', 'info_count', 'worst_check_status', 'checks_count', 'failed_checks_count', 'report'])]
 class HealthReport extends Model
 {
     /**

@@ -11,6 +11,8 @@ upgrade from the version before (see [docs/self-hosting.md](docs/self-hosting.md
 
 ### Added
 
+- **Health, open findings and failed checks on the Projects list** (#293). Each row shows the project's environment, its **Health** (the worst check status of the latest report), its **Open findings** per severity, its **Failed checks** ("1 / 41" of the checks that ran) and the **Last report** as a relative time, with the full date in a tooltip and a _Stale_ chip. The list sorts on the server by health (failing first), open findings (most critical first), name and last report, in one query per page. The status badges (disabled, system, admins only, no token) moved next to the name. A new migration stores the check summary with each report and backfills it from the stored reports.
+
 - **Keyboard triage and list preferences** (#277, app-ui optional patterns `keyboard-shortcuts` and `table-density`).
     - On the Exceptions and Findings tabs, `j` / `k` move a highlighted row and Enter opens it. `x` selects it. `e` resolves an exception group, and `a` assigns the row to you, with the same rights as the buttons.
     - `?` lists the keys of the page. The keys stay quiet while a drawer is open or while you type.
