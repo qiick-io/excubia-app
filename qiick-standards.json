@@ -12,6 +12,7 @@
         "inbox-list:side-panel",
         "keyboard-shortcuts",
         "sidebar-entities",
+        "table-cell-details",
         "table-density"
     ]
 }
