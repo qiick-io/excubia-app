@@ -16,6 +16,7 @@ use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ProjectExceptionBulkController;
 use App\Http\Controllers\ProjectFindingBulkController;
 use App\Http\Controllers\ProjectGroupController;
+use App\Http\Controllers\ProjectLogoController;
 use App\Http\Controllers\ProjectPinController;
 use App\Http\Controllers\ProjectReportController;
 use App\Http\Controllers\ProjectTokenController;
@@ -59,6 +60,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Sidebar pins (#273).
     Route::post('projects/{project:slug}/pin', [ProjectPinController::class, 'store'])->name('projects.pin.store');
     Route::delete('projects/{project:slug}/pin', [ProjectPinController::class, 'destroy'])->name('projects.pin.destroy');
+    // The uploaded project logo (#287), for the people who may see the project.
+    Route::get('projects/{project:slug}/logo', [ProjectLogoController::class, 'show'])->name('projects.logo');
     Route::get('projects/{project:slug}', [ProjectReportController::class, 'show'])->name('projects.show');
     // The project's tabs as their own URLs, so links, back and bookmarks work.
     Route::get('projects/{project:slug}/{view}', [ProjectReportController::class, 'show'])

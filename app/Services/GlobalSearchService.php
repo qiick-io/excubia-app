@@ -56,12 +56,13 @@ final class GlobalSearchService
                 ->orWhereLike('slug', $pattern))
             ->orderBy('name')
             ->limit(self::LIMIT_PER_GROUP)
-            ->get(['id', 'name', 'slug', 'environment'])
+            ->get(['id', 'name', 'slug', 'environment', 'logo_path'])
             ->map(fn (Project $project): GlobalSearchResultData => new GlobalSearchResultData(
                 id: "project:{$project->id}",
                 label: $project->name,
                 description: $project->environment ?? $project->slug,
                 url: route('projects.show', $project->slug, false),
+                avatar: ['slug' => $project->slug, 'logoUrl' => $project->logoUrl()],
             ))
             ->all());
     }

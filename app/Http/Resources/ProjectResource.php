@@ -39,6 +39,7 @@ class ProjectResource extends JsonResource
             'has_push_token' => $project->push_token_hash !== null,
             'last_report_at' => $project->last_report_at?->toIso8601String(),
             'environment' => $project->environment,
+            'logo_url' => $project->logoUrl(),
             'is_stale' => app(ProjectStalenessService::class)->isStale($project),
             // The list columns of ProjectListService (#293), only where its query selected them.
             ...(array_key_exists('health_rank', $project->getAttributes()) ? $this->listColumns($project) : []),

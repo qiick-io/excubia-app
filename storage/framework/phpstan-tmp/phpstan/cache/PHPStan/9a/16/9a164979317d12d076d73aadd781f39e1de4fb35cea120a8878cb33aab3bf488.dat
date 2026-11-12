@@ -1,0 +1,53 @@
+O:23:"PHPStan\Cache\CacheItem":2:{s:11:"variableKey";s:83:"v2-2b9c0e55a0d3ee5c17817fa4086d1039f98a8d7bf002fe401517c16cb9ecfe14-8.4.27-6.75.0.4";s:4:"data";a:22:{s:13:"locatedSource";a:2:{s:5:"class";s:60:"PHPStan\BetterReflection\SourceLocator\Located\LocatedSource";s:4:"data";a:2:{s:4:"name";s:34:"Illuminate\Support\Facades\Process";s:8:"filename";s:180:"/Users/lucagiardi/Projects/LucaGiardi/Qiick/Excubia/excubia-app/.claude/worktrees/287-project-avatar/vendor/composer/../laravel/framework/src/Illuminate/Support/Facades/Process.php";}}s:9:"namespace";s:26:"Illuminate\Support\Facades";s:4:"name";s:34:"Illuminate\Support\Facades\Process";s:9:"shortName";s:7:"Process";s:11:"isInterface";b:0;s:7:"isTrait";b:0;s:6:"isEnum";b:0;s:12:"isBackedEnum";b:0;s:9:"modifiers";i:0;s:10:"docComment";s:3657:"/**
+ * @method static \Illuminate\Process\PendingProcess command(array|string $command)
+ * @method static \Illuminate\Process\PendingProcess path(string $path)
+ * @method static \Illuminate\Process\PendingProcess timeout(\Carbon\CarbonInterval|int $timeout)
+ * @method static \Illuminate\Process\PendingProcess idleTimeout(\Carbon\CarbonInterval|int $timeout)
+ * @method static \Illuminate\Process\PendingProcess forever()
+ * @method static \Illuminate\Process\PendingProcess env(array $environment)
+ * @method static \Illuminate\Process\PendingProcess input(\Traversable|resource|string|int|float|bool|null $input)
+ * @method static \Illuminate\Process\PendingProcess quietly()
+ * @method static \Illuminate\Process\PendingProcess tty(bool $tty = true)
+ * @method static \Illuminate\Process\PendingProcess options(array $options)
+ * @method static \Illuminate\Contracts\Process\ProcessResult run(array|string|null $command = null, callable|null $output = null)
+ * @method static \Illuminate\Process\InvokedProcess|\Illuminate\Process\FakeInvokedProcess start(array|string|null $command = null, callable|null $output = null)
+ * @method static bool supportsTty()
+ * @method static \Illuminate\Process\PendingProcess withFakeHandlers(array $fakeHandlers)
+ * @method static \Illuminate\Process\PendingProcess|mixed when(\Closure|mixed|null $value = null, callable|null $callback = null, callable|null $default = null)
+ * @method static \Illuminate\Process\PendingProcess|mixed unless(\Closure|mixed|null $value = null, callable|null $callback = null, callable|null $default = null)
+ * @method static \Illuminate\Process\FakeProcessResult result(array|string $output = '', array|string $errorOutput = '', int $exitCode = 0)
+ * @method static \Illuminate\Process\FakeProcessDescription describe()
+ * @method static \Illuminate\Process\FakeProcessSequence sequence(array $processes = [])
+ * @method static bool isRecording()
+ * @method static \Illuminate\Process\Factory recordIfRecording(\Illuminate\Process\PendingProcess $process, \Illuminate\Contracts\Process\ProcessResult $result)
+ * @method static \Illuminate\Process\Factory record(\Illuminate\Process\PendingProcess $process, \Illuminate\Contracts\Process\ProcessResult $result)
+ * @method static \Illuminate\Process\Factory preventStrayProcesses(bool $prevent = true)
+ * @method static bool preventingStrayProcesses()
+ * @method static \Illuminate\Process\Factory assertRan(\Closure|array|string $callback)
+ * @method static \Illuminate\Process\Factory assertRanTimes(\Closure|array|string $callback, int $times = 1)
+ * @method static \Illuminate\Process\Factory assertRanInOrder(array $callbacks)
+ * @method static \Illuminate\Process\Factory assertNotRan(\Closure|array|string $callback)
+ * @method static \Illuminate\Process\Factory assertDidntRun(\Closure|array|string $callback)
+ * @method static \Illuminate\Process\Factory assertNothingRan()
+ * @method static \Illuminate\Process\Pool pool(callable $callback)
+ * @method static \Illuminate\Contracts\Process\ProcessResult pipe(callable|array $callback, callable|null $output = null)
+ * @method static \Illuminate\Process\ProcessPoolResults concurrently(callable $callback, callable|null $output = null)
+ * @method static \Illuminate\Process\PendingProcess newPendingProcess()
+ * @method static void macro(string $name, object|callable $macro)
+ * @method static void mixin(object $mixin, bool $replace = true)
+ * @method static bool hasMacro(string $name)
+ * @method static void flushMacros()
+ * @method static mixed macroCall(string $method, array $parameters)
+ *
+ * @see \Illuminate\Process\PendingProcess
+ * @see \Illuminate\Process\Factory
+ */";s:10:"attributes";a:0:{}s:9:"startLine";i:52;s:7:"endLine";i:76;s:11:"startColumn";i:1;s:9:"endColumn";i:1;s:15:"parentClassName";s:33:"Illuminate\Support\Facades\Facade";s:20:"implementsClassNames";a:0:{}s:15:"traitClassNames";a:0:{}s:18:"immediateConstants";a:0:{}s:19:"immediateProperties";a:0:{}s:16:"immediateMethods";a:2:{s:17:"getFacadeAccessor";a:20:{s:4:"name";s:17:"getFacadeAccessor";s:10:"parameters";a:0:{}s:16:"returnsReference";b:0;s:10:"returnType";N;s:10:"attributes";a:0:{}s:10:"docComment";s:73:"/**
+ * Get the registered name of the component.
+ *
+ * @return string
+ */";s:9:"startLine";i:59;s:7:"endLine";i:62;s:11:"startColumn";i:5;s:9:"endColumn";i:5;s:10:"couldThrow";b:0;s:9:"isClosure";b:0;s:11:"isGenerator";b:0;s:10:"isVariadic";b:0;s:9:"modifiers";i:18;s:9:"namespace";s:26:"Illuminate\Support\Facades";s:18:"declaringClassName";s:34:"Illuminate\Support\Facades\Process";s:21:"implementingClassName";s:34:"Illuminate\Support\Facades\Process";s:16:"currentClassName";s:34:"Illuminate\Support\Facades\Process";s:9:"aliasName";N;}s:4:"fake";a:20:{s:4:"name";s:4:"fake";s:10:"parameters";a:1:{s:8:"callback";a:14:{s:4:"name";s:8:"callback";s:7:"default";a:2:{s:4:"code";s:4:"null";s:10:"attributes";a:6:{s:9:"startLine";i:70;s:7:"endLine";i:70;s:13:"startTokenPos";i:72;s:12:"startFilePos";i:4208;s:11:"endTokenPos";i:72;s:10:"endFilePos";i:4211;}}s:4:"type";a:2:{s:5:"class";s:55:"PHPStan\BetterReflection\Reflection\ReflectionUnionType";s:4:"data";a:1:{s:5:"types";a:3:{i:0;a:2:{s:5:"class";s:55:"PHPStan\BetterReflection\Reflection\ReflectionNamedType";s:4:"data";a:2:{s:4:"name";s:7:"Closure";s:12:"isIdentifier";b:0;}}i:1;a:2:{s:5:"class";s:55:"PHPStan\BetterReflection\Reflection\ReflectionNamedType";s:4:"data";a:2:{s:4:"name";s:5:"array";s:12:"isIdentifier";b:1;}}i:2;a:2:{s:5:"class";s:55:"PHPStan\BetterReflection\Reflection\ReflectionNamedType";s:4:"data";a:2:{s:4:"name";s:4:"null";s:12:"isIdentifier";b:1;}}}}}s:10:"isVariadic";b:0;s:5:"byRef";b:0;s:10:"isPromoted";b:0;s:10:"docComment";N;s:10:"attributes";a:0:{}s:9:"startLine";i:70;s:7:"endLine";i:70;s:11:"startColumn";i:33;s:9:"endColumn";i:67;s:14:"parameterIndex";i:0;s:10:"isOptional";b:1;}}s:16:"returnsReference";b:0;s:10:"returnType";N;s:10:"attributes";a:0:{}s:10:"docComment";s:151:"/**
+ * Indicate that the process factory should fake processes.
+ *
+ * @param  \Closure|array|null  $callback
+ * @return \Illuminate\Process\Factory
+ */";s:9:"startLine";i:70;s:7:"endLine";i:75;s:11:"startColumn";i:5;s:9:"endColumn";i:5;s:10:"couldThrow";b:0;s:9:"isClosure";b:0;s:11:"isGenerator";b:0;s:10:"isVariadic";b:0;s:9:"modifiers";i:17;s:9:"namespace";s:26:"Illuminate\Support\Facades";s:18:"declaringClassName";s:34:"Illuminate\Support\Facades\Process";s:21:"implementingClassName";s:34:"Illuminate\Support\Facades\Process";s:16:"currentClassName";s:34:"Illuminate\Support\Facades\Process";s:9:"aliasName";N;}}s:10:"traitsData";a:4:{s:7:"aliases";a:0:{}s:9:"modifiers";a:0:{}s:11:"precedences";a:0:{}s:6:"hashes";a:0:{}}}}

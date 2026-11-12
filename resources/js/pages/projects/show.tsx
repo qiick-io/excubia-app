@@ -18,6 +18,7 @@ import {
 } from '@/components/reports/time-range-picker';
 import { Button } from '@/components/ui/button';
 import { ProjectPinButton } from '@/components/project-pin-button';
+import { ProjectAvatar } from '@/components/projects/project-avatar';
 import AppLayout from '@/layouts/app-layout';
 import projectsRoutes from '@/routes/projects';
 import type {
@@ -131,9 +132,17 @@ export default function ProjectShow({
             {
                 title: project.name,
                 href: projectsRoutes.show.url(project.slug),
+                leading: (
+                    <ProjectAvatar
+                        slug={project.slug}
+                        name={project.name}
+                        logoUrl={project.logo_url}
+                        size="xs"
+                    />
+                ),
             },
         ],
-        [project.name, project.slug, t],
+        [project.name, project.slug, project.logo_url, t],
     );
 
     const latest = project.latest_report ?? null;

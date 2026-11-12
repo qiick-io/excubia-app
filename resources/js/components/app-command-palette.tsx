@@ -14,6 +14,7 @@ import { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CommandPalette } from '@/components/command-palette';
 import type { CommandPaletteGroup } from '@/components/command-palette';
+import { projectAvatarIcon } from '@/components/projects/project-avatar';
 import { PermissionEnum } from '@/enums/permission-enum';
 import { useAppearance } from '@/hooks/use-appearance';
 import { useCan } from '@/hooks/use-can';
@@ -39,6 +40,8 @@ type SearchAnswer = {
             label: string;
             description: string | null;
             url: string;
+            /** Project results (#287): the slug for the colour and the logo. */
+            avatar: { slug: string; logoUrl: string | null } | null;
         }[];
     }[];
 };
@@ -136,7 +139,12 @@ export function AppCommandPalette({
                     id: item.id,
                     label: item.label,
                     description: item.description ?? undefined,
-                    icon: SEARCH_GROUP_ICONS[group.type],
+                    icon: item.avatar
+                        ? projectAvatarIcon({
+                              ...item.avatar,
+                              name: item.label,
+                          })
+                        : SEARCH_GROUP_ICONS[group.type],
                     href: item.url,
                 })),
             }));

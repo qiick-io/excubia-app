@@ -32,7 +32,8 @@ it('pins a project from its header and lists troubled ones under Projects', func
         ->assertPresent('[aria-label="Unpin Billing API"][aria-pressed="true"]')
         ->assertNoJavaScriptErrors();
 
-    expect($page->script("() => [...document.querySelectorAll('[data-sidebar=\"menu-sub\"] ul[aria-label=\"Pinned\"] a')].map((link) => link.innerText.replace(/\s+/g, ' ').trim())"))
+    // What the row reads: the decorative avatar (#287) is aria-hidden and left out.
+    expect($page->script("() => [...document.querySelectorAll('[data-sidebar=\"menu-sub\"] ul[aria-label=\"Pinned\"] a')].map((link) => [...link.children].filter((child) => child.getAttribute('aria-hidden') !== 'true').map((child) => child.innerText).join(' ').replace(/\s+/g, ' ').trim())"))
         ->toBe(['Healthy Billing API'])
         ->and($admin->pinnedProjects()->pluck('slug')->all())->toBe(['billing-api']);
 

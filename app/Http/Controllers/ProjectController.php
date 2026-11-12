@@ -7,6 +7,7 @@ namespace App\Http\Controllers;
 use App\Actions\CreateProjectAction;
 use App\Actions\DeleteProjectAction;
 use App\Actions\RotateProjectTokenAction;
+use App\Actions\SaveProjectLogoAction;
 use App\Actions\UpdateProjectAction;
 use App\Enums\ProjectVisibilityEnum;
 use App\Http\Requests\ListQueryRequest;
@@ -61,13 +62,14 @@ class ProjectController extends Controller
         ]);
     }
 
-    public function store(StoreProjectRequest $request, CreateProjectAction $createProject, RotateProjectTokenAction $rotateToken): RedirectResponse
+    public function store(StoreProjectRequest $request, CreateProjectAction $createProject, RotateProjectTokenAction $rotateToken, SaveProjectLogoAction $saveLogo): RedirectResponse
     {
         $project = $createProject->execute(
             $request->string('name')->trim()->toString(),
             $request->string('slug')->toString(),
             $request->boolean('is_enabled', true),
         );
+        $saveLogo->execute($project, $request->logoUpload());
 
         $this->flashToken($project, $rotateToken->execute($project));
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Project created.')]);
@@ -75,7 +77,7 @@ class ProjectController extends Controller
         return to_route('projects.index');
     }
 
-    public function update(UpdateProjectRequest $request, Project $project, UpdateProjectAction $updateProject): RedirectResponse
+    public function update(UpdateProjectRequest $request, Project $project, UpdateProjectAction $updateProject, SaveProjectLogoAction $saveLogo): RedirectResponse
     {
         $updateProject->execute(
             $project,
@@ -83,6 +85,7 @@ class ProjectController extends Controller
             $request->boolean('is_enabled'),
             $request->enum('visibility', ProjectVisibilityEnum::class),
         );
+        $saveLogo->execute($project, $request->logoUpload(), $request->boolean('remove_logo'));
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Project updated.')]);
 

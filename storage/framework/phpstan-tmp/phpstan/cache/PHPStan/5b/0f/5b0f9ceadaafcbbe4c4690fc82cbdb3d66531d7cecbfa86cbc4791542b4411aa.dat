@@ -1,0 +1,270 @@
+O:23:"PHPStan\Cache\CacheItem":2:{s:11:"variableKey";s:83:"v2-8d96e63fb984db31eaedd858ae60549dcf6332c939d4cc940ca97f1fe6d91d1e-8.4.27-6.75.0.4";s:4:"data";a:22:{s:13:"locatedSource";a:2:{s:5:"class";s:60:"PHPStan\BetterReflection\SourceLocator\Located\LocatedSource";s:4:"data";a:2:{s:4:"name";s:29:"Psr\Http\Message\UriInterface";s:8:"filename";s:157:"/Users/lucagiardi/Projects/LucaGiardi/Qiick/Excubia/excubia-app/.claude/worktrees/287-project-avatar/vendor/composer/../psr/http-message/src/UriInterface.php";}}s:9:"namespace";s:16:"Psr\Http\Message";s:4:"name";s:29:"Psr\Http\Message\UriInterface";s:9:"shortName";s:12:"UriInterface";s:11:"isInterface";b:1;s:7:"isTrait";b:0;s:6:"isEnum";b:0;s:12:"isBackedEnum";b:0;s:9:"modifiers";i:0;s:10:"docComment";s:853:"/**
+ * Value object representing a URI.
+ *
+ * This interface is meant to represent URIs according to RFC 3986 and to
+ * provide methods for most common operations. Additional functionality for
+ * working with URIs can be provided on top of the interface or externally.
+ * Its primary use is for HTTP requests, but may also be used in other
+ * contexts.
+ *
+ * Instances of this interface are considered immutable; all methods that
+ * might change state MUST be implemented such that they retain the internal
+ * state of the current instance and return an instance that contains the
+ * changed state.
+ *
+ * Typically the Host header will be also be present in the request message.
+ * For server-side requests, the scheme will typically be discoverable in the
+ * server parameters.
+ *
+ * @link http://tools.ietf.org/html/rfc3986 (the URI specification)
+ */";s:10:"attributes";a:0:{}s:9:"startLine";i:25;s:7:"endLine";i:324;s:11:"startColumn";i:1;s:9:"endColumn";i:1;s:15:"parentClassName";N;s:20:"implementsClassNames";a:0:{}s:15:"traitClassNames";a:0:{}s:18:"immediateConstants";a:0:{}s:19:"immediateProperties";a:0:{}s:16:"immediateMethods";a:16:{s:9:"getScheme";a:20:{s:4:"name";s:9:"getScheme";s:10:"parameters";a:0:{}s:16:"returnsReference";b:0;s:10:"returnType";a:2:{s:5:"class";s:55:"PHPStan\BetterReflection\Reflection\ReflectionNamedType";s:4:"data";a:2:{s:4:"name";s:6:"string";s:12:"isIdentifier";b:1;}}s:10:"attributes";a:0:{}s:10:"docComment";s:389:"/**
+ * Retrieve the scheme component of the URI.
+ *
+ * If no scheme is present, this method MUST return an empty string.
+ *
+ * The value returned MUST be normalized to lowercase, per RFC 3986
+ * Section 3.1.
+ *
+ * The trailing ":" character is not part of the scheme and MUST NOT be
+ * added.
+ *
+ * @see https://tools.ietf.org/html/rfc3986#section-3.1
+ * @return string The URI scheme.
+ */";s:9:"startLine";i:41;s:7:"endLine";i:41;s:11:"startColumn";i:5;s:9:"endColumn";i:40;s:10:"couldThrow";b:0;s:9:"isClosure";b:0;s:11:"isGenerator";b:0;s:10:"isVariadic";b:0;s:9:"modifiers";i:1;s:9:"namespace";s:16:"Psr\Http\Message";s:18:"declaringClassName";s:29:"Psr\Http\Message\UriInterface";s:21:"implementingClassName";s:29:"Psr\Http\Message\UriInterface";s:16:"currentClassName";s:29:"Psr\Http\Message\UriInterface";s:9:"aliasName";N;}s:12:"getAuthority";a:20:{s:4:"name";s:12:"getAuthority";s:10:"parameters";a:0:{}s:16:"returnsReference";b:0;s:10:"returnType";a:2:{s:5:"class";s:55:"PHPStan\BetterReflection\Reflection\ReflectionNamedType";s:4:"data";a:2:{s:4:"name";s:6:"string";s:12:"isIdentifier";b:1;}}s:10:"attributes";a:0:{}s:10:"docComment";s:486:"/**
+ * Retrieve the authority component of the URI.
+ *
+ * If no authority information is present, this method MUST return an empty
+ * string.
+ *
+ * The authority syntax of the URI is:
+ *
+ * <pre>
+ * [user-info@]host[:port]
+ * </pre>
+ *
+ * If the port component is not set or is the standard port for the current
+ * scheme, it SHOULD NOT be included.
+ *
+ * @see https://tools.ietf.org/html/rfc3986#section-3.2
+ * @return string The URI authority, in "[user-info@]host[:port]" format.
+ */";s:9:"startLine";i:61;s:7:"endLine";i:61;s:11:"startColumn";i:5;s:9:"endColumn";i:43;s:10:"couldThrow";b:0;s:9:"isClosure";b:0;s:11:"isGenerator";b:0;s:10:"isVariadic";b:0;s:9:"modifiers";i:1;s:9:"namespace";s:16:"Psr\Http\Message";s:18:"declaringClassName";s:29:"Psr\Http\Message\UriInterface";s:21:"implementingClassName";s:29:"Psr\Http\Message\UriInterface";s:16:"currentClassName";s:29:"Psr\Http\Message\UriInterface";s:9:"aliasName";N;}s:11:"getUserInfo";a:20:{s:4:"name";s:11:"getUserInfo";s:10:"parameters";a:0:{}s:16:"returnsReference";b:0;s:10:"returnType";a:2:{s:5:"class";s:55:"PHPStan\BetterReflection\Reflection\ReflectionNamedType";s:4:"data";a:2:{s:4:"name";s:6:"string";s:12:"isIdentifier";b:1;}}s:10:"attributes";a:0:{}s:10:"docComment";s:524:"/**
+ * Retrieve the user information component of the URI.
+ *
+ * If no user information is present, this method MUST return an empty
+ * string.
+ *
+ * If a user is present in the URI, this will return that value;
+ * additionally, if the password is also present, it will be appended to the
+ * user value, with a colon (":") separating the values.
+ *
+ * The trailing "@" character is not part of the user information and MUST
+ * NOT be added.
+ *
+ * @return string The URI user information, in "username[:password]" format.
+ */";s:9:"startLine";i:78;s:7:"endLine";i:78;s:11:"startColumn";i:5;s:9:"endColumn";i:42;s:10:"couldThrow";b:0;s:9:"isClosure";b:0;s:11:"isGenerator";b:0;s:10:"isVariadic";b:0;s:9:"modifiers";i:1;s:9:"namespace";s:16:"Psr\Http\Message";s:18:"declaringClassName";s:29:"Psr\Http\Message\UriInterface";s:21:"implementingClassName";s:29:"Psr\Http\Message\UriInterface";s:16:"currentClassName";s:29:"Psr\Http\Message\UriInterface";s:9:"aliasName";N;}s:7:"getHost";a:20:{s:4:"name";s:7:"getHost";s:10:"parameters";a:0:{}s:16:"returnsReference";b:0;s:10:"returnType";a:2:{s:5:"class";s:55:"PHPStan\BetterReflection\Reflection\ReflectionNamedType";s:4:"data";a:2:{s:4:"name";s:6:"string";s:12:"isIdentifier";b:1;}}s:10:"attributes";a:0:{}s:10:"docComment";s:301:"/**
+ * Retrieve the host component of the URI.
+ *
+ * If no host is present, this method MUST return an empty string.
+ *
+ * The value returned MUST be normalized to lowercase, per RFC 3986
+ * Section 3.2.2.
+ *
+ * @see http://tools.ietf.org/html/rfc3986#section-3.2.2
+ * @return string The URI host.
+ */";s:9:"startLine";i:91;s:7:"endLine";i:91;s:11:"startColumn";i:5;s:9:"endColumn";i:38;s:10:"couldThrow";b:0;s:9:"isClosure";b:0;s:11:"isGenerator";b:0;s:10:"isVariadic";b:0;s:9:"modifiers";i:1;s:9:"namespace";s:16:"Psr\Http\Message";s:18:"declaringClassName";s:29:"Psr\Http\Message\UriInterface";s:21:"implementingClassName";s:29:"Psr\Http\Message\UriInterface";s:16:"currentClassName";s:29:"Psr\Http\Message\UriInterface";s:9:"aliasName";N;}s:7:"getPort";a:20:{s:4:"name";s:7:"getPort";s:10:"parameters";a:0:{}s:16:"returnsReference";b:0;s:10:"returnType";a:2:{s:5:"class";s:55:"PHPStan\BetterReflection\Reflection\ReflectionUnionType";s:4:"data";a:1:{s:5:"types";a:2:{i:0;a:2:{s:5:"class";s:55:"PHPStan\BetterReflection\Reflection\ReflectionNamedType";s:4:"data";a:2:{s:4:"name";s:3:"int";s:12:"isIdentifier";b:1;}}i:1;a:2:{s:5:"class";s:55:"PHPStan\BetterReflection\Reflection\ReflectionNamedType";s:4:"data";a:2:{s:4:"name";s:4:"null";s:12:"isIdentifier";b:1;}}}}}s:10:"attributes";a:0:{}s:10:"docComment";s:540:"/**
+ * Retrieve the port component of the URI.
+ *
+ * If a port is present, and it is non-standard for the current scheme,
+ * this method MUST return it as an integer. If the port is the standard port
+ * used with the current scheme, this method SHOULD return null.
+ *
+ * If no port is present, and no scheme is present, this method MUST return
+ * a null value.
+ *
+ * If no port is present, but a scheme is present, this method MAY return
+ * the standard port for that scheme, but SHOULD return null.
+ *
+ * @return null|int The URI port.
+ */";s:9:"startLine";i:108;s:7:"endLine";i:108;s:11:"startColumn";i:5;s:9:"endColumn";i:36;s:10:"couldThrow";b:0;s:9:"isClosure";b:0;s:11:"isGenerator";b:0;s:10:"isVariadic";b:0;s:9:"modifiers";i:1;s:9:"namespace";s:16:"Psr\Http\Message";s:18:"declaringClassName";s:29:"Psr\Http\Message\UriInterface";s:21:"implementingClassName";s:29:"Psr\Http\Message\UriInterface";s:16:"currentClassName";s:29:"Psr\Http\Message\UriInterface";s:9:"aliasName";N;}s:7:"getPath";a:20:{s:4:"name";s:7:"getPath";s:10:"parameters";a:0:{}s:16:"returnsReference";b:0;s:10:"returnType";a:2:{s:5:"class";s:55:"PHPStan\BetterReflection\Reflection\ReflectionNamedType";s:4:"data";a:2:{s:4:"name";s:6:"string";s:12:"isIdentifier";b:1;}}s:10:"attributes";a:0:{}s:10:"docComment";s:1089:"/**
+ * Retrieve the path component of the URI.
+ *
+ * The path can either be empty or absolute (starting with a slash) or
+ * rootless (not starting with a slash). Implementations MUST support all
+ * three syntaxes.
+ *
+ * Normally, the empty path "" and absolute path "/" are considered equal as
+ * defined in RFC 7230 Section 2.7.3. But this method MUST NOT automatically
+ * do this normalization because in contexts with a trimmed base path, e.g.
+ * the front controller, this difference becomes significant. It's the task
+ * of the user to handle both "" and "/".
+ *
+ * The value returned MUST be percent-encoded, but MUST NOT double-encode
+ * any characters. To determine what characters to encode, please refer to
+ * RFC 3986, Sections 2 and 3.3.
+ *
+ * As an example, if the value should include a slash ("/") not intended as
+ * delimiter between path segments, that value MUST be passed in encoded
+ * form (e.g., "%2F") to the instance.
+ *
+ * @see https://tools.ietf.org/html/rfc3986#section-2
+ * @see https://tools.ietf.org/html/rfc3986#section-3.3
+ * @return string The URI path.
+ */";s:9:"startLine";i:135;s:7:"endLine";i:135;s:11:"startColumn";i:5;s:9:"endColumn";i:38;s:10:"couldThrow";b:0;s:9:"isClosure";b:0;s:11:"isGenerator";b:0;s:10:"isVariadic";b:0;s:9:"modifiers";i:1;s:9:"namespace";s:16:"Psr\Http\Message";s:18:"declaringClassName";s:29:"Psr\Http\Message\UriInterface";s:21:"implementingClassName";s:29:"Psr\Http\Message\UriInterface";s:16:"currentClassName";s:29:"Psr\Http\Message\UriInterface";s:9:"aliasName";N;}s:8:"getQuery";a:20:{s:4:"name";s:8:"getQuery";s:10:"parameters";a:0:{}s:16:"returnsReference";b:0;s:10:"returnType";a:2:{s:5:"class";s:55:"PHPStan\BetterReflection\Reflection\ReflectionNamedType";s:4:"data";a:2:{s:4:"name";s:6:"string";s:12:"isIdentifier";b:1;}}s:10:"attributes";a:0:{}s:10:"docComment";s:776:"/**
+ * Retrieve the query string of the URI.
+ *
+ * If no query string is present, this method MUST return an empty string.
+ *
+ * The leading "?" character is not part of the query and MUST NOT be
+ * added.
+ *
+ * The value returned MUST be percent-encoded, but MUST NOT double-encode
+ * any characters. To determine what characters to encode, please refer to
+ * RFC 3986, Sections 2 and 3.4.
+ *
+ * As an example, if a value in a key/value pair of the query string should
+ * include an ampersand ("&") not intended as a delimiter between values,
+ * that value MUST be passed in encoded form (e.g., "%26") to the instance.
+ *
+ * @see https://tools.ietf.org/html/rfc3986#section-2
+ * @see https://tools.ietf.org/html/rfc3986#section-3.4
+ * @return string The URI query string.
+ */";s:9:"startLine";i:157;s:7:"endLine";i:157;s:11:"startColumn";i:5;s:9:"endColumn";i:39;s:10:"couldThrow";b:0;s:9:"isClosure";b:0;s:11:"isGenerator";b:0;s:10:"isVariadic";b:0;s:9:"modifiers";i:1;s:9:"namespace";s:16:"Psr\Http\Message";s:18:"declaringClassName";s:29:"Psr\Http\Message\UriInterface";s:21:"implementingClassName";s:29:"Psr\Http\Message\UriInterface";s:16:"currentClassName";s:29:"Psr\Http\Message\UriInterface";s:9:"aliasName";N;}s:11:"getFragment";a:20:{s:4:"name";s:11:"getFragment";s:10:"parameters";a:0:{}s:16:"returnsReference";b:0;s:10:"returnType";a:2:{s:5:"class";s:55:"PHPStan\BetterReflection\Reflection\ReflectionNamedType";s:4:"data";a:2:{s:4:"name";s:6:"string";s:12:"isIdentifier";b:1;}}s:10:"attributes";a:0:{}s:10:"docComment";s:548:"/**
+ * Retrieve the fragment component of the URI.
+ *
+ * If no fragment is present, this method MUST return an empty string.
+ *
+ * The leading "#" character is not part of the fragment and MUST NOT be
+ * added.
+ *
+ * The value returned MUST be percent-encoded, but MUST NOT double-encode
+ * any characters. To determine what characters to encode, please refer to
+ * RFC 3986, Sections 2 and 3.5.
+ *
+ * @see https://tools.ietf.org/html/rfc3986#section-2
+ * @see https://tools.ietf.org/html/rfc3986#section-3.5
+ * @return string The URI fragment.
+ */";s:9:"startLine";i:175;s:7:"endLine";i:175;s:11:"startColumn";i:5;s:9:"endColumn";i:42;s:10:"couldThrow";b:0;s:9:"isClosure";b:0;s:11:"isGenerator";b:0;s:10:"isVariadic";b:0;s:9:"modifiers";i:1;s:9:"namespace";s:16:"Psr\Http\Message";s:18:"declaringClassName";s:29:"Psr\Http\Message\UriInterface";s:21:"implementingClassName";s:29:"Psr\Http\Message\UriInterface";s:16:"currentClassName";s:29:"Psr\Http\Message\UriInterface";s:9:"aliasName";N;}s:10:"withScheme";a:20:{s:4:"name";s:10:"withScheme";s:10:"parameters";a:1:{s:6:"scheme";a:14:{s:4:"name";s:6:"scheme";s:7:"default";N;s:4:"type";a:2:{s:5:"class";s:55:"PHPStan\BetterReflection\Reflection\ReflectionNamedType";s:4:"data";a:2:{s:4:"name";s:6:"string";s:12:"isIdentifier";b:1;}}s:10:"isVariadic";b:0;s:5:"byRef";b:0;s:10:"isPromoted";b:0;s:10:"docComment";N;s:10:"attributes";a:0:{}s:9:"startLine";i:192;s:7:"endLine";i:192;s:11:"startColumn";i:32;s:9:"endColumn";i:45;s:14:"parameterIndex";i:0;s:10:"isOptional";b:0;}}s:16:"returnsReference";b:0;s:10:"returnType";a:2:{s:5:"class";s:55:"PHPStan\BetterReflection\Reflection\ReflectionNamedType";s:4:"data";a:2:{s:4:"name";s:29:"Psr\Http\Message\UriInterface";s:12:"isIdentifier";b:0;}}s:10:"attributes";a:0:{}s:10:"docComment";s:581:"/**
+ * Return an instance with the specified scheme.
+ *
+ * This method MUST retain the state of the current instance, and return
+ * an instance that contains the specified scheme.
+ *
+ * Implementations MUST support the schemes "http" and "https" case
+ * insensitively, and MAY accommodate other schemes if required.
+ *
+ * An empty scheme is equivalent to removing the scheme.
+ *
+ * @param string $scheme The scheme to use with the new instance.
+ * @return static A new instance with the specified scheme.
+ * @throws \InvalidArgumentException for invalid or unsupported schemes.
+ */";s:9:"startLine";i:192;s:7:"endLine";i:192;s:11:"startColumn";i:5;s:9:"endColumn";i:61;s:10:"couldThrow";b:0;s:9:"isClosure";b:0;s:11:"isGenerator";b:0;s:10:"isVariadic";b:0;s:9:"modifiers";i:1;s:9:"namespace";s:16:"Psr\Http\Message";s:18:"declaringClassName";s:29:"Psr\Http\Message\UriInterface";s:21:"implementingClassName";s:29:"Psr\Http\Message\UriInterface";s:16:"currentClassName";s:29:"Psr\Http\Message\UriInterface";s:9:"aliasName";N;}s:12:"withUserInfo";a:20:{s:4:"name";s:12:"withUserInfo";s:10:"parameters";a:2:{s:4:"user";a:14:{s:4:"name";s:4:"user";s:7:"default";N;s:4:"type";a:2:{s:5:"class";s:55:"PHPStan\BetterReflection\Reflection\ReflectionNamedType";s:4:"data";a:2:{s:4:"name";s:6:"string";s:12:"isIdentifier";b:1;}}s:10:"isVariadic";b:0;s:5:"byRef";b:0;s:10:"isPromoted";b:0;s:10:"docComment";N;s:10:"attributes";a:0:{}s:9:"startLine";i:208;s:7:"endLine";i:208;s:11:"startColumn";i:34;s:9:"endColumn";i:45;s:14:"parameterIndex";i:0;s:10:"isOptional";b:0;}s:8:"password";a:14:{s:4:"name";s:8:"password";s:7:"default";a:2:{s:4:"code";s:4:"null";s:10:"attributes";a:6:{s:9:"startLine";i:208;s:7:"endLine";i:208;s:13:"startTokenPos";i:165;s:12:"startFilePos";i:7833;s:11:"endTokenPos";i:165;s:10:"endFilePos";i:7836;}}s:4:"type";a:2:{s:5:"class";s:55:"PHPStan\BetterReflection\Reflection\ReflectionUnionType";s:4:"data";a:1:{s:5:"types";a:2:{i:0;a:2:{s:5:"class";s:55:"PHPStan\BetterReflection\Reflection\ReflectionNamedType";s:4:"data";a:2:{s:4:"name";s:6:"string";s:12:"isIdentifier";b:1;}}i:1;a:2:{s:5:"class";s:55:"PHPStan\BetterReflection\Reflection\ReflectionNamedType";s:4:"data";a:2:{s:4:"name";s:4:"null";s:12:"isIdentifier";b:1;}}}}}s:10:"isVariadic";b:0;s:5:"byRef";b:0;s:10:"isPromoted";b:0;s:10:"docComment";N;s:10:"attributes";a:0:{}s:9:"startLine";i:208;s:7:"endLine";i:208;s:11:"startColumn";i:48;s:9:"endColumn";i:71;s:14:"parameterIndex";i:1;s:10:"isOptional";b:1;}}s:16:"returnsReference";b:0;s:10:"returnType";a:2:{s:5:"class";s:55:"PHPStan\BetterReflection\Reflection\ReflectionNamedType";s:4:"data";a:2:{s:4:"name";s:29:"Psr\Http\Message\UriInterface";s:12:"isIdentifier";b:0;}}s:10:"attributes";a:0:{}s:10:"docComment";s:558:"/**
+ * Return an instance with the specified user information.
+ *
+ * This method MUST retain the state of the current instance, and return
+ * an instance that contains the specified user information.
+ *
+ * Password is optional, but the user information MUST include the
+ * user; an empty string for the user is equivalent to removing user
+ * information.
+ *
+ * @param string $user The user name to use for authority.
+ * @param null|string $password The password associated with $user.
+ * @return static A new instance with the specified user information.
+ */";s:9:"startLine";i:208;s:7:"endLine";i:208;s:11:"startColumn";i:5;s:9:"endColumn";i:87;s:10:"couldThrow";b:0;s:9:"isClosure";b:0;s:11:"isGenerator";b:0;s:10:"isVariadic";b:0;s:9:"modifiers";i:1;s:9:"namespace";s:16:"Psr\Http\Message";s:18:"declaringClassName";s:29:"Psr\Http\Message\UriInterface";s:21:"implementingClassName";s:29:"Psr\Http\Message\UriInterface";s:16:"currentClassName";s:29:"Psr\Http\Message\UriInterface";s:9:"aliasName";N;}s:8:"withHost";a:20:{s:4:"name";s:8:"withHost";s:10:"parameters";a:1:{s:4:"host";a:14:{s:4:"name";s:4:"host";s:7:"default";N;s:4:"type";a:2:{s:5:"class";s:55:"PHPStan\BetterReflection\Reflection\ReflectionNamedType";s:4:"data";a:2:{s:4:"name";s:6:"string";s:12:"isIdentifier";b:1;}}s:10:"isVariadic";b:0;s:5:"byRef";b:0;s:10:"isPromoted";b:0;s:10:"docComment";N;s:10:"attributes";a:0:{}s:9:"startLine";i:222;s:7:"endLine";i:222;s:11:"startColumn";i:30;s:9:"endColumn";i:41;s:14:"parameterIndex";i:0;s:10:"isOptional";b:0;}}s:16:"returnsReference";b:0;s:10:"returnType";a:2:{s:5:"class";s:55:"PHPStan\BetterReflection\Reflection\ReflectionNamedType";s:4:"data";a:2:{s:4:"name";s:29:"Psr\Http\Message\UriInterface";s:12:"isIdentifier";b:0;}}s:10:"attributes";a:0:{}s:10:"docComment";s:428:"/**
+ * Return an instance with the specified host.
+ *
+ * This method MUST retain the state of the current instance, and return
+ * an instance that contains the specified host.
+ *
+ * An empty host value is equivalent to removing the host.
+ *
+ * @param string $host The hostname to use with the new instance.
+ * @return static A new instance with the specified host.
+ * @throws \InvalidArgumentException for invalid hostnames.
+ */";s:9:"startLine";i:222;s:7:"endLine";i:222;s:11:"startColumn";i:5;s:9:"endColumn";i:57;s:10:"couldThrow";b:0;s:9:"isClosure";b:0;s:11:"isGenerator";b:0;s:10:"isVariadic";b:0;s:9:"modifiers";i:1;s:9:"namespace";s:16:"Psr\Http\Message";s:18:"declaringClassName";s:29:"Psr\Http\Message\UriInterface";s:21:"implementingClassName";s:29:"Psr\Http\Message\UriInterface";s:16:"currentClassName";s:29:"Psr\Http\Message\UriInterface";s:9:"aliasName";N;}s:8:"withPort";a:20:{s:4:"name";s:8:"withPort";s:10:"parameters";a:1:{s:4:"port";a:14:{s:4:"name";s:4:"port";s:7:"default";N;s:4:"type";a:2:{s:5:"class";s:55:"PHPStan\BetterReflection\Reflection\ReflectionUnionType";s:4:"data";a:1:{s:5:"types";a:2:{i:0;a:2:{s:5:"class";s:55:"PHPStan\BetterReflection\Reflection\ReflectionNamedType";s:4:"data";a:2:{s:4:"name";s:3:"int";s:12:"isIdentifier";b:1;}}i:1;a:2:{s:5:"class";s:55:"PHPStan\BetterReflection\Reflection\ReflectionNamedType";s:4:"data";a:2:{s:4:"name";s:4:"null";s:12:"isIdentifier";b:1;}}}}}s:10:"isVariadic";b:0;s:5:"byRef";b:0;s:10:"isPromoted";b:0;s:10:"docComment";N;s:10:"attributes";a:0:{}s:9:"startLine";i:241;s:7:"endLine";i:241;s:11:"startColumn";i:30;s:9:"endColumn";i:39;s:14:"parameterIndex";i:0;s:10:"isOptional";b:0;}}s:16:"returnsReference";b:0;s:10:"returnType";a:2:{s:5:"class";s:55:"PHPStan\BetterReflection\Reflection\ReflectionNamedType";s:4:"data";a:2:{s:4:"name";s:29:"Psr\Http\Message\UriInterface";s:12:"isIdentifier";b:0;}}s:10:"attributes";a:0:{}s:10:"docComment";s:610:"/**
+ * Return an instance with the specified port.
+ *
+ * This method MUST retain the state of the current instance, and return
+ * an instance that contains the specified port.
+ *
+ * Implementations MUST raise an exception for ports outside the
+ * established TCP and UDP port ranges.
+ *
+ * A null value provided for the port is equivalent to removing the port
+ * information.
+ *
+ * @param null|int $port The port to use with the new instance; a null value
+ *     removes the port information.
+ * @return static A new instance with the specified port.
+ * @throws \InvalidArgumentException for invalid ports.
+ */";s:9:"startLine";i:241;s:7:"endLine";i:241;s:11:"startColumn";i:5;s:9:"endColumn";i:55;s:10:"couldThrow";b:0;s:9:"isClosure";b:0;s:11:"isGenerator";b:0;s:10:"isVariadic";b:0;s:9:"modifiers";i:1;s:9:"namespace";s:16:"Psr\Http\Message";s:18:"declaringClassName";s:29:"Psr\Http\Message\UriInterface";s:21:"implementingClassName";s:29:"Psr\Http\Message\UriInterface";s:16:"currentClassName";s:29:"Psr\Http\Message\UriInterface";s:9:"aliasName";N;}s:8:"withPath";a:20:{s:4:"name";s:8:"withPath";s:10:"parameters";a:1:{s:4:"path";a:14:{s:4:"name";s:4:"path";s:7:"default";N;s:4:"type";a:2:{s:5:"class";s:55:"PHPStan\BetterReflection\Reflection\ReflectionNamedType";s:4:"data";a:2:{s:4:"name";s:6:"string";s:12:"isIdentifier";b:1;}}s:10:"isVariadic";b:0;s:5:"byRef";b:0;s:10:"isPromoted";b:0;s:10:"docComment";N;s:10:"attributes";a:0:{}s:9:"startLine";i:265;s:7:"endLine";i:265;s:11:"startColumn";i:30;s:9:"endColumn";i:41;s:14:"parameterIndex";i:0;s:10:"isOptional";b:0;}}s:16:"returnsReference";b:0;s:10:"returnType";a:2:{s:5:"class";s:55:"PHPStan\BetterReflection\Reflection\ReflectionNamedType";s:4:"data";a:2:{s:4:"name";s:29:"Psr\Http\Message\UriInterface";s:12:"isIdentifier";b:0;}}s:10:"attributes";a:0:{}s:10:"docComment";s:911:"/**
+ * Return an instance with the specified path.
+ *
+ * This method MUST retain the state of the current instance, and return
+ * an instance that contains the specified path.
+ *
+ * The path can either be empty or absolute (starting with a slash) or
+ * rootless (not starting with a slash). Implementations MUST support all
+ * three syntaxes.
+ *
+ * If the path is intended to be domain-relative rather than path relative then
+ * it must begin with a slash ("/"). Paths not starting with a slash ("/")
+ * are assumed to be relative to some base path known to the application or
+ * consumer.
+ *
+ * Users can provide both encoded and decoded path characters.
+ * Implementations ensure the correct encoding as outlined in getPath().
+ *
+ * @param string $path The path to use with the new instance.
+ * @return static A new instance with the specified path.
+ * @throws \InvalidArgumentException for invalid paths.
+ */";s:9:"startLine";i:265;s:7:"endLine";i:265;s:11:"startColumn";i:5;s:9:"endColumn";i:57;s:10:"couldThrow";b:0;s:9:"isClosure";b:0;s:11:"isGenerator";b:0;s:10:"isVariadic";b:0;s:9:"modifiers";i:1;s:9:"namespace";s:16:"Psr\Http\Message";s:18:"declaringClassName";s:29:"Psr\Http\Message\UriInterface";s:21:"implementingClassName";s:29:"Psr\Http\Message\UriInterface";s:16:"currentClassName";s:29:"Psr\Http\Message\UriInterface";s:9:"aliasName";N;}s:9:"withQuery";a:20:{s:4:"name";s:9:"withQuery";s:10:"parameters";a:1:{s:5:"query";a:14:{s:4:"name";s:5:"query";s:7:"default";N;s:4:"type";a:2:{s:5:"class";s:55:"PHPStan\BetterReflection\Reflection\ReflectionNamedType";s:4:"data";a:2:{s:4:"name";s:6:"string";s:12:"isIdentifier";b:1;}}s:10:"isVariadic";b:0;s:5:"byRef";b:0;s:10:"isPromoted";b:0;s:10:"docComment";N;s:10:"attributes";a:0:{}s:9:"startLine";i:282;s:7:"endLine";i:282;s:11:"startColumn";i:31;s:9:"endColumn";i:43;s:14:"parameterIndex";i:0;s:10:"isOptional";b:0;}}s:16:"returnsReference";b:0;s:10:"returnType";a:2:{s:5:"class";s:55:"PHPStan\BetterReflection\Reflection\ReflectionNamedType";s:4:"data";a:2:{s:4:"name";s:29:"Psr\Http\Message\UriInterface";s:12:"isIdentifier";b:0;}}s:10:"attributes";a:0:{}s:10:"docComment";s:618:"/**
+ * Return an instance with the specified query string.
+ *
+ * This method MUST retain the state of the current instance, and return
+ * an instance that contains the specified query string.
+ *
+ * Users can provide both encoded and decoded query characters.
+ * Implementations ensure the correct encoding as outlined in getQuery().
+ *
+ * An empty query string value is equivalent to removing the query string.
+ *
+ * @param string $query The query string to use with the new instance.
+ * @return static A new instance with the specified query string.
+ * @throws \InvalidArgumentException for invalid query strings.
+ */";s:9:"startLine";i:282;s:7:"endLine";i:282;s:11:"startColumn";i:5;s:9:"endColumn";i:59;s:10:"couldThrow";b:0;s:9:"isClosure";b:0;s:11:"isGenerator";b:0;s:10:"isVariadic";b:0;s:9:"modifiers";i:1;s:9:"namespace";s:16:"Psr\Http\Message";s:18:"declaringClassName";s:29:"Psr\Http\Message\UriInterface";s:21:"implementingClassName";s:29:"Psr\Http\Message\UriInterface";s:16:"currentClassName";s:29:"Psr\Http\Message\UriInterface";s:9:"aliasName";N;}s:12:"withFragment";a:20:{s:4:"name";s:12:"withFragment";s:10:"parameters";a:1:{s:8:"fragment";a:14:{s:4:"name";s:8:"fragment";s:7:"default";N;s:4:"type";a:2:{s:5:"class";s:55:"PHPStan\BetterReflection\Reflection\ReflectionNamedType";s:4:"data";a:2:{s:4:"name";s:6:"string";s:12:"isIdentifier";b:1;}}s:10:"isVariadic";b:0;s:5:"byRef";b:0;s:10:"isPromoted";b:0;s:10:"docComment";N;s:10:"attributes";a:0:{}s:9:"startLine";i:298;s:7:"endLine";i:298;s:11:"startColumn";i:34;s:9:"endColumn";i:49;s:14:"parameterIndex";i:0;s:10:"isOptional";b:0;}}s:16:"returnsReference";b:0;s:10:"returnType";a:2:{s:5:"class";s:55:"PHPStan\BetterReflection\Reflection\ReflectionNamedType";s:4:"data";a:2:{s:4:"name";s:29:"Psr\Http\Message\UriInterface";s:12:"isIdentifier";b:0;}}s:10:"attributes";a:0:{}s:10:"docComment";s:547:"/**
+ * Return an instance with the specified URI fragment.
+ *
+ * This method MUST retain the state of the current instance, and return
+ * an instance that contains the specified URI fragment.
+ *
+ * Users can provide both encoded and decoded fragment characters.
+ * Implementations ensure the correct encoding as outlined in getFragment().
+ *
+ * An empty fragment value is equivalent to removing the fragment.
+ *
+ * @param string $fragment The fragment to use with the new instance.
+ * @return static A new instance with the specified fragment.
+ */";s:9:"startLine";i:298;s:7:"endLine";i:298;s:11:"startColumn";i:5;s:9:"endColumn";i:65;s:10:"couldThrow";b:0;s:9:"isClosure";b:0;s:11:"isGenerator";b:0;s:10:"isVariadic";b:0;s:9:"modifiers";i:1;s:9:"namespace";s:16:"Psr\Http\Message";s:18:"declaringClassName";s:29:"Psr\Http\Message\UriInterface";s:21:"implementingClassName";s:29:"Psr\Http\Message\UriInterface";s:16:"currentClassName";s:29:"Psr\Http\Message\UriInterface";s:9:"aliasName";N;}s:10:"__toString";a:20:{s:4:"name";s:10:"__toString";s:10:"parameters";a:0:{}s:16:"returnsReference";b:0;s:10:"returnType";a:2:{s:5:"class";s:55:"PHPStan\BetterReflection\Reflection\ReflectionNamedType";s:4:"data";a:2:{s:4:"name";s:6:"string";s:12:"isIdentifier";b:1;}}s:10:"attributes";a:0:{}s:10:"docComment";s:1097:"/**
+ * Return the string representation as a URI reference.
+ *
+ * Depending on which components of the URI are present, the resulting
+ * string is either a full URI or relative reference according to RFC 3986,
+ * Section 4.1. The method concatenates the various components of the URI,
+ * using the appropriate delimiters:
+ *
+ * - If a scheme is present, it MUST be suffixed by ":".
+ * - If an authority is present, it MUST be prefixed by "//".
+ * - The path can be concatenated without delimiters. But there are two
+ *   cases where the path has to be adjusted to make the URI reference
+ *   valid as PHP does not allow to throw an exception in __toString():
+ *     - If the path is rootless and an authority is present, the path MUST
+ *       be prefixed by "/".
+ *     - If the path is starting with more than one "/" and no authority is
+ *       present, the starting slashes MUST be reduced to one.
+ * - If a query is present, it MUST be prefixed by "?".
+ * - If a fragment is present, it MUST be prefixed by "#".
+ *
+ * @see http://tools.ietf.org/html/rfc3986#section-4.1
+ * @return string
+ */";s:9:"startLine";i:323;s:7:"endLine";i:323;s:11:"startColumn";i:5;s:9:"endColumn";i:41;s:10:"couldThrow";b:0;s:9:"isClosure";b:0;s:11:"isGenerator";b:0;s:10:"isVariadic";b:0;s:9:"modifiers";i:1;s:9:"namespace";s:16:"Psr\Http\Message";s:18:"declaringClassName";s:29:"Psr\Http\Message\UriInterface";s:21:"implementingClassName";s:29:"Psr\Http\Message\UriInterface";s:16:"currentClassName";s:29:"Psr\Http\Message\UriInterface";s:9:"aliasName";N;}}s:10:"traitsData";a:4:{s:7:"aliases";a:0:{}s:9:"modifiers";a:0:{}s:11:"precedences";a:0:{}s:6:"hashes";a:0:{}}}}

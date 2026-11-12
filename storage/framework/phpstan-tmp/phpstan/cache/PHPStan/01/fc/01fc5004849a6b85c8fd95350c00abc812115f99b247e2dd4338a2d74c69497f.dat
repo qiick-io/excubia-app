@@ -1,0 +1,1 @@
+O:23:"PHPStan\Cache\CacheItem":2:{s:11:"variableKey";s:74:"v2-258d89b05fd7fac492b4998f73347d89be379a62ff88188debac3bfd32c3baf7-8.4.27";s:4:"data";a:3:{s:7:"classes";a:1:{s:31:"illuminate\broadcasting\channel";b:1;}s:9:"functions";a:0:{}s:9:"constants";a:0:{}}}

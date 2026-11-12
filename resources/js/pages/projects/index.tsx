@@ -23,6 +23,7 @@ import { PageEmptyState } from '@/components/admin/page-empty-state';
 import { ConfirmDestructiveDialog } from '@/components/confirm-destructive-dialog';
 import { EmptyStatus } from '@/components/empty-status';
 import { PageLayout } from '@/components/layout/page-layout';
+import { ProjectAvatar } from '@/components/projects/project-avatar';
 import { ProjectFormDrawer } from '@/components/projects/project-form-drawer';
 import { PushTokenDialog } from '@/components/projects/push-token-dialog';
 import { CHECK_STATUS_VARIANTS } from '@/components/reports/check-details';
@@ -233,12 +234,19 @@ export default function ProjectsIndex({
                         className="block rounded-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                         onClick={(event) => event.stopPropagation()}
                     >
-                        {/* ponytail: the avatar / logo joins this cell with #287. */}
-                        <NameSlugCell
-                            name={project.name}
-                            slug={project.environment ?? project.slug}
-                            badge={<ProjectStateBadges project={project} />}
-                        />
+                        <div className="flex min-w-0 items-center gap-2">
+                            <ProjectAvatar
+                                slug={project.slug}
+                                name={project.name}
+                                logoUrl={project.logo_url}
+                                size="sm"
+                            />
+                            <NameSlugCell
+                                name={project.name}
+                                slug={project.environment ?? project.slug}
+                                badge={<ProjectStateBadges project={project} />}
+                            />
+                        </div>
                     </Link>
                 );
             },

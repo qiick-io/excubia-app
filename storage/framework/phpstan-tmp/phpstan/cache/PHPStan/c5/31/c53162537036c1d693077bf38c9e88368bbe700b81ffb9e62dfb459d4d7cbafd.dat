@@ -1,0 +1,1 @@
+O:23:"PHPStan\Cache\CacheItem":2:{s:11:"variableKey";s:74:"v2-db59bf9d0edb164ed1f2422264fe41360d31ff2ad247fa153d66dbe4943401b1-8.4.27";s:4:"data";a:3:{s:7:"classes";a:1:{s:42:"illuminate\support\testing\fakes\eventfake";b:1;}s:9:"functions";a:0:{}s:9:"constants";a:0:{}}}

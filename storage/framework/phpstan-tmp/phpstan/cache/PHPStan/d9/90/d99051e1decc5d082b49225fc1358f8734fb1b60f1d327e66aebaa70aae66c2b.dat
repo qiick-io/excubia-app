@@ -1,0 +1,4 @@
+O:23:"PHPStan\Cache\CacheItem":2:{s:11:"variableKey";s:38:"v3-6.75.0.4-dev-master@f690ff3-8.4.27-";s:4:"data";a:11:{s:13:"locatedSource";a:2:{s:5:"class";s:68:"PHPStan\BetterReflection\SourceLocator\Located\InternalLocatedSource";s:4:"data";a:4:{s:4:"name";s:12:"LIBXML_NONET";s:8:"filename";s:33:"phpstorm-stubs:libxml/libxml.stub";s:13:"extensionName";s:6:"libxml";s:9:"aliasName";N;}}s:4:"name";s:12:"LIBXML_NONET";s:9:"shortName";s:12:"LIBXML_NONET";s:5:"value";a:2:{s:4:"code";s:4:"2048";s:10:"attributes";a:6:{s:9:"startLine";i:7;s:7:"endLine";i:7;s:13:"startTokenPos";i:9;s:12:"startFilePos";i:143;s:11:"endTokenPos";i:9;s:10:"endFilePos";i:146;}}s:10:"docComment";s:112:"/**
+ * Disable network access when loading documents
+ * @link https://php.net/manual/en/libxml.constants.php
+ */";s:10:"attributes";a:0:{}s:9:"startLine";i:7;s:7:"endLine";i:7;s:11:"startColumn";i:1;s:9:"endColumn";i:28;s:9:"namespace";N;}}

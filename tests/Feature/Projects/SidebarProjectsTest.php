@@ -52,8 +52,8 @@ it('pins and unpins a project, in pin order, shown in the shared prop', function
     $this->actingAs($admin)->get(route('dashboard'))
         ->assertInertia(fn (Assert $page) => $page
             ->where('sidebarProjects.pinned', [
-                ['slug' => 'billing', 'name' => 'Billing', 'status' => 'good'],
-                ['slug' => 'api', 'name' => 'API', 'status' => 'good'],
+                ['slug' => 'billing', 'name' => 'Billing', 'logo_url' => null, 'status' => 'good'],
+                ['slug' => 'api', 'name' => 'API', 'logo_url' => null, 'status' => 'good'],
             ]));
 
     $this->actingAs($admin)->delete(route('projects.pin.destroy', $billing->slug))->assertRedirect();
@@ -102,10 +102,10 @@ it('lists troubled projects that are not pinned, critical first, capped at five'
 
     $sidebar = app(SidebarProjectsService::class)->forUser($admin);
 
-    expect($sidebar['pinned'])->toBe([['slug' => 'pinned', 'name' => 'Pinned', 'status' => 'critical']])
+    expect($sidebar['pinned'])->toBe([['slug' => 'pinned', 'name' => 'Pinned', 'logo_url' => null, 'status' => 'critical']])
         ->and($sidebar['needsAttention'])->toBe([
-            ['slug' => 'zebra', 'name' => 'Zebra', 'status' => 'critical'],
-            ['slug' => 'aardvark', 'name' => 'Aardvark', 'status' => 'warning'],
+            ['slug' => 'zebra', 'name' => 'Zebra', 'logo_url' => null, 'status' => 'critical'],
+            ['slug' => 'aardvark', 'name' => 'Aardvark', 'logo_url' => null, 'status' => 'warning'],
         ]);
 
     foreach (range(1, 6) as $index) {

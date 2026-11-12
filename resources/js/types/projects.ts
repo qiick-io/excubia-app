@@ -14,6 +14,8 @@ export type ProjectRow = {
     last_report_at: string | null;
     /** Laravel `app.env` last reported by excubia-core 1.0.0-beta.4 or later, null when unknown. */
     environment: string | null;
+    /** The uploaded logo (#287), null when the project shows its initials. */
+    logo_url: string | null;
     /** Never reported, or last report older than the stale setting. */
     is_stale: boolean;
     /** Present on the dashboard and the project page only. */
@@ -759,6 +761,7 @@ export type ExceptionsOverview = {
 export type SidebarProject = {
     slug: string;
     name: string;
+    logo_url: string | null;
     status: 'good' | 'warning' | 'critical';
 };
 

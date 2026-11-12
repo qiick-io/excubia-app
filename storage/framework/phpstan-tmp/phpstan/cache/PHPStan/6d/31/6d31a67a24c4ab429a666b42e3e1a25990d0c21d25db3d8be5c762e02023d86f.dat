@@ -1,0 +1,13 @@
+O:23:"PHPStan\Cache\CacheItem":2:{s:11:"variableKey";s:38:"v3-6.75.0.4-dev-master@f690ff3-8.4.27-";s:4:"data";a:17:{s:4:"name";s:7:"mt_rand";s:10:"parameters";a:2:{s:3:"min";a:14:{s:4:"name";s:3:"min";s:7:"default";N;s:4:"type";a:2:{s:5:"class";s:55:"PHPStan\BetterReflection\Reflection\ReflectionNamedType";s:4:"data";a:2:{s:4:"name";s:3:"int";s:12:"isIdentifier";b:1;}}s:10:"isVariadic";b:0;s:5:"byRef";b:0;s:10:"isPromoted";b:0;s:10:"docComment";N;s:10:"attributes";a:0:{}s:9:"startLine";i:21;s:7:"endLine";i:21;s:11:"startColumn";i:22;s:9:"endColumn";i:29;s:14:"parameterIndex";i:0;s:10:"isOptional";b:0;}s:3:"max";a:14:{s:4:"name";s:3:"max";s:7:"default";N;s:4:"type";a:2:{s:5:"class";s:55:"PHPStan\BetterReflection\Reflection\ReflectionNamedType";s:4:"data";a:2:{s:4:"name";s:3:"int";s:12:"isIdentifier";b:1;}}s:10:"isVariadic";b:0;s:5:"byRef";b:0;s:10:"isPromoted";b:0;s:10:"docComment";N;s:10:"attributes";a:0:{}s:9:"startLine";i:21;s:7:"endLine";i:21;s:11:"startColumn";i:32;s:9:"endColumn";i:39;s:14:"parameterIndex";i:1;s:10:"isOptional";b:0;}}s:16:"returnsReference";b:0;s:10:"returnType";a:2:{s:5:"class";s:55:"PHPStan\BetterReflection\Reflection\ReflectionNamedType";s:4:"data";a:2:{s:4:"name";s:3:"int";s:12:"isIdentifier";b:1;}}s:10:"attributes";a:0:{}s:10:"docComment";s:519:"/**
+ * Generate a random value via the Mersenne Twister Random Number Generator
+ * @link https://php.net/manual/en/function.mt-rand.php
+ * @param int $min [optional] <p>
+ * Optional lowest value to be returned (default: 0)
+ * </p>
+ * @param int $max [optional] <p>
+ * Optional highest value to be returned (default: mt_getrandmax())
+ * </p>
+ * @return int A random integer value between min (or 0)
+ * and max (or mt_getrandmax, inclusive)
+ * @throws \ValueError If max is less than min, a ValueError will be thrown.
+ */";s:9:"startLine";i:21;s:7:"endLine";i:23;s:11:"startColumn";i:5;s:9:"endColumn";i:5;s:10:"couldThrow";b:0;s:9:"isClosure";b:0;s:11:"isGenerator";b:0;s:10:"isVariadic";b:0;s:8:"isStatic";b:0;s:9:"namespace";N;s:13:"locatedSource";a:2:{s:5:"class";s:68:"PHPStan\BetterReflection\SourceLocator\Located\InternalLocatedSource";s:4:"data";a:4:{s:4:"name";s:7:"mt_rand";s:8:"filename";s:33:"phpstorm-stubs:random/random.stub";s:13:"extensionName";s:6:"random";s:9:"aliasName";N;}}}}

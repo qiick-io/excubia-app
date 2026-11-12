@@ -1,0 +1,109 @@
+O:23:"PHPStan\Cache\CacheItem":2:{s:11:"variableKey";s:83:"v3-6.75.0.4-8.4.27-0b0f47a934f1eb6cad6d3631648d905d5b80c28a9e0b747f226c949a12f0e690";s:4:"data";a:22:{s:13:"locatedSource";a:2:{s:5:"class";s:60:"PHPStan\BetterReflection\SourceLocator\Located\LocatedSource";s:4:"data";a:2:{s:4:"name";s:43:"App\Http\Requests\StorePushedRuntimeRequest";s:8:"filename";s:148:"/Users/lucagiardi/Projects/LucaGiardi/Qiick/Excubia/excubia-app/.claude/worktrees/287-project-avatar/app/Http/Requests/StorePushedRuntimeRequest.php";}}s:9:"namespace";s:17:"App\Http\Requests";s:4:"name";s:43:"App\Http\Requests\StorePushedRuntimeRequest";s:9:"shortName";s:25:"StorePushedRuntimeRequest";s:11:"isInterface";b:0;s:7:"isTrait";b:0;s:6:"isEnum";b:0;s:12:"isBackedEnum";b:0;s:9:"modifiers";i:0;s:10:"docComment";s:946:"/**
+ * Validates a runtime push of excubia-core (`docs/push-schema.json` `$defs.runtimeEnvelope`,
+ * payload `docs/runtime-schema.json`, protocol version 1). Each aggregate of a known type must
+ * carry the dimensions and metrics of its type; an aggregate of a type this app does not know
+ * only needs a `type` and is skipped on store, never rejected (#111). A value core enumerates
+ * (`statusClass`, `outcome`, `level`, `origin`, `exitCodeClass`, `operation`, `octaneServer`,
+ * `workerType`, the billing `provider` and `eventType`, the auth `guard`, the Scout `engine` and `operation`, the Pennant `feature`, the health `status` and `severity`) is only checked as a string: core adds values
+ * additively, and a value this app does not know must never reject the batch (#169). StorePushedRuntimeAction stores it, or
+ * skips and counts the entry when the app cannot read it. The token was checked by
+ * AuthenticateProjectTokenMiddleware.
+ */";s:10:"attributes";a:0:{}s:9:"startLine";i:24;s:7:"endLine";i:248;s:11:"startColumn";i:1;s:9:"endColumn";i:1;s:15:"parentClassName";s:38:"Illuminate\Foundation\Http\FormRequest";s:20:"implementsClassNames";a:0:{}s:15:"traitClassNames";a:0:{}s:18:"immediateConstants";a:2:{s:18:"DIMENSION_PATTERNS";a:12:{s:18:"declaringClassName";s:43:"App\Http\Requests\StorePushedRuntimeRequest";s:21:"implementingClassName";s:43:"App\Http\Requests\StorePushedRuntimeRequest";s:4:"name";s:18:"DIMENSION_PATTERNS";s:9:"modifiers";i:4;s:4:"type";N;s:5:"value";a:2:{s:4:"code";s:50:"['health' => ['checkId' => '/^[a-z0-9-]{1,64}$/']]";s:10:"attributes";a:6:{s:9:"startLine";i:27;s:7:"endLine";i:29;s:13:"startTokenPos";i:62;s:12:"startFilePos";i:1386;s:11:"endTokenPos";i:77;s:10:"endFilePos";i:1450;}}s:10:"docComment";s:94:"/** Dimensions with a pattern (`docs/runtime-schema.json`); unknown check ids are accepted. */";s:10:"attributes";a:0:{}s:9:"startLine";i:27;s:7:"endLine";i:29;s:11:"startColumn";i:5;s:9:"endColumn";i:6;}s:12:"METRIC_RULES";a:12:{s:18:"declaringClassName";s:43:"App\Http\Requests\StorePushedRuntimeRequest";s:21:"implementingClassName";s:43:"App\Http\Requests\StorePushedRuntimeRequest";s:4:"name";s:12:"METRIC_RULES";s:9:"modifiers";i:4;s:4:"type";N;s:5:"value";a:2:{s:4:"code";s:4573:"[
+    'totalMb' => ['required', 'numeric', 'min:0'],
+    'maxMb' => ['required', 'numeric', 'min:0'],
+    'hits' => ['required', 'integer', 'min:0'],
+    'misses' => ['required', 'integer', 'min:0'],
+    'writes' => ['required', 'integer', 'min:0'],
+    'deletes' => ['required', 'integer', 'min:0'],
+    'totalRepeats' => ['required', 'integer', 'min:2'],
+    'maxRepeats' => ['required', 'integer', 'min:2'],
+    'loadAverage1' => ['present', 'nullable', 'numeric', 'min:0'],
+    'loadAverage5' => ['present', 'nullable', 'numeric', 'min:0'],
+    'loadAverage15' => ['present', 'nullable', 'numeric', 'min:0'],
+    'cpuCores' => ['present', 'nullable', 'integer', 'min:1'],
+    'cpuLimit' => ['sometimes', 'nullable', 'numeric', 'min:0'],
+    'memoryUsedMb' => ['present', 'nullable', 'integer', 'min:0'],
+    'memoryTotalMb' => ['present', 'nullable', 'integer', 'min:0'],
+    'diskUsedGb' => ['present', 'nullable', 'numeric', 'min:0'],
+    'diskTotalGb' => ['present', 'nullable', 'numeric', 'min:0'],
+    'isContainer' => ['sometimes', 'boolean'],
+    // Unknown values are skipped and counted on store (#169).
+    'status' => ['required', 'string', 'max:64'],
+    'severity' => ['required', 'string', 'max:64'],
+    'findingCount' => ['required', 'integer', 'min:0'],
+    'fingerprints' => ['present', 'list', 'max:' . \App\Enums\RuntimeTypeEnum::HEALTH_FINGERPRINTS],
+    'fingerprints.*' => ['string', 'regex:/^[0-9a-f]{64}$/'],
+    // `ai` (#129): usage counts are null when the provider does not report them.
+    'failoverCount' => ['required', 'integer', 'min:0'],
+    'inputTokens' => ['present', 'nullable', 'integer', 'min:0'],
+    'outputTokens' => ['present', 'nullable', 'integer', 'min:0'],
+    'cacheReadInputTokens' => ['present', 'nullable', 'integer', 'min:0'],
+    'cacheWriteInputTokens' => ['present', 'nullable', 'integer', 'min:0'],
+    'reasoningTokens' => ['present', 'nullable', 'integer', 'min:0'],
+    'imageInputTokens' => ['present', 'nullable', 'integer', 'min:0'],
+    'imageOutputTokens' => ['present', 'nullable', 'integer', 'min:0'],
+    'audioSeconds' => ['present', 'nullable', 'numeric', 'min:0'],
+    'searchUnits' => ['present', 'nullable', 'numeric', 'min:0'],
+    // `octane` (#168): every metric always present, 0 without that event (`maxMb` above).
+    'workerStarts' => ['required', 'integer', 'min:0'],
+    'workerStops' => ['required', 'integer', 'min:0'],
+    'requests' => ['required', 'integer', 'min:0'],
+    'tasks' => ['required', 'integer', 'min:0'],
+    'ticks' => ['required', 'integer', 'min:0'],
+    'totalRequestsAtStop' => ['required', 'integer', 'min:0'],
+    'maxRequestsAtStop' => ['required', 'integer', 'min:0'],
+    'maxGrowthMb' => ['required', 'numeric', 'min:0'],
+    // `reverb` (#175): every metric always present, 0 without that event.
+    'connectionsOpened' => ['required', 'integer', 'min:0'],
+    'connectionsRejected' => ['required', 'integer', 'min:0'],
+    'connectionsPruned' => ['required', 'integer', 'min:0'],
+    'messagesReceived' => ['required', 'integer', 'min:0'],
+    'messagesSent' => ['required', 'integer', 'min:0'],
+    'publicChannelsCreated' => ['required', 'integer', 'min:0'],
+    'privateChannelsCreated' => ['required', 'integer', 'min:0'],
+    'presenceChannelsCreated' => ['required', 'integer', 'min:0'],
+    'publicChannelsRemoved' => ['required', 'integer', 'min:0'],
+    'privateChannelsRemoved' => ['required', 'integer', 'min:0'],
+    'presenceChannelsRemoved' => ['required', 'integer', 'min:0'],
+    'maxConnections' => ['required', 'integer', 'min:0'],
+    // `billingWebhook` (#178): every counter always present, 0 without that event.
+    'handledCount' => ['required', 'integer', 'min:0'],
+    'paymentFailedCount' => ['required', 'integer', 'min:0'],
+    'paymentActionRequiredCount' => ['required', 'integer', 'min:0'],
+    'subscriptionCanceledCount' => ['required', 'integer', 'min:0'],
+    // `auth` (#180): every counter always present, 0 without that event.
+    'loginCount' => ['required', 'integer', 'min:0'],
+    'lockoutCount' => ['required', 'integer', 'min:0'],
+    'tokenAuthenticationCount' => ['required', 'integer', 'min:0'],
+    // `scout` (#184): always present, 0 for searches.
+    'modelCount' => ['required', 'integer', 'min:0'],
+    // `pennant` (#189): every counter always present, 0 without that event.
+    'activeCount' => ['required', 'integer', 'min:0'],
+    'inactiveCount' => ['required', 'integer', 'min:0'],
+    'resolvedCount' => ['required', 'integer', 'min:0'],
+    'unknownCount' => ['required', 'integer', 'min:0'],
+]";s:10:"attributes";a:6:{s:9:"startLine";i:32;s:7:"endLine";i:106;s:13:"startTokenPos";i:90;s:12:"startFilePos";i:1570;s:11:"endTokenPos";i:1135;s:10:"endFilePos";i:6425;}}s:10:"docComment";s:78:"/** Validation of the type-specific metrics (`RuntimeTypeEnum::metrics()`). */";s:10:"attributes";a:0:{}s:9:"startLine";i:32;s:7:"endLine";i:106;s:11:"startColumn";i:5;s:9:"endColumn";i:6;}}s:19:"immediateProperties";a:0:{}s:16:"immediateMethods";a:6:{s:9:"authorize";a:20:{s:4:"name";s:9:"authorize";s:10:"parameters";a:0:{}s:16:"returnsReference";b:0;s:10:"returnType";a:2:{s:5:"class";s:55:"PHPStan\BetterReflection\Reflection\ReflectionNamedType";s:4:"data";a:2:{s:4:"name";s:4:"bool";s:12:"isIdentifier";b:1;}}s:10:"attributes";a:0:{}s:10:"docComment";N;s:9:"startLine";i:108;s:7:"endLine";i:111;s:11:"startColumn";i:5;s:9:"endColumn";i:5;s:10:"couldThrow";b:0;s:9:"isClosure";b:0;s:11:"isGenerator";b:0;s:10:"isVariadic";b:0;s:9:"modifiers";i:1;s:9:"namespace";s:17:"App\Http\Requests";s:18:"declaringClassName";s:43:"App\Http\Requests\StorePushedRuntimeRequest";s:21:"implementingClassName";s:43:"App\Http\Requests\StorePushedRuntimeRequest";s:16:"currentClassName";s:43:"App\Http\Requests\StorePushedRuntimeRequest";s:9:"aliasName";N;}s:5:"rules";a:20:{s:4:"name";s:5:"rules";s:10:"parameters";a:0:{}s:16:"returnsReference";b:0;s:10:"returnType";a:2:{s:5:"class";s:55:"PHPStan\BetterReflection\Reflection\ReflectionNamedType";s:4:"data";a:2:{s:4:"name";s:5:"array";s:12:"isIdentifier";b:1;}}s:10:"attributes";a:0:{}s:10:"docComment";s:137:"/**
+ * The envelope, then one rule set per aggregate of a known type.
+ *
+ * @return array<string, ValidationRule|array<mixed>|string>
+ */";s:9:"startLine";i:118;s:7:"endLine";i:150;s:11:"startColumn";i:5;s:9:"endColumn";i:5;s:10:"couldThrow";b:0;s:9:"isClosure";b:0;s:11:"isGenerator";b:0;s:10:"isVariadic";b:0;s:9:"modifiers";i:1;s:9:"namespace";s:17:"App\Http\Requests";s:18:"declaringClassName";s:43:"App\Http\Requests\StorePushedRuntimeRequest";s:21:"implementingClassName";s:43:"App\Http\Requests\StorePushedRuntimeRequest";s:16:"currentClassName";s:43:"App\Http\Requests\StorePushedRuntimeRequest";s:9:"aliasName";N;}s:8:"messages";a:20:{s:4:"name";s:8:"messages";s:10:"parameters";a:0:{}s:16:"returnsReference";b:0;s:10:"returnType";a:2:{s:5:"class";s:55:"PHPStan\BetterReflection\Reflection\ReflectionNamedType";s:4:"data";a:2:{s:4:"name";s:5:"array";s:12:"isIdentifier";b:1;}}s:10:"attributes";a:0:{}s:10:"docComment";s:40:"/**
+ * @return array<string, string>
+ */";s:9:"startLine";i:155;s:7:"endLine";i:160;s:11:"startColumn";i:5;s:9:"endColumn";i:5;s:10:"couldThrow";b:0;s:9:"isClosure";b:0;s:11:"isGenerator";b:0;s:10:"isVariadic";b:0;s:9:"modifiers";i:1;s:9:"namespace";s:17:"App\Http\Requests";s:18:"declaringClassName";s:43:"App\Http\Requests\StorePushedRuntimeRequest";s:21:"implementingClassName";s:43:"App\Http\Requests\StorePushedRuntimeRequest";s:16:"currentClassName";s:43:"App\Http\Requests\StorePushedRuntimeRequest";s:9:"aliasName";N;}s:7:"project";a:20:{s:4:"name";s:7:"project";s:10:"parameters";a:0:{}s:16:"returnsReference";b:0;s:10:"returnType";a:2:{s:5:"class";s:55:"PHPStan\BetterReflection\Reflection\ReflectionUnionType";s:4:"data";a:1:{s:5:"types";a:2:{i:0;a:2:{s:5:"class";s:55:"PHPStan\BetterReflection\Reflection\ReflectionNamedType";s:4:"data";a:2:{s:4:"name";s:18:"App\Models\Project";s:12:"isIdentifier";b:0;}}i:1;a:2:{s:5:"class";s:55:"PHPStan\BetterReflection\Reflection\ReflectionNamedType";s:4:"data";a:2:{s:4:"name";s:4:"null";s:12:"isIdentifier";b:1;}}}}}s:10:"attributes";a:0:{}s:10:"docComment";N;s:9:"startLine";i:162;s:7:"endLine";i:167;s:11:"startColumn";i:5;s:9:"endColumn";i:5;s:10:"couldThrow";b:0;s:9:"isClosure";b:0;s:11:"isGenerator";b:0;s:10:"isVariadic";b:0;s:9:"modifiers";i:1;s:9:"namespace";s:17:"App\Http\Requests";s:18:"declaringClassName";s:43:"App\Http\Requests\StorePushedRuntimeRequest";s:21:"implementingClassName";s:43:"App\Http\Requests\StorePushedRuntimeRequest";s:16:"currentClassName";s:43:"App\Http\Requests\StorePushedRuntimeRequest";s:9:"aliasName";N;}s:14:"aggregateRules";a:20:{s:4:"name";s:14:"aggregateRules";s:10:"parameters";a:2:{s:4:"type";a:14:{s:4:"name";s:4:"type";s:7:"default";N;s:4:"type";a:2:{s:5:"class";s:55:"PHPStan\BetterReflection\Reflection\ReflectionNamedType";s:4:"data";a:2:{s:4:"name";s:25:"App\Enums\RuntimeTypeEnum";s:12:"isIdentifier";b:0;}}s:10:"isVariadic";b:0;s:5:"byRef";b:0;s:10:"isPromoted";b:0;s:10:"docComment";N;s:10:"attributes";a:0:{}s:9:"startLine";i:182;s:7:"endLine";i:182;s:11:"startColumn";i:37;s:9:"endColumn";i:57;s:14:"parameterIndex";i:0;s:10:"isOptional";b:0;}s:9:"aggregate";a:14:{s:4:"name";s:9:"aggregate";s:7:"default";N;s:4:"type";a:2:{s:5:"class";s:55:"PHPStan\BetterReflection\Reflection\ReflectionNamedType";s:4:"data";a:2:{s:4:"name";s:5:"array";s:12:"isIdentifier";b:1;}}s:10:"isVariadic";b:0;s:5:"byRef";b:0;s:10:"isPromoted";b:0;s:10:"docComment";N;s:10:"attributes";a:0:{}s:9:"startLine";i:182;s:7:"endLine";i:182;s:11:"startColumn";i:60;s:9:"endColumn";i:75;s:14:"parameterIndex";i:1;s:10:"isOptional";b:0;}}s:16:"returnsReference";b:0;s:10:"returnType";a:2:{s:5:"class";s:55:"PHPStan\BetterReflection\Reflection\ReflectionNamedType";s:4:"data";a:2:{s:4:"name";s:5:"array";s:12:"isIdentifier";b:1;}}s:10:"attributes";a:0:{}s:10:"docComment";s:695:"/**
+ * Rules for one aggregate of a known type, keyed by its field (`histogram.*` included).
+ * Dimensions are strings (empty allowed, as core sends an empty queue name), enumerated ones
+ * included (#169); those with a pattern must match it.
+ *
+ * The element rules of a list (`histogram.*`, `fingerprints.*`) are left out when every
+ * element plainly passes them: the validator expands each wildcard over the whole flattened
+ * body, which made them about a third of the validation time of a runtime push (#195). Any
+ * other value keeps the rule, so what is rejected, and the error keys, stay the same.
+ *
+ * @param  array<string, mixed>  $aggregate
+ * @return array<string, list<mixed>>
+ */";s:9:"startLine";i:182;s:7:"endLine";i:221;s:11:"startColumn";i:5;s:9:"endColumn";i:5;s:10:"couldThrow";b:0;s:9:"isClosure";b:0;s:11:"isGenerator";b:0;s:10:"isVariadic";b:0;s:9:"modifiers";i:4;s:9:"namespace";s:17:"App\Http\Requests";s:18:"declaringClassName";s:43:"App\Http\Requests\StorePushedRuntimeRequest";s:21:"implementingClassName";s:43:"App\Http\Requests\StorePushedRuntimeRequest";s:16:"currentClassName";s:43:"App\Http\Requests\StorePushedRuntimeRequest";s:9:"aliasName";N;}s:8:"isListOf";a:20:{s:4:"name";s:8:"isListOf";s:10:"parameters";a:2:{s:6:"values";a:14:{s:4:"name";s:6:"values";s:7:"default";N;s:4:"type";a:2:{s:5:"class";s:55:"PHPStan\BetterReflection\Reflection\ReflectionNamedType";s:4:"data";a:2:{s:4:"name";s:5:"mixed";s:12:"isIdentifier";b:1;}}s:10:"isVariadic";b:0;s:5:"byRef";b:0;s:10:"isPromoted";b:0;s:10:"docComment";N;s:10:"attributes";a:0:{}s:9:"startLine";i:230;s:7:"endLine";i:230;s:11:"startColumn";i:38;s:9:"endColumn";i:50;s:14:"parameterIndex";i:0;s:10:"isOptional";b:0;}s:7:"isValid";a:14:{s:4:"name";s:7:"isValid";s:7:"default";N;s:4:"type";a:2:{s:5:"class";s:55:"PHPStan\BetterReflection\Reflection\ReflectionNamedType";s:4:"data";a:2:{s:4:"name";s:8:"callable";s:12:"isIdentifier";b:1;}}s:10:"isVariadic";b:0;s:5:"byRef";b:0;s:10:"isPromoted";b:0;s:10:"docComment";N;s:10:"attributes";a:0:{}s:9:"startLine";i:230;s:7:"endLine";i:230;s:11:"startColumn";i:53;s:9:"endColumn";i:69;s:14:"parameterIndex";i:1;s:10:"isOptional";b:0;}}s:16:"returnsReference";b:0;s:10:"returnType";a:2:{s:5:"class";s:55:"PHPStan\BetterReflection\Reflection\ReflectionNamedType";s:4:"data";a:2:{s:4:"name";s:4:"bool";s:12:"isIdentifier";b:1;}}s:10:"attributes";a:0:{}s:10:"docComment";s:289:"/**
+ * True when the element rule cannot fail: the value is a list whose every element passes the
+ * check, or no array at all (the wildcard then matches nothing). An array with keys keeps the
+ * rule, which reports its elements as before.
+ *
+ * @param  callable(mixed): bool  $isValid
+ */";s:9:"startLine";i:230;s:7:"endLine";i:247;s:11:"startColumn";i:5;s:9:"endColumn";i:5;s:10:"couldThrow";b:0;s:9:"isClosure";b:0;s:11:"isGenerator";b:0;s:10:"isVariadic";b:0;s:9:"modifiers";i:20;s:9:"namespace";s:17:"App\Http\Requests";s:18:"declaringClassName";s:43:"App\Http\Requests\StorePushedRuntimeRequest";s:21:"implementingClassName";s:43:"App\Http\Requests\StorePushedRuntimeRequest";s:16:"currentClassName";s:43:"App\Http\Requests\StorePushedRuntimeRequest";s:9:"aliasName";N;}}s:10:"traitsData";a:4:{s:7:"aliases";a:0:{}s:9:"modifiers";a:0:{}s:11:"precedences";a:0:{}s:6:"hashes";a:0:{}}}}

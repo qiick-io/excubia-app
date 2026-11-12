@@ -1,0 +1,1 @@
+O:23:"PHPStan\Cache\CacheItem":2:{s:11:"variableKey";s:74:"v2-d41c523e39da2a014a896501d098be81cd4c0ecee87542f28b485f3028c1ad7f-8.4.27";s:4:"data";a:3:{s:7:"classes";a:1:{s:37:"laravel\fortify\contracts\passkeyuser";b:1;}s:9:"functions";a:0:{}s:9:"constants";a:0:{}}}

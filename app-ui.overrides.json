@@ -1,0 +1,4 @@
+{
+    "resources/js/components/sidebar-entity-list.tsx": "Adds an optional `leading` node to SidebarEntity, rendered after the status icon in the row and in the icon-only flyout, so project rows show their avatar or logo (#287). To be proposed upstream as a registry change; drop this entry when the registry has it.",
+    "resources/js/components/breadcrumbs.tsx": "Adds an optional `leading` node to BreadcrumbItemType, rendered before the title, so the project page header shows the project's avatar or logo next to its name (#287). To be proposed upstream as a registry change; drop this entry when the registry has it."
+}

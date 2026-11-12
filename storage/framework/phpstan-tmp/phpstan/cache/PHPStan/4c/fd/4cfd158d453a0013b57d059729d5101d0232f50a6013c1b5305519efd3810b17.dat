@@ -1,0 +1,27 @@
+O:23:"PHPStan\Cache\CacheItem":2:{s:11:"variableKey";s:83:"v3-6.75.0.4-8.4.27-3060f2c0f856459f188f4a28725acf475dea453bda8523b36bd1b62dc54f59c3";s:4:"data";a:22:{s:13:"locatedSource";a:2:{s:5:"class";s:60:"PHPStan\BetterReflection\SourceLocator\Located\LocatedSource";s:4:"data";a:2:{s:4:"name";s:27:"App\Models\RuntimeAggregate";s:8:"filename";s:132:"/Users/lucagiardi/Projects/LucaGiardi/Qiick/Excubia/excubia-app/.claude/worktrees/287-project-avatar/app/Models/RuntimeAggregate.php";}}s:9:"namespace";s:10:"App\Models";s:4:"name";s:27:"App\Models\RuntimeAggregate";s:9:"shortName";s:16:"RuntimeAggregate";s:11:"isInterface";b:0;s:7:"isTrait";b:0;s:6:"isEnum";b:0;s:12:"isBackedEnum";b:0;s:9:"modifiers";i:0;s:10:"docComment";s:1034:"/**
+ * One minute of one runtime series of a project (#48, #111): one of the 17 core runtime types
+ * per its dimensions (and the batch's release, when sent). Counts are the recorded events; the
+ * estimated real count is `count / sample_rate`. `total_ms` and `max_ms` are null for types that
+ * are not timed; `metrics` holds the type-specific metrics of `RuntimeTypeEnum::metrics()`
+ * (memory, cache counters, repeats, server gauges and `isContainer`, health status, severity,
+ * finding count and fingerprints), `histogram` the optional 12 latency counts.
+ *
+ * @property int $id
+ * @property int $project_id
+ * @property RuntimeTypeEnum $type
+ * @property Carbon $bucket
+ * @property float $sample_rate
+ * @property string $dimension_key
+ * @property array<string, string> $dimensions
+ * @property int $count
+ * @property int $error_count
+ * @property string|null $release
+ * @property float|null $total_ms
+ * @property float|null $max_ms
+ * @property array<string, mixed>|null $metrics
+ * @property list<int>|null $histogram
+ */";s:10:"attributes";a:1:{i:0;a:3:{s:4:"name";s:48:"Illuminate\Database\Eloquent\Attributes\Fillable";s:10:"isRepeated";b:0;s:9:"arguments";a:1:{i:0;a:2:{s:4:"code";s:159:"['project_id', 'type', 'bucket', 'sample_rate', 'dimension_key', 'dimensions', 'count', 'error_count', 'total_ms', 'max_ms', 'release', 'metrics', 'histogram']";s:10:"attributes";a:6:{s:9:"startLine";i:36;s:7:"endLine";i:36;s:13:"startTokenPos";i:45;s:12:"startFilePos";i:1313;s:11:"endTokenPos";i:83;s:10:"endFilePos";i:1471;}}}}}s:9:"startLine";i:36;s:7:"endLine";i:65;s:11:"startColumn";i:1;s:9:"endColumn";i:1;s:15:"parentClassName";s:34:"Illuminate\Database\Eloquent\Model";s:20:"implementsClassNames";a:0:{}s:15:"traitClassNames";a:0:{}s:18:"immediateConstants";a:0:{}s:19:"immediateProperties";a:0:{}s:16:"immediateMethods";a:2:{s:7:"project";a:20:{s:4:"name";s:7:"project";s:10:"parameters";a:0:{}s:16:"returnsReference";b:0;s:10:"returnType";a:2:{s:5:"class";s:55:"PHPStan\BetterReflection\Reflection\ReflectionNamedType";s:4:"data";a:2:{s:4:"name";s:48:"Illuminate\Database\Eloquent\Relations\BelongsTo";s:12:"isIdentifier";b:0;}}s:10:"attributes";a:0:{}s:10:"docComment";s:44:"/**
+ * @return BelongsTo<Project, $this>
+ */";s:9:"startLine";i:42;s:7:"endLine";i:45;s:11:"startColumn";i:5;s:9:"endColumn";i:5;s:10:"couldThrow";b:0;s:9:"isClosure";b:0;s:11:"isGenerator";b:0;s:10:"isVariadic";b:0;s:9:"modifiers";i:1;s:9:"namespace";s:10:"App\Models";s:18:"declaringClassName";s:27:"App\Models\RuntimeAggregate";s:21:"implementingClassName";s:27:"App\Models\RuntimeAggregate";s:16:"currentClassName";s:27:"App\Models\RuntimeAggregate";s:9:"aliasName";N;}s:5:"casts";a:20:{s:4:"name";s:5:"casts";s:10:"parameters";a:0:{}s:16:"returnsReference";b:0;s:10:"returnType";a:2:{s:5:"class";s:55:"PHPStan\BetterReflection\Reflection\ReflectionNamedType";s:4:"data";a:2:{s:4:"name";s:5:"array";s:12:"isIdentifier";b:1;}}s:10:"attributes";a:0:{}s:10:"docComment";s:40:"/**
+ * @return array<string, string>
+ */";s:9:"startLine";i:50;s:7:"endLine";i:64;s:11:"startColumn";i:5;s:9:"endColumn";i:5;s:10:"couldThrow";b:0;s:9:"isClosure";b:0;s:11:"isGenerator";b:0;s:10:"isVariadic";b:0;s:9:"modifiers";i:2;s:9:"namespace";s:10:"App\Models";s:18:"declaringClassName";s:27:"App\Models\RuntimeAggregate";s:21:"implementingClassName";s:27:"App\Models\RuntimeAggregate";s:16:"currentClassName";s:27:"App\Models\RuntimeAggregate";s:9:"aliasName";N;}}s:10:"traitsData";a:4:{s:7:"aliases";a:0:{}s:9:"modifiers";a:0:{}s:11:"precedences";a:0:{}s:6:"hashes";a:0:{}}}}

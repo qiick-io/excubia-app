@@ -1,0 +1,207 @@
+O:23:"PHPStan\Cache\CacheItem":2:{s:11:"variableKey";s:38:"v3-6.75.0.4-dev-master@f690ff3-8.4.27-";s:4:"data";a:17:{s:4:"name";s:14:"dns_get_record";s:10:"parameters";a:5:{s:8:"hostname";a:14:{s:4:"name";s:8:"hostname";s:7:"default";N;s:4:"type";a:2:{s:5:"class";s:55:"PHPStan\BetterReflection\Reflection\ReflectionNamedType";s:4:"data";a:2:{s:4:"name";s:6:"string";s:12:"isIdentifier";b:1;}}s:10:"isVariadic";b:0;s:5:"byRef";b:0;s:10:"isPromoted";b:0;s:10:"docComment";N;s:10:"attributes";a:0:{}s:9:"startLine";i:211;s:7:"endLine";i:211;s:11:"startColumn";i:29;s:9:"endColumn";i:44;s:14:"parameterIndex";i:0;s:10:"isOptional";b:0;}s:4:"type";a:14:{s:4:"name";s:4:"type";s:7:"default";a:2:{s:4:"code";s:8:"\DNS_ANY";s:10:"attributes";a:6:{s:9:"startLine";i:211;s:7:"endLine";i:211;s:13:"startTokenPos";i:23;s:12:"startFilePos";i:6907;s:11:"endTokenPos";i:23;s:10:"endFilePos";i:6913;}}s:4:"type";a:2:{s:5:"class";s:55:"PHPStan\BetterReflection\Reflection\ReflectionNamedType";s:4:"data";a:2:{s:4:"name";s:3:"int";s:12:"isIdentifier";b:1;}}s:10:"isVariadic";b:0;s:5:"byRef";b:0;s:10:"isPromoted";b:0;s:10:"docComment";N;s:10:"attributes";a:0:{}s:9:"startLine";i:211;s:7:"endLine";i:211;s:11:"startColumn";i:47;s:9:"endColumn";i:65;s:14:"parameterIndex";i:1;s:10:"isOptional";b:1;}s:26:"authoritative_name_servers";a:14:{s:4:"name";s:26:"authoritative_name_servers";s:7:"default";a:2:{s:4:"code";s:5:"\null";s:10:"attributes";a:6:{s:9:"startLine";i:211;s:7:"endLine";i:211;s:13:"startTokenPos";i:31;s:12:"startFilePos";i:6947;s:11:"endTokenPos";i:31;s:10:"endFilePos";i:6950;}}s:4:"type";N;s:10:"isVariadic";b:0;s:5:"byRef";b:1;s:10:"isPromoted";b:0;s:10:"docComment";N;s:10:"attributes";a:0:{}s:9:"startLine";i:211;s:7:"endLine";i:211;s:11:"startColumn";i:68;s:9:"endColumn";i:102;s:14:"parameterIndex";i:2;s:10:"isOptional";b:1;}s:18:"additional_records";a:14:{s:4:"name";s:18:"additional_records";s:7:"default";a:2:{s:4:"code";s:5:"\null";s:10:"attributes";a:6:{s:9:"startLine";i:211;s:7:"endLine";i:211;s:13:"startTokenPos";i:39;s:12:"startFilePos";i:6976;s:11:"endTokenPos";i:39;s:10:"endFilePos";i:6979;}}s:4:"type";N;s:10:"isVariadic";b:0;s:5:"byRef";b:1;s:10:"isPromoted";b:0;s:10:"docComment";N;s:10:"attributes";a:0:{}s:9:"startLine";i:211;s:7:"endLine";i:211;s:11:"startColumn";i:105;s:9:"endColumn";i:131;s:14:"parameterIndex";i:3;s:10:"isOptional";b:1;}s:3:"raw";a:14:{s:4:"name";s:3:"raw";s:7:"default";a:2:{s:4:"code";s:6:"\false";s:10:"attributes";a:6:{s:9:"startLine";i:211;s:7:"endLine";i:211;s:13:"startTokenPos";i:48;s:12:"startFilePos";i:6994;s:11:"endTokenPos";i:48;s:10:"endFilePos";i:6998;}}s:4:"type";a:2:{s:5:"class";s:55:"PHPStan\BetterReflection\Reflection\ReflectionNamedType";s:4:"data";a:2:{s:4:"name";s:4:"bool";s:12:"isIdentifier";b:1;}}s:10:"isVariadic";b:0;s:5:"byRef";b:0;s:10:"isPromoted";b:0;s:10:"docComment";N;s:10:"attributes";a:0:{}s:9:"startLine";i:211;s:7:"endLine";i:211;s:11:"startColumn";i:134;s:9:"endColumn";i:150;s:14:"parameterIndex";i:4;s:10:"isOptional";b:1;}}s:16:"returnsReference";b:0;s:10:"returnType";a:2:{s:5:"class";s:55:"PHPStan\BetterReflection\Reflection\ReflectionUnionType";s:4:"data";a:1:{s:5:"types";a:2:{i:0;a:2:{s:5:"class";s:55:"PHPStan\BetterReflection\Reflection\ReflectionNamedType";s:4:"data";a:2:{s:4:"name";s:5:"array";s:12:"isIdentifier";b:1;}}i:1;a:2:{s:5:"class";s:55:"PHPStan\BetterReflection\Reflection\ReflectionNamedType";s:4:"data";a:2:{s:4:"name";s:5:"false";s:12:"isIdentifier";b:1;}}}}}s:10:"attributes";a:0:{}s:10:"docComment";s:6001:"/**
+ * Fetch DNS Resource Records associated with a hostname
+ * @link https://php.net/manual/en/function.dns-get-record.php
+ * @param string $hostname <p>
+ * hostname should be a valid DNS hostname such
+ * as "www.example.com". Reverse lookups can be generated
+ * using in-addr.arpa notation, but
+ * gethostbyaddr is more suitable for
+ * the majority of reverse lookups.
+ * </p>
+ * <p>
+ * Per DNS standards, email addresses are given in user.host format (for
+ * example: hostmaster.example.com as opposed to hostmaster@example.com),
+ * be sure to check this value and modify if necessary before using it
+ * with a functions such as mail.
+ * </p>
+ * @param int $type [optional] <p>
+ * By default, dns_get_record will search for any
+ * resource records associated with hostname.
+ * To limit the query, specify the optional type
+ * parameter. May be any one of the following:
+ * DNS_A, DNS_CNAME,
+ * DNS_HINFO, DNS_MX,
+ * DNS_NS, DNS_PTR,
+ * DNS_SOA, DNS_TXT,
+ * DNS_AAAA, DNS_SRV,
+ * DNS_NAPTR, DNS_A6,
+ * DNS_ALL or DNS_ANY.
+ * </p>
+ * <p>
+ * Because of eccentricities in the performance of libresolv
+ * between platforms, DNS_ANY will not
+ * always return every record, the slower DNS_ALL
+ * will collect all records more reliably.
+ * </p>
+ * @param array &$authoritative_name_servers [optional] <p>
+ * Passed by reference and, if given, will be populated with Resource
+ * Records for the Authoritative Name Servers.
+ * </p>
+ * @param array &$additional_records [optional] <p>
+ * Passed by reference and, if given, will be populated with any
+ * Additional Records.
+ * </p>
+ * @param bool $raw [optional] <p>
+ * In case of raw mode, we query only the requested type
+ * instead of looping type by type before going with the additional info stuff.
+ * </p>
+ * @return array|false This function returns an array of associative arrays. Each associative array contains
+ * at minimum the following keys:
+ * <table>
+ * Basic DNS attributes
+ * <tr valign="top">
+ * <td>Attribute</td>
+ * <td>Meaning</td>
+ * </tr>
+ * <tr valign="top">
+ * <td>host</td>
+ * <td>
+ * The record in the DNS namespace to which the rest of the associated data refers.
+ * </td>
+ * </tr>
+ * <tr valign="top">
+ * <td>class</td>
+ * <td>
+ * dns_get_record only returns Internet class records and as
+ * such this parameter will always return IN.
+ * </td>
+ * </tr>
+ * <tr valign="top">
+ * <td>type</td>
+ * <td>
+ * String containing the record type. Additional attributes will also be contained
+ * in the resulting array dependant on the value of type. See table below.
+ * </td>
+ * </tr>
+ * <tr valign="top">
+ * <td>ttl</td>
+ * <td>
+ * "Time To Live" remaining for this record. This will not equal
+ * the record's original ttl, but will rather equal the original ttl minus whatever
+ * length of time has passed since the authoritative name server was queried.
+ * </td>
+ * </tr>
+ * </table>
+ * </p>
+ * <p>
+ * <table>
+ * Other keys in associative arrays dependant on 'type'
+ * <tr valign="top">
+ * <td>Type</td>
+ * <td>Extra Columns</td>
+ * </tr>
+ * <tr valign="top">
+ * <td>A</td>
+ * <td>
+ * ip: An IPv4 addresses in dotted decimal notation.
+ * </td>
+ * </tr>
+ * <tr valign="top">
+ * <td>MX</td>
+ * <td>
+ * pri: Priority of mail exchanger.
+ * Lower numbers indicate greater priority.
+ * target: FQDN of the mail exchanger.
+ * See also dns_get_mx.
+ * </td>
+ * </tr>
+ * <tr valign="top">
+ * <td>CNAME</td>
+ * <td>
+ * target: FQDN of location in DNS namespace to which
+ * the record is aliased.
+ * </td>
+ * </tr>
+ * <tr valign="top">
+ * <td>NS</td>
+ * <td>
+ * target: FQDN of the name server which is authoritative
+ * for this hostname.
+ * </td>
+ * </tr>
+ * <tr valign="top">
+ * <td>PTR</td>
+ * <td>
+ * target: Location within the DNS namespace to which
+ * this record points.
+ * </td>
+ * </tr>
+ * <tr valign="top">
+ * <td>TXT</td>
+ * <td>
+ * txt: Arbitrary string data associated with this record.
+ * </td>
+ * </tr>
+ * <tr valign="top">
+ * <td>HINFO</td>
+ * <td>
+ * cpu: IANA number designating the CPU of the machine
+ * referenced by this record.
+ * os: IANA number designating the Operating System on
+ * the machine referenced by this record.
+ * See IANA's Operating System
+ * Names for the meaning of these values.
+ * </td>
+ * </tr>
+ * <tr valign="top">
+ * <td>SOA</td>
+ * <td>
+ * mname: FQDN of the machine from which the resource
+ * records originated.
+ * rname: Email address of the administrative contain
+ * for this domain.
+ * serial: Serial # of this revision of the requested
+ * domain.
+ * refresh: Refresh interval (seconds) secondary name
+ * servers should use when updating remote copies of this domain.
+ * retry: Length of time (seconds) to wait after a
+ * failed refresh before making a second attempt.
+ * expire: Maximum length of time (seconds) a secondary
+ * DNS server should retain remote copies of the zone data without a
+ * successful refresh before discarding.
+ * minimum-ttl: Minimum length of time (seconds) a
+ * client can continue to use a DNS resolution before it should request
+ * a new resolution from the server. Can be overridden by individual
+ * resource records.
+ * </td>
+ * </tr>
+ * <tr valign="top">
+ * <td>AAAA</td>
+ * <td>
+ * ipv6: IPv6 address
+ * </td>
+ * </tr>
+ * <tr valign="top">
+ * <td>A6(PHP &gt;= 5.1.0)</td>
+ * <td>
+ * masklen: Length (in bits) to inherit from the target
+ * specified by chain.
+ * ipv6: Address for this specific record to merge with
+ * chain.
+ * chain: Parent record to merge with
+ * ipv6 data.
+ * </td>
+ * </tr>
+ * <tr valign="top">
+ * <td>SRV</td>
+ * <td>
+ * pri: (Priority) lowest priorities should be used first.
+ * weight: Ranking to weight which of commonly prioritized
+ * targets should be chosen at random.
+ * target and port: hostname and port
+ * where the requested service can be found.
+ * For additional information see: RFC 2782
+ * </td>
+ * </tr>
+ * <tr valign="top">
+ * <td>NAPTR</td>
+ * <td>
+ * order and pref: Equivalent to
+ * pri and weight above.
+ * flags, services, regex,
+ * and replacement: Parameters as defined by
+ * RFC 2915.
+ * </td>
+ * </tr>
+ * </table>
+ */";s:9:"startLine";i:211;s:7:"endLine";i:213;s:11:"startColumn";i:5;s:9:"endColumn";i:5;s:10:"couldThrow";b:0;s:9:"isClosure";b:0;s:11:"isGenerator";b:0;s:10:"isVariadic";b:0;s:8:"isStatic";b:0;s:9:"namespace";N;s:13:"locatedSource";a:2:{s:5:"class";s:68:"PHPStan\BetterReflection\SourceLocator\Located\InternalLocatedSource";s:4:"data";a:4:{s:4:"name";s:14:"dns_get_record";s:8:"filename";s:39:"phpstorm-stubs:standard/standard_4.stub";s:13:"extensionName";s:8:"standard";s:9:"aliasName";N;}}}}

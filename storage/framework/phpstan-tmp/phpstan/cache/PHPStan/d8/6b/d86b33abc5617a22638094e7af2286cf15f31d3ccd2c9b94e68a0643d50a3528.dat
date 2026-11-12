@@ -1,0 +1,1 @@
+O:23:"PHPStan\Cache\CacheItem":2:{s:11:"variableKey";s:74:"v2-4a4b9d2b1f598d02647cdb9e8a2a136ce76326c6d5727e19578790b8c869d863-8.4.27";s:4:"data";a:3:{s:7:"classes";a:1:{s:50:"symfony\component\httpfoundation\responseheaderbag";b:1;}s:9:"functions";a:0:{}s:9:"constants";a:0:{}}}

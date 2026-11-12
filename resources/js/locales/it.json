@@ -823,7 +823,14 @@
         },
         "checksRatio": "{{failed}} / {{total}}",
         "failedChecksLabel": "{{failed}} controlli falliti su {{total}}",
-        "stale": "Fermo"
+        "stale": "Fermo",
+        "logo": {
+            "label": "Logo",
+            "choose": "Scegli file",
+            "change": "Cambia file",
+            "remove": "Rimuovi logo",
+            "hint": "PNG, JPEG, WebP o SVG, fino a 256 KB. Senza logo, il progetto mostra le sue iniziali."
+        }
     },
     "dashboard": {
         "noAccess": "Non hai accesso ai progetti. Chiedi a un amministratore il permesso projects.view.",

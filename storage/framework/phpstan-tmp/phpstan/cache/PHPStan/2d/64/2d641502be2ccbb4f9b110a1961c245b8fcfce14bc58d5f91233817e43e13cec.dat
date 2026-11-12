@@ -1,0 +1,69 @@
+O:23:"PHPStan\Cache\CacheItem":2:{s:11:"variableKey";s:83:"v2-313be659807cdf72aa8b9392e82375f175f99c466979d7e2b5a2c734667e8ab8-8.4.27-6.75.0.4";s:4:"data";a:22:{s:13:"locatedSource";a:2:{s:5:"class";s:60:"PHPStan\BetterReflection\SourceLocator\Located\LocatedSource";s:4:"data";a:2:{s:4:"name";s:31:"Illuminate\Support\Facades\Mail";s:8:"filename";s:177:"/Users/lucagiardi/Projects/LucaGiardi/Qiick/Excubia/excubia-app/.claude/worktrees/287-project-avatar/vendor/composer/../laravel/framework/src/Illuminate/Support/Facades/Mail.php";}}s:9:"namespace";s:26:"Illuminate\Support\Facades";s:4:"name";s:31:"Illuminate\Support\Facades\Mail";s:9:"shortName";s:4:"Mail";s:11:"isInterface";b:0;s:7:"isTrait";b:0;s:6:"isEnum";b:0;s:12:"isBackedEnum";b:0;s:9:"modifiers";i:0;s:10:"docComment";s:4828:"/**
+ * @method static \Illuminate\Contracts\Mail\Mailer mailer(\UnitEnum|string|null $name = null)
+ * @method static \Illuminate\Mail\Mailer driver(\UnitEnum|string|null $driver = null)
+ * @method static \Illuminate\Mail\Mailer build(array $config)
+ * @method static \Symfony\Component\Mailer\Transport\TransportInterface createSymfonyTransport(array $config)
+ * @method static string getDefaultDriver()
+ * @method static void setDefaultDriver(\UnitEnum|string $name)
+ * @method static void purge(\UnitEnum|string|null $name = null)
+ * @method static \Illuminate\Mail\MailManager extend(string $driver, \Closure $callback)
+ * @method static \Illuminate\Contracts\Foundation\Application getApplication()
+ * @method static \Illuminate\Mail\MailManager setApplication(\Illuminate\Contracts\Foundation\Application $app)
+ * @method static \Illuminate\Mail\MailManager forgetMailers()
+ * @method static void alwaysFrom(string $address, string|null $name = null)
+ * @method static void alwaysReplyTo(string $address, string|null $name = null)
+ * @method static void alwaysReturnPath(string $address)
+ * @method static void alwaysTo(string $address, string|null $name = null)
+ * @method static \Illuminate\Mail\PendingMail to(mixed $users, string|null $name = null)
+ * @method static \Illuminate\Mail\PendingMail cc(mixed $users, string|null $name = null)
+ * @method static \Illuminate\Mail\PendingMail bcc(mixed $users, string|null $name = null)
+ * @method static \Illuminate\Mail\SentMessage|null html(string $html, mixed $callback)
+ * @method static \Illuminate\Mail\SentMessage|null raw(string $text, mixed $callback)
+ * @method static \Illuminate\Mail\SentMessage|null plain(string $view, array $data, mixed $callback)
+ * @method static string render(string|array $view, array $data = [])
+ * @method static \Illuminate\Mail\SentMessage|null send(\Illuminate\Contracts\Mail\Mailable|string|array $view, array $data = [], \Closure|string|null $callback = null)
+ * @method static \Illuminate\Mail\SentMessage|null sendNow(\Illuminate\Contracts\Mail\Mailable|string|array $mailable, array $data = [], \Closure|string|null $callback = null)
+ * @method static mixed queue(\Illuminate\Contracts\Mail\Mailable $view, \BackedEnum|string|null $queue = null)
+ * @method static mixed onQueue(\BackedEnum|string|null $queue, \Illuminate\Contracts\Mail\Mailable $view)
+ * @method static mixed queueOn(string $queue, \Illuminate\Contracts\Mail\Mailable $view)
+ * @method static mixed later(\DateTimeInterface|\DateInterval|int $delay, \Illuminate\Contracts\Mail\Mailable $view, string|null $queue = null)
+ * @method static mixed laterOn(string $queue, \DateTimeInterface|\DateInterval|int $delay, \Illuminate\Contracts\Mail\Mailable $view)
+ * @method static \Symfony\Component\Mailer\Transport\TransportInterface getSymfonyTransport()
+ * @method static \Illuminate\Contracts\View\Factory getViewFactory()
+ * @method static void setSymfonyTransport(\Symfony\Component\Mailer\Transport\TransportInterface $transport)
+ * @method static \Illuminate\Mail\Mailer setQueue(\Illuminate\Contracts\Queue\Factory $queue)
+ * @method static void macro(string $name, object|callable $macro)
+ * @method static void mixin(object $mixin, bool $replace = true)
+ * @method static bool hasMacro(string $name)
+ * @method static void flushMacros()
+ * @method static void assertSent(string|\Closure $mailable, callable|array|string|int|null $callback = null)
+ * @method static void assertSentTimes(string $mailable, int $times = 1)
+ * @method static void assertSentOnce(string $mailable)
+ * @method static void assertNotOutgoing(string|\Closure $mailable, callable|null $callback = null)
+ * @method static void assertNotSent(string|\Closure $mailable, callable|array|string|null $callback = null)
+ * @method static void assertNothingOutgoing()
+ * @method static void assertNothingSent()
+ * @method static void assertQueued(string|\Closure $mailable, callable|array|string|int|null $callback = null)
+ * @method static void assertQueuedTimes(string $mailable, int $times = 1)
+ * @method static void assertQueuedOnce(string $mailable)
+ * @method static void assertNotQueued(string|\Closure $mailable, callable|array|string|null $callback = null)
+ * @method static void assertNothingQueued()
+ * @method static void assertSentCount(int $count)
+ * @method static void assertQueuedCount(int $count)
+ * @method static void assertOutgoingCount(int $count)
+ * @method static \Illuminate\Support\Collection sent(string|\Closure $mailable, callable|null $callback = null)
+ * @method static bool hasSent(string $mailable)
+ * @method static \Illuminate\Support\Collection queued(string|\Closure $mailable, callable|null $callback = null)
+ * @method static bool hasQueued(string $mailable)
+ *
+ * @see \Illuminate\Mail\MailManager
+ * @see \Illuminate\Support\Testing\Fakes\MailFake
+ */";s:10:"attributes";a:0:{}s:9:"startLine";i:68;s:7:"endLine";i:95;s:11:"startColumn";i:1;s:9:"endColumn";i:1;s:15:"parentClassName";s:33:"Illuminate\Support\Facades\Facade";s:20:"implementsClassNames";a:0:{}s:15:"traitClassNames";a:0:{}s:18:"immediateConstants";a:0:{}s:19:"immediateProperties";a:0:{}s:16:"immediateMethods";a:2:{s:4:"fake";a:20:{s:4:"name";s:4:"fake";s:10:"parameters";a:0:{}s:16:"returnsReference";b:0;s:10:"returnType";N;s:10:"attributes";a:0:{}s:10:"docComment";s:107:"/**
+ * Replace the bound instance with a fake.
+ *
+ * @return \Illuminate\Support\Testing\Fakes\MailFake
+ */";s:9:"startLine";i:75;s:7:"endLine";i:84;s:11:"startColumn";i:5;s:9:"endColumn";i:5;s:10:"couldThrow";b:0;s:9:"isClosure";b:0;s:11:"isGenerator";b:0;s:10:"isVariadic";b:0;s:9:"modifiers";i:17;s:9:"namespace";s:26:"Illuminate\Support\Facades";s:18:"declaringClassName";s:31:"Illuminate\Support\Facades\Mail";s:21:"implementingClassName";s:31:"Illuminate\Support\Facades\Mail";s:16:"currentClassName";s:31:"Illuminate\Support\Facades\Mail";s:9:"aliasName";N;}s:17:"getFacadeAccessor";a:20:{s:4:"name";s:17:"getFacadeAccessor";s:10:"parameters";a:0:{}s:16:"returnsReference";b:0;s:10:"returnType";N;s:10:"attributes";a:0:{}s:10:"docComment";s:73:"/**
+ * Get the registered name of the component.
+ *
+ * @return string
+ */";s:9:"startLine";i:91;s:7:"endLine";i:94;s:11:"startColumn";i:5;s:9:"endColumn";i:5;s:10:"couldThrow";b:0;s:9:"isClosure";b:0;s:11:"isGenerator";b:0;s:10:"isVariadic";b:0;s:9:"modifiers";i:18;s:9:"namespace";s:26:"Illuminate\Support\Facades";s:18:"declaringClassName";s:31:"Illuminate\Support\Facades\Mail";s:21:"implementingClassName";s:31:"Illuminate\Support\Facades\Mail";s:16:"currentClassName";s:31:"Illuminate\Support\Facades\Mail";s:9:"aliasName";N;}}s:10:"traitsData";a:4:{s:7:"aliases";a:0:{}s:9:"modifiers";a:0:{}s:11:"precedences";a:0:{}s:6:"hashes";a:0:{}}}}

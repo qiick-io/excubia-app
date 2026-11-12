@@ -1,0 +1,65 @@
+O:23:"PHPStan\Cache\CacheItem":2:{s:11:"variableKey";s:38:"v3-6.75.0.4-dev-master@f690ff3-8.4.27-";s:4:"data";a:17:{s:4:"name";s:8:"ob_start";s:10:"parameters";a:3:{s:8:"callback";a:14:{s:4:"name";s:8:"callback";s:7:"default";a:2:{s:4:"code";s:5:"\null";s:10:"attributes";a:6:{s:9:"startLine";i:69;s:7:"endLine";i:69;s:13:"startTokenPos";i:16;s:12:"startFilePos";i:3041;s:11:"endTokenPos";i:16;s:10:"endFilePos";i:3044;}}s:4:"type";N;s:10:"isVariadic";b:0;s:5:"byRef";b:0;s:10:"isPromoted";b:0;s:10:"docComment";N;s:10:"attributes";a:0:{}s:9:"startLine";i:69;s:7:"endLine";i:69;s:11:"startColumn";i:23;s:9:"endColumn";i:38;s:14:"parameterIndex";i:0;s:10:"isOptional";b:1;}s:10:"chunk_size";a:14:{s:4:"name";s:10:"chunk_size";s:7:"default";a:2:{s:4:"code";s:1:"0";s:10:"attributes";a:6:{s:9:"startLine";i:69;s:7:"endLine";i:69;s:13:"startTokenPos";i:25;s:12:"startFilePos";i:3065;s:11:"endTokenPos";i:25;s:10:"endFilePos";i:3065;}}s:4:"type";a:2:{s:5:"class";s:55:"PHPStan\BetterReflection\Reflection\ReflectionNamedType";s:4:"data";a:2:{s:4:"name";s:3:"int";s:12:"isIdentifier";b:1;}}s:10:"isVariadic";b:0;s:5:"byRef";b:0;s:10:"isPromoted";b:0;s:10:"docComment";N;s:10:"attributes";a:0:{}s:9:"startLine";i:69;s:7:"endLine";i:69;s:11:"startColumn";i:41;s:9:"endColumn";i:59;s:14:"parameterIndex";i:1;s:10:"isOptional";b:1;}s:5:"flags";a:14:{s:4:"name";s:5:"flags";s:7:"default";a:2:{s:4:"code";s:28:"\PHP_OUTPUT_HANDLER_STDFLAGS";s:10:"attributes";a:6:{s:9:"startLine";i:69;s:7:"endLine";i:69;s:13:"startTokenPos";i:34;s:12:"startFilePos";i:3081;s:11:"endTokenPos";i:34;s:10:"endFilePos";i:3107;}}s:4:"type";a:2:{s:5:"class";s:55:"PHPStan\BetterReflection\Reflection\ReflectionNamedType";s:4:"data";a:2:{s:4:"name";s:3:"int";s:12:"isIdentifier";b:1;}}s:10:"isVariadic";b:0;s:5:"byRef";b:0;s:10:"isPromoted";b:0;s:10:"docComment";N;s:10:"attributes";a:0:{}s:9:"startLine";i:69;s:7:"endLine";i:69;s:11:"startColumn";i:62;s:9:"endColumn";i:101;s:14:"parameterIndex";i:2;s:10:"isOptional";b:1;}}s:16:"returnsReference";b:0;s:10:"returnType";a:2:{s:5:"class";s:55:"PHPStan\BetterReflection\Reflection\ReflectionNamedType";s:4:"data";a:2:{s:4:"name";s:4:"bool";s:12:"isIdentifier";b:1;}}s:10:"attributes";a:0:{}s:10:"docComment";s:2727:"/**
+ * Turn on output buffering
+ * @link https://php.net/manual/en/function.ob-start.php
+ * @param callable|null $callback <p>
+ * An optional output_callback function may be
+ * specified. This function takes a string as a parameter and should
+ * return a string. The function will be called when
+ * the output buffer is flushed (sent) or cleaned (with
+ * ob_flush, ob_clean or similar
+ * function) or when the output buffer
+ * is flushed to the browser at the end of the request. When
+ * output_callback is called, it will receive the
+ * contents of the output buffer as its parameter and is expected to
+ * return a new output buffer as a result, which will be sent to the
+ * browser. If the output_callback is not a
+ * callable function, this function will return false.
+ * </p>
+ * <p>
+ * If the callback function has two parameters, the second parameter is
+ * filled with a bit-field consisting of
+ * PHP_OUTPUT_HANDLER_START,
+ * PHP_OUTPUT_HANDLER_CONT and
+ * PHP_OUTPUT_HANDLER_END.
+ * </p>
+ * <p>
+ * If output_callback returns false original
+ * input is sent to the browser.
+ * </p>
+ * <p>
+ * The output_callback parameter may be bypassed
+ * by passing a null value.
+ * </p>
+ * <p>
+ * ob_end_clean, ob_end_flush,
+ * ob_clean, ob_flush and
+ * ob_start may not be called from a callback
+ * function. If you call them from callback function, the behavior is
+ * undefined. If you would like to delete the contents of a buffer,
+ * return "" (a null string) from callback function.
+ * You can't even call functions using the output buffering functions like
+ * print_r($expression, true) or
+ * highlight_file($filename, true) from a callback
+ * function.
+ * </p>
+ * <p>
+ * In PHP 4.0.4, ob_gzhandler was introduced to
+ * facilitate sending gz-encoded data to web browsers that support
+ * compressed web pages. ob_gzhandler determines
+ * what type of content encoding the browser will accept and will return
+ * its output accordingly.
+ * </p>
+ * @param int $chunk_size <p>
+ * If the optional parameter chunk_size is passed, the
+ * buffer will be flushed after any output call which causes the buffer's
+ * length to equal or exceed chunk_size.
+ * Default value 0 means that the function is called only in the end,
+ * other special value 1 sets chunk_size to 4096.
+ * </p>
+ * @param int $flags [optional] <p>
+ * The flags parameter is a bitmask that controls the operations that can be performed on the output buffer.
+ * The default is to allow output buffers to be cleaned, flushed and removed, which can be set explicitly via
+ * PHP_OUTPUT_HANDLER_CLEANABLE | PHP_OUTPUT_HANDLER_FLUSHABLE | PHP_OUTPUT_HANDLER_REMOVABLE, or PHP_OUTPUT_HANDLER_STDFLAGS as shorthand.
+ * </p>
+ * @return bool true on success or false on failure.
+ */";s:9:"startLine";i:69;s:7:"endLine";i:71;s:11:"startColumn";i:5;s:9:"endColumn";i:5;s:10:"couldThrow";b:0;s:9:"isClosure";b:0;s:11:"isGenerator";b:0;s:10:"isVariadic";b:0;s:8:"isStatic";b:0;s:9:"namespace";N;s:13:"locatedSource";a:2:{s:5:"class";s:68:"PHPStan\BetterReflection\SourceLocator\Located\InternalLocatedSource";s:4:"data";a:4:{s:4:"name";s:8:"ob_start";s:8:"filename";s:39:"phpstorm-stubs:standard/standard_8.stub";s:13:"extensionName";s:8:"standard";s:9:"aliasName";N;}}}}
