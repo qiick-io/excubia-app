@@ -993,7 +993,6 @@
         "overview": {
             "findings": "Open findings",
             "lastReport": "Last report {{time}}",
-            "lastReportStale": "Stale · last report {{time}}",
             "environment": "Environment {{environment}}",
             "checks": "Checks passing",
             "allChecksPass": "All checks pass",
@@ -1029,7 +1028,17 @@
             "lastDeploy": "Deployed {{time}}",
             "noDeploy": "No deploy marker yet",
             "deployCount_one": "{{count}} deploy in the history",
-            "deployCount_other": "{{count}} deploys in the history"
+            "deployCount_other": "{{count}} deploys in the history",
+            "stale": {
+                "title": "This report is stale",
+                "description": "The last report arrived {{time}}: every number on this page is from then.",
+                "descriptionPush": "The last report arrived {{time}}: every number on this page is from then. Check that the project's scheduler runs excubia:push."
+            },
+            "allChecks": "All checks",
+            "checksFailingOnly": "Failing only",
+            "checksFailingDescription": "The checks of the latest report that warn or fail.",
+            "allChecksPassCount_one": "The {{count}} check passes.",
+            "allChecksPassCount_other": "All {{count}} checks pass."
         },
         "release": "Release",
         "deploy": "Deploy",
@@ -2110,7 +2119,10 @@
         "processed": "Processed",
         "failed": "Failed",
         "viewJobs": "View jobs",
-        "jobsChartLabel": "Stacked bar chart of jobs {{bucket}}: {{processed}} processed and {{failed}} failed {{during}}."
+        "jobsChartLabel": "Stacked bar chart of jobs {{bucket}}: {{processed}} processed and {{failed}} failed {{during}}.",
+        "offTitle": "Runtime monitoring is off",
+        "offDescription": "Turn it on in the project's excubia.json to see exceptions, routes and jobs here.",
+        "notCollected": "Not collected: {{types}}."
     },
     "assignee": {
         "label": "Assignee",

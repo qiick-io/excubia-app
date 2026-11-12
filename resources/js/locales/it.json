@@ -993,7 +993,6 @@
         "overview": {
             "findings": "Problemi aperti",
             "lastReport": "Ultimo report {{time}}",
-            "lastReportStale": "Non aggiornato · ultimo report {{time}}",
             "environment": "Ambiente {{environment}}",
             "checks": "Controlli superati",
             "allChecksPass": "Tutti i controlli superati",
@@ -1029,7 +1028,17 @@
             "lastDeploy": "Deploy {{time}}",
             "noDeploy": "Ancora nessun deploy segnato",
             "deployCount_one": "{{count}} deploy nella cronologia",
-            "deployCount_other": "{{count}} deploy nella cronologia"
+            "deployCount_other": "{{count}} deploy nella cronologia",
+            "stale": {
+                "title": "Questo report non è aggiornato",
+                "description": "L’ultimo report è arrivato {{time}}: ogni numero di questa pagina risale ad allora.",
+                "descriptionPush": "L’ultimo report è arrivato {{time}}: ogni numero di questa pagina risale ad allora. Controlla che lo scheduler del progetto esegua excubia:push."
+            },
+            "allChecks": "Tutti i controlli",
+            "checksFailingOnly": "Solo non superati",
+            "checksFailingDescription": "I controlli dell’ultimo report con avvisi o falliti.",
+            "allChecksPassCount_one": "L’unico controllo è superato.",
+            "allChecksPassCount_other": "Tutti i {{count}} controlli sono superati."
         },
         "release": "Release",
         "deploy": "Deploy",
@@ -2110,7 +2119,10 @@
         "processed": "Elaborati",
         "failed": "Falliti",
         "viewJobs": "Vedi i job",
-        "jobsChartLabel": "Grafico a barre impilate dei job {{bucket}}: {{processed}} elaborati e {{failed}} falliti {{during}}."
+        "jobsChartLabel": "Grafico a barre impilate dei job {{bucket}}: {{processed}} elaborati e {{failed}} falliti {{during}}.",
+        "offTitle": "Il monitoraggio runtime è disattivato",
+        "offDescription": "Attivalo nel file excubia.json del progetto per vedere qui eccezioni, rotte e job.",
+        "notCollected": "Non raccolti: {{types}}."
     },
     "assignee": {
         "label": "Assegnatario",
