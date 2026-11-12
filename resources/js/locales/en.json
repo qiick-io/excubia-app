@@ -1049,6 +1049,15 @@
             "lastSample": "Last sample",
             "serverStatus": "{{server}}: {{status}}",
             "serverStale": "{{server}}: no sample"
+        },
+        "findingGroup": {
+            "title_one": "{{count}} finding",
+            "title_other": "{{count}} findings",
+            "blockers_one": "{{count}} package blocks Laravel {{major}}",
+            "blockers_other": "{{count}} packages block Laravel {{major}}",
+            "show_one": "Show the {{count}} item",
+            "show_other": "Show all {{count}}",
+            "upgradePlan": "Upgrade plan in Fleet"
         }
     },
     "assistant": {

@@ -281,6 +281,35 @@ it('sends a ready fix per finding to the project page and the dashboard', functi
         ->assertInertia(fn (Assert $page) => $page->has('overview.topIssues.0.fix.prompt'));
 });
 
+it('groups the top issues that share a check id and a message into one row with a count (#291)', function () {
+    $blocker = fn (string $package, string $severity = 'medium'): array => [
+        'checkId' => 'laravel-next-blocker', 'severity' => $severity, 'status' => 'fail', 'subject' => $package,
+        'message' => 'Latest release does not allow Laravel 14.', 'fixHint' => 'Watch, replace or fork.',
+        'details' => ['package' => $package, 'lockedVersion' => '1.0.0', 'targetMajor' => 14],
+    ];
+
+    foreach (['shop' => ['spatie/a', 'spatie/b'], 'blog' => ['spatie/b', 'spatie/c']] as $slug => $packages) {
+        $report = pushedReport(Project::factory()->create(['slug' => $slug, 'name' => ucfirst($slug)]), '2026-11-05 08:00:00', SeverityEnum::High, ['high_count' => 1]);
+        $body = $report->report;
+        $body['checks'][] = ['checkId' => 'laravel-next-blocker', 'name' => 'Next-major blockers', 'status' => 'fail', 'findings' => array_map($blocker, $packages)];
+        $report->update(['report' => $body]);
+    }
+
+    $this->actingAs(reportReader())->get(route('dashboard'))
+        ->assertInertia(fn (Assert $page) => $page
+            // The advisory and one row for the three blocking packages.
+            ->where('overview.topIssuesTotal', 2)
+            ->where('overview.topIssues.0.package', 'guzzlehttp/guzzle')
+            ->where('overview.topIssues.0.packages', [])
+            ->where('overview.topIssues.1.checkId', 'laravel-next-blocker')
+            ->where('overview.topIssues.1.targetMajor', 14)
+            ->where('overview.topIssues.1.fix', null)
+            ->has('overview.topIssues.1.packages', 3)
+            ->where('overview.topIssues.1.packages.0.package', 'spatie/b')
+            ->has('overview.topIssues.1.packages.0.projects', 2)
+            ->has('overview.topIssues.1.projects', 2));
+});
+
 it('gives every project tab its own URL and redirects the old ?view= links', function () {
     Project::factory()->create(['slug' => 'shop']);
     $reader = reportReader();

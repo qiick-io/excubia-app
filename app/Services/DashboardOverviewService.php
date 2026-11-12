@@ -196,6 +196,8 @@ class DashboardOverviewService
      * The findings that warn or fail in the latest reports, grouped by check, package (or
      * subject) and advisory, worst first and then by the number of projects affected.
      * Configuration and infrastructure checks are left out: they have their own block.
+     * Packages that repeat one check's message ("Latest release does not allow Laravel 14.")
+     * then share one row with the list of packages (#291), so different problems stay visible.
      *
      * @param  Collection<int, Project>  $projects
      * @return array{topIssues: list<array<string, mixed>>, topIssuesTotal: int}
@@ -233,6 +235,7 @@ class DashboardOverviewService
                     'fixHint' => (string) ($finding['fixHint'] ?? ''),
                     'advisoryId' => $advisoryId,
                     'evidenceUrl' => $finding['evidenceUrl'] ?? null,
+                    'targetMajor' => is_int($details['targetMajor'] ?? null) ? $details['targetMajor'] : null,
                     'installed' => [],
                     'fixedVersions' => [],
                     'projects' => [],
@@ -258,18 +261,74 @@ class DashboardOverviewService
             }
         }
 
-        usort($groups, fn (array $first, array $second): int => [$first['severity']->rank(), -count($first['projects'])] <=> [$second['severity']->rank(), -count($second['projects'])]);
+        $issues = $this->groupRepeatedMessages(array_values($groups));
+        usort($issues, fn (array $first, array $second): int => [$first['severity']->rank(), -count($first['projects'])] <=> [$second['severity']->rank(), -count($second['projects'])]);
 
         return [
-            'topIssues' => array_map(fn (array $group): array => [
-                ...$group,
-                'severity' => $group['severity']->value,
-                'installed' => array_values($group['installed']),
-                'fixedVersions' => array_values($group['fixedVersions']),
-                'projects' => array_values($group['projects']),
-            ], array_slice($groups, 0, self::TOP_ISSUES_LIMIT)),
-            'topIssuesTotal' => count($groups),
+            'topIssues' => array_map(fn (array $issue): array => [
+                ...$issue,
+                'severity' => $issue['severity']->value,
+                'installed' => array_values($issue['installed']),
+                'fixedVersions' => array_values($issue['fixedVersions']),
+                'projects' => array_values($issue['projects']),
+                'packages' => array_map(fn (array $member): array => [
+                    'key' => $member['key'],
+                    'package' => $member['package'],
+                    'projects' => array_values($member['projects']),
+                ], $issue['packages']),
+            ], array_slice($issues, 0, self::TOP_ISSUES_LIMIT)),
+            'topIssuesTotal' => count($issues),
         ];
+    }
+
+    /**
+     * Merges the package groups that share a check id and a message into one row (#291): the
+     * worst severity, every affected project, and the packages listed under `packages`. Only the
+     * display is grouped: each finding keeps its own state. A row that stands alone keeps its
+     * fields and an empty `packages`.
+     *
+     * @param  list<array<string, mixed>>  $issues
+     * @return list<array<string, mixed>>
+     */
+    private function groupRepeatedMessages(array $issues): array
+    {
+        $issuesByMessage = [];
+
+        foreach ($issues as $issue) {
+            $issuesByMessage[$issue['checkId'].'|'.$issue['message']][] = $issue;
+        }
+
+        return array_map(function (array $members): array {
+            if (count($members) === 1) {
+                return [...$members[0], 'packages' => []];
+            }
+
+            // The package that affects most projects first, then by name.
+            usort($members, fn (array $one, array $other): int => [-count($one['projects']), $one['package']] <=> [-count($other['projects']), $other['package']]);
+            $first = $members[0];
+            $worst = $first['severity'];
+
+            foreach ($members as $member) {
+                if ($member['severity']->rank() < $worst->rank()) {
+                    $worst = $member['severity'];
+                }
+            }
+
+            return [
+                ...$first,
+                'key' => 'group|'.$first['checkId'].'|'.$first['message'],
+                'severity' => $worst,
+                'package' => '',
+                'advisoryId' => null,
+                'evidenceUrl' => null,
+                'installed' => [],
+                'fixedVersions' => [],
+                // Keyed by slug, so a project affected through several packages counts once.
+                'projects' => array_replace(...array_column($members, 'projects')),
+                'packages' => $members,
+                'fix' => null,
+            ];
+        }, array_values($issuesByMessage));
     }
 
     /**

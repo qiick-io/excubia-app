@@ -32,9 +32,12 @@ import { NeedsAttentionCard } from '@/components/projects/overview/needs-attenti
 import { RuntimesCard } from '@/components/projects/overview/runtimes-card';
 import { ChecksCard } from '@/components/projects/overview/checks-card';
 import { LiveHealthCard } from '@/components/projects/overview/live-health-card';
-import { relativeTime, findingKey } from '@/lib/report-format';
+import { relativeTime, findingKey, groupFindings } from '@/lib/report-format';
 
-/** Rows of each kind the "Needs attention" card shows; the tabs hold the rest. */
+/**
+ * Rows of each kind the "Needs attention" card shows; the tabs hold the rest. Findings that
+ * share a check and a message count as one row (#291).
+ */
 const ATTENTION_FINDINGS = 8;
 const ATTENTION_EXCEPTIONS = 3;
 
@@ -76,15 +79,24 @@ export function OverviewView({
     const openExceptions = exceptions.filter(
         (group) => group.status === 'open',
     );
+    const findingGroups = groupFindings(findings);
     const items: AttentionItem[] = [
-        ...findings
+        ...findingGroups
             .slice(0, ATTENTION_FINDINGS)
-            .map((finding): AttentionItem => ({
-                kind: 'finding',
-                key: findingKey(finding),
-                finding,
-                fix: fixes[findingKey(finding)] ?? null,
-            })),
+            .map(([finding, ...others]): AttentionItem =>
+                others.length === 0
+                    ? {
+                          kind: 'finding',
+                          key: findingKey(finding),
+                          finding,
+                          fix: fixes[findingKey(finding)] ?? null,
+                      }
+                    : {
+                          kind: 'group',
+                          key: `group-${findingKey(finding)}`,
+                          findings: [finding, ...others],
+                      },
+            ),
         ...openExceptions
             .slice(0, ATTENTION_EXCEPTIONS)
             .map((group): AttentionItem => ({
@@ -318,7 +330,7 @@ export function OverviewView({
             <NeedsAttentionCard
                 slug={project.slug}
                 items={items}
-                total={findings.length + openExceptions.length}
+                total={findingGroups.length + openExceptions.length}
             />
 
             {health !== null ? (

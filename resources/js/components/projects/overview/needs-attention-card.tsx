@@ -3,6 +3,7 @@ import { Bug, CircleCheck } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { PageEmptyState } from '@/components/admin/page-empty-state';
 import { checkLabel } from '@/components/reports/check-details';
+import { FindingGroupSummary } from '@/components/reports/finding-group';
 import type { FindingFix } from '@/components/reports/fix-actions';
 import { FixActions } from '@/components/reports/fix-actions';
 import { SeverityBadge } from '@/components/reports/severity-badge';
@@ -24,6 +25,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { findingKey } from '@/lib/report-format';
 import projectsRoutes from '@/routes/projects';
 import type { ExceptionGroupRow, IssueRow } from '@/types';
 
@@ -34,10 +36,12 @@ export type AttentionItem =
           finding: IssueRow;
           fix: FindingFix | null;
       }
+    /** Findings that share a check and a message (#291), worst first. */
+    | { kind: 'group'; key: string; findings: IssueRow[] }
     | { kind: 'exception'; key: string; group: ExceptionGroupRow };
 
 /**
- * What to fix first: the worst findings, then the open exceptions seen most recently, each
+ * What to fix first: the worst findings (one row per check and message), then the open exceptions seen most recently, each
  * with its ready command or prompt. The tabs list everything.
  */
 export function NeedsAttentionCard({
@@ -103,7 +107,53 @@ export function NeedsAttentionCard({
                         </TableHeader>
                         <TableBody>
                             {items.map((item) =>
-                                item.kind === 'finding' ? (
+                                item.kind === 'group' ? (
+                                    <TableRow key={item.key}>
+                                        <TableCell>
+                                            <SeverityBadge
+                                                severity={
+                                                    item.findings[0].severity
+                                                }
+                                            />
+                                        </TableCell>
+                                        <TableCell className="max-w-[40rem] whitespace-normal">
+                                            <FindingGroupSummary
+                                                checkId={
+                                                    item.findings[0].checkId
+                                                }
+                                                checkLabel={checkLabel(
+                                                    t,
+                                                    item.findings[0].checkId,
+                                                    item.findings[0].checkName,
+                                                )}
+                                                message={
+                                                    item.findings[0].message
+                                                }
+                                                targetMajor={targetMajorOf(
+                                                    item.findings[0],
+                                                )}
+                                                items={item.findings.map(
+                                                    (finding) => ({
+                                                        key: findingKey(
+                                                            finding,
+                                                        ),
+                                                        label: (
+                                                            <Link
+                                                                href={`${findingsUrl}?finding=${encodeURIComponent(findingKey(finding))}`}
+                                                                className="font-medium underline-offset-4 hover:underline"
+                                                            >
+                                                                {
+                                                                    finding.subject
+                                                                }
+                                                            </Link>
+                                                        ),
+                                                    }),
+                                                )}
+                                            />
+                                        </TableCell>
+                                        <TableCell />
+                                    </TableRow>
+                                ) : item.kind === 'finding' ? (
                                     <TableRow key={item.key}>
                                         <TableCell>
                                             <SeverityBadge
@@ -182,4 +232,11 @@ export function NeedsAttentionCard({
             </CardContent>
         </Card>
     );
+}
+
+/** The next Laravel major a `laravel-next-blocker` finding names in its details. */
+function targetMajorOf(finding: IssueRow): number | null {
+    const targetMajor = finding.details?.targetMajor;
+
+    return typeof targetMajor === 'number' ? targetMajor : null;
 }
