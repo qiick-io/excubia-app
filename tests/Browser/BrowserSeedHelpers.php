@@ -37,6 +37,25 @@ function visitA11y(string $path, string $mode): mixed
 }
 
 /**
+ * Asserts that axe really evaluated `color-contrast` on the page (app-ui docs/theme-tokens.md,
+ * "Contrast check"). axe-core before 4.11.1 (Pest's browser plugin bundles 4.10.3) cannot parse
+ * a colour with a `none` channel, such as Tailwind v4's `neutral-*` palette, and then moves the
+ * whole rule to `incomplete` with an error. `assertNoAccessibilityIssues()` reads only
+ * `violations`, so without this check a contrast failure passes silently. Call it after
+ * `assertNoAccessibilityIssues()`, which loads axe on the page.
+ */
+function assertAxeCheckedColorContrast(mixed $page): mixed
+{
+    expect($page->script(<<<'JS'
+        async () => (await window.axe.run({ runOnly: ['color-contrast'] }))
+            .incomplete.filter((result) => result.error)
+            .map((result) => result.error.message ?? String(result.error))
+        JS))->toBe([]);
+
+    return $page;
+}
+
+/**
  * A project with one report (every core check id), runtime rows, an exception group, scheduled
  * tasks and alerts with a mute and a maintenance window, so every tab renders content.
  */
