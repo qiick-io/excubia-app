@@ -838,7 +838,10 @@
         "trend": {
             "title": "Findings over time",
             "description": "Every project's latest report on each day of the last {{count}} days, per severity.",
-            "label": "Stacked bar chart of daily findings per severity over the last {{count}} days; {{total}} findings today."
+            "label": "Stacked bar chart of daily findings per severity over the last {{count}} days; {{total}} findings today.",
+            "sinceFirstReport_one": "Since the first report, {{count}} day ago.",
+            "sinceFirstReport_other": "Since the first report, {{count}} days ago.",
+            "historyBuilding": "History builds up as reports arrive."
         },
         "scope": {
             "project": "Project",

@@ -5,7 +5,11 @@ import { useTranslation } from 'react-i18next';
 import { PageEmptyState } from '@/components/admin/page-empty-state';
 import { PageLayout } from '@/components/layout/page-layout';
 import { StatCard, trendOf } from '@/components/stat-card';
-import { severitySummary } from '@/components/reports/severity-badge';
+import {
+    SeverityBadge,
+    SeverityCounts,
+    severitySummary,
+} from '@/components/reports/severity-badge';
 import type { SeverityChartPoint } from '@/components/reports/severity-chart';
 import { SeverityStackedBarChart } from '@/components/reports/severity-chart';
 import { Button } from '@/components/ui/button';
@@ -13,6 +17,7 @@ import {
     Card,
     CardContent,
     CardDescription,
+    CardFooter,
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
@@ -148,6 +153,10 @@ export default function Dashboard({
             { day: 'numeric', month: 'short' },
         ),
     }));
+    // The server starts the trend at the first report inside the period (#295): a shorter trend
+    // means the history is younger than the period, and one day or less is not a chart yet.
+    const hasTrendChart = trend.length >= 2;
+    const isTrendShorterThanPeriod = trend.length < scope.period;
 
     return (
         <>
@@ -351,15 +360,40 @@ export default function Dashboard({
                                     })}
                                 </CardDescription>
                             </CardHeader>
-                            <CardContent className="h-64">
-                                <SeverityStackedBarChart
-                                    data={chartData}
-                                    label={t('dashboard.trend.label', {
-                                        count: scope.period,
-                                        total: kpis.findings.total,
-                                    })}
-                                />
-                            </CardContent>
+                            {hasTrendChart ? (
+                                <CardContent className="h-64">
+                                    <SeverityStackedBarChart
+                                        data={chartData}
+                                        label={t('dashboard.trend.label', {
+                                            count: trend.length,
+                                            total: kpis.findings.total,
+                                        })}
+                                    />
+                                </CardContent>
+                            ) : (
+                                <CardContent>
+                                    {kpis.findings.total > 0 ? (
+                                        <SeverityCounts
+                                            counts={kpis.findings.counts}
+                                        />
+                                    ) : (
+                                        <SeverityBadge severity={null} />
+                                    )}
+                                </CardContent>
+                            )}
+                            {hasTrendChart &&
+                            !isTrendShorterThanPeriod ? null : (
+                                <CardFooter className="text-sm text-muted-foreground">
+                                    {hasTrendChart
+                                        ? t(
+                                              'dashboard.trend.sinceFirstReport',
+                                              {
+                                                  count: trend.length - 1,
+                                              },
+                                          )
+                                        : t('dashboard.trend.historyBuilding')}
+                                </CardFooter>
+                            )}
                         </Card>
                         <EndOfSupportCard rows={overview.endOfSupport} />
                     </section>

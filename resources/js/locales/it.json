@@ -838,7 +838,10 @@
         "trend": {
             "title": "Problemi nel tempo",
             "description": "L'ultimo report di ogni progetto per ogni giorno degli ultimi {{count}} giorni, per severità.",
-            "label": "Grafico a barre impilate dei problemi giornalieri per severità negli ultimi {{count}} giorni; oggi {{total}} problemi."
+            "label": "Grafico a barre impilate dei problemi giornalieri per severità negli ultimi {{count}} giorni; oggi {{total}} problemi.",
+            "sinceFirstReport_one": "Dal primo report, {{count}} giorno fa.",
+            "sinceFirstReport_other": "Dal primo report, {{count}} giorni fa.",
+            "historyBuilding": "Lo storico si costruisce man mano che arrivano i report."
         },
         "scope": {
             "project": "Progetto",
