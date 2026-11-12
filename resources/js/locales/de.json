@@ -1002,7 +1002,6 @@
         "overview": {
             "findings": "Offene Befunde",
             "lastReport": "Letzter Bericht {{time}}",
-            "lastReportStale": "Veraltet · letzter Bericht {{time}}",
             "environment": "Umgebung {{environment}}",
             "checks": "Bestandene Prüfungen",
             "allChecksPass": "Alle Prüfungen bestanden",
@@ -1038,7 +1037,17 @@
             "lastDeploy": "Deployt {{time}}",
             "noDeploy": "Noch keine Deploy-Markierung",
             "deployCount_one": "{{count}} Deploy im Verlauf",
-            "deployCount_other": "{{count}} Deploys im Verlauf"
+            "deployCount_other": "{{count}} Deploys im Verlauf",
+            "stale": {
+                "title": "Dieser Bericht ist veraltet",
+                "description": "Der letzte Bericht kam {{time}}: Alle Zahlen auf dieser Seite stammen von damals.",
+                "descriptionPush": "Der letzte Bericht kam {{time}}: Alle Zahlen auf dieser Seite stammen von damals. Prüfe, ob der Scheduler des Projekts excubia:push ausführt."
+            },
+            "allChecks": "Alle Prüfungen",
+            "checksFailingOnly": "Nur nicht bestandene",
+            "checksFailingDescription": "Die Prüfungen des letzten Berichts mit Warnung oder Fehler.",
+            "allChecksPassCount_one": "Die {{count}} Prüfung ist bestanden.",
+            "allChecksPassCount_other": "Alle {{count}} Prüfungen sind bestanden."
         },
         "release": "Release",
         "deploy": "Deploy",
@@ -2119,7 +2128,10 @@
         "processed": "Verarbeitet",
         "failed": "Fehlgeschlagen",
         "viewJobs": "Jobs ansehen",
-        "jobsChartLabel": "Gestapeltes Balkendiagramm der Jobs {{bucket}}: {{processed}} verarbeitet und {{failed}} fehlgeschlagen {{during}}."
+        "jobsChartLabel": "Gestapeltes Balkendiagramm der Jobs {{bucket}}: {{processed}} verarbeitet und {{failed}} fehlgeschlagen {{during}}.",
+        "offTitle": "Runtime-Monitoring ist aus",
+        "offDescription": "Schalte es in der excubia.json des Projekts ein, um hier Exceptions, Routen und Jobs zu sehen.",
+        "notCollected": "Nicht erfasst: {{types}}."
     },
     "assignee": {
         "label": "Zuständig",

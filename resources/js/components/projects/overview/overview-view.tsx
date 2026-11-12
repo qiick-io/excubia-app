@@ -1,3 +1,4 @@
+import { Clock, RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { ApplicationSection } from '@/components/reports/application-section';
 import type { FindingFix } from '@/components/reports/fix-actions';
@@ -16,6 +17,8 @@ import {
     severitySummary,
 } from '@/components/reports/severity-badge';
 import { StatCard, trendOf } from '@/components/stat-card';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type {
     ExceptionGroupRow,
@@ -42,9 +45,10 @@ const ATTENTION_FINDINGS = 8;
 const ATTENTION_EXCEPTIONS = 3;
 
 /**
- * Problems first: a row of stat cards (shadcn `dashboard-01`, as the dashboard) for findings,
+ * Problems first: a warning when the report is stale (#292), since every number below is as old
+ * as the report; a row of stat cards (shadcn `dashboard-01`, as the dashboard) for findings,
  * checks, runtimes and, when the project pushes them, exceptions and requests; then what needs
- * attention, worst first, with its fix; then the runtimes and every check.
+ * attention, worst first, with its fix; then the runtimes and the checks that did not pass.
  */
 export function OverviewView({
     project,
@@ -58,6 +62,7 @@ export function OverviewView({
     runtime,
     exceptions,
     exceptionsOverview,
+    onRefresh,
 }: {
     project: ProjectRow;
     latest: HealthReportSummary;
@@ -71,6 +76,8 @@ export function OverviewView({
     runtime: RuntimeSummary | null;
     exceptions: ExceptionGroupRow[];
     exceptionsOverview: ExceptionsOverview | null;
+    /** Runs the checks again; null when the user cannot (only the system project refreshes). */
+    onRefresh: (() => void) | null;
 }) {
     const { t, i18n } = useTranslation();
 
@@ -165,9 +172,38 @@ export function OverviewView({
         (runtime !== null ? 1 : 0) +
         (hasRelease ? 1 : 0);
     const lastSeen = openExceptions[0]?.last_seen_at ?? null;
+    const reportAge = relativeTime(latest.received_at, i18n.language);
 
     return (
         <div className="flex flex-col gap-4">
+            {project.is_stale ? (
+                <Alert variant="warning">
+                    <Clock />
+                    <AlertTitle>{t('report.overview.stale.title')}</AlertTitle>
+                    <AlertDescription>
+                        <p>
+                            {t(
+                                onRefresh === null
+                                    ? 'report.overview.stale.descriptionPush'
+                                    : 'report.overview.stale.description',
+                                { time: reportAge },
+                            )}
+                        </p>
+                        {onRefresh !== null ? (
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="mt-1"
+                                onClick={onRefresh}
+                            >
+                                <RefreshCw className="size-3.5" />
+                                {t('report.refresh')}
+                            </Button>
+                        ) : null}
+                    </AlertDescription>
+                </Alert>
+            ) : null}
             <section
                 className={cn(
                     'grid grid-cols-1 gap-4 sm:grid-cols-2',
@@ -180,17 +216,7 @@ export function OverviewView({
                     trend={trendOf(total, previousTotal)}
                     headline={severitySummary(latest.counts, t)}
                     context={[
-                        t(
-                            project.is_stale
-                                ? 'report.overview.lastReportStale'
-                                : 'report.overview.lastReport',
-                            {
-                                time: relativeTime(
-                                    latest.received_at,
-                                    i18n.language,
-                                ),
-                            },
-                        ),
+                        t('report.overview.lastReport', { time: reportAge }),
                         project.environment === null
                             ? null
                             : t('report.overview.environment', {

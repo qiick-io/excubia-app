@@ -1,8 +1,10 @@
 import { Link } from '@inertiajs/react';
-import { ArrowUpRight } from 'lucide-react';
+import { ArrowUpRight, Gauge } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { NoData } from '@/components/reports/runtime-view';
+import { PageEmptyState } from '@/components/admin/page-empty-state';
+import { CopySnippet } from '@/components/projects/copy-snippet';
+import { RUNTIME_GUIDE_URL } from '@/components/reports/runtime-view';
 import { StackedBarChart } from '@/components/reports/severity-chart';
 import {
     DEFAULT_TIME_RANGE,
@@ -10,6 +12,7 @@ import {
     useRangeTexts,
 } from '@/components/reports/time-range-picker';
 import { Button } from '@/components/ui/button';
+import { useClipboard } from '@/hooks/use-clipboard';
 import {
     Card,
     CardAction,
@@ -28,12 +31,26 @@ import type {
 /** Rows in each list of the section. */
 const LIST_LENGTH = 5;
 
+/** The excubia.json keys that turn on what the section shows: runtime monitoring and exceptions. */
+const ENABLE_SNIPPET = `{
+  "runtime": { "enabled": true },
+  "exceptions": { "enabled": true }
+}`;
+
+/** Static classes, so Tailwind sees them: the cards share the row, whatever their number. */
+const CARD_SPAN: Record<number, string> = {
+    1: 'xl:col-span-12',
+    2: 'xl:col-span-6',
+    3: 'xl:col-span-4',
+};
+
 /** A card of the section: title, description, a "View ↗" link to its tab, then the content. */
 function ApplicationCard({
     title,
     description,
     href,
     linkLabel,
+    className,
     children,
 }: {
     title: string;
@@ -41,12 +58,13 @@ function ApplicationCard({
     href: string;
     /** Accessible name of the link, e.g. "View exceptions". */
     linkLabel: string;
+    className?: string;
     children: ReactNode;
 }) {
     const { t } = useTranslation();
 
     return (
-        <Card className="xl:col-span-4">
+        <Card className={className}>
             <CardHeader className="pb-3">
                 <CardTitle>{title}</CardTitle>
                 <CardDescription>{description}</CardDescription>
@@ -111,8 +129,11 @@ function routeName(row: RuntimeRow): ReactNode {
  * The overview's Application section (#250), after the problems: exceptions, routes and jobs
  * over the page's range, each in a small card with a "View ↗" link to its tab carrying the
  * range. Exceptions show their occurrences per bucket and the groups seen most; routes the
- * slowest by p95 and the most failing by 5xx; jobs processed against failed per bucket. A card
- * without data names the excubia.json key that turns its type on.
+ * slowest by p95 and the most failing by 5xx; jobs processed against failed per bucket.
+ *
+ * Only the types with data in the range get a card (#292): the app cannot read the project's
+ * excubia.json, so no data is the sign that a type is off. One line names the missing types;
+ * with none of them, one empty state replaces the cards with the excubia.json keys to copy.
  */
 export function ApplicationSection({
     slug,
@@ -123,7 +144,7 @@ export function ApplicationSection({
     runtime: RuntimeSummary | null;
     exceptions: ExceptionsOverview | null;
 }) {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const range: TimeRange = runtime?.range ?? DEFAULT_TIME_RANGE;
     const rangeTexts = useRangeTexts(range);
     const tabUrl = useRangeTabUrl();
@@ -150,6 +171,18 @@ export function ApplicationSection({
     );
     const ms = (value: number | null): string =>
         value === null ? '—' : `${Math.round(value).toLocaleString()} ms`;
+    const [copiedText, copy] = useClipboard();
+
+    const hasExceptions = exceptions !== null && occurrences > 0;
+    const hasRoutes = routes.length > 0;
+    const hasJobs = jobTotals.processed + jobTotals.failed > 0;
+    const collected = [hasExceptions, hasRoutes, hasJobs].filter(Boolean);
+    const cardSpan = CARD_SPAN[collected.length];
+    const notCollected = [
+        hasExceptions ? null : t('application.exceptions'),
+        hasRoutes ? null : t('application.routes'),
+        hasJobs ? null : t('application.jobs'),
+    ].filter((label): label is string => label !== null);
 
     return (
         <section
@@ -163,148 +196,208 @@ export function ApplicationSection({
                 >
                     {t('application.title')}
                 </h2>
-                <span className="text-sm text-muted-foreground">
-                    {rangeTexts.headline}
-                </span>
+                {collected.length > 0 ? (
+                    <span className="text-sm text-muted-foreground">
+                        {rangeTexts.headline}
+                    </span>
+                ) : null}
             </div>
 
-            <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-                <ApplicationCard
-                    title={t('application.exceptions')}
-                    description={t('application.exceptionsDescription', {
-                        count: occurrences,
-                        formattedCount: occurrences.toLocaleString(),
-                        ...phrases,
-                    })}
-                    href={tabUrl(slug, 'exceptions')}
-                    linkLabel={t('application.viewExceptions')}
-                >
-                    {exceptions === null || occurrences === 0 ? (
-                        <NoData configKey="exceptions" />
-                    ) : (
-                        <>
+            {collected.length === 0 ? (
+                <PageEmptyState
+                    icon={Gauge}
+                    title={t('application.offTitle')}
+                    description={t('application.offDescription')}
+                    action={
+                        <div className="w-full text-left">
+                            <CopySnippet
+                                label="excubia.json"
+                                text={ENABLE_SNIPPET}
+                                copiedText={copiedText}
+                                copy={copy}
+                            />
+                        </div>
+                    }
+                    docsHref={RUNTIME_GUIDE_URL}
+                    docsLabel={t('runtime.guide')}
+                    compact
+                />
+            ) : (
+                <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+                    {hasExceptions ? (
+                        <ApplicationCard
+                            className={cardSpan}
+                            title={t('application.exceptions')}
+                            description={t(
+                                'application.exceptionsDescription',
+                                {
+                                    count: occurrences,
+                                    formattedCount:
+                                        occurrences.toLocaleString(),
+                                    ...phrases,
+                                },
+                            )}
+                            href={tabUrl(slug, 'exceptions')}
+                            linkLabel={t('application.viewExceptions')}
+                        >
+                            <>
+                                <div className="h-32">
+                                    <StackedBarChart
+                                        data={exceptions.timeline.map(
+                                            (point) => ({
+                                                label: point.at,
+                                                count: point.count,
+                                            }),
+                                        )}
+                                        formatLabel={rangeTexts.bucketText}
+                                        series={[
+                                            {
+                                                key: 'count',
+                                                label: t(
+                                                    'application.occurrences',
+                                                ),
+                                                color: 'var(--runtime-chart-error)',
+                                            },
+                                        ]}
+                                        label={t(
+                                            'application.exceptionsChartLabel',
+                                            { count: occurrences, ...phrases },
+                                        )}
+                                    />
+                                </div>
+                                <RankedList
+                                    title={t('application.topExceptions')}
+                                    rows={exceptions.top.map((group) => ({
+                                        key: String(group.id),
+                                        name: (
+                                            <>
+                                                <span className="font-medium">
+                                                    {group.class
+                                                        .split('\\')
+                                                        .pop()}
+                                                </span>{' '}
+                                                <span className="text-muted-foreground">
+                                                    {group.message}
+                                                </span>
+                                            </>
+                                        ),
+                                        value: (
+                                            group.range_count ?? 0
+                                        ).toLocaleString(),
+                                    }))}
+                                />
+                            </>
+                        </ApplicationCard>
+                    ) : null}
+
+                    {hasRoutes ? (
+                        <ApplicationCard
+                            className={cardSpan}
+                            title={t('application.routes')}
+                            description={t(
+                                'application.routesDescription',
+                                phrases,
+                            )}
+                            href={tabUrl(slug, 'runtime', 'runtime-routes')}
+                            linkLabel={t('charts.viewRoutes')}
+                        >
+                            <>
+                                <RankedList
+                                    title={t('application.slowestRoutes')}
+                                    rows={slowest.map((row) => ({
+                                        key: `${String(row.method)} ${String(row.route)}`,
+                                        name: routeName(row),
+                                        value: `p95 ${ms(row.p95)}`,
+                                    }))}
+                                />
+                                {failing.length > 0 ? (
+                                    <RankedList
+                                        title={t('application.failingRoutes')}
+                                        rows={failing.map((row) => ({
+                                            key: `${String(row.method)} ${String(row.route)}`,
+                                            name: routeName(row),
+                                            value: `5xx ${row.errors.toLocaleString()}`,
+                                        }))}
+                                    />
+                                ) : (
+                                    <p className="text-sm text-muted-foreground">
+                                        {t('application.noFailingRoutes')}
+                                    </p>
+                                )}
+                            </>
+                        </ApplicationCard>
+                    ) : null}
+
+                    {hasJobs ? (
+                        <ApplicationCard
+                            className={cardSpan}
+                            title={t('application.jobs')}
+                            description={t('application.jobsDescription', {
+                                processed: jobTotals.processed.toLocaleString(),
+                                failed: jobTotals.failed.toLocaleString(),
+                                ...phrases,
+                            })}
+                            href={tabUrl(slug, 'runtime', 'runtime-jobs')}
+                            linkLabel={t('application.viewJobs')}
+                        >
                             <div className="h-32">
                                 <StackedBarChart
-                                    data={exceptions.timeline.map((point) => ({
+                                    data={jobTimeline.map((point) => ({
                                         label: point.at,
-                                        count: point.count,
+                                        processed: point.processed,
+                                        failed: point.failed,
                                     }))}
                                     formatLabel={rangeTexts.bucketText}
                                     series={[
                                         {
-                                            key: 'count',
-                                            label: t('application.occurrences'),
+                                            key: 'processed',
+                                            label: t('application.processed'),
+                                            color: 'var(--runtime-chart-ok)',
+                                        },
+                                        {
+                                            key: 'failed',
+                                            label: t('application.failed'),
                                             color: 'var(--runtime-chart-error)',
                                         },
                                     ]}
-                                    label={t(
-                                        'application.exceptionsChartLabel',
-                                        { count: occurrences, ...phrases },
-                                    )}
+                                    label={t('application.jobsChartLabel', {
+                                        processed: jobTotals.processed,
+                                        failed: jobTotals.failed,
+                                        ...phrases,
+                                    })}
                                 />
                             </div>
-                            <RankedList
-                                title={t('application.topExceptions')}
-                                rows={exceptions.top.map((group) => ({
-                                    key: String(group.id),
-                                    name: (
-                                        <>
-                                            <span className="font-medium">
-                                                {group.class.split('\\').pop()}
-                                            </span>{' '}
-                                            <span className="text-muted-foreground">
-                                                {group.message}
-                                            </span>
-                                        </>
-                                    ),
-                                    value: (
-                                        group.range_count ?? 0
-                                    ).toLocaleString(),
-                                }))}
-                            />
-                        </>
-                    )}
-                </ApplicationCard>
+                        </ApplicationCard>
+                    ) : null}
+                </div>
+            )}
 
-                <ApplicationCard
-                    title={t('application.routes')}
-                    description={t('application.routesDescription', phrases)}
-                    href={tabUrl(slug, 'runtime', 'runtime-routes')}
-                    linkLabel={t('charts.viewRoutes')}
-                >
-                    {routes.length === 0 ? (
-                        <NoData configKey="runtime.requests" />
-                    ) : (
-                        <>
-                            <RankedList
-                                title={t('application.slowestRoutes')}
-                                rows={slowest.map((row) => ({
-                                    key: `${String(row.method)} ${String(row.route)}`,
-                                    name: routeName(row),
-                                    value: `p95 ${ms(row.p95)}`,
-                                }))}
-                            />
-                            {failing.length > 0 ? (
-                                <RankedList
-                                    title={t('application.failingRoutes')}
-                                    rows={failing.map((row) => ({
-                                        key: `${String(row.method)} ${String(row.route)}`,
-                                        name: routeName(row),
-                                        value: `5xx ${row.errors.toLocaleString()}`,
-                                    }))}
-                                />
-                            ) : (
-                                <p className="text-sm text-muted-foreground">
-                                    {t('application.noFailingRoutes')}
-                                </p>
-                            )}
-                        </>
-                    )}
-                </ApplicationCard>
-
-                <ApplicationCard
-                    title={t('application.jobs')}
-                    description={t('application.jobsDescription', {
-                        processed: jobTotals.processed.toLocaleString(),
-                        failed: jobTotals.failed.toLocaleString(),
-                        ...phrases,
-                    })}
-                    href={tabUrl(slug, 'runtime', 'runtime-jobs')}
-                    linkLabel={t('application.viewJobs')}
-                >
-                    {jobTotals.processed + jobTotals.failed === 0 ? (
-                        <NoData configKey="runtime.jobs" />
-                    ) : (
-                        <div className="h-32">
-                            <StackedBarChart
-                                data={jobTimeline.map((point) => ({
-                                    label: point.at,
-                                    processed: point.processed,
-                                    failed: point.failed,
-                                }))}
-                                formatLabel={rangeTexts.bucketText}
-                                series={[
-                                    {
-                                        key: 'processed',
-                                        label: t('application.processed'),
-                                        color: 'var(--runtime-chart-ok)',
-                                    },
-                                    {
-                                        key: 'failed',
-                                        label: t('application.failed'),
-                                        color: 'var(--runtime-chart-error)',
-                                    },
-                                ]}
-                                label={t('application.jobsChartLabel', {
-                                    processed: jobTotals.processed,
-                                    failed: jobTotals.failed,
-                                    ...phrases,
-                                })}
-                            />
-                        </div>
-                    )}
-                </ApplicationCard>
-            </div>
+            {collected.length > 0 && notCollected.length > 0 ? (
+                <div className="flex flex-wrap items-center gap-x-3 text-sm text-muted-foreground">
+                    <p>
+                        {t('application.notCollected', {
+                            types: new Intl.ListFormat(i18n.language, {
+                                type: 'conjunction',
+                            }).format(notCollected),
+                        })}
+                    </p>
+                    <Button
+                        variant="link"
+                        size="sm"
+                        asChild
+                        className="px-0 text-muted-foreground"
+                    >
+                        <a
+                            href={RUNTIME_GUIDE_URL}
+                            target="_blank"
+                            rel="noreferrer"
+                        >
+                            {t('runtime.guide')}
+                            <ArrowUpRight className="size-3.5" />
+                        </a>
+                    </Button>
+                </div>
+            ) : null}
         </section>
     );
 }
