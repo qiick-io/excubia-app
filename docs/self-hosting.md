@@ -58,6 +58,8 @@ Only the `app` container migrates (`EXCUBIA_RUN_MIGRATIONS=false` on the others)
 
 Any other setting of `.env.example` (another database, `EXCUBIA_AI_ENABLED`, retention days…) can be added under `environment:` in `docker-compose.yml`. To use MySQL or PostgreSQL, set `DB_CONNECTION`, `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME` and `DB_PASSWORD`.
 
+**Uploaded files.** Project logos and the branding files (Settings → Appearance: logo, dark logo, favicon) are stored on `storage/app/public/project-logos/` and `storage/app/private/branding/` by default. Where the filesystem is rebuilt on every deploy (Laravel Cloud, some container platforms), set `EXCUBIA_FILES_DISK` to a bucket disk, for example `s3` with the `AWS_*` keys (`AWS_ENDPOINT` for R2 or MinIO), and install its driver: `composer require league/flysystem-aws-s3-v3`. Both kinds of files then go to that disk under the same relative paths (`project-logos/…`, `branding/…`). The app streams them through its own routes, so the bucket can stay private. To move an existing install, copy those two directories to the bucket before you set the variable.
+
 ### HTTPS
 
 Put a TLS reverse proxy (Caddy, Traefik, nginx) in front of port 8080, set `APP_URL` to the public `https://` URL and `TRUSTED_PROXIES` to the address of the proxy (`*` when only the proxy can reach the container). Without `TRUSTED_PROXIES`, the app ignores the forwarded headers: it would build `http://` links and see the proxy's IP for every visitor, which also breaks the login rate limit. The app sends `X-Frame-Options`, `nosniff`, `Referrer-Policy` and `Permissions-Policy` itself; set HSTS on the proxy, or set `EXCUBIA_HSTS_MAX_AGE` (seconds, for example `31536000`) to have the app send it on https requests.
@@ -323,7 +325,7 @@ Laravel's `/up` still answers too. The scheduler, the queue worker and the pushe
 
 ## Backups
 
-Back up the database and, with Docker, the application key. Everything else (code, vendor, built assets) comes back from the repository.
+Back up the database, the uploaded files (`storage/app/public/project-logos/` and `storage/app/private/branding/`, unless `EXCUBIA_FILES_DISK` points at a bucket) and, with Docker, the application key. Everything else (code, vendor, built assets) comes back from the repository.
 
 ### SQLite
 

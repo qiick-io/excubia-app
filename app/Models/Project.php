@@ -38,7 +38,7 @@ use Spatie\Activitylog\Support\LogOptions;
  * @property string|null $environment Laravel `app.env` last reported by a report or runtime batch (core #203)
  * @property Carbon|null $stale_alerted_at
  * @property int $skipped_runtime_aggregates runtime entries of unknown types skipped on ingest (#111)
- * @property string|null $logo_path uploaded logo on the public disk (#287); null shows the initials avatar
+ * @property string|null $logo_path uploaded logo on the files disk (#287, #312); null shows the initials avatar
  * @property float|null $ai_monthly_budget estimated AI spend per month (USD) that alerts at 80 % and 100 % (#129)
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at

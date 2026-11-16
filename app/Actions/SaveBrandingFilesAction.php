@@ -5,18 +5,36 @@ declare(strict_types=1);
 namespace App\Actions;
 
 use App\Services\SettingsRepositoryService;
+use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use RuntimeException;
 
 /**
- * Stores the uploaded logo, dark logo and favicon on the local disk (`branding/`) and saves
- * their paths in settings. A removed or replaced file is deleted from the disk.
+ * Stores the uploaded logo, dark logo and favicon on the files disk (disk(), under `branding/`)
+ * and saves their paths in settings. A removed or replaced file is deleted from the disk.
  */
 class SaveBrandingFilesAction
 {
+    /** The disk used when `excubia.files_disk` is not set, so existing installs keep their files. */
+    public const string DEFAULT_DISK = 'local';
+
+    public const string DIRECTORY = 'branding';
+
     public function __construct(private SettingsRepositoryService $settings) {}
+
+    /**
+     * The disk branding files live on: `excubia.files_disk` when set (#312: a bucket, on hosts
+     * whose filesystem is rebuilt on every deploy), the local disk otherwise. The stored relative
+     * path is the same on every disk, so moving to another one is a copy of `branding/`.
+     */
+    public static function disk(): Filesystem
+    {
+        $configuredDisk = config('excubia.files_disk');
+
+        return Storage::disk(is_string($configuredDisk) && $configuredDisk !== '' ? $configuredDisk : self::DEFAULT_DISK);
+    }
 
     /**
      * @param  array<string, UploadedFile>  $uploads  setting key (`project_logo`, …) → new file
@@ -51,7 +69,7 @@ class SaveBrandingFilesAction
      */
     private function store(UploadedFile $upload): string
     {
-        $path = $upload->storeAs('branding', Str::random(20).'.'.$upload->extension(), 'local');
+        $path = self::disk()->putFileAs(self::DIRECTORY, $upload, Str::random(20).'.'.$upload->extension());
 
         if ($path === false) {
             throw new RuntimeException('The branding file could not be stored.');
@@ -63,7 +81,7 @@ class SaveBrandingFilesAction
     private function delete(mixed $path): void
     {
         if (is_string($path) && $path !== '') {
-            Storage::disk('local')->delete($path);
+            self::disk()->delete($path);
         }
     }
 }
