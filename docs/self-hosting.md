@@ -396,12 +396,31 @@ php artisan optimize
 php artisan up
 ```
 
-**You used create-project and pushed to your own remote:** add Excubia as `upstream` once and merge the release tag, then run the same `composer`, `npm` and `excubia:upgrade` steps:
+**Your own repository (recommended when you customise the app or deploy from your own repo):** start from a **clone at a release tag** and push it to your own private repository. Keep `qiick-io/excubia-app` as `upstream`, so every release is a normal merge. A GitHub fork of a public repository can't be private, so clone and push instead of forking:
+
+```bash
+git clone --branch v1.0.0 https://github.com/qiick-io/excubia-app.git excubia
+cd excubia
+git switch -c main
+git remote rename origin upstream
+git remote add origin git@github.com:you/excubia.git   # your private repository
+git push -u origin main
+```
+
+To upgrade, merge the release tag, then run the same `composer`, `npm` and `excubia:upgrade` steps:
+
+```bash
+git fetch --tags upstream
+git merge v1.0.1   # resolve conflicts if you changed app code
+```
+
+**You used create-project and pushed to your own repository:** that tree is a new root commit that shares no history with upstream, so a plain `git merge` stops with `refusing to merge unrelated histories` (and `--allow-unrelated-histories` alone turns every file both sides changed into a conflict). Link the histories once at the release you installed, which changes no file, then merge as above. [Assisted sync](#assisted-sync---sync-upstream) does this for you on the first sync.
 
 ```bash
 git remote add upstream https://github.com/qiick-io/excubia-app.git   # once
 git fetch --tags upstream
-git merge v1.0.1   # resolve conflicts if you changed app code
+git merge -s ours --allow-unrelated-histories -m "chore: link upstream history at v1.0.0" v1.0.0   # once: the version you installed
+git merge v1.0.1
 ```
 
 ### Assisted sync (`--sync-upstream`)
@@ -410,9 +429,10 @@ Opt-in: plain `excubia:upgrade` never pulls code. With `--sync-upstream=vX.Y.Z` 
 
 1. needs a git working tree, clean unless `--force`;
 2. adds the remote `upstream` → `https://github.com/qiick-io/excubia-app.git` if missing, fetches the tags and checks the tag exists;
-3. lists the files that change (`git diff --name-status HEAD vX.Y.Z`); with `--dry-run` it stops here;
-4. asks for confirmation (skip it with `--yes`), merges the tag (`git merge --no-edit`) and stops on a conflict, before migrating;
-5. then runs the usual upgrade steps.
+3. on the first sync of a create-project install, when `HEAD` and the tag share no history (`git merge-base` finds nothing), it links the histories at the tag of the installed version (`version` in `composer.json`, as **Settings → System** shows it) with `git merge -s ours --allow-unrelated-histories -m "chore: link upstream history at vA.B.C" vA.B.C`. That commit changes no file and records the release your tree came from as the common ancestor, so this merge and every later one is a normal three-way merge. When the installed version can't be read or has no upstream tag, it stops before merging and tells you to run that command by hand with the release you installed, or to start from a clone (Path A);
+4. lists the files that change (`git diff --name-status HEAD vX.Y.Z`, or from the installed tag when it links); with `--dry-run` it shows the linking step and that list and stops here, linking and merging nothing;
+5. asks for confirmation (skip it with `--yes`), links the histories if needed, merges the tag (`git merge --no-edit`) and stops on a conflict, before migrating;
+6. then runs the usual upgrade steps.
 
 ```bash
 php artisan excubia:upgrade --sync-upstream=v1.0.1 --dry-run   # preview only
