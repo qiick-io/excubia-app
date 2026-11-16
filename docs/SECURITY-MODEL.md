@@ -13,7 +13,7 @@ This document describes what Excubia App receives, where it stores it, how long 
 | Monitored project (push token)             | pushing reports, runtime and exceptions **for its own project**    | every string it sends: package names, messages, URLs, task and route names are untrusted input |
 | Identity provider (OIDC)                   | the `sub` and a verified `email` of the users it signs in          | anything else in its claims                                                                    |
 | Alert receivers (webhook, Slack, Telegram) | receiving alert payloads                                           | Excubia never follows their redirects nor reads more than the status code                      |
-| AI provider (off by default)               | answering questions over the read-only tool results                | tool results contain project text: the agent is told to treat it as data (prompt injection)    |
+| AI provider (off by default)               | answering questions over the tool results, proposing write calls   | tool results contain project text: the agent is told to treat it as data (prompt injection)    |
 
 ## Data flows
 
@@ -92,13 +92,14 @@ Deleting a project deletes its reports, findings, telemetry, tasks, alerts, mute
 ### 7. AI assistant (off by default)
 
 - `EXCUBIA_AI_ENABLED=false` by default: no page, no route that answers, no outbound call. When on, users need `can-use-ai`.
-- Tools are read-only and run as the asking user (`Project::visibleTo`): project names and slugs, report summaries, findings (package, version, message, fix hint, advisory id), upgrade steps, exception groups (class, masked message, where, counts; no stack frames), runtime tables (routes, queries, jobs, hosts called; no server names or deprecation sources) and scheduled tasks. Each is narrowed to an allowlist of fields. Never push tokens, user data or file paths (covered by `tests/Feature/Assistant/AssistantToolsTest.php`).
+- Read tools run as the asking user (`Project::visibleTo`): project names and slugs, report summaries, findings (package, version, message, fix hint, advisory id), upgrade steps, exception groups (class, masked message, where, counts; no stack frames), runtime tables (routes, queries, jobs, hosts called; no server names or deprecation sources) and scheduled tasks. Each is narrowed to an allowlist of fields. Never push tokens, user data or file paths (covered by `tests/Feature/Assistant/AssistantToolsTest.php`).
+- Write tools (#320, on by default; `EXCUBIA_AI_WRITE_ENABLED=false` turns them off everywhere) are reversible only: exception status, assignment, finding dismissal, alert mutes and maintenance windows, refresh of the system report. Each runs the Action of the UI after the same ProjectPolicy check on a project the user can see (`manageExceptions`, `manageFindings`, `manageAlerts`, `refreshReport`), validates its arguments, and returns no user data (an assignee is given by email but never echoed; an unknown email and a user who cannot see the project get the same error). There are no destructive or security tools. In the assistant every write call pauses the turn until the user approves it (laravel/ai approvals); "always" skips the question for those tools in that conversation only, and is dropped with the conversation.
 - What leaves the server: the user's questions and those tool results, to the provider in `config/ai.php` (Ollama on the same network by default). The system prompt tells the model that tool results are data, not instructions; answers are rendered as plain text, so an injected instruction can at most change the wording of an answer, not run code or tools with more rights.
 - Conversations are stored in `agent_conversations` and `agent_conversation_messages`, scoped to their owner (reading, continuing and deleting are all checked).
 
 ### 7a. Personal API keys
 
-- **Created** by each user for themselves in Settings → API keys (#315): `exk_` + 40 random characters (`Str::random`), with a name, scopes (`mcp:read` today) and an optional expiry date.
+- **Created** by each user for themselves in Settings → API keys (#315): `exk_` + 40 random characters (`Str::random`), with a name, scopes (`mcp:read`; `mcp:write` for the MCP write tools, off unless ticked and only with `mcp:read`) and an optional expiry date. Scopes cannot be edited: a key that needs `mcp:write` is a new key.
 - **Stored** only as `sha256` in `api_keys.key_hash` (hidden from serialization and excluded from the activity log), with the first 12 characters as `key_prefix` for display. The plain key is flashed once (`apiKey` flash) and never stored or logged.
 - **Checked** by `AuthenticateApiKeyMiddleware`, with the scope the route needs: the bearer key is hashed and looked up by hash. A revoked or expired key, a key without the scope, or a deactivated owner is rejected on the next request; deleting a user deletes their keys.
 - **Acts as its owner**, for that request only (no session): every policy and `Project::visibleTo` apply as in the UI, so a key never sees or does more than its owner. Only the owner may revoke a key.
@@ -109,8 +110,8 @@ Deleting a project deletes its reports, findings, telemetry, tasks, alerts, mute
 
 - `EXCUBIA_MCP_ENABLED=false` by default: `POST /mcp` answers 404 before any key is looked up (`EnsureMcpEnabledMiddleware`).
 - Authenticated only by a personal API key with `mcp:read` (`AuthenticateApiKeyMiddleware`, 7a); outside the `web` group, so no session cookie and no CSRF: a signed-in browser cannot drive the tools.
-- The tools are the assistant's (7), run as the key's owner through `AssistantMcpToolAdapter`, read-only, limited to the tools enabled in Settings → AI. The same allowlists apply: never push tokens, API keys, user data or file paths (covered for both surfaces by `tests/Feature/Assistant/AssistantToolsTest.php`).
-- What leaves the server: only the tool results a client asks for with a key a user created. Excubia never calls the client. Every call is in the `ai` activity log (tool, arguments, outcome; never the result).
+- The tools are the assistant's (7), run as the key's owner through `AssistantMcpToolAdapter`, limited to the tools enabled in Settings → AI. The write tools are listed and callable only for a key with `mcp:write` while `EXCUBIA_AI_WRITE_ENABLED` and `EXCUBIA_MCP_WRITE_ENABLED` are on; there is no in-app approval (the key is the consent, and the client asks before each call, helped by `readOnlyHint: false`). The same allowlists apply: never push tokens, API keys, user data or file paths (covered for both surfaces by `tests/Feature/Assistant/AssistantToolsTest.php`).
+- What leaves the server: only the tool results a client asks for with a key a user created. Excubia never calls the client. Every call is in the `ai` activity log (`surface: mcp`, tool, kind, arguments, outcome; never the result).
 
 ### 8. Secrets in logs, errors and props
 

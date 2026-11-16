@@ -47,5 +47,7 @@
     "Some selected items are not in this project.": "Alcuni elementi selezionati non sono in questo progetto.",
     ":count finding assigned.|:count findings assigned.": ":count finding assegnato.|:count finding assegnati.",
     "The logo is not a valid SVG image.": "Il logo non è un'immagine SVG valida.",
-    "API key revoked.": "Chiave API revocata."
+    "API key revoked.": "Chiave API revocata.",
+    "The mcp:write scope needs mcp:read.": "Lo scope mcp:write richiede mcp:read.",
+    "Nothing in this chat waits for an approval.": "In questa chat nulla attende un'approvazione."
 }

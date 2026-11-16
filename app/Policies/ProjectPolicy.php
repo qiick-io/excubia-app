@@ -60,6 +60,22 @@ class ProjectPolicy
     }
 
     /**
+     * Status and assignee of the project's exception groups (#26, #254), from the UI or an AI tool (#320).
+     */
+    public function manageExceptions(User $actor, Project $project): bool
+    {
+        return $actor->can(PermissionEnum::CanManageExceptions->value) && $this->view($actor, $project);
+    }
+
+    /**
+     * Dismissal and assignee of the project's findings (#18, #254), from the UI or an AI tool (#320).
+     */
+    public function manageFindings(User $actor, Project $project): bool
+    {
+        return $actor->can(PermissionEnum::CanDismissFindings->value) && $this->view($actor, $project);
+    }
+
+    /**
      * Mutes and maintenance windows of the project's Alerts tab (#22, #114).
      */
     public function manageAlerts(User $actor, Project $project): bool

@@ -24,7 +24,7 @@ The checks run inside each project through [`qiick/excubia-core`](https://github
 - **Scheduled tasks:** late, missed and failed runs, "scheduler down".
 - **Alerts** by mail and integrations, with mutes and maintenance windows, and a weekly digest.
 - **Access:** users, groups, roles and permissions, two-factor and passkeys, optional OIDC single sign-on.
-- **Self-hosted, no telemetry.** Excubia also watches its own install. Optional read-only AI assistant with a local model, and an optional read-only MCP server for clients such as Claude Code and Cursor ([docs/mcp.md](./docs/mcp.md)).
+- **Self-hosted, no telemetry.** Excubia also watches its own install. Optional AI assistant with a local model, and an optional MCP server for clients such as Claude Code and Cursor ([docs/mcp.md](./docs/mcp.md)): they read your reports and, after your approval, resolve, assign, dismiss and mute (writes can be turned off).
 
 ## Quick start
 

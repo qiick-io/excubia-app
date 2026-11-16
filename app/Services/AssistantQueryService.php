@@ -178,7 +178,8 @@ class AssistantQueryService
 
     /**
      * Findings that warn or fail across projects, latest report of each project only, or every
-     * report received in a date range. Filters are optional; `package` matches the subject.
+     * report received in a date range. Filters are optional; `package` matches the subject. Each
+     * has its `fingerprint`, which the finding write tools (#320) take.
      *
      * @param  array{project?: string|null, minimumSeverity?: string|null, package?: string|null, advisoryId?: string|null, checkId?: string|null, from?: string|null, to?: string|null}  $filters
      * @return array{findings: list<array<string, mixed>>, isTruncated: bool}
@@ -224,7 +225,7 @@ class AssistantQueryService
                         return ['findings' => $matches, 'isTruncated' => true];
                     }
 
-                    $matches[] = ['project' => $project->slug, 'reportId' => $report->id, 'receivedAt' => $report->received_at->toIso8601String(), ...$finding];
+                    $matches[] = ['project' => $project->slug, 'reportId' => $report->id, 'receivedAt' => $report->received_at->toIso8601String(), ...$finding, 'fingerprint' => $this->findings->fingerprint($finding)];
                 }
             }
         }

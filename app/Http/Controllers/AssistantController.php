@@ -8,8 +8,10 @@ use App\Actions\DeleteAssistantConversationsAction;
 use App\Ai\Agents\ExcubiaAssistantAgent;
 use App\Enums\PermissionEnum;
 use App\Http\Requests\DeleteAssistantConversationsRequest;
+use App\Http\Requests\ResolveAssistantApprovalsRequest;
 use App\Http\Requests\StoreAssistantMessageRequest;
 use App\Models\User;
+use App\Services\AssistantApprovalService;
 use App\Services\AssistantConversationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -18,11 +20,14 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
+use Laravel\Ai\Responses\AgentResponse;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Throwable;
 
 /**
  * Assistant chat (#17), behind `excubia.ai_enabled` (404 while off) and `can-use-ai`. The page posts
- * with Inertia and is redirected; the ⌘J side panel posts JSON and gets the thread back.
+ * with Inertia and is redirected; the ⌘J side panel posts JSON and gets the thread back. A turn
+ * that calls a write tool (#320) waits for the user's approval, posted to approve().
  * ponytail: the answer is awaited in the request (no streaming); stream it when answers get long.
  */
 class AssistantController extends Controller
@@ -43,16 +48,45 @@ class AssistantController extends Controller
         return $this->render($user, $conversation);
     }
 
-    public function store(StoreAssistantMessageRequest $request): RedirectResponse|JsonResponse
+    public function store(StoreAssistantMessageRequest $request, AssistantApprovalService $approvals): RedirectResponse|JsonResponse
     {
         /** @var User $user authorized by the request */
         $user = $request->user();
         $conversationId = $request->string('conversation_id')->toString();
-        $agent = new ExcubiaAssistantAgent($user);
+        $agent = new ExcubiaAssistantAgent($user, $conversationId === '' ? [] : $approvals->alwaysApprovedTools($conversationId));
         $conversationId === '' ? $agent->forUser($user) : $agent->continue($conversationId, as: $user);
 
+        return $this->respond($request, $conversationId, fn (): AgentResponse => $agent->prompt($request->string('message')->toString()));
+    }
+
+    /**
+     * Approves or rejects the write calls the conversation waits on (#320) and resumes the turn.
+     */
+    public function approve(ResolveAssistantApprovalsRequest $request, AssistantApprovalService $approvals): RedirectResponse|JsonResponse
+    {
+        /** @var User $user authorized by the request */
+        $user = $request->user();
+        $conversationId = $request->conversationId();
+
+        return $this->respond($request, $conversationId, function () use ($approvals, $user, $conversationId, $request): AgentResponse {
+            $response = $approvals->resolve($user, $conversationId, $request->boolean('approved'), $request->boolean('always'));
+            abort_if($response === null, 422, __('Nothing in this chat waits for an approval.'));
+
+            return $response;
+        });
+    }
+
+    /**
+     * Runs one assistant turn and answers the page (a redirect) or the side panel (JSON with the thread).
+     *
+     * @param  callable(): AgentResponse  $prompt
+     */
+    private function respond(Request $request, string $conversationId, callable $prompt): RedirectResponse|JsonResponse
+    {
         try {
-            $response = $agent->prompt($request->string('message')->toString());
+            $response = $prompt();
+        } catch (HttpException $exception) {
+            throw $exception;
         } catch (Throwable $exception) {
             // The question itself is not logged: only that the provider failed.
             Log::warning('Assistant provider call failed.', ['exception' => $exception::class]);

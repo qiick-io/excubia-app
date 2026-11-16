@@ -432,14 +432,21 @@
             "breadcrumb": "AI settings",
             "head": "AI settings",
             "title": "Assistant tools",
-            "description": "The read-only tools the assistant and the MCP server may use to answer. They never change anything.",
+            "description": "The tools the assistant and the MCP server may use. Read tools never change anything; write tools change data with your permissions, after your approval in the assistant, and over MCP only for API keys with mcp:write.",
             "statusLabel": "Assistant",
             "statusOn": "On",
             "statusOff": "Off (EXCUBIA_AI_ENABLED=false)",
             "providerLabel": "Provider",
             "modelLabel": "Model",
             "envHint": "The provider, model and keys are set in .env (AI_DEFAULT_PROVIDER and the provider's keys). The data sent to a cloud provider leaves your server.",
-            "readOnly": "read-only"
+            "kind": {
+                "read": "read",
+                "write": "write"
+            },
+            "writesLabel": "Write tools",
+            "writesOn": "On",
+            "writesOff": "Off (EXCUBIA_AI_WRITE_ENABLED=false)",
+            "mcpWritesOff": "Off over MCP (EXCUBIA_MCP_WRITE_ENABLED=false)"
         },
         "integrations": {
             "head": "Integrations",
@@ -632,7 +639,8 @@
             "never": "Never",
             "revoke": "Revoke key",
             "scopeHelp": {
-                "mcpRead": "Read projects, reports, findings, exceptions, runtime and schedules through the MCP server."
+                "mcpRead": "Read projects, reports, findings, exceptions, runtime and schedules through the MCP server.",
+                "mcpWrite": "Also change data through the MCP write tools: exception status, assignments, finding dismissals, alert mutes and maintenance windows. Off unless ticked."
             },
             "columns": {
                 "name": "Name",
@@ -1130,7 +1138,7 @@
         "newConversation": "New chat",
         "conversations": "Conversations",
         "emptyTitle": "Ask about your projects",
-        "emptyDescription": "It reads the stored reports: it lists projects, searches findings, shows a project's latest report and history, compares two reports and suggests an upgrade plan. It cannot change anything.",
+        "emptyDescription": "It reads the stored reports: it lists projects, searches findings, shows a project's latest report and history, compares two reports and suggests an upgrade plan. It can also resolve or assign exceptions, dismiss findings and mute alerts, each time after you approve.",
         "placeholder": "Ask a question… (Enter to send, Shift+Enter for a new line)",
         "send": "Send",
         "you": "You",
@@ -1160,7 +1168,22 @@
         "selectConversation": "Select {{title}}",
         "deleteTitle": "Delete selected chats?",
         "deleteDescription_one": "You are about to delete {{count}} chat. This action cannot be undone.",
-        "deleteDescription_other": "You are about to delete {{count}} chats. This action cannot be undone."
+        "deleteDescription_other": "You are about to delete {{count}} chats. This action cannot be undone.",
+        "approval": {
+            "question_one": "Approve this change?",
+            "question_other": "Approve these {{count}} changes?",
+            "always": "Don't ask again for these tools in this chat",
+            "awaiting": "Waiting for your approval.",
+            "tools": {
+                "update-exception-status": "Change the status of exceptions",
+                "assign-items": "Assign exceptions or findings",
+                "dismiss-finding": "Dismiss a finding",
+                "restore-finding": "Restore a finding",
+                "mute-alert": "Mute alerts or open a maintenance window",
+                "unmute-alert": "Unmute alerts or close a maintenance window",
+                "refresh-report": "Refresh the system report"
+            }
+        }
     },
     "permissions": {
         "description": "Permissions are defined in PermissionEnum and synced to the database. Assign them to roles on the role edit page.",
@@ -1580,6 +1603,10 @@
             "reranking": "Reranking",
             "audio": "Text to speech",
             "classification": "Classification"
+        },
+        "approval": {
+            "approve": "Approve",
+            "reject": "Reject"
         }
     },
     "files": {

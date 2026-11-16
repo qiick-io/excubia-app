@@ -29,6 +29,16 @@ class StoreMaintenanceWindowRequest extends FormRequest
      */
     public function rules(): array
     {
+        return self::windowRules();
+    }
+
+    /**
+     * The rules of a window, shared with the `mute-alert` AI tool (#320).
+     *
+     * @return array<string, list<mixed>>
+     */
+    public static function windowRules(): array
+    {
         $once = 'required_if:recurrence,'.MaintenanceWindow::ONCE;
         $weekly = 'required_if:recurrence,'.MaintenanceWindow::WEEKLY;
 

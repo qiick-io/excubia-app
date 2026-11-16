@@ -11,7 +11,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 /**
- * Settings → AI: which read-only tools the assistant may use.
+ * Settings → AI: which tools the assistant and the MCP server may use, read and write (#320).
  */
 class UpdateAiSettingsRequest extends FormRequest
 {
@@ -29,10 +29,14 @@ class UpdateAiSettingsRequest extends FormRequest
     }
 
     /**
-     * @return array{ai_enabled_tools: list<string>}
+     * Stores the tools left unticked, so a tool added by a later upgrade is on (#320).
+     *
+     * @return array{ai_disabled_tools: list<string>}
      */
     public function settings(): array
     {
-        return ['ai_enabled_tools' => array_values(array_map('strval', (array) $this->input('tools', [])))];
+        $enabled = array_map('strval', (array) $this->input('tools', []));
+
+        return ['ai_disabled_tools' => array_values(array_diff(array_keys(ExcubiaAssistantAgent::TOOLS), $enabled))];
     }
 }

@@ -515,7 +515,7 @@ The app version, the excubia-core installed in the app, and the core constraint 
 
 ## MCP server (optional)
 
-Off by default. With `EXCUBIA_MCP_ENABLED=true`, AI clients such as Claude Code, Cursor and Claude Desktop read Excubia's data at `POST /mcp` with a personal API key (Settings → API keys, scope `mcp:read`). It needs no AI provider and has no write tools. Setup, the tools and the limits: [docs/mcp.md](mcp.md).
+Off by default. With `EXCUBIA_MCP_ENABLED=true`, AI clients such as Claude Code, Cursor and Claude Desktop read Excubia's data at `POST /mcp` with a personal API key (Settings → API keys, scope `mcp:read`), and with a key that also has `mcp:write`, use the write tools (on by default, `EXCUBIA_MCP_WRITE_ENABLED`). It needs no AI provider. Setup, the tools and the limits: [docs/mcp.md](mcp.md).
 
 ## AI assistant (optional)
 
@@ -527,4 +527,13 @@ OLLAMA_URL=http://localhost:11434
 OLLAMA_MODEL=qwen3.5:4b
 ```
 
-Pick a model that supports tool calling. For an OpenAI-compatible local server such as LM Studio, set `AI_DEFAULT_PROVIDER=local`, `LOCAL_AI_URL` and `LOCAL_AI_MODEL` instead. Users with the `can-use-ai` permission (admin and super-admin by default) see **Assistant** in the sidebar. The assistant is read-only. To use a cloud provider, set `AI_DEFAULT_PROVIDER` and that provider's key (see `config/ai.php`); the questions and the report data its tools read then leave your server (never push tokens, user data or file paths).
+Pick a model that supports tool calling. For an OpenAI-compatible local server such as LM Studio, set `AI_DEFAULT_PROVIDER=local`, `LOCAL_AI_URL` and `LOCAL_AI_MODEL` instead. Users with the `can-use-ai` permission (admin and super-admin by default) see **Assistant** in the sidebar. To use a cloud provider, set `AI_DEFAULT_PROVIDER` and that provider's key (see `config/ai.php`); the questions and the report data its tools read then leave your server (never push tokens, user data or file paths).
+
+### Write tools and Settings → AI
+
+Besides its read tools, the assistant has reversible write tools (#320), **on by default**: it can resolve, ignore or reopen exception groups, assign exceptions and findings, dismiss, snooze or restore findings, mute or unmute alert events, open or close maintenance windows, and refresh the system report. It never deletes anything and never touches tokens, users, roles or settings. Each tool acts with the asking user's permissions and projects, exactly as the buttons in the UI do.
+
+- **Approval:** every write call waits under the answer for **Approve** or **Reject**. Ticking "Don't ask again for these tools in this chat" before approving lets those tools run without asking for the rest of that conversation.
+- **Turn writes off:** `EXCUBIA_AI_WRITE_ENABLED=false` makes the assistant and the MCP server read-only; `EXCUBIA_MCP_WRITE_ENABLED=false` does it for MCP only. Clear the config cache afterwards (`php artisan config:clear`, or `excubia:upgrade`).
+- **Settings → AI → Tools** (`can-manage-project-settings`) shows whether writes are on and lists every tool with its kind (read or write); untick a tool to turn it off for the assistant and MCP. A tool added by an upgrade is on until you untick it.
+- **Audit:** every tool call is in the activity log (`ai`, "AI tool", with `surface: assistant` or `mcp`, the tool, the arguments and the outcome), every approval decision as "AI tool approval", and the change itself as if it was made in the UI.

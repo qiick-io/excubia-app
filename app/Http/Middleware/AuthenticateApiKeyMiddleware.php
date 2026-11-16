@@ -73,6 +73,8 @@ class AuthenticateApiKeyMiddleware
 
         // The default guard, without touching a session: the owner is signed in for this request only.
         Auth::setUser($apiKey->user);
+        // Further scopes of the key (`mcp:write` for the MCP write tools, #320) are read from here.
+        $request->attributes->set(ApiKey::class, $apiKey);
         $this->recordApiKeyUse->execute($apiKey);
 
         return $next($request);

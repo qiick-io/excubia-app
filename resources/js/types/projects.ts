@@ -275,12 +275,21 @@ export type AssistantConversation = {
 };
 
 /** A user or assistant message of a conversation. */
+/** A write call an assistant turn waits on (#320), keyed by its tool name. */
+export type AssistantPendingApproval = {
+    id: string;
+    tool: string;
+    arguments: Record<string, unknown>;
+};
+
 export type AssistantMessage = {
     id: string;
     role: 'user' | 'assistant';
     content: string;
     is_failed: boolean;
     created_at: string | null;
+    /** The write calls the latest turn waits on: empty on every other message. */
+    pending_approvals: AssistantPendingApproval[];
 };
 
 /** p50, p95 and p99 in ms from the latency histograms; null without histograms. */

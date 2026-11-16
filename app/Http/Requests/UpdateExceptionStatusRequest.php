@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Requests;
 
 use App\Enums\ExceptionStatusEnum;
-use App\Enums\PermissionEnum;
 use App\Models\ExceptionGroup;
 use App\Models\Project;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -29,8 +28,7 @@ class UpdateExceptionStatusRequest extends FormRequest
             && $project instanceof Project
             && $group instanceof ExceptionGroup
             && $group->project_id === $project->id
-            && $user->can('view', $project)
-            && $user->can(PermissionEnum::CanManageExceptions->value);
+            && $user->can('manageExceptions', $project);
     }
 
     /**

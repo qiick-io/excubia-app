@@ -69,6 +69,7 @@ export default function AssistantIndex({
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [isResolving, setIsResolving] = useState(false);
     const form = useForm({
         message: '',
         conversation_id: conversationId ?? '',
@@ -125,6 +126,19 @@ export default function AssistantIndex({
             },
             onFinish: () => setIsDeleting(false),
         });
+    };
+
+    const resolveApprovals = (isApproved: boolean, isAlways: boolean): void => {
+        if (conversationId === null) {
+            return;
+        }
+
+        setIsResolving(true);
+        router.post(
+            aiRoutes.approvals.url(conversationId),
+            { approved: isApproved, always: isAlways },
+            { preserveScroll: true, onFinish: () => setIsResolving(false) },
+        );
     };
 
     const submit = (): void => {
@@ -306,14 +320,20 @@ export default function AssistantIndex({
                                 </Empty>
                             ) : null}
 
-                            {messages.map((message) => (
+                            {messages.map((message, index) => (
                                 <AssistantChatMessage
                                     key={message.id}
                                     message={message}
+                                    onResolveApprovals={
+                                        index === messages.length - 1
+                                            ? resolveApprovals
+                                            : undefined
+                                    }
+                                    isResolving={isResolving}
                                 />
                             ))}
 
-                            {form.processing ? (
+                            {form.processing || isResolving ? (
                                 <ThinkingDots label={t('assistant.thinking')} />
                             ) : null}
                             <div ref={endRef} />

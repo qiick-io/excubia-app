@@ -17,8 +17,8 @@ use Inertia\Response;
 
 /**
  * Settings → AI, laid out as externa-core's AI tools page: the assistant's status (on or off,
- * provider and model, from `.env`) and the read-only tools it may use. The routes require
- * `can-manage-project-settings`.
+ * provider and model, from `.env`), the write switches (#320) and the read and write tools it and
+ * the MCP server may use. The routes require `can-manage-project-settings`.
  */
 class AiSettingsController extends Controller
 {
@@ -36,9 +36,11 @@ class AiSettingsController extends Controller
             'isEnabled' => (bool) config('excubia.ai_enabled'),
             'provider' => $provider,
             'model' => (string) config("ai.providers.{$provider}.models.text.default", ''),
+            'isWriteEnabled' => (bool) config('excubia.ai_write_enabled'),
+            'isMcpWriteEnabled' => (bool) config('excubia.mcp_write_enabled'),
             'enabledTools' => $this->settings->aiEnabledTools(),
             'tools' => array_map(
-                fn (string $name, string $class): array => ['name' => $name, 'description' => (string) (new $class($user))->description()],
+                fn (string $name, string $class): array => ['name' => $name, 'kind' => $class::kind()->value, 'description' => (string) (new $class($user))->description()],
                 array_keys(ExcubiaAssistantAgent::TOOLS),
                 ExcubiaAssistantAgent::TOOLS,
             ),

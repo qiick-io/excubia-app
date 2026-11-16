@@ -15,23 +15,27 @@ use App\Ai\Tools\ListExceptionGroupsTool;
 use App\Ai\Tools\ListProjectsTool;
 use App\Ai\Tools\SearchFindingsTool;
 use App\Data\ApiKeyData;
+use App\Enums\AiToolKindEnum;
 use App\Enums\ApiKeyScopeEnum;
 use App\Enums\RoleEnum;
 use App\Enums\SeverityEnum;
+use App\Models\AlertLog;
 use App\Models\ExceptionGroup;
 use App\Models\HealthReport;
+use App\Models\MaintenanceWindow;
 use App\Models\Project;
 use App\Models\RuntimeAggregate;
 use App\Models\ScheduledTask;
 use App\Models\User;
 use Database\Seeders\PermissionSeeder;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
 use Laravel\Ai\Tools\Request;
 
 /**
- * The read-only assistant tools (#17, #234), called directly and over the MCP server: what they
- * return, the permission check, and that no token, API key, user data or path ever reaches the
- * data sent to the provider or to an MCP client.
+ * The assistant tools (#17, #234, #320), called directly and over the MCP server: what the read
+ * tools return, the permission check, and that no token, API key, user data or path ever reaches
+ * the data sent to the provider or to an MCP client, from a read or a write tool.
  */
 
 /** Every assistant tool class, in the order of ExcubiaAssistantAgent::TOOLS. */
@@ -260,7 +264,7 @@ it('never puts tokens, API keys, user data or file paths in what the MCP tools r
 
     $outputs = [(string) $this->postJson('/mcp', ['jsonrpc' => '2.0', 'id' => 1, 'method' => 'tools/list', 'params' => ['_meta' => $meta]], [...$headers, 'Mcp-Method' => 'tools/list'])->assertOk()->getContent()];
 
-    foreach (array_keys(ExcubiaAssistantAgent::TOOLS) as $name) {
+    foreach (ExcubiaAssistantAgent::toolNames(AiToolKindEnum::Read) as $name) {
         $outputs[] = (string) $this->postJson('/mcp', ['jsonrpc' => '2.0', 'id' => 1, 'method' => 'tools/call', 'params' => ['name' => $name, 'arguments' => ['project' => 'shop'], '_meta' => $meta]], [...$headers, 'Mcp-Method' => 'tools/call', 'Mcp-Name' => $name])
             ->assertOk()
             ->assertJsonPath('result.isError', false)
@@ -273,8 +277,66 @@ it('never puts tokens, API keys, user data or file paths in what the MCP tools r
     expectNoLeaks($output, $shop, $token, $assignee, $apiKey);
 });
 
-it('gives the agent the nine read-only tools of the user who asks', function () {
+/**
+ * One successful call of every write tool (#320) on the leaky project, with the arguments a model
+ * would send: the assignee is given by email, so a leak of it would show.
+ *
+ * @return array<string, array<string, mixed>>
+ */
+function writeToolCalls(Project $shop): array
+{
+    $finding = $shop->findings()->firstOrCreate(['fingerprint' => str_repeat('f', 64)], [
+        'check_id' => 'composer-audit', 'severity' => 'high', 'status' => 'open',
+        'finding' => toolFinding('guzzlehttp/guzzle', 'high', 'GHSA-1'), 'first_seen_at' => now(), 'last_seen_at' => now(),
+    ]);
+    AlertLog::query()->create(['uuid' => (string) Str::uuid(), 'project_id' => $shop->id, 'event' => 'finding.new', 'severity' => 'high', 'subject' => 'app/Secret/SecretPathAction.php', 'summary' => 'New finding', 'status' => AlertLog::SENT, 'deliveries' => []]);
+    $groupId = ExceptionGroup::query()->where('project_id', $shop->id)->value('id');
+    $windowId = MaintenanceWindow::query()->create(['project_id' => $shop->id, 'name' => 'Deploy', 'recurrence' => MaintenanceWindow::WEEKLY, 'timezone' => 'UTC', 'weekdays' => [1], 'start_time' => '02:00', 'duration_minutes' => 30])->id;
+
+    return [
+        'update-exception-status' => ['project' => 'shop', 'ids' => [$groupId], 'status' => 'resolved'],
+        'assign-items' => ['project' => 'shop', 'exception_group_ids' => [$groupId], 'assignee' => 'assignee@example.test'],
+        'dismiss-finding' => ['project' => 'shop', 'fingerprint' => $finding->fingerprint, 'reason' => 'Not used in production', 'until' => now()->addWeek()->toDateString()],
+        'restore-finding' => ['project' => 'shop', 'fingerprint' => $finding->fingerprint],
+        'mute-alert' => ['project' => 'shop', 'target' => 'rule', 'event' => 'finding.new', 'duration' => '24h'],
+        'unmute-alert' => ['project' => 'shop', 'target' => 'maintenance_window', 'maintenance_window_id' => $windowId],
+        'refresh-report' => ['project' => 'excubia'],
+    ];
+}
+
+it('never puts tokens, API keys, user data or file paths in what the write tools return, in the assistant and over MCP', function () {
+    config(['excubia.mcp_enabled' => true]);
+    Queue::fake();
+    ['project' => $shop, 'token' => $token, 'assignee' => $assignee] = leakyProject();
+    $assignee->assignRole(RoleEnum::Reader->value);
+    Project::factory()->create(['slug' => 'excubia', 'is_system' => true]);
+    $admin = toolUser(RoleEnum::Admin);
+    $admin->forceFill(['email' => 'reader@example.test'])->save();
+    $apiKey = app(CreateApiKeyAction::class)->execute($admin, new ApiKeyData('Claude Code', [ApiKeyScopeEnum::McpRead, ApiKeyScopeEnum::McpWrite], null));
+    $headers = ['Accept' => 'application/json, text/event-stream', 'MCP-Protocol-Version' => '2026-07-28', 'Authorization' => 'Bearer '.$apiKey];
+    $meta = ['io.modelcontextprotocol/protocolVersion' => '2026-07-28', 'io.modelcontextprotocol/clientCapabilities' => new stdClass, 'io.modelcontextprotocol/clientInfo' => ['name' => 'excubia-pest', 'version' => '1.0.0']];
+    $outputs = [];
+
+    foreach (writeToolCalls($shop) as $name => $arguments) {
+        $class = ExcubiaAssistantAgent::TOOLS[$name];
+        $outputs[] = $assistantOutput = (string) (new $class($admin))->handle(new Request($arguments));
+        expect(json_decode($assistantOutput, true))->not->toHaveKey('error');
+    }
+
+    // The same calls again over MCP: the mute, window and finding exist again first.
+    foreach (writeToolCalls($shop) as $name => $arguments) {
+        $outputs[] = (string) $this->postJson('/mcp', ['jsonrpc' => '2.0', 'id' => 1, 'method' => 'tools/call', 'params' => ['name' => $name, 'arguments' => $arguments, '_meta' => $meta]], [...$headers, 'Mcp-Method' => 'tools/call', 'Mcp-Name' => $name])
+            ->assertOk()
+            ->assertJsonPath('result.isError', false)
+            ->getContent();
+    }
+
+    expectNoLeaks(implode("\n", $outputs), $shop, $token, $assignee, $apiKey);
+});
+
+it('gives the agent the nine read tools and the write tools (#320) of the user who asks', function () {
     $tools = collect((new ExcubiaAssistantAgent(toolUser()))->tools())->map(fn (object $tool): string => $tool::class)->all();
 
-    expect($tools)->toBe(ALL_ASSISTANT_TOOLS);
+    expect(array_slice($tools, 0, 9))->toBe(ALL_ASSISTANT_TOOLS)
+        ->and(array_slice($tools, 9))->toBe(array_values(array_intersect_key(ExcubiaAssistantAgent::TOOLS, array_flip(ExcubiaAssistantAgent::toolNames(AiToolKindEnum::Write)))));
 });

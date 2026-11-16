@@ -104,6 +104,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('ai', [AssistantController::class, 'index'])->name('ai.index');
     Route::post('ai', [AssistantController::class, 'store'])->middleware('throttle:20,1')->name('ai.store');
     Route::delete('ai/conversations', [AssistantController::class, 'destroy'])->name('ai.conversations.destroy');
+    // Approve or reject the write calls a turn waits on (#320).
+    Route::post('ai/{conversation}/approvals', [AssistantController::class, 'approve'])->middleware('throttle:20,1')->name('ai.approvals');
     Route::get('ai/{conversation}', [AssistantController::class, 'show'])->name('ai.show');
     // Links from before the move to /ai.
     Route::redirect('assistant', '/ai');

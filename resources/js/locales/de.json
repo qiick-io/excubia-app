@@ -432,14 +432,21 @@
             "breadcrumb": "KI-Einstellungen",
             "head": "KI-Einstellungen",
             "title": "Werkzeuge des Assistenten",
-            "description": "Die schreibgeschützten Werkzeuge, die der Assistent und der MCP-Server für Antworten nutzen dürfen. Sie ändern nie etwas.",
+            "description": "Die Tools, die der Assistent und der MCP-Server nutzen dürfen. Lese-Tools ändern nichts; Schreib-Tools ändern Daten mit deinen Berechtigungen, im Assistenten nach deiner Freigabe und über MCP nur für API-Schlüssel mit mcp:write.",
             "statusLabel": "Assistent",
             "statusOn": "An",
             "statusOff": "Aus (EXCUBIA_AI_ENABLED=false)",
             "providerLabel": "Anbieter",
             "modelLabel": "Modell",
             "envHint": "Anbieter, Modell und Schlüssel werden in der .env gesetzt (AI_DEFAULT_PROVIDER und die Schlüssel des Anbieters). Daten an einen Cloud-Anbieter verlassen deinen Server.",
-            "readOnly": "schreibgeschützt"
+            "kind": {
+                "read": "lesen",
+                "write": "schreiben"
+            },
+            "writesLabel": "Schreib-Tools",
+            "writesOn": "An",
+            "writesOff": "Aus (EXCUBIA_AI_WRITE_ENABLED=false)",
+            "mcpWritesOff": "Über MCP aus (EXCUBIA_MCP_WRITE_ENABLED=false)"
         },
         "integrations": {
             "head": "Integrationen",
@@ -632,7 +639,8 @@
             "never": "Nie",
             "revoke": "Schlüssel widerrufen",
             "scopeHelp": {
-                "mcpRead": "Liest Projekte, Berichte, Befunde, Exceptions, Runtime und Zeitpläne über den MCP-Server."
+                "mcpRead": "Liest Projekte, Berichte, Befunde, Exceptions, Runtime und Zeitpläne über den MCP-Server.",
+                "mcpWrite": "Ändert auch Daten über die MCP-Schreib-Tools: Exception-Status, Zuweisungen, verworfene Findings, stummgeschaltete Alerts und Wartungsfenster. Aus, solange nicht angehakt."
             },
             "columns": {
                 "name": "Name",
@@ -1130,7 +1138,7 @@
         "newConversation": "Neuer Chat",
         "conversations": "Unterhaltungen",
         "emptyTitle": "Frag nach deinen Projekten",
-        "emptyDescription": "Er liest die gespeicherten Berichte: listet Projekte, sucht Befunde, zeigt den letzten Bericht und den Verlauf eines Projekts, vergleicht zwei Berichte und schlägt einen Upgrade-Plan vor. Er kann nichts ändern.",
+        "emptyDescription": "Er liest die gespeicherten Berichte: listet Projekte, sucht Findings, zeigt den letzten Bericht und den Verlauf eines Projekts, vergleicht zwei Berichte und schlägt einen Upgrade-Plan vor. Er kann auch Exceptions lösen oder zuweisen, Findings verwerfen und Alerts stummschalten, jedes Mal nach deiner Freigabe.",
         "placeholder": "Stelle eine Frage… (Enter zum Senden, Umschalt+Enter für eine neue Zeile)",
         "send": "Senden",
         "you": "Du",
@@ -1160,7 +1168,22 @@
         "selectConversation": "{{title}} auswählen",
         "deleteTitle": "Ausgewählte Chats löschen?",
         "deleteDescription_one": "Du löschst {{count}} Chat. Das kann nicht rückgängig gemacht werden.",
-        "deleteDescription_other": "Du löschst {{count}} Chats. Das kann nicht rückgängig gemacht werden."
+        "deleteDescription_other": "Du löschst {{count}} Chats. Das kann nicht rückgängig gemacht werden.",
+        "approval": {
+            "question_one": "Diese Änderung freigeben?",
+            "question_other": "Diese {{count}} Änderungen freigeben?",
+            "always": "In diesem Chat für diese Tools nicht mehr fragen",
+            "awaiting": "Wartet auf deine Freigabe.",
+            "tools": {
+                "update-exception-status": "Status von Exceptions ändern",
+                "assign-items": "Exceptions oder Findings zuweisen",
+                "dismiss-finding": "Ein Finding verwerfen",
+                "restore-finding": "Ein Finding wiederherstellen",
+                "mute-alert": "Alerts stummschalten oder ein Wartungsfenster öffnen",
+                "unmute-alert": "Alerts wieder aktivieren oder ein Wartungsfenster schließen",
+                "refresh-report": "Den Systembericht aktualisieren"
+            }
+        }
     },
     "permissions": {
         "description": "Berechtigungen sind in PermissionEnum definiert und werden mit der Datenbank synchronisiert. Weise sie auf der Bearbeitungsseite einer Rolle zu.",
@@ -1580,6 +1603,10 @@
             "reranking": "Reranking",
             "audio": "Sprachausgabe",
             "classification": "Klassifizierung"
+        },
+        "approval": {
+            "approve": "Freigeben",
+            "reject": "Ablehnen"
         }
     },
     "files": {
