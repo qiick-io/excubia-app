@@ -7,6 +7,7 @@ namespace App\Actions;
 use App\Models\Project;
 use App\Services\SvgSanitizerService;
 use GdImage;
+use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -14,8 +15,8 @@ use Illuminate\Validation\ValidationException;
 use RuntimeException;
 
 /**
- * Sets, replaces or removes a project's logo (#287). The file is stored on the public disk
- * under a random name (the name doubles as the cache-busting version of its URL); the file it
+ * Sets, replaces or removes a project's logo (#287). The file is stored on the files disk
+ * (disk()) under a random name (the name doubles as the cache-busting version of its URL); the file it
  * replaces is deleted. Raster images are re-encoded as a transparent square PNG, which also
  * drops metadata and anything appended to the image; SVGs are sanitised (SvgSanitizerService)
  * and kept as vectors, drawn square by the avatar. Without a logo the project shows its
@@ -23,7 +24,8 @@ use RuntimeException;
  */
 final class SaveProjectLogoAction
 {
-    public const string DISK = 'public';
+    /** The disk used when `excubia.files_disk` is not set, so existing installs keep their files. */
+    public const string DEFAULT_DISK = 'public';
 
     public const string DIRECTORY = 'project-logos';
 
@@ -31,6 +33,18 @@ final class SaveProjectLogoAction
     public const int SIZE = 128;
 
     public function __construct(private SvgSanitizerService $svgSanitizer) {}
+
+    /**
+     * The disk logos live on: `excubia.files_disk` when set (#312: a bucket, on hosts whose
+     * filesystem is rebuilt on every deploy), the public disk otherwise. The stored relative
+     * path is the same on every disk, so moving to another one is a copy of `project-logos/`.
+     */
+    public static function disk(): Filesystem
+    {
+        $configuredDisk = config('excubia.files_disk');
+
+        return Storage::disk(is_string($configuredDisk) && $configuredDisk !== '' ? $configuredDisk : self::DEFAULT_DISK);
+    }
 
     /**
      * Nothing changes without an upload and without `$shouldRemove`; an upload wins over a removal.
@@ -48,7 +62,7 @@ final class SaveProjectLogoAction
         $project->forceFill(['logo_path' => $upload === null ? null : $this->store($upload)])->save();
 
         if ($previousPath !== null && $previousPath !== $project->logo_path) {
-            Storage::disk(self::DISK)->delete($previousPath);
+            self::disk()->delete($previousPath);
         }
 
         return $project;
@@ -58,7 +72,7 @@ final class SaveProjectLogoAction
     public function deleteFile(Project $project): void
     {
         if ($project->logo_path !== null) {
-            Storage::disk(self::DISK)->delete($project->logo_path);
+            self::disk()->delete($project->logo_path);
         }
     }
 
@@ -85,7 +99,7 @@ final class SaveProjectLogoAction
 
         $path = self::DIRECTORY.'/'.Str::random(32).'.'.$extension;
 
-        if (! Storage::disk(self::DISK)->put($path, $contents)) {
+        if (! self::disk()->put($path, $contents)) {
             throw new RuntimeException('The project logo could not be stored.');
         }
 

@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Storage;
  */
 beforeEach(function (): void {
     $this->seed(PermissionSeeder::class);
-    Storage::fake(SaveProjectLogoAction::DISK);
+    Storage::fake(SaveProjectLogoAction::DEFAULT_DISK);
 });
 
 it('shows the initials or the logo of a project everywhere it is named', function (string $scheme) {

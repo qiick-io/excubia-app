@@ -93,6 +93,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Uploaded files
+    |--------------------------------------------------------------------------
+    |
+    | The disk (config/filesystems.php) of project logos and branding files
+    | (#312). Empty keeps logos on `public` and branding on `local`. Set a
+    | bucket disk (`s3`) where the filesystem is rebuilt on every deploy,
+    | such as Laravel Cloud. The app streams the files, so it can be private.
+    |
+    */
+
+    'files_disk' => env('EXCUBIA_FILES_DISK'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Assistant
     |--------------------------------------------------------------------------
     |

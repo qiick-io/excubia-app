@@ -11,6 +11,8 @@ upgrade from the version before (see [docs/self-hosting.md](docs/self-hosting.md
 
 ### Added
 
+- **Configurable disk for uploaded files** (#312). `EXCUBIA_FILES_DISK` (`config/excubia.php` → `files_disk`) puts project logos and the branding files (logo, dark logo, favicon) on any disk of `config/filesystems.php`, for example `s3` on Laravel Cloud, where the filesystem is rebuilt on every deploy. Unset, logos stay on `public` and branding on `local`. The files are still streamed through `/projects/{project}/logo` and `/branding/{asset}` with their type from the stored extension, so a private bucket works. The `s3` driver needs `league/flysystem-aws-s3-v3`, which Excubia does not ship.
+
 - **Wide tables show that they scroll** (#206, app-ui v0.6.0). On a phone, a table wider than its card fades out on each side that hides columns, and the scroller becomes a keyboard-focusable region named "Scrollable table". Tables that fit, as on desktop, are unchanged.
 
 - **Health, open findings and failed checks on the Projects list** (#293). Each row shows the project's environment, its **Health** (the worst check status of the latest report), its **Open findings** per severity, its **Failed checks** ("1 / 41" of the checks that ran) and the **Last report** as a relative time, with the full date in a tooltip and a _Stale_ chip. The list sorts on the server by health (failing first), open findings (most critical first), name and last report, in one query per page. The status badges (disabled, system, admins only, no token) moved next to the name. A new migration stores the check summary with each report and backfills it from the stored reports.
@@ -110,6 +112,7 @@ upgrade from the version before (see [docs/self-hosting.md](docs/self-hosting.md
 
 ### Upgrade notes
 
+- **Uploaded files disk** (#312): nothing to do unless you move to a bucket. To move, copy `storage/app/public/project-logos/` to `project-logos/` and `storage/app/private/branding/` to `branding/` on the bucket, then set `EXCUBIA_FILES_DISK` (for example `s3`, with `composer require league/flysystem-aws-s3-v3` and the `AWS_*` keys). The stored paths do not change.
 - **First release:** there is nothing to upgrade from. Install with `composer create-project qiick/excubia-app` and `php artisan excubia:install`, or the Docker image (`ghcr.io/qiick-io/excubia-app`); see [docs/self-hosting.md](docs/self-hosting.md).
 - **Migrations are frozen and forward-only from this release on** (#193): released migrations are never edited again, every schema change is a new migration, and each release upgrades the previous database with `php artisan migrate --force` (run by `excubia:upgrade` and the Docker entrypoint). Back up the database before every upgrade. Development databases created before this release need one last fresh migration.
 - **Upgrade steps from here on (source):** check out or merge the new tag, then `composer install --no-dev -o`, `npm ci && npm run build`, `php artisan excubia:upgrade --force` and `php artisan optimize`. **Docker:** pull `ghcr.io/qiick-io/excubia-app:<version>` and recreate the containers; the `app` container migrates on start.

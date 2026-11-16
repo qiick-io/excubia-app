@@ -54,8 +54,8 @@ class SettingsRepositoryService
     ];
 
     /**
-     * Uploaded branding files: the public asset name → the setting holding its path on the local
-     * disk (`branding/`). Excubia has no file manager, so they live next to the app.
+     * Uploaded branding files: the public asset name → the setting holding its path on the files
+     * disk (`branding/`, SaveBrandingFilesAction::disk()). Excubia has no file manager.
      */
     public const BRANDING_ASSETS = [
         'logo' => 'project_logo',

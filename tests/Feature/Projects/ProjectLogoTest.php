@@ -20,7 +20,7 @@ use Inertia\Testing\AssertableInertia as Assert;
  */
 beforeEach(function () {
     $this->seed(PermissionSeeder::class);
-    Storage::fake(SaveProjectLogoAction::DISK);
+    Storage::fake(SaveProjectLogoAction::DEFAULT_DISK);
 });
 
 function logoActor(RoleEnum $role = RoleEnum::Admin): User
@@ -50,7 +50,7 @@ it('creates a project with a logo stored as a transparent square PNG', function 
         ->assertRedirect(route('projects.index'));
 
     $project = Project::query()->where('slug', 'shop')->sole();
-    $stored = Storage::disk(SaveProjectLogoAction::DISK)->get((string) $project->logo_path);
+    $stored = Storage::disk(SaveProjectLogoAction::DEFAULT_DISK)->get((string) $project->logo_path);
     $size = getimagesizefromstring((string) $stored);
 
     expect($project->logo_path)->toStartWith(SaveProjectLogoAction::DIRECTORY.'/')->toEndWith('.png')
@@ -68,8 +68,8 @@ it('replaces a logo and deletes the old file', function () {
     updateProjectLogo($admin, $project, ['logo' => svgLogo()])->assertRedirect();
 
     expect($project->refresh()->logo_path)->not->toBe($firstPath)->toEndWith('.svg');
-    Storage::disk(SaveProjectLogoAction::DISK)->assertMissing($firstPath);
-    Storage::disk(SaveProjectLogoAction::DISK)->assertExists((string) $project->logo_path);
+    Storage::disk(SaveProjectLogoAction::DEFAULT_DISK)->assertMissing($firstPath);
+    Storage::disk(SaveProjectLogoAction::DEFAULT_DISK)->assertExists((string) $project->logo_path);
 });
 
 it('removes a logo, back to the initials avatar', function () {
@@ -81,7 +81,7 @@ it('removes a logo, back to the initials avatar', function () {
     updateProjectLogo($admin, $project, ['remove_logo' => true])->assertRedirect();
 
     expect($project->refresh()->logo_path)->toBeNull();
-    Storage::disk(SaveProjectLogoAction::DISK)->assertMissing($path);
+    Storage::disk(SaveProjectLogoAction::DEFAULT_DISK)->assertMissing($path);
 });
 
 it('keeps the logo when the form changes something else', function () {
@@ -102,7 +102,7 @@ it('stores an uploaded SVG without its script', function () {
         'logo' => svgLogo('<script>alert(1)</script><rect onclick="alert(2)" width="8" height="8"/>'),
     ])->assertRedirect()->assertSessionHasNoErrors();
 
-    $stored = (string) Storage::disk(SaveProjectLogoAction::DISK)->get((string) $project->refresh()->logo_path);
+    $stored = (string) Storage::disk(SaveProjectLogoAction::DEFAULT_DISK)->get((string) $project->refresh()->logo_path);
 
     expect($stored)->toContain('<rect width="8" height="8"/>')
         ->and($stored)->not->toContain('alert');
@@ -132,7 +132,7 @@ it('lets only people who may edit the project change its logo', function () {
         ->assertForbidden();
 
     expect($project->refresh()->logo_path)->toBeNull();
-    expect(Storage::disk(SaveProjectLogoAction::DISK)->allFiles())->toBe([]);
+    expect(Storage::disk(SaveProjectLogoAction::DEFAULT_DISK)->allFiles())->toBe([]);
 });
 
 it('serves the logo to people who may see the project, with headers that keep an SVG inert', function () {
@@ -174,7 +174,7 @@ it('deletes the logo file with its project', function () {
 
     $this->actingAs($admin)->delete(route('projects.destroy', $project))->assertRedirect();
 
-    Storage::disk(SaveProjectLogoAction::DISK)->assertMissing($path);
+    Storage::disk(SaveProjectLogoAction::DEFAULT_DISK)->assertMissing($path);
 });
 
 it('sends the logo URL to the projects list, the sidebar and the search', function () {
