@@ -23,6 +23,8 @@ return Application::configure(basePath: dirname(__DIR__))
         // Auth-free liveness and readiness probes, as externa-core.
         then: function (): void {
             require __DIR__.'/../routes/health.php';
+            // The read-only MCP server (#234), outside the web group: no session, no CSRF.
+            require __DIR__.'/../routes/mcp.php';
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {
@@ -48,6 +50,6 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
-            fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
+            fn (Request $request) => $request->is('api/*') || $request->is('mcp') || $request->expectsJson(),
         );
     })->create();

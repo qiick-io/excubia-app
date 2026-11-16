@@ -92,7 +92,7 @@ Deleting a project deletes its reports, findings, telemetry, tasks, alerts, mute
 ### 7. AI assistant (off by default)
 
 - `EXCUBIA_AI_ENABLED=false` by default: no page, no route that answers, no outbound call. When on, users need `can-use-ai`.
-- Tools are read-only and run as the asking user (`Project::visibleTo`): project names and slugs, report summaries, findings (package, version, message, fix hint, advisory id) and upgrade steps. Never push tokens, user data or file paths (covered by `tests/Feature/Assistant/AssistantToolsTest.php`).
+- Tools are read-only and run as the asking user (`Project::visibleTo`): project names and slugs, report summaries, findings (package, version, message, fix hint, advisory id), upgrade steps, exception groups (class, masked message, where, counts; no stack frames), runtime tables (routes, queries, jobs, hosts called; no server names or deprecation sources) and scheduled tasks. Each is narrowed to an allowlist of fields. Never push tokens, user data or file paths (covered by `tests/Feature/Assistant/AssistantToolsTest.php`).
 - What leaves the server: the user's questions and those tool results, to the provider in `config/ai.php` (Ollama on the same network by default). The system prompt tells the model that tool results are data, not instructions; answers are rendered as plain text, so an injected instruction can at most change the wording of an answer, not run code or tools with more rights.
 - Conversations are stored in `agent_conversations` and `agent_conversation_messages`, scoped to their owner (reading, continuing and deleting are all checked).
 
@@ -104,6 +104,13 @@ Deleting a project deletes its reports, findings, telemetry, tasks, alerts, mute
 - **Acts as its owner**, for that request only (no session): every policy and `Project::visibleTo` apply as in the UI, so a key never sees or does more than its owner. Only the owner may revoke a key.
 - **Audit**: creation, revocation and the first use go to the `auth` activity log.
 - **Rate limits**: 20 failed attempts per minute per IP (then every attempt from that IP gets 429), and `EXCUBIA_API_KEY_REQUESTS_PER_MINUTE` (60) per key.
+
+### 7b. MCP server (off by default)
+
+- `EXCUBIA_MCP_ENABLED=false` by default: `POST /mcp` answers 404 before any key is looked up (`EnsureMcpEnabledMiddleware`).
+- Authenticated only by a personal API key with `mcp:read` (`AuthenticateApiKeyMiddleware`, 7a); outside the `web` group, so no session cookie and no CSRF: a signed-in browser cannot drive the tools.
+- The tools are the assistant's (7), run as the key's owner through `AssistantMcpToolAdapter`, read-only, limited to the tools enabled in Settings → AI. The same allowlists apply: never push tokens, API keys, user data or file paths (covered for both surfaces by `tests/Feature/Assistant/AssistantToolsTest.php`).
+- What leaves the server: only the tool results a client asks for with a key a user created. Excubia never calls the client. Every call is in the `ai` activity log (tool, arguments, outcome; never the result).
 
 ### 8. Secrets in logs, errors and props
 

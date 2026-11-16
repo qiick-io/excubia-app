@@ -2,27 +2,40 @@
 
 declare(strict_types=1);
 
+use App\Actions\CreateApiKeyAction;
 use App\Actions\RotateProjectTokenAction;
 use App\Ai\Agents\ExcubiaAssistantAgent;
 use App\Ai\Tools\CompareReportsTool;
 use App\Ai\Tools\GetLatestReportTool;
 use App\Ai\Tools\GetReportHistoryTool;
+use App\Ai\Tools\GetRuntimeSummaryTool;
+use App\Ai\Tools\GetScheduleStatusTool;
 use App\Ai\Tools\GetUpgradePlanTool;
+use App\Ai\Tools\ListExceptionGroupsTool;
 use App\Ai\Tools\ListProjectsTool;
 use App\Ai\Tools\SearchFindingsTool;
+use App\Data\ApiKeyData;
+use App\Enums\ApiKeyScopeEnum;
 use App\Enums\RoleEnum;
 use App\Enums\SeverityEnum;
+use App\Models\ExceptionGroup;
 use App\Models\HealthReport;
 use App\Models\Project;
+use App\Models\RuntimeAggregate;
+use App\Models\ScheduledTask;
 use App\Models\User;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Support\Str;
 use Laravel\Ai\Tools\Request;
 
 /**
- * The read-only assistant tools (#17), called directly: what they return, the permission check,
- * and that no token, user data or path ever reaches the data sent to the provider.
+ * The read-only assistant tools (#17, #234), called directly and over the MCP server: what they
+ * return, the permission check, and that no token, API key, user data or path ever reaches the
+ * data sent to the provider or to an MCP client.
  */
+
+/** Every assistant tool class, in the order of ExcubiaAssistantAgent::TOOLS. */
+const ALL_ASSISTANT_TOOLS = [ListProjectsTool::class, SearchFindingsTool::class, GetLatestReportTool::class, CompareReportsTool::class, GetReportHistoryTool::class, GetUpgradePlanTool::class, ListExceptionGroupsTool::class, GetRuntimeSummaryTool::class, GetScheduleStatusTool::class];
 beforeEach(function () {
     $this->seed(PermissionSeeder::class);
 });
@@ -127,36 +140,141 @@ it('compares the latest two reports and returns the history', function () {
         ->and(collect($history['reports'])->pluck('id')->all())->toBe([$newer->id, $older->id]);
 });
 
+it('returns the exception groups, the runtime summary and the schedule status of a project', function () {
+    leakyProject();
+    $user = toolUser();
+
+    $exceptions = runTool(ListExceptionGroupsTool::class, $user, ['project' => 'shop', 'range' => '6h']);
+    $resolvedOnly = runTool(ListExceptionGroupsTool::class, $user, ['project' => 'shop', 'status' => 'resolved']);
+    $runtime = runTool(GetRuntimeSummaryTool::class, $user, ['project' => 'shop']);
+    $schedule = runTool(GetScheduleStatusTool::class, $user, ['project' => 'shop', 'range' => '7d']);
+
+    expect($exceptions['range'])->toBe('6h')
+        ->and($exceptions['exceptionGroups'][0])->toMatchArray(['class' => 'RuntimeException', 'message' => 'Payment failed', 'status' => 'open', 'range_count' => 0, 'count' => 4])
+        ->and($exceptions['exceptionGroups'][0])->not->toHaveKeys(['frames', 'previous', 'fix', 'assignee', 'fingerprint'])
+        ->and($resolvedOnly['exceptionGroups'])->toBe([])
+        ->and($runtime['runtime']['range'])->toBe('24h')
+        ->and($runtime['runtime']['requests'])->not->toHaveKey('timeline')
+        ->and($runtime['runtime']['requests']['routes'][0])->toMatchArray(['route' => 'checkout.store', 'method' => 'POST', 'count' => 10])
+        ->and($runtime['runtime'])->not->toHaveKeys(['servers', 'deprecations', 'deploys'])
+        ->and($schedule['scheduledTasks'][0])->toMatchArray(['task' => 'artisan reports:send', 'expression' => '0 3 * * *', 'runs' => ['finished' => 0, 'failed' => 0, 'skipped' => 0]])
+        ->and(runTool(GetRuntimeSummaryTool::class, $user, ['project' => 'unknown']))->toHaveKey('error');
+
+    Project::factory()->create(['slug' => 'quiet']);
+    expect(runTool(GetRuntimeSummaryTool::class, $user, ['project' => 'quiet'])['runtime'])->toBeNull();
+});
+
 it('gives nothing to a user without can-show-projects', function (string $tool) {
     $shop = Project::factory()->create(['slug' => 'shop']);
     toolReport($shop, '2026-11-02 08:00:00', [toolFinding('guzzlehttp/guzzle', 'high')]);
 
     expect(runTool($tool, User::factory()->create(), ['project' => 'shop']))
         ->toBe(['error' => 'The user lacks the can-show-projects permission.']);
-})->with([ListProjectsTool::class, SearchFindingsTool::class, GetLatestReportTool::class, CompareReportsTool::class, GetReportHistoryTool::class, GetUpgradePlanTool::class]);
+})->with(ALL_ASSISTANT_TOOLS);
 
-it('never puts tokens, user data or file paths in what the tools return', function () {
+/**
+ * A project with a push token, two reports, an exception group with stack frames (file paths)
+ * assigned to a user, a request runtime row, a deprecation with its source file and a scheduled
+ * task: everything a tool could leak.
+ *
+ * @return array{project: Project, token: string, assignee: User}
+ */
+function leakyProject(): array
+{
     $shop = Project::factory()->create(['slug' => 'shop']);
     $token = app(RotateProjectTokenAction::class)->execute($shop);
-    toolReport($shop, '2026-11-01 08:00:00', [toolFinding('monolog/monolog', 'low')]);
-    toolReport($shop, '2026-11-02 08:00:00', [toolFinding('guzzlehttp/guzzle', 'high', 'GHSA-1')]);
+    toolReport($shop, now()->subDay()->toDateTimeString(), [toolFinding('monolog/monolog', 'low')]);
+    toolReport($shop, now()->toDateTimeString(), [toolFinding('guzzlehttp/guzzle', 'high', 'GHSA-1')]);
+    $assignee = User::factory()->create(['email' => 'assignee@example.test', 'first_name' => 'Assigned', 'last_name' => 'Person']);
+
+    ExceptionGroup::query()->create([
+        'project_id' => $shop->id, 'fingerprint' => str_repeat('a', 64), 'environment' => 'production', 'class' => 'RuntimeException',
+        'message' => 'Payment failed', 'frames' => [['file' => 'app/Actions/SecretPathAction.php', 'line' => 12, 'function' => 'pay', 'inApp' => true]],
+        'previous' => [], 'context_kind' => 'request', 'context_name' => 'checkout.store', 'count' => 4,
+        'first_seen_at' => now()->subHour(), 'last_seen_at' => now(), 'status' => 'open',
+    ])->forceFill(['assigned_user_id' => $assignee->id])->save();
+
+    foreach ([['request', ['route' => 'checkout.store', 'method' => 'POST', 'statusClass' => '2xx']], ['deprecation', ['source' => 'vendor/acme/secret-path/src/Legacy.php', 'message' => 'Legacy call', 'phpVersion' => '8.4']], ['server', ['server' => 'web-secret-host']]] as $position => [$type, $dimensions]) {
+        RuntimeAggregate::query()->create([
+            'project_id' => $shop->id, 'type' => $type, 'bucket' => now()->subMinutes(5)->startOfMinute(), 'sample_rate' => 1,
+            'dimension_key' => str_repeat((string) $position, 64), 'dimensions' => $dimensions, 'count' => 10, 'error_count' => 1, 'total_ms' => 500, 'max_ms' => 90,
+        ]);
+    }
+
+    ScheduledTask::query()->create([
+        'project_id' => $shop->id, 'task_id' => hash('sha256', 'artisan reports:send'), 'task' => 'artisan reports:send',
+        'expression' => '0 3 * * *', 'timezone' => 'UTC', 'environments' => ['production'], 'position' => 0,
+    ]);
+
+    return ['project' => $shop, 'token' => $token, 'assignee' => $assignee];
+}
+
+/**
+ * What a tool output may never contain.
+ */
+function expectNoLeaks(string $output, Project $project, string $token, User $assignee, ?string $apiKey = null): void
+{
+    expect($output)->not->toContain($token)
+        ->and($output)->not->toContain((string) $project->fresh()->push_token_hash)
+        ->and($output)->not->toContain('push_token')
+        ->and($output)->not->toContain('assignee@example.test')
+        ->and($output)->not->toContain('Assigned Person')
+        ->and($output)->not->toContain('reader@example.test')
+        ->and($output)->not->toContain(base_path())
+        ->and($output)->not->toContain('"path"')
+        ->and($output)->not->toContain('SecretPathAction')
+        ->and($output)->not->toContain('secret-path')
+        ->and($output)->not->toContain('web-secret-host');
+
+    if ($apiKey !== null) {
+        expect($output)->not->toContain($apiKey)
+            ->and($output)->not->toContain(hash('sha256', $apiKey));
+    }
+}
+
+it('never puts tokens, user data or file paths in what the tools return', function () {
+    ['project' => $shop, 'token' => $token, 'assignee' => $assignee] = leakyProject();
     $user = toolUser();
     $user->forceFill(['email' => 'reader@example.test'])->save();
 
-    $output = collect([ListProjectsTool::class, SearchFindingsTool::class, GetLatestReportTool::class, CompareReportsTool::class, GetReportHistoryTool::class, GetUpgradePlanTool::class])
+    $output = collect(ALL_ASSISTANT_TOOLS)
         ->map(fn (string $tool): string => (string) (new $tool($user))->handle(new Request(['project' => 'shop'])))
         ->implode("\n");
 
-    expect($output)->not->toContain($token)
-        ->and($output)->not->toContain((string) $shop->fresh()->push_token_hash)
-        ->and($output)->not->toContain('push_token')
-        ->and($output)->not->toContain('reader@example.test')
-        ->and($output)->not->toContain(base_path())
-        ->and($output)->not->toContain('"path"');
+    // The tools did read the data: the leak checks below are not vacuous.
+    expect($output)->toContain('Payment failed')
+        ->and($output)->toContain('checkout.store')
+        ->and($output)->toContain('artisan reports:send');
+
+    expectNoLeaks($output, $shop, $token, $assignee);
 });
 
-it('gives the agent the six read-only tools of the user who asks', function () {
+it('never puts tokens, API keys, user data or file paths in what the MCP tools return', function () {
+    config(['excubia.mcp_enabled' => true]);
+    ['project' => $shop, 'token' => $token, 'assignee' => $assignee] = leakyProject();
+    $user = toolUser();
+    $user->forceFill(['email' => 'reader@example.test'])->save();
+    $apiKey = app(CreateApiKeyAction::class)->execute($user, new ApiKeyData('Claude Code', [ApiKeyScopeEnum::McpRead], null));
+    $headers = ['Accept' => 'application/json, text/event-stream', 'MCP-Protocol-Version' => '2026-07-28', 'Authorization' => 'Bearer '.$apiKey];
+    $meta = ['io.modelcontextprotocol/protocolVersion' => '2026-07-28', 'io.modelcontextprotocol/clientCapabilities' => new stdClass, 'io.modelcontextprotocol/clientInfo' => ['name' => 'excubia-pest', 'version' => '1.0.0']];
+
+    $outputs = [(string) $this->postJson('/mcp', ['jsonrpc' => '2.0', 'id' => 1, 'method' => 'tools/list', 'params' => ['_meta' => $meta]], [...$headers, 'Mcp-Method' => 'tools/list'])->assertOk()->getContent()];
+
+    foreach (array_keys(ExcubiaAssistantAgent::TOOLS) as $name) {
+        $outputs[] = (string) $this->postJson('/mcp', ['jsonrpc' => '2.0', 'id' => 1, 'method' => 'tools/call', 'params' => ['name' => $name, 'arguments' => ['project' => 'shop'], '_meta' => $meta]], [...$headers, 'Mcp-Method' => 'tools/call', 'Mcp-Name' => $name])
+            ->assertOk()
+            ->assertJsonPath('result.isError', false)
+            ->getContent();
+    }
+
+    $output = implode("\n", $outputs);
+
+    expect($output)->toContain('Payment failed')->and($output)->toContain('artisan reports:send');
+    expectNoLeaks($output, $shop, $token, $assignee, $apiKey);
+});
+
+it('gives the agent the nine read-only tools of the user who asks', function () {
     $tools = collect((new ExcubiaAssistantAgent(toolUser()))->tools())->map(fn (object $tool): string => $tool::class)->all();
 
-    expect($tools)->toBe([ListProjectsTool::class, SearchFindingsTool::class, GetLatestReportTool::class, CompareReportsTool::class, GetReportHistoryTool::class, GetUpgradePlanTool::class]);
+    expect($tools)->toBe(ALL_ASSISTANT_TOOLS);
 });

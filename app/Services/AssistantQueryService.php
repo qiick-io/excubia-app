@@ -4,18 +4,23 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Data\TimeRangeData;
+use App\Enums\ExceptionStatusEnum;
 use App\Enums\SeverityEnum;
+use App\Enums\TimeRangeEnum;
 use App\Http\Resources\HealthReportResource;
 use App\Models\HealthReport;
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Date;
 
 /**
- * The read-only data behind the assistant tools (#17). Every method returns plain arrays built
- * from stored reports: project names and slugs, report summaries and findings. Push tokens,
- * user data and file paths are never part of them. Projects restricted to admins (#70) are
+ * The read-only data behind the assistant and MCP tools (#17, #234). Every method returns plain
+ * arrays built from stored reports and telemetry: project names and slugs, report summaries,
+ * findings, exception groups, runtime tables and scheduled tasks, each narrowed to an allowlist
+ * of fields. Push tokens, user data and file paths are never part of them. Projects restricted to admins (#70) are
  * left out unless the asking user is an admin.
  */
 class AssistantQueryService
@@ -23,11 +28,31 @@ class AssistantQueryService
     /** Most findings one search returns, so a tool result stays small. */
     public const SEARCH_LIMIT = 100;
 
+    /** Most exception groups one call returns (ProjectTelemetryService reads at most 100). */
+    public const EXCEPTION_GROUP_LIMIT = 100;
+
+    /**
+     * The fields of an exception group a tool returns. Frames and previous exceptions (file
+     * paths), the fix prompt (built from the frames) and the assignee (user data) stay out.
+     */
+    private const EXCEPTION_GROUP_FIELDS = ['id', 'class', 'message', 'environment', 'context', 'count', 'range_count', 'first_seen_at', 'last_seen_at', 'first_release', 'last_release', 'regressed_release', 'status', 'resolved_at'];
+
+    /**
+     * The tables of the Runtime tab a tool returns. Charts stay out (too large), and so do the
+     * deprecations (source file paths), servers (host names) and deploys.
+     */
+    private const RUNTIME_FIELDS = ['range', 'isSampled', 'requests', 'slowQueries', 'jobs', 'queueWait', 'scheduledTasks', 'outgoingHttp', 'commands', 'cache', 'mail', 'notifications'];
+
+    /** The fields of a scheduled task a tool returns, as the Schedule tab shows them. */
+    private const SCHEDULED_TASK_FIELDS = ['task', 'expression', 'timezone', 'environments', 'is_heartbeat', 'status', 'is_low_confidence', 'last_due_at', 'next_due_at', 'last_run_at', 'last_outcome', 'status_changed_at', 'evaluated_at', 'runs'];
+
     private ?User $user = null;
 
     public function __construct(
         private ProjectStalenessService $staleness,
         private ReportFindingsService $findings,
+        private ProjectTelemetryService $telemetry,
+        private ProjectRuntimeService $runtime,
     ) {}
 
     /**
@@ -205,6 +230,81 @@ class AssistantQueryService
         }
 
         return ['findings' => $matches, 'isTruncated' => false];
+    }
+
+    /**
+     * The exception groups of a project seen in the range (#234), open first, then the latest,
+     * optionally of one status, with only EXCEPTION_GROUP_FIELDS.
+     *
+     * @return array<string, mixed>|null null when the project does not exist
+     */
+    public function exceptionGroups(string $slug, TimeRangeEnum $range, ?ExceptionStatusEnum $status): ?array
+    {
+        $project = $this->project($slug);
+
+        if ($project === null) {
+            return null;
+        }
+
+        $groups = collect($this->telemetry->exceptions($project, TimeRangeData::fromPreset($range, Date::now()->toImmutable())))
+            ->when($status !== null, fn ($collection) => $collection->where('status', $status?->value))
+            ->map(fn (array $group): array => Arr::only($group, self::EXCEPTION_GROUP_FIELDS))
+            ->values()
+            ->all();
+
+        return [
+            'project' => $this->projectSummary($project),
+            'range' => $range->value,
+            'exceptionGroups' => $groups,
+        ];
+    }
+
+    /**
+     * The runtime tables of a project over the range (#234), with only RUNTIME_FIELDS and the
+     * request totals without their chart. `runtime` is null when the project never sent any.
+     *
+     * @return array<string, mixed>|null null when the project does not exist
+     */
+    public function runtimeSummary(string $slug, TimeRangeEnum $range): ?array
+    {
+        $project = $this->project($slug);
+
+        if ($project === null) {
+            return null;
+        }
+
+        $summary = $this->runtime->summary($project, TimeRangeData::fromPreset($range, Date::now()->toImmutable()));
+
+        return [
+            'project' => $this->projectSummary($project),
+            'runtime' => $summary === null ? null : [
+                ...Arr::only($summary, self::RUNTIME_FIELDS),
+                'requests' => Arr::except((array) $summary['requests'], ['timeline']),
+            ],
+        ];
+    }
+
+    /**
+     * The scheduled tasks of a project with their status and runs per outcome in the range
+     * (#234), with only SCHEDULED_TASK_FIELDS.
+     *
+     * @return array<string, mixed>|null null when the project does not exist
+     */
+    public function scheduleStatus(string $slug, TimeRangeEnum $range): ?array
+    {
+        $project = $this->project($slug);
+
+        if ($project === null) {
+            return null;
+        }
+
+        $schedule = $this->telemetry->schedule($project, TimeRangeData::fromPreset($range, Date::now()->toImmutable()));
+
+        return [
+            'project' => $this->projectSummary($project),
+            'range' => $range->value,
+            'scheduledTasks' => array_map(fn (array $task): array => Arr::only($task, self::SCHEDULED_TASK_FIELDS), $schedule['tasks']),
+        ];
     }
 
     /**

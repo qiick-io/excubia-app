@@ -513,6 +513,10 @@ Outside `local` and `testing`, an error when the user `superadmin@example.com` e
 
 The app version, the excubia-core installed in the app, and the core constraint and protocol version the app accepts from projects. See [compatibility.md](./compatibility.md) and [Upgrades](#upgrades).
 
+## MCP server (optional)
+
+Off by default. With `EXCUBIA_MCP_ENABLED=true`, AI clients such as Claude Code, Cursor and Claude Desktop read Excubia's data at `POST /mcp` with a personal API key (Settings → API keys, scope `mcp:read`). It needs no AI provider and has no write tools. Setup, the tools and the limits: [docs/mcp.md](mcp.md).
+
 ## AI assistant (optional)
 
 Off by default. To turn it on, run a model with [Ollama](https://ollama.com) and add to `.env`:

@@ -432,7 +432,7 @@
             "breadcrumb": "AI settings",
             "head": "AI settings",
             "title": "Assistant tools",
-            "description": "The read-only tools the assistant may use to answer. It never changes anything.",
+            "description": "The read-only tools the assistant and the MCP server may use to answer. They never change anything.",
             "statusLabel": "Assistant",
             "statusOn": "On",
             "statusOff": "Off (EXCUBIA_AI_ENABLED=false)",

@@ -45,6 +45,9 @@ return [
         // laravel/ai agents and tools of the assistant.
         'Ai\\Agents' => 'Agent',
         'Ai\\Tools' => 'Tool',
+        // laravel/mcp servers and the adapter that serves the assistant tools over MCP (#234).
+        'Mcp\\Servers' => 'Server',
+        'Mcp\\Adapters' => 'Adapter',
     ],
 
     // Thin controllers (app-ui v0.2.0): existing debt, a ratchet. Lower an entry when the
