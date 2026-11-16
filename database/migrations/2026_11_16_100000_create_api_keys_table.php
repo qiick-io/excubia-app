@@ -22,7 +22,8 @@ return new class extends Migration
             $table->string('key_prefix', 16);
             $table->string('key_hash', 64)->unique();
             $table->json('scopes');
-            $table->timestamp('expires_at')->nullable();
+            // A datetime, not a timestamp: MySQL timestamps end in 2038, and a user may pick a later expiry.
+            $table->dateTime('expires_at')->nullable();
             $table->timestamp('last_used_at')->nullable();
             $table->timestamp('revoked_at')->nullable();
             $table->timestamps();
