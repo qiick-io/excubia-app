@@ -34,6 +34,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Personal API keys
+    |--------------------------------------------------------------------------
+    |
+    | Requests per minute one personal API key may make (#315). Failed key
+    | lookups are limited per IP on their own, before this limit applies.
+    |
+    */
+
+    'api_key_requests_per_minute' => (int) env('EXCUBIA_API_KEY_REQUESTS_PER_MINUTE', 60),
+
+    /*
+    |--------------------------------------------------------------------------
     | Alerts
     |--------------------------------------------------------------------------
     |

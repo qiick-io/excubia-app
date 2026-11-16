@@ -231,6 +231,7 @@ it('screenshots every authenticated page and project tab', function () {
         'assistant' => [route('ai.index', absolute: false)],
         'settings-profile' => [route('profile.edit', absolute: false)],
         'settings-security' => [route('security.edit', absolute: false)],
+        'settings-api-keys' => [route('api-keys.index', absolute: false)],
         'settings-appearance' => [route('appearance.edit', absolute: false)],
         'settings-appearance-sidebar' => [route('appearance.sidebar.edit', absolute: false)],
         'settings-performance' => [route('performance.edit', absolute: false)],

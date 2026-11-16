@@ -236,7 +236,8 @@
             "sectionAi": "AI",
             "aiTools": "Strumenti",
             "integrations": "Integrazioni",
-            "aiPrices": "Prezzi"
+            "aiPrices": "Prezzi",
+            "apiKeys": "Chiavi API"
         },
         "profile": {
             "head": "Impostazioni profilo",
@@ -616,6 +617,46 @@
                 "enableTitle": "Attiva l’autenticazione a due fattori",
                 "enableDescription": "Per completare l'attivazione dell'autenticazione a due fattori, scansiona il codice QR o inserisci la chiave di configurazione nella tua app di autenticazione"
             }
+        },
+        "apiKeys": {
+            "description": "Chiavi personali per client AI come Claude Code o Cursor. Una chiave agisce come te: vede solo ciò che vedi in Excubia e smette di funzionare quando la revochi o il tuo account viene disattivato.",
+            "create": "Crea chiave API",
+            "createTitle": "Crea chiave API",
+            "createDescription": "Dai alla chiave il nome del client che la usa, scegli cosa può fare e, se vuoi, quando scade.",
+            "secretBanner": "Copia questa chiave ora. Non verrà mostrata di nuovo.",
+            "secretValue": "Nuova chiave API",
+            "copy": "Copia chiave",
+            "copied": "Copiata",
+            "expiresAt": "Scade il",
+            "expiresAtHelp": "Lascia vuoto per una chiave che non scade.",
+            "never": "Mai",
+            "revoke": "Revoca chiave",
+            "scopeHelp": {
+                "mcpRead": "Legge progetti, report, problemi, eccezioni, runtime e schedule tramite il server MCP."
+            },
+            "columns": {
+                "name": "Nome",
+                "prefix": "Prefisso",
+                "scopes": "Scope",
+                "lastUsed": "Ultimo uso",
+                "expires": "Scadenza",
+                "status": "Stato",
+                "actions": "Azioni"
+            },
+            "status": {
+                "active": "Attiva",
+                "expired": "Scaduta",
+                "revoked": "Revocata"
+            },
+            "confirm": {
+                "revokeTitle": "Revocare la chiave API “{{name}}”?",
+                "revokeDescription": "Questa chiave smetterà di funzionare immediatamente.",
+                "revokeConfirm": "Revoca"
+            },
+            "empty": {
+                "title": "Nessuna chiave API",
+                "description": "Crea una chiave per collegare un client AI a Excubia."
+            }
         }
     },
     "activityLog": {
@@ -663,6 +704,8 @@
             "members_synced": "Membri sincronizzati",
             "token_rotated": "Token di push rinnovato",
             "token_revoked": "Token di push revocato",
+            "api_key_revoked": "Chiave API revocata",
+            "api_key_first_used": "Chiave API usata la prima volta",
             "collection_permissions_synced": "Permessi collection sincronizzati",
             "file_permissions_synced": "Permessi file sincronizzati"
         },

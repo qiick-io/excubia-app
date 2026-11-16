@@ -31,6 +31,8 @@ declare module '@inertiajs/core' {
         flashDataType: {
             toast?: FlashToast;
             pushToken?: PushTokenFlash;
+            /** A new personal API key (#315), flashed once. */
+            apiKey?: string;
         };
     }
 }

@@ -3,6 +3,7 @@
 use App\Http\Controllers\Settings\AiPricesSettingsController;
 use App\Http\Controllers\Settings\AiSettingsController;
 use App\Http\Controllers\Settings\AlertSubscriptionController;
+use App\Http\Controllers\Settings\ApiKeyController;
 use App\Http\Controllers\Settings\AppearanceSettingsController;
 use App\Http\Controllers\Settings\AppearanceSidebarSettingsController;
 use App\Http\Controllers\Settings\LocaleController;
@@ -49,6 +50,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('settings/ai-prices', [AiPricesSettingsController::class, 'edit'])->name('ai-prices.edit');
         Route::put('settings/ai-prices', [AiPricesSettingsController::class, 'update'])->name('ai-prices.update');
     });
+
+    // Personal API keys of the signed-in user (#315): only their own keys, see ApiKeyPolicy.
+    Route::get('settings/api-keys', [ApiKeyController::class, 'index'])->name('api-keys.index');
+    Route::post('settings/api-keys', [ApiKeyController::class, 'store'])
+        ->middleware('throttle:10,1')
+        ->name('api-keys.store');
+    Route::delete('settings/api-keys/{apiKey}', [ApiKeyController::class, 'destroy'])->name('api-keys.destroy');
 
     // Alert emails of the signed-in user (#22): their own filters and a test mail to themselves.
     Route::put('settings/profile/alerts', [AlertSubscriptionController::class, 'update'])->name('profile.alerts.update');

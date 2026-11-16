@@ -96,6 +96,15 @@ Deleting a project deletes its reports, findings, telemetry, tasks, alerts, mute
 - What leaves the server: the user's questions and those tool results, to the provider in `config/ai.php` (Ollama on the same network by default). The system prompt tells the model that tool results are data, not instructions; answers are rendered as plain text, so an injected instruction can at most change the wording of an answer, not run code or tools with more rights.
 - Conversations are stored in `agent_conversations` and `agent_conversation_messages`, scoped to their owner (reading, continuing and deleting are all checked).
 
+### 7a. Personal API keys
+
+- **Created** by each user for themselves in Settings → API keys (#315): `exk_` + 40 random characters (`Str::random`), with a name, scopes (`mcp:read` today) and an optional expiry date.
+- **Stored** only as `sha256` in `api_keys.key_hash` (hidden from serialization and excluded from the activity log), with the first 12 characters as `key_prefix` for display. The plain key is flashed once (`apiKey` flash) and never stored or logged.
+- **Checked** by `AuthenticateApiKeyMiddleware`, with the scope the route needs: the bearer key is hashed and looked up by hash. A revoked or expired key, a key without the scope, or a deactivated owner is rejected on the next request; deleting a user deletes their keys.
+- **Acts as its owner**, for that request only (no session): every policy and `Project::visibleTo` apply as in the UI, so a key never sees or does more than its owner. Only the owner may revoke a key.
+- **Audit**: creation, revocation and the first use go to the `auth` activity log.
+- **Rate limits**: 20 failed attempts per minute per IP (then every attempt from that IP gets 429), and `EXCUBIA_API_KEY_REQUESTS_PER_MINUTE` (60) per key.
+
 ### 8. Secrets in logs, errors and props
 
 - `APP_DEBUG=false` and `LOG_CHANNEL=stderr` in the Docker image: no stack traces or `.env` values on error pages.

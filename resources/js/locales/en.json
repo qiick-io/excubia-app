@@ -236,7 +236,8 @@
             "sectionAi": "AI",
             "aiTools": "Tools",
             "integrations": "Integrations",
-            "aiPrices": "Prices"
+            "aiPrices": "Prices",
+            "apiKeys": "API keys"
         },
         "profile": {
             "head": "Profile settings",
@@ -616,6 +617,46 @@
                 "enableTitle": "Enable two-factor authentication",
                 "enableDescription": "To finish enabling two-factor authentication, scan the QR code or enter the setup key in your authenticator app"
             }
+        },
+        "apiKeys": {
+            "description": "Personal keys for AI clients such as Claude Code or Cursor. A key acts as you: it sees only what you see in Excubia, and stops working when you revoke it or your account is deactivated.",
+            "create": "Create API key",
+            "createTitle": "Create API key",
+            "createDescription": "Name the key after the client that uses it, pick what it may do and, optionally, when it expires.",
+            "secretBanner": "Copy this key now. It will not be shown again.",
+            "secretValue": "New API key",
+            "copy": "Copy key",
+            "copied": "Copied",
+            "expiresAt": "Expires on",
+            "expiresAtHelp": "Leave empty for a key that does not expire.",
+            "never": "Never",
+            "revoke": "Revoke key",
+            "scopeHelp": {
+                "mcpRead": "Read projects, reports, findings, exceptions, runtime and schedules through the MCP server."
+            },
+            "columns": {
+                "name": "Name",
+                "prefix": "Prefix",
+                "scopes": "Scopes",
+                "lastUsed": "Last used",
+                "expires": "Expires",
+                "status": "Status",
+                "actions": "Actions"
+            },
+            "status": {
+                "active": "Active",
+                "expired": "Expired",
+                "revoked": "Revoked"
+            },
+            "confirm": {
+                "revokeTitle": "Revoke API key “{{name}}”?",
+                "revokeDescription": "This key will stop working immediately.",
+                "revokeConfirm": "Revoke"
+            },
+            "empty": {
+                "title": "No API keys yet",
+                "description": "Create a key to connect an AI client to Excubia."
+            }
         }
     },
     "activityLog": {
@@ -663,6 +704,8 @@
             "members_synced": "Members synced",
             "token_rotated": "Push token rotated",
             "token_revoked": "Push token revoked",
+            "api_key_revoked": "API key revoked",
+            "api_key_first_used": "API key first used",
             "collection_permissions_synced": "Collection permissions synced",
             "file_permissions_synced": "File permissions synced"
         },

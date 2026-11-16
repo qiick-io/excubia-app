@@ -12,6 +12,7 @@ use App\Http\Controllers\ProjectReportController;
 use App\Jobs\DeliverAlertJob;
 use App\Models\AlertLog;
 use App\Models\AlertMute;
+use App\Models\ApiKey;
 use App\Models\ExceptionGroup;
 use App\Models\Finding;
 use App\Models\MaintenanceWindow;
@@ -43,7 +44,7 @@ const HIDDEN_PROJECT_SLUG = 'classified-vault';
  * Account routes every signed-in user may call on their own account; a reader changing its own
  * profile or marking its own notifications read is not a finding.
  */
-const SELF_SERVICE_ROUTES = ['profile.update', 'profile.destroy', 'locale.update', 'user-password.update', 'profile.alerts.update', 'profile.alerts.test', 'notifications.read', 'notifications.unread'];
+const SELF_SERVICE_ROUTES = ['profile.update', 'profile.destroy', 'locale.update', 'user-password.update', 'profile.alerts.update', 'profile.alerts.test', 'notifications.read', 'notifications.unread', 'api-keys.store'];
 
 beforeEach(function () {
     $this->withoutVite();
@@ -95,6 +96,7 @@ beforeEach(function () {
     $this->projectGroup = ProjectGroup::query()->create(['name' => 'Vault clients']);
     $this->projectGroup->projects()->attach($this->hidden->id);
     $this->customRole = Role::query()->create(['name' => 'auditor', 'guard_name' => 'web']);
+    $this->adminApiKey = ApiKey::factory()->for($this->admin)->create();
 });
 
 /**
@@ -153,6 +155,7 @@ function hiddenTargetUrl(array $entry, Project $routeProject): string
         'project_group' => $test->projectGroup->id,
         'role' => $test->customRole->id,
         'conversation' => $test->conversation->id,
+        'apiKey' => $test->adminApiKey->id,
         'uuid' => (string) Str::uuid(),
         'asset' => 'logo',
         'channel' => 'webhook',
@@ -218,7 +221,8 @@ it('walks every named route as a reader without reading the hidden project or ch
         ->and($this->children['finding']->fresh()->dismissed_at)->toBeNull()
         ->and($this->children['exceptionGroup']->fresh()->status->value)->toBe('open')
         ->and(AlertMute::query()->whereKey($this->children['alertMute']->id)->exists())->toBeTrue()
-        ->and(MaintenanceWindow::query()->whereKey($this->children['maintenanceWindow']->id)->exists())->toBeTrue();
+        ->and(MaintenanceWindow::query()->whereKey($this->children['maintenanceWindow']->id)->exists())->toBeTrue()
+        ->and($this->adminApiKey->fresh()->revoked_at)->toBeNull();
 });
 
 it('keeps the hidden project and its children out of reach of a non-admin holding every permission', function () {
