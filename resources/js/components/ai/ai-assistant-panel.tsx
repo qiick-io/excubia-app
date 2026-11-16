@@ -53,6 +53,10 @@ export function AiAssistantPanel() {
         { message: string; conversation_id: string },
         PanelResponse
     >({ message: '', conversation_id: '' });
+    const approvalHttp = useHttp<
+        { approved: boolean; always: boolean },
+        PanelResponse
+    >({ approved: false, always: false });
 
     const isAvailable = isAssistantEnabled && can(PermissionEnum.CanUseAi);
     const isAssistantRoute = isCurrentUrl(
@@ -90,7 +94,7 @@ export function AiAssistantPanel() {
 
     useEffect(() => {
         endRef.current?.scrollIntoView({ block: 'end' });
-    }, [messages.length, http.processing]);
+    }, [messages.length, http.processing, approvalHttp.processing]);
 
     if (!isAvailable || isAssistantRoute) {
         return null;
@@ -109,6 +113,26 @@ export function AiAssistantPanel() {
             if (!http.hasErrors) {
                 toast.error(t('assistant.unreachable'));
             }
+        }
+    };
+
+    const resolveApprovals = async (
+        isApproved: boolean,
+        isAlways: boolean,
+    ): Promise<void> => {
+        // The decision is sent as is: setData() would only apply on the next render.
+        approvalHttp.transform(() => ({
+            approved: isApproved,
+            always: isAlways,
+        }));
+
+        try {
+            const response = await approvalHttp.post(
+                aiRoutes.approvals.url(http.data.conversation_id),
+            );
+            setMessages(response.messages);
+        } catch {
+            toast.error(t('assistant.unreachable'));
         }
     };
 
@@ -176,14 +200,24 @@ export function AiAssistantPanel() {
                         </Empty>
                     ) : null}
 
-                    {messages.map((message) => (
+                    {messages.map((message, index) => (
                         <AssistantChatMessage
                             key={message.id}
                             message={message}
+                            onResolveApprovals={
+                                index === messages.length - 1
+                                    ? (isApproved, isAlways) =>
+                                          void resolveApprovals(
+                                              isApproved,
+                                              isAlways,
+                                          )
+                                    : undefined
+                            }
+                            isResolving={approvalHttp.processing}
                         />
                     ))}
 
-                    {http.processing ? (
+                    {http.processing || approvalHttp.processing ? (
                         <ThinkingDots label={t('assistant.thinking')} />
                     ) : null}
                     <div ref={endRef} />

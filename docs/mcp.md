@@ -1,10 +1,11 @@
 # MCP server
 
 Excubia can serve its data to AI clients such as Claude Code, Cursor and Claude Desktop through
-the [Model Context Protocol](https://modelcontextprotocol.io) (MCP). The server is **read-only**
-and **off by default**. A client connects with a personal API key and sees exactly what the key's
-owner sees in Excubia: the same projects (projects restricted to admins stay hidden from
-non-admins) and nothing else.
+the [Model Context Protocol](https://modelcontextprotocol.io) (MCP). The server is **off by
+default**. A client connects with a personal API key and sees exactly what the key's owner sees in
+Excubia: the same projects (projects restricted to admins stay hidden from non-admins) and nothing
+else. A key with the `mcp:write` scope can also use the [write tools](#write-tools) (resolve or
+assign exceptions, dismiss findings, mute alerts…), with its owner's permissions.
 
 Nothing leaves your server unless a client that a user has given a key to asks for it. Excubia
 never calls the client, and it sends no data anywhere when the server is off.
@@ -29,13 +30,17 @@ client brings its own model.
 
 1. Sign in to Excubia and open **Settings → API keys**.
 2. Click **Create API key**, name it after the client (for example "Claude Code on my laptop"),
-   keep the `mcp:read` scope and, if you want, pick an expiry date.
+   keep the `mcp:read` scope and, if you want, pick an expiry date. Tick `mcp:write` too if the
+   client should use the [write tools](#write-tools); it is off unless you tick it, and needs
+   `mcp:read`. Scopes cannot be changed later: to add `mcp:write`, create a new key and revoke the
+   old one.
 3. Copy the key (`exk_…`). It is shown once; Excubia stores only a hash of it.
 
 The key acts as you. To see projects, you need the `can-show-projects` permission (every built-in
 role has it). Revoke the key in the same page when you no longer use it; deactivating or deleting
 your account stops all your keys at once. Creating, revoking and the first use of a key are in the
-activity log, and so is every MCP tool call (`ai` log, event "AI tool").
+activity log, and so is every MCP tool call (`ai` log, event "AI tool", with `surface: mcp`, the
+tool, the arguments and the outcome).
 
 Keep the key out of shared files: put it in an environment variable or your client's secret store,
 not in a config file you commit.
@@ -109,7 +114,11 @@ header `Authorization: Bearer <key>`. To try the server by hand, run
 ## Tools
 
 The tools are the AI assistant's, so both answer the same way. **Settings → AI → Tools** turns a
-tool off for both. Every tool is read-only; there are no write tools.
+tool off for both. `tools/list` returns every tool in one page.
+
+### Read tools
+
+Every key with `mcp:read` sees these. They carry the hints `readOnlyHint` and `idempotentHint`.
 
 | Tool                    | What it returns                                                                                                 |
 | ----------------------- | --------------------------------------------------------------------------------------------------------------- |
@@ -123,14 +132,53 @@ tool off for both. Every tool is read-only; there are no write tools.
 | `get-runtime-summary`   | A project's runtime over a time range: requests with percentiles, slowest routes, slow queries, jobs, and more. |
 | `get-schedule-status`   | A project's scheduled tasks: status, last and next due time, last run and the runs per outcome.                 |
 
-What the tools never return: push tokens, API keys, user data (names, emails, assignees), stack
-frames or other file paths, server host names, and the deprecation sources. This is covered by a
+`search-findings` gives each finding its `fingerprint`, which the finding write tools take;
+`list-exception-groups` gives each group its `id`.
+
+### Write tools
+
+Listed only for a key with **`mcp:write`**, and only while `EXCUBIA_AI_WRITE_ENABLED` and
+`EXCUBIA_MCP_WRITE_ENABLED` are on (both default `true`). An `mcp:read` key never sees them in
+`tools/list`, and calling one answers an unknown-tool error. They carry `readOnlyHint: false` and
+`destructiveHint: false`: they change data, delete nothing, and the client asks you before each
+call. Creating the key with `mcp:write` is your consent, so Excubia asks for no approval of its
+own (the in-app assistant does).
+
+Each tool runs the same action as the button in the UI, with your permissions on a project you can
+see: a reader without `can-manage-exceptions` cannot resolve an exception over MCP either.
+
+| Tool                      | What it does                                                                                                                                                  | Needs                   |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
+| `update-exception-status` | Resolve, ignore or reopen exception groups of one project, by id (at most 200).                                                                               | `can-manage-exceptions` |
+| `assign-items`            | Assign exception groups (by id) or findings (by fingerprint) to `me`, to a user by email who can see the project, or to `nobody`.                             | the list's permission   |
+| `dismiss-finding`         | Dismiss a finding with a reason, for good or until a day (a snooze).                                                                                          | `can-dismiss-findings`  |
+| `restore-finding`         | Remove a finding's dismissal or snooze.                                                                                                                       | `can-dismiss-findings`  |
+| `mute-alert`              | Mute one alert event of a project for 1h, 24h, 7d or forever (`target: rule`), or open a one-off or weekly maintenance window (`target: maintenance_window`). | `can-manage-alerts`     |
+| `unmute-alert`            | End every mute of an alert event, or close a maintenance window by the id `mute-alert` returned.                                                              | `can-manage-alerts`     |
+| `refresh-report`          | Queue a new report of the Excubia system project ("Refresh now"). Other projects push their own reports.                                                      | `can-run-checks`        |
+
+There are no destructive or security tools: nothing deletes a project or touches push tokens,
+API keys, users, roles or settings.
+
+### Turn the write tools off
+
+- `EXCUBIA_MCP_WRITE_ENABLED=false`: MCP is read-only for every key; the assistant may still write.
+- `EXCUBIA_AI_WRITE_ENABLED=false`: no write anywhere, in the assistant or over MCP.
+- **Settings → AI → Tools**: untick single tools, for the assistant and MCP.
+- Or give the client a key without `mcp:write`.
+
+Clear the config cache after changing `.env` (`php artisan config:clear`, or `excubia:upgrade`).
+
+### What the tools never return
+
+Push tokens, API keys, user data (names, emails, assignees), stack frames or other file paths,
+server host names, and the deprecation sources, from a read or a write tool. This is covered by a
 test for both the assistant and the MCP server.
 
 ## Limits and errors
 
 - `401`: the key is missing, unknown, revoked or expired, or its owner is deactivated.
-- `403`: the key lacks the `mcp:read` scope.
+- `403`: the key lacks the `mcp:read` scope. (A missing `mcp:write` hides the write tools instead.)
 - `404`: `EXCUBIA_MCP_ENABLED` is not `true`.
 - `429`: more than 20 failed attempts per minute from one IP, or more than
   `EXCUBIA_API_KEY_REQUESTS_PER_MINUTE` requests per minute with one key. The `Retry-After`

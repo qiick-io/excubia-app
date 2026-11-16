@@ -6,29 +6,32 @@ namespace App\Mcp\Adapters;
 
 use App\Ai\Agents\ExcubiaAssistantAgent;
 use App\Ai\Tools\AssistantTool;
+use App\Enums\AiToolKindEnum;
+use App\Models\ApiKey;
 use App\Models\User;
+use App\Services\AiToolWriteGateService;
 use App\Services\SettingsRepositoryService;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
+use Illuminate\Http\Request as HttpRequest;
 use Illuminate\Support\Str;
 use Laravel\Ai\Tools\Request as AssistantToolRequest;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Tool;
-use Laravel\Mcp\Server\Tools\Annotations\IsIdempotent;
-use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 /**
- * One read-only Assistant tool served over MCP (#234), as externa-core's
- * `RegistryMcpToolAdapter` bridges its AI tool registry: the name, description and input
- * schema come from the Assistant tool, and a call runs that same tool as the user the API key
- * belongs to. So the Assistant and MCP share one implementation, the same permission check
- * (`can-show-projects` and `Project::visibleTo()`) and the same field allowlists.
+ * One Assistant tool served over MCP (#234), as externa-core's `RegistryMcpToolAdapter` bridges its
+ * AI tool registry: the name, description and input schema come from the Assistant tool, and a call
+ * runs that same tool as the user the API key belongs to. So the Assistant and MCP share one
+ * implementation, the same permission checks (`can-show-projects`, `Project::visibleTo()`, the
+ * ProjectPolicy abilities of the write tools) and the same field allowlists.
  *
- * Only the tools enabled in Settings → AI are listed. Every call is written to the `ai`
- * activity log (tool, arguments, outcome), never the result.
+ * Only the tools enabled in Settings → AI are listed. A write tool (#320) is listed and callable
+ * only for a key with the `mcp:write` scope while `EXCUBIA_AI_WRITE_ENABLED` and
+ * `EXCUBIA_MCP_WRITE_ENABLED` are on (AiToolWriteGateService); creating such a key is the user's
+ * consent and the client asks before each call, so there is no in-app approval. The annotations
+ * follow the tool's kind. The tool writes every call to the `ai` activity log with `surface: mcp`.
  */
-#[IsReadOnly]
-#[IsIdempotent]
 final class AssistantMcpToolAdapter extends Tool
 {
     /**
@@ -78,9 +81,29 @@ final class AssistantMcpToolAdapter extends Tool
         return $this->assistantTool(new User)->schema($schema);
     }
 
-    public function shouldRegister(SettingsRepositoryService $settings): bool
+    /**
+     * The MCP hints of the tool's kind, as externa-core's adapter sets them: a read tool is
+     * read-only and idempotent; a write tool changes data but deletes nothing.
+     *
+     * @return array<string, bool>
+     */
+    public function annotations(): array
     {
-        return in_array($this->toolName, $settings->aiEnabledTools(), true);
+        return $this->toolClass::kind() === AiToolKindEnum::Read
+            ? ['readOnlyHint' => true, 'idempotentHint' => true]
+            : ['readOnlyHint' => false, 'destructiveHint' => false];
+    }
+
+    public function shouldRegister(SettingsRepositoryService $settings, AiToolWriteGateService $writeGate, HttpRequest $httpRequest): bool
+    {
+        if (! in_array($this->toolName, $settings->aiEnabledTools(), true)) {
+            return false;
+        }
+
+        $apiKey = $httpRequest->attributes->get(ApiKey::class);
+
+        return $this->toolClass::kind() === AiToolKindEnum::Read
+            || $writeGate->isMcpWriteAllowed($apiKey instanceof ApiKey ? $apiKey : null);
     }
 
     public function handle(Request $request): Response
@@ -92,20 +115,12 @@ final class AssistantMcpToolAdapter extends Tool
         }
 
         $result = (string) $this->assistantTool($user)->handle(new AssistantToolRequest($request->all()));
-        $isError = array_key_exists('error', (array) json_decode($result, true));
 
-        activity()
-            ->useLog('ai')
-            ->causedBy($user)
-            ->event('ai_tool')
-            ->withProperties(['surface' => 'mcp', 'tool' => $this->toolName, 'arguments' => $request->all(), 'status' => $isError ? 'error' : 'ok'])
-            ->log("MCP tool {$this->toolName}");
-
-        return $isError ? Response::error($result) : Response::text($result);
+        return array_key_exists('error', (array) json_decode($result, true)) ? Response::error($result) : Response::text($result);
     }
 
     private function assistantTool(User $user): AssistantTool
     {
-        return new ($this->toolClass)($user);
+        return new ($this->toolClass)($user, 'mcp');
     }
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Actions\CreateApiKeyAction;
 use App\Ai\Agents\ExcubiaAssistantAgent;
 use App\Data\ApiKeyData;
+use App\Enums\AiToolKindEnum;
 use App\Enums\ApiKeyScopeEnum;
 use App\Enums\ProjectVisibilityEnum;
 use App\Enums\RoleEnum;
@@ -21,8 +22,8 @@ use Illuminate\Testing\TestResponse;
 use Spatie\Activitylog\Models\Activity;
 
 /**
- * The read-only MCP server (#234) over HTTP: off by default, a personal API key with `mcp:read`
- * that acts as its owner, the Assistant tools only, read-only and logged.
+ * The MCP server (#234) over HTTP: off by default, a personal API key with `mcp:read` that acts as
+ * its owner, the Assistant tools only, logged. The write tools (#320) are in AiWriteToolsTest.
  */
 beforeEach(function () {
     $this->seed(PermissionSeeder::class);
@@ -105,12 +106,12 @@ it('rejects a missing, unknown or revoked key and a key without mcp:read', funct
     mcpCall($plainKey, 'ping')->assertUnauthorized();
 });
 
-it('lists the Assistant tools, every one read-only, and only those enabled in Settings → AI', function () {
+it('lists the Assistant read tools to an mcp:read key, every one read-only, and only those enabled in Settings → AI', function () {
     $plainKey = mcpKey(mcpUser());
 
     $tools = collect(mcpCall($plainKey, 'tools/list')->assertOk()->json('result.tools'));
 
-    expect($tools->pluck('name')->all())->toBe(array_keys(ExcubiaAssistantAgent::TOOLS))
+    expect($tools->pluck('name')->all())->toBe(ExcubiaAssistantAgent::toolNames(AiToolKindEnum::Read))
         ->and($tools->every(fn (array $tool): bool => $tool['annotations']['readOnlyHint'] === true))->toBeTrue()
         ->and($tools->firstWhere('name', 'get-latest-report')['inputSchema']['required'])->toBe(['project'])
         ->and($tools->firstWhere('name', 'get-latest-report')['title'])->toBe('Get Latest Report')

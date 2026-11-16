@@ -432,14 +432,21 @@
             "breadcrumb": "Impostazioni AI",
             "head": "Impostazioni AI",
             "title": "Strumenti dell'assistente",
-            "description": "Gli strumenti in sola lettura che l'assistente e il server MCP possono usare per rispondere. Non modificano mai nulla.",
+            "description": "Gli strumenti che l'assistente e il server MCP possono usare. Gli strumenti di lettura non cambiano nulla; quelli di scrittura cambiano i dati con i tuoi permessi, dopo la tua approvazione nell'assistente e, via MCP, solo per chiavi API con mcp:write.",
             "statusLabel": "Assistente",
             "statusOn": "Attivo",
             "statusOff": "Spento (EXCUBIA_AI_ENABLED=false)",
             "providerLabel": "Provider",
             "modelLabel": "Modello",
             "envHint": "Provider, modello e chiavi si impostano nel .env (AI_DEFAULT_PROVIDER e le chiavi del provider). I dati inviati a un provider cloud escono dal tuo server.",
-            "readOnly": "sola lettura"
+            "kind": {
+                "read": "lettura",
+                "write": "scrittura"
+            },
+            "writesLabel": "Strumenti di scrittura",
+            "writesOn": "Attivi",
+            "writesOff": "Disattivati (EXCUBIA_AI_WRITE_ENABLED=false)",
+            "mcpWritesOff": "Disattivati via MCP (EXCUBIA_MCP_WRITE_ENABLED=false)"
         },
         "integrations": {
             "head": "Integrazioni",
@@ -632,7 +639,8 @@
             "never": "Mai",
             "revoke": "Revoca chiave",
             "scopeHelp": {
-                "mcpRead": "Legge progetti, report, problemi, eccezioni, runtime e schedule tramite il server MCP."
+                "mcpRead": "Legge progetti, report, problemi, eccezioni, runtime e schedule tramite il server MCP.",
+                "mcpWrite": "Modifica anche i dati con gli strumenti di scrittura MCP: stato delle eccezioni, assegnazioni, finding ignorati, avvisi silenziati e finestre di manutenzione. Disattivato se non selezionato."
             },
             "columns": {
                 "name": "Nome",
@@ -1130,7 +1138,7 @@
         "newConversation": "Nuova chat",
         "conversations": "Conversazioni",
         "emptyTitle": "Chiedi dei tuoi progetti",
-        "emptyDescription": "Legge i report salvati: elenca i progetti, cerca i problemi, mostra l'ultimo report e lo storico di un progetto, confronta due report e propone un piano di aggiornamento. Non può modificare nulla.",
+        "emptyDescription": "Legge i report salvati: elenca i progetti, cerca i finding, mostra l'ultimo report e lo storico di un progetto, confronta due report e suggerisce un piano di aggiornamento. Può anche risolvere o assegnare eccezioni, ignorare finding e silenziare avvisi, ogni volta dopo la tua approvazione.",
         "placeholder": "Fai una domanda… (Invio per inviare, Maiusc+Invio per andare a capo)",
         "send": "Invia",
         "you": "Tu",
@@ -1160,7 +1168,22 @@
         "selectConversation": "Seleziona {{title}}",
         "deleteTitle": "Eliminare le chat selezionate?",
         "deleteDescription_one": "Stai per eliminare {{count}} chat. Questa azione non si può annullare.",
-        "deleteDescription_other": "Stai per eliminare {{count}} chat. Questa azione non si può annullare."
+        "deleteDescription_other": "Stai per eliminare {{count}} chat. Questa azione non si può annullare.",
+        "approval": {
+            "question_one": "Approvare questa modifica?",
+            "question_other": "Approvare queste {{count}} modifiche?",
+            "always": "Non chiedere più per questi strumenti in questa chat",
+            "awaiting": "In attesa della tua approvazione.",
+            "tools": {
+                "update-exception-status": "Cambiare lo stato delle eccezioni",
+                "assign-items": "Assegnare eccezioni o finding",
+                "dismiss-finding": "Ignorare un finding",
+                "restore-finding": "Ripristinare un finding",
+                "mute-alert": "Silenziare avvisi o aprire una finestra di manutenzione",
+                "unmute-alert": "Riattivare avvisi o chiudere una finestra di manutenzione",
+                "refresh-report": "Aggiornare il report di sistema"
+            }
+        }
     },
     "permissions": {
         "description": "I permessi sono definiti in PermissionEnum e sincronizzati nel database. Assegnali ai ruoli dalla pagina di modifica del ruolo.",
@@ -1580,6 +1603,10 @@
             "reranking": "Reranking",
             "audio": "Sintesi vocale",
             "classification": "Classificazione"
+        },
+        "approval": {
+            "approve": "Approva",
+            "reject": "Rifiuta"
         }
     },
     "files": {

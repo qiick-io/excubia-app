@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Actions;
 
 use App\Models\User;
+use App\Services\AssistantApprovalService;
 use Illuminate\Support\Facades\DB;
 use Laravel\Ai\Models\Conversation;
 use Laravel\Ai\Models\ConversationMessage;
@@ -15,6 +16,8 @@ use Laravel\Ai\Models\ConversationMessage;
  */
 class DeleteAssistantConversationsAction
 {
+    public function __construct(private readonly AssistantApprovalService $approvals) {}
+
     /**
      * @param  list<string>  $conversationIds
      * @return int the number of conversations deleted
@@ -30,6 +33,7 @@ class DeleteAssistantConversationsAction
                 ->all();
 
             ConversationMessage::query()->whereIn('conversation_id', $ids)->delete();
+            $this->approvals->forget(array_values(array_map(strval(...), $ids)));
 
             return Conversation::query()->whereKey($ids)->delete();
         });

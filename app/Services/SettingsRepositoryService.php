@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Ai\Agents\ExcubiaAssistantAgent;
 use App\Data\AlertFilterData;
+use App\Enums\AiToolKindEnum;
 use App\Enums\AlertEventEnum;
 use App\Enums\SeverityEnum;
 use App\Enums\ThemePresetEnum;
@@ -104,6 +105,8 @@ class SettingsRepositoryService
             'oidc_client_secret' => null,
             'oidc_button_label' => null,
             'oidc_jit_provisioning' => false,
+            // Tools switched off in Settings → AI (#320); `ai_enabled_tools` is the list saved before it.
+            'ai_disabled_tools' => null,
             'ai_enabled_tools' => null,
             'webhook_url' => null,
             'webhook_secret' => null,
@@ -400,16 +403,24 @@ class SettingsRepositoryService
     }
 
     /**
-     * Assistant tools enabled in Settings → AI; every tool until the setting is saved.
+     * Assistant tools enabled in Settings → AI: every tool that is not switched off, so a tool
+     * added by an upgrade (such as the write tools of #320) is on.
+     *
+     * Settings saved before #320 kept the enabled tools (`ai_enabled_tools`), all of them read
+     * tools; until the page is saved again, the read tools missing from that list stay off.
      *
      * @return list<string>
      */
     public function aiEnabledTools(): array
     {
-        $value = $this->all()['ai_enabled_tools'];
-        $names = array_keys(ExcubiaAssistantAgent::TOOLS);
+        $values = $this->all();
+        $disabled = $values['ai_disabled_tools'];
 
-        return is_array($value) ? array_values(array_intersect($names, $value)) : $names;
+        if (! is_array($disabled) && is_array($values['ai_enabled_tools'])) {
+            $disabled = array_diff(ExcubiaAssistantAgent::toolNames(AiToolKindEnum::Read), $values['ai_enabled_tools']);
+        }
+
+        return array_values(array_diff(array_keys(ExcubiaAssistantAgent::TOOLS), (array) $disabled));
     }
 
     /** Days runtime aggregates are kept (Data retention). */

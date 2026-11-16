@@ -125,21 +125,34 @@ return [
     | The AI assistant is off by default: no page, no sidebar module and no
     | outbound call. Set the provider in config/ai.php (Ollama by default).
     |
+    | Its write tools (#320: exception status, assignment, finding dismissal,
+    | alert mutes and maintenance windows, refresh report) are on by default,
+    | run only after the user approves the call, and are logged. Set
+    | EXCUBIA_AI_WRITE_ENABLED=false for a read-only assistant and MCP server.
+    |
     */
 
     'ai_enabled' => (bool) env('EXCUBIA_AI_ENABLED', false),
+
+    'ai_write_enabled' => (bool) env('EXCUBIA_AI_WRITE_ENABLED', true),
 
     /*
     |--------------------------------------------------------------------------
     | MCP server
     |--------------------------------------------------------------------------
     |
-    | The read-only MCP server at POST /mcp (#234) is off by default: the
-    | endpoint answers 404. Clients authenticate with a personal API key with
-    | the mcp:read scope. It needs no AI provider. See docs/mcp.md.
+    | The MCP server at POST /mcp (#234) is off by default: the endpoint
+    | answers 404. Clients authenticate with a personal API key with the
+    | mcp:read scope. It needs no AI provider. See docs/mcp.md.
+    |
+    | Once it is on, its write tools (#320) are on too, for keys that also
+    | have the mcp:write scope. EXCUBIA_MCP_WRITE_ENABLED=false keeps MCP
+    | read-only while the assistant may still write.
     |
     */
 
     'mcp_enabled' => (bool) env('EXCUBIA_MCP_ENABLED', false),
+
+    'mcp_write_enabled' => (bool) env('EXCUBIA_MCP_WRITE_ENABLED', true),
 
 ];

@@ -18,21 +18,27 @@ import { edit as editProfile } from '@/routes/profile';
 
 type ToolRow = {
     name: string;
+    kind: 'read' | 'write';
     description: string;
 };
 
 /**
- * Settings → AI, laid out as externa-core's AI tools page: what the assistant runs on (from
- * `.env`) and the read-only tools it may use, one checkbox each.
+ * Settings → AI, laid out as externa-core's AI tools page: what the assistant runs on and
+ * whether its write tools are on (from `.env`, #320), and the read and write tools it and the MCP
+ * server may use, one checkbox each.
  */
 export default function AiSettingsPage({
     isEnabled,
+    isWriteEnabled,
+    isMcpWriteEnabled,
     provider,
     model,
     enabledTools,
     tools,
 }: {
     isEnabled: boolean;
+    isWriteEnabled: boolean;
+    isMcpWriteEnabled: boolean;
     provider: string;
     model: string;
     enabledTools: string[];
@@ -116,6 +122,20 @@ export default function AiSettingsPage({
                             </span>
                         </p>
                         <p className="mt-2">
+                            {t('settings.ai.writesLabel')}:{' '}
+                            <span className="font-medium">
+                                {isWriteEnabled
+                                    ? t('settings.ai.writesOn')
+                                    : t('settings.ai.writesOff')}
+                            </span>
+                            {isWriteEnabled && !isMcpWriteEnabled ? (
+                                <span className="text-muted-foreground">
+                                    {' · '}
+                                    {t('settings.ai.mcpWritesOff')}
+                                </span>
+                            ) : null}
+                        </p>
+                        <p className="mt-2">
                             {t('settings.ai.providerLabel')}:{' '}
                             <span className="font-mono text-xs">
                                 {provider}
@@ -150,7 +170,9 @@ export default function AiSettingsPage({
                                     <FieldLabel htmlFor={`tool-${tool.name}`}>
                                         {tool.name}
                                         <span className="text-xs font-normal text-muted-foreground">
-                                            ({t('settings.ai.readOnly')})
+                                            (
+                                            {t(`settings.ai.kind.${tool.kind}`)}
+                                            )
                                         </span>
                                     </FieldLabel>
                                     <FieldDescription>

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
-use App\Enums\PermissionEnum;
 use App\Models\Finding;
 use App\Models\Project;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -27,8 +26,7 @@ class UpdateFindingDismissalRequest extends FormRequest
             && $project instanceof Project
             && $finding instanceof Finding
             && $finding->project_id === $project->id
-            && $user->can('view', $project)
-            && $user->can(PermissionEnum::CanDismissFindings->value);
+            && $user->can('manageFindings', $project);
     }
 
     /**

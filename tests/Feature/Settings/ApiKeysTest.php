@@ -67,7 +67,7 @@ it('creates a key, shows it once and stores only its hash', function () {
         ->assertInertia(fn (Assert $page) => $page
             ->component('settings/api-keys')
             ->missingFlash('apiKey')
-            ->where('scopes', ['mcp:read'])
+            ->where('scopes', ['mcp:read', 'mcp:write'])
             ->where('apiKeys.data.0.name', 'Claude Code')
             ->where('apiKeys.data.0.is_active', true)
             ->missing('apiKeys.data.0.key_hash'));
@@ -82,7 +82,8 @@ it('validates the name, the scopes and the expiry date', function (array $body, 
 })->with([
     'no name' => [['name' => ''], 'name'],
     'no scope' => [['scopes' => []], 'scopes'],
-    'unknown scope' => [['scopes' => ['mcp:write']], 'scopes.0'],
+    'unknown scope' => [['scopes' => ['rest:read']], 'scopes.0'],
+    'mcp:write without mcp:read' => [['scopes' => ['mcp:write']], 'scopes'],
     'past expiry' => [['expires_at' => '2020-01-01'], 'expires_at'],
 ]);
 

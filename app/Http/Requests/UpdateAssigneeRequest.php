@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
-use App\Enums\PermissionEnum;
 use App\Models\ExceptionGroup;
 use App\Models\Finding;
 use App\Models\Project;
@@ -30,13 +29,11 @@ class UpdateAssigneeRequest extends FormRequest
         $item = $this->item();
         $user = $this->user();
 
-        if ($user === null || ! $project instanceof Project || $item === null || $item->project_id !== $project->id || ! $user->can('view', $project)) {
+        if ($user === null || ! $project instanceof Project || $item === null || $item->project_id !== $project->id) {
             return false;
         }
 
-        return $user->can($item instanceof ExceptionGroup
-            ? PermissionEnum::CanManageExceptions->value
-            : PermissionEnum::CanDismissFindings->value);
+        return $user->can($item instanceof ExceptionGroup ? 'manageExceptions' : 'manageFindings', $project);
     }
 
     /**

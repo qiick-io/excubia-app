@@ -7,13 +7,15 @@ namespace App\Http\Requests\Settings;
 use App\Data\ApiKeyData;
 use App\Enums\ApiKeyScopeEnum;
 use Carbon\CarbonImmutable;
+use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 /**
  * Settings → API keys: a new personal key (#315) with a name, at least one scope and an optional
- * expiry date. Every signed-in, verified user may create keys for themselves.
+ * expiry date. Every signed-in, verified user may create keys for themselves. `mcp:write` (#320)
+ * needs `mcp:read`, since the MCP endpoint itself requires it.
  */
 class StoreApiKeyRequest extends FormRequest
 {
@@ -29,7 +31,13 @@ class StoreApiKeyRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'scopes' => ['required', 'array', 'min:1'],
+            'scopes' => ['required', 'array', 'min:1', function (string $attribute, mixed $value, Closure $fail): void {
+                $scopes = (array) $value;
+
+                if (in_array(ApiKeyScopeEnum::McpWrite->value, $scopes, true) && ! in_array(ApiKeyScopeEnum::McpRead->value, $scopes, true)) {
+                    $fail(__('The mcp:write scope needs mcp:read.'));
+                }
+            }],
             'scopes.*' => ['string', 'distinct', Rule::in(ApiKeyScopeEnum::values())],
             'expires_at' => ['nullable', 'date', 'after:today'],
         ];

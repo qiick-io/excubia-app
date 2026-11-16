@@ -63,7 +63,11 @@ type ApiKeyRow = {
 /** What each scope allows, by scope value (i18next reads `:` as a namespace separator). */
 const SCOPE_HELP_KEYS: Record<string, string> = {
     'mcp:read': 'settings.apiKeys.scopeHelp.mcpRead',
+    'mcp:write': 'settings.apiKeys.scopeHelp.mcpWrite',
 };
+
+/** Scopes a new key starts without: writing is an explicit choice (#320). */
+const OPT_IN_SCOPES = ['mcp:write'];
 
 /**
  * Settings → API keys (#315), copied from externa-core's API keys page and narrowed to the
@@ -102,7 +106,7 @@ export default function ApiKeysSettingsPage({
         expires_at: string;
     }>({
         name: '',
-        scopes: [...scopes],
+        scopes: scopes.filter((scope) => !OPT_IN_SCOPES.includes(scope)),
         expires_at: '',
     });
 
