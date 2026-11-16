@@ -9,6 +9,7 @@ use App\Ai\Tools\AssistantTool;
 use App\Models\User;
 use App\Services\SettingsRepositoryService;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
+use Illuminate\Support\Str;
 use Laravel\Ai\Tools\Request as AssistantToolRequest;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -53,6 +54,15 @@ final class AssistantMcpToolAdapter extends Tool
     public function name(): string
     {
         return $this->toolName;
+    }
+
+    /**
+     * The tool's own title ("Get Latest Report"): the default title comes from the class name,
+     * which would give every wrapped tool the same "Assistant Mcp Tool Adapter" in clients.
+     */
+    public function title(): string
+    {
+        return Str::headline($this->toolName);
     }
 
     public function description(): string
