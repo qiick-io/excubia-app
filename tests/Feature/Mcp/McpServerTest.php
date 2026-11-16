@@ -112,7 +112,9 @@ it('lists the Assistant tools, every one read-only, and only those enabled in Se
 
     expect($tools->pluck('name')->all())->toBe(array_keys(ExcubiaAssistantAgent::TOOLS))
         ->and($tools->every(fn (array $tool): bool => $tool['annotations']['readOnlyHint'] === true))->toBeTrue()
-        ->and($tools->firstWhere('name', 'get-latest-report')['inputSchema']['required'])->toBe(['project']);
+        ->and($tools->firstWhere('name', 'get-latest-report')['inputSchema']['required'])->toBe(['project'])
+        ->and($tools->firstWhere('name', 'get-latest-report')['title'])->toBe('Get Latest Report')
+        ->and($tools->pluck('title')->unique()->count())->toBe($tools->count());
 
     app(SettingsRepositoryService::class)->save(['ai_enabled_tools' => ['list-projects']]);
 
