@@ -432,7 +432,7 @@
             "breadcrumb": "Impostazioni AI",
             "head": "Impostazioni AI",
             "title": "Strumenti dell'assistente",
-            "description": "Gli strumenti in sola lettura che l'assistente può usare per rispondere. Non modifica mai nulla.",
+            "description": "Gli strumenti in sola lettura che l'assistente e il server MCP possono usare per rispondere. Non modificano mai nulla.",
             "statusLabel": "Assistente",
             "statusOn": "Attivo",
             "statusOff": "Spento (EXCUBIA_AI_ENABLED=false)",

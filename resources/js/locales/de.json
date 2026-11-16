@@ -432,7 +432,7 @@
             "breadcrumb": "KI-Einstellungen",
             "head": "KI-Einstellungen",
             "title": "Werkzeuge des Assistenten",
-            "description": "Die schreibgeschützten Werkzeuge, die der Assistent für Antworten nutzen darf. Er ändert nie etwas.",
+            "description": "Die schreibgeschützten Werkzeuge, die der Assistent und der MCP-Server für Antworten nutzen dürfen. Sie ändern nie etwas.",
             "statusLabel": "Assistent",
             "statusOn": "An",
             "statusOff": "Aus (EXCUBIA_AI_ENABLED=false)",

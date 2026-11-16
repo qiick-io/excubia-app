@@ -24,7 +24,7 @@ The checks run inside each project through [`qiick/excubia-core`](https://github
 - **Scheduled tasks:** late, missed and failed runs, "scheduler down".
 - **Alerts** by mail and integrations, with mutes and maintenance windows, and a weekly digest.
 - **Access:** users, groups, roles and permissions, two-factor and passkeys, optional OIDC single sign-on.
-- **Self-hosted, no telemetry.** Excubia also watches its own install. Optional read-only AI assistant with a local model.
+- **Self-hosted, no telemetry.** Excubia also watches its own install. Optional read-only AI assistant with a local model, and an optional read-only MCP server for clients such as Claude Code and Cursor ([docs/mcp.md](./docs/mcp.md)).
 
 ## Quick start
 
@@ -97,9 +97,11 @@ Run `php artisan excubia:push` once to send the first report. A project that has
 - No telemetry and no third-party trackers.
 - The AI assistant is off by default. When you turn it on, it sends to the AI provider you configure:
     - the questions users ask;
-    - the report data its tools read: project names, findings, package names and versions, upgrade steps.
+    - the data its tools read: project names, findings, package names and versions, upgrade steps, exception groups, runtime tables and scheduled tasks.
 
     It never sends push tokens, user data or file paths. With the default local model (Ollama), nothing leaves your network.
+
+- The MCP server is off by default. When you turn it on, it answers only clients that send a personal API key a user created, with the same tools and the same limits as the assistant, as that user. Excubia never calls the client.
 
 ## Stack
 
