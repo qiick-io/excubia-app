@@ -148,7 +148,7 @@ it('resolves and reopens exception groups of one project with the bulk action, a
     $activity = Activity::query()->where('log_name', 'ai')->where('event', 'ai_tool')->oldest('id')->first();
 
     expect($activity->causer_id)->toBe($admin->id)
-        ->and($activity->properties->only(['surface', 'tool', 'kind', 'status'])->all())->toBe(['surface' => 'assistant', 'tool' => 'update-exception-status', 'kind' => 'write', 'status' => 'ok'])
+        ->and($activity->properties->only(['surface', 'tool', 'kind', 'status'])->all())->toBeSameJson(['surface' => 'assistant', 'tool' => 'update-exception-status', 'kind' => 'write', 'status' => 'ok'])
         ->and($activity->properties['arguments']['ids'])->toBe([$first->id, $second->id])
         ->and(Activity::query()->where('event', 'ai_tool')->where('properties->status', 'error')->count())->toBe(3);
 });
@@ -303,7 +303,7 @@ it('serves the write tools over MCP only to an mcp:write key while EXCUBIA_MCP_W
     $activity = Activity::query()->where('log_name', 'ai')->where('event', 'ai_tool')->sole();
 
     expect($group->fresh()->status)->toBe(ExceptionStatusEnum::Resolved)
-        ->and($activity->properties->only(['surface', 'tool', 'status'])->all())->toBe(['surface' => 'mcp', 'tool' => 'update-exception-status', 'status' => 'ok']);
+        ->and($activity->properties->only(['surface', 'tool', 'status'])->all())->toBeSameJson(['surface' => 'mcp', 'tool' => 'update-exception-status', 'status' => 'ok']);
 
     config(['excubia.mcp_write_enabled' => false]);
     expect(writerMcpToolNames($writeKey))->toBe(ExcubiaAssistantAgent::toolNames(AiToolKindEnum::Read));
@@ -367,7 +367,7 @@ it('pauses an assistant turn on a write call until the user approves it', functi
     $approval = Activity::query()->where('event', 'ai_tool_approval')->sole();
 
     expect($group->fresh()->status)->toBe(ExceptionStatusEnum::Resolved)
-        ->and($approval->properties->only(['surface', 'tool', 'decision', 'isAlways'])->all())->toBe(['surface' => 'assistant', 'tool' => 'update-exception-status', 'decision' => 'approved', 'isAlways' => false])
+        ->and($approval->properties->only(['surface', 'tool', 'decision', 'isAlways'])->all())->toBeSameJson(['surface' => 'assistant', 'tool' => 'update-exception-status', 'decision' => 'approved', 'isAlways' => false])
         ->and(Activity::query()->where('event', 'ai_tool')->sole()->properties['surface'])->toBe('assistant');
 
     $this->actingAs($admin)->get(route('ai.show', $conversationId))
