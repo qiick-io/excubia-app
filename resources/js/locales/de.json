@@ -236,7 +236,8 @@
             "sectionAi": "KI",
             "aiTools": "Werkzeuge",
             "integrations": "Integrationen",
-            "aiPrices": "Preise"
+            "aiPrices": "Preise",
+            "apiKeys": "API-Schlüssel"
         },
         "profile": {
             "head": "Profileinstellungen",
@@ -616,6 +617,46 @@
                 "enableTitle": "Zwei-Faktor-Authentifizierung aktivieren",
                 "enableDescription": "Um die Zwei-Faktor-Authentifizierung zu aktivieren, scannen Sie den QR-Code oder geben Sie den Einrichtungsschlüssel in Ihrer Authenticator-App ein"
             }
+        },
+        "apiKeys": {
+            "description": "Persönliche Schlüssel für KI-Clients wie Claude Code oder Cursor. Ein Schlüssel handelt als Sie: Er sieht nur, was Sie in Excubia sehen, und funktioniert nicht mehr, sobald Sie ihn widerrufen oder Ihr Konto deaktiviert wird.",
+            "create": "API-Schlüssel erstellen",
+            "createTitle": "API-Schlüssel erstellen",
+            "createDescription": "Benennen Sie den Schlüssel nach dem Client, der ihn nutzt, wählen Sie, was er darf, und optional, wann er abläuft.",
+            "secretBanner": "Kopieren Sie diesen Schlüssel jetzt. Er wird nicht erneut angezeigt.",
+            "secretValue": "Neuer API-Schlüssel",
+            "copy": "Schlüssel kopieren",
+            "copied": "Kopiert",
+            "expiresAt": "Läuft ab am",
+            "expiresAtHelp": "Leer lassen für einen Schlüssel ohne Ablauf.",
+            "never": "Nie",
+            "revoke": "Schlüssel widerrufen",
+            "scopeHelp": {
+                "mcpRead": "Liest Projekte, Berichte, Befunde, Exceptions, Runtime und Zeitpläne über den MCP-Server."
+            },
+            "columns": {
+                "name": "Name",
+                "prefix": "Präfix",
+                "scopes": "Scopes",
+                "lastUsed": "Zuletzt verwendet",
+                "expires": "Ablauf",
+                "status": "Status",
+                "actions": "Aktionen"
+            },
+            "status": {
+                "active": "Aktiv",
+                "expired": "Abgelaufen",
+                "revoked": "Widerrufen"
+            },
+            "confirm": {
+                "revokeTitle": "API-Schlüssel „{{name}}“ widerrufen?",
+                "revokeDescription": "Dieser Schlüssel funktioniert sofort nicht mehr.",
+                "revokeConfirm": "Widerrufen"
+            },
+            "empty": {
+                "title": "Noch keine API-Schlüssel",
+                "description": "Erstellen Sie einen Schlüssel, um einen KI-Client mit Excubia zu verbinden."
+            }
         }
     },
     "activityLog": {
@@ -663,6 +704,8 @@
             "members_synced": "Mitglieder synchronisiert",
             "token_rotated": "Push-Token erneuert",
             "token_revoked": "Push-Token widerrufen",
+            "api_key_revoked": "API-Schlüssel widerrufen",
+            "api_key_first_used": "API-Schlüssel erstmals verwendet",
             "collection_permissions_synced": "Collection-Berechtigungen synchronisiert",
             "file_permissions_synced": "Datei-Berechtigungen synchronisiert"
         },

@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/sidebar';
 import { PermissionEnum } from '@/enums/permission-enum';
 import aiPricesRoutes from '@/routes/ai-prices';
+import apiKeysRoutes from '@/routes/api-keys';
 import aiSettings from '@/routes/ai-settings';
 import integrationsRoutes from '@/routes/project/integrations';
 import { useCan } from '@/hooks/use-can';
@@ -61,6 +62,12 @@ export default function SettingsLayout({
         {
             title: t('settings.layout.security'),
             href: editSecurity(),
+            icon: null,
+        },
+        // Personal API keys (#315): every user manages their own.
+        {
+            title: t('settings.layout.apiKeys'),
+            href: apiKeysRoutes.index.url(),
             icon: null,
         },
     ];

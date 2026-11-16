@@ -46,5 +46,6 @@
     ":count exception assigned.|:count exceptions assigned.": ":count eccezione assegnata.|:count eccezioni assegnate.",
     "Some selected items are not in this project.": "Alcuni elementi selezionati non sono in questo progetto.",
     ":count finding assigned.|:count findings assigned.": ":count finding assegnato.|:count finding assegnati.",
-    "The logo is not a valid SVG image.": "Il logo non è un'immagine SVG valida."
+    "The logo is not a valid SVG image.": "Il logo non è un'immagine SVG valida.",
+    "API key revoked.": "Chiave API revocata."
 }

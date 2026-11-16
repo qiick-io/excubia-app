@@ -11,6 +11,8 @@ upgrade from the version before (see [docs/self-hosting.md](docs/self-hosting.md
 
 ### Added
 
+- **Personal API keys** (#315). Settings → API keys lets every user create keys for themselves, with a name, scopes (`mcp:read`, for the MCP server) and an optional expiry date, and revoke them. A key is shown once and stored as a SHA-256 hash. It acts as its owner, so it never sees or does more than they do in the UI, and it stops working at once when it is revoked or expires, or when its owner is deactivated or deleted. Creation, revocation and the first use are in the activity log (`auth`). Failed attempts are limited to 20 per minute per IP and requests to `EXCUBIA_API_KEY_REQUESTS_PER_MINUTE` (60) per key. A new migration creates the `api_keys` table.
+
 - **Configurable disk for uploaded files** (#312). `EXCUBIA_FILES_DISK` (`config/excubia.php` → `files_disk`) puts project logos and the branding files (logo, dark logo, favicon) on any disk of `config/filesystems.php`, for example `s3` on Laravel Cloud, where the filesystem is rebuilt on every deploy. Unset, logos stay on `public` and branding on `local`. The files are still streamed through `/projects/{project}/logo` and `/branding/{asset}` with their type from the stored extension, so a private bucket works. The `s3` driver needs `league/flysystem-aws-s3-v3`, which Excubia does not ship.
 
 - **Wide tables show that they scroll** (#206, app-ui v0.6.0). On a phone, a table wider than its card fades out on each side that hides columns, and the scroller becomes a keyboard-focusable region named "Scrollable table". Tables that fit, as on desktop, are unchanged.
@@ -112,6 +114,7 @@ upgrade from the version before (see [docs/self-hosting.md](docs/self-hosting.md
 
 ### Upgrade notes
 
+- **Personal API keys** (#315): `php artisan migrate --force` (run by `excubia:upgrade`) creates the `api_keys` table; nothing else to do. Optionally set `EXCUBIA_API_KEY_REQUESTS_PER_MINUTE`.
 - **Uploaded files disk** (#312): nothing to do unless you move to a bucket. To move, copy `storage/app/public/project-logos/` to `project-logos/` and `storage/app/private/branding/` to `branding/` on the bucket, then set `EXCUBIA_FILES_DISK` (for example `s3`, with `composer require league/flysystem-aws-s3-v3` and the `AWS_*` keys). The stored paths do not change.
 - **First release:** there is nothing to upgrade from. Install with `composer create-project qiick/excubia-app` and `php artisan excubia:install`, or the Docker image (`ghcr.io/qiick-io/excubia-app`); see [docs/self-hosting.md](docs/self-hosting.md).
 - **Migrations are frozen and forward-only from this release on** (#193): released migrations are never edited again, every schema change is a new migration, and each release upgrades the previous database with `php artisan migrate --force` (run by `excubia:upgrade` and the Docker entrypoint). Back up the database before every upgrade. Development databases created before this release need one last fresh migration.
