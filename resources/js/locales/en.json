@@ -18,6 +18,7 @@
         "name": "Name",
         "firstName": "First name",
         "lastName": "Last name",
+        "pageOf": "Page {{page}} of {{total}}",
         "pageRange": "{{from}}–{{to}} of {{total}}",
         "perPageOption": "{{count}} / page",
         "rowsPerPage": "Rows per page",
