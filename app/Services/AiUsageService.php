@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Data\TimeRangeData;
 use App\Enums\RuntimeTypeEnum;
+use App\Models\AiUsageDay;
 use App\Models\Project;
 use App\Models\RuntimeAggregate;
 use Carbon\CarbonImmutable;
@@ -38,6 +39,16 @@ class AiUsageService
         private readonly AiPriceService $prices,
         private readonly TimeSeriesService $timeSeries,
     ) {}
+
+    /**
+     * Whether any project has pushed AI usage that is still kept: until one has, the price table
+     * of Settings → AI has nothing to price (#331).
+     */
+    public function hasAnyUsage(): bool
+    {
+        return AiUsageDay::query()->exists()
+            || RuntimeAggregate::query()->whereIn('type', [RuntimeTypeEnum::Ai->value, RuntimeTypeEnum::AiTool->value])->exists();
+    }
 
     /**
      * @return array<string, mixed>|null null when the project never pushed AI usage
