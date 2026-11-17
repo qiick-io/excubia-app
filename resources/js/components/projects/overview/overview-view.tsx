@@ -48,7 +48,8 @@ const ATTENTION_EXCEPTIONS = 3;
  * Problems first: a warning when the report is stale (#292), since every number below is as old
  * as the report; a row of stat cards (shadcn `dashboard-01`, as the dashboard) for findings,
  * checks, runtimes and, when the project pushes them, exceptions and requests; then what needs
- * attention, worst first, with its fix; then the runtimes and the checks that did not pass.
+ * attention, worst first, with its fix; then the infrastructure, dependencies and runtimes
+ * next to the checks that did not pass; then the application's routes, jobs and exceptions.
  */
 export function OverviewView({
     project,
@@ -359,33 +360,34 @@ export function OverviewView({
                 total={findingGroups.length + openExceptions.length}
             />
 
+            {/*
+             * The short cards stack in one column next to the checks, whose list is the longest:
+             * on wide screens the checks card takes the column's height and scrolls its list,
+             * so no card leaves a hole beside a taller one (#329). Without a report's health
+             * data there are no checks, and the runtimes card takes the whole row.
+             */}
             {health !== null ? (
                 <section className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-                    <InfrastructureCard
+                    <div className="flex flex-col gap-4 xl:col-span-5">
+                        <InfrastructureCard health={health} />
+                        <DependenciesCard slug={project.slug} health={health} />
+                        <RuntimesCard latest={latest} />
+                    </div>
+                    <ChecksCard
                         health={health}
-                        className="xl:col-span-7"
-                    />
-                    <DependenciesCard
-                        slug={project.slug}
-                        health={health}
-                        className="xl:col-span-5"
+                        className="xl:col-span-7 xl:h-0 xl:min-h-full"
+                        contentClassName="xl:min-h-0 xl:flex-1 xl:overflow-y-auto"
                     />
                 </section>
-            ) : null}
+            ) : (
+                <RuntimesCard latest={latest} />
+            )}
 
             <ApplicationSection
                 slug={project.slug}
                 runtime={runtime}
                 exceptions={exceptionsOverview}
             />
-
-            {/* The checks list is long: the runtimes card keeps its own height (#194). */}
-            <section className="grid grid-cols-1 items-start gap-4 xl:grid-cols-12">
-                <RuntimesCard latest={latest} className="xl:col-span-5" />
-                {health !== null ? (
-                    <ChecksCard health={health} className="xl:col-span-7" />
-                ) : null}
-            </section>
         </div>
     );
 }

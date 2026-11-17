@@ -22,6 +22,8 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { useScrollRegion } from '@/hooks/use-scroll-region';
+import { cn } from '@/lib/utils';
 import type { ReportHealth } from '@/types';
 
 /** Statuses that need a look: the overview lists only these checks by default (#292). */
@@ -35,12 +37,17 @@ const PROBLEM_STATUSES = new Set(['fail', 'warn']);
 export function ChecksCard({
     health,
     className,
+    contentClassName,
 }: {
     health: ReportHealth;
     className?: string;
+    /** Classes of the card's content, e.g. to scroll the list inside a card of fixed height. */
+    contentClassName?: string;
 }) {
     const { t } = useTranslation();
     const [isShowingAll, setIsShowingAll] = useState(false);
+    // When the content scrolls inside a card of fixed height, the keyboard must reach it too.
+    const scrollRegionRef = useScrollRegion<HTMLDivElement>(t('report.checks'));
 
     const failingGroups = health.groups
         .map((group) => ({
@@ -79,7 +86,13 @@ export function ChecksCard({
                     </Button>
                 </CardAction>
             </CardHeader>
-            <CardContent>
+            <CardContent
+                ref={scrollRegionRef}
+                className={cn(
+                    'outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset',
+                    contentClassName,
+                )}
+            >
                 {groups.length === 0 ? (
                     <p className="text-sm text-muted-foreground">
                         {t('report.overview.allChecksPassCount', {
