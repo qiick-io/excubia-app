@@ -453,15 +453,20 @@ function ReadinessView({ readiness }: { readiness: Readiness }) {
         },
     ];
 
+    const statCardSpan = readinessStatSpan(
+        readiness.targets.length + (readiness.unknown > 0 ? 1 : 0),
+    );
+
     return (
         <div className="flex flex-col gap-4">
-            {/* Key numbers as on the dashboard: a row of equal stat cards, four per row (#330). */}
+            {/* Key numbers as on the dashboard: a row of equal stat cards, four per row (#330),
+                fewer, wider ones filling the row when there are only two or three (#335). */}
             {readiness.targets.length > 0 || readiness.unknown > 0 ? (
                 <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-12">
                     {readiness.targets.map((target) => (
                         <StatCard
                             key={target.targetMajor}
-                            className="xl:col-span-3"
+                            className={statCardSpan}
                             label={t('fleet.readiness.target', {
                                 major: target.targetMajor,
                             })}
@@ -475,7 +480,7 @@ function ReadinessView({ readiness }: { readiness: Readiness }) {
                     ))}
                     {readiness.unknown > 0 ? (
                         <StatCard
-                            className="xl:col-span-3"
+                            className={statCardSpan}
                             label={t('fleet.readiness.status.unknown')}
                             value={readiness.unknown.toLocaleString()}
                             context={t('fleet.readiness.unknownDescription')}
@@ -499,6 +504,19 @@ function ReadinessView({ readiness }: { readiness: Readiness }) {
             </Card>
         </div>
     );
+}
+
+/**
+ * The wide-screen span of each readiness stat card: four to a row, or the row shared out when
+ * there are fewer, so two cards do not leave half the row empty (#335). Static classes, so
+ * Tailwind sees them.
+ */
+function readinessStatSpan(cardCount: number): string {
+    if (cardCount <= 2) {
+        return 'xl:col-span-6';
+    }
+
+    return cardCount === 3 ? 'xl:col-span-4' : 'xl:col-span-3';
 }
 
 /**

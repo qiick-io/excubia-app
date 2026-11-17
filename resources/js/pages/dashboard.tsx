@@ -32,7 +32,6 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { PermissionEnum } from '@/enums/permission-enum';
 import { useCan } from '@/hooks/use-can';
 import AppLayout from '@/layouts/app-layout';
-import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
 import projectsRoutes from '@/routes/projects';
 import type { LiveHealthSummary, ProjectRow } from '@/types';
@@ -159,7 +158,10 @@ export default function Dashboard({
     // Without exceptions, Requests would sit alone on the telemetry row: it joins the key
     // numbers instead, one column per card on wide screens (#328).
     const keyRowRequests = overview.exceptions ? null : overview.runtime;
-    const keySpan = keyRowRequests ? undefined : 'xl:col-span-3';
+    // Four key numbers sit four to a row (app-ui dashboard pattern). Five in one row are too
+    // narrow at 1440 px and wrap their headlines (#335): three then two, so no row is half empty.
+    const keySpan = keyRowRequests ? 'xl:col-span-4' : 'xl:col-span-3';
+    const keyWideSpan = keyRowRequests ? 'xl:col-span-6' : 'xl:col-span-3';
     const periodLabel = t('dashboard.period.previous', {
         count: scope.period,
     });
@@ -294,14 +296,7 @@ export default function Dashboard({
                 }
             >
                 <div className="flex flex-col gap-4">
-                    <section
-                        className={cn(
-                            'grid grid-cols-1 gap-4 sm:grid-cols-2',
-                            keyRowRequests
-                                ? 'xl:grid-cols-5'
-                                : 'xl:grid-cols-12',
-                        )}
-                    >
+                    <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-12">
                         <StatCard
                             className={keySpan}
                             label={t('dashboard.kpi.findings')}
@@ -350,7 +345,7 @@ export default function Dashboard({
                             }
                         />
                         <StatCard
-                            className={keySpan}
+                            className={keyWideSpan}
                             label={t('dashboard.kpi.stale')}
                             value={kpis.stale.value.toLocaleString()}
                             headline={t('dashboard.kpi.staleHeadline', {
@@ -362,7 +357,7 @@ export default function Dashboard({
                             <RequestsStatCard
                                 runtime={keyRowRequests}
                                 periodLabel={periodLabel}
-                                className="sm:col-span-2 xl:col-span-1"
+                                className="sm:col-span-2 xl:col-span-6"
                             />
                         ) : null}
                     </section>
