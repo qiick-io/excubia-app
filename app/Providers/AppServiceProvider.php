@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Enums\PermissionEnum;
+use App\Models\ApiKey;
 use App\Models\Project;
 use App\Models\User;
 use App\Policies\ActivityPolicy;
@@ -24,6 +25,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Http\Request;
 use Illuminate\Mail\Markdown;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
@@ -59,10 +61,24 @@ class AppServiceProvider extends ServiceProvider
         $this->configureAuthorization();
         $this->configureActivityLogging();
         $this->registerAuthActivityListeners();
+        $this->configureApiKeyGuard();
         $this->configureRateLimiting();
         $this->configureTrustedProxies();
         // Excubia's own runtime and exceptions for the system project (#84).
         app(SelfMonitoringService::class)->register($this->app);
+    }
+
+    /**
+     * Registers the `api_key` request guard (#351): resolves the owner from the ApiKey the
+     * AuthenticateApiKeyMiddleware attached to the request. Never touches the web session.
+     */
+    protected function configureApiKeyGuard(): void
+    {
+        Auth::viaRequest('api_key', function (Request $request): ?User {
+            $apiKey = $request->attributes->get(ApiKey::class);
+
+            return $apiKey instanceof ApiKey ? $apiKey->owner : null;
+        });
     }
 
     /**

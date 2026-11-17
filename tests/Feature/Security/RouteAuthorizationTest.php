@@ -96,7 +96,7 @@ beforeEach(function () {
     $this->projectGroup = ProjectGroup::query()->create(['name' => 'Vault clients']);
     $this->projectGroup->projects()->attach($this->hidden->id);
     $this->customRole = Role::query()->create(['name' => 'auditor', 'guard_name' => 'web']);
-    $this->adminApiKey = ApiKey::factory()->for($this->admin)->create();
+    $this->adminApiKey = ApiKey::factory()->for($this->admin, 'owner')->create(['created_by' => $this->admin->id]);
 });
 
 /**

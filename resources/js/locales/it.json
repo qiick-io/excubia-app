@@ -719,7 +719,8 @@
             "members_synced": "Membri sincronizzati",
             "token_rotated": "Token di push rinnovato",
             "token_revoked": "Token di push revocato",
-            "api_key_revoked": "Chiave API revocata",
+            "rotated": "Chiave API ruotata",
+            "revoked": "Chiave API revocata",
             "api_key_first_used": "Chiave API usata la prima volta",
             "collection_permissions_synced": "Permessi collection sincronizzati",
             "file_permissions_synced": "Permessi file sincronizzati"

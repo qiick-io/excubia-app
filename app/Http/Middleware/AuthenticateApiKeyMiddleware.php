@@ -13,19 +13,15 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
 use Symfony\Component\HttpFoundation\Response;
+use ValueError;
 
 /**
- * Authenticates a request by a personal API key (#315), sent as `Authorization: Bearer <key>`,
- * as externa-core's AuthenticateMcpRequestMiddleware. Use it with the scope the route needs:
- * `AuthenticateApiKeyMiddleware::class.':mcp:read'`.
+ * Authenticates a request by a personal API key (#315, #351) as `Authorization: Bearer <token>`,
+ * bound to the dedicated `api_key` guard (never the `web` session guard). Use with the scope the
+ * route needs: `AuthenticateApiKeyMiddleware::class.':mcp:read'`.
  *
- * The key acts as its owner: the owner becomes the authenticated user for this request only (no
- * session), so every policy and `Project::visibleTo()` apply exactly as in the UI. A revoked or
- * expired key, or a deactivated owner, is rejected on the very next request; deleting the owner
- * deletes the key.
- *
- * Rate limited twice: failed attempts per IP (a guessed key never reaches the per-key bucket),
- * then `excubia.api_key_requests_per_minute` per key.
+ * Lookup is by the public `key_prefix`, then `hash_equals` on SHA-256 of the full presented token
+ * (and the previous hash inside the rotation grace window). Failures are RFC 6750-shaped.
  */
 class AuthenticateApiKeyMiddleware
 {
@@ -46,42 +42,124 @@ class AuthenticateApiKeyMiddleware
             return $this->tooManyRequests(RateLimiter::availableIn($failuresKey));
         }
 
-        $plainKey = $request->bearerToken();
-        $apiKey = $plainKey === null || $plainKey === ''
+        $plainToken = $request->bearerToken();
+        $publicPrefix = is_string($plainToken) && $plainToken !== ''
+            ? ApiKey::publicPrefixFromToken($plainToken)
+            : null;
+
+        $apiKey = $publicPrefix === null
             ? null
-            : ApiKey::query()->with('user')->where('key_hash', ApiKey::hashKey($plainKey))->first();
+            : ApiKey::query()->with('owner')->where('key_prefix', $publicPrefix)->first();
 
-        if ($apiKey === null || ! $apiKey->isActive() || ! $apiKey->user->is_active) {
+        if (
+            $plainToken === null
+            || $plainToken === ''
+            || $publicPrefix === null
+            || $apiKey === null
+            || ! $apiKey->matchesPresentedToken($plainToken)
+        ) {
             RateLimiter::hit($failuresKey);
 
-            return response()->json(['message' => 'Missing, unknown, revoked or expired API key.'], Response::HTTP_UNAUTHORIZED);
+            return $this->invalidToken('Unknown API key.');
         }
 
-        if (! $apiKey->hasScope(ApiKeyScopeEnum::from($scope))) {
+        if ($apiKey->isRevoked()) {
             RateLimiter::hit($failuresKey);
 
-            return response()->json(['message' => "This API key lacks the {$scope} scope."], Response::HTTP_FORBIDDEN);
+            return $this->invalidToken('Revoked API key.');
         }
 
+        if ($apiKey->isExpired()) {
+            RateLimiter::hit($failuresKey);
+
+            return $this->invalidToken('Expired API key.');
+        }
+
+        if (! $apiKey->owner->is_active) {
+            RateLimiter::hit($failuresKey);
+
+            return $this->invalidToken('Unknown API key.');
+        }
+
+        try {
+            $requiredScope = ApiKeyScopeEnum::from($scope);
+        } catch (ValueError) {
+            RateLimiter::hit($failuresKey);
+
+            return $this->insufficientScope($scope);
+        }
+
+        if (! $apiKey->hasScope($requiredScope)) {
+            RateLimiter::hit($failuresKey);
+
+            return $this->insufficientScope($scope);
+        }
+
+        if (! $apiKey->allowsIp((string) $request->ip())) {
+            RateLimiter::hit($failuresKey);
+
+            return response()->json([
+                'message' => 'API key is not allowed from this IP address.',
+                'error' => 'insufficient_scope',
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        $limit = $apiKey->rate_limit_per_minute
+            ?? (int) config('excubia.api_key_requests_per_minute');
         $requestsKey = 'api-key:'.$apiKey->id;
 
-        if (RateLimiter::tooManyAttempts($requestsKey, (int) config('excubia.api_key_requests_per_minute'))) {
+        if ($limit > 0 && RateLimiter::tooManyAttempts($requestsKey, $limit)) {
             return $this->tooManyRequests(RateLimiter::availableIn($requestsKey));
         }
 
-        RateLimiter::hit($requestsKey);
+        if ($limit > 0) {
+            RateLimiter::hit($requestsKey);
+        }
 
-        // The default guard, without touching a session: the owner is signed in for this request only.
-        Auth::setUser($apiKey->user);
-        // Further scopes of the key (`mcp:write` for the MCP write tools, #320) are read from here.
+        // Dedicated `api_key` guard only: the web session guard stays untouched so key auth cannot
+        // mint a session. shouldUse makes Auth::user() (and laravel/mcp) resolve the owner; User::
+        // getDefaultGuardName() keeps Spatie on `web`. Restore the previous default afterwards.
         $request->attributes->set(ApiKey::class, $apiKey);
-        $this->recordApiKeyUse->execute($apiKey);
+        Auth::guard('api_key')->setUser($apiKey->owner);
+        $previousGuard = Auth::getDefaultDriver();
+        Auth::shouldUse('api_key');
+        $this->recordApiKeyUse->execute($apiKey, $request->ip());
 
-        return $next($request);
+        try {
+            return $next($request);
+        } finally {
+            Auth::shouldUse($previousGuard);
+        }
+    }
+
+    private function invalidToken(string $message): JsonResponse
+    {
+        return response()->json(
+            ['message' => $message, 'error' => 'invalid_token'],
+            Response::HTTP_UNAUTHORIZED,
+            ['WWW-Authenticate' => 'Bearer error="invalid_token"'],
+        );
+    }
+
+    private function insufficientScope(string $scope): JsonResponse
+    {
+        return response()->json(
+            [
+                'message' => "This API key lacks the {$scope} scope.",
+                'error' => 'insufficient_scope',
+                'scope' => $scope,
+            ],
+            Response::HTTP_FORBIDDEN,
+            ['WWW-Authenticate' => 'Bearer error="insufficient_scope"'],
+        );
     }
 
     private function tooManyRequests(int $retryAfterSeconds): JsonResponse
     {
-        return response()->json(['message' => 'Too many requests.'], Response::HTTP_TOO_MANY_REQUESTS, ['Retry-After' => (string) $retryAfterSeconds]);
+        return response()->json(
+            ['message' => 'Too many requests.', 'error' => 'rate_limit_exceeded'],
+            Response::HTTP_TOO_MANY_REQUESTS,
+            ['Retry-After' => (string) $retryAfterSeconds],
+        );
     }
 }

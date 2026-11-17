@@ -7,9 +7,10 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Personal API keys (#315), as externa-core's `api_keys` but owned by one user: a key acts as its
- * owner and nothing more. Only the SHA-256 hash of the key is stored, with a short prefix to tell
- * keys apart in the list. Deleting the user deletes their keys. A new table: nothing to backfill.
+ * Personal API keys (#315, #351): baseline storage from app-ui docs/api-keys.md. A key acts as
+ * its owner and never more. Only the SHA-256 of the full token is stored; `key_prefix` holds the
+ * public part (`exc_{env}_{id}`) for indexed lookup and display, never a slice of the secret.
+ * Edited in place: this product has no releases yet (Luca, 2026-11-17).
  */
 return new class extends Migration
 {
@@ -17,18 +18,28 @@ return new class extends Migration
     {
         Schema::create('api_keys', function (Blueprint $table): void {
             $table->id();
-            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
+            $table->uuid('uuid')->unique();
             $table->string('name');
-            $table->string('key_prefix', 16);
+            $table->string('key_prefix', 32);
             $table->string('key_hash', 64)->unique();
+            $table->foreignId('owner_id')->constrained('users')->cascadeOnDelete();
+            $table->foreignId('created_by')->constrained('users')->cascadeOnDelete();
             $table->json('scopes');
+            $table->json('ip_allowlist')->nullable();
+            $table->unsignedInteger('rate_limit_per_minute')->nullable();
             // A datetime, not a timestamp: MySQL timestamps end in 2038, and a user may pick a later expiry.
             $table->dateTime('expires_at')->nullable();
             $table->timestamp('last_used_at')->nullable();
+            $table->string('last_used_ip', 45)->nullable();
             $table->timestamp('revoked_at')->nullable();
+            $table->string('previous_key_hash', 64)->nullable();
+            $table->timestamp('previous_key_valid_until')->nullable();
             $table->timestamps();
 
-            $table->index('user_id');
+            $table->index('key_prefix');
+            $table->index('owner_id');
+            $table->index('created_by');
+            $table->index('revoked_at');
         });
     }
 

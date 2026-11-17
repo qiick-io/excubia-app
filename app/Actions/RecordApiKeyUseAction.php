@@ -8,16 +8,27 @@ use App\Enums\ActivityEventEnum;
 use App\Models\ApiKey;
 
 /**
- * Stamps the last use of a personal API key (#315). The first use is logged in the `auth` log,
- * caused by the owner; later uses only move `last_used_at`, so the log does not grow per request.
+ * Stamps last use of a personal API key (#315, #351) at most once a minute, with the client IP.
+ * The first use is logged in the `auth` log; later uses only move the stamp so the log does not
+ * grow per request.
  */
 final class RecordApiKeyUseAction
 {
-    public function execute(ApiKey $apiKey): void
+    public function execute(ApiKey $apiKey, ?string $ipAddress = null): void
     {
+        if (
+            $apiKey->last_used_at !== null
+            && $apiKey->last_used_at->greaterThan(now()->subMinute())
+        ) {
+            return;
+        }
+
         $isFirstUse = $apiKey->last_used_at === null;
 
-        $apiKey->forceFill(['last_used_at' => now()])->saveQuietly();
+        $apiKey->forceFill([
+            'last_used_at' => now(),
+            'last_used_ip' => $ipAddress,
+        ])->saveQuietly();
 
         if (! $isFirstUse) {
             return;
@@ -25,7 +36,7 @@ final class RecordApiKeyUseAction
 
         activity()
             ->useLog('auth')
-            ->causedBy($apiKey->user)
+            ->causedBy($apiKey->owner)
             ->performedOn($apiKey)
             ->event(ActivityEventEnum::ApiKeyFirstUsed->value)
             ->withProperties(['name' => $apiKey->name, 'key_prefix' => $apiKey->key_prefix])

@@ -23,13 +23,15 @@ class ApiKeyFactory extends Factory
      */
     public function definition(): array
     {
-        $plainKey = ApiKey::KEY_PREFIX.Str::random(40);
+        $token = ApiKey::generateToken();
 
         return [
-            'user_id' => User::factory(),
+            'uuid' => (string) Str::uuid(),
             'name' => fake()->words(2, true),
-            'key_prefix' => substr($plainKey, 0, 12),
-            'key_hash' => ApiKey::hashKey($plainKey),
+            'key_prefix' => $token['prefix'],
+            'key_hash' => $token['hash'],
+            'owner_id' => User::factory(),
+            'created_by' => fn (array $attributes): mixed => $attributes['owner_id'],
             'scopes' => [ApiKeyScopeEnum::McpRead->value],
         ];
     }
