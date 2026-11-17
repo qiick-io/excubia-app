@@ -6,6 +6,7 @@ import { buttonVariants } from '@/components/ui/button';
 import {
     Pagination,
     PaginationContent,
+    PaginationEllipsis,
     PaginationItem,
 } from '@/components/ui/pagination';
 import {
@@ -17,6 +18,7 @@ import {
 } from '@/components/ui/select';
 import { useScrollRegion } from '@/hooks/use-scroll-region';
 import { LIST_PER_PAGE_OPTIONS, listUrlWithPerPage } from '@/lib/list-per-page';
+import { paginationPageUrl, paginationWindow } from '@/lib/pagination-window';
 import { cn } from '@/lib/utils';
 
 export type PageLayoutProps = {
@@ -178,60 +180,150 @@ function paginationAriaLabel(label: string): string | undefined {
     return plain.length > 0 ? plain : undefined;
 }
 
+/** One control of the pagination row: Previous / Next come from Laravel, pages are built here. */
+function PaginationButton({
+    url,
+    isActive = false,
+    isPageNumber,
+    ariaLabel,
+    children,
+    html,
+}: {
+    url: string | null;
+    isActive?: boolean;
+    isPageNumber: boolean;
+    ariaLabel?: string;
+    children?: ReactNode;
+    html?: string;
+}) {
+    return (
+        <button
+            type="button"
+            className={cn(
+                buttonVariants({
+                    variant: isActive ? 'outline' : 'ghost',
+                    size: 'default',
+                }),
+                // Page numbers are square at one or two digits and widen with longer numbers (#150).
+                isPageNumber
+                    ? 'min-w-control px-2 tabular-nums'
+                    : 'min-w-0 px-2.5',
+                !url && !isActive && 'pointer-events-none opacity-50',
+            )}
+            disabled={!url && !isActive}
+            aria-label={ariaLabel}
+            aria-current={isActive ? 'page' : undefined}
+            onClick={() => url && router.visit(url)}
+            {...(html === undefined
+                ? { children }
+                : { dangerouslySetInnerHTML: { __html: html } })}
+        />
+    );
+}
+
 /**
- * Laravel-style pagination link row via shadcn Pagination + Inertia visits.
- * Query params are unchanged; controls remain `<button>` for browser tests.
+ * Pagination row for server-paginated lists: Previous, a compact window of page numbers and
+ * Next, as Inertia visits (`<button>`s, so browser tests can press them). Previous / Next keep
+ * Laravel's labels and URLs; the page numbers are built from `currentPage` / `lastPage` with
+ * {@link paginationWindow} instead of Laravel's own window, which holds about ten consecutive
+ * pages near the ends and overflows the footer once page numbers reach five digits (#150).
+ * Below `sm` the numbers give way to "Page 3 of 120". Numbers follow the UI language's format.
  *
- * @param {{ links: TablePaginationLink[] }} props - Component props.
- * @param {TablePaginationLink[]} props.links - Pagination links from the server.
+ * @param props.links - Pagination links from the server (`links` of a Laravel paginator).
+ * @param props.currentPage - The page on screen; read from the active link when omitted.
+ * @param props.lastPage - The number of pages; read from the highest page link when omitted.
  * @returns {JSX.Element | null}
  */
 export function TablePagination({
     links,
+    currentPage,
+    lastPage,
     className,
 }: {
     links: TablePaginationLink[];
+    currentPage?: number;
+    lastPage?: number;
     className?: string;
 }) {
+    const { t, i18n } = useTranslation();
+
     if (links.length === 0) {
         return null;
     }
 
+    const numberFormat = new Intl.NumberFormat(i18n.language);
+    const formatNumber = (value: number): string => numberFormat.format(value);
+    const pageLinks = links.flatMap((link) => {
+        const plain = paginationPlainLabel(link.label);
+
+        return /^\d+$/.test(plain) ? [{ ...link, page: Number(plain) }] : [];
+    });
+    const current =
+        currentPage ?? pageLinks.find((link) => link.active)?.page ?? 1;
+    const last =
+        lastPage ?? Math.max(current, ...pageLinks.map((link) => link.page));
+    const template = pageLinks.find((link) => link.url !== null);
+    const pageUrl = (page: number): string | null =>
+        template?.url
+            ? paginationPageUrl(template.url, template.page, page)
+            : null;
+    const previous = links[0];
+    const next = links[links.length - 1];
+
     return (
         <Pagination className={className}>
             <PaginationContent>
-                {links.map((link, index) => {
-                    const plain = paginationPlainLabel(link.label);
-                    const isPageNumber = /^\d+$/.test(plain);
-
-                    return (
-                        <PaginationItem key={index}>
-                            <button
-                                type="button"
-                                className={cn(
-                                    buttonVariants({
-                                        variant: link.active
-                                            ? 'outline'
-                                            : 'ghost',
-                                        size: isPageNumber ? 'icon' : 'default',
-                                    }),
-                                    !isPageNumber && 'min-w-0 px-2.5',
-                                    !link.url &&
-                                        'pointer-events-none opacity-50',
-                                )}
-                                disabled={!link.url}
-                                aria-label={paginationAriaLabel(link.label)}
-                                aria-current={link.active ? 'page' : undefined}
-                                onClick={() =>
-                                    link.url && router.visit(link.url)
-                                }
-                                dangerouslySetInnerHTML={{
-                                    __html: link.label,
-                                }}
-                            />
+                <PaginationItem>
+                    <PaginationButton
+                        url={previous.url}
+                        isPageNumber={false}
+                        ariaLabel={paginationAriaLabel(previous.label)}
+                        html={previous.label}
+                    />
+                </PaginationItem>
+                {paginationWindow(current, last).map((page, position) =>
+                    page === null ? (
+                        <PaginationItem
+                            key={`gap-${position}`}
+                            className="hidden sm:list-item"
+                        >
+                            <PaginationEllipsis className="size-auto w-6" />
                         </PaginationItem>
-                    );
-                })}
+                    ) : (
+                        <PaginationItem
+                            key={page}
+                            className="hidden sm:list-item"
+                        >
+                            <PaginationButton
+                                url={page === current ? null : pageUrl(page)}
+                                isActive={page === current}
+                                isPageNumber
+                                ariaLabel={`Go to page ${page}`}
+                            >
+                                {formatNumber(page)}
+                            </PaginationButton>
+                        </PaginationItem>
+                    ),
+                )}
+                <PaginationItem className="sm:hidden">
+                    <span
+                        className="px-2 text-sm whitespace-nowrap text-muted-foreground tabular-nums"
+                        aria-live="polite"
+                    >
+                        {t('common.pageOf', {
+                            page: formatNumber(current),
+                            total: formatNumber(last),
+                        })}
+                    </span>
+                </PaginationItem>
+                <PaginationItem>
+                    <PaginationButton
+                        url={next.url}
+                        isPageNumber={false}
+                        ariaLabel={paginationAriaLabel(next.label)}
+                        html={next.label}
+                    />
+                </PaginationItem>
             </PaginationContent>
         </Pagination>
     );
@@ -275,7 +367,9 @@ export function TablePaginationFooter({
 }: {
     pagination: TablePaginationState;
 }) {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
+    const numberFormat = new Intl.NumberFormat(i18n.language);
+    const formatNumber = (value: number): string => numberFormat.format(value);
     const firstRow = Math.min(
         (pagination.current_page - 1) * pagination.per_page + 1,
         pagination.total,
@@ -292,14 +386,16 @@ export function TablePaginationFooter({
                 data-test="pagination-range"
             >
                 {t('common.pageRange', {
-                    from: firstRow,
-                    to: lastRow,
-                    total: pagination.total,
+                    from: formatNumber(firstRow),
+                    to: formatNumber(lastRow),
+                    total: formatNumber(pagination.total),
                 })}
             </p>
             {pagination.last_page > 1 ? (
                 <TablePagination
                     links={pagination.links ?? []}
+                    currentPage={pagination.current_page}
+                    lastPage={pagination.last_page}
                     className="mx-0 w-auto sm:col-start-2"
                 />
             ) : null}
