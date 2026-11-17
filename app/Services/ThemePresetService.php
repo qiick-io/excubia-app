@@ -10,9 +10,9 @@ use App\Enums\ThemePresetEnum;
  * Resolves built-in theme presets (config/theme-presets.php) into CSS variables for the
  * document shell, as in qiick-io/externa-core: the shared `base` surfaces with the selected
  * preset's brand colours merged over them. Precedence: custom brand hex → selected preset
- * → default blue. A custom hex removes the brand-linked preset keys so `--brand-primary`
+ * → default Genziana. A custom hex removes the brand-linked preset keys so `--brand-primary`
  * (resources/css/app.css) wins, and gets an AA-checked foreground. A preset with
- * `ai_override` (Violet) switches the AI accent to teal.
+ * `ai_override` (Ametista) switches the AI accent to teal.
  *
  * ponytail: externa's OKLCH hue check that also switches the AI accent for a near-violet
  * custom hex is left out; port OklchHue if custom violet brands become a problem.
@@ -75,7 +75,8 @@ class ThemePresetService
 
     /**
      * Presets for the Appearance picker, each with its merged base + brand tokens so the page
-     * previews them without a client-side copy of the config.
+     * previews them without a client-side copy of the config. `name` is the translation key
+     * the picker renders, so no display string leaves the config untranslated.
      *
      * @return list<array{slug: string, name: string, aiOverride: bool, swatchLight: string, swatchDark: string, light: array<string, string>, dark: array<string, string>}>
      */
@@ -98,7 +99,7 @@ class ThemePresetService
                 'name' => is_string($definition['name'] ?? null) ? $definition['name'] : $case->value,
                 'aiOverride' => (bool) ($definition['ai_override'] ?? false),
                 'swatchLight' => $light['primary'] ?? '#1375A7',
-                'swatchDark' => $dark['primary'] ?? '#2BB0ED',
+                'swatchDark' => $dark['primary'] ?? '#2FA8EA',
                 'light' => $light,
                 'dark' => $dark,
             ];

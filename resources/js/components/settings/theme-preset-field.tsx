@@ -10,16 +10,6 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { contrastingForeground } from '@/lib/contrasting-foreground';
 import type { ThemePresetCatalogItem, ThemePresetSlug } from '@/types';
 
-/** Translation keys for the built-in preset names (en / de / it). */
-const PRESET_NAME_KEYS: Record<ThemePresetSlug, string> = {
-    teal: 'settings.appearance.themePresetTeal',
-    blue: 'settings.appearance.themePresetBlue',
-    indigo: 'settings.appearance.themePresetIndigo',
-    violet: 'settings.appearance.themePresetViolet',
-    rose: 'settings.appearance.themePresetRose',
-    slate: 'settings.appearance.themePresetSlate',
-};
-
 type ThemePresetFieldProps = {
     /** Presets offered by the server (`appearance.theme_presets`). */
     catalog: ThemePresetCatalogItem[];
@@ -77,7 +67,7 @@ export function ThemePresetField({
                                 <FieldTitle
                                     id={`theme-preset-${preset.slug}-name`}
                                 >
-                                    {t(PRESET_NAME_KEYS[preset.slug])}
+                                    {t(preset.name)}
                                 </FieldTitle>
                                 <div className="flex gap-2" aria-hidden="true">
                                     <PresetSwatch

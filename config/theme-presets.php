@@ -12,13 +12,16 @@ declare(strict_types=1);
  * gets the merged tokens from the server, so this file is the only source.
  *
  * Copied from qiick-io/externa-core `config/theme-presets.php`; Excubia's default is
- * Blue, its brand preset (qiick-io/app-ui `@qiick/theme-blue`).
+ * Genziana, its brand preset (qiick-io/app-ui `@qiick/theme-blue`). The other presets are
+ * the generic ones only: a sibling product's brand colour is never offered here (#342).
+ * Preset names are Italian pigments, stones and plants; `name` is a translation key of
+ * resources/js/locales/*.json, never a display string.
  *
  * @see https://github.com/qiick-io/externa-core/issues/243
  */
 
 return [
-    'default' => 'blue',
+    'default' => 'genziana',
     'ai_accent_hue' => 306.0,
     'ai_override_hue_tolerance' => 30.0,
     'ai_override_light' => [
@@ -94,43 +97,10 @@ return [
         ],
     ],
     'presets' => [
-        'teal' => [
-            'name' => 'Teal',
-            'ai_override' => false,
-            'light' => [
-                'primary' => '#0E7C86',
-                'ring' => '#0E7C86',
-                'chart-1' => '#0E7C86',
-                'chart-2' => '#2571D4',
-                'sidebar-primary' => '#0E7C86',
-                'sidebar-accent' => '#ECFDFD',
-                'sidebar-accent-foreground' => '#074F5A',
-                'sidebar-ring' => '#0E7C86',
-                'ai' => '#7F35BB',
-                'ai-hover' => '#69279B',
-                'ai-bg' => '#F7F0FF',
-                'ai-text' => '#521B79',
-                'ai-border' => '#9650D3',
-            ],
-            'dark' => [
-                'primary' => '#2CB1BC',
-                'ring' => '#2CB1BC',
-                'chart-1' => '#2CB1BC',
-                'chart-2' => '#498FE4',
-                'sidebar-primary' => '#2CB1BC',
-                'sidebar-accent' => '#02252C',
-                'sidebar-accent-foreground' => '#A3EBF0',
-                'sidebar-ring' => '#2CB1BC',
-                'ai' => '#C497F2',
-                'ai-hover' => '#D8B8FA',
-                'ai-bg' => '#3A0F57',
-                'ai-text' => '#D8B8FA',
-                'ai-border' => '#AD70E6',
-            ],
-        ],
-        'blue' => [
-            // Excubia's brand blue: Refactoring UI "Light Blue Vivid" scale, primary = the logo #1375A7.
-            'name' => 'Blue (default)',
+        'genziana' => [
+            // Excubia's own 238° hue, from qiick-product-colors.json: primary = `accent` (light) and
+            // `mark` (dark), sidebar accent = `subtle-*`, its text = `text-strong` / `hover-dark`.
+            'name' => 'settings.appearance.themePresetGenziana',
             'ai_override' => false,
             'light' => [
                 'primary' => '#1375A7',
@@ -138,8 +108,8 @@ return [
                 'chart-1' => '#1375A7',
                 'chart-2' => '#0E7C86',
                 'sidebar-primary' => '#1375A7',
-                'sidebar-accent' => '#E3F8FF',
-                'sidebar-accent-foreground' => '#035388',
+                'sidebar-accent' => '#EFF8FF',
+                'sidebar-accent-foreground' => '#0B5377',
                 'sidebar-ring' => '#1375A7',
                 'ai' => '#7F35BB',
                 'ai-hover' => '#69279B',
@@ -148,14 +118,14 @@ return [
                 'ai-border' => '#9650D3',
             ],
             'dark' => [
-                'primary' => '#2BB0ED',
-                'ring' => '#2BB0ED',
-                'chart-1' => '#2BB0ED',
+                'primary' => '#2FA8EA',
+                'ring' => '#2FA8EA',
+                'chart-1' => '#2FA8EA',
                 'chart-2' => '#2CB1BC',
-                'sidebar-primary' => '#2BB0ED',
-                'sidebar-accent' => '#04364F',
-                'sidebar-accent-foreground' => '#81DEFD',
-                'sidebar-ring' => '#2BB0ED',
+                'sidebar-primary' => '#2FA8EA',
+                'sidebar-accent' => '#072333',
+                'sidebar-accent-foreground' => '#7BCAFC',
+                'sidebar-ring' => '#2FA8EA',
                 'ai' => '#C497F2',
                 'ai-hover' => '#D8B8FA',
                 'ai-bg' => '#3A0F57',
@@ -163,8 +133,8 @@ return [
                 'ai-border' => '#AD70E6',
             ],
         ],
-        'indigo' => [
-            'name' => 'Indigo',
+        'indaco' => [
+            'name' => 'settings.appearance.themePresetIndaco',
             'ai_override' => false,
             'light' => [
                 'primary' => '#6259C7',
@@ -197,8 +167,8 @@ return [
                 'ai-border' => '#AD70E6',
             ],
         ],
-        'violet' => [
-            'name' => 'Violet',
+        'ametista' => [
+            'name' => 'settings.appearance.themePresetAmetista',
             'ai_override' => true,
             'light' => [
                 'primary' => '#7E4BC0',
@@ -231,8 +201,8 @@ return [
                 'ai-border' => '#1A95A2',
             ],
         ],
-        'rose' => [
-            'name' => 'Rose',
+        'robbia' => [
+            'name' => 'settings.appearance.themePresetRobbia',
             'ai_override' => false,
             'light' => [
                 'primary' => '#AF3774',
@@ -265,8 +235,8 @@ return [
                 'ai-border' => '#AD70E6',
             ],
         ],
-        'slate' => [
-            'name' => 'Slate',
+        'ardesia' => [
+            'name' => 'settings.appearance.themePresetArdesia',
             'ai_override' => false,
             'light' => [
                 'primary' => '#48586D',
