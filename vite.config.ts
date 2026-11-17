@@ -44,6 +44,8 @@ export default defineConfig({
             'resources/js/components/ui/*',
             // Registry item (app-ui), formatted upstream; the drift check keeps it in sync.
             'resources/js/components/realtime/*',
+            // Registry item (app-ui timeline), formatted upstream; the drift check keeps it in sync.
+            'resources/js/components/timeline.tsx',
             'resources/js/routes/**',
             'resources/js/wayfinder/**',
         ],
@@ -65,6 +67,8 @@ export default defineConfig({
             'resources/js/components/ui/*',
             // Registry item (app-ui), formatted upstream; the drift check keeps it in sync.
             'resources/js/components/realtime/*',
+            // Registry item (app-ui timeline), formatted upstream; the drift check keeps it in sync.
+            'resources/js/components/timeline.tsx',
             'resources/views/mail/*',
             // Verbatim copies of excubia-core contracts (#111), kept byte for byte.
             'tests/Fixtures/core/*',
