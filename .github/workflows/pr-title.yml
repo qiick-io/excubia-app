@@ -11,4 +11,4 @@ permissions:
 
 jobs:
   pr-title:
-    uses: qiick-io/app-ui/.github/workflows/pr-title.yml@v0.7.0
+    uses: qiick-io/app-ui/.github/workflows/pr-title.yml@v0.8.0
