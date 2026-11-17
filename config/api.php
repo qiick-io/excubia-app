@@ -21,15 +21,16 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Expiry warning window
+    | Expiry notice window
     |--------------------------------------------------------------------------
     |
     | Days before expires_at when the daily notify command warns the owner (and
     | the issuer when different). The command selects the [N, N+1) day window
-    | so each key is notified once without extra state.
+    | so each key is notified once without extra state. Env name matches
+    | externa-core / the fleet map (app-ui#178): API_KEY_EXPIRY_NOTICE_DAYS.
     |
     */
 
-    'expiry_warning_days' => (int) env('API_KEY_EXPIRY_WARNING_DAYS', 7),
+    'key_expiry_notice_days' => max(1, (int) env('API_KEY_EXPIRY_NOTICE_DAYS', 7)),
 
 ];

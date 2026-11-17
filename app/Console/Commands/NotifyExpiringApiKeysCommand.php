@@ -11,7 +11,7 @@ use Symfony\Component\Console\Attribute\AsCommand;
 
 /**
  * Notifies owners (and issuers when different) about API keys that expire in the warning window
- * (#351): between N and N+1 days from now (N = config `api.expiry_warning_days`, default 7), so
+ * (#351): between N and N+1 days from now (N = config `api.key_expiry_notice_days`, default 7), so
  * each key is notified once without extra state when the command runs daily.
  */
 #[AsCommand(name: 'excubia:notify-expiring-api-keys')]
@@ -23,9 +23,9 @@ class NotifyExpiringApiKeysCommand extends Command
 
     public function handle(): int
     {
-        $warningDays = max(1, (int) config('api.expiry_warning_days', 7));
-        $windowStart = now()->addDays($warningDays);
-        $windowEnd = now()->addDays($warningDays + 1);
+        $noticeDays = max(1, (int) config('api.key_expiry_notice_days', 7));
+        $windowStart = now()->addDays($noticeDays);
+        $windowEnd = now()->addDays($noticeDays + 1);
 
         $apiKeys = ApiKey::query()
             ->with(['owner', 'creator'])
