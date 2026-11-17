@@ -216,12 +216,6 @@ export function AppSidebar() {
                             </SidebarMenuButton>
                         </SidebarMenuItem>
                     </SidebarMenu>
-                    {/* The notification centre (#296): the badge comes from the shared prop, so
-                        it updates on navigation; Excubia has no broadcasting for live updates. */}
-                    <NotificationsBell
-                        source={notificationsSource}
-                        unreadCount={notifications.unread_count}
-                    />
                 </SidebarHeader>
 
                 <SidebarContent>
@@ -247,6 +241,13 @@ export function AppSidebar() {
 
                 <SidebarFooter>
                     <NavFooter items={footerNavItems} className="mt-auto" />
+                    {/* The notification centre (#296), right above the user menu (app-ui shell,
+                        #344): the badge comes from the shared prop, so it updates on navigation;
+                        Excubia has no broadcasting for live updates. */}
+                    <NotificationsBell
+                        source={notificationsSource}
+                        unreadCount={notifications.unread_count}
+                    />
                     <AppNavUser />
                     {appVersion ? (
                         <p className="truncate px-2 text-center text-xs leading-none text-muted-foreground group-data-[collapsible=icon]:hidden">
