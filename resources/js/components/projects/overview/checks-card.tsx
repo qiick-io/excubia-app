@@ -35,9 +35,12 @@ const PROBLEM_STATUSES = new Set(['fail', 'warn']);
 export function ChecksCard({
     health,
     className,
+    contentClassName,
 }: {
     health: ReportHealth;
     className?: string;
+    /** Classes of the card's content, e.g. to scroll the list inside a card of fixed height. */
+    contentClassName?: string;
 }) {
     const { t } = useTranslation();
     const [isShowingAll, setIsShowingAll] = useState(false);
@@ -79,7 +82,7 @@ export function ChecksCard({
                     </Button>
                 </CardAction>
             </CardHeader>
-            <CardContent>
+            <CardContent className={contentClassName}>
                 {groups.length === 0 ? (
                     <p className="text-sm text-muted-foreground">
                         {t('report.overview.allChecksPassCount', {
