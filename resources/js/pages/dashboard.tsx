@@ -32,11 +32,15 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { PermissionEnum } from '@/enums/permission-enum';
 import { useCan } from '@/hooks/use-can';
 import AppLayout from '@/layouts/app-layout';
+import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
 import projectsRoutes from '@/routes/projects';
 import type { LiveHealthSummary, ProjectRow } from '@/types';
 import type { TrendPoint, Overview, AssignedRow } from '@/types/dashboard';
-import { TelemetryRow } from '@/components/dashboard/telemetry-row';
+import {
+    RequestsStatCard,
+    TelemetryRow,
+} from '@/components/dashboard/telemetry-row';
 import { AssignedToYouCard } from '@/components/dashboard/assigned-to-you-card';
 import { TopIssuesCard } from '@/components/dashboard/top-issues-card';
 import { EndOfSupportCard } from '@/components/dashboard/end-of-support-card';
@@ -143,6 +147,10 @@ export default function Dashboard({
     }
 
     const { kpis } = overview;
+    // Without exceptions, Requests would sit alone on the telemetry row: it joins the key
+    // numbers instead, one column per card on wide screens (#328).
+    const keyRowRequests = overview.exceptions ? null : overview.runtime;
+    const keySpan = keyRowRequests ? undefined : 'xl:col-span-3';
     const periodLabel = t('dashboard.period.previous', {
         count: scope.period,
     });
@@ -277,9 +285,16 @@ export default function Dashboard({
                 }
             >
                 <div className="flex flex-col gap-4">
-                    <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-12">
+                    <section
+                        className={cn(
+                            'grid grid-cols-1 gap-4 sm:grid-cols-2',
+                            keyRowRequests
+                                ? 'xl:grid-cols-5'
+                                : 'xl:grid-cols-12',
+                        )}
+                    >
                         <StatCard
-                            className="xl:col-span-3"
+                            className={keySpan}
                             label={t('dashboard.kpi.findings')}
                             value={kpis.findings.total.toLocaleString()}
                             trend={trendOf(
@@ -294,7 +309,7 @@ export default function Dashboard({
                             }
                         />
                         <StatCard
-                            className="xl:col-span-3"
+                            className={keySpan}
                             label={t('dashboard.kpi.atRisk')}
                             value={kpis.atRisk.value.toLocaleString()}
                             trend={trendOf(
@@ -309,7 +324,7 @@ export default function Dashboard({
                             }
                         />
                         <StatCard
-                            className="xl:col-span-3"
+                            className={keySpan}
                             label={t('dashboard.kpi.endOfSupport')}
                             value={kpis.endOfSupport.value.toLocaleString()}
                             trend={trendOf(
@@ -326,7 +341,7 @@ export default function Dashboard({
                             }
                         />
                         <StatCard
-                            className="xl:col-span-3"
+                            className={keySpan}
                             label={t('dashboard.kpi.stale')}
                             value={kpis.stale.value.toLocaleString()}
                             headline={t('dashboard.kpi.staleHeadline', {
@@ -334,13 +349,20 @@ export default function Dashboard({
                             })}
                             context={t('dashboard.kpi.staleContext')}
                         />
+                        {keyRowRequests ? (
+                            <RequestsStatCard
+                                runtime={keyRowRequests}
+                                periodLabel={periodLabel}
+                                className="sm:col-span-2 xl:col-span-1"
+                            />
+                        ) : null}
                     </section>
 
                     {assignedToMe.length > 0 ? (
                         <AssignedToYouCard rows={assignedToMe} />
                     ) : null}
 
-                    {overview.runtime || overview.exceptions ? (
+                    {overview.exceptions ? (
                         <TelemetryRow
                             runtime={overview.runtime}
                             exceptions={overview.exceptions}
