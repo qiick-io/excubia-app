@@ -23,7 +23,8 @@ enum ActivityEventEnum: string
     case MembersSynced = 'members_synced';
     case TokenRotated = 'token_rotated';
     case TokenRevoked = 'token_revoked';
-    case ApiKeyRevoked = 'api_key_revoked';
+    case ApiKeyRotated = 'rotated';
+    case ApiKeyRevoked = 'revoked';
     case ApiKeyFirstUsed = 'api_key_first_used';
 
     /**

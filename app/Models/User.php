@@ -105,13 +105,24 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
     }
 
     /**
-     * Personal API keys (#315), revoked and expired ones included. Deleting the user deletes them.
+     * Personal API keys (#315, #351) this user owns, revoked and expired ones included. Deleting
+     * the user deletes them.
      *
      * @return HasMany<ApiKey, $this>
      */
     public function apiKeys(): HasMany
     {
-        return $this->hasMany(ApiKey::class);
+        return $this->hasMany(ApiKey::class, 'owner_id');
+    }
+
+    /**
+     * Roles and permissions live on the `web` guard. API-key auth switches the default guard to
+     * `api_key` for the request (#351); Spatie must still resolve against `web` or every can()
+     * and assignRole() would look for a second set of roles that does not exist.
+     */
+    public function getDefaultGuardName(): string
+    {
+        return 'web';
     }
 
     /**

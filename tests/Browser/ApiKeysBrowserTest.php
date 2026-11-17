@@ -31,7 +31,9 @@ it('creates a key, shows it once and revokes it', function (string $scheme) {
         ->assertNoAccessibilityIssues(1);
 
     $apiKey = ApiKey::query()->sole();
-    expect($page->value('[data-test="api-key-secret-value"]'))->toStartWith($apiKey->key_prefix);
+    $secret = $page->value('[data-test="api-key-secret-value"]');
+    expect($secret)->toStartWith($apiKey->key_prefix)
+        ->and($secret)->toMatch(ApiKey::TOKEN_PATTERN);
 
     $page->click('[data-test="api-key-revoke"]')
         ->click('[data-test="confirm-destructive"]')

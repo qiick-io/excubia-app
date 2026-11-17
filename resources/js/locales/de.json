@@ -719,7 +719,8 @@
             "members_synced": "Mitglieder synchronisiert",
             "token_rotated": "Push-Token erneuert",
             "token_revoked": "Push-Token widerrufen",
-            "api_key_revoked": "API-Schlüssel widerrufen",
+            "rotated": "API-Schlüssel rotiert",
+            "revoked": "API-Schlüssel widerrufen",
             "api_key_first_used": "API-Schlüssel erstmals verwendet",
             "collection_permissions_synced": "Collection-Berechtigungen synchronisiert",
             "file_permissions_synced": "Datei-Berechtigungen synchronisiert"
