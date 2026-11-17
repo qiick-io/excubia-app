@@ -179,7 +179,14 @@ export default function FleetIndex({
                     initialSearch={search}
                 />
             ) : (
-                <PageLayout scrollContent>
+                <PageLayout
+                    scrollContent
+                    description={
+                        view === 'readiness' && readiness !== null
+                            ? t('fleet.readiness.description')
+                            : undefined
+                    }
+                >
                     {view === 'readiness' && readiness !== null ? (
                         <ReadinessView readiness={readiness} />
                     ) : view === 'eol' && calendar !== null ? (
@@ -448,16 +455,13 @@ function ReadinessView({ readiness }: { readiness: Readiness }) {
 
     return (
         <div className="flex flex-col gap-4">
-            {/* The description shares its row with the stat cards, so a lone card leaves no gap (#290). */}
-            <div className="flex flex-col gap-4 xl:flex-row xl:items-center">
-                <p className="max-w-2xl text-sm text-muted-foreground xl:flex-1">
-                    {t('fleet.readiness.description')}
-                </p>
-                <div className="grid gap-4 sm:grid-cols-2 xl:flex xl:shrink-0">
+            {/* Key numbers as on the dashboard: a row of equal stat cards, four per row (#330). */}
+            {readiness.targets.length > 0 || readiness.unknown > 0 ? (
+                <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-12">
                     {readiness.targets.map((target) => (
                         <StatCard
                             key={target.targetMajor}
-                            className="xl:w-64"
+                            className="xl:col-span-3"
                             label={t('fleet.readiness.target', {
                                 major: target.targetMajor,
                             })}
@@ -471,14 +475,14 @@ function ReadinessView({ readiness }: { readiness: Readiness }) {
                     ))}
                     {readiness.unknown > 0 ? (
                         <StatCard
-                            className="xl:w-64"
+                            className="xl:col-span-3"
                             label={t('fleet.readiness.status.unknown')}
                             value={readiness.unknown.toLocaleString()}
                             context={t('fleet.readiness.unknownDescription')}
                         />
                     ) : null}
-                </div>
-            </div>
+                </section>
+            ) : null}
             <Card>
                 <CardHeader className="pb-3">
                     <CardTitle>{t('fleet.readiness.projectsTitle')}</CardTitle>
