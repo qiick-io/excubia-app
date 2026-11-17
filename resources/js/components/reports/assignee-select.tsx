@@ -89,7 +89,10 @@ export function AssignedToMeToggle({
             onPressedChange={onPressedChange}
         >
             <UserRound />
-            {t('assignee.mine')}
+            {/* Wrapped so the icon is not the toggle's only element child: the registry Toggle
+                drops its horizontal padding for icon-only toggles (`has-[>svg:only-child]:px-0`),
+                and a bare text node does not count as a child element. */}
+            <span>{t('assignee.mine')}</span>
         </Toggle>
     );
 }
