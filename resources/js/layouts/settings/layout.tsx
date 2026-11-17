@@ -12,7 +12,6 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { PermissionEnum } from '@/enums/permission-enum';
-import aiPricesRoutes from '@/routes/ai-prices';
 import apiKeysRoutes from '@/routes/api-keys';
 import aiSettings from '@/routes/ai-settings';
 import integrationsRoutes from '@/routes/project/integrations';
@@ -49,7 +48,7 @@ export default function SettingsLayout({
     wide = false,
 }: SettingsLayoutProps) {
     const { t } = useTranslation();
-    const { isCurrentUrl } = useCurrentUrl();
+    const { isCurrentUrl, isCurrentOrParentUrl } = useCurrentUrl();
     const { can } = useCan();
     const { projectSettings } = usePage().props;
 
@@ -160,28 +159,21 @@ export default function SettingsLayout({
             : []),
     ];
 
-    // AI group, as externa-core's (Settings → AI tools).
-    // The AI price table (#129) feeds the budgets and alerts, so it needs `can-manage-alerts`.
-    const aiNavItems: NavItem[] = [
-        ...(can(PermissionEnum.CanManageProjectSettings)
+    // AI group, as externa-core's: one entry, Settings → AI (#331). Its page holds the assistant
+    // tools (`can-manage-project-settings`) and the AI prices section (`can-manage-alerts`), whose
+    // price table (#129) is a sub-page, so the entry stays active there.
+    const aiNavItems: NavItem[] =
+        can(PermissionEnum.CanManageProjectSettings) ||
+        can(PermissionEnum.CanManageAlerts)
             ? [
                   {
-                      title: t('settings.layout.aiTools'),
+                      title: t('settings.layout.general'),
                       href: aiSettings.edit.url(),
                       icon: null,
+                      isActive: isCurrentOrParentUrl(aiSettings.edit.url()),
                   },
               ]
-            : []),
-        ...(can(PermissionEnum.CanManageAlerts)
-            ? [
-                  {
-                      title: t('settings.layout.aiPrices'),
-                      href: aiPricesRoutes.edit.url(),
-                      icon: null,
-                  },
-              ]
-            : []),
-    ];
+            : [];
 
     const reportBugUrl =
         projectSettings.reportBugUrl?.trim() || DEFAULT_REPORT_BUG_URL;
@@ -199,7 +191,7 @@ export default function SettingsLayout({
                         <SidebarMenuButton
                             asChild
                             size="sm"
-                            isActive={isCurrentUrl(item.href)}
+                            isActive={item.isActive ?? isCurrentUrl(item.href)}
                         >
                             <Link href={item.href}>
                                 {item.icon && <item.icon />}

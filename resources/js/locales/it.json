@@ -235,9 +235,7 @@
             "authSecurity": "Autenticazione e sicurezza",
             "sidebar": "Barra laterale",
             "sectionAi": "AI",
-            "aiTools": "Strumenti",
             "integrations": "Integrazioni",
-            "aiPrices": "Prezzi",
             "apiKeys": "Chiavi API"
         },
         "profile": {
@@ -440,6 +438,13 @@
             "providerLabel": "Provider",
             "modelLabel": "Modello",
             "envHint": "Provider, modello e chiavi si impostano nel .env (AI_DEFAULT_PROVIDER e le chiavi del provider). I dati inviati a un provider cloud escono dal tuo server.",
+            "pricesTitle": "Prezzi",
+            "pricesDescription": "I prezzi per provider e modello trasformano le chiamate AI dei progetti monitorati in costi stimati, nella loro scheda AI e negli avvisi sul budget AI.",
+            "pricesEdit": "Modifica i prezzi",
+            "pricesDocs": "Informazioni sull'uso dell'AI",
+            "pricesEmptyTitle": "Ancora nessun uso dell'AI",
+            "pricesEmptyDescription": "I prezzi si usano quando un progetto invia l'uso dell'AI.",
+            "pricesOpenAnyway": "Apri la tabella dei prezzi",
             "kind": {
                 "read": "lettura",
                 "write": "scrittura"
@@ -551,17 +556,17 @@
             "severitiesTitle": "Gravità predefinite",
             "severitiesDescription": "La gravità di ogni evento che non la prende da un problema. La gravità minima di ogni canale e iscrizione si confronta con questa.",
             "aiRulesTitle": "Regole di avviso sull'uso dell'AI",
-            "aiRulesDescription": "Avvisi facoltativi dall'uso dell'AI inviato dai progetti (Laravel AI SDK), con costi stimati da Impostazioni → Prezzi AI. I budget mensili si impostano per progetto nella sua scheda AI. Vuoto disattiva la regola.",
+            "aiRulesDescription": "Avvisi facoltativi dall'uso dell'AI inviato dai progetti (Laravel AI SDK), con costi stimati da Impostazioni → AI → Prezzi. I budget mensili si impostano per progetto nella sua scheda AI. Vuoto disattiva la regola.",
             "aiSpendSpike": "Spesa AI di oggi oltre (% della media di 7 giorni)",
             "aiSpendSpikeHint": "Avvisa una volta al giorno quando la spesa AI stimata di oggi di un progetto raggiunge questa quota della sua giornata media dei 7 giorni precedenti, da 1 $. 300 significa tre volte la media.",
             "aiErrorRate": "Tasso di errore AI oltre (%)",
             "aiErrorRateHint": "Avvisa quando è fallita più di questa quota delle chiamate AI dell'ultima ora, con almeno 20 chiamate."
         },
         "aiPrices": {
-            "breadcrumb": "Prezzi AI",
+            "breadcrumb": "Prezzi",
             "head": "Prezzi AI",
             "title": "Prezzi AI",
-            "description": "Prezzi per provider e modello che trasformano l'uso dell'AI dei progetti in costi stimati. Il provider è il nome nel config/ai.php del progetto. Un modello con data (gpt-4o-2024-08-06) usa la riga del suo modello (gpt-4o). I modelli senza riga mostrano i token senza costo.",
+            "description": "Prezzi per provider e modello che trasformano le chiamate AI dei progetti monitorati in costi stimati, nella loro scheda AI e negli avvisi sul budget AI. Il provider è il nome nel config/ai.php del progetto. Un modello con data (gpt-4o-2024-08-06) usa la riga del suo modello (gpt-4o). I modelli senza riga mostrano i token senza costo.",
             "estimates": "Sono stime, non la tua fattura: verificale con il provider. Tabella del {{date}}; i valori predefiniti sono stati verificati il {{defaultsDate}}.",
             "sources": "Valori predefiniti dalle pagine prezzi ufficiali, livello standard, prezzi base dei modelli a fasce (verificati il {{date}}):",
             "add": "Aggiungi modello",

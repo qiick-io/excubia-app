@@ -41,7 +41,8 @@ import aiPricesRoutes from '@/routes/ai-prices';
 import projectsRoutes from '@/routes/projects';
 import type { AiUsageSummary, AiUsageTotals, RuntimeRow } from '@/types';
 
-const AI_GUIDE_URL =
+/** The excubia-core guide that turns on the AI usage a project sends (also linked from Settings → AI). */
+export const AI_GUIDE_URL =
     'https://github.com/qiick-io/excubia-core/blob/main/docs/guides/runtime-monitoring.md';
 
 /** One column of a breakdown table: a header and a right-aligned numeric cell. */
