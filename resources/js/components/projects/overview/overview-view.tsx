@@ -361,23 +361,18 @@ export function OverviewView({
             />
 
             {/*
-             * The short cards stack in one column next to the checks, whose list is the longest:
-             * on wide screens the checks card takes the column's height and scrolls its list,
-             * so no card leaves a hole beside a taller one (#329). Without a report's health
-             * data there are no checks, and the runtimes card takes the whole row.
+             * The short cards stack in one column next to the checks (#329). Both columns are as
+             * tall as their content, with no inner scroll and no stretched card (#335). Without a
+             * report's health data there are no checks, and the runtimes card takes the whole row.
              */}
             {health !== null ? (
-                <section className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+                <section className="grid grid-cols-1 items-start gap-4 xl:grid-cols-12">
                     <div className="flex flex-col gap-4 xl:col-span-5">
                         <InfrastructureCard health={health} />
                         <DependenciesCard slug={project.slug} health={health} />
                         <RuntimesCard latest={latest} />
                     </div>
-                    <ChecksCard
-                        health={health}
-                        className="xl:col-span-7 xl:h-0 xl:min-h-full"
-                        contentClassName="xl:min-h-0 xl:flex-1 xl:overflow-y-auto"
-                    />
+                    <ChecksCard health={health} className="xl:col-span-7" />
                 </section>
             ) : (
                 <RuntimesCard latest={latest} />
