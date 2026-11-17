@@ -55,12 +55,13 @@ Tokens come from the `@qiick/theme` registry item: one shared base (surfaces, th
 
 Adopt one by adding its name (with its variant when it has variants) to `patterns` in `qiick-standards.json`, then re-running the sync. What an optional pattern is and how its page is written: https://github.com/qiick-io/app-ui/blob/develop/docs/optional/README.md
 
-| Optional pattern                                        | Name in `patterns`                               | Page                                                                                |
-| ------------------------------------------------------- | ------------------------------------------------ | ----------------------------------------------------------------------------------- |
-| Command palette and global search (⌘K)                  | `command-palette`                                | https://github.com/qiick-io/app-ui/blob/develop/docs/optional/command-palette.md    |
-| Grouped view tabs with counts                           | `grouped-tabs:sub-menu`, `grouped-tabs:two-rows` | https://github.com/qiick-io/app-ui/blob/develop/docs/optional/grouped-tabs.md       |
-| Inbox list: saved views, bulk actions, item detail      | `inbox-list:side-panel`, `inbox-list:full-page`  | https://github.com/qiick-io/app-ui/blob/develop/docs/optional/inbox-list.md         |
-| Keyboard shortcuts and the ? help dialog                | `keyboard-shortcuts`                             | https://github.com/qiick-io/app-ui/blob/develop/docs/optional/keyboard-shortcuts.md |
-| Sidebar filter, pinned and needs-attention entity lists | `sidebar-entities`                               | https://github.com/qiick-io/app-ui/blob/develop/docs/optional/sidebar-entities.md   |
-| Table cell details: lists inside table cells            | `table-cell-details`                             | https://github.com/qiick-io/app-ui/blob/develop/docs/optional/table-cell-details.md |
-| Table density preference                                | `table-density`                                  | https://github.com/qiick-io/app-ui/blob/develop/docs/optional/table-density.md      |
+| Optional pattern                                           | Name in `patterns`                               | Page                                                                                |
+| ---------------------------------------------------------- | ------------------------------------------------ | ----------------------------------------------------------------------------------- |
+| Command palette and global search (⌘K)                     | `command-palette`                                | https://github.com/qiick-io/app-ui/blob/develop/docs/optional/command-palette.md    |
+| Grouped view tabs with counts                              | `grouped-tabs:sub-menu`, `grouped-tabs:two-rows` | https://github.com/qiick-io/app-ui/blob/develop/docs/optional/grouped-tabs.md       |
+| Inbox list: saved views, bulk actions, item detail         | `inbox-list:side-panel`, `inbox-list:full-page`  | https://github.com/qiick-io/app-ui/blob/develop/docs/optional/inbox-list.md         |
+| Keyboard shortcuts and the ? help dialog                   | `keyboard-shortcuts`                             | https://github.com/qiick-io/app-ui/blob/develop/docs/optional/keyboard-shortcuts.md |
+| Sidebar filter, pinned and needs-attention entity lists    | `sidebar-entities`                               | https://github.com/qiick-io/app-ui/blob/develop/docs/optional/sidebar-entities.md   |
+| Sidebar navigation with children: submenus, sections, tree | `sidebar-nav`                                    | https://github.com/qiick-io/app-ui/blob/develop/docs/optional/sidebar-nav.md        |
+| Table cell details: lists inside table cells               | `table-cell-details`                             | https://github.com/qiick-io/app-ui/blob/develop/docs/optional/table-cell-details.md |
+| Table density preference                                   | `table-density`                                  | https://github.com/qiick-io/app-ui/blob/develop/docs/optional/table-density.md      |
