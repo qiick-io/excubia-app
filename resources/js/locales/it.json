@@ -937,6 +937,8 @@
             "staleContext": "Nessun report entro la soglia impostata"
         },
         "topIssues": {
+            "emptyMineTitle": "Niente assegnato a te",
+            "emptyMineDescription": "Nessun problema degli ultimi report è assegnato a te.",
             "title": "Problemi principali",
             "description": "{{shown}} di {{total}} problemi, raggruppati fra i progetti, dal più grave.",
             "issue": "Problema",
@@ -1468,6 +1470,7 @@
         "durationChartLabel": "Grafico a linee della durata media e p95 delle richieste {{bucket}} {{during}}: media {{average}}, p95 {{p95}}, più lenta {{max}}."
     },
     "exceptions": {
+        "actions": "Azioni",
         "emptyTitle": "Nessuna eccezione",
         "emptyDescription": "Attiva la cattura delle eccezioni nell'excubia.json del progetto per raggrupparle qui, mascherate prima di lasciare il progetto.",
         "guide": "Guida alla cattura delle eccezioni",
@@ -2153,6 +2156,7 @@
         }
     },
     "findings": {
+        "actions": "Azioni",
         "statusFilter": "Stato del problema",
         "status": {
             "open": "Aperti",
@@ -2246,6 +2250,8 @@
         "notCollected": "Non raccolti: {{types}}."
     },
     "assignee": {
+        "assignToMe": "Assegna {{item}} a me",
+        "assignTo": "Assegna {{item}}…",
         "label": "Assegnatario",
         "none": "Non assegnato",
         "hint": "Chi se ne occupa. Sono elencati solo gli utenti che vedono questo progetto.",

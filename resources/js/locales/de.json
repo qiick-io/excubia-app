@@ -937,6 +937,8 @@
             "staleContext": "Kein Bericht innerhalb der eingestellten Schwelle"
         },
         "topIssues": {
+            "emptyMineTitle": "Dir ist nichts zugewiesen",
+            "emptyMineDescription": "Kein Befund der neuesten Berichte ist dir zugewiesen.",
             "title": "Wichtigste Befunde",
             "description": "{{shown}} von {{total}} Befunden, projektübergreifend gruppiert, die schwersten zuerst.",
             "issue": "Befund",
@@ -1468,6 +1470,7 @@
         "durationChartLabel": "Liniendiagramm der durchschnittlichen und p95-Anfragedauer {{bucket}} {{during}}: Durchschnitt {{average}}, p95 {{p95}}, langsamste {{max}}."
     },
     "exceptions": {
+        "actions": "Aktionen",
         "emptyTitle": "Keine Exceptions",
         "emptyDescription": "Aktiviere die Exception-Erfassung in der excubia.json des Projekts, um sie hier zu gruppieren, maskiert bevor sie das Projekt verlassen.",
         "guide": "Leitfaden zur Exception-Erfassung",
@@ -2153,6 +2156,7 @@
         }
     },
     "findings": {
+        "actions": "Aktionen",
         "statusFilter": "Befundstatus",
         "status": {
             "open": "Offen",
@@ -2246,6 +2250,8 @@
         "notCollected": "Nicht erfasst: {{types}}."
     },
     "assignee": {
+        "assignToMe": "{{item}} mir zuweisen",
+        "assignTo": "{{item}} zuweisen…",
         "label": "Zuständig",
         "none": "Nicht zugewiesen",
         "hint": "Wer sich darum kümmert. Nur Benutzer, die dieses Projekt sehen, sind aufgeführt.",
