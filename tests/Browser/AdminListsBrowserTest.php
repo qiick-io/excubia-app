@@ -8,6 +8,8 @@ use App\Models\ProjectGroup;
 use App\Models\User;
 use Database\Seeders\PermissionSeeder;
 
+require_once __DIR__.'/BrowserSeedHelpers.php';
+
 /**
  * The admin lists on the registry DataTable (app-ui #28): header sorting is done by the server
  * through the URL, and activity log rows expand in place.

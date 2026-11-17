@@ -13,6 +13,11 @@ import {
     CommandItem,
     CommandList,
 } from '@/components/ui/command';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { RESERVED_SHORTCUTS } from '@/lib/shortcut-keys';
 import { cn } from '@/lib/utils';
 
@@ -336,9 +341,10 @@ function PaletteRow({
 }
 
 /**
- * The header control that opens the palette, on the left of the header
- * actions: a search field look with the ⌘K hint, and an icon-only button
- * below `sm`.
+ * The command palette's opener: a search icon with a tooltip naming it and its shortcut (⌘K /
+ * Ctrl+K). It sits right after the sidebar toggle, in `AppSidebarHeader`'s `leading` slot, so it
+ * takes one icon's width instead of a search-field's and leaves the header's right side to the
+ * page's actions (#157). ⌘K itself is the main way in; the icon is for discovery and the mouse.
  */
 export function CommandPaletteTrigger({
     onOpen,
@@ -350,25 +356,24 @@ export function CommandPaletteTrigger({
     const { t } = useTranslation();
 
     return (
-        <Button
-            type="button"
-            variant="outline"
-            onClick={onOpen}
-            aria-label={t('commandPalette.trigger')}
-            aria-haspopup="dialog"
-            className={cn(
-                'w-8 justify-start gap-2 px-0 text-muted-foreground sm:w-56 sm:px-3',
-                className,
-            )}
-        >
-            <Search className="mx-auto size-4 sm:mx-0" aria-hidden="true" />
-            <span className="hidden flex-1 text-left sm:inline">
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={onOpen}
+                    aria-label={t('commandPalette.trigger')}
+                    aria-haspopup="dialog"
+                    className={cn('shrink-0', className)}
+                >
+                    <Search aria-hidden="true" />
+                </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="flex items-center gap-2">
                 {t('commandPalette.trigger')}
-            </span>
-            <ShortcutHint
-                keys={RESERVED_SHORTCUTS.commandPalette}
-                className="hidden sm:inline-flex"
-            />
-        </Button>
+                <ShortcutHint keys={RESERVED_SHORTCUTS.commandPalette} />
+            </TooltipContent>
+        </Tooltip>
     );
 }

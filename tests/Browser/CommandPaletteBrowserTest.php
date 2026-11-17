@@ -22,7 +22,7 @@ it('opens from the header, finds a project and navigates to it', function (strin
 
     $path = route('dashboard', absolute: false);
     $page = ($scheme === 'dark' ? visit($path)->inDarkMode() : visit($path)->inLightMode())
-        ->click('[aria-haspopup="dialog"]:has-text("Search")')
+        ->click('button[aria-haspopup="dialog"][aria-label="Search"]')
         ->assertSee('Navigation')
         ->type('[cmdk-input]', 'billing')
         ->wait(1)

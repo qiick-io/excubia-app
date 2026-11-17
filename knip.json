@@ -20,7 +20,12 @@
         "resources/js/components/table-cell-details.tsx",
         "resources/js/lib/table-cell-details.ts",
         "resources/js/components/sidebar-unread-badge.tsx",
-        "resources/js/lib/notification-sound.ts"
+        "resources/js/lib/notification-sound.ts",
+        // ponytail: the app-ui timeline pattern is installed ahead of its first use; #333 renders
+        // the upgrade plan with it once excubia-core rc.2 ships the structured plan. Drop these
+        // two entries in that PR.
+        "resources/js/components/timeline.tsx",
+        "resources/js/lib/timeline.ts"
     ],
     "ignoreDependencies": ["concurrently"],
     "ignoreBinaries": ["oxlint"]

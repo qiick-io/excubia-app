@@ -44,7 +44,7 @@ it('shows the initials or the logo of a project everywhere it is named', functio
 
     expect($page->script(str_replace('SELECTOR', "'[data-slot=\"breadcrumb\"] [data-test=\"project-avatar\"]'", $avatarTexts)))->toBe(['BA']);
 
-    $page->click('[aria-haspopup="dialog"]:has-text("Search")')
+    $page->click('button[aria-haspopup="dialog"][aria-label="Search"]')
         ->type('[cmdk-input]', 'shop')
         ->wait(1)
         ->assertSee('Shop')

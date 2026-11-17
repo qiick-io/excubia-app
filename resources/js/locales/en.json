@@ -115,6 +115,8 @@
         "clearSelection": "Clear selection",
         "close": "Close",
         "toggleSidebar": "Toggle sidebar",
+        "collapseSidebar": "Collapse sidebar",
+        "expandSidebar": "Expand sidebar",
         "loading": "Loading",
         "saving": "Saving",
         "reorder": "Reorder",
@@ -2350,5 +2352,19 @@
             "grouped_one": "{{count}} alert in {{project}}",
             "grouped_other": "{{count}} alerts in {{project}}"
         }
+    },
+    "timeline": {
+        "itemCount_one": "{{count}} item",
+        "itemCount_other": "{{count}} items",
+        "showLess": "Show less",
+        "showMore": "Show {{count}} more",
+        "status": {
+            "done": "Done",
+            "current": "In progress",
+            "pending": "To do",
+            "warning": "Needs attention",
+            "blocked": "Blocked"
+        },
+        "valueChange": "from {{from}} to {{to}}"
     }
 }
