@@ -18,6 +18,7 @@ import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 import { cn } from '@/lib/utils';
 import aiPricesRoutes from '@/routes/ai-prices';
+import aiSettings from '@/routes/ai-settings';
 import type { BreadcrumbItem } from '@/types';
 import { edit as editProfile } from '@/routes/profile';
 
@@ -63,7 +64,7 @@ const toFormRow = (row: PriceRow): FormRow => ({
 });
 
 /**
- * Settings → AI prices (#129): the editable price table that turns the AI usage the projects
+ * Settings → AI → Prices (#129, a sub-page of Settings → AI since #331): the editable price table that turns the AI usage the projects
  * push into estimated costs, one row per provider (as named in the project's `config/ai.php`)
  * and model. Seeded with the list prices of the official pricing pages (`defaultsSources`, linked
  * in the note); "Restore defaults" puts
@@ -91,6 +92,7 @@ export default function AiPricesSettings({
 
     const breadcrumbs: BreadcrumbItem[] = [
         { title: t('settings.layout.title'), href: editProfile() },
+        { title: t('settings.ai.breadcrumb'), href: aiSettings.edit.url() },
         {
             title: t('settings.aiPrices.breadcrumb'),
             href: aiPricesRoutes.edit.url(),

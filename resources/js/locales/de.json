@@ -234,9 +234,7 @@
             "authSecurity": "Authentifizierung & Sicherheit",
             "sidebar": "Seitenleiste",
             "sectionAi": "KI",
-            "aiTools": "Werkzeuge",
             "integrations": "Integrationen",
-            "aiPrices": "Preise",
             "apiKeys": "API-Schlüssel"
         },
         "profile": {
@@ -439,6 +437,13 @@
             "providerLabel": "Anbieter",
             "modelLabel": "Modell",
             "envHint": "Anbieter, Modell und Schlüssel werden in der .env gesetzt (AI_DEFAULT_PROVIDER und die Schlüssel des Anbieters). Daten an einen Cloud-Anbieter verlassen deinen Server.",
+            "pricesTitle": "Preise",
+            "pricesDescription": "Preise pro Anbieter und Modell rechnen die KI-Aufrufe deiner überwachten Projekte in geschätzte Kosten um, im KI-Tab der Projekte und in den KI-Budgetalarmen.",
+            "pricesEdit": "Preise bearbeiten",
+            "pricesDocs": "Mehr zur KI-Nutzung",
+            "pricesEmptyTitle": "Noch keine KI-Nutzung",
+            "pricesEmptyDescription": "Preise werden genutzt, sobald ein Projekt KI-Nutzung sendet.",
+            "pricesOpenAnyway": "Preistabelle öffnen",
             "kind": {
                 "read": "lesen",
                 "write": "schreiben"
@@ -550,17 +555,17 @@
             "severitiesTitle": "Standard-Schweregrade",
             "severitiesDescription": "Der Schweregrad jedes Ereignisses, das ihn nicht von einem Befund übernimmt. Der Mindestschweregrad jedes Kanals und Abos wird damit verglichen.",
             "aiRulesTitle": "Alarmregeln für KI-Nutzung",
-            "aiRulesDescription": "Optionale Alarme aus der KI-Nutzung, die die Projekte senden (Laravel AI SDK), mit Kosten geschätzt aus Einstellungen → KI-Preise. Monatsbudgets werden pro Projekt in seinem KI-Tab festgelegt. Leer schaltet eine Regel aus.",
+            "aiRulesDescription": "Optionale Alarme aus der KI-Nutzung, die die Projekte senden (Laravel AI SDK), mit Kosten geschätzt aus Einstellungen → KI → Preise. Monatsbudgets werden pro Projekt in seinem KI-Tab festgelegt. Leer schaltet eine Regel aus.",
             "aiSpendSpike": "KI-Kosten heute über (% des 7-Tage-Durchschnitts)",
             "aiSpendSpikeHint": "Einmal am Tag alarmieren, wenn die geschätzten KI-Kosten eines Projekts heute diesen Anteil seines Durchschnittstags der 7 Tage davor erreichen, ab 1 $. 300 bedeutet das Dreifache.",
             "aiErrorRate": "KI-Fehlerrate über (%)",
             "aiErrorRateHint": "Alarmieren, wenn mehr als dieser Anteil der KI-Aufrufe der letzten Stunde fehlschlug, bei mindestens 20 Aufrufen."
         },
         "aiPrices": {
-            "breadcrumb": "KI-Preise",
+            "breadcrumb": "Preise",
             "head": "KI-Preise",
             "title": "KI-Preise",
-            "description": "Preise pro Anbieter und Modell, die die KI-Nutzung deiner Projekte in geschätzte Kosten umrechnen. Der Anbieter ist der Name in der config/ai.php des Projekts. Ein Modellname mit Datum (gpt-4o-2024-08-06) nutzt die Zeile seines Modells (gpt-4o). Modelle ohne Zeile zeigen Tokens ohne Kosten.",
+            "description": "Preise pro Anbieter und Modell, die die KI-Aufrufe deiner überwachten Projekte in geschätzte Kosten umrechnen, im KI-Tab der Projekte und in den KI-Budgetalarmen. Der Anbieter ist der Name in der config/ai.php des Projekts. Ein Modellname mit Datum (gpt-4o-2024-08-06) nutzt die Zeile seines Modells (gpt-4o). Modelle ohne Zeile zeigen Tokens ohne Kosten.",
             "estimates": "Das sind Schätzungen, nicht deine Rechnung: prüfe sie bei deinem Anbieter. Tabelle vom {{date}}; die Standardwerte wurden zuletzt am {{defaultsDate}} geprüft.",
             "sources": "Standardwerte von den offiziellen Preisseiten, Standard-Tarif, Basispreise gestaffelter Modelle (geprüft am {{date}}):",
             "add": "Modell hinzufügen",

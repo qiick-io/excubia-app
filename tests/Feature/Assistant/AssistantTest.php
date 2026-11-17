@@ -199,17 +199,25 @@ it('uses only the tools enabled in Settings → AI', function () {
         ->toBe([ExcubiaAssistantAgent::TOOLS['list-projects'], ExcubiaAssistantAgent::TOOLS['search-findings']]);
 });
 
-it('shows the AI settings to project settings managers only', function () {
+it('shows the AI tools to project settings managers only', function () {
     config(['excubia.ai_enabled' => true, 'ai.default' => 'ollama']);
 
     $this->actingAs(assistantUser(RoleEnum::SuperAdmin))->get(route('ai-settings.edit'))
         ->assertInertia(fn (Assert $page) => $page->component('settings/ai')
+            ->where('canManageTools', true)
             ->where('isEnabled', true)
             ->where('provider', 'ollama')
             ->has('tools', count(ExcubiaAssistantAgent::TOOLS))
             ->where('enabledTools', array_keys(ExcubiaAssistantAgent::TOOLS)));
 
-    $this->actingAs(assistantUser())->get(route('ai-settings.edit'))->assertForbidden();
+    // An admin manages alerts but not project settings: Settings → AI opens on its prices section only (#331).
+    $this->actingAs(assistantUser())->get(route('ai-settings.edit'))
+        ->assertInertia(fn (Assert $page) => $page->component('settings/ai')
+            ->where('canManageTools', false)
+            ->where('canManagePrices', true)
+            ->has('tools', 0));
+    $this->actingAs(assistantUser())->put(route('ai-settings.update'), ['tools' => []])->assertForbidden();
+    $this->actingAs(assistantUser(RoleEnum::Reader))->get(route('ai-settings.edit'))->assertForbidden();
     $this->actingAs(assistantUser(RoleEnum::SuperAdmin))
         ->put(route('ai-settings.update'), ['tools' => ['delete-everything']])
         ->assertSessionHasErrors('tools.0');
