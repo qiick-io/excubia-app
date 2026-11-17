@@ -14,7 +14,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 
 /**
- * Settings → AI prices (#129): the editable price table per provider and model that turns the
+ * Settings → AI → Prices (#129): the editable price table per provider and model that turns the
  * AI usage of the projects into estimated costs, with the seeded defaults to restore. The routes
  * require `can-manage-alerts`.
  */

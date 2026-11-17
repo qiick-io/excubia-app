@@ -235,9 +235,7 @@
             "authSecurity": "Authentication & Security",
             "sidebar": "Sidebar",
             "sectionAi": "AI",
-            "aiTools": "Tools",
             "integrations": "Integrations",
-            "aiPrices": "Prices",
             "apiKeys": "API keys"
         },
         "profile": {
@@ -440,6 +438,13 @@
             "providerLabel": "Provider",
             "modelLabel": "Model",
             "envHint": "The provider, model and keys are set in .env (AI_DEFAULT_PROVIDER and the provider's keys). The data sent to a cloud provider leaves your server.",
+            "pricesTitle": "Prices",
+            "pricesDescription": "Prices per provider and model turn the AI calls of your monitored projects into estimated costs, on their AI tab and in the AI budget alerts.",
+            "pricesEdit": "Edit prices",
+            "pricesDocs": "About AI usage",
+            "pricesEmptyTitle": "No AI usage yet",
+            "pricesEmptyDescription": "Prices are used once a project sends AI usage.",
+            "pricesOpenAnyway": "Open the price table",
             "kind": {
                 "read": "read",
                 "write": "write"
@@ -551,17 +556,17 @@
             "severitiesTitle": "Default severities",
             "severitiesDescription": "The severity of each event that does not take one from a finding. The minimum severity of every channel and subscription is compared with it.",
             "aiRulesTitle": "AI usage alert rules",
-            "aiRulesDescription": "Optional alerts from the AI usage the projects push (Laravel AI SDK), with costs estimated from Settings → AI prices. Monthly budgets are set per project on its AI tab. Empty turns a rule off.",
+            "aiRulesDescription": "Optional alerts from the AI usage the projects push (Laravel AI SDK), with costs estimated from Settings → AI → Prices. Monthly budgets are set per project on its AI tab. Empty turns a rule off.",
             "aiSpendSpike": "Today's AI spend above (% of the 7-day average)",
             "aiSpendSpikeHint": "Alert once a day when a project's estimated AI spend today reaches this share of its average day over the 7 days before, from $1. 300 means three times the average.",
             "aiErrorRate": "AI error rate above (%)",
             "aiErrorRateHint": "Alert when more than this share of the AI calls of the last hour failed, with at least 20 calls."
         },
         "aiPrices": {
-            "breadcrumb": "AI prices",
+            "breadcrumb": "Prices",
             "head": "AI prices",
             "title": "AI prices",
-            "description": "Prices per provider and model that turn the AI usage of your projects into estimated costs. The provider is the name in the project's config/ai.php. A dated model name (gpt-4o-2024-08-06) uses the row of its model (gpt-4o). Models without a row show tokens without a cost.",
+            "description": "Prices per provider and model that turn the AI calls of your monitored projects into estimated costs, on their AI tab and in the AI budget alerts. The provider is the name in the project's config/ai.php. A dated model name (gpt-4o-2024-08-06) uses the row of its model (gpt-4o). Models without a row show tokens without a cost.",
             "estimates": "These are estimates, not your bill: verify them against your provider. Table dated {{date}}; the defaults were last checked on {{defaultsDate}}.",
             "sources": "Defaults from the official pricing pages, standard tier, base prices of tiered models (checked on {{date}}):",
             "add": "Add model",

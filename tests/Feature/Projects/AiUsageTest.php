@@ -249,7 +249,7 @@ it('prices old-shape saved rows since forever and dated rows from their day', fu
     expect($prices->costOfDays($this->project, Date::parse('2026-11-14'), Date::parse('2026-11-15'))['cost'])->toEqualWithDelta(6.0, 0.000001);
 });
 
-it('saves a new price of a model from a date in Settings → AI prices and keeps the history', function () {
+it('saves a new price of a model from a date in Settings → AI → Prices and keeps the history', function () {
     $admin = aiUser(RoleEnum::Admin);
     $this->actingAs($admin)->get(route('ai-prices.edit'))->assertInertia(fn (Assert $page) => $page
         ->where('prices', fn ($rows): bool => collect($rows)->contains(fn (array $row): bool => $row['model'] === 'gemini-3.8-flash' && $row['effective_from'] === '2027-01-01' && $row['output'] === 7.5))
@@ -334,6 +334,36 @@ it('lets alert managers set the monthly AI budget, not readers', function () {
     $this->actingAs(aiUser(RoleEnum::Admin))->put(route('projects.ai-budget.update', $this->project), ['ai_monthly_budget' => ''])->assertSessionHasNoErrors();
 
     expect($this->project->fresh()->ai_monthly_budget)->toBeNull();
+});
+
+it('keeps the old AI prices address working as a redirect to Settings → AI → Prices', function () {
+    expect(route('ai-prices.edit', absolute: false))->toBe('/settings/ai/prices');
+
+    $this->actingAs(aiUser(RoleEnum::Admin))->get('/settings/ai-prices')
+        ->assertStatus(301)
+        ->assertRedirect('/settings/ai/prices');
+});
+
+it('shows an empty state instead of the price link on Settings → AI until a project sends AI usage', function () {
+    $admin = aiUser(RoleEnum::Admin);
+
+    $this->actingAs($admin)->get(route('ai-settings.edit'))->assertInertia(fn (Assert $page) => $page
+        ->component('settings/ai')
+        ->where('canManagePrices', true)
+        ->where('hasAiUsage', false));
+
+    aiUsageDay($this->project, '2026-11-19', 1000);
+
+    $this->actingAs($admin)->get(route('ai-settings.edit'))->assertInertia(fn (Assert $page) => $page
+        ->where('hasAiUsage', true));
+});
+
+it('counts recent AI calls not yet summed into a day as AI usage for Settings → AI', function () {
+    pushAiRuntime([aiEntry()]);
+    AiUsageDay::query()->delete();
+
+    $this->actingAs(aiUser(RoleEnum::Admin))->get(route('ai-settings.edit'))->assertInertia(fn (Assert $page) => $page
+        ->where('hasAiUsage', true));
 });
 
 it('edits the AI price table with can-manage-alerts and restores nothing it was not sent', function () {

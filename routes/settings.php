@@ -46,10 +46,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->middleware('throttle:10,1')
             ->name('project.integrations.test');
 
-        // AI price table (#129), which the AI budgets and alerts use.
-        Route::get('settings/ai-prices', [AiPricesSettingsController::class, 'edit'])->name('ai-prices.edit');
-        Route::put('settings/ai-prices', [AiPricesSettingsController::class, 'update'])->name('ai-prices.update');
+        // AI price table (#129), which the AI budgets and alerts use: a sub-page of Settings → AI (#331).
+        Route::get('settings/ai/prices', [AiPricesSettingsController::class, 'edit'])->name('ai-prices.edit');
+        Route::put('settings/ai/prices', [AiPricesSettingsController::class, 'update'])->name('ai-prices.update');
     });
+
+    // The price table's address before #331, kept working for bookmarks and older links.
+    Route::permanentRedirect('settings/ai-prices', '/settings/ai/prices');
+
+    // Settings → AI: the assistant tools (`can-manage-project-settings`) and the AI prices
+    // section (`can-manage-alerts`), each shown to who may change it (SettingPolicy::viewAi).
+    Route::get('settings/ai', [AiSettingsController::class, 'edit'])
+        ->middleware('can:viewAi,'.Setting::class)
+        ->name('ai-settings.edit');
 
     // Personal API keys of the signed-in user (#315): only their own keys, see ApiKeyPolicy.
     Route::get('settings/api-keys', [ApiKeyController::class, 'index'])->name('api-keys.index');
@@ -81,7 +90,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('settings/appearance/sidebar', [AppearanceSidebarSettingsController::class, 'edit'])->name('appearance.sidebar.edit');
         Route::put('settings/appearance/sidebar', [AppearanceSidebarSettingsController::class, 'update'])->name('appearance.sidebar.update');
 
-        Route::get('settings/ai', [AiSettingsController::class, 'edit'])->name('ai-settings.edit');
         Route::put('settings/ai', [AiSettingsController::class, 'update'])->name('ai-settings.update');
 
         Route::get('settings/performance', [PerformanceSettingsController::class, 'edit'])->name('performance.edit');

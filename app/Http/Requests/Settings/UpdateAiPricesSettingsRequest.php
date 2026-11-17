@@ -11,7 +11,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Date;
 
 /**
- * Settings → AI prices (#129): the price rows per provider and model, in USD (tokens per 1M,
+ * Settings → AI → Prices (#129): the price rows per provider and model, in USD (tokens per 1M,
  * audio per second, search units per unit). Input and output prices are required, the others
  * optional. A row may start on a day (`effective_from`, UTC, #202; empty for since forever), so a
  * provider and model appear once per start day. Needs `can-manage-alerts`, like the budgets and

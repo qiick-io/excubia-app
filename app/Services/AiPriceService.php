@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Date;
 
 /**
  * The AI price table (#129) and the cost of AI usage. excubia-core sends no prices: the app
- * prices the tokens with this table, editable in Settings → AI prices (`ai_prices`), seeded with
+ * prices the tokens with this table, editable in Settings → AI → Prices (`ai_prices`), seeded with
  * DEFAULTS, the public list prices of each provider's official pricing page (SOURCES) as checked
  * on DEFAULTS_UPDATED_ON. Prices are in USD: tokens per 1M, audio per second, search units per unit.
  *
@@ -142,7 +142,7 @@ class AiPriceService
     }
 
     /**
-     * The saved table, or the defaults until Settings → AI prices is saved.
+     * The saved table, or the defaults until Settings → AI → Prices is saved.
      *
      * @return list<Price>
      */
