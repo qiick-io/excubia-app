@@ -42,7 +42,7 @@ class DashboardController extends Controller
                 'canViewProjects' => false,
                 'projects' => [],
                 'projectGroups' => [],
-                'scope' => ['project' => null, 'group' => null, 'period' => $period],
+                'scope' => ['project' => null, 'group' => null, 'period' => $period, 'isAssignedToMe' => false],
                 'overview' => null,
                 'trend' => [],
                 'liveHealth' => (object) [],
@@ -61,14 +61,16 @@ class DashboardController extends Controller
             ->orderBy('name')
             ->get();
         $selected = $projects->firstWhere('slug', $request->string('project')->toString());
+        // `?assigned=me` narrows the top issues to the user's findings (#332), as on the lists.
+        $isAssignedToMe = $request->query('assigned') === 'me';
         $scoped = fn (): Collection => ($selected === null ? $projects : $projects->where('id', $selected->id)->values())->loadMissing('latestReport');
 
         return Inertia::render('dashboard', [
             'canViewProjects' => true,
             'projects' => fn (): array => ProjectResource::collection($projects->loadMissing('latestReport'))->resolve(),
             'projectGroups' => fn (): array => $projectGroups->map(fn (ProjectGroup $projectGroup): array => ['id' => $projectGroup->id, 'name' => $projectGroup->name])->all(),
-            'scope' => ['project' => $selected?->slug, 'group' => $group?->id, 'period' => $period],
-            'overview' => fn (): array => $overview->overview($scoped(), $period),
+            'scope' => ['project' => $selected?->slug, 'group' => $group?->id, 'period' => $period, 'isAssignedToMe' => $isAssignedToMe],
+            'overview' => fn (): array => $overview->overview($scoped(), $period, $isAssignedToMe ? $request->user() : null),
             'trend' => fn (): array => $trend->daily($scoped(), $period),
             'liveHealth' => fn (): object => (object) $health->summaries($projects),
             // Open exception groups and findings assigned to the user, per project (#254).

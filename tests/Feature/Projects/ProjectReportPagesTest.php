@@ -234,7 +234,7 @@ it('builds the issue-first overview for all projects or one, with the previous p
 
     $this->actingAs(reportReader())->get(route('dashboard'))
         ->assertInertia(fn (Assert $page) => $page
-            ->where('scope', ['project' => null, 'group' => null, 'period' => 14])
+            ->where('scope', ['project' => null, 'group' => null, 'period' => 14, 'isAssignedToMe' => false])
             ->where('overview.kpis.findings.total', 4)
             ->where('overview.kpis.findings.previous', 1)
             ->where('overview.kpis.atRisk.value', 2)
@@ -254,7 +254,7 @@ it('builds the issue-first overview for all projects or one, with the previous p
 
     $this->actingAs(reportReader())->get(route('dashboard', ['project' => 'blog', 'group' => null, 'period' => 7]))
         ->assertInertia(fn (Assert $page) => $page
-            ->where('scope', ['project' => 'blog', 'group' => null, 'period' => 7])
+            ->where('scope', ['project' => 'blog', 'group' => null, 'period' => 7, 'isAssignedToMe' => false])
             ->has('projects', 2)
             ->where('overview.kpis.findings.total', 2)
             ->where('overview.kpis.findings.previous', null)
@@ -264,7 +264,38 @@ it('builds the issue-first overview for all projects or one, with the previous p
             ->has('trend', 1));
 
     $this->actingAs(reportReader())->get(route('dashboard', ['project' => 'nope', 'period' => 5]))
-        ->assertInertia(fn (Assert $page) => $page->where('scope', ['project' => null, 'group' => null, 'period' => 14]));
+        ->assertInertia(fn (Assert $page) => $page->where('scope', ['project' => null, 'group' => null, 'period' => 14, 'isAssignedToMe' => false]));
+});
+
+it('narrows the dashboard top issues to the findings assigned to me with ?assigned=me', function () {
+    $shop = Project::factory()->create(['name' => 'Shop', 'slug' => 'shop']);
+    $me = reportReader();
+    $other = reportReader();
+    $finding = fn (string $package) => ['checkId' => 'composer-advisories', 'fingerprint' => hash('sha256', $package), 'severity' => 'high', 'status' => 'fail', 'subject' => $package, 'message' => "Known vulnerability in {$package}", 'fixHint' => '', 'evidenceUrl' => null, 'details' => ['package' => $package]];
+    pushedReport($shop, '2026-11-05 08:00:00', SeverityEnum::High, ['high_count' => 2])->update(['report' => [
+        'schemaVersion' => 1,
+        'checks' => [['checkId' => 'composer-advisories', 'name' => 'Known vulnerabilities', 'status' => 'fail', 'findings' => [$finding('guzzlehttp/guzzle'), $finding('monolog/monolog')]]],
+        'upgradePlan' => [],
+    ]]);
+
+    foreach (['guzzlehttp/guzzle' => $me, 'monolog/monolog' => $other] as $package => $assignee) {
+        $shop->findings()->create([
+            'fingerprint' => hash('sha256', $package), 'check_id' => 'composer-advisories', 'severity' => 'high', 'status' => 'open',
+            'finding' => $finding($package), 'first_seen_at' => Date::now(), 'last_seen_at' => Date::now(),
+        ])->forceFill(['assigned_user_id' => $assignee->id])->save();
+    }
+
+    $this->actingAs($me)->get(route('dashboard'))
+        ->assertInertia(fn (Assert $page) => $page->where('overview.topIssuesTotal', 2));
+
+    $this->actingAs($me)->get(route('dashboard', ['assigned' => 'me']))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('scope.isAssignedToMe', true)
+            ->where('overview.topIssuesTotal', 1)
+            ->where('overview.topIssues.0.package', 'guzzlehttp/guzzle'));
+
+    $this->actingAs(reportReader())->get(route('dashboard', ['assigned' => 'me']))
+        ->assertInertia(fn (Assert $page) => $page->where('overview.topIssuesTotal', 0));
 });
 
 it('sends a ready fix per finding to the project page and the dashboard', function () {

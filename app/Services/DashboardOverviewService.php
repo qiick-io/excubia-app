@@ -8,10 +8,12 @@ use App\Enums\CheckCategoryEnum;
 use App\Enums\ExceptionStatusEnum;
 use App\Enums\SeverityEnum;
 use App\Models\ExceptionGroup;
+use App\Models\Finding;
 use App\Models\HealthReport;
 use App\Models\Project;
 use App\Models\RuntimeAggregate;
 use App\Models\RuntimeHourlyRollup;
+use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
@@ -91,9 +93,10 @@ class DashboardOverviewService
 
     /**
      * @param  Collection<int, Project>  $projects  the scoped projects, with `latestReport` loaded
+     * @param  User|null  $onlyAssignedTo  keeps the top issues to those with a finding assigned to this user (#332)
      * @return array<string, mixed>
      */
-    public function overview(Collection $projects, int $periodDays): array
+    public function overview(Collection $projects, int $periodDays, ?User $onlyAssignedTo = null): array
     {
         $today = CarbonImmutable::instance(Date::now());
         $previousAt = $today->subDays($periodDays);
@@ -120,7 +123,7 @@ class DashboardOverviewService
                     'total' => $projects->count(),
                 ],
             ],
-            ...$this->topIssues($projects),
+            ...$this->topIssues($projects, $onlyAssignedTo),
             'endOfSupport' => $this->endOfSupport($projects, $today),
             'configuration' => $this->configuration($projects),
             'licenses' => $this->licenses($projects),
@@ -198,13 +201,22 @@ class DashboardOverviewService
      * Configuration and infrastructure checks are left out: they have their own block.
      * Packages that repeat one check's message ("Latest release does not allow Laravel 14.")
      * then share one row with the list of packages (#291), so different problems stay visible.
+     * With `$onlyAssignedTo`, only the findings assigned to that user count (#332), before the
+     * limit, so the "Assigned to me" view is complete.
      *
      * @param  Collection<int, Project>  $projects
      * @return array{topIssues: list<array<string, mixed>>, topIssuesTotal: int}
      */
-    private function topIssues(Collection $projects): array
+    private function topIssues(Collection $projects, ?User $onlyAssignedTo = null): array
     {
         $groups = [];
+        // "project id|core fingerprint" of the findings assigned to the user, one query.
+        $assignedFindingKeys = $onlyAssignedTo === null ? null : Finding::query()
+            ->whereIn('project_id', $projects->pluck('id'))
+            ->where('assigned_user_id', $onlyAssignedTo->id)
+            ->get(['project_id', 'fingerprint'])
+            ->mapWithKeys(fn (Finding $finding): array => [$finding->project_id.'|'.$finding->fingerprint => true])
+            ->all();
 
         foreach ($projects as $project) {
             if ($project->latestReport === null) {
@@ -215,6 +227,10 @@ class DashboardOverviewService
                 $checkId = (string) ($finding['checkId'] ?? '');
 
                 if ($this->isPosture($checkId)) {
+                    continue;
+                }
+
+                if ($assignedFindingKeys !== null && ! isset($assignedFindingKeys[$project->id.'|'.($finding['fingerprint'] ?? '')])) {
                     continue;
                 }
 

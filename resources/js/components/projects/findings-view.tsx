@@ -24,7 +24,15 @@ import {
 } from '@/components/reports/check-details';
 import {
     AssignedToMeToggle,
+    AssigneeFacetFilter,
+    AssigneeRowActions,
+    assigneeColumn,
     isAssignedToMeLinked,
+    matchesAssigneeFilter,
+    saveAssignee,
+    sortByAssignee,
+    useAssigneeFilter,
+    useAssigneeSort,
     useCurrentUserId,
     type AssigneeOption,
 } from '@/components/reports/assignee-select';
@@ -87,7 +95,9 @@ function findingStatusFromUrl(): FindingStatusFilter {
  * (lifecycle status, severity, group, check) on the left, the table in a TablePanel (app-ui
  * `docs/list-page.md`), and a detail drawer with the check's explanation, structured details,
  * lifecycle and history (`?finding=<key>` opens it). Open findings include those whose check did
- * not run in the latest report. Filtering happens in the browser: the list is small.
+ * not run in the latest report. Filtering happens in the browser: the list is small. The assignee
+ * column (avatar or "Unassigned") sorts, its facet filters, and each row can be assigned from its
+ * actions (#332).
  */
 export function FindingsView({
     rows,
@@ -109,6 +119,8 @@ export function FindingsView({
         useState<FindingStatusFilter>(findingStatusFromUrl);
     const currentUserId = useCurrentUserId();
     const [isMine, setIsMineFilter] = useState(isAssignedToMeLinked);
+    const [assigneeFilter, setAssigneeFilter] = useAssigneeFilter();
+    const [sort, setSort] = useAssigneeSort();
     const [isNewOnly, setIsNewOnly] = useState(
         () => getQueryParam(locationPageUrl(), 'new') === '24h',
     );
@@ -151,10 +163,11 @@ export function FindingsView({
     );
 
     const needle = search.trim().toLowerCase();
-    const filtered = rows.filter(
+    const matching = rows.filter(
         (row) =>
             (status === 'all' || row.lifecycle.status === status) &&
             (!isMine || row.lifecycle.assignee?.id === currentUserId) &&
+            matchesAssigneeFilter(row.lifecycle.assignee, assigneeFilter) &&
             (!isNewOnly ||
                 isFirstSeenWithinLastDay(row.lifecycle.firstSeenAt)) &&
             (severity === 'all' || row.severity === severity) &&
@@ -165,10 +178,16 @@ export function FindingsView({
                     .toLowerCase()
                     .includes(needle)),
     );
+    const filtered = sortByAssignee(
+        matching,
+        sort,
+        (row) => row.lifecycle.assignee,
+    );
     const hasActiveFilters =
         needle !== '' ||
         (status !== 'open' && status !== 'resolved') ||
         isMine ||
+        assigneeFilter.length > 0 ||
         isNewOnly ||
         severity !== 'all' ||
         category !== 'all' ||
@@ -202,6 +221,7 @@ export function FindingsView({
     const hasOtherFilters =
         status !== 'open' ||
         needle !== '' ||
+        assigneeFilter.length > 0 ||
         severity !== 'all' ||
         category !== 'all' ||
         checkId !== 'all';
@@ -239,13 +259,12 @@ export function FindingsView({
                 currentUserId !== null &&
                 assignees.some((option) => option.id === currentUserId),
             handler: (row) =>
-                router.put(
+                saveAssignee(
                     projectsRoutes.findings.assignee.url({
                         project: projectId,
                         finding: row.lifecycle.id,
                     }),
-                    { assigned_user_id: currentUserId },
-                    { preserveScroll: true, preserveState: true },
+                    currentUserId,
                 ),
         },
     });
@@ -373,14 +392,10 @@ export function FindingsView({
                 return <>{row.fixHint}</>;
             },
         },
-        {
-            id: 'assignee',
-            header: t('assignee.column'),
-            meta: { cellClassName: 'min-w-[8rem] text-sm' },
-            cell: ({ row: tableRow }) => (
-                <>{tableRow.original.lifecycle.assignee?.name ?? '—'}</>
-            ),
-        },
+        assigneeColumn<LifecycleRow>(
+            t('assignee.column'),
+            (row) => row.lifecycle.assignee,
+        ),
         {
             id: 'firstSeen',
             header: t('findings.firstSeen'),
@@ -430,18 +445,32 @@ export function FindingsView({
         },
         {
             id: 'actions',
-            header: t('fix.actions'),
+            header: t('findings.actions'),
             meta: {
                 headerClassName: 'w-[1%] text-right',
                 cellClassName: 'text-right',
+                isRowClickIgnored: true,
             },
             cell: ({ row: tableRow }) => {
                 const row = tableRow.original;
 
                 return (
-                    <>
+                    <div className="inline-flex items-center justify-end gap-1">
+                        {canDismiss ? (
+                            <AssigneeRowActions
+                                url={projectsRoutes.findings.assignee.url({
+                                    project: projectId,
+                                    finding: row.lifecycle.id,
+                                })}
+                                itemLabel={
+                                    detailText(row, 'package') ?? row.subject
+                                }
+                                assignee={row.lifecycle.assignee}
+                                options={assignees}
+                            />
+                        ) : null}
                         <FixActions fix={fixes[findingKey(row)]} />
-                    </>
+                    </div>
                 );
             },
         },
@@ -565,6 +594,14 @@ export function FindingsView({
                                     ))}
                                 </SelectContent>
                             </Select>
+                            <AssigneeFacetFilter
+                                options={assignees}
+                                rowAssignees={rows.map(
+                                    (row) => row.lifecycle.assignee,
+                                )}
+                                selectedValues={assigneeFilter}
+                                onSelectedValuesChange={setAssigneeFilter}
+                            />
                             <Select
                                 value={category}
                                 onValueChange={(value) =>
@@ -639,6 +676,7 @@ export function FindingsView({
                                     onClick={() => {
                                         setSearch('');
                                         setIsMine(false);
+                                        setAssigneeFilter([]);
                                         setIsNewOnly(false);
                                         patchLocationQuery({ new: null });
                                         setStatus('open');
@@ -657,6 +695,8 @@ export function FindingsView({
                         columns={findingColumns}
                         data={filtered}
                         getRowId={findingKey}
+                        sort={sort}
+                        onSortChange={setSort}
                         getRowProps={listShortcuts.getActiveRowProps}
                         rowSelection={Object.fromEntries(
                             selected.map((key) => [key, true]),

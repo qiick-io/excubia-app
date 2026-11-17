@@ -937,6 +937,8 @@
             "staleContext": "No report within the stale setting"
         },
         "topIssues": {
+            "emptyMineTitle": "Nothing assigned to you",
+            "emptyMineDescription": "No issue in the latest reports has a finding assigned to you.",
             "title": "Top issues",
             "description": "{{shown}} of {{total}} issues, grouped across projects, worst first.",
             "issue": "Issue",
@@ -1468,6 +1470,7 @@
         "durationChartLabel": "Line chart of the average and p95 request duration {{bucket}} {{during}}: average {{average}}, p95 {{p95}}, slowest {{max}}."
     },
     "exceptions": {
+        "actions": "Actions",
         "emptyTitle": "No exceptions",
         "emptyDescription": "Turn on exception capture in the project's excubia.json to group its exceptions here, masked before they leave the project.",
         "guide": "Exception capture guide",
@@ -2153,6 +2156,7 @@
         }
     },
     "findings": {
+        "actions": "Actions",
         "statusFilter": "Finding status",
         "status": {
             "open": "Open",
@@ -2246,6 +2250,8 @@
         "notCollected": "Not collected: {{types}}."
     },
     "assignee": {
+        "assignToMe": "Assign {{item}} to me",
+        "assignTo": "Assign {{item}}…",
         "label": "Assignee",
         "none": "Unassigned",
         "hint": "Who is on it. Only users who can see this project are listed.",
