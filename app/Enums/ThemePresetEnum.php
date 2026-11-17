@@ -9,12 +9,11 @@ namespace App\Enums;
  */
 enum ThemePresetEnum: string
 {
-    case Teal = 'teal';
-    case Blue = 'blue';
-    case Indigo = 'indigo';
-    case Violet = 'violet';
-    case Rose = 'rose';
-    case Slate = 'slate';
+    case Genziana = 'genziana';
+    case Indaco = 'indaco';
+    case Ametista = 'ametista';
+    case Robbia = 'robbia';
+    case Ardesia = 'ardesia';
 
     /**
      * @return list<string>
@@ -29,7 +28,7 @@ enum ThemePresetEnum: string
      */
     public static function default(): self
     {
-        return self::Blue;
+        return self::Genziana;
     }
 
     public static function tryFromNullable(?string $value): self
