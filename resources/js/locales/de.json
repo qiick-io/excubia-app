@@ -115,6 +115,8 @@
         "clearSelection": "Auswahl löschen",
         "close": "Schließen",
         "toggleSidebar": "Seitenleiste umschalten",
+        "collapseSidebar": "Seitenleiste einklappen",
+        "expandSidebar": "Seitenleiste ausklappen",
         "loading": "Wird geladen",
         "saving": "Wird gespeichert",
         "reorder": "Neu ordnen",
@@ -2351,5 +2353,19 @@
             "grouped_one": "{{count}} Alarm in {{project}}",
             "grouped_other": "{{count}} Alarme in {{project}}"
         }
+    },
+    "timeline": {
+        "itemCount_one": "{{count}} Eintrag",
+        "itemCount_other": "{{count}} Einträge",
+        "showLess": "Weniger anzeigen",
+        "showMore": "{{count}} weitere anzeigen",
+        "status": {
+            "done": "Erledigt",
+            "current": "In Arbeit",
+            "pending": "Offen",
+            "warning": "Erfordert Aufmerksamkeit",
+            "blocked": "Blockiert"
+        },
+        "valueChange": "von {{from}} auf {{to}}"
     }
 }

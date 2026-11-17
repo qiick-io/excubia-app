@@ -1,6 +1,6 @@
 {
-    "$comment": "qiick standards pack: https://github.com/qiick-io/app-ui/tree/v0.8.0/standards. Sync: node <app-ui>/scripts/sync-standards.mjs --target .",
-    "ref": "v0.8.0",
+    "$comment": "qiick standards pack: https://github.com/qiick-io/app-ui/tree/v0.9.0/standards. Sync: node <app-ui>/scripts/sync-standards.mjs --target .",
+    "ref": "v0.9.0",
     "uiPreset": "Blue",
     "php": true,
     "frontendRoots": ["resources/js"],
@@ -13,6 +13,7 @@
         "keyboard-shortcuts",
         "sidebar-entities",
         "table-cell-details",
-        "table-density"
+        "table-density",
+        "timeline"
     ]
 }

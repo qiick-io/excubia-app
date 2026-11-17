@@ -13,7 +13,8 @@ import type { AppLayoutProps } from '@/types';
 
 /**
  * Authenticated app layout with collapsible sidebar and header bar. It holds the keyboard
- * shortcuts and the command palette (#274): the palette's trigger is the first header action.
+ * shortcuts and the command palette (#274): the palette's search icon sits right after the
+ * sidebar toggle, in the header's `leading` slot, leaving the right side to page actions.
  * @param {AppLayoutProps} props - Layout props from Inertia pages.
  * @param {React.ReactNode} props.children - Page content.
  * @param {AppLayoutProps['breadcrumbs']} [props.breadcrumbs=[]] - Breadcrumb trail for the header.
@@ -43,14 +44,12 @@ export default function AppSidebarLayout({
                 >
                     <AppSidebarHeader
                         breadcrumbs={breadcrumbs}
-                        actions={
-                            <>
-                                <CommandPaletteTrigger
-                                    onOpen={() => setIsPaletteOpen(true)}
-                                />
-                                {headerActions}
-                            </>
+                        leading={
+                            <CommandPaletteTrigger
+                                onOpen={() => setIsPaletteOpen(true)}
+                            />
                         }
+                        actions={headerActions}
                     />
                     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
                         {children}

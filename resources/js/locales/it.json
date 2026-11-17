@@ -115,6 +115,8 @@
         "clearSelection": "Cancella selezione",
         "close": "Chiudi",
         "toggleSidebar": "Attiva/disattiva barra laterale",
+        "collapseSidebar": "Comprimi barra laterale",
+        "expandSidebar": "Espandi barra laterale",
         "loading": "Caricamento",
         "saving": "Salvataggio",
         "reorder": "Riordina",
@@ -2351,5 +2353,19 @@
             "grouped_one": "{{count}} avviso in {{project}}",
             "grouped_other": "{{count}} avvisi in {{project}}"
         }
+    },
+    "timeline": {
+        "itemCount_one": "{{count}} elemento",
+        "itemCount_other": "{{count}} elementi",
+        "showLess": "Mostra meno",
+        "showMore": "Mostra altri {{count}}",
+        "status": {
+            "done": "Fatto",
+            "current": "In corso",
+            "pending": "Da fare",
+            "warning": "Richiede attenzione",
+            "blocked": "Bloccato"
+        },
+        "valueChange": "da {{from}} a {{to}}"
     }
 }
