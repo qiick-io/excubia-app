@@ -32,8 +32,16 @@ import {
 import { isFirstSeenWithinLastDay, savedViewHref } from '@/lib/inbox-views';
 import {
     AssignedToMeToggle,
+    AssigneeFacetFilter,
+    AssigneeRowActions,
     AssigneeSelect,
+    assigneeColumn,
     isAssignedToMeLinked,
+    matchesAssigneeFilter,
+    saveAssignee,
+    sortByAssignee,
+    useAssigneeFilter,
+    useAssigneeSort,
     useCurrentUserId,
     type AssigneeOption,
 } from '@/components/reports/assignee-select';
@@ -95,7 +103,9 @@ const STATUS_VARIANTS = {
  * `docs/list-page.md`): search on the left, status and time range (#113) segmented controls on
  * the right, a table of the groups seen in the range, and a detail drawer with the assignee
  * (#254), the occurrences over the range, the stack and the actions (resolve, ignore, reopen,
- * copy a fix prompt). "Assigned to me" narrows the list to the groups the user is on.
+ * copy a fix prompt). "Assigned to me" narrows the list to the groups the user is on; the
+ * assignee column (avatar or "Unassigned") sorts, its facet filters, and each row can be assigned
+ * from its actions (#332).
  */
 export function ExceptionsView({
     projectId,
@@ -125,6 +135,8 @@ export function ExceptionsView({
     const [status, setStatusFilter] = useState<StatusFilter>(statusFromUrl);
     const currentUserId = useCurrentUserId();
     const [isMine, setIsMineFilter] = useState(isAssignedToMeLinked);
+    const [assigneeFilter, setAssigneeFilter] = useAssigneeFilter();
+    const [sort, setSort] = useAssigneeSort();
     const [isNewOnly, setIsNewOnly] = useState(
         () => getQueryParam(locationPageUrl(), 'new') === '24h',
     );
@@ -156,18 +168,29 @@ export function ExceptionsView({
 
     const filtered = useMemo(() => {
         const needle = search.trim().toLowerCase();
-
-        return groups.filter(
+        const matching = groups.filter(
             (group) =>
                 (status === 'all' || group.status === status) &&
                 (!isMine || group.assignee?.id === currentUserId) &&
+                matchesAssigneeFilter(group.assignee, assigneeFilter) &&
                 (!isNewOnly || isFirstSeenWithinLastDay(group.first_seen_at)) &&
                 (needle === '' ||
                     `${group.class} ${group.message} ${group.context.name}`
                         .toLowerCase()
                         .includes(needle)),
         );
-    }, [groups, search, status, isMine, isNewOnly, currentUserId]);
+
+        return sortByAssignee(matching, sort, (group) => group.assignee);
+    }, [
+        groups,
+        search,
+        status,
+        isMine,
+        assigneeFilter,
+        isNewOnly,
+        currentUserId,
+        sort,
+    ]);
 
     // Keyboard triage (#277): j / k, Enter, x, e resolve, a assign to me.
     const listShortcuts = useListShortcuts({
@@ -207,13 +230,12 @@ export function ExceptionsView({
                 currentUserId !== null &&
                 assignees.some((option) => option.id === currentUserId),
             handler: (group) =>
-                router.put(
+                saveAssignee(
                     projectsRoutes.exceptions.assignee.url({
                         project: projectId,
                         exceptionGroup: group.id,
                     }),
-                    { assigned_user_id: currentUserId },
-                    { preserveScroll: true, preserveState: true },
+                    currentUserId,
                 ),
         },
     });
@@ -247,7 +269,11 @@ export function ExceptionsView({
     }
 
     const hasActiveFilters =
-        search.trim() !== '' || status !== 'open' || isMine || isNewOnly;
+        search.trim() !== '' ||
+        status !== 'open' ||
+        isMine ||
+        isNewOnly ||
+        assigneeFilter.length > 0;
 
     const openGroups = groups.filter((group) => group.status === 'open');
     const savedViews: InboxSavedView[] = [
@@ -275,7 +301,7 @@ export function ExceptionsView({
         },
     ];
     const activeSavedViewId =
-        status !== 'open' || search.trim() !== ''
+        status !== 'open' || search.trim() !== '' || assigneeFilter.length > 0
             ? undefined
             : isMine && !isNewOnly
               ? 'mine'
@@ -437,12 +463,10 @@ export function ExceptionsView({
                 return <>{group.count.toLocaleString()}</>;
             },
         },
-        {
-            id: 'assignee',
-            header: t('assignee.column'),
-            meta: { cellClassName: 'max-w-[10rem] truncate text-sm' },
-            cell: ({ row }) => <>{row.original.assignee?.name ?? '—'}</>,
-        },
+        assigneeColumn<ExceptionGroupRow>(
+            t('assignee.column'),
+            (group) => group.assignee,
+        ),
         {
             id: 'lastSeen',
             header: t('exceptions.lastSeen'),
@@ -486,6 +510,30 @@ export function ExceptionsView({
                 );
             },
         },
+        ...(canManage
+            ? [
+                  {
+                      id: 'actions',
+                      header: t('exceptions.actions'),
+                      meta: {
+                          headerClassName: 'w-[1%] text-right',
+                          cellClassName: 'text-right',
+                          isRowClickIgnored: true,
+                      },
+                      cell: ({ row }) => (
+                          <AssigneeRowActions
+                              url={projectsRoutes.exceptions.assignee.url({
+                                  project: projectId,
+                                  exceptionGroup: row.original.id,
+                              })}
+                              itemLabel={row.original.class}
+                              assignee={row.original.assignee}
+                              options={assignees}
+                          />
+                      ),
+                  } satisfies ColumnDef<ExceptionGroupRow>,
+              ]
+            : []),
     ];
 
     return (
@@ -545,6 +593,12 @@ export function ExceptionsView({
                             isPressed={isMine}
                             onPressedChange={setIsMine}
                         />
+                        <AssigneeFacetFilter
+                            options={assignees}
+                            rowAssignees={groups.map((group) => group.assignee)}
+                            selectedValues={assigneeFilter}
+                            onSelectedValuesChange={setAssigneeFilter}
+                        />
                         {picker}
                     </div>
                 }
@@ -565,6 +619,7 @@ export function ExceptionsView({
                                     onClick={() => {
                                         setSearch('');
                                         setIsMine(false);
+                                        setAssigneeFilter([]);
                                         clearNewOnly();
                                         setStatus('all');
                                     }}
@@ -579,6 +634,8 @@ export function ExceptionsView({
                         columns={exceptionColumns}
                         data={filtered}
                         getRowId={(group) => String(group.id)}
+                        sort={sort}
+                        onSortChange={setSort}
                         rowSelection={canManage ? rowSelection : undefined}
                         onRowSelectionChange={setRowSelection}
                         onRowClick={(group) => {

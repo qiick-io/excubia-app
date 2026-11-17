@@ -71,7 +71,13 @@ export default function Dashboard({
     projects: ProjectRow[];
     /** Project groups holding a project the user can see (#252). */
     projectGroups: { id: number; name: string }[];
-    scope: { project: string | null; group: number | null; period: number };
+    scope: {
+        project: string | null;
+        group: number | null;
+        period: number;
+        /** `?assigned=me`: the top issues are those assigned to the user (#332). */
+        isAssignedToMe: boolean;
+    };
     overview: Overview | null;
     trend: TrendPoint[];
     /** Project slug → live health, for the projects that send health samples (#143). */
@@ -85,11 +91,13 @@ export default function Dashboard({
         project?: string | null;
         group?: number | null;
         period?: number;
+        isAssignedToMe?: boolean;
     }): void => {
         const project =
             next.project !== undefined ? next.project : scope.project;
         const group = next.group !== undefined ? next.group : scope.group;
         const period = next.period ?? scope.period;
+        const isAssignedToMe = next.isAssignedToMe ?? scope.isAssignedToMe;
 
         router.get(
             dashboard.url({
@@ -97,6 +105,7 @@ export default function Dashboard({
                     project: project ?? undefined,
                     group: group ?? undefined,
                     period: period === DEFAULT_PERIOD ? undefined : period,
+                    assigned: isAssignedToMe ? 'me' : undefined,
                 },
             }),
             {},
@@ -401,6 +410,10 @@ export default function Dashboard({
                     <TopIssuesCard
                         issues={overview.topIssues}
                         total={overview.topIssuesTotal}
+                        isAssignedToMe={scope.isAssignedToMe}
+                        onAssignedToMeChange={(isPressed) =>
+                            visit({ isAssignedToMe: isPressed })
+                        }
                     />
 
                     <section className="grid grid-cols-1 gap-4 xl:grid-cols-12">

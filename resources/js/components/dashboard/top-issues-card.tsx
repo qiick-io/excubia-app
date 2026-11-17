@@ -1,7 +1,8 @@
 import { Link } from '@inertiajs/react';
-import { CircleCheck } from 'lucide-react';
+import { CircleCheck, UserRound } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { PageEmptyState } from '@/components/admin/page-empty-state';
+import { AssignedToMeToggle } from '@/components/reports/assignee-select';
 import { checkLabel } from '@/components/reports/check-details';
 import { FindingGroupSummary } from '@/components/reports/finding-group';
 import { FixActions } from '@/components/reports/fix-actions';
@@ -9,6 +10,7 @@ import { SeverityBadge } from '@/components/reports/severity-badge';
 import { Badge } from '@/components/ui/badge';
 import {
     Card,
+    CardAction,
     CardContent,
     CardDescription,
     CardHeader,
@@ -27,14 +29,19 @@ import type { TopIssue } from '@/types/dashboard';
 
 /**
  * The grouped findings across projects, worst first; packages that repeat one check's message
- * share a row (#291).
+ * share a row (#291). "Assigned to me" (#332) narrows them to the findings the user is on
+ * (`?assigned=me`, the same filter as the Exceptions and Findings lists).
  */
 export function TopIssuesCard({
     issues,
     total,
+    isAssignedToMe,
+    onAssignedToMeChange,
 }: {
     issues: TopIssue[];
     total: number;
+    isAssignedToMe: boolean;
+    onAssignedToMeChange: (isPressed: boolean) => void;
 }) {
     const { t } = useTranslation();
 
@@ -48,13 +55,27 @@ export function TopIssuesCard({
                         total,
                     })}
                 </CardDescription>
+                <CardAction>
+                    <AssignedToMeToggle
+                        isPressed={isAssignedToMe}
+                        onPressedChange={onAssignedToMeChange}
+                    />
+                </CardAction>
             </CardHeader>
             <CardContent>
                 {issues.length === 0 ? (
                     <PageEmptyState
-                        icon={CircleCheck}
-                        title={t('dashboard.topIssues.emptyTitle')}
-                        description={t('dashboard.topIssues.emptyDescription')}
+                        icon={isAssignedToMe ? UserRound : CircleCheck}
+                        title={
+                            isAssignedToMe
+                                ? t('dashboard.topIssues.emptyMineTitle')
+                                : t('dashboard.topIssues.emptyTitle')
+                        }
+                        description={
+                            isAssignedToMe
+                                ? t('dashboard.topIssues.emptyMineDescription')
+                                : t('dashboard.topIssues.emptyDescription')
+                        }
                         compact
                         className="border-0"
                     />
