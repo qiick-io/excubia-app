@@ -20,7 +20,7 @@ beforeEach(function () {
 
 function brandingPayload(array $overrides = []): array
 {
-    return ['theme_preset' => 'blue', 'default_appearance' => 'system', ...$overrides];
+    return ['theme_preset' => 'genziana', 'default_appearance' => 'system', ...$overrides];
 }
 
 function brandingManager(): User

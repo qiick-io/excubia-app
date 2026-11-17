@@ -407,13 +407,15 @@ it('flushes the permission cache', function () {
 it('offers the built-in theme presets on the appearance page', function () {
     $this->actingAs(projectSettingsManager())->get(route('appearance.edit'))
         ->assertInertia(fn (Assert $page) => $page
-            ->where('appearance.theme_preset', 'blue')
+            ->where('appearance.theme_preset', 'genziana')
             ->where('appearance.project_color', null)
             ->where('appearance.brand_passes_aa', true)
             ->has('appearance.theme_presets', count(ThemePresetEnum::cases()))
-            ->where('appearance.theme_presets.1.slug', 'blue')
-            ->where('appearance.theme_presets.1.light.primary', '#1375A7')
-            ->where('appearance.theme_presets.1.light.background', '#FFFFFF'));
+            ->where('appearance.theme_presets.0.slug', 'genziana')
+            ->where('appearance.theme_presets.0.name', 'settings.appearance.themePresetGenziana')
+            ->where('appearance.theme_presets.0.light.primary', '#1375A7')
+            ->where('appearance.theme_presets.0.dark.primary', '#2FA8EA')
+            ->where('appearance.theme_presets.0.light.background', '#FFFFFF'));
 });
 
 it('saves the theme preset and brand colours', function () {
@@ -421,7 +423,7 @@ it('saves the theme preset and brand colours', function () {
 
     $this->actingAs($manager)
         ->put(route('appearance.update'), [
-            'theme_preset' => 'indigo',
+            'theme_preset' => 'indaco',
             'project_color' => '#123456',
             'project_color_dark' => '',
             'default_appearance' => 'system',
@@ -431,25 +433,25 @@ it('saves the theme preset and brand colours', function () {
 
     $settings = app(SettingsRepositoryService::class);
 
-    expect($settings->themePreset())->toBe('indigo')
+    expect($settings->themePreset())->toBe('indaco')
         ->and($settings->projectColor())->toBe('#123456')
         ->and($settings->projectColorDark())->toBeNull();
 
     $this->actingAs($manager)->get(route('dashboard'))
         ->assertInertia(fn (Assert $page) => $page
-            ->where('projectAppearance.themePreset', 'indigo')
+            ->where('projectAppearance.themePreset', 'indaco')
             ->where('projectAppearance.themeCss.brandPrimary', '#123456')
             ->where('projectAppearance.themeCss.brandPrimaryDark', '#123456'));
 });
 
 it('keeps the stored theme preset when the request omits it', function () {
-    app(SettingsRepositoryService::class)->setMany(['theme_preset' => 'rose']);
+    app(SettingsRepositoryService::class)->setMany(['theme_preset' => 'robbia']);
 
     $this->actingAs(projectSettingsManager())
         ->put(route('appearance.update'), ['default_appearance' => 'light'])
         ->assertSessionHasNoErrors();
 
-    expect(app(SettingsRepositoryService::class)->themePreset())->toBe('rose');
+    expect(app(SettingsRepositoryService::class)->themePreset())->toBe('robbia');
 });
 
 it('rejects an unknown theme preset and invalid brand colours', function () {
@@ -462,35 +464,80 @@ it('rejects an unknown theme preset and invalid brand colours', function () {
         ])
         ->assertSessionHasErrors(['theme_preset', 'project_color', 'project_color_dark']);
 
-    expect(app(SettingsRepositoryService::class)->themePreset())->toBe('blue');
+    expect(app(SettingsRepositoryService::class)->themePreset())->toBe('genziana');
 });
 
 it('merges the shared base with the preset brand colours', function () {
-    $blue = app(ThemePresetService::class)->resolve(null, null, null);
-    $violet = app(ThemePresetService::class)->resolve('violet', null, null);
+    $genziana = app(ThemePresetService::class)->resolve(null, null, null);
+    $ametista = app(ThemePresetService::class)->resolve('ametista', null, null);
 
-    expect($blue['themePreset'])->toBe('blue')
-        ->and($blue['light']['primary'])->toBe('#1375A7')
-        ->and($blue['light']['sidebar'])->toBe(config('theme-presets.base.light.sidebar'))
-        ->and($blue['dark']['background'])->toBe('#0E171E')
-        ->and($blue['light']['ai'])->toBe('#7F35BB')
-        ->and($violet['light']['ai'])->toBe(config('theme-presets.ai_override_light.ai'))
-        ->and($violet['dark']['ai'])->toBe(config('theme-presets.ai_override_dark.ai'));
+    expect($genziana['themePreset'])->toBe('genziana')
+        ->and($genziana['light']['primary'])->toBe('#1375A7')
+        ->and($genziana['light']['sidebar'])->toBe(config('theme-presets.base.light.sidebar'))
+        ->and($genziana['dark']['background'])->toBe('#0E171E')
+        ->and($genziana['light']['ai'])->toBe('#7F35BB')
+        ->and($ametista['light']['ai'])->toBe(config('theme-presets.ai_override_light.ai'))
+        ->and($ametista['dark']['ai'])->toBe(config('theme-presets.ai_override_dark.ai'));
+});
+
+it('offers only the generic presets next to Genziana, named by translation keys', function () {
+    $catalog = app(ThemePresetService::class)->catalog();
+
+    expect(array_column($catalog, 'slug'))->toBe(['genziana', 'indaco', 'ametista', 'robbia', 'ardesia']);
+
+    foreach (['en', 'it', 'de'] as $locale) {
+        $translations = json_decode((string) file_get_contents(resource_path("js/locales/{$locale}.json")), true);
+
+        foreach ($catalog as $preset) {
+            expect($preset['name'])->toStartWith('settings.appearance.themePreset')
+                ->and(data_get($translations, $preset['name']))->toBeString()->not->toBeEmpty();
+        }
+    }
+});
+
+it('falls back to Genziana for a slug that is no longer offered', function () {
+    app(SettingsRepositoryService::class)->setMany(['theme_preset' => 'teal']);
+
+    expect(app(SettingsRepositoryService::class)->themePreset())->toBe('genziana');
+
+    $this->actingAs(projectSettingsManager())
+        ->put(route('appearance.update'), ['theme_preset' => 'blue', 'default_appearance' => 'system'])
+        ->assertSessionHasErrors(['theme_preset']);
+});
+
+it('takes Genziana from the official Excubia tokens and keeps its AA pairs', function () {
+    $genziana = app(ThemePresetService::class)->resolve('genziana', null, null);
+
+    expect($genziana['light'])->toMatchArray([
+        'primary' => '#1375A7',
+        'sidebar-accent' => '#EFF8FF',
+        'sidebar-accent-foreground' => '#0B5377',
+    ])->and($genziana['dark'])->toMatchArray([
+        'primary' => '#2FA8EA',
+        'sidebar-accent' => '#072333',
+        'sidebar-accent-foreground' => '#7BCAFC',
+    ]);
+
+    $asCustomBrand = app(ThemePresetService::class)->resolve('genziana', '#1375A7', '#2FA8EA');
+
+    expect($asCustomBrand['brandPassesAa'])->toBeTrue()
+        ->and($asCustomBrand['brandPrimaryForeground'])->toBe($genziana['light']['primary-foreground'])
+        ->and($asCustomBrand['brandPrimaryDarkForeground'])->toBe($genziana['dark']['primary-foreground']);
 });
 
 it('renders the theme variables of a non-default preset in the HTML', function () {
-    app(SettingsRepositoryService::class)->setMany(['theme_preset' => 'indigo']);
-    $indigo = config('theme-presets.presets.indigo');
+    app(SettingsRepositoryService::class)->setMany(['theme_preset' => 'indaco']);
+    $indaco = config('theme-presets.presets.indaco');
 
     $this->get(route('login'))
         ->assertSee('<style id="excubia-theme-css">', false)
-        ->assertSee('--primary: '.$indigo['light']['primary'].';', false)
-        ->assertSee('--primary: '.$indigo['dark']['primary'].';', false)
+        ->assertSee('--primary: '.$indaco['light']['primary'].';', false)
+        ->assertSee('--primary: '.$indaco['dark']['primary'].';', false)
         ->assertDontSee('--brand-primary:', false);
 });
 
 it('renders the custom brand colour with an accessible foreground', function () {
-    app(SettingsRepositoryService::class)->setMany(['theme_preset' => 'indigo', 'project_color' => '#FFEE00']);
+    app(SettingsRepositoryService::class)->setMany(['theme_preset' => 'indaco', 'project_color' => '#FFEE00']);
 
     $this->get(route('login'))
         ->assertSee('--brand-primary: #FFEE00;', false)
@@ -499,14 +546,14 @@ it('renders the custom brand colour with an accessible foreground', function () 
 
 it('keeps a contrast-safe focus ring for a low-contrast brand colour', function () {
     // #0F172A is about 17:1 on white but about 1.1:1 on the dark background (externa-core#453).
-    $themeCss = app(ThemePresetService::class)->resolve('teal', '#0F172A', null);
+    $themeCss = app(ThemePresetService::class)->resolve('genziana', '#0F172A', null);
 
     expect($themeCss['light']['ring'])->toBe('#0F172A')
         ->and($themeCss['light']['sidebar-ring'])->toBe('#0F172A')
         ->and($themeCss['dark']['ring'])->toBe('var(--color-teal-400)')
         ->and($themeCss['dark']['sidebar-ring'])->toBe('var(--color-teal-400)');
 
-    $faint = app(ThemePresetService::class)->resolve('teal', '#F5F5F5', '#38BDF8');
+    $faint = app(ThemePresetService::class)->resolve('genziana', '#F5F5F5', '#38BDF8');
 
     expect($faint['light']['ring'])->toBe('var(--color-teal-600)')
         ->and($faint['dark']['ring'])->toBe('#38BDF8');

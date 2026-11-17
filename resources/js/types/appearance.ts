@@ -1,16 +1,16 @@
 import type { DefaultAppearance } from '@/types/project-settings';
 
 export type ThemePresetSlug =
-    | 'teal'
-    | 'blue'
-    | 'indigo'
-    | 'violet'
-    | 'rose'
-    | 'slate';
+    | 'genziana'
+    | 'indaco'
+    | 'ametista'
+    | 'robbia'
+    | 'ardesia';
 
 /** One preset offered by the Appearance picker (ThemePresetService::catalog()). */
 export type ThemePresetCatalogItem = {
     slug: ThemePresetSlug;
+    /** Translation key of the preset name (`settings.appearance.themePreset*`). */
     name: string;
     aiOverride: boolean;
     swatchLight: string;

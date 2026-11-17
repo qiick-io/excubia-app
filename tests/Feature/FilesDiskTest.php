@@ -45,7 +45,7 @@ function saveProjectLogoThroughForm(User $actor, Project $project, array $payloa
 function saveBrandingThroughForm(User $actor, array $payload): TestResponse
 {
     return test()->actingAs($actor)->put(route('appearance.update'), [
-        'theme_preset' => 'blue',
+        'theme_preset' => 'genziana',
         'default_appearance' => 'system',
         ...$payload,
     ]);
