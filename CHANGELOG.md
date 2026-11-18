@@ -11,6 +11,8 @@ upgrade from the version before (see [docs/self-hosting.md](docs/self-hosting.md
 
 ### Changed
 
+- **Node 26 LTS** (#325). `.nvmrc`, `package.json` `engines.node` and the Docker frontend build image move from Node 24 to Node 26 (`node:26-alpine`). CI already reads `.nvmrc`, so the workflows need no edit.
+
 - **API keys on the shared baseline** (#351). The `api_keys` create migration now matches app-ui's storage shape (`uuid`, `owner_id`, `created_by`, `ip_allowlist`, `rate_limit_per_minute`, `last_used_ip`, rotation grace columns). Tokens are `exc_(live|test)_<id><secret>` (SHA-256 of the full token; lookup by the public `key_prefix`). Rotation, expiry warnings (`excubia:notify-expiring-api-keys`), RFC 6750 refusals, a dedicated `api_key` guard, and MCP tool-call `api_key_id` attribution are included. No data migration: this product has no releases yet. The Settings screen is unchanged pending registry items from app-ui#175.
 
 ### Added

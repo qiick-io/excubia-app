@@ -22,8 +22,8 @@ RUN composer dump-autoload --optimize --no-dev --no-interaction
 # Frontend build. The Wayfinder plugin runs `php artisan wayfinder:generate`, so it builds on the
 # PHP stage with Node copied in from the official image (both Alpine/musl).
 FROM vendor AS assets
-COPY --from=node:24-alpine /usr/local/bin/node /usr/local/bin/node
-COPY --from=node:24-alpine /usr/local/lib/node_modules /usr/local/lib/node_modules
+COPY --from=node:26-alpine /usr/local/bin/node /usr/local/bin/node
+COPY --from=node:26-alpine /usr/local/lib/node_modules /usr/local/lib/node_modules
 RUN apk add --no-cache libstdc++ \
     && ln -s ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm
 RUN npm ci --no-audit --no-fund && npm run build
