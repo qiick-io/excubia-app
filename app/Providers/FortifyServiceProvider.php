@@ -12,11 +12,13 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
 use Laravel\Fortify\Fortify;
 use Laravel\Passkeys\Contracts\PasskeyUser;
 use Laravel\Passkeys\Passkeys;
+use Qiick\Oidc\Services\SsoOnlyModeService;
 
 class FortifyServiceProvider extends ServiceProvider
 {
@@ -48,7 +50,14 @@ class FortifyServiceProvider extends ServiceProvider
     }
 
     /**
-     * Refuse inactive users on every local login path (password, two-factor and passkey).
+     * Refuse inactive users on every local login path (password, two-factor and passkey), and
+     * in SSO-only mode everyone but the break-glass accounts (OidcBreakGlassPolicyService).
+     *
+     * Both callbacks bypass Auth::attempt(), so qiick/laravel-oidc's own SSO-only listener never
+     * sees these logins: canUseLocalLogin() is checked here instead. The password is checked
+     * first, so the SSO-only message never tells a stranger that an email exists.
+     *
+     * @throws ValidationException in SSO-only mode for a valid password of a non-break-glass user
      */
     private function configureAuthentication(): void
     {
@@ -59,11 +68,17 @@ class FortifyServiceProvider extends ServiceProvider
                 return null;
             }
 
+            if (! app(SsoOnlyModeService::class)->canUseLocalLogin($user)) {
+                throw ValidationException::withMessages([Fortify::username() => __('Password sign-in is disabled. Use single sign-on.')]);
+            }
+
             return $user;
         });
 
         Passkeys::authorizeLoginUsing(
-            fn (Request $request, PasskeyUser $user): bool => $user instanceof User && $user->is_active,
+            fn (Request $request, PasskeyUser $user): bool => $user instanceof User
+                && $user->is_active
+                && app(SsoOnlyModeService::class)->canUseLocalLogin($user),
         );
     }
 
@@ -74,8 +89,7 @@ class FortifyServiceProvider extends ServiceProvider
     {
         Fortify::loginView(fn (Request $request) => Inertia::render('auth/login', [
             'canResetPassword' => Features::enabled(Features::resetPasswords()),
-            'canUseOidc' => app(SettingsRepositoryService::class)->isOidcLoginAvailable(),
-            'oidcButtonLabel' => app(SettingsRepositoryService::class)->oidcButtonLabel(),
+            ...$this->ssoLoginProps($request),
             'status' => $request->session()->get('status'),
             // A fresh install has no user yet: the login page links to the first-run wizard (#116).
             'needsSetup' => ! User::query()->exists(),
@@ -98,6 +112,24 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::twoFactorChallengeView(fn () => Inertia::render('auth/two-factor-challenge'));
 
         Fortify::confirmPasswordView(fn () => Inertia::render('auth/confirm-password'));
+    }
+
+    /**
+     * The SSO part of the login page, from qiick/laravel-oidc's login options. The button label
+     * stays the admin's own (null lets the page translate the default).
+     *
+     * @return array{canUseOidc: bool, oidcButtonLabel: string|null, oidcRedirectUrl: string|null, isPasswordLoginVisible: bool}
+     */
+    private function ssoLoginProps(Request $request): array
+    {
+        $loginOptions = app(SsoOnlyModeService::class)->loginOptions($request);
+
+        return [
+            'canUseOidc' => $loginOptions->isSsoAvailable,
+            'oidcButtonLabel' => app(SettingsRepositoryService::class)->oidcButtonLabel(),
+            'oidcRedirectUrl' => $loginOptions->redirectUrl,
+            'isPasswordLoginVisible' => $loginOptions->isPasswordLoginVisible,
+        ];
     }
 
     /**

@@ -2,7 +2,6 @@
 
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\AssistantController;
-use App\Http\Controllers\Auth\OidcController;
 use App\Http\Controllers\Auth\SetupController;
 use App\Http\Controllers\BrandingController;
 use App\Http\Controllers\DashboardController;
@@ -43,11 +42,8 @@ Route::get('setup', [SetupController::class, 'show'])->name('setup.show');
 Route::post('setup/admin', [SetupController::class, 'storeAdmin'])->middleware('throttle:6,1')->name('setup.admin.store');
 Route::post('setup/project', [SetupController::class, 'storeProject'])->middleware(['auth', 'verified'])->name('setup.project.store');
 
-// Each callback makes token and userinfo calls to the IdP (#154).
-Route::middleware(['guest', 'throttle:10,1'])->group(function () {
-    Route::get('auth/oidc/redirect', [OidcController::class, 'redirect'])->name('auth.oidc.redirect');
-    Route::get('auth/oidc/callback', [OidcController::class, 'callback'])->name('auth.oidc.callback');
-});
+// SSO (auth/oidc/redirect, callback and backchannel-logout) is registered by qiick/laravel-oidc
+// (#356), throttled in config/oidc.php.
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');

@@ -46,4 +46,6 @@ export type ProjectSettingsForm = {
     has_oidc_client_secret: boolean;
     oidc_button_label: string | null;
     oidc_jit_provisioning: boolean;
+    oidc_auto_link: boolean;
+    oidc_only: boolean;
 };

@@ -105,6 +105,11 @@ class SettingsRepositoryService
             'oidc_client_secret' => null,
             'oidc_button_label' => null,
             'oidc_jit_provisioning' => false,
+            // Off by default (qiick/laravel-oidc): a matching email links an SSO identity only for a
+            // trusted IdP. Installs that configured SSO before the package keep linking (migration).
+            'oidc_auto_link' => false,
+            // SSO-only mode: the password form is hidden and only break-glass accounts sign in locally.
+            'oidc_only' => false,
             // Tools switched off in Settings → AI (#320); `ai_enabled_tools` is the list saved before it.
             'ai_disabled_tools' => null,
             'ai_enabled_tools' => null,
@@ -473,6 +478,16 @@ class SettingsRepositoryService
     public function isOidcJitProvisioningEnabled(): bool
     {
         return (bool) $this->all()['oidc_jit_provisioning'];
+    }
+
+    public function isOidcAutoLinkEnabled(): bool
+    {
+        return (bool) $this->all()['oidc_auto_link'];
+    }
+
+    public function isOidcOnlyEnabled(): bool
+    {
+        return (bool) $this->all()['oidc_only'];
     }
 
     /**

@@ -11,6 +11,15 @@ upgrade from the version before (see [docs/self-hosting.md](docs/self-hosting.md
 
 ### Changed
 
+- **SSO through `qiick/laravel-oidc`** (#356). The local OIDC client (Socialite, `OidcController` and its two services) is replaced by the qiick package every product uses. The URLs registered at the IdP stay the same (`/auth/oidc/redirect`, `/auth/oidc/callback`) and SSO is still configured in **Settings → Application**, never in `.env`. What changes for users and admins:
+    - the `id_token` is validated and `nonce` is sent; a user is found by the linked identity (issuer + `sub`), never by email;
+    - linking an existing user by verified email is now the **Link existing users by verified email** setting, off on new installs; installs that had configured SSO keep it on (see the upgrade notes);
+    - an SSO login now runs Excubia's TOTP challenge when 2FA is required, or when the user turned TOTP on, unless the IdP proves MFA in the signed `id_token` (`amr: mfa`); before, SSO always skipped it;
+    - SSO logins no longer set the remember-me cookie;
+    - **back-channel logout**: register `{APP_URL}/auth/oidc/backchannel-logout` at the IdP, and a logout there ends the Excubia session. It needs a cache store shared by every app server (the default `database` store is);
+    - **SSO-only mode** (new setting): hides the password form; active super-admins with TOTP or a passkey still sign in locally at `/login?local=1`;
+    - JIT users take the last word of the `name` claim as their last name when the IdP sends no `given_name` ("Ada King Lovelace" becomes Ada King / Lovelace).
+
 - **Node 26 LTS** (#325). `.nvmrc`, `package.json` `engines.node` and the Docker frontend build image move from Node 24 to Node 26 (`node:26-alpine`). CI already reads `.nvmrc`, so the workflows need no edit.
 
 - **Dependency refresh** (#326). npm patch/minor upgrades and Composer semver-safe updates within declared ranges. Build-time packages (`vite`, `laravel-vite-plugin`, `@vitejs/plugin-react`, `@inertiajs/vite`, `@tailwindcss/vite`) move from `dependencies` to `devDependencies` so `npm audit --omit=dev` no longer reports their advisories; the Docker image already builds with a plain `npm ci` and drops `node_modules` from the runtime stage.
@@ -135,6 +144,11 @@ upgrade from the version before (see [docs/self-hosting.md](docs/self-hosting.md
 
 ### Upgrade notes
 
+- **SSO on `qiick/laravel-oidc`** (#356). `php artisan migrate --force` (run by `excubia:upgrade` and the Docker entrypoint) creates `user_identities` and copies every `users.oidc_sub` into it with the issuer saved in Settings → Application, so SSO users keep signing in to the same account; on installs that had configured SSO it also keeps **Link existing users by verified email** on. Before upgrading:
+    - check that the saved **Issuer URL** is exactly the `issuer` of `{issuer}/.well-known/openid-configuration`, trailing slash included or not: the package compares them character by character (the old client cut the slash), and the imported identities carry the saved value;
+    - to preview the import, run the package migration alone, then the dry run: `php artisan migrate --force --path=vendor/qiick/laravel-oidc/database/migrations` and `php artisan oidc:import-legacy-subjects --dry-run --issuer="<saved issuer>"`. A `sub` already linked to another user is reported and skipped, never moved, and does not stop the upgrade; fix it and re-run the command without `--dry-run` (it is idempotent);
+    - register `{APP_URL}/auth/oidc/backchannel-logout` at the IdP for back-channel logout.
+      `users.oidc_sub` stays and is no longer written; a later migration drops it.
 - **AI write tools are on after upgrading** (#320). Where the assistant (`EXCUBIA_AI_ENABLED`) or the MCP server (`EXCUBIA_MCP_ENABLED`) is on, they can change exception statuses, assignments, finding dismissals, alert mutes and maintenance windows and refresh the system report: in the assistant after each approval, over MCP only for keys with `mcp:write`. To stay read-only, set `EXCUBIA_AI_WRITE_ENABLED=false` (or `EXCUBIA_MCP_WRITE_ENABLED=false` for MCP only) and clear the config cache (`excubia:upgrade` does). Existing API keys keep `mcp:read` only: create a new key with `mcp:write` to write over MCP. If you ever saved Settings → AI → Tools, the tools you left unticked stay off and the new write tools are on. No migration.
 - **MCP server and new assistant tools** (#234): nothing to do; the MCP server stays off until you set `EXCUBIA_MCP_ENABLED=true` (see [docs/mcp.md](docs/mcp.md)). If you ever saved Settings → AI → Tools, the three new tools are off on your install: tick them there to use them in the assistant and over MCP.
 - **Personal API keys** (#315): `php artisan migrate --force` (run by `excubia:upgrade`) creates the `api_keys` table; nothing else to do. Optionally set `EXCUBIA_API_KEY_REQUESTS_PER_MINUTE`.

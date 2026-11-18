@@ -35,9 +35,12 @@ class ProjectSecuritySettingsController extends Controller
                 'has_oidc_client_secret',
                 'oidc_button_label',
                 'oidc_jit_provisioning',
+                'oidc_auto_link',
+                'oidc_only',
             ]),
             'passwordPolicies' => SettingsRepositoryService::PASSWORD_POLICIES,
-            'oidcCallbackUrl' => route('auth.oidc.callback'),
+            'oidcCallbackUrl' => route('oidc.callback'),
+            'oidcBackchannelLogoutUrl' => route('oidc.backchannel-logout'),
         ]);
     }
 

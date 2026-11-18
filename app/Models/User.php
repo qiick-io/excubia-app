@@ -16,6 +16,7 @@ use Illuminate\Support\Carbon;
 use Laravel\Fortify\Contracts\PasskeyUser;
 use Laravel\Fortify\PasskeyAuthenticatable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
+use Qiick\Oidc\Models\UserIdentity;
 use Spatie\Activitylog\Support\LogOptions;
 use Spatie\Permission\Traits\HasRoles;
 
@@ -25,7 +26,8 @@ use Spatie\Permission\Traits\HasRoles;
  * @property string|null $last_name
  * @property-read string $name first and last name
  * @property string $email
- * @property string|null $oidc_sub
+ * @property string|null $oidc_sub legacy, imported into user_identities (#356) and no longer written
+ * @property-read bool|null $identities_exists from withExists('identities')
  * @property Carbon|null $email_verified_at
  * @property string|null $password
  * @property bool $is_active
@@ -113,6 +115,17 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
     public function apiKeys(): HasMany
     {
         return $this->hasMany(ApiKey::class, 'owner_id');
+    }
+
+    /**
+     * SSO identities (issuer + `sub`) linked to this user by qiick/laravel-oidc (#356). The
+     * legacy `oidc_sub` column is no longer written: its values were imported here.
+     *
+     * @return HasMany<UserIdentity, $this>
+     */
+    public function identities(): HasMany
+    {
+        return $this->hasMany(UserIdentity::class);
     }
 
     /**

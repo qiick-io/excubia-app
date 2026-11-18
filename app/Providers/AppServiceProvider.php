@@ -13,6 +13,10 @@ use App\Policies\RolePolicy;
 use App\Policies\SystemHealthPolicy;
 use App\Services\EffectivePermissionResolverService;
 use App\Services\JobMonitorQueryService;
+use App\Services\OidcBreakGlassPolicyService;
+use App\Services\OidcSecondFactorChallengeService;
+use App\Services\OidcSettingsRepositoryService;
+use App\Services\OidcUserProvisioningService;
 use App\Services\SelfMonitoringService;
 use App\Services\SettingsRepositoryService;
 use App\Services\SystemHealthService;
@@ -21,6 +25,8 @@ use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Contracts\Events\Dispatcher;
+use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Http\Request;
@@ -35,6 +41,12 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 use Qiick\Excubia\Contracts\HttpClientContract;
 use Qiick\Excubia\Services\SymfonyHttpClientService;
+use Qiick\Oidc\Contracts\BreakGlassPolicyContract;
+use Qiick\Oidc\Contracts\ProviderConfigurationRepositoryContract;
+use Qiick\Oidc\Contracts\SecondFactorChallengeContract;
+use Qiick\Oidc\Contracts\UserProvisioningContract;
+use Qiick\Oidc\Services\SsoOnlyModeService;
+use Qiick\Oidc\Services\UserLinkingService;
 use Spatie\Activitylog\Facades\Activity;
 use Spatie\Activitylog\Models\Activity as ActivityModel;
 use Spatie\Permission\Models\Permission;
@@ -50,6 +62,42 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(SettingsRepositoryService::class);
         // The HTTP client excubia-core uses for the system report (#70); tests bind a fake.
         $this->app->bind(HttpClientContract::class, fn (): HttpClientContract => new SymfonyHttpClientService);
+        $this->registerOidcBindings();
+    }
+
+    /**
+     * Plugs Excubia into qiick/laravel-oidc (#356). Its provider registers first, so these
+     * bindings replace its defaults: the provider settings, JIT, auto-link, SSO-only mode and the
+     * button label come from Settings → Application instead of `config('oidc.*')`.
+     *
+     * The package builds UserLinkingService and SsoOnlyModeService from config values, so both
+     * are rebuilt here with the settings; their other arguments keep the package's config.
+     */
+    protected function registerOidcBindings(): void
+    {
+        $this->app->bind(ProviderConfigurationRepositoryContract::class, OidcSettingsRepositoryService::class);
+        $this->app->bind(UserProvisioningContract::class, OidcUserProvisioningService::class);
+        $this->app->bind(SecondFactorChallengeContract::class, OidcSecondFactorChallengeService::class);
+        $this->app->bind(BreakGlassPolicyContract::class, OidcBreakGlassPolicyService::class);
+
+        $this->app->bind(UserLinkingService::class, fn (Application $app): UserLinkingService => new UserLinkingService(
+            userProvisioning: $app->make(UserProvisioningContract::class),
+            events: $app->make(Dispatcher::class),
+            isAutoLinkEnabled: $app->make(SettingsRepositoryService::class)->isOidcAutoLinkEnabled(),
+            isJitEnabled: $app->make(SettingsRepositoryService::class)->isOidcJitProvisioningEnabled(),
+            isVerifiedEmailRequired: config()->boolean('oidc.require_verified_email', true),
+            allowedDomains: [],
+            emailColumn: 'email',
+            activeColumn: 'is_active',
+        ));
+
+        $this->app->bind(SsoOnlyModeService::class, fn (Application $app): SsoOnlyModeService => new SsoOnlyModeService(
+            configurationRepository: $app->make(ProviderConfigurationRepositoryContract::class),
+            breakGlassPolicy: $app->make(BreakGlassPolicyContract::class),
+            isOnlyModeConfigured: $app->make(SettingsRepositoryService::class)->isOidcOnlyEnabled(),
+            buttonLabel: $app->make(SettingsRepositoryService::class)->oidcButtonLabel(),
+            breakGlassQueryParameter: 'local',
+        ));
     }
 
     /**
