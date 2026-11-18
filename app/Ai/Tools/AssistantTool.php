@@ -25,8 +25,13 @@ abstract class AssistantTool implements Tool
 {
     /**
      * @param  'assistant'|'mcp'  $surface  where the call comes from, for the activity log
+     * @param  int|null  $apiKeyId  the issuing key when the surface is MCP (#351 attribution)
      */
-    public function __construct(protected User $user, protected string $surface = 'assistant') {}
+    public function __construct(
+        protected User $user,
+        protected string $surface = 'assistant',
+        protected ?int $apiKeyId = null,
+    ) {}
 
     /**
      * What the tool does to data: read tools never change anything.
@@ -49,11 +54,23 @@ abstract class AssistantTool implements Tool
         $result = $this->run($request);
         $isError = array_key_exists('error', $result);
 
+        $properties = [
+            'surface' => $this->surface,
+            'tool' => static::toolName(),
+            'kind' => static::kind()->value,
+            'arguments' => $request->all(),
+            'status' => $isError ? 'error' : 'ok',
+        ];
+
+        if ($this->apiKeyId !== null) {
+            $properties['api_key_id'] = $this->apiKeyId;
+        }
+
         activity()
             ->useLog('ai')
             ->causedBy($this->user)
             ->event('ai_tool')
-            ->withProperties(['surface' => $this->surface, 'tool' => static::toolName(), 'kind' => static::kind()->value, 'arguments' => $request->all(), 'status' => $isError ? 'error' : 'ok'])
+            ->withProperties($properties)
             ->log(($this->surface === 'mcp' ? 'MCP' : 'Assistant').' tool '.static::toolName());
 
         return (string) json_encode($result, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PARTIAL_OUTPUT_ON_ERROR);

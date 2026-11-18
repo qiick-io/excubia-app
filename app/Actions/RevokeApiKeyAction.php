@@ -6,27 +6,35 @@ namespace App\Actions;
 
 use App\Enums\ActivityEventEnum;
 use App\Models\ApiKey;
+use App\Models\User;
 
 /**
- * Revokes a personal API key (#315): the next request with it is rejected. The row stays, so the
- * list and the activity log still name it.
+ * Revokes a personal API key (#315, #351): the next request with it is rejected immediately. The
+ * row stays for the list and the audit trail; any rotation grace window is cleared.
  */
 final class RevokeApiKeyAction
 {
-    public function execute(ApiKey $apiKey): void
+    public function execute(ApiKey $apiKey, ?User $actor = null): void
     {
         if ($apiKey->revoked_at !== null) {
             return;
         }
 
-        // Quietly: the model would log a generic "updated"; this explicit event says what happened.
-        $apiKey->forceFill(['revoked_at' => now()])->saveQuietly();
+        $apiKey->forceFill([
+            'revoked_at' => now(),
+            'previous_key_hash' => null,
+            'previous_key_valid_until' => null,
+        ])->saveQuietly();
 
-        activity()
-            ->useLog('auth')
+        $activity = activity('api-keys')
             ->performedOn($apiKey)
             ->event(ActivityEventEnum::ApiKeyRevoked->value)
-            ->withProperties(['name' => $apiKey->name, 'key_prefix' => $apiKey->key_prefix])
-            ->log('API key revoked');
+            ->withProperties(['name' => $apiKey->name, 'scopes' => $apiKey->scopes, 'key_prefix' => $apiKey->key_prefix]);
+
+        if ($actor !== null) {
+            $activity->causedBy($actor);
+        }
+
+        $activity->log('API key revoked');
     }
 }

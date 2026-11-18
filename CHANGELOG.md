@@ -9,6 +9,10 @@ upgrade from the version before (see [docs/self-hosting.md](docs/self-hosting.md
 
 ## [Unreleased]
 
+### Changed
+
+- **API keys on the shared baseline** (#351). The `api_keys` create migration now matches app-ui's storage shape (`uuid`, `owner_id`, `created_by`, `ip_allowlist`, `rate_limit_per_minute`, `last_used_ip`, rotation grace columns). Tokens are `exc_(live|test)_<id><secret>` (SHA-256 of the full token; lookup by the public `key_prefix`). Rotation, expiry warnings (`excubia:notify-expiring-api-keys`), RFC 6750 refusals, a dedicated `api_key` guard, and MCP tool-call `api_key_id` attribution are included. No data migration: this product has no releases yet. The Settings screen is unchanged pending registry items from app-ui#175.
+
 ### Added
 
 - **AI write tools, on by default** (#320). The assistant and the MCP server can now act on what they find, with the same Actions, permissions and project visibility as the UI. Seven reversible tools: `update-exception-status` (resolve, ignore or reopen up to 200 exception groups), `assign-items` (assign exception groups or findings to "me", a user by email who can see the project, or nobody), `dismiss-finding` (dismiss or snooze with a reason), `restore-finding`, `mute-alert` (mute an alert event, or open a maintenance window), `unmute-alert` (end the mutes of an event, or close a window) and `refresh-report` (the system project's "Refresh now"). There are no destructive or security tools: nothing deletes projects, touches tokens, users, roles or settings.

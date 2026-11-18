@@ -42,6 +42,16 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+
+        /*
+         * Personal API keys (#351): Request guard, never the session. AuthenticateApiKeyMiddleware
+         * validates the bearer token and sets the ApiKey on the request; this guard resolves the
+         * owner from that attribute so downstream code can tell a key from a browser.
+         */
+        'api_key' => [
+            'driver' => 'api_key',
+            'provider' => 'users',
+        ],
     ],
 
     /*

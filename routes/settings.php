@@ -60,12 +60,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->middleware('can:viewAi,'.Setting::class)
         ->name('ai-settings.edit');
 
-    // Personal API keys of the signed-in user (#315): only their own keys, see ApiKeyPolicy.
-    Route::get('settings/api-keys', [ApiKeyController::class, 'index'])->name('api-keys.index');
-    Route::post('settings/api-keys', [ApiKeyController::class, 'store'])
-        ->middleware('throttle:10,1')
-        ->name('api-keys.store');
-    Route::delete('settings/api-keys/{apiKey}', [ApiKeyController::class, 'destroy'])->name('api-keys.destroy');
+    // Personal API keys of the signed-in user (#315, #351): web session only, see ApiKeyPolicy.
+    Route::middleware('auth:web')->group(function () {
+        Route::get('settings/api-keys', [ApiKeyController::class, 'index'])->name('api-keys.index');
+        Route::post('settings/api-keys', [ApiKeyController::class, 'store'])
+            ->middleware('throttle:10,1')
+            ->name('api-keys.store');
+        Route::post('settings/api-keys/{apiKey}/rotate', [ApiKeyController::class, 'rotate'])
+            ->middleware('throttle:10,1')
+            ->name('api-keys.rotate');
+        Route::delete('settings/api-keys/{apiKey}', [ApiKeyController::class, 'destroy'])->name('api-keys.destroy');
+    });
 
     // Alert emails of the signed-in user (#22): their own filters and a test mail to themselves.
     Route::put('settings/profile/alerts', [AlertSubscriptionController::class, 'update'])->name('profile.alerts.update');
