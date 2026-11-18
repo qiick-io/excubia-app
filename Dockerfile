@@ -21,10 +21,13 @@ RUN composer dump-autoload --optimize --no-dev --no-interaction
 
 # Frontend build. The Wayfinder plugin runs `php artisan wayfinder:generate`, so it builds on the
 # PHP stage with Node copied in from the official image (both Alpine/musl).
+#
+# Node 26 links against libatomic, which Node 24 did not: without it the copied binary dies with
+# "Error loading shared library libatomic.so.1" and "__atomic_compare_exchange: symbol not found".
 FROM vendor AS assets
 COPY --from=node:26-alpine /usr/local/bin/node /usr/local/bin/node
 COPY --from=node:26-alpine /usr/local/lib/node_modules /usr/local/lib/node_modules
-RUN apk add --no-cache libstdc++ \
+RUN apk add --no-cache libstdc++ libatomic \
     && ln -s ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm
 RUN npm ci --no-audit --no-fund && npm run build
 
