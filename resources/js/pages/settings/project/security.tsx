@@ -42,13 +42,81 @@ type SecurityProjectSettings = Pick<
     | 'has_oidc_client_secret'
     | 'oidc_button_label'
     | 'oidc_jit_provisioning'
+    | 'oidc_auto_link'
+    | 'oidc_only'
 >;
 
 type Props = {
     project: SecurityProjectSettings;
     passwordPolicies: PasswordPolicy[];
     oidcCallbackUrl: string;
+    oidcBackchannelLogoutUrl: string;
 };
+
+const SSO_TOGGLE_NAMES = [
+    'oidc_auto_link',
+    'oidc_jit_provisioning',
+    'oidc_only',
+] as const;
+
+type SsoToggleName = (typeof SSO_TOGGLE_NAMES)[number];
+
+const SSO_TOGGLE_TEXTS = {
+    oidc_auto_link: {
+        label: 'settings.project.oidcAutoLink',
+        hint: 'settings.project.oidcAutoLinkHint',
+    },
+    oidc_jit_provisioning: {
+        label: 'settings.project.oidcJitProvisioning',
+        hint: 'settings.project.oidcJitProvisioningHint',
+    },
+    oidc_only: {
+        label: 'settings.project.oidcOnly',
+        hint: 'settings.project.oidcOnlyHint',
+    },
+} as const satisfies Record<SsoToggleName, { label: string; hint: string }>;
+
+/**
+ * One SSO on/off setting with its hint; the form posts it through a hidden input.
+ */
+function SsoToggleField({
+    name,
+    label,
+    hint,
+    checked,
+    error,
+    onCheckedChange,
+}: {
+    name: SsoToggleName;
+    label: string;
+    hint: string;
+    checked: boolean;
+    error?: string;
+    onCheckedChange: (checked: boolean) => void;
+}) {
+    const fieldId = name.replaceAll('_', '-');
+
+    return (
+        <Field data-invalid={error ? true : undefined}>
+            <div className="flex items-center gap-3">
+                <Checkbox
+                    id={name}
+                    checked={checked}
+                    onCheckedChange={(state) => onCheckedChange(state === true)}
+                    aria-invalid={error ? true : undefined}
+                    aria-describedby={
+                        error ? `${fieldId}-error` : `${fieldId}-hint`
+                    }
+                />
+                <FieldLabel htmlFor={name}>{label}</FieldLabel>
+            </div>
+            <FieldDescription id={`${fieldId}-hint`} className="pl-8">
+                {hint}
+            </FieldDescription>
+            <FieldError id={`${fieldId}-error`}>{error}</FieldError>
+        </Field>
+    );
+}
 
 function buildFormState(project: SecurityProjectSettings) {
     return {
@@ -61,6 +129,8 @@ function buildFormState(project: SecurityProjectSettings) {
         oidc_client_secret: '',
         oidc_button_label: project.oidc_button_label ?? '',
         oidc_jit_provisioning: project.oidc_jit_provisioning ?? false,
+        oidc_auto_link: project.oidc_auto_link ?? false,
+        oidc_only: project.oidc_only ?? false,
     };
 }
 
@@ -71,6 +141,7 @@ export default function ProjectSecuritySettingsPage({
     project,
     passwordPolicies,
     oidcCallbackUrl,
+    oidcBackchannelLogoutUrl,
 }: Props) {
     const { t } = useTranslation();
     const [form, setForm] = useState(() => buildFormState(project));
@@ -115,11 +186,14 @@ export default function ProjectSecuritySettingsPage({
                                 name="oidc_enabled"
                                 value={form.oidc_enabled ? '1' : '0'}
                             />
-                            <input
-                                type="hidden"
-                                name="oidc_jit_provisioning"
-                                value={form.oidc_jit_provisioning ? '1' : '0'}
-                            />
+                            {SSO_TOGGLE_NAMES.map((name) => (
+                                <input
+                                    key={name}
+                                    type="hidden"
+                                    name={name}
+                                    value={form[name] ? '1' : '0'}
+                                />
+                            ))}
 
                             <div className="space-y-6">
                                 <Heading
@@ -551,60 +625,36 @@ export default function ProjectSecuritySettingsPage({
                                         </FieldError>
                                     </Field>
 
-                                    <Field
-                                        data-invalid={
-                                            errors.oidc_jit_provisioning
-                                                ? true
-                                                : undefined
-                                        }
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <Checkbox
-                                                id="oidc_jit_provisioning"
-                                                checked={
-                                                    form.oidc_jit_provisioning
-                                                }
-                                                onCheckedChange={(checked) =>
-                                                    setForm((current) => ({
-                                                        ...current,
-                                                        oidc_jit_provisioning:
-                                                            checked === true,
-                                                    }))
-                                                }
-                                                aria-invalid={
-                                                    errors.oidc_jit_provisioning
-                                                        ? true
-                                                        : undefined
-                                                }
-                                                aria-describedby={
-                                                    errors.oidc_jit_provisioning
-                                                        ? 'oidc-jit-provisioning-error'
-                                                        : 'oidc-jit-provisioning-hint'
-                                                }
-                                            />
-                                            <FieldLabel htmlFor="oidc_jit_provisioning">
-                                                {t(
-                                                    'settings.project.oidcJitProvisioning',
-                                                )}
-                                            </FieldLabel>
-                                        </div>
-                                        <FieldDescription
-                                            id="oidc-jit-provisioning-hint"
-                                            className="pl-8"
-                                        >
-                                            {t(
-                                                'settings.project.oidcJitProvisioningHint',
+                                    {SSO_TOGGLE_NAMES.map((name) => (
+                                        <SsoToggleField
+                                            key={name}
+                                            name={name}
+                                            label={t(
+                                                SSO_TOGGLE_TEXTS[name].label,
                                             )}
-                                        </FieldDescription>
-                                        <FieldError id="oidc-jit-provisioning-error">
-                                            {errors.oidc_jit_provisioning}
-                                        </FieldError>
-                                    </Field>
+                                            hint={t(
+                                                SSO_TOGGLE_TEXTS[name].hint,
+                                            )}
+                                            checked={form[name]}
+                                            error={errors[name]}
+                                            onCheckedChange={(checked) =>
+                                                setForm((current) => ({
+                                                    ...current,
+                                                    [name]: checked,
+                                                }))
+                                            }
+                                        />
+                                    ))}
                                 </FieldGroup>
 
                                 <p className="text-sm text-muted-foreground">
                                     {t('settings.project.oidcRedirectHint', {
                                         url: oidcCallbackUrl,
+                                    })}
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                    {t('settings.project.oidcBackchannelHint', {
+                                        url: oidcBackchannelLogoutUrl,
                                     })}
                                 </p>
                             </div>

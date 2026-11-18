@@ -34,6 +34,8 @@ class UpdateProjectSecuritySettingsRequest extends FormRequest
             'oidc_client_secret' => ['nullable', 'string', 'max:2048'],
             'oidc_button_label' => ['nullable', 'string', 'max:100'],
             'oidc_jit_provisioning' => ['boolean'],
+            'oidc_auto_link' => ['boolean'],
+            'oidc_only' => ['boolean'],
         ];
     }
 
@@ -68,6 +70,8 @@ class UpdateProjectSecuritySettingsRequest extends FormRequest
             'oidc_client_secret' => $this->string('oidc_client_secret')->toString() ?: null,
             'oidc_button_label' => $this->string('oidc_button_label')->trim()->toString() ?: null,
             'oidc_jit_provisioning' => $this->boolean('oidc_jit_provisioning'),
+            'oidc_auto_link' => $this->boolean('oidc_auto_link'),
+            'oidc_only' => $this->boolean('oidc_only'),
         ];
     }
 }

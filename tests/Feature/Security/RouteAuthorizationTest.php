@@ -113,7 +113,7 @@ function appRoutes(): array
         $name = $route->getName();
         $action = $route->getActionName();
 
-        if ($name === null || str_starts_with($route->uri(), 'api/') || str_starts_with($name, 'setup.') || str_starts_with($name, 'auth.oidc.') || str_starts_with($name, 'storage.')
+        if ($name === null || str_starts_with($route->uri(), 'api/') || str_starts_with($name, 'setup.') || str_starts_with($name, 'storage.')
             || ! (str_starts_with($action, 'App\\') || $action === 'Closure')) {
             continue;
         }

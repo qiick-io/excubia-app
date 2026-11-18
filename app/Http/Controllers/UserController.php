@@ -43,7 +43,7 @@ class UserController extends Controller
         $sort = $request->sortColumn(self::SORTABLE_COLUMNS, 'created_at');
         $direction = $request->sortDirection('desc');
 
-        $query = $request->applySearch(User::query(), ['first_name', 'last_name', 'email']);
+        $query = $request->applySearch(User::query()->withExists('identities'), ['first_name', 'last_name', 'email']);
 
         if (! $wantsJson) {
             $query->with(['roles:id,name', 'groups:id,name']);

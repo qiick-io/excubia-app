@@ -36,7 +36,7 @@ class UserResource extends JsonResource
             'name' => $user->name,
             'email' => $user->email,
             'is_active' => $user->is_active,
-            'is_sso_linked' => $user->oidc_sub !== null,
+            'is_sso_linked' => (bool) $user->identities_exists,
             'email_verified_at' => $user->email_verified_at?->toIso8601String(),
             'created_at' => $user->created_at?->toIso8601String(),
             'updated_at' => $user->updated_at?->toIso8601String(),
