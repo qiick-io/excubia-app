@@ -195,6 +195,11 @@ jobs:
         if: steps.gate.outputs.run == 'true'
         run: npm run types
 
+      # Upgrade-plan view-model tests (#333); Node from .nvmrc (26) supports --experimental-strip-types.
+      - name: Frontend unit tests
+        if: steps.gate.outputs.run == 'true'
+        run: npm test
+
       - name: Dead code (knip)
         if: steps.gate.outputs.run == 'true'
         run: npm run knip
