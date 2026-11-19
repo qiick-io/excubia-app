@@ -9,6 +9,7 @@ use App\Models\Project;
 use App\Models\Setting;
 use App\Models\User;
 use App\Services\SettingsRepositoryService;
+use App\Services\WebhookUrlGuardService;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Date;
@@ -221,7 +222,7 @@ it('signs webhook deliveries and records the outcome', function () {
     $eventId = (string) Str::uuid();
     $payload = ['id' => $eventId, 'event' => 'finding.new', 'severity' => 'high', 'project' => null, 'occurredAt' => '2026-11-05T12:00:00Z', 'url' => 'https://excubia.test', 'data' => []];
 
-    (new DeliverAlertJob(DeliverAlertJob::WEBHOOK, $payload))->handle(app(SettingsRepositoryService::class));
+    (new DeliverAlertJob(DeliverAlertJob::WEBHOOK, $payload))->handle(app(SettingsRepositoryService::class), app(WebhookUrlGuardService::class));
 
     Http::assertSent(function ($request): bool {
         $timestamp = $request->header('X-Excubia-Timestamp')[0];
@@ -236,7 +237,7 @@ it('refuses deliveries to private addresses', function () {
     configureAlertChannels(['webhook_url' => 'https://127.0.0.1/hook']);
     Http::fake();
 
-    (new DeliverAlertJob(DeliverAlertJob::WEBHOOK, ['id' => (string) Str::uuid(), 'event' => 'ping']))->handle(app(SettingsRepositoryService::class));
+    (new DeliverAlertJob(DeliverAlertJob::WEBHOOK, ['id' => (string) Str::uuid(), 'event' => 'ping']))->handle(app(SettingsRepositoryService::class), app(WebhookUrlGuardService::class));
 
     Http::assertNothingSent();
     expect(app(SettingsRepositoryService::class)->all()['webhook_last_error']['message'])->toContain('Refused');
@@ -246,7 +247,7 @@ it('refuses IPv6 loopback, private and IPv4-mapped literals (#51)', function (st
     configureAlertChannels(['webhook_url' => $url]);
     Http::fake();
 
-    (new DeliverAlertJob(DeliverAlertJob::WEBHOOK, ['id' => (string) Str::uuid(), 'event' => 'ping']))->handle(app(SettingsRepositoryService::class));
+    (new DeliverAlertJob(DeliverAlertJob::WEBHOOK, ['id' => (string) Str::uuid(), 'event' => 'ping']))->handle(app(SettingsRepositoryService::class), app(WebhookUrlGuardService::class));
 
     Http::assertNothingSent();
     expect(app(SettingsRepositoryService::class)->all()['webhook_last_error']['message'])->toContain('Refused');
@@ -265,7 +266,7 @@ it('never quotes the delivery URL in a transport error, so channel secrets stay 
     $job = new DeliverAlertJob(DeliverAlertJob::WEBHOOK, ['id' => (string) Str::uuid(), 'event' => 'ping']);
 
     try {
-        $job->handle(app(SettingsRepositoryService::class));
+        $job->handle(app(SettingsRepositoryService::class), app(WebhookUrlGuardService::class));
         $this->fail('The delivery should fail.');
     } catch (RuntimeException $exception) {
         expect($exception->getMessage())->toBe('Alert delivery to webhook failed: ConnectionException');

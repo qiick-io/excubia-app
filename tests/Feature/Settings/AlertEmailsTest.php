@@ -17,6 +17,7 @@ use App\Models\User;
 use App\Models\UserGroup;
 use App\Services\AlertDispatcherService;
 use App\Services\SettingsRepositoryService;
+use App\Services\WebhookUrlGuardService;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Http;
@@ -274,7 +275,7 @@ it('records a failed mail and a mail to a user disabled since the alert', functi
 
     Mail::fake();
     $user->forceFill(['is_active' => false])->save();
-    $job->handle(app(SettingsRepositoryService::class));
+    $job->handle(app(SettingsRepositoryService::class), app(WebhookUrlGuardService::class));
 
     Mail::assertNothingSent();
     expect(AlertLog::query()->sole()->deliveries)->toBe(['email:'.$user->id => AlertLog::FAILED]);
