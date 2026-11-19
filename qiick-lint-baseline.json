@@ -4,5 +4,32 @@
     "eslint/id-length": {
         "resources/js/components/admin/data-table-toolbar.tsx": 1,
         "resources/js/components/admin/paginated-multi-select.tsx": 1
+    },
+    "eslint/max-lines": {
+        "resources/js/components/projects/findings-view.tsx": 1,
+        "resources/js/components/reports/alerts-view.tsx": 1,
+        "resources/js/components/reports/exceptions-view.tsx": 1,
+        "resources/js/components/reports/runtime-view.tsx": 1,
+        "resources/js/pages/fleet/index.tsx": 1,
+        "resources/js/pages/settings/project/integrations.tsx": 1,
+        "resources/js/pages/settings/project/security.tsx": 1
+    },
+    "eslint/max-lines-per-function": {
+        "resources/js/components/projects/findings-view.tsx": 1,
+        "resources/js/components/projects/overview/overview-view.tsx": 1,
+        "resources/js/components/reports/exceptions-view.tsx": 1,
+        "resources/js/components/reports/runtime-view.tsx": 1,
+        "resources/js/pages/admin/activity-logs/index.tsx": 1,
+        "resources/js/pages/admin/groups/index.tsx": 1,
+        "resources/js/pages/admin/project-groups/index.tsx": 1,
+        "resources/js/pages/admin/system/index.tsx": 1,
+        "resources/js/pages/admin/users/index.tsx": 1,
+        "resources/js/pages/dashboard.tsx": 1,
+        "resources/js/pages/projects/index.tsx": 1,
+        "resources/js/pages/settings/ai-prices.tsx": 1,
+        "resources/js/pages/settings/appearance.tsx": 2,
+        "resources/js/pages/settings/project.tsx": 2,
+        "resources/js/pages/settings/project/integrations.tsx": 2,
+        "resources/js/pages/settings/project/security.tsx": 2
     }
 }

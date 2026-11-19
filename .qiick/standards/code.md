@@ -45,6 +45,12 @@ The Pest architecture test (`tests/Arch/NamingArchitectureTest.php`) enforces th
 - No `dd`, `dump`, `ray`, `var_dump`, `console.log` left behind. No `env()` outside `config/`.
 - Strict DRY: extract shared validation rules, scopes, DTO shapes and UI primitives instead of copying blocks.
 
+## Size: a tripwire, not a score
+
+- A frontend file holds at most **600** lines of code and a function (component, hook) at most **300**; blank lines and comments do not count, so documentation never pushes a file over. Generated Wayfinder output (`resources/js/actions`, `routes`, `wayfinder`) and `components/ui` are excluded.
+- The limits exist because the fleet grew dozens of god components nobody planned. They catch that shape of problem; they do not measure quality, and a file under them is not fine for that reason.
+- `max-lines` and `max-lines-per-function` are ratcheted warnings, never errors: today's outliers are listed in `qiick-lint-baseline.json` and a new one fails. An honest exception is baselined with `--update` and its reason in the PR. The ratchet counts files and functions over the limit, not lines, so a listed file can still grow: when you touch one, move code out, not in.
+
 ## Documentation (English PHPDoc / JSDoc)
 
 This replaces the "comment only exceptionally complex logic" default of Laravel Boost and similar guidelines.
