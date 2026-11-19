@@ -17,6 +17,7 @@ use App\Ai\Tools\SearchFindingsTool;
 use App\Data\ApiKeyData;
 use App\Enums\AiToolKindEnum;
 use App\Enums\ApiKeyScopeEnum;
+use App\Enums\PermissionEnum;
 use App\Enums\RoleEnum;
 use App\Enums\SeverityEnum;
 use App\Models\AlertLog;
@@ -46,7 +47,13 @@ beforeEach(function () {
 
 function toolUser(RoleEnum $role = RoleEnum::Reader): User
 {
-    return User::factory()->create()->assignRole($role->value);
+    $user = User::factory()->create()->assignRole($role->value);
+
+    if (! $user->hasPermissionTo(PermissionEnum::CanUseAi->value)) {
+        $user->givePermissionTo(PermissionEnum::CanUseAi->value);
+    }
+
+    return $user;
 }
 
 /**

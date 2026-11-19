@@ -6,10 +6,12 @@ use App\Actions\CreateApiKeyAction;
 use App\Actions\RotateApiKeyAction;
 use App\Data\ApiKeyData;
 use App\Enums\ApiKeyScopeEnum;
+use App\Enums\RoleEnum;
 use App\Http\Middleware\AuthenticateApiKeyMiddleware;
 use App\Models\ApiKey;
 use App\Models\User;
 use App\Notifications\ApiKeyExpiringNotification;
+use Database\Seeders\PermissionSeeder;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Notification;
@@ -22,8 +24,11 @@ use Spatie\Activitylog\Models\Activity;
 /**
  * Personal API keys (#315, #351): Settings → API keys (web session only); AuthenticateApiKeyMiddleware
  * on the `api_key` guard; rotation grace; RFC 6750 refusals; write⇒read; expiry notify.
+ * A key never holds a scope its creator lacks; at use time it is narrowed to the owner's
+ * current permissions (key scopes ∩ owner's permissions).
  */
 beforeEach(function () {
+    $this->seed(PermissionSeeder::class);
     $this->withoutVite();
     Route::middleware(AuthenticateApiKeyMiddleware::class.':mcp:read')
         ->get('/__test/api-key', fn () => response()->json([
@@ -34,6 +39,14 @@ beforeEach(function () {
     Route::middleware(AuthenticateApiKeyMiddleware::class.':mcp:write')
         ->get('/__test/api-key-write', fn () => response()->json(['ok' => true]));
 });
+
+/**
+ * An owner who may grant and use every mcp scope (admin holds can-use-ai).
+ */
+function apiKeyOwner(): User
+{
+    return User::factory()->create()->assignRole(RoleEnum::Admin->value);
+}
 
 function plainApiKey(User $user, ?string $expiresAt = null, array $scopes = [ApiKeyScopeEnum::McpRead]): string
 {
@@ -49,7 +62,7 @@ function callWithApiKey(?string $plainKey, string $path = '/__test/api-key'): Te
 }
 
 it('creates a key, shows it once and stores only the hash of the full token', function () {
-    $user = User::factory()->create();
+    $user = apiKeyOwner();
 
     $this->actingAs($user)
         ->post(route('api-keys.store'), ['name' => 'Claude Code', 'scopes' => ['mcp:read'], 'expires_at' => '2099-01-31'])
@@ -90,7 +103,7 @@ it('creates a key, shows it once and stores only the hash of the full token', fu
 });
 
 it('validates the name, the scopes and the expiry date', function (array $body, string $field) {
-    $this->actingAs(User::factory()->create())
+    $this->actingAs(apiKeyOwner())
         ->post(route('api-keys.store'), [...['name' => 'Key', 'scopes' => ['mcp:read']], ...$body])
         ->assertSessionHasErrors($field);
 
@@ -102,8 +115,50 @@ it('validates the name, the scopes and the expiry date', function (array $body, 
     'past expiry' => [['expires_at' => '2020-01-01'], 'expires_at'],
 ]);
 
+it('refuses a scope the creator does not hold on the settings form', function () {
+    $creator = User::factory()->create()->assignRole(RoleEnum::Reader->value);
+
+    expect(ApiKeyScopeEnum::scopesCreatorMayGrant($creator))->toBe([]);
+
+    $this->actingAs($creator)->post(route('api-keys.store'), [
+        'name' => 'Escalated',
+        'scopes' => ['mcp:read'],
+    ])->assertSessionHasErrors('scopes.0');
+
+    expect(ApiKey::query()->count())->toBe(0);
+});
+
+it('refuses a scope the creator does not hold over the JSON API', function () {
+    $creator = User::factory()->create()->assignRole(RoleEnum::Reader->value);
+
+    $this->actingAs($creator)->postJson(route('api-keys.store'), [
+        'name' => 'Escalated',
+        'scopes' => ['mcp:write'],
+    ])->assertUnprocessable()->assertJsonValidationErrors('scopes.0');
+
+    expect(ApiKey::query()->count())->toBe(0);
+});
+
+it('narrows a key at use time when the owner loses the permission the scope needs', function () {
+    $owner = apiKeyOwner();
+    $plainKey = plainApiKey($owner, scopes: [ApiKeyScopeEnum::McpRead, ApiKeyScopeEnum::McpWrite]);
+
+    callWithApiKey($plainKey)->assertOk();
+    callWithApiKey($plainKey, '/__test/api-key-write')->assertOk();
+
+    $owner->syncRoles([RoleEnum::Reader->value]);
+
+    callWithApiKey($plainKey)
+        ->assertForbidden()
+        ->assertJsonPath('error', 'insufficient_scope')
+        ->assertJsonPath('scope', 'mcp:read');
+    callWithApiKey($plainKey, '/__test/api-key-write')
+        ->assertForbidden()
+        ->assertJsonPath('error', 'insufficient_scope');
+});
+
 it('stores mcp:write alone and treats it as satisfying mcp:read', function () {
-    $user = User::factory()->create();
+    $user = apiKeyOwner();
 
     $this->actingAs($user)
         ->post(route('api-keys.store'), ['name' => 'Writer', 'scopes' => ['mcp:write']])
@@ -121,7 +176,7 @@ it('stores mcp:write alone and treats it as satisfying mcp:read', function () {
 });
 
 it('does not let mcp:read satisfy mcp:write', function () {
-    $plainKey = plainApiKey(User::factory()->create());
+    $plainKey = plainApiKey(apiKeyOwner());
 
     callWithApiKey($plainKey, '/__test/api-key-write')
         ->assertForbidden()
@@ -129,7 +184,7 @@ it('does not let mcp:read satisfy mcp:write', function () {
 });
 
 it('lists only the signed-in user\'s keys', function () {
-    $user = User::factory()->create();
+    $user = apiKeyOwner();
     ApiKey::factory()->for($user, 'owner')->create(['name' => 'Mine', 'created_by' => $user->id]);
     ApiKey::factory()->create(['name' => 'Someone else\'s']);
 
@@ -140,7 +195,7 @@ it('lists only the signed-in user\'s keys', function () {
 });
 
 it('lets a key act as its owner on the api_key guard and logs its first use once', function () {
-    $user = User::factory()->create();
+    $user = apiKeyOwner();
     $plainKey = plainApiKey($user);
 
     callWithApiKey($plainKey)
@@ -160,7 +215,7 @@ it('lets a key act as its owner on the api_key guard and logs its first use once
 });
 
 it('refuses a presented token with a trailing newline at the pattern boundary', function () {
-    $user = User::factory()->create();
+    $user = apiKeyOwner();
     $plainKey = plainApiKey($user);
 
     expect(ApiKey::publicPrefixFromToken($plainKey."\n"))->toBeNull()
@@ -171,7 +226,7 @@ it('refuses a presented token with a trailing newline at the pattern boundary', 
 
 it('rejects a missing, unknown, expired or revoked key with invalid_token', function () {
     Date::setTestNow('2026-11-16 12:00:00');
-    $user = User::factory()->create();
+    $user = apiKeyOwner();
     $expiredKey = plainApiKey($user, '2026-11-20');
     $revokedKey = plainApiKey($user);
     $revoked = ApiKey::query()->latest('id')->first();
@@ -197,7 +252,7 @@ it('rejects a missing, unknown, expired or revoked key with invalid_token', func
 });
 
 it('rejects the key of a deactivated user at once, and of a deleted user', function () {
-    $user = User::factory()->create();
+    $user = apiKeyOwner();
     $plainKey = plainApiKey($user);
     callWithApiKey($plainKey)->assertOk();
 
@@ -211,7 +266,7 @@ it('rejects the key of a deactivated user at once, and of a deleted user', funct
 });
 
 it('rejects a key without the scope the route needs, including an empty scope list', function () {
-    $user = User::factory()->create();
+    $user = apiKeyOwner();
     $plainKey = plainApiKey($user);
     ApiKey::query()->sole()->forceFill(['scopes' => []])->save();
 
@@ -221,7 +276,7 @@ it('rejects a key without the scope the route needs, including an empty scope li
 });
 
 it('rejects an address outside the IP allowlist', function () {
-    $user = User::factory()->create();
+    $user = apiKeyOwner();
     $plainKey = plainApiKey($user);
     ApiKey::query()->sole()->forceFill(['ip_allowlist' => ['203.0.113.10']])->save();
 
@@ -237,7 +292,7 @@ it('does not let a user revoke someone else\'s key', function () {
 });
 
 it('refuses key management over API-key auth', function () {
-    $user = User::factory()->create();
+    $user = apiKeyOwner();
     $plainKey = plainApiKey($user);
     $apiKey = ApiKey::query()->sole();
 
@@ -255,7 +310,7 @@ it('refuses key management over API-key auth', function () {
 
 it('rotates a key: previous secret works in the grace window and not after', function () {
     Date::setTestNow('2026-11-17 12:00:00');
-    $user = User::factory()->create();
+    $user = apiKeyOwner();
     $oldPlain = plainApiKey($user);
     $apiKey = ApiKey::query()->sole();
 
@@ -281,7 +336,7 @@ it('rotates a key: previous secret works in the grace window and not after', fun
 });
 
 it('revokes immediately so the previous secret stops working too', function () {
-    $user = User::factory()->create();
+    $user = apiKeyOwner();
     $oldPlain = plainApiKey($user);
     $apiKey = ApiKey::query()->sole();
     $newPlain = app(RotateApiKeyAction::class)->execute($apiKey, $user);
@@ -293,7 +348,7 @@ it('revokes immediately so the previous secret stops working too', function () {
 });
 
 it('enforces the per-key rate_limit_per_minute column', function () {
-    $user = User::factory()->create();
+    $user = apiKeyOwner();
     $plainKey = plainApiKey($user);
     ApiKey::query()->sole()->forceFill(['rate_limit_per_minute' => 2])->save();
 
@@ -309,12 +364,12 @@ it('limits failed attempts per IP and requests per key via the default config', 
 
     callWithApiKey('exc_test_'.str_repeat('x', 40))->assertTooManyRequests();
 
-    callWithApiKey(plainApiKey(User::factory()->create()))->assertTooManyRequests();
+    callWithApiKey(plainApiKey(apiKeyOwner()))->assertTooManyRequests();
 });
 
 it('limits the requests of one key per minute from the app default', function () {
     config(['excubia.api_key_requests_per_minute' => 2]);
-    $plainKey = plainApiKey(User::factory()->create());
+    $plainKey = plainApiKey(apiKeyOwner());
 
     callWithApiKey($plainKey)->assertOk();
     callWithApiKey($plainKey)->assertOk();

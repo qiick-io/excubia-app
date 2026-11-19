@@ -5,12 +5,16 @@ declare(strict_types=1);
 namespace App\Enums;
 
 use App\Models\User;
+use App\Services\EffectivePermissionResolverService;
 
 /**
  * What a personal API key may be used for (#315, #351): `<resource>:(read|write)` only.
  * `mcp:read` reaches the MCP server and its read tools; `mcp:write` adds the write tools (#320)
  * and implies `mcp:read`. Backing values are stored in `api_keys.scopes`: never change one
  * without a data migration.
+ *
+ * A key never holds a scope its creator lacks, and at use time its effective access is the
+ * intersection of the stored scopes with the owner's current permissions (fleet rule).
  */
 enum ApiKeyScopeEnum: string
 {
@@ -21,17 +25,45 @@ enum ApiKeyScopeEnum: string
     public const PATTERN = '/^[a-z][a-z0-9-]*:(read|write)$/D';
 
     /**
-     * Scopes the creator may put on a new key. Today every enum case: mcp scopes are not Spatie
-     * permissions, and every signed-in verified user may reach MCP. When scopes start mapping to
-     * permissions, narrow the return here — one seam instead of a rule re-derived per request.
+     * Permissions a user must hold to issue or keep using a key with this scope. `write` needs
+     * the same ceiling as `read` today: both mcp scopes are the AI surface (`can-use-ai`).
+     *
+     * @return list<PermissionEnum>
+     */
+    public function requiredCreatorPermissions(): array
+    {
+        return match ($this) {
+            self::McpRead, self::McpWrite => [PermissionEnum::CanUseAi],
+        };
+    }
+
+    /**
+     * Whether the user currently holds every permission this scope needs.
+     */
+    public function isHeldBy(User $user): bool
+    {
+        $permissionResolver = app(EffectivePermissionResolverService::class);
+
+        foreach ($this->requiredCreatorPermissions() as $requiredPermission) {
+            if (! $permissionResolver->hasPermission($user, $requiredPermission->value)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Scopes the creator may put on a new key: only those whose permissions they hold now.
      *
      * @return list<self>
      */
     public static function scopesCreatorMayGrant(User $creator): array
     {
-        unset($creator);
-
-        return self::cases();
+        return array_values(array_filter(
+            self::cases(),
+            fn (self $scope): bool => $scope->isHeldBy($creator),
+        ));
     }
 
     /**

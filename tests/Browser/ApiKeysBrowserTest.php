@@ -2,8 +2,10 @@
 
 declare(strict_types=1);
 
+use App\Enums\RoleEnum;
 use App\Models\ApiKey;
 use App\Models\User;
+use Database\Seeders\PermissionSeeder;
 
 require_once __DIR__.'/BrowserSeedHelpers.php';
 
@@ -11,8 +13,12 @@ require_once __DIR__.'/BrowserSeedHelpers.php';
  * Settings → API keys (#315): a user creates a key in the dialog, sees it once, then revokes it
  * through the destructive confirmation, in light and dark, with no serious axe issue.
  */
+beforeEach(function () {
+    $this->seed(PermissionSeeder::class);
+});
+
 it('creates a key, shows it once and revokes it', function (string $scheme) {
-    $user = User::factory()->create();
+    $user = User::factory()->create()->assignRole(RoleEnum::Admin->value);
     $this->actingAs($user);
 
     $page = visitA11y(route('api-keys.index', absolute: false), $scheme)

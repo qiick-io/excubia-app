@@ -7,6 +7,7 @@ use App\Ai\Agents\ExcubiaAssistantAgent;
 use App\Data\ApiKeyData;
 use App\Enums\AiToolKindEnum;
 use App\Enums\ApiKeyScopeEnum;
+use App\Enums\PermissionEnum;
 use App\Enums\ProjectVisibilityEnum;
 use App\Enums\RoleEnum;
 use App\Enums\SeverityEnum;
@@ -32,7 +33,14 @@ beforeEach(function () {
 
 function mcpUser(RoleEnum $role = RoleEnum::Reader): User
 {
-    return User::factory()->create()->assignRole($role->value);
+    $user = User::factory()->create()->assignRole($role->value);
+
+    // mcp scopes require can-use-ai; Reader does not hold it by default.
+    if (! $user->hasPermissionTo(PermissionEnum::CanUseAi->value)) {
+        $user->givePermissionTo(PermissionEnum::CanUseAi->value);
+    }
+
+    return $user;
 }
 
 function mcpKey(User $user): string
@@ -145,7 +153,9 @@ it('runs a tool as the key owner, hides admin-only projects from a reader and lo
 });
 
 it('returns a tool error for a user without can-show-projects and for an unknown project', function () {
-    $plainKey = mcpKey(User::factory()->create());
+    $user = User::factory()->create();
+    $user->givePermissionTo(PermissionEnum::CanUseAi->value);
+    $plainKey = mcpKey($user);
 
     mcpCall($plainKey, 'tools/call', ['name' => 'list-projects', 'arguments' => []], 'list-projects')
         ->assertOk()
