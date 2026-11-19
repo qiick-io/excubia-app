@@ -9,13 +9,13 @@ use App\Mail\AlertMail;
 use App\Models\User;
 use App\Notifications\AlertNotification;
 use App\Services\SettingsRepositoryService;
+use App\Services\WebhookUrlGuardService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use RuntimeException;
-use Symfony\Component\HttpFoundation\IpUtils;
 use Throwable;
 
 /**
@@ -25,8 +25,10 @@ use Throwable;
  * - telegram: a Bot API sendMessage;
  * - email:<user id>: an AlertMail to that user, in their locale (the user must still be active);
  * - app:<user id>: an in-app AlertNotification for that user's bell (#296), same condition.
- * HTTPS only, no redirects, and hosts that resolve to private or reserved addresses are refused;
- * the connection goes to the checked address, and transport errors never quote the URL.
+ * HTTPS only, no redirects, and hosts that resolve to private or reserved addresses are refused
+ * by {@see WebhookUrlGuardService}; the connection is pinned with CURLOPT_CONNECT_TO to the
+ * checked address (curl ignores CURLOPT_RESOLVE for IP-literal spellings), and transport errors
+ * never quote the URL.
  * Retried 3 times with backoff; the webhook's last success and last error are kept for Settings,
  * and every channel's outcome goes on the alert's history row (#114). A grouped message (one
  * report push, #22) carries the worst alert's payload and lists every alert in `alerts`, whose
@@ -74,7 +76,7 @@ class DeliverAlertJob implements ShouldQueue
     /**
      * @throws RuntimeException when the endpoint does not answer 2xx (the job is retried)
      */
-    public function handle(SettingsRepositoryService $settings): void
+    public function handle(SettingsRepositoryService $settings, WebhookUrlGuardService $urlGuard): void
     {
         $userId = self::emailUserId($this->channel);
 
@@ -103,10 +105,12 @@ class DeliverAlertJob implements ShouldQueue
             default => [null, [], ''],
         };
 
-        $address = $url === null ? null : $this->publicAddress($url);
+        $authorized = $url === null
+            ? ['ok' => false, 'reason' => 'the URL is missing, not HTTPS or points to a private address.']
+            : $urlGuard->authorizeOutbound($url);
 
-        if ($url === null || $address === null) {
-            $this->record($settings, false, 'Refused: the URL is missing, not HTTPS or points to a private address.');
+        if ($url === null || ! $authorized['ok']) {
+            $this->record($settings, false, 'Refused: '.($authorized['reason'] ?? 'the URL is missing, not HTTPS or points to a private address.'));
 
             return;
         }
@@ -115,9 +119,10 @@ class DeliverAlertJob implements ShouldQueue
             $response = Http::timeout(5)
                 ->connectTimeout(3)
                 ->withoutRedirecting()
-                // Connects to the address checked above, so a second DNS answer cannot point the
-                // request at a private host (DNS rebinding, #51).
-                ->withOptions(['curl' => [CURLOPT_RESOLVE => [$this->pinnedResolve($url, $address)]]])
+                // Pins the connection to the address the guard checked. CURLOPT_CONNECT_TO with
+                // an empty source host applies whatever spelling the URL uses; CURLOPT_RESOLVE
+                // would be ignored for curl-style IP literals (DNS rebinding / metadata bypass).
+                ->withOptions(['curl' => [CURLOPT_CONNECT_TO => $authorized['curl_connect_to']]])
                 ->withHeaders(['User-Agent' => 'Excubia-Alerts/1.0', ...$headers])
                 ->withBody($body, 'application/json')
                 ->post($url);
@@ -218,42 +223,6 @@ class DeliverAlertJob implements ShouldQueue
             'X-Excubia-Timestamp' => $timestamp,
             'X-Excubia-Signature' => 'sha256='.hash_hmac('sha256', $timestamp.'.'.$body, $secret),
         ], $body];
-    }
-
-    /**
-     * The address to connect to: the URL is HTTPS and every IPv4 and IPv6 address of its host is
-     * public (no loopback, private, link-local, mapped or reserved range). Null when refused, also
-     * when the host does not resolve, so an unresolvable or IPv6-only name is never let through
-     * unchecked (#51).
-     */
-    private function publicAddress(string $url): ?string
-    {
-        $parts = parse_url($url);
-
-        if (($parts['scheme'] ?? null) !== 'https' || ! is_string($parts['host'] ?? null) || isset($parts['user']) || isset($parts['pass'])) {
-            return null;
-        }
-
-        $host = trim($parts['host'], '[]');
-        $addresses = filter_var($host, FILTER_VALIDATE_IP) !== false ? [$host] : [
-            ...(gethostbynamel($host) ?: []),
-            ...array_column(@dns_get_record($host, DNS_AAAA) ?: [], 'ipv6'),
-        ];
-        $isPublic = fn (string $address): bool => ! IpUtils::isPrivateIp($address)
-            && filter_var($address, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) !== false;
-
-        return $addresses !== [] && collect($addresses)->every($isPublic) ? $addresses[0] : null;
-    }
-
-    /**
-     * The `CURLOPT_RESOLVE` entry that maps the URL's host and port to the checked address.
-     */
-    private function pinnedResolve(string $url, string $address): string
-    {
-        $parts = parse_url($url);
-        $host = trim((string) ($parts['host'] ?? ''), '[]');
-
-        return sprintf('%s:%d:%s', $host, (int) ($parts['port'] ?? 443), str_contains($address, ':') ? "[{$address}]" : $address);
     }
 
     /**

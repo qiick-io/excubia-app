@@ -16,6 +16,7 @@ use App\Models\RuntimeAggregate;
 use App\Models\User;
 use App\Services\AlertDispatcherService;
 use App\Services\SettingsRepositoryService;
+use App\Services\WebhookUrlGuardService;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Http;
@@ -215,7 +216,7 @@ it('records each channel delivery on the alert history', function () {
     [$delivered, $failed] = collect(Queue::pushedJobs()[DeliverAlertJob::class])->map(fn (array $job) => $job['job'])->all();
 
     Http::fake(['93.184.216.34/*' => Http::response('', 204)]);
-    $delivered->handle(app(SettingsRepositoryService::class));
+    $delivered->handle(app(SettingsRepositoryService::class), app(WebhookUrlGuardService::class));
     $failed->failed(new RuntimeException('HTTP 500'));
 
     expect(AlertLog::query()->orderBy('id')->get()->map(fn (AlertLog $log): array => [$log->status, $log->deliveries])->all())
