@@ -642,40 +642,15 @@
             "create": "Create API key",
             "createTitle": "Create API key",
             "createDescription": "Name the key after the client that uses it, pick what it may do and, optionally, when it expires.",
-            "secretBanner": "Copy this key now. It will not be shown again.",
-            "secretValue": "New API key",
-            "copy": "Copy key",
-            "copied": "Copied",
-            "expiresAt": "Expires on",
-            "expiresAtHelp": "Leave empty for a key that does not expire.",
-            "never": "Never",
-            "revoke": "Revoke key",
-            "scopeHelp": {
-                "mcpRead": "Read projects, reports, findings, exceptions, runtime and schedules through the MCP server.",
-                "mcpWrite": "Also change data through the MCP write tools: exception status, assignments, finding dismissals, alert mutes and maintenance windows. Off unless ticked."
-            },
-            "columns": {
-                "name": "Name",
-                "prefix": "Prefix",
-                "scopes": "Scopes",
-                "lastUsed": "Last used",
-                "expires": "Expires",
-                "status": "Status",
-                "actions": "Actions"
-            },
-            "status": {
-                "active": "Active",
-                "expired": "Expired",
-                "revoked": "Revoked"
-            },
-            "confirm": {
-                "revokeTitle": "Revoke API key “{{name}}”?",
-                "revokeDescription": "This key will stop working immediately.",
-                "revokeConfirm": "Revoke"
-            },
             "empty": {
                 "title": "No API keys yet",
                 "description": "Create a key to connect an AI client to Excubia."
+            },
+            "resources": {
+                "mcp": {
+                    "label": "AI clients (MCP server)",
+                    "description": "Read: projects, reports, findings, exceptions, runtime and schedules. Write also changes exception status, assignments, finding dismissals, alert mutes and maintenance windows."
+                }
             }
         }
     },
@@ -2391,5 +2366,65 @@
             "blocked": "Blocked"
         },
         "valueChange": "from {{from}} to {{to}}"
+    },
+    "apiKeys": {
+        "form": {
+            "requiredHint": "Fields marked with * are required.",
+            "name": "Name",
+            "nameDescription": "Say what uses the key, so it can be found when it has to be rotated or revoked.",
+            "restrictions": "Restrictions",
+            "restrictionsDescription": "Optional. Leave a field empty for no limit.",
+            "expiresAt": "Expires",
+            "expiresAtDescription": "The key stops working at this time. You are notified before it does.",
+            "ipAllowlist": "Allowed IP addresses",
+            "ipAllowlistDescription": "Addresses or CIDR ranges, separated by commas. Requests from anywhere else are refused.",
+            "ipAllowlistPlaceholder": "203.0.113.4, 10.0.0.0/8",
+            "rateLimit": "Requests per minute",
+            "rateLimitDescription": "Requests above this limit are refused with 429 until the minute is over."
+        },
+        "scopes": {
+            "legend": "Permissions",
+            "description": "What the key can do with each resource. Write includes read.",
+            "none": "No access",
+            "read": "Read",
+            "write": "Write"
+        },
+        "secret": {
+            "createdTitle": "Copy the key for “{{name}}”",
+            "rotatedTitle": "Copy the new secret for “{{name}}”",
+            "description": "This is the only time the key is shown. It is not stored and cannot be shown again: put it in your password manager or secret store now.",
+            "previousSecretValidUntil": "The previous secret keeps working until {{date}}.",
+            "label": "API key",
+            "copy": "Copy the key",
+            "copied": "Key copied to the clipboard",
+            "copyFailed": "The key could not be copied. It is selected: copy it with your keyboard.",
+            "announcement": "API key for {{name}} created. It is shown only once.",
+            "acknowledge": "I have stored the key somewhere safe",
+            "done": "Done"
+        },
+        "list": {
+            "name": "Name",
+            "key": "Key",
+            "permissions": "Permissions",
+            "lastUsed": "Last used",
+            "expires": "Expires",
+            "status": "Status",
+            "actions": "Actions",
+            "never": "Never",
+            "neverUsed": "Never used",
+            "noPermissions": "No permissions",
+            "rotate": "Rotate {{name}}",
+            "revoke": "Revoke {{name}}"
+        },
+        "status": {
+            "active": "Active",
+            "expired": "Expired",
+            "revoked": "Revoked"
+        },
+        "revoke": {
+            "title": "Revoke “{{name}}”?",
+            "description": "Every request with this key is refused from now on. The key stays in the list and in the activity log; it cannot be used again.",
+            "confirm": "Revoke"
+        }
     }
 }

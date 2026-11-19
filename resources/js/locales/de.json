@@ -642,40 +642,15 @@
             "create": "API-Schlüssel erstellen",
             "createTitle": "API-Schlüssel erstellen",
             "createDescription": "Benennen Sie den Schlüssel nach dem Client, der ihn nutzt, wählen Sie, was er darf, und optional, wann er abläuft.",
-            "secretBanner": "Kopieren Sie diesen Schlüssel jetzt. Er wird nicht erneut angezeigt.",
-            "secretValue": "Neuer API-Schlüssel",
-            "copy": "Schlüssel kopieren",
-            "copied": "Kopiert",
-            "expiresAt": "Läuft ab am",
-            "expiresAtHelp": "Leer lassen für einen Schlüssel ohne Ablauf.",
-            "never": "Nie",
-            "revoke": "Schlüssel widerrufen",
-            "scopeHelp": {
-                "mcpRead": "Liest Projekte, Berichte, Befunde, Exceptions, Runtime und Zeitpläne über den MCP-Server.",
-                "mcpWrite": "Ändert auch Daten über die MCP-Schreib-Tools: Exception-Status, Zuweisungen, verworfene Findings, stummgeschaltete Alerts und Wartungsfenster. Aus, solange nicht angehakt."
-            },
-            "columns": {
-                "name": "Name",
-                "prefix": "Präfix",
-                "scopes": "Scopes",
-                "lastUsed": "Zuletzt verwendet",
-                "expires": "Ablauf",
-                "status": "Status",
-                "actions": "Aktionen"
-            },
-            "status": {
-                "active": "Aktiv",
-                "expired": "Abgelaufen",
-                "revoked": "Widerrufen"
-            },
-            "confirm": {
-                "revokeTitle": "API-Schlüssel „{{name}}“ widerrufen?",
-                "revokeDescription": "Dieser Schlüssel funktioniert sofort nicht mehr.",
-                "revokeConfirm": "Widerrufen"
-            },
             "empty": {
                 "title": "Noch keine API-Schlüssel",
                 "description": "Erstellen Sie einen Schlüssel, um einen KI-Client mit Excubia zu verbinden."
+            },
+            "resources": {
+                "mcp": {
+                    "label": "KI-Clients (MCP-Server)",
+                    "description": "Lesen: Projekte, Berichte, Befunde, Exceptions, Runtime und Zeitpläne. Schreiben ändert zusätzlich Exception-Status, Zuweisungen, verworfene Findings, stummgeschaltete Alerts und Wartungsfenster."
+                }
             }
         }
     },
@@ -2391,5 +2366,65 @@
             "blocked": "Blockiert"
         },
         "valueChange": "von {{from}} auf {{to}}"
+    },
+    "apiKeys": {
+        "form": {
+            "requiredHint": "Mit * markierte Felder sind Pflichtfelder.",
+            "name": "Name",
+            "nameDescription": "Geben Sie an, was den Schlüssel verwendet, damit er sich beim Rotieren oder Widerrufen finden lässt.",
+            "restrictions": "Einschränkungen",
+            "restrictionsDescription": "Optional. Lassen Sie ein Feld leer, um nichts zu begrenzen.",
+            "expiresAt": "Läuft ab",
+            "expiresAtDescription": "Der Schlüssel funktioniert ab diesem Zeitpunkt nicht mehr. Sie werden vorher benachrichtigt.",
+            "ipAllowlist": "Erlaubte IP-Adressen",
+            "ipAllowlistDescription": "Adressen oder CIDR-Bereiche, durch Kommas getrennt. Anfragen von anderen Adressen werden abgelehnt.",
+            "ipAllowlistPlaceholder": "203.0.113.4, 10.0.0.0/8",
+            "rateLimit": "Anfragen pro Minute",
+            "rateLimitDescription": "Anfragen über diesem Limit werden bis zum Ende der Minute mit 429 abgelehnt."
+        },
+        "scopes": {
+            "legend": "Berechtigungen",
+            "description": "Was der Schlüssel mit jeder Ressource tun darf. Schreiben schließt Lesen ein.",
+            "none": "Kein Zugriff",
+            "read": "Lesen",
+            "write": "Schreiben"
+        },
+        "secret": {
+            "createdTitle": "Schlüssel für „{{name}}“ kopieren",
+            "rotatedTitle": "Neues Geheimnis für „{{name}}“ kopieren",
+            "description": "Der Schlüssel wird nur dieses eine Mal angezeigt. Er wird nicht gespeichert und kann nicht erneut angezeigt werden: Legen Sie ihn jetzt in Ihrem Passwort- oder Secret-Manager ab.",
+            "previousSecretValidUntil": "Das bisherige Geheimnis bleibt bis {{date}} gültig.",
+            "label": "API-Schlüssel",
+            "copy": "Schlüssel kopieren",
+            "copied": "Schlüssel in die Zwischenablage kopiert",
+            "copyFailed": "Der Schlüssel konnte nicht kopiert werden. Er ist markiert: Kopieren Sie ihn mit der Tastatur.",
+            "announcement": "API-Schlüssel für {{name}} erstellt. Er wird nur einmal angezeigt.",
+            "acknowledge": "Ich habe den Schlüssel sicher gespeichert",
+            "done": "Fertig"
+        },
+        "list": {
+            "name": "Name",
+            "key": "Schlüssel",
+            "permissions": "Berechtigungen",
+            "lastUsed": "Zuletzt verwendet",
+            "expires": "Läuft ab",
+            "status": "Status",
+            "actions": "Aktionen",
+            "never": "Nie",
+            "neverUsed": "Nie verwendet",
+            "noPermissions": "Keine Berechtigungen",
+            "rotate": "{{name}} rotieren",
+            "revoke": "{{name}} widerrufen"
+        },
+        "status": {
+            "active": "Aktiv",
+            "expired": "Abgelaufen",
+            "revoked": "Widerrufen"
+        },
+        "revoke": {
+            "title": "„{{name}}“ widerrufen?",
+            "description": "Ab sofort wird jede Anfrage mit diesem Schlüssel abgelehnt. Der Schlüssel bleibt in der Liste und im Aktivitätsprotokoll; er kann nicht wieder verwendet werden.",
+            "confirm": "Widerrufen"
+        }
     }
 }
