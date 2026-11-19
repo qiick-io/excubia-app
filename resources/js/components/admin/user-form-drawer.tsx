@@ -31,6 +31,7 @@ const EMPTY_USER_FORM = {
     first_name: '',
     last_name: '',
     email: '',
+    username: '',
     password: '',
     is_active: true,
     roles: [] as string[],
@@ -77,6 +78,7 @@ export function UserFormDrawer({
                 first_name: editing.first_name,
                 last_name: editing.last_name ?? '',
                 email: editing.email,
+                username: editing.username ?? '',
                 password: '',
                 is_active: editing.is_active,
                 roles: editing.roles.map((role) => role.name),
@@ -243,6 +245,36 @@ export function UserFormDrawer({
                             </FieldDescription>
                             <FieldError id="user-email-error">
                                 {form.errors.email}
+                            </FieldError>
+                        </Field>
+
+                        <Field
+                            data-invalid={
+                                form.errors.username ? true : undefined
+                            }
+                        >
+                            <FieldLabel htmlFor="user_username">
+                                {t('users.form.username')}
+                            </FieldLabel>
+                            <Input
+                                id="user_username"
+                                value={form.data.username}
+                                onChange={(event) =>
+                                    form.setData('username', event.target.value)
+                                }
+                                maxLength={STRING_LIMITS.USERNAME}
+                                disabled={readOnly}
+                                aria-invalid={
+                                    form.errors.username ? true : undefined
+                                }
+                                aria-describedby={
+                                    form.errors.username
+                                        ? 'user-username-error'
+                                        : undefined
+                                }
+                            />
+                            <FieldError id="user-username-error">
+                                {form.errors.username}
                             </FieldError>
                         </Field>
 

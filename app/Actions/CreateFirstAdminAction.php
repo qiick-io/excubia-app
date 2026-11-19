@@ -33,7 +33,7 @@ class CreateFirstAdminAction
 
             $this->syncPermissions->execute();
 
-            return $this->createUser->execute($firstName, $lastName, $email, $password, [RoleEnum::SuperAdmin->value]);
+            return $this->createUser->execute($firstName, $lastName, $email, null, $password, [RoleEnum::SuperAdmin->value]);
         });
     }
 }
