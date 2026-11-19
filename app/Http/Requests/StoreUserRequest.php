@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Concerns\ValidatesUsernameTrait;
 use App\Models\User;
 use App\Services\RoleGrantService;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -17,6 +18,8 @@ use Spatie\Permission\Models\Role;
  */
 class StoreUserRequest extends FormRequest
 {
+    use ValidatesUsernameTrait;
+
     public function authorize(): bool
     {
         return (bool) $this->user()?->can('create', User::class);
@@ -31,6 +34,7 @@ class StoreUserRequest extends FormRequest
             'first_name' => ['required', 'string', 'max:255'],
             'last_name' => ['nullable', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', Rule::unique(User::class)],
+            'username' => $this->usernameRules(),
             'password' => ['required', 'string', Password::default()],
             'is_active' => ['boolean'],
             ...$this->roleRules(),

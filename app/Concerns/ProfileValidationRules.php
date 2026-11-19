@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Concerns;
 
+use App\Http\Requests\Concerns\ValidatesUsernameTrait;
 use App\Models\User;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Validation\Rule;
@@ -9,6 +12,8 @@ use Illuminate\Validation\Rules\Unique;
 
 trait ProfileValidationRules
 {
+    use ValidatesUsernameTrait;
+
     /**
      * Get the validation rules used to validate user profiles.
      *
@@ -20,6 +25,7 @@ trait ProfileValidationRules
             'first_name' => $this->nameRules(),
             'last_name' => ['nullable', 'string', 'max:255'],
             'email' => $this->emailRules($userId),
+            'username' => $this->usernameRules($userId),
         ];
     }
 

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use App\Traits\LogsApplicationActivityTrait;
@@ -26,6 +28,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property string|null $last_name
  * @property-read string $name first and last name
  * @property string $email
+ * @property string|null $username optional, unique and stored lowercase (fleet baseline #84)
  * @property string|null $oidc_sub unused: left over from the pre-release SSO client, never shipped (#356)
  * @property-read bool|null $identities_exists from withExists('identities')
  * @property Carbon|null $email_verified_at
@@ -43,7 +46,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['first_name', 'last_name', 'email', 'password', 'has_weekly_digest'])]
+#[Fillable(['first_name', 'last_name', 'username', 'email', 'password', 'has_weekly_digest'])]
 #[Hidden(['password', 'oidc_sub', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
 {
@@ -66,6 +69,7 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
      */
     protected $attributes = [
         'is_active' => true,
+        'username' => null,
         'locale' => 'en',
         'has_weekly_digest' => false,
         'has_alert_emails' => false,
@@ -136,6 +140,25 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
     public function getDefaultGuardName(): string
     {
         return 'web';
+    }
+
+    /**
+     * The one canonical form of a username, shared by the model and the request validators.
+     */
+    public static function normalizeUsername(?string $value): ?string
+    {
+        $normalized = mb_strtolower(trim($value ?? ''));
+
+        return $normalized === '' ? null : $normalized;
+    }
+
+    /**
+     * Canonicalize usernames on every write, including CLI and seeder writes that bypass the
+     * request validators. The unique index then compares lowercase values on every database.
+     */
+    public function setUsernameAttribute(?string $value): void
+    {
+        $this->attributes['username'] = self::normalizeUsername($value);
     }
 
     /**

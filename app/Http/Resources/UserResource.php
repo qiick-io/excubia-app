@@ -35,6 +35,7 @@ class UserResource extends JsonResource
             'last_name' => $user->last_name,
             'name' => $user->name,
             'email' => $user->email,
+            'username' => $user->username,
             'is_active' => $user->is_active,
             'is_sso_linked' => (bool) $user->identities_exists,
             'email_verified_at' => $user->email_verified_at?->toIso8601String(),

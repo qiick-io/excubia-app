@@ -6,6 +6,7 @@ export type User = {
     /** First and last name. */
     name: string;
     email: string;
+    username: string | null;
     avatar?: string;
     email_verified_at: string | null;
     locale?: string;

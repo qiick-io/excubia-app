@@ -96,6 +96,7 @@ class UserController extends Controller
             $request->string('first_name')->toString(),
             $request->filled('last_name') ? $request->string('last_name')->toString() : null,
             $request->string('email')->toString(),
+            $this->submittedUsername($request),
             $request->string('password')->toString(),
             $request->roles(),
             $request->boolean('is_active', true),
@@ -113,6 +114,7 @@ class UserController extends Controller
             $request->string('first_name')->toString(),
             $request->filled('last_name') ? $request->string('last_name')->toString() : null,
             $request->string('email')->toString(),
+            $this->submittedUsername($request),
             $request->filled('password') ? $request->string('password')->toString() : null,
             $request->roles(),
             $request->boolean('is_active'),
@@ -132,5 +134,15 @@ class UserController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => __('User deleted.')]);
 
         return to_route('users.index');
+    }
+
+    /**
+     * The username after validation has trimmed, lowercased and canonicalized it.
+     */
+    private function submittedUsername(StoreUserRequest|UpdateUserRequest $request): ?string
+    {
+        $username = $request->validated('username');
+
+        return is_string($username) ? $username : null;
     }
 }

@@ -777,6 +777,7 @@
             "firstNameRequired": "First name *",
             "emailRequired": "Email *",
             "emailHint": "Use a valid email address, for example",
+            "username": "Username",
             "newPasswordOptional": "New password (optional)",
             "passwordRequired": "Password *",
             "rolesRequired": "Roles *",

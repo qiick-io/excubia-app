@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
+import { STRING_LIMITS } from '@/lib/string-limits';
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 import { edit } from '@/routes/profile';
@@ -204,6 +205,47 @@ export default function Profile({
 
                                             <FieldError id="email-error">
                                                 {errors.email}
+                                            </FieldError>
+                                        </Field>
+
+                                        <Field
+                                            data-invalid={
+                                                errors.username
+                                                    ? true
+                                                    : undefined
+                                            }
+                                        >
+                                            <FieldLabel htmlFor="username">
+                                                {t('users.form.username')}
+                                            </FieldLabel>
+
+                                            <Input
+                                                id="username"
+                                                className="mt-1 block w-full"
+                                                defaultValue={
+                                                    user.username ?? ''
+                                                }
+                                                name="username"
+                                                maxLength={
+                                                    STRING_LIMITS.USERNAME
+                                                }
+                                                placeholder={t(
+                                                    'users.form.username',
+                                                )}
+                                                aria-invalid={
+                                                    errors.username
+                                                        ? true
+                                                        : undefined
+                                                }
+                                                aria-describedby={
+                                                    errors.username
+                                                        ? 'username-error'
+                                                        : undefined
+                                                }
+                                            />
+
+                                            <FieldError id="username-error">
+                                                {errors.username}
                                             </FieldError>
                                         </Field>
 

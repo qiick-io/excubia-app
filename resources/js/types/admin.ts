@@ -40,6 +40,7 @@ export type AdminUserRow = {
     /** First and last name. */
     name: string;
     email: string;
+    username: string | null;
     is_active: boolean;
     is_sso_linked: boolean;
     email_verified_at: string | null;

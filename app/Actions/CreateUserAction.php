@@ -18,11 +18,12 @@ class CreateUserAction
     /**
      * @param  list<string>  $roles
      */
-    public function execute(string $firstName, ?string $lastName, string $email, string $password, array $roles, bool $isActive = true): User
+    public function execute(string $firstName, ?string $lastName, string $email, ?string $username, string $password, array $roles, bool $isActive = true): User
     {
         $user = (new User)->forceFill([
             'first_name' => $firstName,
             'last_name' => $lastName,
+            'username' => $username,
             'email' => $email,
             'password' => $password,
             'is_active' => $isActive,
