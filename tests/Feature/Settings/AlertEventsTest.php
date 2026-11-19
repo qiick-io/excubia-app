@@ -20,6 +20,7 @@ use App\Models\User;
 use App\Services\AlertDispatcherService;
 use App\Services\AlertSuppressionService;
 use App\Services\SettingsRepositoryService;
+use App\Services\WebhookUrlGuardService;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Date;
@@ -222,7 +223,7 @@ it('delivers every event to the signed webhook and by email, one webhook request
             continue;
         }
 
-        $job->handle(app(SettingsRepositoryService::class));
+        $job->handle(app(SettingsRepositoryService::class), app(WebhookUrlGuardService::class));
     }
 
     $sent = collect(Http::recorded())->map(fn (array $pair): array => json_decode($pair[0]->body(), true));
@@ -260,7 +261,7 @@ it('sends one Slack, Telegram and email message per report, worst first, but one
 
     // Every alert keeps its history row; a grouped delivery's outcome lands on all of them.
     Mail::fake();
-    $jobs->first(fn (DeliverAlertJob $job): bool => DeliverAlertJob::emailUserId($job->channel) !== null)->handle(app(SettingsRepositoryService::class));
+    $jobs->first(fn (DeliverAlertJob $job): bool => DeliverAlertJob::emailUserId($job->channel) !== null)->handle(app(SettingsRepositoryService::class), app(WebhookUrlGuardService::class));
     $slack->failed(new RuntimeException('HTTP 500'));
 
     expect(AlertLog::query()->where('project_id', $project->id)->get()->map(fn (AlertLog $log): array => [$log->deliveries['email:'.$this->subscriber->id], $log->deliveries['slack']])->unique()->all())
