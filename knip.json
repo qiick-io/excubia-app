@@ -21,7 +21,8 @@
         "resources/js/lib/table-cell-details.ts",
         "resources/js/components/sidebar-unread-badge.tsx",
         "resources/js/lib/notification-sound.ts",
-        "resources/js/components/api-keys/api-key-list-row.tsx"
+        "resources/js/components/api-keys/api-key-list-row.tsx",
+        "resources/js/lib/api-key-scopes.ts"
     ],
     "ignoreDependencies": ["concurrently"],
     "ignoreBinaries": ["oxlint"]
