@@ -25,8 +25,11 @@ permissions:
   contents: read
 
 concurrency:
-  group: docker-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # The event is part of the group: a push run and a pull-request run on the same SHA are
+  # different evidence and must never cancel each other (externa-core#805).
+  group: docker-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  # A `main` or `develop` run is the release evidence: let it finish.
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/develop' }}
 
 jobs:
   build:
@@ -34,13 +37,55 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
+      # `Docker image` is a required status check, so this job always runs and always reports.
+      # A pull request that only changes Markdown cannot change the image, so it reports
+      # success without building one. The checkout is unconditional because the gate below
+      # diffs the branch; `.git` is in .dockerignore, so the depth never reaches the build
+      # context.
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Resolve whether to build
+        id: gate
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+
+          # Only a pull request to `develop` is ever reduced; a release pull request to `main`,
+          # a push and a tag always build.
+          RUN=true
+          if [ "$EVENT" = 'pull_request' ] && [ "$BASE_REF" = 'develop' ]; then
+            FILES=$(git diff --name-only "$BASE_SHA...$HEAD_SHA")
+            RUN=false
+            while IFS= read -r f; do
+              case "$f" in
+                docs/*|.github/ISSUE_TEMPLATE/*|.github/pull_request_template.md|.github/assets/*) ;;
+                */*) RUN=true; break ;;
+                *.md) ;;
+                *) RUN=true; break ;;
+              esac
+            done <<< "$FILES"
+          fi
+
+          echo "run=$RUN" >> "$GITHUB_OUTPUT"
+          echo "build=$RUN"
+
+      - name: Stub success (docs-only pull request)
+        if: steps.gate.outputs.run != 'true'
+        run: echo "Stub success for the required check Docker image - the diff is docs only."
 
       - name: Set up Buildx
+        if: steps.gate.outputs.run == 'true'
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
       - name: Build
+        if: steps.gate.outputs.run == 'true'
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
@@ -52,6 +97,7 @@ jobs:
 
       # The image migrates a fresh SQLite volume and must answer the probes and /setup.
       - name: Smoke test
+        if: steps.gate.outputs.run == 'true'
         run: |
           docker run -d --name excubia -p 8080:8080 excubia-app:ci
           for attempt in $(seq 1 30); do
