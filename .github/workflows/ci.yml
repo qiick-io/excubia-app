@@ -14,12 +14,87 @@ permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # The event is part of the group: a push run and a pull-request run on the same SHA are
+  # different evidence and must never cancel each other (externa-core#805).
+  group: ci-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  # A `main` or `develop` run is the release evidence: let it finish.
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/develop' }}
 
+# Gate policy (CI diet, as externa-core#381 / #438):
+# - Required check NAMES never change and every required job still runs on every pull request.
+#   When the heavy work is skipped the job reports success from a stub step: a required check
+#   that is never queued stays pending forever and the pull request can never be merged, so
+#   workflow-level `paths:` is never used here.
+# - push → main/develop, pull_request → main, workflow_dispatch: everything runs (full mode).
+#   `changes` is skipped on those events, so the classification costs nothing there and the
+#   gates below default to full.
+# - pull_request → develop with code: Pest on PHP 8.4; the PHP 8.5, MySQL and PostgreSQL legs
+#   stub. The full matrix still runs on the merge to develop, before any release.
+# - pull_request → develop touching a migration, the database config or a toolchain/stack file:
+#   full mode, so a migration always meets MySQL and PostgreSQL before it reaches develop.
+# - pull_request → develop with docs only: every heavy job stubs.
 jobs:
+  changes:
+    # Only a pull request to `develop` is ever reduced. On every other event this job is
+    # skipped, `needs.changes.outputs.mode` is empty and the gates below read that as full.
+    if: github.event_name == 'pull_request' && github.base_ref == 'develop'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      mode: ${{ steps.mode.outputs.mode }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Detect change mode
+        id: mode
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+
+          FILES=$(git diff --name-only "$BASE_SHA...$HEAD_SHA")
+
+          # docs = top-level *.md, docs/, the .github templates and the readme assets.
+          # A nested *.md (resources/.../SKILL.md) is code.
+          CODE=0
+          while IFS= read -r f; do
+            case "$f" in
+              docs/*|.github/ISSUE_TEMPLATE/*|.github/pull_request_template.md|.github/assets/*) ;;
+              */*) CODE=1; break ;;
+              *.md) ;;
+              *) CODE=1; break ;;
+            esac
+          done <<< "$FILES"
+
+          if [ "$CODE" -eq 0 ]; then
+            MODE=docs
+          else
+            MODE=lite
+          fi
+
+          # A migration, the database config or a toolchain/stack change must see the whole
+          # matrix before it is merged, not after.
+          while IFS= read -r f; do
+            case "$f" in
+              composer.json|composer.lock|package.json|package-lock.json|.nvmrc|phpunit.xml|vite.config.ts|tsconfig.json|config/database.php|database/migrations/*)
+                MODE=full
+                echo "Full-mode trigger ($f)."
+                break
+                ;;
+            esac
+          done <<< "$FILES"
+
+          echo "mode=$MODE" >> "$GITHUB_OUTPUT"
+          echo "CI mode=$MODE"
+
   tests:
     name: PHP ${{ matrix.php }}
+    needs: changes
+    if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 20
     strategy:
@@ -29,10 +104,34 @@ jobs:
           - '8.4'
           - '8.5'
     steps:
+      - name: Require the change classification to have succeeded
+        if: needs.changes.result == 'failure' || needs.changes.result == 'cancelled'
+        run: |
+          echo "::error::changes=${{ needs.changes.result }} - failing this required check instead of reporting a skipped (= passing) gate."
+          exit 1
+
+      - name: Resolve whether to run the suite
+        id: gate
+        env:
+          MODE: ${{ needs.changes.outputs.mode }}
+          PHP: ${{ matrix.php }}
+        run: |
+          RUN=true
+          if [ "$MODE" = 'docs' ]; then RUN=false; fi
+          if [ "$MODE" = 'lite' ] && [ "$PHP" != '8.4' ]; then RUN=false; fi
+          echo "run=$RUN" >> "$GITHUB_OUTPUT"
+          echo "mode=${MODE:-full} php=$PHP run=$RUN"
+
+      - name: Stub success (the CI gate skipped the heavy work)
+        if: steps.gate.outputs.run != 'true'
+        run: echo "Stub success for the required check PHP ${{ matrix.php }} - mode=${{ needs.changes.outputs.mode }}."
+
       - name: Checkout
+        if: steps.gate.outputs.run == 'true'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup PHP
+        if: steps.gate.outputs.run == 'true'
         uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
         with:
           php-version: ${{ matrix.php }}
@@ -41,16 +140,19 @@ jobs:
           tools: composer:v2
 
       - name: Setup Node
+        if: steps.gate.outputs.run == 'true'
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: npm
 
       - name: Composer cache directory
+        if: steps.gate.outputs.run == 'true'
         id: composer-cache
         run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
 
       - name: Cache Composer packages
+        if: steps.gate.outputs.run == 'true'
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ steps.composer-cache.outputs.dir }}
@@ -58,12 +160,15 @@ jobs:
           restore-keys: composer-${{ runner.os }}-php${{ matrix.php }}-
 
       - name: Install Composer dependencies
+        if: steps.gate.outputs.run == 'true'
         run: composer install --no-interaction --prefer-dist --no-progress
 
       - name: Install npm dependencies
+        if: steps.gate.outputs.run == 'true'
         run: npm ci
 
       - name: Prepare environment
+        if: steps.gate.outputs.run == 'true'
         run: |
           cp .env.example .env
           php artisan key:generate --ansi
@@ -71,34 +176,44 @@ jobs:
       # Before Pest and the type check: the tests need the Vite manifest, and the build generates
       # the Wayfinder route helpers that `npm run types` reads.
       - name: Build
+        if: steps.gate.outputs.run == 'true'
         run: npm run build
 
       - name: Pint
+        if: steps.gate.outputs.run == 'true'
         run: vendor/bin/pint --test
 
       - name: Pest
+        if: steps.gate.outputs.run == 'true'
         run: php artisan test
 
       - name: Lint
+        if: steps.gate.outputs.run == 'true'
         run: npm run lint
 
       - name: Types
+        if: steps.gate.outputs.run == 'true'
         run: npm run types
 
       - name: Dead code (knip)
+        if: steps.gate.outputs.run == 'true'
         run: npm run knip
 
       - name: Hard-coded UI strings (ratchet)
+        if: steps.gate.outputs.run == 'true'
         run: npm run lint:i18n
 
       # The qiick ratcheted rules (#258) in Oxlint: restricted imports, navigator.clipboard,
       # id-length. The type-aware boolean prefix rule waits for typescript-eslint on TypeScript 7.
       - name: qiick standards rules (ratchet)
+        if: steps.gate.outputs.run == 'true'
         run: npm run lint:standards
 
   # The full suite on the other supported databases (#136); the `tests` job covers SQLite.
   databases:
     name: ${{ matrix.name }}
+    needs: changes
+    if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 20
     strategy:
@@ -141,10 +256,35 @@ jobs:
       DB_USERNAME: excubia
       DB_PASSWORD: excubia
     steps:
+      - name: Require the change classification to have succeeded
+        if: needs.changes.result == 'failure' || needs.changes.result == 'cancelled'
+        run: |
+          echo "::error::changes=${{ needs.changes.result }} - failing this required check instead of reporting a skipped (= passing) gate."
+          exit 1
+
+      # Only full mode runs the other databases. A migration, the database config or a
+      # toolchain change puts a pull request into full mode (see `changes`), so a schema
+      # change never reaches develop without having met MySQL and PostgreSQL.
+      - name: Resolve whether to run the suite
+        id: gate
+        env:
+          MODE: ${{ needs.changes.outputs.mode }}
+        run: |
+          RUN=true
+          if [ "$MODE" = 'lite' ] || [ "$MODE" = 'docs' ]; then RUN=false; fi
+          echo "run=$RUN" >> "$GITHUB_OUTPUT"
+          echo "mode=${MODE:-full} run=$RUN"
+
+      - name: Stub success (the CI gate skipped the heavy work)
+        if: steps.gate.outputs.run != 'true'
+        run: echo "Stub success for the required check ${{ matrix.name }} - mode=${{ needs.changes.outputs.mode }}."
+
       - name: Checkout
+        if: steps.gate.outputs.run == 'true'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup PHP
+        if: steps.gate.outputs.run == 'true'
         uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
         with:
           php-version: '8.4'
@@ -153,16 +293,19 @@ jobs:
           tools: composer:v2
 
       - name: Setup Node
+        if: steps.gate.outputs.run == 'true'
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: npm
 
       - name: Composer cache directory
+        if: steps.gate.outputs.run == 'true'
         id: composer-cache
         run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
 
       - name: Cache Composer packages
+        if: steps.gate.outputs.run == 'true'
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ steps.composer-cache.outputs.dir }}
@@ -170,22 +313,27 @@ jobs:
           restore-keys: composer-${{ runner.os }}-php8.4-
 
       - name: Install Composer dependencies
+        if: steps.gate.outputs.run == 'true'
         run: composer install --no-interaction --prefer-dist --no-progress
 
       - name: Install npm dependencies
+        if: steps.gate.outputs.run == 'true'
         run: npm ci
 
       - name: Prepare environment
+        if: steps.gate.outputs.run == 'true'
         run: |
           cp .env.example .env
           php artisan key:generate --ansi
 
       # The tests need the Vite manifest.
       - name: Build
+        if: steps.gate.outputs.run == 'true'
         run: npm run build
 
       # The DB_* job variables override the SQLite defaults of phpunit.xml.
       - name: Pest
+        if: steps.gate.outputs.run == 'true'
         run: php artisan test
 
   contract:
@@ -273,16 +421,41 @@ jobs:
   # pushes and pull requests to `main` run every browser test. Not part of `php artisan test`.
   accessibility:
     name: Accessibility
+    needs: changes
+    if: always()
     # ponytail: pinned to 24.04 while ubuntu-latest (26.04) runners cannot resolve
     # security.ubuntu.com for the Playwright system packages (2026-11-11); back to
     # ubuntu-latest once its mirrors answer again.
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
+      - name: Require the change classification to have succeeded
+        if: needs.changes.result == 'failure' || needs.changes.result == 'cancelled'
+        run: |
+          echo "::error::changes=${{ needs.changes.result }} - failing this required check instead of reporting a skipped (= passing) gate."
+          exit 1
+
+      # A docs-only pull request cannot change a rendered page: no Playwright, no build.
+      - name: Resolve whether to run the browser tests
+        id: gate
+        env:
+          MODE: ${{ needs.changes.outputs.mode }}
+        run: |
+          RUN=true
+          if [ "$MODE" = 'docs' ]; then RUN=false; fi
+          echo "run=$RUN" >> "$GITHUB_OUTPUT"
+          echo "mode=${MODE:-full} run=$RUN"
+
+      - name: Stub success (the CI gate skipped the heavy work)
+        if: steps.gate.outputs.run != 'true'
+        run: echo "Stub success for the required check Accessibility - mode=${{ needs.changes.outputs.mode }}."
+
       - name: Checkout
+        if: steps.gate.outputs.run == 'true'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup PHP
+        if: steps.gate.outputs.run == 'true'
         uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
         with:
           php-version: '8.4'
@@ -291,16 +464,19 @@ jobs:
           tools: composer:v2
 
       - name: Setup Node
+        if: steps.gate.outputs.run == 'true'
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: npm
 
       - name: Composer cache directory
+        if: steps.gate.outputs.run == 'true'
         id: composer-cache
         run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
 
       - name: Cache Composer packages
+        if: steps.gate.outputs.run == 'true'
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ steps.composer-cache.outputs.dir }}
@@ -308,16 +484,20 @@ jobs:
           restore-keys: composer-${{ runner.os }}-php8.4-
 
       - name: Install Composer dependencies
+        if: steps.gate.outputs.run == 'true'
         run: composer install --no-interaction --prefer-dist --no-progress
 
       - name: Install npm dependencies
+        if: steps.gate.outputs.run == 'true'
         run: npm ci
 
       - name: Playwright version
+        if: steps.gate.outputs.run == 'true'
         id: playwright
         run: echo "version=$(node -p "require('playwright/package.json').version")" >> "$GITHUB_OUTPUT"
 
       - name: Cache Playwright browsers
+        if: steps.gate.outputs.run == 'true'
         id: playwright-cache
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
@@ -325,27 +505,29 @@ jobs:
           key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}-chromium
 
       - name: Install Playwright Chromium
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        if: steps.gate.outputs.run == 'true' && steps.playwright-cache.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps chromium
 
       - name: Install Playwright system dependencies
-        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        if: steps.gate.outputs.run == 'true' && steps.playwright-cache.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium
 
       - name: Prepare environment
+        if: steps.gate.outputs.run == 'true'
         run: |
           cp .env.example .env
           php artisan key:generate --ansi
 
       - name: Build
+        if: steps.gate.outputs.run == 'true'
         run: npm run build
 
       - name: Axe smoke (PR → develop)
-        if: github.event_name == 'pull_request' && github.base_ref == 'develop'
+        if: steps.gate.outputs.run == 'true' && github.event_name == 'pull_request' && github.base_ref == 'develop'
         run: vendor/bin/pest tests/Browser/A11ySmokeBrowserTest.php
 
       - name: Browser tests
-        if: github.event_name != 'pull_request' || github.base_ref != 'develop'
+        if: steps.gate.outputs.run == 'true' && (github.event_name != 'pull_request' || github.base_ref != 'develop')
         run: vendor/bin/pest tests/Browser
 
   # Theme tokens and the WCAG 2.2 AA contrast of the installed theme, from app-ui at the pinned
