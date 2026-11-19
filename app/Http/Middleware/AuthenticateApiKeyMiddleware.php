@@ -6,6 +6,7 @@ namespace App\Http\Middleware;
 
 use App\Actions\RecordApiKeyUseAction;
 use App\Enums\ApiKeyScopeEnum;
+use App\Exceptions\ApiKeyRejectedException;
 use App\Models\ApiKey;
 use Closure;
 use Illuminate\Http\JsonResponse;
@@ -21,7 +22,8 @@ use ValueError;
  * route needs: `AuthenticateApiKeyMiddleware::class.':mcp:read'`.
  *
  * Lookup is by the public `key_prefix`, then `hash_equals` on SHA-256 of the full presented token
- * (and the previous hash inside the rotation grace window). Failures are RFC 6750-shaped.
+ * (and the previous hash inside the rotation grace window). Failures are RFC 6750-shaped through
+ * {@see ApiKeyRejectedException} (fleet contract with externa-core 1.5.0).
  */
 class AuthenticateApiKeyMiddleware
 {
@@ -60,25 +62,25 @@ class AuthenticateApiKeyMiddleware
         ) {
             RateLimiter::hit($failuresKey);
 
-            return $this->invalidToken('Unknown API key.');
+            return ApiKeyRejectedException::unknownKey()->render();
         }
 
         if ($apiKey->isRevoked()) {
             RateLimiter::hit($failuresKey);
 
-            return $this->invalidToken('Revoked API key.');
+            return ApiKeyRejectedException::revokedKey()->render();
         }
 
         if ($apiKey->isExpired()) {
             RateLimiter::hit($failuresKey);
 
-            return $this->invalidToken('Expired API key.');
+            return ApiKeyRejectedException::expiredKey()->render();
         }
 
         if (! $apiKey->owner->is_active) {
             RateLimiter::hit($failuresKey);
 
-            return $this->invalidToken('Unknown API key.');
+            return ApiKeyRejectedException::unusableKey(__('The API key owner is no longer active.'))->render();
         }
 
         try {
@@ -86,7 +88,7 @@ class AuthenticateApiKeyMiddleware
         } catch (ValueError) {
             RateLimiter::hit($failuresKey);
 
-            return $this->insufficientScope($scope);
+            return ApiKeyRejectedException::noScopes()->render();
         }
 
         // Stored scopes ∩ owner's current permissions: a key whose owner loses a permission
@@ -94,16 +96,13 @@ class AuthenticateApiKeyMiddleware
         if (! $apiKey->hasScope($requiredScope) || ! $requiredScope->isHeldBy($apiKey->owner)) {
             RateLimiter::hit($failuresKey);
 
-            return $this->insufficientScope($scope);
+            return ApiKeyRejectedException::insufficientScope($requiredScope)->render();
         }
 
         if (! $apiKey->allowsIp((string) $request->ip())) {
             RateLimiter::hit($failuresKey);
 
-            return response()->json([
-                'message' => 'API key is not allowed from this IP address.',
-                'error' => 'insufficient_scope',
-            ], Response::HTTP_FORBIDDEN);
+            return ApiKeyRejectedException::ipNotAllowed()->render();
         }
 
         $limit = $apiKey->rate_limit_per_minute
@@ -132,28 +131,6 @@ class AuthenticateApiKeyMiddleware
         } finally {
             Auth::shouldUse($previousGuard);
         }
-    }
-
-    private function invalidToken(string $message): JsonResponse
-    {
-        return response()->json(
-            ['message' => $message, 'error' => 'invalid_token'],
-            Response::HTTP_UNAUTHORIZED,
-            ['WWW-Authenticate' => 'Bearer error="invalid_token"'],
-        );
-    }
-
-    private function insufficientScope(string $scope): JsonResponse
-    {
-        return response()->json(
-            [
-                'message' => "This API key lacks the {$scope} scope.",
-                'error' => 'insufficient_scope',
-                'scope' => $scope,
-            ],
-            Response::HTTP_FORBIDDEN,
-            ['WWW-Authenticate' => 'Bearer error="insufficient_scope"'],
-        );
     }
 
     private function tooManyRequests(int $retryAfterSeconds): JsonResponse
