@@ -1073,6 +1073,25 @@
         "installed": "Installiert",
         "fixedIn": "Behoben in",
         "planDescription": "Die empfohlene Reihenfolge der Upgrades, das Dringendste zuerst.",
+        "plan": {
+            "packageCount_one": "{{count}} Paket",
+            "packageCount_other": "{{count}} Pakete",
+            "kind": {
+                "composer-advisory": "Composer-Advisory beheben",
+                "npm-advisory": "npm-Advisory beheben",
+                "php-eol": "PHP aktualisieren",
+                "next-major-blocked": "Pakete blockieren die nächste Laravel-Major",
+                "next-major-blockedWithMajor": "Pakete blockieren Laravel {{major}}",
+                "laravel-eol": "Laravel aktualisieren",
+                "laravel-eolWithMajor": "Auf Laravel {{major}} aktualisieren",
+                "composer-abandoned": "Aufgegebenes Paket ersetzen",
+                "composer-stale": "Veraltete Pakete prüfen",
+                "composer-patch": "Composer-Pakete auf den neuesten Patch aktualisieren",
+                "npm-patch": "npm-Pakete auf den neuesten Patch aktualisieren",
+                "license-review": "Abhängigkeitslizenzen prüfen",
+                "unknown": "Upgrade-Schritt"
+            }
+        },
         "trend": {
             "title": "Befunde im Zeitverlauf",
             "description": "Befunde mit Warnung oder Fehler je Bericht, nach Schweregrad.",
