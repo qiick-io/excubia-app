@@ -1073,6 +1073,25 @@
         "installed": "Installed",
         "fixedIn": "Fixed in",
         "planDescription": "The suggested order of the upgrades, most urgent first.",
+        "plan": {
+            "packageCount_one": "{{count}} package",
+            "packageCount_other": "{{count}} packages",
+            "kind": {
+                "composer-advisory": "Fix Composer advisory",
+                "npm-advisory": "Fix npm advisory",
+                "php-eol": "Upgrade PHP",
+                "next-major-blocked": "Packages blocking the next Laravel major",
+                "next-major-blockedWithMajor": "Packages blocking Laravel {{major}}",
+                "laravel-eol": "Upgrade Laravel",
+                "laravel-eolWithMajor": "Upgrade to Laravel {{major}}",
+                "composer-abandoned": "Replace abandoned package",
+                "composer-stale": "Review stale packages",
+                "composer-patch": "Update Composer packages to the latest patch",
+                "npm-patch": "Update npm packages to the latest patch",
+                "license-review": "Review dependency licenses",
+                "unknown": "Upgrade step"
+            }
+        },
         "trend": {
             "title": "Findings over time",
             "description": "Findings that warn or fail in each report, per severity.",

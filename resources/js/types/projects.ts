@@ -135,13 +135,32 @@ type ReportCheck = {
     findings: ReportFinding[];
 };
 
+/**
+ * One upgrade-plan step. `kind`, `targetMajor` and `packages` are optional so
+ * reports from cores before 1.0.0-rc.2 still type-check; the UI falls back to
+ * the numbered message list when `kind` is missing (#333). `target` on a
+ * package is set only on composer-patch and npm-patch steps.
+ */
+export type UpgradePlanStep = {
+    stepNumber: number;
+    message: string;
+    kind?: string | null;
+    targetMajor?: number | null;
+    packages?: {
+        name: string;
+        ecosystem: 'composer' | 'npm';
+        installed: string | null;
+        target: string | null;
+    }[];
+};
+
 /** The excubia-core JSON report, schema version 1. */
 export type HealthReportBody = {
     schemaVersion: number;
     generatedAt?: string;
     excubiaVersion?: string;
     checks: ReportCheck[];
-    upgradePlan: { stepNumber: number; message: string }[];
+    upgradePlan: UpgradePlanStep[];
 };
 
 /** Group of a check id (`CheckCategoryEnum`); `other` for ids this app does not know yet. */

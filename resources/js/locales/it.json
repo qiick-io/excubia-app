@@ -1073,6 +1073,25 @@
         "installed": "Installata",
         "fixedIn": "Corretto in",
         "planDescription": "L'ordine consigliato degli aggiornamenti, dal più urgente.",
+        "plan": {
+            "packageCount_one": "{{count}} pacchetto",
+            "packageCount_other": "{{count}} pacchetti",
+            "kind": {
+                "composer-advisory": "Correggi advisory Composer",
+                "npm-advisory": "Correggi advisory npm",
+                "php-eol": "Aggiorna PHP",
+                "next-major-blocked": "Pacchetti che bloccano la prossima major di Laravel",
+                "next-major-blockedWithMajor": "Pacchetti che bloccano Laravel {{major}}",
+                "laravel-eol": "Aggiorna Laravel",
+                "laravel-eolWithMajor": "Aggiorna a Laravel {{major}}",
+                "composer-abandoned": "Sostituisci pacchetto abbandonato",
+                "composer-stale": "Rivedi pacchetti obsoleti",
+                "composer-patch": "Aggiorna i pacchetti Composer all'ultima patch",
+                "npm-patch": "Aggiorna i pacchetti npm all'ultima patch",
+                "license-review": "Rivedi le licenze delle dipendenze",
+                "unknown": "Passo di aggiornamento"
+            }
+        },
         "trend": {
             "title": "Problemi nel tempo",
             "description": "Problemi che avvisano o falliscono in ogni report, per severità.",
