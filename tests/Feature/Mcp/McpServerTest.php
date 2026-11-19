@@ -114,6 +114,46 @@ it('rejects a missing, unknown or revoked key and a key without mcp:read', funct
     mcpCall($plainKey, 'ping')->assertUnauthorized();
 });
 
+it('answers every MCP API-key refusal with the fleet RFC 6750 shape', function () {
+    $user = mcpUser();
+    $plainKey = mcpKey($user);
+    $ipKey = mcpKey($user);
+    ApiKey::query()->where('key_prefix', ApiKey::publicPrefixFromToken($ipKey))->sole()
+        ->forceFill(['ip_allowlist' => ['203.0.113.10']])->save();
+
+    // Laravel MCP may prefix `realm="mcp"` on WWW-Authenticate; the fleet error token still wins.
+    mcpCall(null, 'ping')
+        ->assertUnauthorized()
+        ->assertJsonPath('error', 'invalid_token');
+    expect((string) mcpCall(null, 'ping')->headers->get('WWW-Authenticate'))->toContain('error="invalid_token"');
+
+    mcpCall('exc_test_'.str_repeat('z', 40), 'ping')
+        ->assertUnauthorized()
+        ->assertJsonPath('error', 'invalid_token');
+
+    ApiKey::query()->where('key_prefix', ApiKey::publicPrefixFromToken($plainKey))->sole()
+        ->forceFill(['scopes' => []])->save();
+    $missingScope = mcpCall($plainKey, 'ping')
+        ->assertForbidden()
+        ->assertJsonPath('error', 'insufficient_scope')
+        ->assertJsonPath('scope', 'mcp:read');
+    expect((string) $missingScope->headers->get('WWW-Authenticate'))
+        ->toContain('error="insufficient_scope"')
+        ->toContain('scope="mcp:read"');
+
+    ApiKey::query()->where('key_prefix', ApiKey::publicPrefixFromToken($plainKey))->sole()
+        ->forceFill(['scopes' => ['mcp:read'], 'revoked_at' => now()])->save();
+    mcpCall($plainKey, 'ping')
+        ->assertUnauthorized()
+        ->assertJsonPath('error', 'invalid_token');
+
+    mcpCall($ipKey, 'ping')
+        ->assertForbidden()
+        ->assertJsonPath('error', 'ip_not_allowed')
+        ->assertJsonPath('message', 'API key is not allowed from this IP address.');
+    expect((string) mcpCall($ipKey, 'ping')->headers->get('WWW-Authenticate'))->not->toContain('insufficient_scope');
+});
+
 it('lists the Assistant read tools to an mcp:read key, every one read-only, and only those enabled in Settings → AI', function () {
     $plainKey = mcpKey(mcpUser());
 

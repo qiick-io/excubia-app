@@ -239,12 +239,12 @@ it('rejects a missing, unknown, expired or revoked key with invalid_token', func
     callWithApiKey($expiredKey)
         ->assertUnauthorized()
         ->assertJsonPath('error', 'invalid_token')
-        ->assertJsonPath('message', 'Expired API key.')
+        ->assertJsonPath('message', 'The API key has expired.')
         ->assertHeader('WWW-Authenticate', 'Bearer error="invalid_token"');
     callWithApiKey($revokedKey)
         ->assertUnauthorized()
         ->assertJsonPath('error', 'invalid_token')
-        ->assertJsonPath('message', 'Revoked API key.');
+        ->assertJsonPath('message', 'The API key has been revoked.');
 
     expect($revoked->fresh()->revoked_at)->not->toBeNull()
         ->and($revoked->fresh()->previous_key_hash)->toBeNull()
@@ -275,12 +275,58 @@ it('rejects a key without the scope the route needs, including an empty scope li
         ->assertJsonPath('error', 'insufficient_scope');
 });
 
-it('rejects an address outside the IP allowlist', function () {
+it('rejects an address outside the IP allowlist with ip_not_allowed', function () {
     $user = apiKeyOwner();
     $plainKey = plainApiKey($user);
     ApiKey::query()->sole()->forceFill(['ip_allowlist' => ['203.0.113.10']])->save();
 
-    callWithApiKey($plainKey)->assertForbidden();
+    callWithApiKey($plainKey)
+        ->assertForbidden()
+        ->assertJsonPath('error', 'ip_not_allowed')
+        ->assertJsonPath('message', 'API key is not allowed from this IP address.')
+        ->assertHeaderMissing('WWW-Authenticate');
+});
+
+it('answers every API-key refusal with the fleet RFC 6750 shape', function () {
+    Date::setTestNow('2026-11-16 12:00:00');
+    $user = apiKeyOwner();
+    $expiredKey = plainApiKey($user, '2026-11-15');
+    $revokedKey = plainApiKey($user);
+    $scopedKey = plainApiKey($user);
+    $ipKey = plainApiKey($user);
+    ApiKey::query()->where('key_prefix', ApiKey::publicPrefixFromToken($revokedKey))->sole()
+        ->forceFill(['revoked_at' => now()])->save();
+    ApiKey::query()->where('key_prefix', ApiKey::publicPrefixFromToken($scopedKey))->sole()
+        ->forceFill(['scopes' => []])->save();
+    ApiKey::query()->where('key_prefix', ApiKey::publicPrefixFromToken($ipKey))->sole()
+        ->forceFill(['ip_allowlist' => ['203.0.113.10']])->save();
+
+    callWithApiKey(null)
+        ->assertUnauthorized()
+        ->assertJsonPath('error', 'invalid_token')
+        ->assertHeader('WWW-Authenticate', 'Bearer error="invalid_token"');
+    callWithApiKey($expiredKey)
+        ->assertUnauthorized()
+        ->assertJsonPath('error', 'invalid_token')
+        ->assertHeader('WWW-Authenticate', 'Bearer error="invalid_token"');
+    callWithApiKey($revokedKey)
+        ->assertUnauthorized()
+        ->assertJsonPath('error', 'invalid_token')
+        ->assertHeader('WWW-Authenticate', 'Bearer error="invalid_token"');
+    callWithApiKey($scopedKey)
+        ->assertForbidden()
+        ->assertJsonPath('error', 'insufficient_scope')
+        ->assertJsonPath('scope', 'mcp:read')
+        ->assertHeader('WWW-Authenticate', 'Bearer error="insufficient_scope", scope="mcp:read"');
+    callWithApiKey($ipKey)
+        ->assertForbidden()
+        ->assertJsonPath('error', 'ip_not_allowed')
+        ->assertHeaderMissing('WWW-Authenticate');
+    callWithApiKey($scopedKey, '/__test/api-key-write')
+        ->assertForbidden()
+        ->assertJsonPath('error', 'insufficient_scope')
+        ->assertJsonPath('scope', 'mcp:write')
+        ->assertHeader('WWW-Authenticate', 'Bearer error="insufficient_scope", scope="mcp:write"');
 });
 
 it('does not let a user revoke someone else\'s key', function () {
