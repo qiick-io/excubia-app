@@ -80,7 +80,7 @@ jobs:
           # matrix before it is merged, not after.
           while IFS= read -r f; do
             case "$f" in
-              composer.json|composer.lock|package.json|package-lock.json|.nvmrc|phpunit.xml|vite.config.ts|tsconfig.json|config/database.php|database/migrations/*)
+              composer.json|composer.lock|package.json|package-lock.json|.nvmrc|phpunit.xml|vite.config.ts|tsconfig.json|config/database.php|database/migrations/*|.github/workflows/ci.yml)
                 MODE=full
                 echo "Full-mode trigger ($f)."
                 break
