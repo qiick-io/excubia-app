@@ -209,6 +209,12 @@ jobs:
         if: steps.gate.outputs.run == 'true'
         run: npm run lint:standards
 
+      # Chrome's legacy-scan, ratcheted against legacy-scan-baseline.json. A step in this
+      # job and not a job of its own: GitHub bills per job, rounded up to the whole minute.
+      - name: Legacy web platform patterns (ratchet)
+        if: steps.gate.outputs.run == 'true'
+        run: npm run lint:legacy
+
   # The full suite on the other supported databases (#136); the `tests` job covers SQLite.
   databases:
     name: ${{ matrix.name }}
