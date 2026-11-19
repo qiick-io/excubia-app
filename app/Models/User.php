@@ -26,7 +26,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property string|null $last_name
  * @property-read string $name first and last name
  * @property string $email
- * @property string|null $oidc_sub legacy, imported into user_identities (#356) and no longer written
+ * @property string|null $oidc_sub unused: left over from the pre-release SSO client, never shipped (#356)
  * @property-read bool|null $identities_exists from withExists('identities')
  * @property Carbon|null $email_verified_at
  * @property string|null $password
@@ -119,7 +119,7 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
 
     /**
      * SSO identities (issuer + `sub`) linked to this user by qiick/laravel-oidc (#356). The
-     * legacy `oidc_sub` column is no longer written: its values were imported here.
+     * `oidc_sub` column is unused: no install ever shipped the old client.
      *
      * @return HasMany<UserIdentity, $this>
      */
