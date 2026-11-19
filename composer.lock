@@ -4325,16 +4325,16 @@
         },
         {
             "name": "qiick/excubia-core",
-            "version": "v1.0.0-rc.1",
+            "version": "v1.0.0-rc.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/qiick-io/excubia-core.git",
-                "reference": "da658e3aaaacc343277aff1fb3a531508bc66836"
+                "reference": "e690ca417cda13009974c2df53cccd1e382622f7"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/qiick-io/excubia-core/zipball/da658e3aaaacc343277aff1fb3a531508bc66836",
-                "reference": "da658e3aaaacc343277aff1fb3a531508bc66836",
+                "url": "https://api.github.com/repos/qiick-io/excubia-core/zipball/e690ca417cda13009974c2df53cccd1e382622f7",
+                "reference": "e690ca417cda13009974c2df53cccd1e382622f7",
                 "shasum": ""
             },
             "require": {
@@ -4384,7 +4384,7 @@
                 }
             ],
             "description": "Health checks for Laravel apps.",
-            "homepage": "https://github.com/qiick-io/excubia-core",
+            "homepage": "https://qiick.io/en/excubia",
             "keywords": [
                 "cli",
                 "composer",
@@ -4396,11 +4396,12 @@
                 "security"
             ],
             "support": {
+                "docs": "https://docs.qiick.io/excubia",
                 "issues": "https://github.com/qiick-io/excubia-core/issues",
                 "source": "https://github.com/qiick-io/excubia-core"
             },
-            "time": "2026-11-10T10:40:24+00:00",
-            "published-time": "2026-11-10T10:40:48+00:00"
+            "time": "2026-11-19T15:27:20+00:00",
+            "published-time": "2026-11-19T15:27:30+00:00"
         },
         {
             "name": "qiick/laravel-oidc",
