@@ -36,7 +36,10 @@ class ApiKeyController extends Controller
                 ->latest('id')
                 ->paginate($request->perPage())
                 ->withQueryString()),
-            'scopes' => ApiKeyScopeEnum::values(),
+            'scopes' => array_map(
+                fn (ApiKeyScopeEnum $scope): string => $scope->value,
+                ApiKeyScopeEnum::scopesCreatorMayGrant($user),
+            ),
         ]);
     }
 

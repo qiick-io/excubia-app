@@ -89,7 +89,9 @@ class AuthenticateApiKeyMiddleware
             return $this->insufficientScope($scope);
         }
 
-        if (! $apiKey->hasScope($requiredScope)) {
+        // Stored scopes ∩ owner's current permissions: a key whose owner loses a permission
+        // loses that scope on the next request (fleet ceiling).
+        if (! $apiKey->hasScope($requiredScope) || ! $requiredScope->isHeldBy($apiKey->owner)) {
             RateLimiter::hit($failuresKey);
 
             return $this->insufficientScope($scope);
