@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use Spatie\Activitylog\Actions\CleanActivityLogAction;
 use Spatie\Activitylog\Actions\LogActivityAction;
-use Spatie\Activitylog\Models\Activity;
+use App\Models\Activity;
 
 return [
 

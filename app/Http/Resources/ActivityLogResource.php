@@ -8,7 +8,7 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Spatie\Activitylog\Models\Activity;
+use App\Models\Activity;
 
 /**
  * An activity log entry for the activity log page, as in qiick-io/externa-core.

@@ -48,7 +48,7 @@ use Qiick\Oidc\Contracts\UserProvisioningContract;
 use Qiick\Oidc\Services\SsoOnlyModeService;
 use Qiick\Oidc\Services\UserLinkingService;
 use Spatie\Activitylog\Facades\Activity;
-use Spatie\Activitylog\Models\Activity as ActivityModel;
+use App\Models\Activity as ActivityModel;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 

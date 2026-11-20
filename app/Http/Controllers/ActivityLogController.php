@@ -13,7 +13,7 @@ use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
-use Spatie\Activitylog\Models\Activity;
+use App\Models\Activity;
 
 /**
  * Activity log browser with user, action, log and date filters, behind `can-show-activity-logs`

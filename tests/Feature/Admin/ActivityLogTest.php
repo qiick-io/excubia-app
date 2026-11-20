@@ -10,7 +10,7 @@ use App\Models\UserGroup;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Support\Carbon;
 use Inertia\Testing\AssertableInertia as Assert;
-use Spatie\Activitylog\Models\Activity;
+use App\Models\Activity;
 
 /**
  * Activity log copied from externa-core: what admins change is logged with them as causer,
@@ -84,8 +84,8 @@ it('logs user creation, updates, role changes and deletion with the acting user'
     $user = User::query()->where('email', 'grace@example.com')->sole();
     $created = latestActivity('created', $user->getMorphClass());
 
-    expect($created->causer_id)->toBe($admin->id)
-        ->and($created->subject_id)->toBe($user->id)
+    expect($created->causer_id)->toBe((string) $admin->id)
+        ->and($created->subject_id)->toBe((string) $user->id)
         ->and($created->attribute_changes['attributes']['email'])->toBe('grace@example.com')
         ->and($created->attribute_changes['attributes'])->not->toHaveKey('password')
         ->and(latestActivity('roles_synced')->properties['role_names'])->toBe([RoleEnum::Reader->value]);
@@ -102,17 +102,17 @@ it('logs user creation, updates, role changes and deletion with the acting user'
     $updated = latestActivity('updated', $user->getMorphClass());
     $rolesSynced = latestActivity('roles_synced');
 
-    expect($updated->causer_id)->toBe($admin->id)
+    expect($updated->causer_id)->toBe((string) $admin->id)
         ->and($updated->attribute_changes['attributes']['is_active'])->toBeFalse()
         ->and($updated->attribute_changes['old']['is_active'])->toBeTrue()
-        ->and($rolesSynced->causer_id)->toBe($admin->id)
+        ->and($rolesSynced->causer_id)->toBe((string) $admin->id)
         ->and($rolesSynced->properties['role_names'])->toBe([RoleEnum::Admin->value]);
 
     $this->actingAs($admin)->delete(route('users.destroy', $user))->assertRedirect(route('users.index'));
 
     expect(latestActivity('deleted', $user->getMorphClass()))
-        ->causer_id->toBe($admin->id)
-        ->subject_id->toBe($user->id);
+        ->causer_id->toBe((string) $admin->id)
+        ->subject_id->toBe((string) $user->id);
 });
 
 it('logs group changes with their members and roles', function () {
@@ -128,7 +128,7 @@ it('logs group changes with their members and roles', function () {
     $group = UserGroup::query()->where('name', 'viewers')->sole();
 
     expect(latestActivity('created', $group->getMorphClass()))
-        ->causer_id->toBe($admin->id)
+        ->causer_id->toBe((string) $admin->id)
         ->and(latestActivity('members_synced')->properties['user_ids'])->toBe([$member->id])
         ->and(latestActivity('roles_synced', $group->getMorphClass())->properties['role_names'])->toBe([RoleEnum::Reader->value]);
 
@@ -146,7 +146,7 @@ it('logs group changes with their members and roles', function () {
 
     $this->actingAs($admin)->delete(route('groups.destroy', $group))->assertRedirect(route('groups.index'));
 
-    expect(latestActivity('deleted', $group->getMorphClass())->causer_id)->toBe($admin->id);
+    expect(latestActivity('deleted', $group->getMorphClass())->causer_id)->toBe((string) $admin->id);
 });
 
 it('logs role changes with their permissions', function () {
@@ -160,7 +160,7 @@ it('logs role changes with their permissions', function () {
     $role = Role::findByName('operator');
 
     expect(latestActivity('created', $role->getMorphClass()))
-        ->causer_id->toBe($owner->id)
+        ->causer_id->toBe((string) $owner->id)
         ->and(latestActivity('permissions_synced')->properties['permission_names'])->toBe(['can-run-checks', 'can-show-projects']);
 
     $this->actingAs($owner)->put(route('roles.update', $role), [
@@ -173,7 +173,7 @@ it('logs role changes with their permissions', function () {
 
     $this->actingAs($owner)->delete(route('roles.destroy', $role))->assertRedirect(route('roles.index'));
 
-    expect(latestActivity('deleted', $role->getMorphClass())->causer_id)->toBe($owner->id);
+    expect(latestActivity('deleted', $role->getMorphClass())->causer_id)->toBe((string) $owner->id);
 });
 
 it('logs every project settings section with the saved keys', function (string $route, array $payload, string $section) {
@@ -184,7 +184,7 @@ it('logs every project settings section with the saved keys', function (string $
     $activity = latestActivity('settings_updated');
 
     expect($activity->log_name)->toBe('settings')
-        ->and($activity->causer_id)->toBe($owner->id)
+        ->and($activity->causer_id)->toBe((string) $owner->id)
         ->and($activity->properties['section'])->toBe($section)
         ->and($activity->properties['keys'])->toContain(array_key_first($payload));
 })->with([
@@ -233,12 +233,12 @@ it('logs logins, logouts and failed logins', function () {
 
     $this->post(route('login.store'), ['email' => 'ada@example.com', 'password' => 'password']);
 
-    expect(latestActivity('login'))->causer_id->toBe($user->id)->log_name->toBe('auth')
+    expect(latestActivity('login'))->causer_id->toBe((string) $user->id)->log_name->toBe('auth')
         ->and(latestActivity('login')->properties['ip'])->toBe('127.0.0.1');
 
     $this->post(route('logout'));
 
-    expect(latestActivity('logout')->causer_id)->toBe($user->id);
+    expect(latestActivity('logout')->causer_id)->toBe((string) $user->id);
 });
 
 it('filters the activity log by user, action, log, date and search', function () {

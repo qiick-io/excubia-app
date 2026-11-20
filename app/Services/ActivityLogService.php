@@ -7,7 +7,7 @@ namespace App\Services;
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
-use Spatie\Activitylog\Models\Activity;
+use App\Models\Activity;
 
 /**
  * Builds the filtered, newest-first activity log query of the activity log page.

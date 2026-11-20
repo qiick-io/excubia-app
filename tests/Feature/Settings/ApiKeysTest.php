@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Testing\TestResponse;
 use Inertia\Support\SessionKey;
 use Inertia\Testing\AssertableInertia as Assert;
-use Spatie\Activitylog\Models\Activity;
+use App\Models\Activity;
 
 /**
  * Personal API keys (#315, #351): Settings → API keys (web session only); AuthenticateApiKeyMiddleware

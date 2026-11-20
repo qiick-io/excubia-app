@@ -9,7 +9,7 @@ use App\Models\Project;
 use App\Models\User;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Support\Facades\Date;
-use Spatie\Activitylog\Models\Activity;
+use App\Models\Activity;
 
 /**
  * Bulk assign on the Findings tab (#276): each finding authorized, assigned, logged and given

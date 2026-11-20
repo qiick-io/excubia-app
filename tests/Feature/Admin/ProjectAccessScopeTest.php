@@ -12,7 +12,7 @@ use App\Models\UserGroup;
 use App\Services\AssistantQueryService;
 use Database\Seeders\PermissionSeeder;
 use Inertia\Testing\AssertableInertia as Assert;
-use Spatie\Activitylog\Models\Activity;
+use App\Models\Activity;
 use Spatie\Permission\Models\Role;
 
 beforeEach(function () {

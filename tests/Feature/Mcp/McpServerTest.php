@@ -20,7 +20,7 @@ use App\Services\SettingsRepositoryService;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
-use Spatie\Activitylog\Models\Activity;
+use App\Models\Activity;
 
 /**
  * The MCP server (#234) over HTTP: off by default, a personal API key with `mcp:read` that acts as

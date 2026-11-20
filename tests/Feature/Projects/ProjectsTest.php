@@ -9,7 +9,7 @@ use Database\Seeders\PermissionSeeder;
 use Illuminate\Support\Facades\Log;
 use Inertia\Support\SessionKey;
 use Inertia\Testing\AssertableInertia as Assert;
-use Spatie\Activitylog\Models\Activity;
+use App\Models\Activity;
 
 /**
  * Project registration (#5): `projects.view` lists, `projects.manage` creates, edits, deletes

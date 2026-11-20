@@ -17,7 +17,7 @@ use App\Services\ReportAlertsService;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Support\Facades\Date;
 use Inertia\Testing\AssertableInertia as Assert;
-use Spatie\Activitylog\Models\Activity;
+use App\Models\Activity;
 use Spatie\Permission\Models\Role;
 
 /**
