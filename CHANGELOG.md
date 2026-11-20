@@ -9,6 +9,10 @@ upgrade from the version before (see [docs/self-hosting.md](docs/self-hosting.md
 
 ## [Unreleased]
 
+### Security
+
+- **Alibaba and Oracle cloud metadata addresses are blocked in alert webhooks.** `100.100.100.200` and `192.0.0.192` join the metadata hosts in `WebhookUrlGuardService`, so a webhook is refused as metadata in every spelling the guard reads (decimal, octal, hexadecimal, trailing dot and IPv4-mapped IPv6), including when a hostname resolves to one of them. The separate OIDC SSRF guard lives in `qiick/laravel-oidc`: beta.3 still lets these two addresses through when `OIDC_ALLOW_PRIVATE_HOSTS=true`, so that path needs a package bump to the develop fix.
+
 ### Changed
 
 - **Initial super-admin follows the fleet rule.** `db:seed` now creates the admin outside `local` and `testing` when `INITIAL_SUPER_ADMIN_PASSWORD` is set, is not `password` (case-insensitive) and passes `Password::defaults()`. It says which condition failed when it skips, and never rewrites an existing user. The `.env.example` password `password` is only an example for local and testing; `excubia:create-user` uses the same validation, so a known or weak password cannot bootstrap a server from the CLI either.
