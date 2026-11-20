@@ -46,6 +46,7 @@ yarn-error.log
 /.pi
 /.mcp.json
 /boost.json
+/graphify-out/
 /opencode.json
 /opencode.jsonc
 /tests/Browser/Screenshots
