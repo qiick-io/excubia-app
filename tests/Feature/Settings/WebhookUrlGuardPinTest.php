@@ -61,6 +61,39 @@ dataset('non canonical ipv4 spellings', [
     'canonical public with a trailing dot' => 'https://93.184.216.34./hook',
 ]);
 
+/**
+ * The two metadata endpoints that are not link-local: Alibaba Cloud (100.100.100.200) and
+ * Oracle Cloud (192.0.0.192). A metadata address must be refused as metadata in every form the
+ * guard reads, not merely as a malformed URL: the reason is part of the guard's contract with
+ * the operator debugging a blocked webhook.
+ */
+dataset('alibaba and oracle metadata spellings', [
+    'alibaba canonical' => 'https://100.100.100.200/latest/meta-data/',
+    'alibaba decimal' => 'https://1684301000/latest/meta-data/',
+    'alibaba dotted octal' => 'https://0144.0144.0144.0310/latest/meta-data/',
+    'alibaba dotted hex' => 'https://0x64.0x64.0x64.0xc8/latest/meta-data/',
+    'alibaba one hex number' => 'https://0x646464c8/latest/meta-data/',
+    'alibaba one octal number' => 'https://014431062310/latest/meta-data/',
+    'alibaba three parts' => 'https://100.100.25800/latest/meta-data/',
+    'alibaba two parts' => 'https://100.6579400/latest/meta-data/',
+    'alibaba trailing dot' => 'https://100.100.100.200./latest/meta-data/',
+    'alibaba decimal trailing dot' => 'https://1684301000./latest/meta-data/',
+    'alibaba ipv4-mapped ipv6, dotted' => 'https://[::ffff:100.100.100.200]/latest/meta-data/',
+    'alibaba ipv4-mapped ipv6, hex' => 'https://[::ffff:6464:64c8]/latest/meta-data/',
+    'oracle canonical' => 'https://192.0.0.192/latest/meta-data/',
+    'oracle decimal' => 'https://3221225664/latest/meta-data/',
+    'oracle dotted octal' => 'https://0300.0.0.0300/latest/meta-data/',
+    'oracle dotted hex' => 'https://0xc0.0.0.0xc0/latest/meta-data/',
+    'oracle one hex number' => 'https://0xc00000c0/latest/meta-data/',
+    'oracle one octal number' => 'https://030000000300/latest/meta-data/',
+    'oracle three parts' => 'https://192.0.192/latest/meta-data/',
+    'oracle two parts' => 'https://192.192/latest/meta-data/',
+    'oracle trailing dot' => 'https://192.0.0.192./latest/meta-data/',
+    'oracle decimal trailing dot' => 'https://3221225664./latest/meta-data/',
+    'oracle ipv4-mapped ipv6, dotted' => 'https://[::ffff:192.0.0.192]/latest/meta-data/',
+    'oracle ipv4-mapped ipv6, hex' => 'https://[::ffff:c000:c0]/latest/meta-data/',
+]);
+
 it('refuses every spelling of the ipv4 metadata address', function (string $url): void {
     expect(pinGuard()->validate($url))->toBe('Host is not allowed.');
 })->with('metadata ipv4 spellings');
@@ -77,6 +110,17 @@ it('refuses a hostname that resolves to the metadata address', function (): void
     expect(pinGuard(['169.254.169.254'])->validate('https://hooks.example.com/hook'))
         ->toBe('Host resolves to a disallowed address.')
         ->and(pinGuard(['fd00:ec2::254'])->validate('https://hooks.example.com/hook'))
+        ->toBe('Host resolves to a disallowed address.');
+});
+
+it('refuses alibaba and oracle metadata addresses in every spelling the guard canonicalises', function (string $url): void {
+    expect(pinGuard()->validate($url))->toBe('Host is not allowed.');
+})->with('alibaba and oracle metadata spellings');
+
+it('refuses a hostname that resolves to an alibaba or oracle metadata address', function (): void {
+    expect(pinGuard(['100.100.100.200'])->validate('https://hooks.example.com/hook'))
+        ->toBe('Host resolves to a disallowed address.')
+        ->and(pinGuard(['192.0.0.192'])->validate('https://hooks.example.com/hook'))
         ->toBe('Host resolves to a disallowed address.');
 });
 

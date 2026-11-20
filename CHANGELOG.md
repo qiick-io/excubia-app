@@ -9,6 +9,10 @@ upgrade from the version before (see [docs/self-hosting.md](docs/self-hosting.md
 
 ## [Unreleased]
 
+### Security
+
+- **Alibaba and Oracle cloud metadata addresses are blocked in alert webhooks.** `100.100.100.200` and `192.0.0.192` join the metadata hosts in `WebhookUrlGuardService`, so a webhook is refused as metadata in every spelling the guard reads (decimal, octal, hexadecimal, trailing dot and IPv4-mapped IPv6), including when a hostname resolves to one of them. The separate OIDC SSRF guard lives in `qiick/laravel-oidc`: beta.3 still lets these two addresses through when `OIDC_ALLOW_PRIVATE_HOSTS=true`, so that path needs a package bump to the develop fix.
+
 ### Changed
 
 - **Core schema aligned with the fleet decision** (knowledge `2026-11-19-fleet-core-schema`). Edited in the create migrations (decision 2026-11-20: until the first stable tag, no additive migrations):

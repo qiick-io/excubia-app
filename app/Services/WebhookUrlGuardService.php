@@ -70,6 +70,9 @@ final class WebhookUrlGuardService
         'metadata.google.internal',
         '169.254.169.254',
         'fd00:ec2::254',
+        // Alibaba and Oracle serve metadata on public-looking addresses, outside link-local.
+        '100.100.100.200',
+        '192.0.0.192',
     ];
 
     /**
