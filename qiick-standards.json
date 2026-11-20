@@ -6,6 +6,75 @@
     "frontendRoots": ["resources/js"],
     "oxlint": true,
     "app": true,
+    "conformance": {
+        "userModel": "App\\Models\\User",
+        "publicIdColumn": "public_id",
+        "apiPrefix": "api/v1",
+        "usesSpatieTeams": false,
+        "hasOrganisations": false,
+        "hasUserGroups": true,
+        "hasPrincipals": true,
+        "hasApiKeys": true,
+        "hasSettings": true,
+        "hasUserIdentities": true
+    },
+    "divergences": {
+        "C3": {
+            "reason": "Fixture bug in the v0.12.0 runner: the C3 probe inserts a user_identities row with user_id=1 without creating a user, so the qiick/laravel-oidc foreign key rejects it on PostgreSQL and MySQL before the case-sensitivity assertion runs. Tracked in #380; upstream fix pending.",
+            "decision": "knowledge/decisions/2026-11-19-fleet-core-schema",
+            "review_by": "2026-12-20"
+        },
+        "C13": {
+            "reason": "API-key-authenticated activity still records the internal bigint key id instead of the public UUID in properties.api_key_id. Tracked in #382, not hidden.",
+            "decision": "knowledge/decisions/2026-11-20-core-hardening",
+            "review_by": "2026-12-20"
+        },
+        "C17": {
+            "reason": "Tracked security work, not hidden: user erasure with anonymised activity and unique tombstones is not implemented yet (#381).",
+            "decision": "knowledge/decisions/2026-11-20-core-hardening",
+            "review_by": "2026-12-20"
+        },
+        "C20": {
+            "reason": "One backed error-code enum with a stable JSON error shape for /api/* and /mcp is not implemented yet. Tracked in #390, not hidden.",
+            "decision": "knowledge/decisions/2026-11-20-core-hardening",
+            "review_by": "2026-12-20"
+        },
+        "C21": {
+            "reason": "Accept-Language negotiation does not set Content-Language on responses yet. Tracked in #386, not hidden.",
+            "decision": "knowledge/decisions/2026-11-20-core-hardening",
+            "review_by": "2026-12-20"
+        },
+        "C24": {
+            "reason": "X-Request-Id response header and log propagation are not implemented yet. Tracked in #388, not hidden.",
+            "decision": "knowledge/decisions/2026-11-20-core-hardening",
+            "review_by": "2026-12-20"
+        },
+        "C25": {
+            "reason": "Idempotency-Key replay on retryable creates is not implemented yet. Tracked in #383, not hidden.",
+            "decision": "knowledge/decisions/2026-11-20-core-hardening",
+            "review_by": "2026-12-20"
+        },
+        "C26": {
+            "reason": "No OpenAPI 3.1 document covering the named api/v1 routes exists yet. Tracked in #378, not hidden.",
+            "decision": "knowledge/decisions/2026-11-20-core-hardening",
+            "review_by": "2026-12-20"
+        },
+        "C27": {
+            "reason": "Outbound webhooks do not use Standard Webhooks headers and the {type,timestamp,data} envelope yet. Tracked in #389, not hidden.",
+            "decision": "knowledge/decisions/2026-11-19-shared-packages-for-api-keys-and-outbound-http",
+            "review_by": "2026-12-20"
+        },
+        "C29": {
+            "reason": "Excubia has no organisations or Spatie teams today, so team switching is out of scope. Tracked in #387, not hidden.",
+            "decision": "knowledge/decisions/2026-11-20-core-hardening",
+            "review_by": "2026-12-20"
+        },
+        "C31": {
+            "reason": "Tracked security work, not hidden: API resources still expose internal bigint ids instead of public UUIDs (#379).",
+            "decision": "knowledge/decisions/2026-11-20-core-hardening",
+            "review_by": "2026-12-20"
+        }
+    },
     "requiredItems": [
         "api-key-form",
         "api-key-list-row",

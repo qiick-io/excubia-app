@@ -30,8 +30,8 @@ use Symfony\Component\HttpFoundation\IpUtils;
  * @property string $key_prefix
  * @property string $key_hash
  * @property int $owner_id
- * @property string $owner_principal_id
- * @property int $created_by
+ * @property string|null $owner_principal_id null once the owning principal is removed
+ * @property int|null $created_by null once the issuing user is removed
  * @property list<string> $scopes
  * @property list<string>|null $ip_allowlist
  * @property int|null $rate_limit_per_minute

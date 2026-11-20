@@ -557,6 +557,11 @@ jobs:
   php-quality:
     uses: qiick-io/app-ui/.github/workflows/php-quality.yml@f613af9febfce3b6d7f7f41785e9845a610080c7
 
+  # Fleet conformance C1-C37 on PostgreSQL and MySQL (app-ui v0.12.0). The `tests` job
+  # runs the same suite on SQLite; engine-dependent checks need the two servers here.
+  conformance:
+    uses: qiick-io/app-ui/.github/workflows/conformance.yml@f613af9febfce3b6d7f7f41785e9845a610080c7
+
   # The @qiick UI registry copies and the qiick standards pack (agent files,
   # architecture test, kebab-case file names) must match app-ui.
   app-ui-drift:

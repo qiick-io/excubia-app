@@ -24,8 +24,9 @@ return new class extends Migration
             $table->string('key_hash', 64)->unique();
             $table->foreignId('owner_id')->constrained('users')->cascadeOnDelete();
             // Fleet principal that owns the key; authorisation still uses owner_id → users.
-            $table->foreignUuid('owner_principal_id')->constrained('principals')->cascadeOnDelete();
-            $table->foreignId('created_by')->constrained('users')->cascadeOnDelete();
+            // Removing a principal or its creator must never erase the key or its audit trail.
+            $table->foreignUuid('owner_principal_id')->nullable()->constrained('principals')->nullOnDelete();
+            $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->json('scopes');
             $table->json('ip_allowlist')->nullable();
             $table->unsignedInteger('rate_limit_per_minute')->nullable();

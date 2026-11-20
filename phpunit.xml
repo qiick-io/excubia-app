@@ -14,11 +14,15 @@
         <testsuite name="Feature">
             <directory>tests/Feature</directory>
         </testsuite>
+        <testsuite name="Conformance">
+            <directory>tests/Conformance</directory>
+        </testsuite>
     </testsuites>
-    <!-- The seeded benchmark of #113, the visual QA screenshots of #194 and the real-git sync test of #323 run on demand with their group. -->
+    <!-- The conformance suite runs in its own CI job on PostgreSQL/MySQL (C5/C11/C15 are engine-only). The seeded benchmark of #113, the visual QA screenshots of #194 and the real-git sync test of #323 also run on demand with their group. -->
     <groups>
         <exclude>
             <group>benchmark</group>
+            <group>conformance</group>
             <group>integration</group>
             <group>visual</group>
         </exclude>
