@@ -1,3 +1,5 @@
+import type { RecordId } from '@/lib/record-id';
+
 /**
  * Per-user avatar colour, kept outside the shadcn `avatar` so that component stays
  * unchanged. Pass the result to `AvatarFallback`'s `className` (and to a sender name)
@@ -21,7 +23,7 @@ const AVATAR_TONES = [
     'bg-avatar-10 text-avatar-foreground',
 ];
 
-function seedFromId(id: number | string): number | null {
+function seedFromId(id: RecordId): number | null {
     if (typeof id === 'number') {
         return Number.isNaN(id) ? null : id;
     }
@@ -32,6 +34,7 @@ function seedFromId(id: number | string): number | null {
         return null;
     }
 
+    // A colour seed, never an identity: ids are compared strictly elsewhere.
     const asNumber = Number(trimmed);
 
     if (Number.isFinite(asNumber)) {
@@ -51,9 +54,7 @@ function seedFromId(id: number | string): number | null {
  * Stable swatch class for a user (or group) id: numeric ids use abs(id) % 10,
  * other strings are hashed first. Undefined when there is no id.
  */
-export function avatarToneClass(
-    id?: number | string | null,
-): string | undefined {
+export function avatarToneClass(id?: RecordId | null): string | undefined {
     if (id === undefined || id === null) {
         return undefined;
     }

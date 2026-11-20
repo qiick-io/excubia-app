@@ -19,6 +19,7 @@ import {
     FieldLabel,
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import type { RecordId } from '@/lib/record-id';
 import { STRING_LIMITS } from '@/lib/string-limits';
 import projectGroupsRoutes from '@/routes/project-groups';
 import projectsRoutes from '@/routes/projects';
@@ -27,7 +28,7 @@ import type { AdminProjectGroupRow } from '@/types/admin';
 const EMPTY_PROJECT_GROUP_FORM = {
     name: '',
     description: '',
-    projects: [] as number[],
+    projects: [] as RecordId[],
 };
 
 export type ProjectGroupFormDrawerProps = {

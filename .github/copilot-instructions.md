@@ -196,8 +196,9 @@ How a release goes, for reference: release PR → the maintainer merges it with 
 Machines enforce these in CI; keep them green, and never silence one to get green. Fix the new finding; a baseline only shrinks.
 
 - **PHP quality floor:** PHPStan (Larastan) at level **8** at least in apps and **`max`** in packages; the level never drops and `phpstan-baseline.neon` only shrinks. Apps run Pest with line coverage in CI and fail below the committed `coverage-floor.txt`, which only rises; packages keep a fixed minimum per path. Both run in the reusable `php-quality.yml`.
+- **Fleet conformance:** every core-hardening decision ships with a check in `tests/Conformance` (synced from the pack). The suite runs on a freshly migrated database; engine-dependent checks need PostgreSQL and MySQL via the reusable `conformance.yml`. A product skips a check only with a `divergences` object (`reason`, `decision`, `review_by`). Catalogue: [`standards/CONFORMANCE.md`](../CONFORMANCE.md).
 
-**Details:** `.qiick/standards/checks.md`. Read it before fixing a failing check, adding or changing a GitHub Actions workflow, or touching a baseline, `knip.json`, a ratchet or the strict-model setup.
+**Details:** `.qiick/standards/checks.md`. Read it before fixing a failing check, adding or changing a GitHub Actions workflow, or touching a baseline, `knip.json`, a ratchet, the conformance suite or the strict-model setup.
 
 ## Self-hosted app distribution
 
