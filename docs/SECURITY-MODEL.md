@@ -116,7 +116,7 @@ Deleting a project deletes its reports, findings, telemetry, tasks, alerts, mute
 ### 8. Secrets in logs, errors and props
 
 - `APP_DEBUG=false` and `LOG_CHANNEL=stderr` in the Docker image: no stack traces or `.env` values on error pages.
-- Shared Inertia props carry the signed-in user (password, 2FA secret and codes, remember token and the legacy `oidc_sub` are hidden), the effective permissions and role names, app name, theme and the sidebar modules; never settings secrets.
+- Shared Inertia props carry the signed-in user (password, 2FA secret and codes and remember token are hidden), the effective permissions and role names, app name, theme and the sidebar modules; never settings secrets.
 - The activity log records model changes except password, 2FA, remember-token and push-token columns, plus IP and user agent of the actor.
 - Inertia DevTools is enabled only in the `local` environment.
 

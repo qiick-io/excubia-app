@@ -28,6 +28,7 @@ function usernameUserPayload(array $overrides = []): array
         'first_name' => 'Grace',
         'last_name' => 'Hopper',
         'email' => 'grace@example.com',
+        'timezone' => 'UTC',
         'password' => 'correct-horse-battery',
         'roles' => [RoleEnum::Reader->value],
         'is_active' => true,
@@ -45,6 +46,8 @@ function usernameProfilePayload(User $user, array $overrides = []): array
         'first_name' => $user->first_name,
         'last_name' => $user->last_name,
         'email' => $user->email,
+        'locale' => $user->locale ?? 'en',
+        'timezone' => $user->timezone ?? 'UTC',
         ...$overrides,
     ];
 }

@@ -36,9 +36,13 @@ final class CreateApiKeyAction
             'rate_limit_per_minute' => $apiKeyData->rateLimitPerMinute,
             'expires_at' => $apiKeyData->expiresAt,
         ]);
+        $ownerPrincipal = $owner->principal
+            ?? $owner->principal()->firstOrFail();
+
         $apiKey->forceFill([
             'uuid' => (string) Str::uuid(),
             'owner_id' => $owner->id,
+            'owner_principal_id' => $ownerPrincipal->getKey(),
             'created_by' => $creator->id,
             'key_prefix' => $token['prefix'],
             'key_hash' => $token['hash'],

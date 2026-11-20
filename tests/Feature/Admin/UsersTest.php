@@ -29,6 +29,7 @@ function userPayload(array $overrides = []): array
         'first_name' => 'Grace',
         'last_name' => 'Hopper',
         'email' => 'grace@example.com',
+        'timezone' => 'UTC',
         'password' => 'correct-horse-battery',
         'roles' => [RoleEnum::Reader->value],
         'is_active' => true,
@@ -55,7 +56,36 @@ it('lists users for an admin', function () {
     $this->actingAs($admin)->get(route('users.index'))
         ->assertInertia(fn (Assert $page) => $page->component('admin/users/index')
             ->has('users.data', 2)
+            ->has('timezones')
+            ->where('timezones', timezone_identifiers_list())
             ->where('roles', fn ($roles) => collect($roles)->pluck('name')->all() === [RoleEnum::Admin->value, RoleEnum::Reader->value]));
+});
+
+it('persists and rejects timezone on the admin user form', function () {
+    $admin = managedUser(RoleEnum::Admin);
+
+    $this->actingAs($admin)
+        ->post(route('users.store'), userPayload([
+            'email' => 'timezone@example.com',
+            'timezone' => 'America/New_York',
+        ]))
+        ->assertSessionHasNoErrors()
+        ->assertRedirect(route('users.index'));
+
+    $created = User::query()->where('email', 'timezone@example.com')->sole();
+
+    expect($created->timezone)->toBe('America/New_York');
+
+    $this->actingAs($admin)
+        ->from(route('users.index'))
+        ->put(route('users.update', $created), userPayload([
+            'email' => $created->email,
+            'password' => '',
+            'timezone' => 'Not/A_Zone',
+        ]))
+        ->assertSessionHasErrors('timezone');
+
+    expect($created->refresh()->timezone)->toBe('America/New_York');
 });
 
 it('searches, sorts and paginates users', function () {

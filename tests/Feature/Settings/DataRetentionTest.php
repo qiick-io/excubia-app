@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
+use App\Models\Activity;
 use App\Services\SettingsRepositoryService;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Date;
-use Spatie\Activitylog\Models\Activity;
 
 /**
  * Data retention (#94): the daily activity log clean reads the setting when it runs.

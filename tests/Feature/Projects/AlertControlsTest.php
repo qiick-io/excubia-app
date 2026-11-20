@@ -490,7 +490,12 @@ it('saves the weekly digest choice on the profile', function () {
     $user = controlsAdmin();
 
     $this->actingAs($user)->patch(route('profile.update'), [
-        'first_name' => $user->first_name, 'last_name' => $user->last_name, 'email' => $user->email, 'has_weekly_digest' => '1',
+        'first_name' => $user->first_name,
+        'last_name' => $user->last_name,
+        'email' => $user->email,
+        'locale' => $user->locale ?? 'en',
+        'timezone' => $user->timezone ?? 'UTC',
+        'has_weekly_digest' => '1',
     ])->assertSessionHasNoErrors();
 
     expect($user->fresh()->has_weekly_digest)->toBeTrue();

@@ -3,13 +3,13 @@
 declare(strict_types=1);
 
 use App\Enums\RoleEnum;
+use App\Models\Activity;
 use App\Models\Project;
 use App\Models\User;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Support\Facades\Log;
 use Inertia\Support\SessionKey;
 use Inertia\Testing\AssertableInertia as Assert;
-use Spatie\Activitylog\Models\Activity;
 
 /**
  * Project registration (#5): `projects.view` lists, `projects.manage` creates, edits, deletes

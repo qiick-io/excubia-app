@@ -79,10 +79,12 @@ export default function AdminUsersIndex({
     users: usersProp,
     filters = {},
     roles,
+    timezones,
 }: {
     users: LaravelPaginated<AdminUserRow> | Paginated<AdminUserRow>;
     filters?: Filters;
     roles: AdminRoleRef[];
+    timezones: string[];
 }) {
     const users = normalizePaginated(usersProp);
     const { t } = useTranslation();
@@ -494,6 +496,7 @@ export default function AdminUsersIndex({
                 <UserFormDrawer
                     editing={editing}
                     roles={roles}
+                    timezones={timezones}
                     open={drawerOpen}
                     readOnly={
                         editing

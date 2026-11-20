@@ -243,7 +243,7 @@
         "profile": {
             "head": "Profileinstellungen",
             "title": "Profilinformationen",
-            "description": "Aktualisieren Sie Ihre Profildaten und E-Mail-Adresse",
+            "description": "Aktualisieren Sie Profildetails, Sprache und Zeitzone",
             "unverified": "Ihre E-Mail-Adresse ist nicht bestätigt.",
             "resend": "Hier klicken, um die Bestätigungs-E-Mail erneut zu senden.",
             "linkSent": "Ein neuer Bestätigungslink wurde an Ihre E-Mail-Adresse gesendet.",
@@ -253,7 +253,9 @@
             "alertsEnabled": "Alarm-E-Mails an mich senden",
             "alertsTest": "Test-E-Mail senden",
             "alertsTestHint": "Zuerst speichern. Die Mail geht an deine Adresse und benötigt einen Queue-Worker.",
-            "alertsInApp": "Alarme in der App anzeigen (Glocke in der Seitenleiste)"
+            "alertsInApp": "Alarme in der App anzeigen (Glocke in der Seitenleiste)",
+            "locale": "Sprache",
+            "timezone": "Zeitzone"
         },
         "security": {
             "head": "Sicherheitseinstellungen",
@@ -782,7 +784,8 @@
             "passwordRequired": "Passwort *",
             "rolesRequired": "Rollen *",
             "rolesPlaceholder": "Mindestens eine Rolle auswählen",
-            "rolesLocked": "Sie können Ihre eigenen Rollen nicht ändern."
+            "rolesLocked": "Sie können Ihre eigenen Rollen nicht ändern.",
+            "timezone": "Zeitzone"
         }
     },
     "groups": {

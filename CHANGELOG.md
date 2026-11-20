@@ -15,6 +15,13 @@ upgrade from the version before (see [docs/self-hosting.md](docs/self-hosting.md
 
 ### Changed
 
+- **Core schema aligned with the fleet decision** (knowledge `2026-11-19-fleet-core-schema`). Edited in the create migrations (decision 2026-11-20: until the first stable tag, no additive migrations):
+    - `users`: drop unused `oidc_sub`; add `public_id` (UUID v7, unique) and `timezone` (IANA, default `UTC`), editable on the profile and admin user forms (en/it/de);
+    - `activity_log`: subject/causer morph ids as `string(64)`, plus nullable indexed `organisation_id` (always null until organisations exist);
+    - `settings`: scoped shape `(scope, scope_id, group, key)` with instance rows at `scope=instance`, `scope_id=''` (empty string, never NULL — PostgreSQL/MySQL unique indexes treat NULLs as distinct), `group=app`; `SettingsRepositoryService` public signatures stay flat-keyed;
+    - `principals` table and `api_keys.owner_principal_id` (one `user` principal per user; deactivating a user stamps `principals.deactivated_at`; authorisation still uses `owner_id`);
+    - `user_groups` soft deletes; the effective-permission resolver ignores soft-deleted groups so members lose those permissions immediately (externa-core #823).
+
 - **Initial super-admin follows the fleet rule.** `db:seed` now creates the admin outside `local` and `testing` when `INITIAL_SUPER_ADMIN_PASSWORD` is set, is not `password` (case-insensitive) and passes `Password::defaults()`. It says which condition failed when it skips, and never rewrites an existing user. The `.env.example` password `password` is only an example for local and testing; `excubia:create-user` uses the same validation, so a known or weak password cannot bootstrap a server from the CLI either.
 - **SSO through `qiick/laravel-oidc`** (#356). The local OIDC client (Socialite, `OidcController` and its two services) is replaced by the qiick package every product uses. The URLs registered at the IdP stay the same (`/auth/oidc/redirect`, `/auth/oidc/callback`) and SSO is still configured in **Settings → Application**, never in `.env`. What changes for users and admins:
     - the `id_token` is validated and `nonce` is sent; a user is found by the linked identity (issuer + `sub`), never by email;
@@ -30,6 +37,10 @@ upgrade from the version before (see [docs/self-hosting.md](docs/self-hosting.md
 - **Dependency refresh** (#326). npm patch/minor upgrades and Composer semver-safe updates within declared ranges. Build-time packages (`vite`, `laravel-vite-plugin`, `@vitejs/plugin-react`, `@inertiajs/vite`, `@tailwindcss/vite`) move from `dependencies` to `devDependencies` so `npm audit --omit=dev` no longer reports their advisories; the Docker image already builds with a plain `npm ci` and drops `node_modules` from the runtime stage.
 
 - **API keys on the shared baseline** (#351). The `api_keys` create migration now matches app-ui's storage shape (`uuid`, `owner_id`, `created_by`, `ip_allowlist`, `rate_limit_per_minute`, `last_used_ip`, rotation grace columns). Tokens are `exc_(live|test)_<id><secret>` (SHA-256 of the full token; lookup by the public `key_prefix`). Rotation, expiry warnings (`excubia:notify-expiring-api-keys`), RFC 6750 refusals, a dedicated `api_key` guard, and MCP tool-call `api_key_id` attribution are included. No data migration: this product has no releases yet. The Settings screen is unchanged pending registry items from app-ui#175.
+
+### Upgrade notes
+
+- **Fleet core schema (decision 2026-11-19 / 2026-11-20).** Recreate the database: `php artisan migrate:fresh --seed --force`. Existing data is lost (accepted for the beta; the production dogfood database is being recreated anyway).
 
 ### Added
 

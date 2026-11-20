@@ -10,6 +10,7 @@ import type {
     AlertFilterProject,
     AlertFilterProjectGroup,
 } from '@/components/settings/alert-filter-fields';
+import ProfileLocaleFields from '@/components/settings/profile-locale-fields';
 import { Button } from '@/components/ui/button';
 import DeleteUser from '@/components/delete-user';
 import Heading from '@/components/heading';
@@ -46,14 +47,16 @@ type AlertSubscription = {
 export default function Profile({
     mustVerifyEmail,
     status,
+    timezones,
     alertSubscription,
 }: {
     mustVerifyEmail: boolean;
     status?: string;
+    timezones: string[];
     alertSubscription: AlertSubscription | null;
 }) {
     const { t } = useTranslation();
-    const { auth } = usePage().props;
+    const { auth, availableLocales, locale: pageLocale } = usePage().props;
     const user = auth.user;
 
     const breadcrumbs: BreadcrumbItem[] = [
@@ -248,6 +251,23 @@ export default function Profile({
                                                 {errors.username}
                                             </FieldError>
                                         </Field>
+
+                                        <ProfileLocaleFields
+                                            defaultLocale={
+                                                user.locale ??
+                                                pageLocale ??
+                                                'en'
+                                            }
+                                            defaultTimezone={
+                                                user.timezone ?? 'UTC'
+                                            }
+                                            availableLocales={availableLocales}
+                                            timezones={timezones}
+                                            errors={{
+                                                locale: errors.locale,
+                                                timezone: errors.timezone,
+                                            }}
+                                        />
 
                                         <BooleanField
                                             name="has_weekly_digest"
