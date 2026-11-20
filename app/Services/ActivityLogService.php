@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Models\Activity;
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
-use App\Models\Activity;
 
 /**
  * Builds the filtered, newest-first activity log query of the activity log page.
@@ -16,6 +16,9 @@ use App\Models\Activity;
  * non-admin holding `can-show-activity-logs` does not see changes to projects restricted to
  * admins. Entries about deleted projects are hidden from non-admins too, since their
  * visibility can no longer be checked.
+ *
+ * Morph ids are `string(64)` (fleet): comparisons to bigint primary keys cast to text so
+ * PostgreSQL accepts the join (MySQL and SQLite coerce silently).
  */
 class ActivityLogService
 {
@@ -32,14 +35,16 @@ class ActivityLogService
             ->latest('id');
 
         if (! $this->permissions->isAdmin($viewer)) {
+            $idAsString = $this->castIntegerIdAsString($query);
+
             $query->where(fn (Builder $inner) => $inner->whereNull('subject_type')
                 ->orWhere('subject_type', '!=', (new Project)->getMorphClass())
-                ->orWhereIn('subject_id', Project::query()->visibleTo($viewer)->select('id')));
+                ->orWhereIn('subject_id', Project::query()->visibleTo($viewer)->selectRaw($idAsString)));
         }
 
         if ($filters['user_ids'] !== []) {
             $query->where('causer_type', (new User)->getMorphClass())
-                ->whereIn('causer_id', $filters['user_ids']);
+                ->whereIn('causer_id', array_map(strval(...), $filters['user_ids']));
         }
 
         if ($filters['event'] !== '') {
@@ -70,5 +75,18 @@ class ActivityLogService
         }
 
         return $query;
+    }
+
+    /**
+     * SQL expression that yields a project's bigint id as text for morph-id comparison.
+     *
+     * @param  Builder<Activity>  $query
+     */
+    private function castIntegerIdAsString(Builder $query): string
+    {
+        return match ($query->getConnection()->getDriverName()) {
+            'mysql', 'mariadb' => 'CAST(id AS CHAR)',
+            default => 'CAST(id AS TEXT)',
+        };
     }
 }
