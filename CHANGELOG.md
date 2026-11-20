@@ -11,7 +11,7 @@ upgrade from the version before (see [docs/self-hosting.md](docs/self-hosting.md
 
 ### Security
 
-- **Alibaba and Oracle cloud metadata addresses are blocked in alert webhooks.** `100.100.100.200` and `192.0.0.192` join the metadata hosts in `WebhookUrlGuardService`, so a webhook is refused as metadata in every spelling the guard reads (decimal, octal, hexadecimal, trailing dot and IPv4-mapped IPv6), including when a hostname resolves to one of them. The separate OIDC SSRF guard lives in `qiick/laravel-oidc`: beta.3 still lets these two addresses through when `OIDC_ALLOW_PRIVATE_HOSTS=true`, so that path needs a package bump to the develop fix.
+- **Alibaba and Oracle cloud metadata addresses are blocked in alert webhooks.** `100.100.100.200` and `192.0.0.192` join the metadata hosts in `WebhookUrlGuardService`, so a webhook is refused as metadata in every spelling the guard reads (decimal, octal, hexadecimal, trailing dot and IPv4-mapped IPv6), including when a hostname resolves to one of them. The separate OIDC SSRF guard in `qiick/laravel-oidc` is updated to 1.0.0-beta.4, which keeps these two addresses blocked even when `OIDC_ALLOW_PRIVATE_HOSTS=true`. No migration.
 
 ### Changed
 
