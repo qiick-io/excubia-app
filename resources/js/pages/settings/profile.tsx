@@ -10,6 +10,7 @@ import type {
     AlertFilterProject,
     AlertFilterProjectGroup,
 } from '@/components/settings/alert-filter-fields';
+import ProfileLocaleFields from '@/components/settings/profile-locale-fields';
 import { Button } from '@/components/ui/button';
 import DeleteUser from '@/components/delete-user';
 import Heading from '@/components/heading';
@@ -21,10 +22,6 @@ import {
     FieldLabel,
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import {
-    NativeSelect,
-    NativeSelectOption,
-} from '@/components/ui/native-select';
 import { Separator } from '@/components/ui/separator';
 import { STRING_LIMITS } from '@/lib/string-limits';
 import AppLayout from '@/layouts/app-layout';
@@ -255,97 +252,22 @@ export default function Profile({
                                             </FieldError>
                                         </Field>
 
-                                        <Field
-                                            data-invalid={
-                                                errors.locale ? true : undefined
+                                        <ProfileLocaleFields
+                                            defaultLocale={
+                                                user.locale ??
+                                                pageLocale ??
+                                                'en'
                                             }
-                                        >
-                                            <FieldLabel htmlFor="locale">
-                                                {t('settings.profile.locale')}
-                                            </FieldLabel>
-
-                                            <NativeSelect
-                                                id="locale"
-                                                name="locale"
-                                                required
-                                                defaultValue={
-                                                    user.locale ??
-                                                    pageLocale ??
-                                                    'en'
-                                                }
-                                                className="w-full"
-                                                aria-invalid={
-                                                    errors.locale
-                                                        ? true
-                                                        : undefined
-                                                }
-                                                aria-describedby={
-                                                    errors.locale
-                                                        ? 'locale-error'
-                                                        : undefined
-                                                }
-                                            >
-                                                {Object.entries(
-                                                    availableLocales,
-                                                ).map(([code, label]) => (
-                                                    <NativeSelectOption
-                                                        key={code}
-                                                        value={code}
-                                                    >
-                                                        {label}
-                                                    </NativeSelectOption>
-                                                ))}
-                                            </NativeSelect>
-
-                                            <FieldError id="locale-error">
-                                                {errors.locale}
-                                            </FieldError>
-                                        </Field>
-
-                                        <Field
-                                            data-invalid={
-                                                errors.timezone
-                                                    ? true
-                                                    : undefined
+                                            defaultTimezone={
+                                                user.timezone ?? 'UTC'
                                             }
-                                        >
-                                            <FieldLabel htmlFor="timezone">
-                                                {t('settings.profile.timezone')}
-                                            </FieldLabel>
-
-                                            <NativeSelect
-                                                id="timezone"
-                                                name="timezone"
-                                                required
-                                                defaultValue={
-                                                    user.timezone ?? 'UTC'
-                                                }
-                                                className="w-full"
-                                                aria-invalid={
-                                                    errors.timezone
-                                                        ? true
-                                                        : undefined
-                                                }
-                                                aria-describedby={
-                                                    errors.timezone
-                                                        ? 'timezone-error'
-                                                        : undefined
-                                                }
-                                            >
-                                                {timezones.map((timezone) => (
-                                                    <NativeSelectOption
-                                                        key={timezone}
-                                                        value={timezone}
-                                                    >
-                                                        {timezone}
-                                                    </NativeSelectOption>
-                                                ))}
-                                            </NativeSelect>
-
-                                            <FieldError id="timezone-error">
-                                                {errors.timezone}
-                                            </FieldError>
-                                        </Field>
+                                            availableLocales={availableLocales}
+                                            timezones={timezones}
+                                            errors={{
+                                                locale: errors.locale,
+                                                timezone: errors.timezone,
+                                            }}
+                                        />
 
                                         <BooleanField
                                             name="has_weekly_digest"
