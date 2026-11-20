@@ -8,23 +8,26 @@ use App\Traits\LogsApplicationActivityTrait;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use Spatie\Permission\Models\Role;
 
 /**
  * Named group of users that carries roles. Every member inherits the group's roles, and also
  * sees the projects of the project groups linked to the group (#253), admin-only ones included.
+ * Soft-deleted (fleet shape): the effective-permission resolver must ignore deleted groups.
  *
  * @property int $id
  * @property string $name
  * @property string|null $description
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ * @property Carbon|null $deleted_at
  */
 #[Fillable(['name', 'description'])]
 class UserGroup extends Model
 {
-    use LogsApplicationActivityTrait;
+    use LogsApplicationActivityTrait, SoftDeletes;
 
     /**
      * @return BelongsToMany<User, $this>
