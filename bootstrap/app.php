@@ -7,14 +7,12 @@ use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\RecordIngestRejectionMiddleware;
 use App\Http\Middleware\SecurityHeadersMiddleware;
 use App\Http\Middleware\SetLocaleMiddleware;
-use Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Middleware\ThrottleRequests;
-use Qiick\Oidc\Http\Middleware\EnsureOidcSessionIsActiveMiddleware;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -39,13 +37,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // counter upsert per endpoint, status, reason and hour, never a row per request.
         $middleware->prependToPriorityList(ThrottleRequests::class, RecordIngestRejectionMiddleware::class);
 
-        // qiick/laravel-oidc appends its back-channel logout check to the web group, and the
-        // priority list would sort `auth` ahead of it: the first request after an IdP logout
-        // passed the auth check and only then lost its user (#356). It must run before `auth`.
-        $middleware->prependToPriorityList(AuthenticatesRequests::class, EnsureOidcSessionIsActiveMiddleware::class);
-
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state', 'locale', 'accessibility_high_contrast', 'accessibility_reduce_motion', 'table_density_compact']);
-
         $middleware->web(prepend: [SecurityHeadersMiddleware::class], append: [
             EnsureUserIsActiveMiddleware::class,
             SetLocaleMiddleware::class,
