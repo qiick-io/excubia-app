@@ -35,6 +35,8 @@ return new class extends Migration
             $table->date('dismissed_until')->nullable();
             $table->string('dismissed_reason', 500)->nullable();
             $table->foreignId('dismissed_by_user_id')->nullable()->constrained('users')->nullOnDelete();
+            // Who is on it (#254): optional assignee; a deleted user leaves the finding unassigned.
+            $table->foreignId('assigned_user_id')->nullable()->index()->constrained('users')->nullOnDelete();
             $table->timestamps();
 
             $table->unique(['project_id', 'fingerprint']);
@@ -53,6 +55,8 @@ return new class extends Migration
             $table->string('reason', 500)->nullable();
             $table->date('until')->nullable();
             $table->timestamp('occurred_at');
+            // Who is on it (#254): assignee recorded on an assignment event.
+            $table->foreignId('assigned_user_id')->nullable()->index()->constrained('users')->nullOnDelete();
 
             $table->index(['finding_id', 'occurred_at']);
             $table->index(['event', 'occurred_at']);

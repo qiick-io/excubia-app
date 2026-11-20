@@ -29,6 +29,10 @@ return new class extends Migration
             $table->unsignedInteger('medium_count')->default(0);
             $table->unsignedInteger('low_count')->default(0);
             $table->unsignedInteger('info_count')->default(0);
+            // Check summary (#293): worst status among checks that ran, and their counts.
+            $table->string('worst_check_status', 8)->nullable();
+            $table->unsignedInteger('checks_count')->default(0);
+            $table->unsignedInteger('failed_checks_count')->default(0);
             $table->json('report');
             $table->timestamps();
 

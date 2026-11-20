@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -17,6 +19,8 @@ return new class extends Migration
             $table->string('first_name');
             $table->string('last_name')->nullable();
             $table->string('email')->unique();
+            // Fleet-wide optional username (#84): nullable, unique, stored lowercase.
+            $table->string('username')->nullable()->unique();
             $table->string('oidc_sub')->nullable()->unique();
             $table->string('locale')->default('en');
             // Weekly email digest (#114), opt-in from Settings → Profile.
@@ -25,6 +29,8 @@ return new class extends Migration
             // (AlertFilterData: minimum severity, event types, projects).
             $table->boolean('has_alert_emails')->default(false);
             $table->json('alert_email_filters')->nullable();
+            // In-app alert channel (#296), on by default, same filters as alert emails.
+            $table->boolean('has_alert_in_app')->default(true);
             $table->timestamp('email_verified_at')->nullable();
             // Null for accounts that only sign in through OIDC.
             $table->string('password')->nullable();
