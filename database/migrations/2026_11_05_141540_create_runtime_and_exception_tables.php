@@ -95,6 +95,8 @@ return new class extends Migration
             $table->string('regressed_release', 100)->nullable();
             $table->string('status', 16)->default('open');
             $table->timestamp('resolved_at')->nullable();
+            // Who is on it (#254): optional assignee; a deleted user leaves the group unassigned.
+            $table->foreignId('assigned_user_id')->nullable()->index()->constrained('users')->nullOnDelete();
             $table->timestamps();
 
             $table->unique(['project_id', 'fingerprint', 'environment']);

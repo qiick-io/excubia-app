@@ -32,6 +32,8 @@ return new class extends Migration
             $table->unsignedBigInteger('skipped_runtime_aggregates')->default(0);
             // Estimated AI spend per calendar month (USD) that alerts at 80 % and 100 % (#129); null is off.
             $table->decimal('ai_monthly_budget', 12, 2)->nullable();
+            // Optional uploaded logo (#287): path on the files disk; null means initials avatar.
+            $table->string('logo_path')->nullable();
             $table->timestamps();
         });
     }
