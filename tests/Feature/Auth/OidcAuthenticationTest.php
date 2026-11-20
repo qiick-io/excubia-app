@@ -273,6 +273,8 @@ it('ends the Excubia session when the IdP logs the user out through the back cha
         'logout_token' => $identityProvider->sign($identityProvider->logoutTokenClaims(['sub' => 'sub-abc', 'sid' => 'idp-session-1']), ['typ' => 'logout+jwt']),
     ])->assertOk();
 
+    // First request after back-channel logout must already be a guest: the package places
+    // EnsureOidcSessionIsActiveMiddleware before auth (beta.2+), so no app workaround.
     $this->get(route('dashboard'))->assertRedirect(route('login'));
     $this->assertGuest();
 });
