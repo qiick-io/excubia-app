@@ -75,6 +75,7 @@ it('logs user creation, updates, role changes and deletion with the acting user'
         'first_name' => 'Grace',
         'last_name' => 'Hopper',
         'email' => 'grace@example.com',
+        'timezone' => 'UTC',
         'password' => 'correct-horse-battery',
         'roles' => [RoleEnum::Reader->value],
         'is_active' => true,
@@ -93,6 +94,7 @@ it('logs user creation, updates, role changes and deletion with the acting user'
         'first_name' => 'Grace',
         'last_name' => 'Hopper',
         'email' => 'grace@example.com',
+        'timezone' => 'Europe/Rome',
         'roles' => [RoleEnum::Admin->value],
         'is_active' => false,
     ])->assertRedirect(route('users.index'));

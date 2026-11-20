@@ -18,7 +18,7 @@ class CreateUserAction
     /**
      * @param  list<string>  $roles
      */
-    public function execute(string $firstName, ?string $lastName, string $email, ?string $username, string $password, array $roles, bool $isActive = true): User
+    public function execute(string $firstName, ?string $lastName, string $email, ?string $username, string $password, array $roles, bool $isActive = true, string $timezone = 'UTC'): User
     {
         $user = (new User)->forceFill([
             'first_name' => $firstName,
@@ -26,6 +26,7 @@ class CreateUserAction
             'username' => $username,
             'email' => $email,
             'password' => $password,
+            'timezone' => $timezone,
             'is_active' => $isActive,
             'email_verified_at' => now(),
         ]);

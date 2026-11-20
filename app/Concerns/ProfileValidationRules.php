@@ -26,6 +26,8 @@ trait ProfileValidationRules
             'last_name' => ['nullable', 'string', 'max:255'],
             'email' => $this->emailRules($userId),
             'username' => $this->usernameRules($userId),
+            'locale' => ['required', 'string', Rule::in(array_keys((array) config('i18n.available_locales', ['en' => 'English'])))],
+            'timezone' => ['required', 'string', 'timezone:all'],
         ];
     }
 

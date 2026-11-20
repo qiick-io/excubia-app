@@ -243,7 +243,7 @@
         "profile": {
             "head": "Profile settings",
             "title": "Profile information",
-            "description": "Update your profile details and email address",
+            "description": "Update your profile details, language and timezone",
             "unverified": "Your email address is unverified.",
             "resend": "Click here to resend the verification email.",
             "linkSent": "A new verification link has been sent to your email address.",
@@ -253,7 +253,9 @@
             "alertsEnabled": "Send me alert emails",
             "alertsTest": "Send test email",
             "alertsTestHint": "Save first. The mail goes to your address and needs a queue worker.",
-            "alertsInApp": "Show alerts in the app (bell in the sidebar)"
+            "alertsInApp": "Show alerts in the app (bell in the sidebar)",
+            "locale": "Language",
+            "timezone": "Timezone"
         },
         "security": {
             "head": "Security settings",
@@ -782,7 +784,8 @@
             "passwordRequired": "Password *",
             "rolesRequired": "Roles *",
             "rolesPlaceholder": "Select at least one role",
-            "rolesLocked": "You cannot change your own roles."
+            "rolesLocked": "You cannot change your own roles.",
+            "timezone": "Timezone"
         }
     },
     "groups": {

@@ -10,6 +10,7 @@ export type User = {
     avatar?: string;
     email_verified_at: string | null;
     locale?: string;
+    timezone?: string;
     two_factor_enabled?: boolean;
     /** Weekly email digest (#114). */
     has_weekly_digest?: boolean;

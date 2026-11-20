@@ -9,6 +9,7 @@ use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -24,17 +25,18 @@ use Spatie\Permission\Traits\HasRoles;
 
 /**
  * @property int $id
+ * @property string $public_id fleet public UUID v7; never the primary key
  * @property string $first_name
  * @property string|null $last_name
  * @property-read string $name first and last name
  * @property string $email
  * @property string|null $username optional, unique and stored lowercase (fleet baseline #84)
- * @property string|null $oidc_sub unused: left over from the pre-release SSO client, never shipped (#356)
  * @property-read bool|null $identities_exists from withExists('identities')
  * @property Carbon|null $email_verified_at
  * @property string|null $password
  * @property bool $is_active
  * @property string $locale
+ * @property string $timezone IANA zone for the account (fleet baseline, default UTC)
  * @property bool $has_weekly_digest weekly email digest (#114)
  * @property bool $has_alert_emails alert emails (#22)
  * @property array<string, mixed>|null $alert_email_filters see AlertFilterData; the in-app alerts read them too
@@ -46,12 +48,12 @@ use Spatie\Permission\Traits\HasRoles;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['first_name', 'last_name', 'username', 'email', 'password', 'has_weekly_digest'])]
-#[Hidden(['password', 'oidc_sub', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
+#[Fillable(['first_name', 'last_name', 'username', 'email', 'locale', 'timezone', 'password', 'has_weekly_digest'])]
+#[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, HasRoles, LogsApplicationActivityTrait, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
+    use HasFactory, HasRoles, HasUuids, LogsApplicationActivityTrait, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
 
     /**
      * The full name travels with the user to the pages (avatar, menus).
@@ -71,11 +73,22 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
         'is_active' => true,
         'username' => null,
         'locale' => 'en',
+        'timezone' => 'UTC',
         'has_weekly_digest' => false,
         'has_alert_emails' => false,
         'has_alert_in_app' => true,
         'alert_email_filters' => null,
     ];
+
+    /**
+     * Only `public_id` is a generated UUID; the primary key stays an auto-increment id.
+     *
+     * @return list<string>
+     */
+    public function uniqueIds(): array
+    {
+        return ['public_id'];
+    }
 
     /**
      * Activity log options excluding sensitive credential fields.
@@ -122,8 +135,7 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
     }
 
     /**
-     * SSO identities (issuer + `sub`) linked to this user by qiick/laravel-oidc (#356). The
-     * `oidc_sub` column is unused: no install ever shipped the old client.
+     * SSO identities (issuer + `sub`) linked to this user by qiick/laravel-oidc (#356).
      *
      * @return HasMany<UserIdentity, $this>
      */

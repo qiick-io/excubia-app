@@ -52,7 +52,7 @@ function roleManager(): User
  */
 function escalationUserPayload(User $user, array $roles): array
 {
-    return ['first_name' => 'Same', 'last_name' => null, 'email' => $user->email, 'password' => '', 'is_active' => true, 'roles' => $roles];
+    return ['first_name' => 'Same', 'last_name' => null, 'email' => $user->email, 'timezone' => 'UTC', 'password' => '', 'is_active' => true, 'roles' => $roles];
 }
 
 it('stops a can-edit-users holder from giving themselves the admin role', function () {

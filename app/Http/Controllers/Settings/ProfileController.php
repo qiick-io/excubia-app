@@ -30,6 +30,7 @@ class ProfileController extends Controller
             // User implements MustVerifyEmail: every account confirms its email.
             'mustVerifyEmail' => true,
             'status' => $request->session()->get('status'),
+            'timezones' => timezone_identifiers_list(),
             // Alert emails (#22) and in-app alerts (#296), for users who can see projects.
             'alertSubscription' => $user->can('viewAny', Project::class) ? [
                 'has_alert_emails' => (bool) $user->has_alert_emails,
@@ -54,11 +55,20 @@ class ProfileController extends Controller
             $user->email_verified_at = null;
         }
 
+        $localeChanged = $user->isDirty('locale');
+        $locale = $user->locale;
+
         $user->save();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Profile updated.')]);
 
-        return to_route('profile.edit');
+        $redirect = to_route('profile.edit');
+
+        if ($localeChanged && is_string($locale) && $locale !== '') {
+            return $redirect->cookie('locale', $locale, 60 * 24 * 365);
+        }
+
+        return $redirect;
     }
 
     /**
