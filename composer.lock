@@ -4406,16 +4406,16 @@
         },
         {
             "name": "qiick/laravel-oidc",
-            "version": "v1.0.0-beta.3",
+            "version": "v1.0.0-beta.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/qiick-io/laravel-oidc.git",
-                "reference": "05f85f7d9414d17c5e5989d9dd54d21f6586f159"
+                "reference": "5892df07639bdf3f68ba5614dead837e1924066d"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/qiick-io/laravel-oidc/zipball/05f85f7d9414d17c5e5989d9dd54d21f6586f159",
-                "reference": "05f85f7d9414d17c5e5989d9dd54d21f6586f159",
+                "url": "https://api.github.com/repos/qiick-io/laravel-oidc/zipball/5892df07639bdf3f68ba5614dead837e1924066d",
+                "reference": "5892df07639bdf3f68ba5614dead837e1924066d",
                 "shasum": ""
             },
             "require": {
@@ -4473,8 +4473,8 @@
                 "issues": "https://github.com/qiick-io/laravel-oidc/issues",
                 "source": "https://github.com/qiick-io/laravel-oidc"
             },
-            "time": "2026-11-19T20:35:41+00:00",
-            "published-time": "2026-11-19T20:36:02+00:00"
+            "time": "2026-11-20T13:33:50+00:00",
+            "published-time": "2026-11-20T13:33:55+00:00"
         },
         {
             "name": "ramsey/collection",
