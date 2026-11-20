@@ -7,12 +7,13 @@ namespace App\Console\Commands;
 use App\Actions\CreateUserAction;
 use App\Enums\RoleEnum;
 use App\Models\User;
+use App\Services\InitialSuperAdminPasswordService;
+use Closure;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\Password;
 use Spatie\Permission\Models\Role;
 
 use function Laravel\Prompts\password;
@@ -36,7 +37,7 @@ class CreateUserCommand extends Command
 
     protected $description = 'Create a dashboard user (the password is prompted)';
 
-    public function handle(CreateUserAction $createUser): int
+    public function handle(CreateUserAction $createUser, InitialSuperAdminPasswordService $initialSuperAdminPassword): int
     {
         // Built-in roles must exist even when `db:seed` was never run.
         $this->callSilently('db:seed', ['--class' => PermissionSeeder::class, '--force' => true]);
@@ -56,7 +57,15 @@ class CreateUserCommand extends Command
             'first_name' => ['required', 'string', 'max:255'],
             'last_name' => ['nullable', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'string', Password::default()],
+            'password' => [
+                'required',
+                'string',
+                function (string $attribute, mixed $value, Closure $fail) use ($initialSuperAdminPassword): void {
+                    foreach ($initialSuperAdminPassword->rejectionReasons(is_string($value) ? $value : null) as $reason) {
+                        $fail($reason);
+                    }
+                },
+            ],
             'role' => ['required', 'string', Rule::in($roles)],
         ]);
 

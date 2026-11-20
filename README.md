@@ -121,7 +121,7 @@ touch database/database.sqlite && php artisan migrate
 composer run dev
 ```
 
-Open `/setup` to create your account. Or set `INITIAL_SUPER_ADMIN_PASSWORD` in `.env` and run `php artisan db:seed`: it creates the super-admin `INITIAL_SUPER_ADMIN_EMAIL` with that password, in `local` and `testing` only (never on a server).
+Open `/setup` to create your account. `php artisan db:seed` also creates the super-admin `INITIAL_SUPER_ADMIN_EMAIL` from `.env`: in `local` and `testing` with the example password `password`; on a server only when `INITIAL_SUPER_ADMIN_PASSWORD` is explicitly set, is not `password` (any case) and passes the password policy. Otherwise it skips with a warning and never changes an existing user. `excubia:create-user` uses the same validation.
 
 ### Checks
 

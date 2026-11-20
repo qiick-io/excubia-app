@@ -6,11 +6,13 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Development super-admin (CreateSuperAdminSeeder)
+    | Initial super-admin (CreateSuperAdminSeeder / excubia:create-user)
     |--------------------------------------------------------------------------
     |
-    | Used only by `db:seed` in `local` and `testing`, and only when a password
-    | is set (#225). Servers create the first admin at /setup instead.
+    | Used by `db:seed`: in `local` and `testing` the password comes from .env, where
+    | `password` is only an example. On a server the admin is created only when that
+    | password is set, is not `password` and passes Password::defaults(); otherwise
+    | the seed warns why and skips. An existing user is never rewritten.
     |
     */
 
