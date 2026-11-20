@@ -40,6 +40,7 @@ return new class extends Migration
 
             $table->index('key_prefix');
             $table->index('owner_id');
+            $table->index('owner_principal_id');
             $table->index('created_by');
             $table->index('revoked_at');
         });

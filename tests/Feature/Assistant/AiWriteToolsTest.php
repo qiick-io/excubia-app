@@ -147,7 +147,7 @@ it('resolves and reopens exception groups of one project with the bulk action, a
 
     $activity = Activity::query()->where('log_name', 'ai')->where('event', 'ai_tool')->oldest('id')->first();
 
-    expect($activity->causer_id)->toBe($admin->id)
+    expect($activity->causer_id)->toBe((string) $admin->id)
         ->and($activity->properties->only(['surface', 'tool', 'kind', 'status'])->all())->toBeSameJson(['surface' => 'assistant', 'tool' => 'update-exception-status', 'kind' => 'write', 'status' => 'ok'])
         ->and($activity->properties['arguments']['ids'])->toBe([$first->id, $second->id])
         ->and(Activity::query()->where('event', 'ai_tool')->where('properties->status', 'error')->count())->toBe(3);

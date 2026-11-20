@@ -44,7 +44,7 @@ it('resolves the selected groups and logs one entry per changed group', function
 
     expect($first->fresh()->status->value)->toBe('resolved')
         ->and($second->fresh()->resolved_at)->not->toBeNull()
-        ->and(Activity::query()->where('event', 'status_changed')->pluck('subject_id')->sort()->values()->all())->toBe([$first->id, $second->id]);
+        ->and(Activity::query()->where('event', 'status_changed')->pluck('subject_id')->sort()->values()->all())->toBe([(string) $first->id, (string) $second->id]);
 });
 
 it('assigns the selected groups to a user who can see the project', function () {
