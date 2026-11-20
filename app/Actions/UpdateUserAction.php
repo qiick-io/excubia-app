@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace App\Actions;
 
+use App\Models\Principal;
 use App\Models\User;
 use App\Services\SuperAdminGuardService;
 use Illuminate\Validation\ValidationException;
 
 /**
  * Updates a dashboard user. A null password keeps the current one.
+ *
+ * Side effects: deactivating the user stamps `principals.deactivated_at`; reactivating clears it.
  */
 class UpdateUserAction
 {
@@ -41,6 +44,18 @@ class UpdateUserAction
 
             $user->save();
             $this->syncRoles->execute($user, $roles);
+
+            if ($isActive) {
+                Principal::query()
+                    ->where('user_id', $user->getKey())
+                    ->whereNotNull('deactivated_at')
+                    ->update(['deactivated_at' => null]);
+            } else {
+                Principal::query()
+                    ->where('user_id', $user->getKey())
+                    ->whereNull('deactivated_at')
+                    ->update(['deactivated_at' => now()]);
+            }
 
             return $user;
         });

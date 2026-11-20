@@ -6,6 +6,7 @@ namespace Database\Factories;
 
 use App\Enums\ApiKeyScopeEnum;
 use App\Models\ApiKey;
+use App\Models\Principal;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
@@ -31,6 +32,9 @@ class ApiKeyFactory extends Factory
             'key_prefix' => $token['prefix'],
             'key_hash' => $token['hash'],
             'owner_id' => User::factory(),
+            'owner_principal_id' => fn (array $attributes): string => (string) Principal::query()
+                ->where('user_id', $attributes['owner_id'])
+                ->value('id'),
             'created_by' => fn (array $attributes): mixed => $attributes['owner_id'],
             'scopes' => [ApiKeyScopeEnum::McpRead->value],
         ];

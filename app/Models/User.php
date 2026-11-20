@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\PrincipalTypeEnum;
 use App\Traits\LogsApplicationActivityTrait;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -13,6 +14,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
@@ -61,6 +63,25 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
      * @var list<string>
      */
     protected $appends = ['name'];
+
+    /**
+     * Every user gets a fleet `user` principal (API-key owner) on create.
+     */
+    protected static function booted(): void
+    {
+        static::created(function (User $user): void {
+            if (Principal::query()->where('user_id', $user->getKey())->exists()) {
+                return;
+            }
+
+            Principal::query()->create([
+                'type' => PrincipalTypeEnum::User,
+                'user_id' => $user->getKey(),
+                'organisation_id' => null,
+                'name' => $user->name !== '' ? $user->name : $user->email,
+            ]);
+        });
+    }
 
     /**
      * The column defaults a freshly created user does not read back from the
@@ -132,6 +153,16 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
     public function apiKeys(): HasMany
     {
         return $this->hasMany(ApiKey::class, 'owner_id');
+    }
+
+    /**
+     * Fleet principal for this person (one per user).
+     *
+     * @return HasOne<Principal, $this>
+     */
+    public function principal(): HasOne
+    {
+        return $this->hasOne(Principal::class);
     }
 
     /**

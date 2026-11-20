@@ -211,7 +211,7 @@ it('lets a key act as its owner on the api_key guard and logs its first use once
     expect($apiKey->last_used_at)->not->toBeNull()
         ->and($apiKey->last_used_ip)->not->toBeNull()
         ->and(Activity::query()->where('event', 'api_key_first_used')->count())->toBe(1)
-        ->and(Activity::query()->where('event', 'api_key_first_used')->sole()->causer_id)->toBe($user->id);
+        ->and(Activity::query()->where('event', 'api_key_first_used')->sole()->causer_id)->toBe((string) $user->id);
 });
 
 it('refuses a presented token with a trailing newline at the pattern boundary', function () {

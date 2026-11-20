@@ -23,6 +23,8 @@ return new class extends Migration
             $table->string('key_prefix', 32);
             $table->string('key_hash', 64)->unique();
             $table->foreignId('owner_id')->constrained('users')->cascadeOnDelete();
+            // Fleet principal that owns the key; authorisation still uses owner_id → users.
+            $table->foreignUuid('owner_principal_id')->constrained('principals')->cascadeOnDelete();
             $table->foreignId('created_by')->constrained('users')->cascadeOnDelete();
             $table->json('scopes');
             $table->json('ip_allowlist')->nullable();
