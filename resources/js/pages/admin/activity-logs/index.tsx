@@ -21,6 +21,7 @@ import AppLayout from '@/layouts/app-layout';
 import { listPerPageQuery } from '@/lib/list-per-page';
 import { normalizePaginated } from '@/lib/pagination';
 import type { LaravelPaginated } from '@/lib/pagination';
+import type { RecordId } from '@/lib/record-id';
 import { cn } from '@/lib/utils';
 import activityLogsRoutes from '@/routes/activity-logs';
 import type {
@@ -32,21 +33,21 @@ import type {
 
 type Filters = {
     search?: string;
-    user_ids?: number[];
-    user_id?: number | null;
+    user_ids?: RecordId[];
+    user_id?: RecordId | null;
     event?: string;
     log_name?: string;
     date_from?: string;
     date_to?: string;
 };
 
-function resolveInitialUserIds(filters: Filters): number[] {
+function resolveInitialUserIds(filters: Filters): RecordId[] {
     if (Array.isArray(filters.user_ids) && filters.user_ids.length > 0) {
-        return filters.user_ids.map(Number).filter((id) => id > 0);
+        return filters.user_ids;
     }
 
-    if (filters.user_id) {
-        return [Number(filters.user_id)];
+    if (filters.user_id !== null && filters.user_id !== undefined) {
+        return [filters.user_id];
     }
 
     return [];
@@ -75,7 +76,7 @@ export default function AdminActivityLogsIndex({
     const activityLogs = normalizePaginated(activityLogsProp);
     const users = useMemo(() => usersProp ?? [], [usersProp]);
     const [search, setSearch] = useState(filters.search ?? '');
-    const [userIds, setUserIds] = useState<number[]>(() =>
+    const [userIds, setUserIds] = useState<RecordId[]>(() =>
         resolveInitialUserIds(filters),
     );
     const [event, setEvent] = useState(filters.event ?? '');
