@@ -11,6 +11,7 @@ upgrade from the version before (see [docs/self-hosting.md](docs/self-hosting.md
 
 ### Changed
 
+- **Initial super-admin follows the fleet rule.** `db:seed` now creates the admin outside `local` and `testing` when `INITIAL_SUPER_ADMIN_PASSWORD` is set, is not `password` (case-insensitive) and passes `Password::defaults()`. It says which condition failed when it skips, and never rewrites an existing user. The `.env.example` password `password` is only an example for local and testing; `excubia:create-user` uses the same validation, so a known or weak password cannot bootstrap a server from the CLI either.
 - **SSO through `qiick/laravel-oidc`** (#356). The local OIDC client (Socialite, `OidcController` and its two services) is replaced by the qiick package every product uses. The URLs registered at the IdP stay the same (`/auth/oidc/redirect`, `/auth/oidc/callback`) and SSO is still configured in **Settings → Application**, never in `.env`. What changes for users and admins:
     - the `id_token` is validated and `nonce` is sent; a user is found by the linked identity (issuer + `sub`), never by email;
     - linking an existing user by verified email is now the **Link existing users by verified email** setting, off on new installs; installs that had configured SSO keep it on (see the upgrade notes);

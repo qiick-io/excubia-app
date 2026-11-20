@@ -151,7 +151,7 @@ Open `/setup` (the login page links to it while no account exists):
 
 On a server without a browser at hand, `php artisan excubia:create-user` creates an account from the CLI instead (the first one becomes super-admin).
 
-Never run `php artisan db:seed` or `migrate --seed` to get a login on a server: the default seeder creates the development super-admin only where `APP_ENV` is `local` or `testing` and `INITIAL_SUPER_ADMIN_PASSWORD` is set, and skips it everywhere else. The install paths (`excubia:install`, `excubia:upgrade`, the Docker entrypoint) seed only the permissions and the system project.
+`php artisan db:seed` on a server creates the initial super-admin only when `INITIAL_SUPER_ADMIN_PASSWORD` is explicitly set, is not `password` (any case) and passes the configured password policy. Otherwise it says which condition failed and skips the admin. It never rewrites an existing account. `php artisan excubia:create-user` applies the same check, so a known or weak password cannot bootstrap a server from the CLI either. The install paths (`excubia:install`, `excubia:upgrade`, the Docker entrypoint) seed only the permissions and the system project.
 
 ## Scheduler and queue
 

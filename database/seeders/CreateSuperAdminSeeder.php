@@ -6,50 +6,50 @@ namespace Database\Seeders;
 
 use App\Enums\RoleEnum;
 use App\Models\User;
+use App\Services\InitialSuperAdminPasswordService;
 use Illuminate\Database\Seeder;
 
 /**
- * Creates a development super-admin from config/super_admin.php, so `migrate --seed` gives a
- * local checkout a login.
+ * Creates the initial super-admin from config/super_admin.php, so a fresh install can sign in.
  *
- * Only in `local` and `testing`, and only with a password set in `.env` (#225): a server that
- * runs the Laravel reflex `migrate --seed --force` must never get a known-credential account,
- * and `/setup` stays closed once any user exists. Servers create the first admin through
- * `/setup` or `excubia:create-user`.
+ * The password gate is shared with `excubia:create-user` (#225): local and testing use the
+ * password from .env; a server creates the admin only when that password is set, is not the known
+ * default and meets Password::defaults(). A skipped seed always says which condition failed.
  *
- * Idempotent on the email: an existing user keeps their password and gets the role,
- * the verified email and the active flag back.
+ * Never rewrites an existing user: re-seeding or upgrading must not reset an admin's password,
+ * activation, verification or roles.
  */
 class CreateSuperAdminSeeder extends Seeder
 {
     /** The environments where a seeded login is a convenience, not a risk. */
     public const ENVIRONMENTS = ['local', 'testing'];
 
-    public function run(): void
+    public function run(InitialSuperAdminPasswordService $initialSuperAdminPassword): void
     {
-        if (! app()->environment(self::ENVIRONMENTS)) {
-            $this->command?->warn('Skipped the development super-admin outside local and testing: create the first admin at /setup or with `php artisan excubia:create-user`.');
+        $configuredPassword = config('super_admin.password');
+        $password = is_string($configuredPassword) ? $configuredPassword : null;
 
-            return;
-        }
+        $reasons = $initialSuperAdminPassword->rejectionReasons($password);
 
-        $password = config('super_admin.password');
-
-        if (! is_string($password) || $password === '') {
-            $this->command?->warn('Skipped the development super-admin: INITIAL_SUPER_ADMIN_PASSWORD is empty.');
+        if ($reasons !== []) {
+            $this->command?->warn('Skipped the initial super-admin (INITIAL_SUPER_ADMIN_PASSWORD): '.implode('; ', $reasons));
 
             return;
         }
 
         $user = User::query()->firstOrNew(['email' => config('super_admin.email')]);
 
-        if (! $user->exists) {
-            $user->first_name = config('super_admin.first_name');
-            $user->last_name = config('super_admin.last_name');
-            $user->password = $password;
+        if ($user->exists) {
+            return;
         }
 
-        $user->forceFill(['email_verified_at' => $user->email_verified_at ?? now(), 'is_active' => true])->save();
+        $user->forceFill([
+            'first_name' => config('super_admin.first_name'),
+            'last_name' => config('super_admin.last_name'),
+            'password' => (string) $password,
+            'email_verified_at' => now(),
+            'is_active' => true,
+        ])->save();
         $user->assignRole(RoleEnum::SuperAdmin->value);
     }
 }
