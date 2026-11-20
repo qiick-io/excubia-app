@@ -287,7 +287,6 @@ export function UserFormDrawer({
                             </FieldError>
                         </Field>
 
-
                         <Field
                             data-invalid={
                                 form.errors.timezone ? true : undefined
@@ -300,10 +299,7 @@ export function UserFormDrawer({
                                 id="user_timezone"
                                 value={form.data.timezone}
                                 onChange={(event) =>
-                                    form.setData(
-                                        'timezone',
-                                        event.target.value,
-                                    )
+                                    form.setData('timezone', event.target.value)
                                 }
                                 disabled={readOnly}
                                 className="w-full"

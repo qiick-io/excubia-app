@@ -35,11 +35,15 @@ class ActivityLogService
             ->latest('id');
 
         if (! $this->permissions->isAdmin($viewer)) {
-            $idAsString = $this->castIntegerIdAsString($query);
+            $visibleProjects = Project::query()->visibleTo($viewer);
+            $visibleProjectIds = match ($this->connectionDriver($query)) {
+                'mysql', 'mariadb' => $visibleProjects->selectRaw('CAST(id AS CHAR)'),
+                default => $visibleProjects->selectRaw('CAST(id AS TEXT)'),
+            };
 
             $query->where(fn (Builder $inner) => $inner->whereNull('subject_type')
                 ->orWhere('subject_type', '!=', (new Project)->getMorphClass())
-                ->orWhereIn('subject_id', Project::query()->visibleTo($viewer)->selectRaw($idAsString)));
+                ->orWhereIn('subject_id', $visibleProjectIds));
         }
 
         if ($filters['user_ids'] !== []) {
@@ -78,15 +82,14 @@ class ActivityLogService
     }
 
     /**
-     * SQL expression that yields a project's bigint id as text for morph-id comparison.
+     * Database driver name for the activity connection.
      *
      * @param  Builder<Activity>  $query
      */
-    private function castIntegerIdAsString(Builder $query): string
+    private function connectionDriver(Builder $query): string
     {
-        return match ($query->getConnection()->getDriverName()) {
-            'mysql', 'mariadb' => 'CAST(id AS CHAR)',
-            default => 'CAST(id AS TEXT)',
-        };
+        $connection = $query->getModel()->getConnection();
+
+        return $connection->getDriverName();
     }
 }

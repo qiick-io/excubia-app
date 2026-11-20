@@ -64,7 +64,7 @@ class ProfileController extends Controller
 
         $redirect = to_route('profile.edit');
 
-        if ($localeChanged && is_string($locale) && $locale !== '') {
+        if ($localeChanged && $locale !== '') {
             return $redirect->cookie('locale', $locale, 60 * 24 * 365);
         }
 
