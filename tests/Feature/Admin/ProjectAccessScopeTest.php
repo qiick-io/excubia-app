@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Enums\PermissionEnum;
 use App\Enums\ProjectVisibilityEnum;
 use App\Enums\RoleEnum;
+use App\Models\Activity;
 use App\Models\Project;
 use App\Models\ProjectGroup;
 use App\Models\User;
@@ -12,7 +13,6 @@ use App\Models\UserGroup;
 use App\Services\AssistantQueryService;
 use Database\Seeders\PermissionSeeder;
 use Inertia\Testing\AssertableInertia as Assert;
-use App\Models\Activity;
 use Spatie\Permission\Models\Role;
 
 beforeEach(function () {

@@ -13,6 +13,7 @@ use App\Enums\PermissionEnum;
 use App\Enums\ProjectVisibilityEnum;
 use App\Enums\RoleEnum;
 use App\Jobs\RunSystemReportJob;
+use App\Models\Activity;
 use App\Models\AlertLog;
 use App\Models\AlertMute;
 use App\Models\ExceptionGroup;
@@ -30,7 +31,6 @@ use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Ai\Models\Conversation;
 use Laravel\Ai\Responses\Data\ToolCall;
 use Laravel\Ai\Tools\Request;
-use App\Models\Activity;
 
 /**
  * The write tools of the Assistant and the MCP server (#320): each one through the Assistant and

@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 use App\Enums\FindingEventEnum;
 use App\Enums\RoleEnum;
+use App\Models\Activity;
 use App\Models\Finding;
 use App\Models\Project;
 use App\Models\User;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Support\Facades\Date;
-use App\Models\Activity;
 
 /**
  * Bulk assign on the Findings tab (#276): each finding authorized, assigned, logged and given

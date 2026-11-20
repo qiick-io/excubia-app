@@ -7,13 +7,13 @@ namespace App\Http\Controllers;
 use App\Enums\ActivityEventEnum;
 use App\Http\Requests\ActivityLogRequest;
 use App\Http\Resources\ActivityLogResource;
+use App\Models\Activity;
 use App\Models\User;
 use App\Services\ActivityLogService;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
-use App\Models\Activity;
 
 /**
  * Activity log browser with user, action, log and date filters, behind `can-show-activity-logs`

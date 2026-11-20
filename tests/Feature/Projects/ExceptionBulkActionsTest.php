@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 use App\Enums\ProjectVisibilityEnum;
 use App\Enums\RoleEnum;
+use App\Models\Activity;
 use App\Models\ExceptionGroup;
 use App\Models\Project;
 use App\Models\User;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Support\Facades\Date;
-use App\Models\Activity;
 
 /**
  * Bulk actions on the Exceptions tab (#276): status and assignee for the selected groups, each

@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 use App\Enums\PermissionEnum;
 use App\Enums\RoleEnum;
+use App\Models\Activity;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\UserGroup;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Support\Carbon;
 use Inertia\Testing\AssertableInertia as Assert;
-use App\Models\Activity;
 
 /**
  * Activity log copied from externa-core: what admins change is logged with them as causer,

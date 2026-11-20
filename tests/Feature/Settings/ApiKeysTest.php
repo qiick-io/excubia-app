@@ -8,6 +8,7 @@ use App\Data\ApiKeyData;
 use App\Enums\ApiKeyScopeEnum;
 use App\Enums\RoleEnum;
 use App\Http\Middleware\AuthenticateApiKeyMiddleware;
+use App\Models\Activity;
 use App\Models\ApiKey;
 use App\Models\User;
 use App\Notifications\ApiKeyExpiringNotification;
@@ -19,7 +20,6 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Testing\TestResponse;
 use Inertia\Support\SessionKey;
 use Inertia\Testing\AssertableInertia as Assert;
-use App\Models\Activity;
 
 /**
  * Personal API keys (#315, #351): Settings → API keys (web session only); AuthenticateApiKeyMiddleware

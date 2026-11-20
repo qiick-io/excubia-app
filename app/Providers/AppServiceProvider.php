@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Enums\PermissionEnum;
+use App\Models\Activity as ActivityModel;
 use App\Models\ApiKey;
 use App\Models\Project;
 use App\Models\User;
@@ -48,7 +49,6 @@ use Qiick\Oidc\Contracts\UserProvisioningContract;
 use Qiick\Oidc\Services\SsoOnlyModeService;
 use Qiick\Oidc\Services\UserLinkingService;
 use Spatie\Activitylog\Facades\Activity;
-use App\Models\Activity as ActivityModel;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
