@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 use App\Enums\ProjectVisibilityEnum;
 use App\Enums\RoleEnum;
+use App\Models\Activity;
 use App\Models\ExceptionGroup;
 use App\Models\Project;
 use App\Models\User;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Support\Facades\Date;
-use Spatie\Activitylog\Models\Activity;
 
 /**
  * Bulk actions on the Exceptions tab (#276): status and assignee for the selected groups, each
@@ -44,7 +44,7 @@ it('resolves the selected groups and logs one entry per changed group', function
 
     expect($first->fresh()->status->value)->toBe('resolved')
         ->and($second->fresh()->resolved_at)->not->toBeNull()
-        ->and(Activity::query()->where('event', 'status_changed')->pluck('subject_id')->sort()->values()->all())->toBe([$first->id, $second->id]);
+        ->and(Activity::query()->where('event', 'status_changed')->pluck('subject_id')->sort()->values()->all())->toBe([(string) $first->id, (string) $second->id]);
 });
 
 it('assigns the selected groups to a user who can see the project', function () {

@@ -69,6 +69,7 @@ class UserController extends Controller
             'users' => UserResource::collection($users),
             'filters' => $request->filters($sort, $direction),
             'roles' => StoreUserRequest::assignableRoleOptionsFor($actor instanceof User ? $actor : null),
+            'timezones' => timezone_identifiers_list(),
         ]);
     }
 
@@ -100,6 +101,7 @@ class UserController extends Controller
             $request->string('password')->toString(),
             $request->roles(),
             $request->boolean('is_active', true),
+            $request->string('timezone')->toString(),
         );
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('User created.')]);
@@ -118,6 +120,7 @@ class UserController extends Controller
             $request->filled('password') ? $request->string('password')->toString() : null,
             $request->roles(),
             $request->boolean('is_active'),
+            $request->string('timezone')->toString(),
         );
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('User updated.')]);

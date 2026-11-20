@@ -41,6 +41,7 @@ export type AdminUserRow = {
     name: string;
     email: string;
     username: string | null;
+    timezone: string;
     is_active: boolean;
     is_sso_linked: boolean;
     email_verified_at: string | null;

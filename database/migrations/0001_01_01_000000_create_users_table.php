@@ -21,8 +21,11 @@ return new class extends Migration
             $table->string('email')->unique();
             // Fleet-wide optional username (#84): nullable, unique, stored lowercase.
             $table->string('username')->nullable()->unique();
-            $table->string('oidc_sub')->nullable()->unique();
+            // Fleet public id (UUID v7): exposed outside the database; primary key stays bigint.
+            $table->uuid('public_id')->unique();
             $table->string('locale')->default('en');
+            // IANA timezone (fleet baseline); default UTC.
+            $table->string('timezone')->default('UTC');
             // Weekly email digest (#114), opt-in from Settings → Profile.
             $table->boolean('has_weekly_digest')->default(false);
             // Alert emails (#22), opt-in from Settings → Profile, with the user's own filters

@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Models\Activity;
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
-use Spatie\Activitylog\Models\Activity;
 
 /**
  * Builds the filtered, newest-first activity log query of the activity log page.
@@ -16,6 +16,9 @@ use Spatie\Activitylog\Models\Activity;
  * non-admin holding `can-show-activity-logs` does not see changes to projects restricted to
  * admins. Entries about deleted projects are hidden from non-admins too, since their
  * visibility can no longer be checked.
+ *
+ * Morph ids are `string(64)` (fleet): comparisons to bigint primary keys cast to text so
+ * PostgreSQL accepts the join (MySQL and SQLite coerce silently).
  */
 class ActivityLogService
 {
@@ -32,14 +35,20 @@ class ActivityLogService
             ->latest('id');
 
         if (! $this->permissions->isAdmin($viewer)) {
+            $visibleProjects = Project::query()->visibleTo($viewer);
+            $visibleProjectIds = match ($this->connectionDriver($query)) {
+                'mysql', 'mariadb' => $visibleProjects->selectRaw('CAST(id AS CHAR)'),
+                default => $visibleProjects->selectRaw('CAST(id AS TEXT)'),
+            };
+
             $query->where(fn (Builder $inner) => $inner->whereNull('subject_type')
                 ->orWhere('subject_type', '!=', (new Project)->getMorphClass())
-                ->orWhereIn('subject_id', Project::query()->visibleTo($viewer)->select('id')));
+                ->orWhereIn('subject_id', $visibleProjectIds));
         }
 
         if ($filters['user_ids'] !== []) {
             $query->where('causer_type', (new User)->getMorphClass())
-                ->whereIn('causer_id', $filters['user_ids']);
+                ->whereIn('causer_id', array_map(strval(...), $filters['user_ids']));
         }
 
         if ($filters['event'] !== '') {
@@ -70,5 +79,17 @@ class ActivityLogService
         }
 
         return $query;
+    }
+
+    /**
+     * Database driver name for the activity connection.
+     *
+     * @param  Builder<Activity>  $query
+     */
+    private function connectionDriver(Builder $query): string
+    {
+        $connection = $query->getModel()->getConnection();
+
+        return $connection->getDriverName();
     }
 }

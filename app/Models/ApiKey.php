@@ -29,6 +29,7 @@ use Symfony\Component\HttpFoundation\IpUtils;
  * @property string $key_prefix
  * @property string $key_hash
  * @property int $owner_id
+ * @property string $owner_principal_id
  * @property int $created_by
  * @property list<string> $scopes
  * @property list<string>|null $ip_allowlist
@@ -42,6 +43,7 @@ use Symfony\Component\HttpFoundation\IpUtils;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read User $owner
+ * @property-read Principal $ownerPrincipal
  * @property-read User $creator
  */
 class ApiKey extends Model
@@ -117,6 +119,16 @@ class ApiKey extends Model
     public function owner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'owner_id');
+    }
+
+    /**
+     * Fleet principal that owns the key (additive; authorisation still uses {@see owner()}).
+     *
+     * @return BelongsTo<Principal, $this>
+     */
+    public function ownerPrincipal(): BelongsTo
+    {
+        return $this->belongsTo(Principal::class, 'owner_principal_id');
     }
 
     /**

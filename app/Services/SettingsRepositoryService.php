@@ -12,6 +12,7 @@ use App\Enums\SeverityEnum;
 use App\Enums\ThemePresetEnum;
 use App\Models\Setting;
 use Illuminate\Contracts\Encryption\DecryptException;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rules\Password;
@@ -21,6 +22,11 @@ use Illuminate\Validation\Rules\Password;
  * for the code that uses them (login, password rule, 2FA requirement, report history, SSO,
  * UI locale, default appearance, sidebar modules).
  *
+ * Storage is scoped (fleet / externa-core shape): every Excubia setting lives at
+ * scope=`instance`, scope_id=`''` (empty string, never NULL — PostgreSQL/MySQL unique indexes
+ * treat NULLs as distinct; signaculum-core #205), group=`app`. Public method signatures stay
+ * flat-keyed so callers do not change.
+ *
  * Secrets (SECRET_KEYS: the OIDC client secret, the webhook signing secret, the Slack incoming-
  * webhook URL, which is a bearer secret, and the Telegram bot token) are stored encrypted and
  * left out of forEdit().
@@ -29,6 +35,13 @@ use Illuminate\Validation\Rules\Password;
  */
 class SettingsRepositoryService
 {
+    public const string SCOPE_INSTANCE = 'instance';
+
+    /** Empty string sentinel for instance scope (NOT NULL; see signaculum-core #205). */
+    public const string SCOPE_ID_INSTANCE = '';
+
+    public const string GROUP_APP = 'app';
+
     public const PASSWORD_POLICIES = ['weak', 'medium', 'strong'];
 
     public const APPEARANCES = ['system', 'light', 'dark'];
@@ -153,7 +166,7 @@ class SettingsRepositoryService
     {
         return $this->values ??= array_merge(
             $this->defaults(),
-            Setting::query()->pluck('value', 'key')->all(),
+            $this->instanceAppQuery()->pluck('value', 'key')->all(),
         );
     }
 
@@ -230,7 +243,15 @@ class SettingsRepositoryService
     {
         DB::transaction(function () use ($values): void {
             foreach ($values as $key => $value) {
-                Setting::query()->updateOrCreate(['key' => $key], ['value' => $value]);
+                Setting::query()->updateOrCreate(
+                    [
+                        'scope' => self::SCOPE_INSTANCE,
+                        'scope_id' => self::SCOPE_ID_INSTANCE,
+                        'group' => self::GROUP_APP,
+                        'key' => $key,
+                    ],
+                    ['value' => $value],
+                );
             }
         });
 
@@ -244,7 +265,7 @@ class SettingsRepositoryService
      */
     public function forget(array $keys): void
     {
-        Setting::query()->whereIn('key', $keys)->delete();
+        $this->instanceAppQuery()->whereIn('key', $keys)->delete();
         $this->values = null;
     }
 
@@ -650,6 +671,19 @@ class SettingsRepositoryService
             && $this->oidcIssuer() !== null
             && $this->oidcClientId() !== null
             && $this->oidcClientSecret() !== null;
+    }
+
+    /**
+     * Instance-scope rows in the `app` group (fleet flat-key storage).
+     *
+     * @return Builder<Setting>
+     */
+    private function instanceAppQuery(): Builder
+    {
+        return Setting::query()
+            ->where('scope', self::SCOPE_INSTANCE)
+            ->where('scope_id', self::SCOPE_ID_INSTANCE)
+            ->where('group', self::GROUP_APP);
     }
 
     /**

@@ -8,6 +8,7 @@ use App\Http\Requests\Concerns\ValidatesUsernameTrait;
 use App\Models\User;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\In;
 use Illuminate\Validation\Rules\Unique;
 
 trait ProfileValidationRules
@@ -17,7 +18,7 @@ trait ProfileValidationRules
     /**
      * Get the validation rules used to validate user profiles.
      *
-     * @return array<string, array<int, Unique|ValidationRule|array<mixed>|string>>
+     * @return array<string, array<int, Unique|In|ValidationRule|array<mixed>|string>>
      */
     protected function profileRules(?int $userId = null): array
     {
@@ -26,6 +27,8 @@ trait ProfileValidationRules
             'last_name' => ['nullable', 'string', 'max:255'],
             'email' => $this->emailRules($userId),
             'username' => $this->usernameRules($userId),
+            'locale' => ['required', 'string', Rule::in(array_keys((array) config('i18n.available_locales', ['en' => 'English'])))],
+            'timezone' => ['required', 'string', 'timezone:all'],
         ];
     }
 

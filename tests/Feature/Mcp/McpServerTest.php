@@ -13,6 +13,7 @@ use App\Enums\RoleEnum;
 use App\Enums\SeverityEnum;
 use App\Mcp\Adapters\AssistantMcpToolAdapter;
 use App\Mcp\Servers\ExcubiaServer;
+use App\Models\Activity;
 use App\Models\ApiKey;
 use App\Models\Project;
 use App\Models\User;
@@ -20,7 +21,6 @@ use App\Services\SettingsRepositoryService;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
-use Spatie\Activitylog\Models\Activity;
 
 /**
  * The MCP server (#234) over HTTP: off by default, a personal API key with `mcp:read` that acts as

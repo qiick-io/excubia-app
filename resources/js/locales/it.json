@@ -243,7 +243,7 @@
         "profile": {
             "head": "Impostazioni profilo",
             "title": "Informazioni profilo",
-            "description": "Aggiorna i dettagli del profilo e l'indirizzo email",
+            "description": "Aggiorna i dettagli del profilo, la lingua e il fuso orario",
             "unverified": "Il tuo indirizzo email non è verificato.",
             "resend": "Clicca qui per reinviare l'email di verifica.",
             "linkSent": "Un nuovo link di verifica è stato inviato al tuo indirizzo email.",
@@ -253,7 +253,9 @@
             "alertsEnabled": "Inviami gli avvisi via email",
             "alertsTest": "Invia email di prova",
             "alertsTestHint": "Salva prima. L'email arriva al tuo indirizzo e serve un queue worker.",
-            "alertsInApp": "Mostra gli avvisi nell'app (campanella nella barra laterale)"
+            "alertsInApp": "Mostra gli avvisi nell'app (campanella nella barra laterale)",
+            "locale": "Lingua",
+            "timezone": "Fuso orario"
         },
         "security": {
             "head": "Impostazioni sicurezza",
@@ -782,7 +784,8 @@
             "passwordRequired": "Password *",
             "rolesRequired": "Ruoli *",
             "rolesPlaceholder": "Seleziona almeno un ruolo",
-            "rolesLocked": "Non puoi cambiare i tuoi ruoli."
+            "rolesLocked": "Non puoi cambiare i tuoi ruoli.",
+            "timezone": "Fuso orario"
         }
     },
     "groups": {

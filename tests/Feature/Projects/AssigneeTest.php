@@ -6,6 +6,7 @@ use App\Enums\FindingEventEnum;
 use App\Enums\PermissionEnum;
 use App\Enums\ProjectVisibilityEnum;
 use App\Enums\RoleEnum;
+use App\Models\Activity;
 use App\Models\ExceptionGroup;
 use App\Models\Finding;
 use App\Models\Project;
@@ -17,7 +18,6 @@ use App\Services\ReportAlertsService;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Support\Facades\Date;
 use Inertia\Testing\AssertableInertia as Assert;
-use Spatie\Activitylog\Models\Activity;
 use Spatie\Permission\Models\Role;
 
 /**

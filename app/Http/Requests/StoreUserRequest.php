@@ -35,6 +35,7 @@ class StoreUserRequest extends FormRequest
             'last_name' => ['nullable', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', Rule::unique(User::class)],
             'username' => $this->usernameRules(),
+            'timezone' => ['required', 'string', 'timezone:all'],
             'password' => ['required', 'string', Password::default()],
             'is_active' => ['boolean'],
             ...$this->roleRules(),

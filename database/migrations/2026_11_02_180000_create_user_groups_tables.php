@@ -18,6 +18,8 @@ return new class extends Migration
             $table->string('name')->unique();
             $table->text('description')->nullable();
             $table->timestamps();
+            // Fleet shape (externa-core): soft-deleted groups must not keep granting roles.
+            $table->softDeletes();
         });
 
         Schema::create('user_group_user', function (Blueprint $table): void {

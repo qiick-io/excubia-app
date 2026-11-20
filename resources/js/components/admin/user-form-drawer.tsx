@@ -23,6 +23,10 @@ import {
     FieldLabel,
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import {
+    NativeSelect,
+    NativeSelectOption,
+} from '@/components/ui/native-select';
 import { STRING_LIMITS } from '@/lib/string-limits';
 import users from '@/routes/users';
 import type { AdminRoleRef, AdminUserRow } from '@/types/admin';
@@ -32,6 +36,7 @@ const EMPTY_USER_FORM = {
     last_name: '',
     email: '',
     username: '',
+    timezone: 'UTC',
     password: '',
     is_active: true,
     roles: [] as string[],
@@ -41,6 +46,8 @@ export type UserFormDrawerProps = {
     editing: AdminUserRow | null;
     /** Roles the current user may assign. */
     roles: AdminRoleRef[];
+    /** IANA timezone identifiers for the timezone select. */
+    timezones: string[];
     readOnly?: boolean;
     open?: boolean;
     onCancel?: () => void;
@@ -55,6 +62,7 @@ export type UserFormDrawerProps = {
 export function UserFormDrawer({
     editing,
     roles,
+    timezones,
     readOnly = false,
     open = true,
     onCancel,
@@ -79,6 +87,7 @@ export function UserFormDrawer({
                 last_name: editing.last_name ?? '',
                 email: editing.email,
                 username: editing.username ?? '',
+                timezone: editing.timezone ?? 'UTC',
                 password: '',
                 is_active: editing.is_active,
                 roles: editing.roles.map((role) => role.name),
@@ -275,6 +284,45 @@ export function UserFormDrawer({
                             />
                             <FieldError id="user-username-error">
                                 {form.errors.username}
+                            </FieldError>
+                        </Field>
+
+                        <Field
+                            data-invalid={
+                                form.errors.timezone ? true : undefined
+                            }
+                        >
+                            <FieldLabel htmlFor="user_timezone">
+                                {t('users.form.timezone')}
+                            </FieldLabel>
+                            <NativeSelect
+                                id="user_timezone"
+                                value={form.data.timezone}
+                                onChange={(event) =>
+                                    form.setData('timezone', event.target.value)
+                                }
+                                disabled={readOnly}
+                                className="w-full"
+                                aria-invalid={
+                                    form.errors.timezone ? true : undefined
+                                }
+                                aria-describedby={
+                                    form.errors.timezone
+                                        ? 'user-timezone-error'
+                                        : undefined
+                                }
+                            >
+                                {timezones.map((timezone) => (
+                                    <NativeSelectOption
+                                        key={timezone}
+                                        value={timezone}
+                                    >
+                                        {timezone}
+                                    </NativeSelectOption>
+                                ))}
+                            </NativeSelect>
+                            <FieldError id="user-timezone-error">
+                                {form.errors.timezone}
                             </FieldError>
                         </Field>
 
