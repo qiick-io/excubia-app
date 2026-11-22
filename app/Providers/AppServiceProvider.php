@@ -48,6 +48,7 @@ use Qiick\Oidc\Contracts\SecondFactorChallengeContract;
 use Qiick\Oidc\Contracts\UserProvisioningContract;
 use Qiick\Oidc\Services\SsoOnlyModeService;
 use Qiick\Oidc\Services\UserLinkingService;
+use RuntimeException;
 use Spatie\Activitylog\Facades\Activity;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -244,6 +245,8 @@ class AppServiceProvider extends ServiceProvider
             app()->isProduction(),
         );
 
+        $this->assertOutboundHttpsOnly();
+
         // Lazy loading, silently discarded and missing attributes throw outside
         // production, so tests catch them (qiick standards, Automated checks).
         Model::shouldBeStrict(! app()->isProduction());
@@ -253,5 +256,24 @@ class AppServiceProvider extends ServiceProvider
         // Values echoed into Markdown mails (the weekly digest) come from pushed reports: escape
         // their `[` and `<`, so a package or task name cannot plant a link in the email (#51).
         Markdown::withSecuredEncoding();
+    }
+
+    /**
+     * Alert deliveries are HTTPS-only: a self-hoster must not weaken that in production via
+     * OUTBOUND_HTTPS_ONLY=false (adversarial review of #399).
+     *
+     * @throws RuntimeException when production would allow plain HTTP outbound
+     */
+    protected function assertOutboundHttpsOnly(): void
+    {
+        if (! $this->app->isProduction()) {
+            return;
+        }
+
+        if ($this->app->make('config')->get('outbound.ssrf.https_only') === false) {
+            throw new RuntimeException(
+                'OUTBOUND_HTTPS_ONLY cannot be false in production: alert deliveries must use HTTPS.',
+            );
+        }
     }
 }

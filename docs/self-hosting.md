@@ -237,6 +237,8 @@ The delivery id is only in the `webhook-id` header (not in the body). `data` hol
 
 Headers: `webhook-id` (the delivery UUID), `webhook-timestamp` (Unix seconds) and `webhook-signature` (`v1,<base64>`, space-separated when rotating secrets). The signed content is `<webhook-id>.<webhook-timestamp>.<raw body>` with the `whsec_` secret. Verify on the raw body, reject skewed timestamps and deduplicate by `webhook-id`. There are no legacy `X-Excubia-*` headers. The test event is `ping`, with `project: null` inside `data`.
 
+**Secret rotation:** Settings → Integrations holds a single `whsec_…` secret. Generating a new one overwrites the old; deliveries sign with that one secret only (no dual-signature cutover window). Multi-secret rotation for receivers arrives with the `webhook_endpoint_secrets` table in `qiick/laravel-outbound` 1.0 — until then, schedule a short overlap on the receiver if you rotate.
+
 ## Sizing
 
 How many projects one instance takes, measured with the ingest load test (#195). Each test project pushes what excubia-core sends with runtime monitoring on: one runtime batch a minute with about 55 series (a busy app: 10 routes, 4 jobs, cache, logs, server, health, `ai`, `octane`, `reverb`, auth, Pennant, Scout…), an exceptions batch in most minutes (1 to 3 groups) and a full report every hour. An app with less traffic sends fewer series and costs less, in proportion.

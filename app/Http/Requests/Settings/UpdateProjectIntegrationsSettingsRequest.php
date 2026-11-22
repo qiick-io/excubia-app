@@ -52,7 +52,7 @@ class UpdateProjectIntegrationsSettingsRequest extends FormRequest
             'event_severities.*' => [Rule::enum(SeverityEnum::class)],
             'webhook_url' => ['nullable', 'url:https', 'max:2048', new OutboundWebhookUrlRule],
             'webhook_secret' => ['nullable', 'string', 'max:512', new WebhookSecretRule],
-            'notifier_slack_webhook_url' => ['nullable', 'url:https', 'starts_with:https://hooks.slack.com/', 'max:2048'],
+            'notifier_slack_webhook_url' => ['nullable', 'url:https', 'starts_with:https://hooks.slack.com/', 'max:2048', new OutboundWebhookUrlRule],
             // BotFather token shape: "<bot_id>:<secret>".
             'notifier_telegram_bot_token' => ['nullable', 'string', 'max:512', 'regex:/^\d+:[A-Za-z0-9_-]+$/'],
             'notifier_telegram_chat_id' => ['nullable', 'string', 'max:64', 'regex:/^-?\d+$|^@[A-Za-z0-9_]{5,}$/'],

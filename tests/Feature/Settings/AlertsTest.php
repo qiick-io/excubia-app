@@ -34,7 +34,10 @@ beforeEach(function () {
     // Save-time SSRF validation resolves hostnames; pin public answers for form tests.
     app()->instance(
         HostResolver::class,
-        new FakeHostResolver(['hooks.example.com' => ['93.184.216.34']]),
+        new FakeHostResolver([
+            'hooks.example.com' => ['93.184.216.34'],
+            'hooks.slack.com' => ['93.184.216.34'],
+        ]),
     );
     app()->forgetInstance(RemoteUrlGuard::class);
 });
@@ -186,6 +189,19 @@ it('saves the integrations settings, keeps secrets write-only and validates them
         'webhook_secret' => alertWebhookSecret(),
         ...integrationChannels(),
     ])->assertSessionHasErrors(['webhook_url']);
+
+    app()->instance(
+        HostResolver::class,
+        new FakeHostResolver(['hooks.slack.com' => ['10.0.0.8']]),
+    );
+    app()->forgetInstance(RemoteUrlGuard::class);
+
+    $this->actingAs($manager)->put(route('project.integrations.update'), [
+        'webhook_url' => 'https://93.184.216.34/excubia',
+        'webhook_secret' => alertWebhookSecret(),
+        'notifier_slack_webhook_url' => 'https://hooks.slack.com/services/T/B/PRIVATE',
+        ...integrationChannels(),
+    ])->assertSessionHasErrors(['notifier_slack_webhook_url']);
 
     $this->actingAs(User::factory()->create()->assignRole(RoleEnum::Reader->value))
         ->get(route('project.integrations.edit'))->assertForbidden();
