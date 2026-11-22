@@ -116,14 +116,14 @@ final class AssistantMcpToolAdapter extends Tool
 
         $httpRequest = request();
         $apiKey = $httpRequest->attributes->get(ApiKey::class);
-        $apiKeyId = $apiKey instanceof ApiKey ? $apiKey->id : null;
+        $apiKeyId = $apiKey instanceof ApiKey ? $apiKey->uuid : null;
 
         $result = (string) $this->assistantTool($user, $apiKeyId)->handle(new AssistantToolRequest($request->all()));
 
         return array_key_exists('error', (array) json_decode($result, true)) ? Response::error($result) : Response::text($result);
     }
 
-    private function assistantTool(User $user, ?int $apiKeyId = null): AssistantTool
+    private function assistantTool(User $user, ?string $apiKeyId = null): AssistantTool
     {
         return new ($this->toolClass)($user, 'mcp', $apiKeyId);
     }
