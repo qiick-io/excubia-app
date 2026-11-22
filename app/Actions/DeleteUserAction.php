@@ -12,9 +12,11 @@ use Illuminate\Support\Str;
 /**
  * Soft-deletes a dashboard user and releases their unique identifiers.
  *
- * Roles and passkeys stay attached for the audit trail; the keys are revoked, the principal is
- * detached and deactivated, and personal data is replaced with unique tombstones so the email and
- * username can be reused on every database engine. Activity rows keep their audit ids.
+ * Roles and audit activity stay attached for the trail, but login links and the user's own data
+ * go with the account: SSO identities and passkeys are deleted (they are credentials, not audit),
+ * assistant chats and their messages are removed, and the principal is detached and deactivated.
+ * Personal columns become unique tombstones from the full public-id UUID so the email and username
+ * can be reused on every database engine. The deleted row itself is inactive.
  */
 class DeleteUserAction
 {
@@ -25,6 +27,7 @@ class DeleteUserAction
         $this->superAdminGuard->preventLosingLastSuperAdmin(function () use ($user): void {
             $publicId = $user->public_id;
             $originalEmail = $user->email;
+            $publicIdHex = str_replace('-', '', $publicId);
 
             $user->apiKeys()->whereNull('revoked_at')->update(['revoked_at' => now()]);
             $user->apiKeys()->update(['name' => 'Deleted key '.$publicId]);
@@ -33,6 +36,20 @@ class DeleteUserAction
                 'name' => 'Deleted principal '.$publicId,
                 'user_id' => null,
             ]);
+
+            // Login links are credentials, not audit: leaving an identity behind points SSO at a
+            // soft-deleted user forever, and a passkey keeps its PII-bearing name and breaks auth.
+            $user->identities()->delete();
+            $user->passkeys()->delete();
+
+            $conversationIds = DB::table('agent_conversations')
+                ->where('participant_type', $user->getMorphClass())
+                ->where('participant_id', $user->id)
+                ->pluck('id');
+
+            DB::table('agent_conversation_messages')->whereIn('conversation_id', $conversationIds)->delete();
+            DB::table('agent_conversations')->whereIn('id', $conversationIds)->delete();
+
             DB::table('sessions')->where('user_id', $user->id)->delete();
             DB::table('password_reset_tokens')->where('email', $originalEmail)->delete();
             DB::table('notifications')
@@ -45,7 +62,8 @@ class DeleteUserAction
                 'first_name' => 'Deleted',
                 'last_name' => null,
                 'email' => 'deleted+'.$publicId.'@example.invalid',
-                'username' => 'deleted_'.substr(str_replace('-', '', $publicId), 0, 24),
+                'username' => 'deleted_'.$publicIdHex,
+                'is_active' => false,
                 'email_verified_at' => null,
                 'last_login_at' => null,
                 'last_login_ip' => null,

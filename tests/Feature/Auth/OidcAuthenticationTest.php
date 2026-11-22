@@ -231,6 +231,41 @@ it('re-provisions a deleted account by email when JIT is on', function () {
         ->and($user->trashed())->toBeFalse();
 });
 
+it('re-provisions a deleted SSO user and links the same subject to the new account', function () {
+    $identityProvider = FakeIdentityProvider::fake();
+    enableOidc(['oidc_jit_provisioning' => true]);
+    $deleted = User::factory()->create(['email' => 'sso.user@example.com']);
+    linkIdentity($deleted, 'fake-subject-1');
+    app(DeleteUserAction::class)->execute($deleted);
+
+    expect(UserIdentity::query()->count())->toBe(0);
+
+    signInThroughSso($this, $identityProvider)->assertRedirect('/dashboard');
+
+    $user = User::query()->where('email', 'sso.user@example.com')->sole();
+
+    $this->assertAuthenticatedAs($user);
+    expect($user->id)->not->toBe($deleted->id)
+        ->and($user->identities()->sole()->subject)->toBe('fake-subject-1')
+        ->and($user->is_active)->toBeTrue();
+});
+
+it('auto-links a re-created account to the SSO subject after the old account was deleted', function () {
+    $identityProvider = FakeIdentityProvider::fake();
+    enableOidc(['oidc_auto_link' => true]);
+    $deleted = User::factory()->create(['email' => 'sso.user@example.com']);
+    linkIdentity($deleted, 'fake-subject-1');
+    app(DeleteUserAction::class)->execute($deleted);
+
+    $recreated = User::factory()->create(['email' => 'sso.user@example.com']);
+
+    signInThroughSso($this, $identityProvider)->assertRedirect('/dashboard');
+
+    $this->assertAuthenticatedAs($recreated);
+    expect(UserIdentity::query()->sole()->only(['user_id', 'subject']))
+        ->toBe(['user_id' => $recreated->id, 'subject' => 'fake-subject-1']);
+});
+
 it('takes the last word of the name claim as the last name', function () {
     $identityProvider = FakeIdentityProvider::fake();
     enableOidc(['oidc_jit_provisioning' => true]);
@@ -367,6 +402,21 @@ describe('SSO-only mode', function () {
 
         expect(Passkeys::allowsLogin(new Request, $passkeyFor($superAdmin)))->toBeTrue()
             ->and(Passkeys::allowsLogin(new Request, $passkeyFor($admin)))->toBeFalse();
+    });
+
+    it('refuses a passkey whose user was deleted instead of throwing a TypeError', function () {
+        $user = User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value);
+        $passkey = $user->passkeys()->create([
+            'name' => 'Ada private laptop',
+            'credential_id' => 'credential-orphan-'.$user->id,
+            'credential' => [],
+        ]);
+
+        // A soft delete leaves the login link behind; the closure must refuse it, not throw.
+        $user->delete();
+
+        expect($passkey->fresh()->user)->toBeNull()
+            ->and(Passkeys::allowsLogin(new Request, $passkey->fresh()))->toBeFalse();
     });
 
     it('never locks anyone out while SSO itself is off', function () {

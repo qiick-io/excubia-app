@@ -118,7 +118,7 @@ it('leaves an existing user untouched when seeding in production', function () {
         ->and($existing->hasRole(RoleEnum::SuperAdmin->value))->toBeFalse();
 });
 
-it('leaves the instance alone when a soft-deleted user held the seeded email', function () {
+it('creates the seeded super admin even when a soft-deleted user held the email', function () {
     configureInitialSuperAdminServer();
     config(['super_admin.password' => 'V3ry-Str0ng-Passphrase-2026']);
     $deleted = User::factory()->create(['email' => 'superadmin@example.com']);
