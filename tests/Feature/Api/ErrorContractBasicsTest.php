@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Route;
-use RuntimeException;
 
 /**
  * The two error-contract behaviours that are already safe while the backed error-code
