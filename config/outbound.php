@@ -20,11 +20,16 @@ return [
 
         /*
          * Restrict server-side fetches to https. Browser-target checks may use
-         * a different UrlGuardOptions per call. Parsed with FILTER_VALIDATE_BOOLEAN
-         * (not a PHP (bool) cast): only true/1/yes/on enable it. Production refuses
-         * to boot unless this is exactly true (see AppServiceProvider).
+         * a different UrlGuardOptions per call. Fail-closed: only filter_var with
+         * FILTER_VALIDATE_BOOLEAN + FILTER_NULL_ON_FAILURE === true enables it
+         * (0/no/off/empty/null stay false). Production refuses to boot unless
+         * this is true (see AppServiceProvider).
          */
-        'https_only' => filter_var(env('OUTBOUND_HTTPS_ONLY', true), FILTER_VALIDATE_BOOLEAN),
+        'https_only' => filter_var(
+            env('OUTBOUND_HTTPS_ONLY', true),
+            FILTER_VALIDATE_BOOLEAN,
+            FILTER_NULL_ON_FAILURE,
+        ) === true,
 
     ],
 

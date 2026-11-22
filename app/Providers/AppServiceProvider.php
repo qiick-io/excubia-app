@@ -270,7 +270,9 @@ class AppServiceProvider extends ServiceProvider
             return;
         }
 
-        if (! self::outboundHttpsOnlyIsStrictlyEnabled(env('OUTBOUND_HTTPS_ONLY', true))) {
+        // Read the published config (env() is forbidden outside config/). Config already
+        // fail-closes via filter_var(…, FILTER_NULL_ON_FAILURE) === true.
+        if (! self::outboundHttpsOnlyIsStrictlyEnabled(config('outbound.ssrf.https_only'))) {
             throw new RuntimeException(
                 'OUTBOUND_HTTPS_ONLY must be true in production: alert deliveries must use HTTPS.',
             );
