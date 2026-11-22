@@ -4406,16 +4406,16 @@
         },
         {
             "name": "qiick/laravel-oidc",
-            "version": "v1.0.0-beta.4",
+            "version": "v1.0.0-beta.6",
             "source": {
                 "type": "git",
                 "url": "https://github.com/qiick-io/laravel-oidc.git",
-                "reference": "5892df07639bdf3f68ba5614dead837e1924066d"
+                "reference": "619bfa45aa2652cae70b277547f24ce3cb846eb8"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/qiick-io/laravel-oidc/zipball/5892df07639bdf3f68ba5614dead837e1924066d",
-                "reference": "5892df07639bdf3f68ba5614dead837e1924066d",
+                "url": "https://api.github.com/repos/qiick-io/laravel-oidc/zipball/619bfa45aa2652cae70b277547f24ce3cb846eb8",
+                "reference": "619bfa45aa2652cae70b277547f24ce3cb846eb8",
                 "shasum": ""
             },
             "require": {
@@ -4424,7 +4424,8 @@
                 "illuminate/cache": "^12.0 || ^13.0",
                 "illuminate/http": "^12.0 || ^13.0",
                 "illuminate/support": "^12.0 || ^13.0",
-                "php": "^8.3"
+                "php": "^8.3",
+                "qiick/laravel-outbound": "^0.1"
             },
             "require-dev": {
                 "larastan/larastan": "^3.3.1",
@@ -4432,6 +4433,7 @@
                 "nunomaduro/collision": "^8.5",
                 "orchestra/testbench": "^10.0 || ^11.0",
                 "pestphp/pest": "^4.0",
+                "pestphp/pest-plugin-mutate": "^4.0",
                 "phpstan/phpstan": "^2.1.11"
             },
             "type": "library",
@@ -4473,8 +4475,8 @@
                 "issues": "https://github.com/qiick-io/laravel-oidc/issues",
                 "source": "https://github.com/qiick-io/laravel-oidc"
             },
-            "time": "2026-11-20T13:33:50+00:00",
-            "published-time": "2026-11-20T13:33:55+00:00"
+            "time": "2026-11-22T15:29:46+00:00",
+            "published-time": "2026-11-22T15:29:50+00:00"
         },
         {
             "name": "qiick/laravel-outbound",
