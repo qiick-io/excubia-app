@@ -79,9 +79,10 @@ class ProfileController extends Controller
      */
     public function destroy(ProfileDeleteRequest $request, #[CurrentUser] User $user, DeleteUserAction $deleteUser): RedirectResponse
     {
-        Auth::logout();
-
+        // The guard may refuse the deletion: keep the session until it has succeeded.
         $deleteUser->execute($user);
+
+        Auth::logout();
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();

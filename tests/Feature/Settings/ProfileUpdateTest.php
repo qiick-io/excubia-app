@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Settings;
 
+use App\Enums\RoleEnum;
 use App\Models\ApiKey;
 use App\Models\User;
+use Database\Seeders\PermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
@@ -144,6 +146,21 @@ class ProfileUpdateTest extends TestCase
             ->and($apiKey->fresh()->isRevoked())->toBeTrue()
             ->and($principal->fresh()->user_id)->toBeNull()
             ->and($principal->fresh()->deactivated_at)->not->toBeNull();
+    }
+
+    public function test_refusing_to_delete_the_last_super_admin_keeps_the_session(): void
+    {
+        $this->seed(PermissionSeeder::class);
+        $admin = User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value);
+
+        $this->actingAs($admin)
+            ->from(route('profile.edit'))
+            ->delete(route('profile.destroy'), ['password' => 'password'])
+            ->assertSessionHasErrors('user')
+            ->assertRedirect(route('profile.edit'));
+
+        $this->assertAuthenticatedAs($admin);
+        expect($admin->fresh()->trashed())->toBeFalse();
     }
 
     public function test_correct_password_must_be_provided_to_delete_account(): void
