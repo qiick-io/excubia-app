@@ -31,6 +31,12 @@ beforeEach(function () {
     $this->seed(PermissionSeeder::class);
     Http::preventStrayRequests();
     Date::setTestNow('2026-11-05 12:00:00');
+    // Save-time SSRF validation resolves hostnames; pin public answers for form tests.
+    app()->instance(
+        HostResolver::class,
+        new FakeHostResolver(['hooks.example.com' => ['93.184.216.34']]),
+    );
+    app()->forgetInstance(RemoteUrlGuard::class);
 });
 
 function alertsManager(): User
@@ -127,13 +133,6 @@ it('saves only validated values from the integrations settings and drops the rul
 
 it('saves the integrations settings, keeps secrets write-only and validates them', function () {
     $manager = alertsManager();
-    // Save-time SSRF check resolves the host; pin a public answer so the form does not hit real DNS.
-    app()->instance(
-        HostResolver::class,
-        new FakeHostResolver(['hooks.example.com' => ['93.184.216.34']]),
-    );
-    app()->forgetInstance(RemoteUrlGuard::class);
-
     $webhookSecret = alertWebhookSecret('a');
 
     $this->actingAs($manager)->put(route('project.integrations.update'), [
