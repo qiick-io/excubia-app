@@ -47,6 +47,29 @@ const EMPTY_FORM: ApiKeyFormValues = {
     rate_limit_per_minute: '',
 };
 
+/**
+ * `datetime-local` is wall-clock in the browser; the server stores the exact instant as UTC.
+ * Send ISO 8601 with the browser's offset so a 09:30 pick stays 09:30 in that zone.
+ */
+function datetimeLocalToIsoWithOffset(value: string): string {
+    const localDate = new Date(value);
+    const offsetMinutes = -localDate.getTimezoneOffset();
+    const sign = offsetMinutes >= 0 ? '+' : '-';
+    const absoluteMinutes = Math.abs(offsetMinutes);
+    const offsetHours = String(Math.floor(absoluteMinutes / 60)).padStart(
+        2,
+        '0',
+    );
+    const offsetMins = String(absoluteMinutes % 60).padStart(2, '0');
+    const pad = (part: number): string => String(part).padStart(2, '0');
+
+    return (
+        `${localDate.getFullYear()}-${pad(localDate.getMonth() + 1)}-${pad(localDate.getDate())}` +
+        `T${pad(localDate.getHours())}:${pad(localDate.getMinutes())}:${pad(localDate.getSeconds())}` +
+        `${sign}${offsetHours}:${offsetMins}`
+    );
+}
+
 /** The request payload: empty restrictions become null, the allowlist a list of addresses. */
 function toApiKeyPayload(values: ApiKeyFormValues) {
     const ipAddresses = values.ip_allowlist
@@ -56,7 +79,10 @@ function toApiKeyPayload(values: ApiKeyFormValues) {
     return {
         name: values.name,
         scopes: values.scopes,
-        expires_at: values.expires_at === '' ? null : values.expires_at,
+        expires_at:
+            values.expires_at === ''
+                ? null
+                : datetimeLocalToIsoWithOffset(values.expires_at),
         ip_allowlist: ipAddresses.length === 0 ? null : ipAddresses,
         rate_limit_per_minute:
             values.rate_limit_per_minute === ''
@@ -65,46 +91,48 @@ function toApiKeyPayload(values: ApiKeyFormValues) {
     };
 }
 
+type IssuedApiKey = {
+    secret: string;
+    name: string;
+    reason: 'created' | 'rotated';
+    previous_key_valid_until: string | null;
+};
+
 /**
  * Settings → API keys (#315, #364), built from the app-ui api-key items (docs/api-keys.md):
  * the signed-in user's own keys, since a key acts as its owner and there is no owner to pick.
- * A new or rotated secret comes back once as the `apiKey` flash and is shown only in the
- * secret dialog; acknowledging it reloads the list, so Back never shows it again.
+ * A new or rotated secret comes back once as `issuedApiKey` (encrypted one-time session
+ * payload, never plaintext) with name and reason from the server; React keeps only an
+ * acknowledgement boolean, never the secret.
  */
 export default function ApiKeysSettingsPage({
     apiKeys: apiKeysProp,
     scopes,
+    issuedApiKey = null,
 }: {
     apiKeys: LaravelPaginated<ApiKeyRow> | Paginated<ApiKeyRow>;
     /** The scopes the signed-in user may grant (`ApiKeyScopeEnum::scopesCreatorMayGrant`). */
     scopes: string[];
+    /** One-time issued payload for this response only; null after acknowledge or a normal visit. */
+    issuedApiKey?: IssuedApiKey | null;
 }) {
     const { t, i18n } = useTranslation();
-    const { flash } = usePage();
+    const { auth } = usePage().props;
+    const userTimezone = auth.user?.timezone ?? 'UTC';
     const apiKeys = normalizePaginated(apiKeysProp);
     const rows = apiKeys.data;
     const [isCreateOpen, setCreateOpen] = useState(false);
-    const [issuedKey, setIssuedKey] = useState<{
-        name: string;
-        rotatedKeyId: number | null;
-    } | null>(null);
-    const [acknowledgedSecret, setAcknowledgedSecret] = useState<string | null>(
-        null,
-    );
+    const [hasAcknowledgedIssuedKey, setHasAcknowledgedIssuedKey] =
+        useState(false);
     const [pendingRevokeKey, setPendingRevokeKey] = useState<ApiKeyRow | null>(
         null,
     );
     const [isRevoking, setRevoking] = useState(false);
     const form = useForm<ApiKeyFormValues>(EMPTY_FORM);
 
-    const secret =
-        flash.apiKey && flash.apiKey !== acknowledgedSecret
-            ? flash.apiKey
-            : null;
-    const rotatedKey =
-        issuedKey?.rotatedKeyId === null || issuedKey === null
-            ? undefined
-            : rows.find((row) => row.id === issuedKey.rotatedKeyId);
+    const activeIssued =
+        issuedApiKey && !hasAcknowledgedIssuedKey ? issuedApiKey : null;
+    const secret = activeIssued?.secret ?? null;
 
     const resources: ApiKeyScopeResource[] = useMemo(
         () => [
@@ -142,7 +170,7 @@ export default function ApiKeysSettingsPage({
         form.post(apiKeysRoutes.store.url(), {
             preserveScroll: true,
             onSuccess: () => {
-                setIssuedKey({ name: form.data.name, rotatedKeyId: null });
+                setHasAcknowledgedIssuedKey(false);
                 setCreateOpen(false);
             },
         });
@@ -154,8 +182,9 @@ export default function ApiKeysSettingsPage({
             {},
             {
                 preserveScroll: true,
-                onSuccess: () =>
-                    setIssuedKey({ name: row.name, rotatedKeyId: row.id }),
+                onSuccess: () => {
+                    setHasAcknowledgedIssuedKey(false);
+                },
             },
         );
     };
@@ -280,18 +309,19 @@ export default function ApiKeysSettingsPage({
 
             <ApiKeySecretDialog
                 secret={secret}
-                keyName={issuedKey?.name ?? ''}
-                reason={rotatedKey ? 'rotated' : 'created'}
+                keyName={activeIssued?.name ?? ''}
+                reason={activeIssued?.reason ?? 'created'}
                 previousSecretValidUntil={
-                    rotatedKey?.previous_key_valid_until
+                    activeIssued?.previous_key_valid_until
                         ? new Date(
-                              rotatedKey.previous_key_valid_until,
-                          ).toLocaleString(i18n.language)
+                              activeIssued.previous_key_valid_until,
+                          ).toLocaleString(i18n.language, {
+                              timeZone: userTimezone,
+                          })
                         : undefined
                 }
                 onAcknowledge={() => {
-                    setAcknowledgedSecret(secret);
-                    setIssuedKey(null);
+                    setHasAcknowledgedIssuedKey(true);
                     router.reload({ only: ['apiKeys'] });
                 }}
             />

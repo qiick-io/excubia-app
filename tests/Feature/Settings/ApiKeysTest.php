@@ -12,13 +12,15 @@ use App\Models\Activity;
 use App\Models\ApiKey;
 use App\Models\User;
 use App\Notifications\ApiKeyExpiringNotification;
+use App\Services\ApiKeySecretOnceService;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Date;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Testing\TestResponse;
-use Inertia\Support\SessionKey;
 use Inertia\Testing\AssertableInertia as Assert;
 
 /**
@@ -61,14 +63,36 @@ function callWithApiKey(?string $plainKey, string $path = '/__test/api-key'): Te
     return test()->withHeaders($plainKey === null ? [] : ['Authorization' => 'Bearer '.$plainKey])->getJson($path);
 }
 
+/**
+ * Peek at the encrypted one-time secret still in the session after create/rotate
+ * (before the index GET pulls it).
+ */
+function pendingIssuedApiKeySecret(): string
+{
+    $encrypted = session()->get(ApiKeySecretOnceService::SESSION_KEY);
+
+    expect($encrypted)->toBeString();
+
+    /** @var array{secret?: mixed} $payload */
+    $payload = json_decode(Crypt::decryptString($encrypted), true, 512, JSON_THROW_ON_ERROR);
+
+    expect($payload['secret'] ?? null)->toBeString();
+
+    return $payload['secret'];
+}
+
 it('creates a key, shows it once and stores only the hash of the full token', function () {
     $user = apiKeyOwner();
 
     $this->actingAs($user)
-        ->post(route('api-keys.store'), ['name' => 'Claude Code', 'scopes' => ['mcp:read'], 'expires_at' => '2099-01-31'])
+        ->post(route('api-keys.store'), [
+            'name' => 'Claude Code',
+            'scopes' => ['mcp:read'],
+            'expires_at' => '2099-01-31T09:30:00+01:00',
+        ])
         ->assertRedirect(route('api-keys.index'));
 
-    $plainKey = session(SessionKey::FLASH_DATA)['apiKey'];
+    $plainKey = pendingIssuedApiKeySecret();
     $apiKey = ApiKey::query()->sole();
 
     expect($plainKey)->toMatch(ApiKey::TOKEN_PATTERN)
@@ -80,7 +104,7 @@ it('creates a key, shows it once and stores only the hash of the full token', fu
         ->and($apiKey->key_prefix)->toStartWith('exc_test_')
         ->and(strlen($apiKey->key_prefix))->toBe(strlen('exc_test_') + ApiKey::PUBLIC_ID_LENGTH)
         ->and($apiKey->scopes)->toBe(['mcp:read'])
-        ->and($apiKey->expires_at?->toDateTimeString())->toBe('2099-01-31 23:59:59')
+        ->and($apiKey->expires_at?->toDateTimeString())->toBe('2099-01-31 08:30:00')
         ->and($apiKey->getAttributes())->not->toContain($plainKey)
         ->and(json_encode(ApiKey::query()->toBase()->get()))->not->toContain($plainKey)
         ->and(json_encode(Activity::query()->get()))->not->toContain($plainKey)
@@ -88,14 +112,19 @@ it('creates a key, shows it once and stores only the hash of the full token', fu
         ->and(Activity::query()->where('log_name', 'api-keys')->where('event', 'created')->count())->toBe(1);
 
     $this->actingAs($user)->get(route('api-keys.index'))
-        ->assertInertia(fn (Assert $page) => $page->hasFlash('apiKey', $plainKey));
+        ->assertHeaderContains('Cache-Control', 'no-store')
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('issuedApiKey.secret', $plainKey)
+            ->where('issuedApiKey.name', 'Claude Code')
+            ->where('issuedApiKey.reason', 'created')
+            ->where('apiKeys.data.0.expires_at', '2099-01-31T08:30:00+00:00'));
 
     $this->actingAs($user)->get(route('api-keys.index'))
         ->assertDontSee($plainKey)
         ->assertDontSee($apiKey->key_hash)
         ->assertInertia(fn (Assert $page) => $page
             ->component('settings/api-keys')
-            ->missingFlash('apiKey')
+            ->where('issuedApiKey', null)
             ->where('scopes', ['mcp:read', 'mcp:write'])
             ->where('apiKeys.data.0.name', 'Claude Code')
             ->where('apiKeys.data.0.is_active', true)
@@ -103,6 +132,8 @@ it('creates a key, shows it once and stores only the hash of the full token', fu
 });
 
 it('validates the name, the scopes and the expiry date', function (array $body, string $field) {
+    Date::setTestNow('2026-11-22 12:00:00');
+
     $this->actingAs(apiKeyOwner())
         ->post(route('api-keys.store'), [...['name' => 'Key', 'scopes' => ['mcp:read']], ...$body])
         ->assertSessionHasErrors($field);
@@ -112,7 +143,8 @@ it('validates the name, the scopes and the expiry date', function (array $body, 
     'no name' => [['name' => ''], 'name'],
     'no scope' => [['scopes' => []], 'scopes'],
     'unknown scope' => [['scopes' => ['rest:read']], 'scopes.0'],
-    'past expiry' => [['expires_at' => '2020-01-01'], 'expires_at'],
+    'past expiry' => [['expires_at' => '2020-01-01T09:30:00+01:00'], 'expires_at'],
+    'earlier today' => [['expires_at' => '2026-11-22T11:00:00+00:00'], 'expires_at'],
 ]);
 
 it('refuses a scope the creator does not hold on the settings form', function () {
@@ -165,7 +197,7 @@ it('stores mcp:write alone and treats it as satisfying mcp:read', function () {
         ->assertRedirect(route('api-keys.index'));
 
     $apiKey = ApiKey::query()->sole();
-    $plainKey = session(SessionKey::FLASH_DATA)['apiKey'];
+    $plainKey = pendingIssuedApiKeySecret();
 
     expect($apiKey->scopes)->toBe(['mcp:write'])
         ->and($apiKey->hasScope(ApiKeyScopeEnum::McpRead))->toBeTrue()
@@ -362,7 +394,7 @@ it('rotates a key: previous secret works in the grace window and not after', fun
 
     $this->actingAs($user)->post(route('api-keys.rotate', $apiKey))->assertRedirect(route('api-keys.index'));
 
-    $newPlain = session(SessionKey::FLASH_DATA)['apiKey'];
+    $newPlain = pendingIssuedApiKeySecret();
     $apiKey->refresh();
 
     expect($newPlain)->not->toBe($oldPlain)
@@ -379,6 +411,130 @@ it('rotates a key: previous secret works in the grace window and not after', fun
     Date::setTestNow('2026-11-18 12:00:01');
     callWithApiKey($oldPlain)->assertUnauthorized()->assertJsonPath('error', 'invalid_token');
     callWithApiKey($newPlain)->assertOk();
+});
+
+it('keeps the exact expiry instant across offset and DST edges', function () {
+    Date::setTestNow('2026-03-01 12:00:00');
+    $user = apiKeyOwner();
+
+    $this->actingAs($user)->post(route('api-keys.store'), [
+        'name' => 'Rome morning',
+        'scopes' => ['mcp:read'],
+        // Europe/Rome is UTC+1 in winter; 09:30 local → 08:30 UTC.
+        'expires_at' => '2026-03-20T09:30:00+01:00',
+    ])->assertRedirect();
+
+    expect(ApiKey::query()->sole()->expires_at?->toIso8601String())->toBe('2026-03-20T08:30:00+00:00');
+
+    ApiKey::query()->delete();
+    Date::setTestNow('2026-06-01 12:00:00');
+
+    $this->actingAs($user)->post(route('api-keys.store'), [
+        'name' => 'Rome after DST',
+        'scopes' => ['mcp:read'],
+        // Europe/Rome is UTC+2 in summer; 09:30+02:00 → 07:30 UTC.
+        'expires_at' => '2026-06-15T09:30:00+02:00',
+    ])->assertRedirect();
+
+    expect(ApiKey::query()->sole()->expires_at?->toIso8601String())->toBe('2026-06-15T07:30:00+00:00');
+});
+
+it('validates each IP allowlist entry and refuses unrestricted CIDRs', function (array $allowlist, string $field) {
+    $this->actingAs(apiKeyOwner())
+        ->post(route('api-keys.store'), [
+            'name' => 'Restricted',
+            'scopes' => ['mcp:read'],
+            'ip_allowlist' => $allowlist,
+        ])
+        ->assertSessionHasErrors($field);
+
+    expect(ApiKey::query()->count())->toBe(0);
+})->with([
+    'garbage' => [['not-an-ip'], 'ip_allowlist.0'],
+    'prefix too wide' => [['203.0.113.0/33'], 'ip_allowlist.0'],
+    'ipv6 prefix too wide' => [['2001:db8::/129'], 'ip_allowlist.0'],
+    'all ipv4' => [['0.0.0.0/0'], 'ip_allowlist.0'],
+    'all ipv6' => [['::/0'], 'ip_allowlist.0'],
+    'second entry bad' => [['203.0.113.4', '999.0.0.1'], 'ip_allowlist.1'],
+]);
+
+it('accepts a mixed IPv4 and IPv6 allowlist', function () {
+    $this->actingAs(apiKeyOwner())
+        ->post(route('api-keys.store'), [
+            'name' => 'Mixed',
+            'scopes' => ['mcp:read'],
+            'ip_allowlist' => ['203.0.113.4', '10.0.0.0/8', '2001:db8::1', '2001:db8::/32'],
+        ])
+        ->assertRedirect();
+
+    expect(ApiKey::query()->sole()->ip_allowlist)->toBe([
+        '203.0.113.4',
+        '10.0.0.0/8',
+        '2001:db8::1',
+        '2001:db8::/32',
+    ]);
+});
+
+it('returns 409 when rotating a revoked or expired key', function () {
+    Date::setTestNow('2026-11-17 12:00:00');
+    $user = apiKeyOwner();
+    $revokedKey = ApiKey::factory()->for($user, 'owner')->create([
+        'created_by' => $user->id,
+        'revoked_at' => now(),
+    ]);
+    $expiredKey = ApiKey::factory()->for($user, 'owner')->create([
+        'created_by' => $user->id,
+        'expires_at' => now()->subHour(),
+    ]);
+
+    $this->actingAs($user)->post(route('api-keys.rotate', $revokedKey))
+        ->assertStatus(409)
+        ->assertSee(__('Only an active API key can be rotated.'), false);
+
+    $this->actingAs($user)->post(route('api-keys.rotate', $expiredKey))
+        ->assertStatus(409)
+        ->assertSee(__('Only an active API key can be rotated.'), false);
+});
+
+it('returns 409 when rotating a key whose scopes the owner no longer holds', function () {
+    $user = apiKeyOwner();
+    $plainKey = plainApiKey($user, scopes: [ApiKeyScopeEnum::McpWrite]);
+    $apiKey = ApiKey::query()->where('key_prefix', ApiKey::publicPrefixFromToken($plainKey))->sole();
+
+    $user->syncRoles([RoleEnum::Reader->value]);
+
+    $this->actingAs($user)->post(route('api-keys.rotate', $apiKey))
+        ->assertStatus(409)
+        ->assertSee(__('This API key cannot be rotated: you no longer hold its scopes.'), false);
+});
+
+it('never writes the plaintext secret into the sessions table on create or rotate', function () {
+    config(['session.driver' => 'database']);
+    $user = apiKeyOwner();
+
+    $this->actingAs($user)
+        ->post(route('api-keys.store'), ['name' => 'Secret', 'scopes' => ['mcp:read']])
+        ->assertRedirect();
+
+    $plainKey = pendingIssuedApiKeySecret();
+    $encrypted = session()->get(ApiKeySecretOnceService::SESSION_KEY);
+    session()->save();
+    $createPayloads = DB::table('sessions')->pluck('payload')->implode("\n");
+
+    expect($createPayloads)->not->toContain($plainKey)
+        ->and(json_encode(session()->all()))->not->toContain($plainKey)
+        ->and(is_string($encrypted))->toBeTrue()
+        ->and($encrypted)->not->toBe($plainKey);
+
+    $apiKey = ApiKey::query()->sole();
+    $this->actingAs($user)->post(route('api-keys.rotate', $apiKey))->assertRedirect();
+
+    $rotatedPlain = pendingIssuedApiKeySecret();
+    session()->save();
+    $rotatePayloads = DB::table('sessions')->pluck('payload')->implode("\n");
+
+    expect($rotatePayloads)->not->toContain($rotatedPlain)
+        ->and($rotatePayloads)->not->toContain($plainKey);
 });
 
 it('revokes immediately so the previous secret stops working too', function () {

@@ -6,6 +6,14 @@
     "frontendRoots": ["resources/js"],
     "oxlint": true,
     "app": true,
+    "requiredItems": [
+        "api-key-form",
+        "api-key-list-row",
+        "api-key-scope-picker",
+        "api-key-scopes",
+        "api-key-secret-dialog",
+        "record-id"
+    ],
     "patterns": [
         "command-palette",
         "grouped-tabs:sub-menu",

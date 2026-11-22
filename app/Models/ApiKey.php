@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\ApiKeyScopeEnum;
+use App\Rules\IpAllowlistEntryRule;
 use App\Traits\LogsApplicationActivityTrait;
 use Database\Factories\ApiKeyFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -192,6 +193,42 @@ class ApiKey extends Model
         }
 
         return IpUtils::checkIp($ipAddress, $allowlist);
+    }
+
+    /**
+     * Whether `$entry` is a well-formed IPv4/IPv6 address or CIDR for storage (prefix at most
+     * 32 or 128). Same parser as {@see allowsIp()}: a value IpUtils cannot match is refused at
+     * input so it never sits inert in the allowlist. Callers must refuse `0.0.0.0/0` and `::/0`
+     * separately ({@see IpAllowlistEntryRule}): those mean no restriction.
+     */
+    public static function isValidAllowlistEntry(string $entry): bool
+    {
+        if ($entry === '') {
+            return false;
+        }
+
+        if (! str_contains($entry, '/')) {
+            return filter_var($entry, FILTER_VALIDATE_IP) !== false;
+        }
+
+        [$subnet, $prefixLength] = array_pad(explode('/', $entry, 2), 2, null);
+
+        if (! is_string($subnet) || $subnet === '' || filter_var($subnet, FILTER_VALIDATE_IP) === false) {
+            return false;
+        }
+
+        if (! is_string($prefixLength) || ! ctype_digit($prefixLength)) {
+            return false;
+        }
+
+        $maxPrefix = filter_var($subnet, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false ? 32 : 128;
+        $prefix = (int) $prefixLength;
+
+        if ($prefix < 0 || $prefix > $maxPrefix) {
+            return false;
+        }
+
+        return IpUtils::checkIp($subnet, $entry);
     }
 
     /**
