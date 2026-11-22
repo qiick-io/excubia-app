@@ -113,6 +113,11 @@ return [
             Artisan::call('db:seed', ['--class' => CreateSuperAdminSeeder::class, '--force' => true]);
             expect(User::query()->exists())->toBeFalse();
 
+            // Case variants are the same known default, whatever the policy would accept.
+            config(['super_admin.password' => 'PASSWORD']);
+            Artisan::call('db:seed', ['--class' => CreateSuperAdminSeeder::class, '--force' => true]);
+            expect(User::query()->exists())->toBeFalse();
+
             // Another weak password is refused by the policy itself, not by a string comparison.
             config(['super_admin.password' => 'abc12']);
             Artisan::call('db:seed', ['--class' => CreateSuperAdminSeeder::class, '--force' => true]);
