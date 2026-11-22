@@ -469,7 +469,7 @@
             "webhookUrl": "URL del webhook",
             "webhookUrlHint": "Solo HTTPS. Lascia vuoto per disattivare. Serve un queue worker.",
             "webhookSecret": "Segreto del webhook",
-            "webhookSecretHint": "Usato per la firma HMAC-SHA256 (X-Excubia-Signature di \"timestamp.body\"). Lascia vuoto per mantenere quello attuale.",
+            "webhookSecretHint": "Segreto Standard Webhooks (whsec_…). Firma webhook-id.timestamp.body come v1,<base64>. Lascia vuoto per mantenere quello attuale.",
             "generateSecret": "Genera segreto",
             "sendTest": "Invia evento di test",
             "sendTestHint": "Salva prima URL e segreto, poi metti in coda un ping firmato. Serve un queue worker.",

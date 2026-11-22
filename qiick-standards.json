@@ -54,11 +54,6 @@
             "decision": "knowledge/decisions/2026-11-20-core-hardening",
             "review_by": "2026-12-20"
         },
-        "C27": {
-            "reason": "Outbound webhooks do not use Standard Webhooks headers and the {type,timestamp,data} envelope yet. Tracked in #389, not hidden.",
-            "decision": "knowledge/decisions/2026-11-20-fleet-contracts",
-            "review_by": "2026-12-20"
-        },
         "C29": {
             "reason": "Excubia has no organisations or Spatie teams today, so team switching is out of scope. It will add principals.organisation_id as NOT NULL together with Spatie teams when organisations arrive. Tracked in #387, not hidden.",
             "decision": "knowledge/decisions/2026-11-22-principal-organisation-required-in-multi-tenant-products",

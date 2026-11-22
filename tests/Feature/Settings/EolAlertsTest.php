@@ -31,7 +31,7 @@ beforeEach(function () {
 
     app(SettingsRepositoryService::class)->save([
         'webhook_url' => 'https://93.184.216.34/excubia',
-        'webhook_secret' => str_repeat('s', 32),
+        'webhook_secret' => alertWebhookSecret(),
         'notifier_slack_webhook_url' => 'https://hooks.slack.com/services/T/B/X',
         'notifier_telegram_bot_token' => '123456:ABC-def_1',
         'notifier_telegram_chat_id' => '-1001234567890',

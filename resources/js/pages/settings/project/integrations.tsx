@@ -159,15 +159,16 @@ export default function ProjectIntegrationsSettings({
         );
     };
 
-    // 32 random bytes as hex, as externa-core's "Generate secret".
+    // Standard Webhooks secret: whsec_ + base64 of 32 random bytes.
     const generateSecret = (): void => {
         const bytes = crypto.getRandomValues(new Uint8Array(32));
-        setValue(
-            'webhook_secret',
-            Array.from(bytes, (byte) =>
-                byte.toString(16).padStart(2, '0'),
-            ).join(''),
-        );
+        let binary = '';
+
+        for (const byte of bytes) {
+            binary += String.fromCharCode(byte);
+        }
+
+        setValue('webhook_secret', `whsec_${btoa(binary)}`);
     };
 
     const isSlackConfigured = project.has_notifier_slack_webhook_url;

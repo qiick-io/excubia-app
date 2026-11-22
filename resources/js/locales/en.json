@@ -469,7 +469,7 @@
             "webhookUrl": "Webhook URL",
             "webhookUrlHint": "HTTPS only. Leave empty to disable. Requires a queue worker.",
             "webhookSecret": "Webhook secret",
-            "webhookSecretHint": "Used for the HMAC-SHA256 signature (X-Excubia-Signature of \"timestamp.body\"). Leave blank to keep the current secret.",
+            "webhookSecretHint": "Standard Webhooks secret (whsec_…). Signs webhook-id.timestamp.body as v1,<base64>. Leave blank to keep the current secret.",
             "generateSecret": "Generate secret",
             "sendTest": "Send test event",
             "sendTestHint": "Save the webhook URL and secret first, then queue a signed ping. Requires a queue worker.",

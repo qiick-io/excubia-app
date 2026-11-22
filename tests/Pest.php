@@ -1,6 +1,13 @@
 <?php
 
+use GuzzleHttp\Promise\PromiseInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\Request;
+use Illuminate\Support\Facades\Http;
+use Qiick\Outbound\Http\OutboundHttpLimits;
+use Qiick\Outbound\Http\PinnedHttpClient;
+use Qiick\Outbound\Ssrf\RemoteUrlGuard;
+use Qiick\Outbound\Testing\FakeOutboundHttpFactory;
 use Tests\TestCase;
 
 /*
@@ -76,9 +83,29 @@ expect()->extend('toBeSameJson', function (array $expected) {
 |
 */
 
-function something()
+/**
+ * A valid Standard Webhooks secret (`whsec_` + base64 of 32 raw bytes) for alert tests.
+ */
+function alertWebhookSecret(string $byte = 's'): string
 {
-    // ..
+    return 'whsec_'.base64_encode(str_repeat($byte, 32));
+}
+
+/**
+ * Bind a {@see PinnedHttpClient} over a faked private factory so
+ * {@see Http::fake()} on the shared facade cannot bypass the pin.
+ *
+ * @param  (callable(Request, array): PromiseInterface)|null  $callback
+ */
+function bindPinnedAlertClient(RemoteUrlGuard $guard, ?callable $callback = null): void
+{
+    $factory = FakeOutboundHttpFactory::fake($callback);
+    app()->instance(RemoteUrlGuard::class, $guard);
+    app()->instance(PinnedHttpClient::class, new PinnedHttpClient(
+        $factory,
+        $guard,
+        app(OutboundHttpLimits::class),
+    ));
 }
 
 /**
