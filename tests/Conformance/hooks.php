@@ -512,24 +512,61 @@ return [
 
         expect($apiKey->key_hash)->toMatch('/^[a-f0-9]{64}$/');
 
-        // Rotate the app's own encrypter: a new APP_KEY plus APP_PREVIOUS_KEYS must still read
-        // a value written before the rotation. No hand-built Encrypter in this probe.
-        $originalKey = (string) config('app.key');
-        $originalPreviousKeys = config('app.previous_keys');
+        // Rotate the app's own encrypter through config/app.php: APP_PREVIOUS_KEYS must survive
+        // the rotation without setting app.previous_keys by hand. No custom Encrypter in this probe.
+        $originalAppConfig = config('app');
+        $originalEnvironment = [
+            'APP_KEY' => [getenv('APP_KEY'), $_SERVER['APP_KEY'] ?? null, $_ENV['APP_KEY'] ?? null],
+            'APP_PREVIOUS_KEYS' => [getenv('APP_PREVIOUS_KEYS'), $_SERVER['APP_PREVIOUS_KEYS'] ?? null, $_ENV['APP_PREVIOUS_KEYS'] ?? null],
+        ];
         $oldKey = 'base64:'.base64_encode(random_bytes(32));
         $newKey = 'base64:'.base64_encode(random_bytes(32));
 
+        $setEnvironment = static function (string $name, string $value): void {
+            putenv("{$name}={$value}");
+            $_SERVER[$name] = $value;
+            $_ENV[$name] = $value;
+        };
+
         try {
-            config(['app.key' => $oldKey, 'app.previous_keys' => []]);
+            $setEnvironment('APP_KEY', $oldKey);
+            $setEnvironment('APP_PREVIOUS_KEYS', '');
+            config()->set('app', require config_path('app.php'));
             app()->forgetInstance('encrypter');
             $storedBeforeRotation = app('encrypter')->encryptString('rotate-me');
 
-            config(['app.key' => $newKey, 'app.previous_keys' => [$oldKey]]);
+            $setEnvironment('APP_KEY', $newKey);
+            $setEnvironment('APP_PREVIOUS_KEYS', $oldKey);
+            $rotatedConfig = require config_path('app.php');
+
+            expect($rotatedConfig['previous_keys'])->toContain($oldKey);
+
+            config()->set('app', $rotatedConfig);
             app()->forgetInstance('encrypter');
 
             expect(app('encrypter')->decryptString($storedBeforeRotation))->toBe('rotate-me');
         } finally {
-            config(['app.key' => $originalKey, 'app.previous_keys' => $originalPreviousKeys]);
+            foreach ($originalEnvironment as $name => [$putenvValue, $serverValue, $envValue]) {
+                if ($putenvValue === false) {
+                    putenv($name);
+                } else {
+                    putenv("{$name}={$putenvValue}");
+                }
+
+                if ($serverValue === null) {
+                    unset($_SERVER[$name]);
+                } else {
+                    $_SERVER[$name] = $serverValue;
+                }
+
+                if ($envValue === null) {
+                    unset($_ENV[$name]);
+                } else {
+                    $_ENV[$name] = $envValue;
+                }
+            }
+
+            config()->set('app', $originalAppConfig);
             app()->forgetInstance('encrypter');
         }
     },
