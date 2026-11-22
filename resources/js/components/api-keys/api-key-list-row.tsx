@@ -13,13 +13,14 @@ import {
 } from '@/components/ui/tooltip';
 import { apiKeyStatus } from '@/lib/api-key-scopes';
 import type { ApiKeyStatus } from '@/lib/api-key-scopes';
+import type { RecordId } from '@/lib/record-id';
 
 /**
  * The baseline columns a key row shows (docs/api-keys.md), as the API returns them. An app
  * row type with more fields (owner, tenancy) extends it and keeps them in its own columns.
  */
 export type ApiKeyListRow = {
-    id: string | number;
+    id: RecordId;
     name: string;
     key_prefix: string;
     scopes: string[];
