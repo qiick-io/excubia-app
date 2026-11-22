@@ -9,7 +9,7 @@
     "conformance": {
         "userModel": "App\\Models\\User",
         "publicIdColumn": "public_id",
-        "apiPrefix": "api/v1",
+        "apiPrefix": "api",
         "usesSpatieTeams": false,
         "hasOrganisations": false,
         "hasUserGroups": true,
@@ -24,18 +24,13 @@
             "decision": "knowledge/decisions/2026-11-19-fleet-core-schema",
             "review_by": "2026-12-20"
         },
-        "C13": {
-            "reason": "API-key-authenticated activity still records the internal bigint key id instead of the public UUID in properties.api_key_id. Tracked in #382, not hidden.",
-            "decision": "knowledge/decisions/2026-11-20-core-hardening",
-            "review_by": "2026-12-20"
-        },
         "C17": {
             "reason": "Tracked security work, not hidden: user erasure with anonymised activity and unique tombstones is not implemented yet (#381).",
             "decision": "knowledge/decisions/2026-11-20-core-hardening",
             "review_by": "2026-12-20"
         },
         "C20": {
-            "reason": "One backed error-code enum with a stable JSON error shape for /api/* and /mcp is not implemented yet. Tracked in #390, not hidden.",
+            "reason": "One backed error-code enum with a stable JSON error shape for /api/* and /mcp is not implemented yet. Product tests already pin the safe behaviours (no stack trace with APP_DEBUG=false, JSON without Accept); tracked in #390, not hidden.",
             "decision": "knowledge/decisions/2026-11-20-core-hardening",
             "review_by": "2026-12-20"
         },
@@ -50,23 +45,23 @@
             "review_by": "2026-12-20"
         },
         "C25": {
-            "reason": "Idempotency-Key replay on retryable creates is not implemented yet. Tracked in #383, not hidden.",
+            "reason": "HTTP-level Idempotency-Key replay on retryable creates is not implemented yet: ingest already de-duplicates by batchId (201 for a new batch, 200 for a repeat), but that is payload identity, not a replayed request with the same key and body. Tracked in #383, not hidden.",
             "decision": "knowledge/decisions/2026-11-20-core-hardening",
             "review_by": "2026-12-20"
         },
         "C26": {
-            "reason": "No OpenAPI 3.1 document covering the named api/v1 routes exists yet. Tracked in #378, not hidden.",
+            "reason": "No OpenAPI 3.1 document covering the named /api routes (reports, runtime, exceptions) exists yet. Tracked in #378, not hidden.",
             "decision": "knowledge/decisions/2026-11-20-core-hardening",
             "review_by": "2026-12-20"
         },
         "C27": {
             "reason": "Outbound webhooks do not use Standard Webhooks headers and the {type,timestamp,data} envelope yet. Tracked in #389, not hidden.",
-            "decision": "knowledge/decisions/2026-11-19-shared-packages-for-api-keys-and-outbound-http",
+            "decision": "knowledge/decisions/2026-11-20-fleet-contracts",
             "review_by": "2026-12-20"
         },
         "C29": {
-            "reason": "Excubia has no organisations or Spatie teams today, so team switching is out of scope. Tracked in #387, not hidden.",
-            "decision": "knowledge/decisions/2026-11-20-core-hardening",
+            "reason": "Excubia has no organisations or Spatie teams today, so team switching is out of scope. It will add principals.organisation_id as NOT NULL together with Spatie teams when organisations arrive. Tracked in #387, not hidden.",
+            "decision": "knowledge/decisions/2026-11-22-principal-organisation-required-in-multi-tenant-products",
             "review_by": "2026-12-20"
         },
         "C31": {
