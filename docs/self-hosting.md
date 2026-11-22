@@ -212,26 +212,30 @@ The health, schedule and runtime events are described with their features in the
 
 ### Webhook payload
 
-A JSON `POST` to the HTTPS URL, retried 3 times with backoff (10, 30, 60 seconds). Redirects are not followed, and hosts that resolve to private addresses are refused.
+A JSON `POST` to the HTTPS URL, retried 3 times with backoff (10, 30, 60 seconds). Redirects are not followed, and hosts that resolve to private addresses are refused. Deliveries use [Standard Webhooks](https://www.standardwebhooks.com/) through `qiick/laravel-outbound`: the signing secret is a `whsec_…` value (Settings → Integrations can generate one).
 
 ```json
 {
-    "id": "4f8e…",
-    "event": "finding.new",
-    "severity": "high",
-    "project": { "name": "Shop", "slug": "shop" },
-    "occurredAt": "2026-11-07T12:00:00Z",
-    "url": "https://excubia.example.com/projects/shop",
+    "type": "finding.new",
+    "timestamp": "2026-11-07T12:00:00+00:00",
     "data": {
-        "checkId": "composer-audit",
-        "subject": "laravel/framework",
         "severity": "high",
-        "message": "…"
+        "project": { "name": "Shop", "slug": "shop" },
+        "occurredAt": "2026-11-07T12:00:00Z",
+        "url": "https://excubia.example.com/projects/shop",
+        "data": {
+            "checkId": "composer-audit",
+            "subject": "laravel/framework",
+            "severity": "high",
+            "message": "…"
+        }
     }
 }
 ```
 
-`data` holds the event's details and is an empty object when there are none. Fields may be added to the payload and to `data`, never removed or renamed; the webhook stays one request per alert even when the other channels group a report's alerts. Headers: `X-Excubia-Event` (the event), `X-Excubia-Event-Id` (the `id`), `X-Excubia-Timestamp` (Unix seconds) and `X-Excubia-Signature: sha256=<hex>`, the HMAC-SHA256 of `<timestamp>.<raw body>` with the webhook secret. Check the signature on the raw body and reject old timestamps. The test event is `ping`, with `project: null`.
+The delivery id is only in the `webhook-id` header (not in the body). `data` holds severity, project, time, URL and the event details (`data.data`); event details are an empty object when there are none. Fields may be added to the envelope and to `data`, never removed or renamed; the webhook stays one request per alert even when the other channels group a report's alerts.
+
+Headers: `webhook-id` (the delivery UUID), `webhook-timestamp` (Unix seconds) and `webhook-signature` (`v1,<base64>`, space-separated when rotating secrets). The signed content is `<webhook-id>.<webhook-timestamp>.<raw body>` with the `whsec_` secret. Verify on the raw body, reject skewed timestamps and deduplicate by `webhook-id`. There are no legacy `X-Excubia-*` headers. The test event is `ping`, with `project: null` inside `data`.
 
 ## Sizing
 

@@ -38,7 +38,7 @@ beforeEach(function () {
     Date::setTestNow('2026-11-07 10:00:30');
     app(SettingsRepositoryService::class)->save([
         'webhook_url' => 'https://hooks.example.com/excubia',
-        'webhook_secret' => str_repeat('s', 32),
+        'webhook_secret' => alertWebhookSecret(),
     ]);
 });
 

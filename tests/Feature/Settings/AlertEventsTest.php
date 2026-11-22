@@ -20,7 +20,6 @@ use App\Models\User;
 use App\Services\AlertDispatcherService;
 use App\Services\AlertSuppressionService;
 use App\Services\SettingsRepositoryService;
-use App\Services\WebhookUrlGuardService;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Date;
@@ -28,6 +27,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
+use Qiick\Outbound\Ssrf\RemoteUrlGuard;
 
 /**
  * Alerts (#22), third part: every event of the Reports, Reporting and Administration groups on
@@ -44,7 +44,7 @@ beforeEach(function () {
     // check needs no DNS lookup in tests.
     app(SettingsRepositoryService::class)->save([
         'webhook_url' => 'https://93.184.216.34/excubia',
-        'webhook_secret' => str_repeat('s', 32),
+        'webhook_secret' => alertWebhookSecret(),
         'notifier_slack_webhook_url' => 'https://hooks.slack.com/services/T/B/X',
         'notifier_telegram_bot_token' => '123456:ABC-def_1',
         'notifier_telegram_chat_id' => '-1001234567890',
@@ -210,7 +210,16 @@ it('sends :dataset to the webhook, Slack, Telegram and every subscriber', functi
 ]);
 
 it('delivers every event to the signed webhook and by email, one webhook request per event', function () {
-    Http::fake(['93.184.216.34/*' => Http::response('', 204)]);
+    $sentBodies = [];
+    $webhookIds = [];
+    $webhookSignatures = [];
+    bindPinnedAlertClient(app(RemoteUrlGuard::class), function (Request $request) use (&$sentBodies, &$webhookIds, &$webhookSignatures) {
+        $sentBodies[] = json_decode($request->body(), true, 512, JSON_THROW_ON_ERROR);
+        $webhookIds[] = $request->header('Webhook-Id')[0] ?? null;
+        $webhookSignatures[] = $request->header('Webhook-Signature')[0] ?? '';
+
+        return Http::response('', 204);
+    });
     Mail::fake();
     $project = Project::factory()->create();
     storeEventsReport($project, []);
@@ -223,17 +232,17 @@ it('delivers every event to the signed webhook and by email, one webhook request
             continue;
         }
 
-        $job->handle(app(SettingsRepositoryService::class), app(WebhookUrlGuardService::class));
+        app()->call([$job, 'handle']);
     }
 
-    $sent = collect(Http::recorded())->map(fn (array $pair): array => json_decode($pair[0]->body(), true));
+    $sent = collect($sentBodies);
 
-    expect($sent->pluck('event')->all())->toBe(['report.checks_skipped', 'finding.new', 'project.worsened', 'project.token_changed', 'project.disabled'])
-        ->and($sent->pluck('id')->unique())->toHaveCount(5)
-        ->and($sent->first()['data'])->toBe(['checkIds' => ['composer-advisories'], 'count' => 1])
+    expect($sent->pluck('type')->all())->toBe(['report.checks_skipped', 'finding.new', 'project.worsened', 'project.token_changed', 'project.disabled'])
+        ->and(collect($webhookIds)->unique()->filter())->toHaveCount(5)
+        ->and($sent->first()['data']['data'])->toBe(['checkIds' => ['composer-advisories'], 'count' => 1])
         ->and(AlertLog::query()->get()->every(fn (AlertLog $log): bool => $log->deliveries[DeliverAlertJob::WEBHOOK] === AlertLog::SENT
-            && $log->deliveries['email:'.$this->subscriber->id] === AlertLog::SENT))->toBeTrue();
-    Http::assertSent(fn (Request $request): bool => str_starts_with($request->header('X-Excubia-Signature')[0], 'sha256='));
+            && $log->deliveries['email:'.$this->subscriber->id] === AlertLog::SENT))->toBeTrue()
+        ->and($webhookSignatures[0] ?? '')->toStartWith('v1,');
     // The report's three alerts in one mail, then the token and the disable on their own.
     Mail::assertSentCount(3);
     Mail::assertSent(AlertMail::class, fn (AlertMail $mail): bool => count($mail->alerts) === 3
@@ -261,7 +270,7 @@ it('sends one Slack, Telegram and email message per report, worst first, but one
 
     // Every alert keeps its history row; a grouped delivery's outcome lands on all of them.
     Mail::fake();
-    $jobs->first(fn (DeliverAlertJob $job): bool => DeliverAlertJob::emailUserId($job->channel) !== null)->handle(app(SettingsRepositoryService::class), app(WebhookUrlGuardService::class));
+    app()->call([$jobs->first(fn (DeliverAlertJob $job): bool => DeliverAlertJob::emailUserId($job->channel) !== null), 'handle']);
     $slack->failed(new RuntimeException('HTTP 500'));
 
     expect(AlertLog::query()->where('project_id', $project->id)->get()->map(fn (AlertLog $log): array => [$log->deliveries['email:'.$this->subscriber->id], $log->deliveries['slack']])->unique()->all())

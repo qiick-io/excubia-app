@@ -35,7 +35,6 @@ use App\Models\User;
 use App\Models\UserGroup;
 use App\Services\EffectivePermissionResolverService;
 use App\Services\SettingsRepositoryService;
-use App\Services\WebhookUrlGuardService;
 use Database\Seeders\CreateSuperAdminSeeder;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Database\Schema\Builder;
@@ -50,6 +49,9 @@ use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use Laravel\Fortify\Actions\EnableTwoFactorAuthentication;
 use Laravel\Fortify\Fortify;
+use Qiick\Outbound\Contracts\HostResolver;
+use Qiick\Outbound\Ssrf\RemoteUrlGuard;
+use Qiick\Outbound\Ssrf\UnsafeUrl;
 use Spatie\Permission\Models\Role as SpatieRole;
 
 /** Seeds the built-in roles the behaviour hooks assert against. */
@@ -371,48 +373,84 @@ return [
         $settings = app(SettingsRepositoryService::class);
         $settings->save([
             'webhook_url' => 'https://hooks.example.com/hook',
-            'webhook_secret' => 'whsec_'.base64_encode(str_repeat('s', 32)),
+            'webhook_secret' => alertWebhookSecret(),
         ]);
 
-        $headers = [];
+        $request = null;
         $body = null;
-        Http::fake(static function (ClientRequest $request) use (&$headers, &$body) {
-            $headers = $request->headers();
-            $body = json_decode($request->body(), true, 512, JSON_THROW_ON_ERROR);
+        $guard = new RemoteUrlGuard(
+            new class implements HostResolver
+            {
+                public function resolve(string $host): array
+                {
+                    return ['93.184.216.34'];
+                }
+            },
+            httpsOnly: true,
+        );
+        bindPinnedAlertClient($guard, static function (ClientRequest $clientRequest) use (&$request, &$body) {
+            $request = $clientRequest;
+            $body = json_decode($clientRequest->body(), true, 512, JSON_THROW_ON_ERROR);
 
             return Http::response('', 204);
         });
 
-        $alertJob()->handle($settings, new WebhookUrlGuardService(static fn (): array => ['93.184.216.34']));
+        app()->call([$alertJob(), 'handle']);
 
-        expect(array_keys($headers))->toContain('Webhook-Id', 'Webhook-Timestamp', 'Webhook-Signature')
+        expect($request)->not->toBeNull()
+            ->and($request->hasHeader('Webhook-Id'))->toBeTrue()
+            ->and($request->hasHeader('Webhook-Timestamp'))->toBeTrue()
+            ->and($request->hasHeader('Webhook-Signature'))->toBeTrue()
             ->and($body)->toHaveKeys(['type', 'timestamp', 'data']);
     },
 
     'assertSsrfGuard' => static function () use ($alertJob): void {
-        $guard = new WebhookUrlGuardService(static fn (): array => ['93.184.216.34']);
+        $guardReason = static function (RemoteUrlGuard $guard, string $url): ?string {
+            try {
+                $guard->authorize($url);
 
-        expect($guard->validate('https://169.254.169.254/latest/meta-data/'))->toBe('Host is not allowed.')
-            ->and($guard->validate('https://2852039166/latest/meta-data/'))->toBe('Host is not allowed.')
-            ->and($guard->authorizeOutbound('https://hooks.example.com/hook'))->toBe([
-                'ok' => true,
-                'curl_connect_to' => ['::93.184.216.34:443'],
-            ]);
+                return null;
+            } catch (UnsafeUrl $exception) {
+                return $exception->reason();
+            }
+        };
+
+        $guard = new RemoteUrlGuard(
+            new class implements HostResolver
+            {
+                public function resolve(string $host): array
+                {
+                    return ['93.184.216.34'];
+                }
+            },
+            httpsOnly: true,
+        );
+
+        expect($guardReason($guard, 'https://169.254.169.254/latest/meta-data/'))->toBe('Host is not allowed.')
+            ->and($guardReason($guard, 'https://2852039166/latest/meta-data/'))->toBe('Host is not allowed.');
+
+        $destination = $guard->authorize('https://hooks.example.com/hook');
+        expect([$destination->curlConnectToEntry])->toBe(['::93.184.216.34:443']);
 
         foreach (['https://10.0.0.8/hook', 'https://127.0.0.1/hook'] as $blockedLiteral) {
-            expect($guard->validate($blockedLiteral))->toBe('Host is not allowed.');
+            expect($guardReason($guard, $blockedLiteral))->toBe('Host is not allowed.');
         }
 
-        $resolverCalls = 0;
-        $pinnedGuard = new WebhookUrlGuardService(static function (string $_host) use (&$resolverCalls): array {
-            $resolverCalls++;
+        $resolver = new class implements HostResolver
+        {
+            public int $calls = 0;
 
-            return ['93.184.216.34'];
-        });
-        app()->instance(WebhookUrlGuardService::class, $pinnedGuard);
+            public function resolve(string $host): array
+            {
+                $this->calls++;
+
+                return ['93.184.216.34'];
+            }
+        };
+        $pinnedGuard = new RemoteUrlGuard($resolver, httpsOnly: true);
 
         $sentOptions = null;
-        Http::fake(static function (ClientRequest $_request, array $options) use (&$sentOptions) {
+        bindPinnedAlertClient($pinnedGuard, static function (ClientRequest $_request, array $options) use (&$sentOptions) {
             $sentOptions = $options;
 
             return Http::response('', 204);
@@ -421,19 +459,29 @@ return [
         $settings = app(SettingsRepositoryService::class);
         $settings->save([
             'webhook_url' => 'https://rebind.example.com/hook',
-            'webhook_secret' => str_repeat('s', 32),
+            'webhook_secret' => alertWebhookSecret(),
         ]);
-        $alertJob()->handle($settings, $pinnedGuard);
+        app()->call([$alertJob(), 'handle']);
 
-        expect($resolverCalls)->toBe(1)
+        expect($resolver->calls)->toBe(1)
             ->and($sentOptions['curl'] ?? null)->toBe([CURLOPT_CONNECT_TO => ['::93.184.216.34:443']]);
 
         foreach (['10.0.0.8' => 'Host resolves to a disallowed address.', '169.254.169.254' => 'Host resolves to a disallowed address.'] as $address => $reason) {
-            Http::fake();
-            $job = $alertJob();
-            $job->handle($settings, new WebhookUrlGuardService(static fn (): array => [$address]));
+            $blockedGuard = new RemoteUrlGuard(
+                new class($address) implements HostResolver
+                {
+                    public function __construct(private readonly string $address) {}
 
-            Http::assertNothingSent();
+                    public function resolve(string $host): array
+                    {
+                        return [$this->address];
+                    }
+                },
+                httpsOnly: true,
+            );
+            bindPinnedAlertClient($blockedGuard, static fn () => Http::response('', 204));
+            app()->call([$alertJob(), 'handle']);
+
             expect($settings->all()['webhook_last_error']['message'])->toContain($reason);
         }
     },

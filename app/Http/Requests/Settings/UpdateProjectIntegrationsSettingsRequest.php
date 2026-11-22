@@ -10,6 +10,8 @@ use App\Http\Requests\Settings\Concerns\ValidatesAlertFiltersTrait;
 use App\Jobs\DeliverAlertJob;
 use App\Models\Project;
 use App\Models\Setting;
+use App\Rules\OutboundWebhookUrlRule;
+use App\Rules\WebhookSecretRule;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -48,8 +50,8 @@ class UpdateProjectIntegrationsSettingsRequest extends FormRequest
             // Keyed by event; events that take a finding's severity are dropped in settings().
             'event_severities' => ['nullable', 'array'],
             'event_severities.*' => [Rule::enum(SeverityEnum::class)],
-            'webhook_url' => ['nullable', 'url:https', 'max:2048'],
-            'webhook_secret' => ['nullable', 'string', 'min:16', 'max:512'],
+            'webhook_url' => ['nullable', 'url:https', 'max:2048', new OutboundWebhookUrlRule],
+            'webhook_secret' => ['nullable', 'string', 'max:512', new WebhookSecretRule],
             'notifier_slack_webhook_url' => ['nullable', 'url:https', 'starts_with:https://hooks.slack.com/', 'max:2048'],
             // BotFather token shape: "<bot_id>:<secret>".
             'notifier_telegram_bot_token' => ['nullable', 'string', 'max:512', 'regex:/^\d+:[A-Za-z0-9_-]+$/'],

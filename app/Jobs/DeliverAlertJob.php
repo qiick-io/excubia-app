@@ -9,26 +9,35 @@ use App\Mail\AlertMail;
 use App\Models\User;
 use App\Notifications\AlertNotification;
 use App\Services\SettingsRepositoryService;
-use App\Services\WebhookUrlGuardService;
+use DateTimeImmutable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Date;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
+use Qiick\Outbound\Http\HttpRequestOptions;
+use Qiick\Outbound\Http\OutboundHttpException;
+use Qiick\Outbound\Http\OutboundRequest;
+use Qiick\Outbound\Http\PinnedHttpClient;
+use Qiick\Outbound\Ssrf\RemoteUrlGuard;
+use Qiick\Outbound\Ssrf\UnsafeUrl;
+use Qiick\Outbound\Webhooks\StandardWebhookSigner;
+use Qiick\Outbound\Webhooks\WebhookException;
+use Qiick\Outbound\Webhooks\WebhookMessage;
+use Qiick\Outbound\Webhooks\WebhookSecret;
 use RuntimeException;
 use Throwable;
 
 /**
  * Delivers one alert (#22) to one channel, as externa-core's outbound webhook and notifier jobs:
- * - webhook: JSON body signed with HMAC-SHA256 of `timestamp.body` (`X-Excubia-Signature`);
+ * - webhook: Standard Webhooks envelope `{type, timestamp, data}` signed with
+ *   {@see StandardWebhookSigner} (`webhook-id`, `webhook-timestamp`, `webhook-signature`);
  * - slack: an incoming-webhook message;
  * - telegram: a Bot API sendMessage;
  * - email:<user id>: an AlertMail to that user, in their locale (the user must still be active);
  * - app:<user id>: an in-app AlertNotification for that user's bell (#296), same condition.
  * HTTPS only, no redirects, and hosts that resolve to private or reserved addresses are refused
- * by {@see WebhookUrlGuardService}; the connection is pinned with CURLOPT_CONNECT_TO to the
- * checked address (curl ignores CURLOPT_RESOLVE for IP-literal spellings), and transport errors
- * never quote the URL.
+ * by {@see RemoteUrlGuard} through {@see PinnedHttpClient}; the connection
+ * is pinned with CURLOPT_CONNECT_TO to the checked address, and transport errors never quote the URL.
  * Retried 3 times with backoff; the webhook's last success and last error are kept for Settings,
  * and every channel's outcome goes on the alert's history row (#114). A grouped message (one
  * report push, #22) carries the worst alert's payload and lists every alert in `alerts`, whose
@@ -76,8 +85,11 @@ class DeliverAlertJob implements ShouldQueue
     /**
      * @throws RuntimeException when the endpoint does not answer 2xx (the job is retried)
      */
-    public function handle(SettingsRepositoryService $settings, WebhookUrlGuardService $urlGuard): void
-    {
+    public function handle(
+        SettingsRepositoryService $settings,
+        PinnedHttpClient $http,
+        StandardWebhookSigner $signer,
+    ): void {
         $userId = self::emailUserId($this->channel);
 
         if ($userId !== null) {
@@ -94,49 +106,32 @@ class DeliverAlertJob implements ShouldQueue
             return;
         }
 
-        [$url, $headers, $body] = match ($this->channel) {
-            self::WEBHOOK => $this->webhookRequest($settings),
-            self::SLACK => [$settings->slackWebhookUrl(), [], (string) json_encode(['text' => $this->text], JSON_THROW_ON_ERROR)],
-            self::TELEGRAM => [
-                'https://api.telegram.org/bot'.$settings->telegramBotToken().'/sendMessage',
-                [],
-                (string) json_encode(['chat_id' => $settings->telegramChatId(), 'text' => $this->text, 'disable_web_page_preview' => true], JSON_THROW_ON_ERROR),
-            ],
-            default => [null, [], ''],
-        };
-
-        $authorized = $url === null
-            ? ['ok' => false, 'reason' => 'the URL is missing, not HTTPS or points to a private address.']
-            : $urlGuard->authorizeOutbound($url);
-
-        if ($url === null || ! $authorized['ok']) {
-            $this->record($settings, false, 'Refused: '.($authorized['reason'] ?? 'the URL is missing, not HTTPS or points to a private address.'));
-
-            return;
-        }
-
         try {
-            $response = Http::timeout(5)
-                ->connectTimeout(3)
-                ->withoutRedirecting()
-                // Pins the connection to the address the guard checked. CURLOPT_CONNECT_TO with
-                // an empty source host applies whatever spelling the URL uses; CURLOPT_RESOLVE
-                // would be ignored for curl-style IP literals (DNS rebinding / metadata bypass).
-                ->withOptions(['curl' => [CURLOPT_CONNECT_TO => $authorized['curl_connect_to']]])
-                ->withHeaders(['User-Agent' => 'Excubia-Alerts/1.0', ...$headers])
-                ->withBody($body, 'application/json')
-                ->post($url);
-        } catch (Throwable $exception) {
-            // Transport errors quote the URL, which holds the Slack webhook secret or the
-            // Telegram bot token: never let it reach failed_jobs, the logs or Settings (#51).
-            throw new RuntimeException("Alert delivery to {$this->channel} failed: ".class_basename($exception));
+            match ($this->channel) {
+                self::WEBHOOK => $this->deliverWebhook($settings, $http, $signer),
+                self::SLACK => $this->deliverRaw(
+                    $settings,
+                    $http,
+                    $settings->slackWebhookUrl(),
+                    (string) json_encode(['text' => $this->text], JSON_THROW_ON_ERROR),
+                ),
+                self::TELEGRAM => $this->deliverRaw(
+                    $settings,
+                    $http,
+                    'https://api.telegram.org/bot'.$settings->telegramBotToken().'/sendMessage',
+                    (string) json_encode([
+                        'chat_id' => $settings->telegramChatId(),
+                        'text' => $this->text,
+                        'disable_web_page_preview' => true,
+                    ], JSON_THROW_ON_ERROR),
+                ),
+                default => $this->record($settings, false, 'Refused: the URL is missing, not HTTPS or points to a private address.'),
+            };
+        } catch (UnsafeUrl $exception) {
+            $this->record($settings, false, 'Refused: '.$exception->reason());
+        } catch (WebhookException $exception) {
+            $this->record($settings, false, 'Refused: '.$exception->getMessage());
         }
-
-        if (! $response->successful()) {
-            throw new RuntimeException("Alert delivery to {$this->channel} failed: HTTP {$response->status()}");
-        }
-
-        $this->record($settings, true, "HTTP {$response->status()}");
     }
 
     /**
@@ -205,24 +200,111 @@ class DeliverAlertJob implements ShouldQueue
     }
 
     /**
-     * @return array{0: string|null, 1: array<string, string>, 2: string}
+     * Signs and posts one Standard Webhooks alert. The delivery id lives only in `webhook-id`;
+     * the body is `{type, timestamp, data}` (no legacy `X-Excubia-*` headers: Excuvia is unreleased).
+     *
+     * @throws UnsafeUrl
+     * @throws WebhookException
+     * @throws RuntimeException
      */
-    private function webhookRequest(SettingsRepositoryService $settings): array
-    {
-        $secret = $settings->webhookSecret();
-        $body = (string) json_encode($this->payload, JSON_THROW_ON_ERROR);
-        $timestamp = (string) Date::now()->timestamp;
+    private function deliverWebhook(
+        SettingsRepositoryService $settings,
+        PinnedHttpClient $http,
+        StandardWebhookSigner $signer,
+    ): void {
+        $url = $settings->webhookUrl();
+        $secretValue = $settings->webhookSecret();
 
-        if ($secret === null) {
-            return [null, [], $body];
+        if ($url === null || $secretValue === null) {
+            $this->record($settings, false, 'Refused: the URL is missing, not HTTPS or points to a private address.');
+
+            return;
         }
 
-        return [$settings->webhookUrl(), [
-            'X-Excubia-Event' => (string) $this->payload['event'],
-            'X-Excubia-Event-Id' => (string) $this->payload['id'],
-            'X-Excubia-Timestamp' => $timestamp,
-            'X-Excubia-Signature' => 'sha256='.hash_hmac('sha256', $timestamp.'.'.$body, $secret),
-        ], $body];
+        $timestamp = DateTimeImmutable::createFromInterface(Date::now());
+        $envelopeData = $this->payload;
+        unset($envelopeData['id'], $envelopeData['event']);
+
+        $message = new WebhookMessage(
+            id: (string) $this->payload['id'],
+            type: (string) $this->payload['event'],
+            timestamp: $timestamp,
+            data: $envelopeData,
+        );
+        $rawBody = $message->toPayloadJson();
+        $signed = $signer->sign(
+            $message->id,
+            $timestamp->getTimestamp(),
+            $rawBody,
+            [WebhookSecret::parse($secretValue)],
+        );
+
+        $this->post($http, $url, $signed->rawBody, [
+            ...$signed->headers,
+            'User-Agent' => 'Excubia-Alerts/1.0',
+        ], $settings);
+    }
+
+    /**
+     * Posts a raw JSON body to a Slack or Telegram URL through the pinned client.
+     *
+     * @throws UnsafeUrl
+     * @throws RuntimeException
+     */
+    private function deliverRaw(
+        SettingsRepositoryService $settings,
+        PinnedHttpClient $http,
+        ?string $url,
+        string $body,
+    ): void {
+        if ($url === null) {
+            $this->record($settings, false, 'Refused: the URL is missing, not HTTPS or points to a private address.');
+
+            return;
+        }
+
+        $this->post($http, $url, $body, ['User-Agent' => 'Excubia-Alerts/1.0'], $settings);
+    }
+
+    /**
+     * @param  array<string, string>  $headers
+     *
+     * @throws UnsafeUrl
+     * @throws RuntimeException
+     */
+    private function post(
+        PinnedHttpClient $http,
+        string $url,
+        string $body,
+        array $headers,
+        SettingsRepositoryService $settings,
+    ): void {
+        try {
+            $response = $http->send(
+                'POST',
+                $url,
+                static function (OutboundRequest $request) use ($body, $headers): void {
+                    $request->withHeaders($headers)->withBody($body, 'application/json');
+                },
+                new HttpRequestOptions(timeoutSeconds: 5, connectTimeoutSeconds: 3),
+            );
+        } catch (OutboundHttpException $exception) {
+            // Transport errors quote the URL, which holds the Slack webhook secret or the
+            // Telegram bot token: never let it reach failed_jobs, the logs or Settings (#51).
+            throw new RuntimeException("Alert delivery to {$this->channel} failed: ".class_basename($exception->getPrevious() ?? $exception));
+        } catch (Throwable $exception) {
+            if ($exception instanceof UnsafeUrl || $exception instanceof RuntimeException) {
+                throw $exception;
+            }
+
+            throw new RuntimeException("Alert delivery to {$this->channel} failed: ".class_basename($exception));
+        }
+
+        if (! $response->successful()) {
+            throw new RuntimeException("Alert delivery to {$this->channel} failed: HTTP {$response->status()}");
+        }
+
+        $this->record($settings, true, "HTTP {$response->status()}");
     }
 
     /**

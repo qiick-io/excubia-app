@@ -4,34 +4,85 @@ declare(strict_types=1);
 
 use App\Jobs\DeliverAlertJob;
 use App\Services\SettingsRepositoryService;
-use App\Services\WebhookUrlGuardService;
 use GuzzleHttp\Promise\PromiseInterface;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+use Qiick\Outbound\Contracts\HostResolver;
+use Qiick\Outbound\Ssrf\RemoteUrlGuard;
+use Qiick\Outbound\Ssrf\UnsafeUrl;
 
 /**
- * What curl connects to for alert webhooks, and how the guard knows it checked that address.
+ * What curl connects to for alert webhooks, and how the package guard knows it checked that address.
  *
- * `filter_var()` rejects `2852039166`, `0251.0376.0251.0376` and `169.254.169.254.`, but curl
- * and inet_aton(3) read each of them as 169.254.169.254. CURLOPT_RESOLVE is a DNS-cache entry
- * keyed by host name and is ignored for hosts curl parses as an address; CURLOPT_CONNECT_TO
- * with an empty source host pins whatever spelling the URL uses.
- *
- * Ported from signaculum-core #185 for Excubia's HTTPS-only, always-public alert webhooks.
+ * Exercises {@see RemoteUrlGuard} and {@see PinnedHttpClient} from qiick/laravel-outbound: the
+ * product copy of WebhookUrlGuardService is gone. `filter_var()` rejects `2852039166`,
+ * `0251.0376.0251.0376` and `169.254.169.254.`, but curl and inet_aton(3) read each of them as
+ * 169.254.169.254. CURLOPT_RESOLVE is a DNS-cache entry keyed by host name and is ignored for
+ * hosts curl parses as an address; CURLOPT_CONNECT_TO with an empty source host pins whatever
+ * spelling the URL uses.
  */
-function pinGuard(array $addresses = ['93.184.216.34']): WebhookUrlGuardService
+function pinHostResolver(array $addresses = ['93.184.216.34']): HostResolver
 {
-    return new WebhookUrlGuardService(static fn (string $_host): array => $addresses);
+    return new class($addresses) implements HostResolver
+    {
+        /**
+         * @param  list<string>  $addresses
+         */
+        public function __construct(private readonly array $addresses) {}
+
+        public function resolve(string $host): array
+        {
+            return $this->addresses;
+        }
+    };
 }
 
-function pinGuardThatMustNotResolve(): WebhookUrlGuardService
+function pinGuard(array $addresses = ['93.184.216.34']): RemoteUrlGuard
 {
-    return new WebhookUrlGuardService(
-        static function (string $host): array {
-            throw new RuntimeException("Guard resolved an address literal as a name: {$host}");
+    return new RemoteUrlGuard(pinHostResolver($addresses), httpsOnly: true);
+}
+
+function pinGuardThatMustNotResolve(): RemoteUrlGuard
+{
+    return new RemoteUrlGuard(
+        new class implements HostResolver
+        {
+            public function resolve(string $host): array
+            {
+                throw new RuntimeException("Guard resolved an address literal as a name: {$host}");
+            }
         },
+        httpsOnly: true,
     );
+}
+
+/**
+ * @return string|null English refusal when the URL must not be called; null when safe
+ */
+function pinGuardReason(RemoteUrlGuard $guard, string $url): ?string
+{
+    try {
+        $guard->authorize($url);
+
+        return null;
+    } catch (UnsafeUrl $exception) {
+        return $exception->reason();
+    }
+}
+
+/**
+ * @return array{ok: true, curl_connect_to: list<string>}|array{ok: false, reason: string}
+ */
+function pinAuthorize(RemoteUrlGuard $guard, string $url): array
+{
+    try {
+        $destination = $guard->authorize($url);
+
+        return ['ok' => true, 'curl_connect_to' => [$destination->curlConnectToEntry]];
+    } catch (UnsafeUrl $exception) {
+        return ['ok' => false, 'reason' => $exception->reason()];
+    }
 }
 
 dataset('metadata ipv4 spellings', [
@@ -95,59 +146,59 @@ dataset('alibaba and oracle metadata spellings', [
 ]);
 
 it('refuses every spelling of the ipv4 metadata address', function (string $url): void {
-    expect(pinGuard()->validate($url))->toBe('Host is not allowed.');
+    expect(pinGuardReason(pinGuard(), $url))->toBe('Host is not allowed.');
 })->with('metadata ipv4 spellings');
 
 it('reads an ipv4 spelling as the address it is, and never looks it up as a name', function (string $url): void {
-    expect(pinGuardThatMustNotResolve()->validate($url))->not->toBeNull();
+    expect(pinGuardReason(pinGuardThatMustNotResolve(), $url))->not->toBeNull();
 })->with('metadata ipv4 spellings');
 
 it('refuses an ipv4 address that is not written in dotted decimal', function (string $url): void {
-    expect(pinGuardThatMustNotResolve()->validate($url))->toBe('Invalid URL.');
+    expect(pinGuardReason(pinGuardThatMustNotResolve(), $url))->toBe('URL is invalid.');
 })->with('non canonical ipv4 spellings');
 
 it('refuses a hostname that resolves to the metadata address', function (): void {
-    expect(pinGuard(['169.254.169.254'])->validate('https://hooks.example.com/hook'))
+    expect(pinGuardReason(pinGuard(['169.254.169.254']), 'https://hooks.example.com/hook'))
         ->toBe('Host resolves to a disallowed address.')
-        ->and(pinGuard(['fd00:ec2::254'])->validate('https://hooks.example.com/hook'))
+        ->and(pinGuardReason(pinGuard(['fd00:ec2::254']), 'https://hooks.example.com/hook'))
         ->toBe('Host resolves to a disallowed address.');
 });
 
 it('refuses alibaba and oracle metadata addresses in every spelling the guard canonicalises', function (string $url): void {
-    expect(pinGuard()->validate($url))->toBe('Host is not allowed.');
+    expect(pinGuardReason(pinGuard(), $url))->toBe('Host is not allowed.');
 })->with('alibaba and oracle metadata spellings');
 
 it('refuses a hostname that resolves to an alibaba or oracle metadata address', function (): void {
-    expect(pinGuard(['100.100.100.200'])->validate('https://hooks.example.com/hook'))
+    expect(pinGuardReason(pinGuard(['100.100.100.200']), 'https://hooks.example.com/hook'))
         ->toBe('Host resolves to a disallowed address.')
-        ->and(pinGuard(['192.0.0.192'])->validate('https://hooks.example.com/hook'))
+        ->and(pinGuardReason(pinGuard(['192.0.0.192']), 'https://hooks.example.com/hook'))
         ->toBe('Host resolves to a disallowed address.');
 });
 
 it('keeps the metadata names blocked with a trailing dot', function (): void {
-    expect(pinGuard()->validate('https://metadata./hook'))->toBe('Host is not allowed.')
-        ->and(pinGuard()->validate('https://metadata.google.internal./hook'))->toBe('Host is not allowed.');
+    expect(pinGuardReason(pinGuard(), 'https://metadata./hook'))->toBe('Host is not allowed.')
+        ->and(pinGuardReason(pinGuard(), 'https://metadata.google.internal./hook'))->toBe('Host is not allowed.');
 });
 
 it('keeps the blocked names blocked with a trailing dot', function (): void {
-    expect(pinGuard(['127.0.0.1'])->validate('https://localhost./hook'))->toBe('Host is not allowed.')
-        ->and(pinGuard(['10.0.0.1'])->validate('https://redis.internal./hook'))->toBe('Host is not allowed.')
-        ->and(pinGuard(['10.0.0.1'])->validate('https://printer.local./hook'))->toBe('Host is not allowed.');
+    expect(pinGuardReason(pinGuard(['127.0.0.1']), 'https://localhost./hook'))->toBe('Host is not allowed.')
+        ->and(pinGuardReason(pinGuard(['10.0.0.1']), 'https://redis.internal./hook'))->toBe('Host is not allowed.')
+        ->and(pinGuardReason(pinGuard(['10.0.0.1']), 'https://printer.local./hook'))->toBe('Host is not allowed.');
 });
 
 it('refuses a host that does not resolve, because there is nothing to pin', function (): void {
-    expect(pinGuard([])->validate('https://nxdomain.example.com/hook'))->toBe('Host could not be resolved.');
+    expect(pinGuardReason(pinGuard([]), 'https://nxdomain.example.com/hook'))->toBe('Host could not be resolved.');
 });
 
 it('never pins a resolver answer that is not an address', function (): void {
-    expect(pinGuard(['metadata.google.internal'])->validate('https://cname.example.com/hook'))
+    expect(pinGuardReason(pinGuard(['metadata.google.internal']), 'https://cname.example.com/hook'))
         ->toBe('Host could not be resolved.')
-        ->and(pinGuard(['metadata.google.internal', '93.184.216.34'])->authorizeOutbound('https://cname.example.com/hook'))
+        ->and(pinAuthorize(pinGuard(['metadata.google.internal', '93.184.216.34']), 'https://cname.example.com/hook'))
         ->toBe(['ok' => true, 'curl_connect_to' => ['::93.184.216.34:443']]);
 });
 
 it('pins every destination it authorises to exactly one checked address', function (string $url, array $addresses, string $pin): void {
-    expect(pinGuard($addresses)->authorizeOutbound($url))->toBe([
+    expect(pinAuthorize(pinGuard($addresses), $url))->toBe([
         'ok' => true,
         'curl_connect_to' => [$pin],
     ]);
@@ -162,16 +213,16 @@ it('pins every destination it authorises to exactly one checked address', functi
 it('checks every record of a hostname, and pins one of them, ipv4 first', function (): void {
     $addresses = ['2606:2800:220:1:248:1893:25c8:1946', '93.184.216.34', '93.184.216.35'];
 
-    expect(pinGuard($addresses)->authorizeOutbound('https://many.example.com/hook'))->toBe([
+    expect(pinAuthorize(pinGuard($addresses), 'https://many.example.com/hook'))->toBe([
         'ok' => true,
         'curl_connect_to' => ['::93.184.216.34:443'],
     ])
-        ->and(pinGuard([...$addresses, '10.0.0.5'])->validate('https://many.example.com/hook'))
+        ->and(pinGuardReason(pinGuard([...$addresses, '10.0.0.5']), 'https://many.example.com/hook'))
         ->toBe('Host resolves to a disallowed address.');
 });
 
 it('still treats a name that only looks numeric as a name', function (string $host): void {
-    expect(pinGuard(['93.184.216.34'])->authorizeOutbound("https://{$host}/hook"))->toBe([
+    expect(pinAuthorize(pinGuard(['93.184.216.34']), "https://{$host}/hook"))->toBe([
         'ok' => true,
         'curl_connect_to' => ['::93.184.216.34:443'],
     ]);
@@ -182,23 +233,33 @@ it('still treats a name that only looks numeric as a name', function (string $ho
     '1.16777216',
     '123456789012',
     'cafe.1.2.3',
-    '1..2',
     'deadbeef.example.com',
 ]);
 
-it('resolves once per delivery and sends the request to the address it checked', function (): void {
-    $lookups = 0;
-    $guard = new WebhookUrlGuardService(
-        static function (string $_host) use (&$lookups): array {
-            $lookups++;
+it('refuses a hostname with empty labels as an invalid URL, without resolving DNS', function (string $host): void {
+    expect(pinGuardReason(pinGuardThatMustNotResolve(), "https://{$host}/hook"))->toBe('URL is invalid.');
+})->with([
+    '1..2',
+    '.example.com',
+    'example..com',
+]);
 
-            return $lookups === 1 ? ['93.184.216.34'] : ['169.254.169.254'];
-        },
-    );
-    app()->instance(WebhookUrlGuardService::class, $guard);
+it('resolves once per delivery and sends the request to the address it checked', function (): void {
+    $resolver = new class implements HostResolver
+    {
+        public int $lookups = 0;
+
+        public function resolve(string $host): array
+        {
+            $this->lookups++;
+
+            return $this->lookups === 1 ? ['93.184.216.34'] : ['169.254.169.254'];
+        }
+    };
+    $guard = new RemoteUrlGuard($resolver, httpsOnly: true);
 
     $sentOptions = null;
-    Http::fake(function (Request $request, array $options) use (&$sentOptions): PromiseInterface {
+    bindPinnedAlertClient($guard, function (Request $request, array $options) use (&$sentOptions): PromiseInterface {
         $sentOptions = $options;
 
         return Http::response('', 204);
@@ -206,32 +267,32 @@ it('resolves once per delivery and sends the request to the address it checked',
 
     app(SettingsRepositoryService::class)->save([
         'webhook_url' => 'https://rebind.example.com/hook',
-        'webhook_secret' => str_repeat('s', 32),
+        'webhook_secret' => alertWebhookSecret(),
     ]);
 
-    (new DeliverAlertJob(DeliverAlertJob::WEBHOOK, [
+    app()->call([new DeliverAlertJob(DeliverAlertJob::WEBHOOK, [
         'id' => (string) Str::uuid(),
         'event' => 'ping',
-    ]))->handle(app(SettingsRepositoryService::class), $guard);
+    ]), 'handle']);
 
-    expect($lookups)->toBe(1)
+    expect($resolver->lookups)->toBe(1)
         ->and($sentOptions['curl'] ?? null)->toBe([CURLOPT_CONNECT_TO => ['::93.184.216.34:443']]);
 
-    Http::fake();
-    (new DeliverAlertJob(DeliverAlertJob::WEBHOOK, [
+    bindPinnedAlertClient($guard, static fn (): PromiseInterface => Http::response('', 204));
+
+    app()->call([new DeliverAlertJob(DeliverAlertJob::WEBHOOK, [
         'id' => (string) Str::uuid(),
         'event' => 'ping',
-    ]))->handle(app(SettingsRepositoryService::class), $guard);
+    ]), 'handle']);
 
-    Http::assertNothingSent();
-    expect($lookups)->toBe(2)
+    expect($resolver->lookups)->toBe(2)
         ->and(app(SettingsRepositoryService::class)->all()['webhook_last_error']['message'])
         ->toContain('Host resolves to a disallowed address.');
 });
 
 it('pins a literal address in the url too, since curl reads more spellings than the guard', function (): void {
     $sentOptions = null;
-    Http::fake(function (Request $request, array $options) use (&$sentOptions): PromiseInterface {
+    bindPinnedAlertClient(pinGuardThatMustNotResolve(), function (Request $request, array $options) use (&$sentOptions): PromiseInterface {
         $sentOptions = $options;
 
         return Http::response('', 204);
@@ -239,13 +300,13 @@ it('pins a literal address in the url too, since curl reads more spellings than 
 
     app(SettingsRepositoryService::class)->save([
         'webhook_url' => 'https://93.184.216.34/hook',
-        'webhook_secret' => str_repeat('s', 32),
+        'webhook_secret' => alertWebhookSecret(),
     ]);
 
-    (new DeliverAlertJob(DeliverAlertJob::WEBHOOK, [
+    app()->call([new DeliverAlertJob(DeliverAlertJob::WEBHOOK, [
         'id' => (string) Str::uuid(),
         'event' => 'ping',
-    ]))->handle(app(SettingsRepositoryService::class), pinGuardThatMustNotResolve());
+    ]), 'handle']);
 
     expect($sentOptions['curl'] ?? null)->toBe([CURLOPT_CONNECT_TO => ['::93.184.216.34:443']]);
 });

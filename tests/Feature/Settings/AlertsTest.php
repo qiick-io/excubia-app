@@ -9,14 +9,19 @@ use App\Models\Project;
 use App\Models\Setting;
 use App\Models\User;
 use App\Services\SettingsRepositoryService;
-use App\Services\WebhookUrlGuardService;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
+use Qiick\Outbound\Contracts\HostResolver;
+use Qiick\Outbound\Ssrf\RemoteUrlGuard;
+use Qiick\Outbound\Testing\FakeHostResolver;
+use Qiick\Outbound\Webhooks\StandardWebhookSigner;
+use Qiick\Outbound\Webhooks\WebhookSecret;
 
 /**
  * Alerts (#22): Settings → Integrations, the events a report raises, delivery to the signed
@@ -26,6 +31,12 @@ beforeEach(function () {
     $this->seed(PermissionSeeder::class);
     Http::preventStrayRequests();
     Date::setTestNow('2026-11-05 12:00:00');
+    // Save-time SSRF validation resolves hostnames; pin public answers for form tests.
+    app()->instance(
+        HostResolver::class,
+        new FakeHostResolver(['hooks.example.com' => ['93.184.216.34']]),
+    );
+    app()->forgetInstance(RemoteUrlGuard::class);
 });
 
 function alertsManager(): User
@@ -72,7 +83,7 @@ function configureAlertChannels(array $overrides = [], string $slackSeverity = '
 {
     app(SettingsRepositoryService::class)->save([
         'webhook_url' => 'https://hooks.example.com/excubia',
-        'webhook_secret' => str_repeat('s', 32),
+        'webhook_secret' => alertWebhookSecret(),
         'notifier_slack_webhook_url' => 'https://hooks.slack.com/services/T/B/X',
         'alert_channels' => ['slack' => ['minimum_severity' => $slackSeverity, 'event_types' => $slackEvents]],
         ...$overrides,
@@ -122,10 +133,11 @@ it('saves only validated values from the integrations settings and drops the rul
 
 it('saves the integrations settings, keeps secrets write-only and validates them', function () {
     $manager = alertsManager();
+    $webhookSecret = alertWebhookSecret('a');
 
     $this->actingAs($manager)->put(route('project.integrations.update'), [
         'webhook_url' => 'https://hooks.example.com/excubia',
-        'webhook_secret' => str_repeat('a', 32),
+        'webhook_secret' => $webhookSecret,
         'notifier_slack_webhook_url' => 'https://hooks.slack.com/services/T/B/X',
         'notifier_telegram_bot_token' => '123456:ABC-def_1',
         'notifier_telegram_chat_id' => '-1001234567890',
@@ -134,7 +146,7 @@ it('saves the integrations settings, keeps secrets write-only and validates them
 
     $settings = app(SettingsRepositoryService::class);
 
-    expect($settings->webhookSecret())->toBe(str_repeat('a', 32))
+    expect($settings->webhookSecret())->toBe($webhookSecret)
         ->and($settings->telegramBotToken())->toBe('123456:ABC-def_1')
         // The Slack incoming-webhook URL is a bearer secret (#51): encrypted at rest.
         ->and($settings->slackWebhookUrl())->toBe('https://hooks.slack.com/services/T/B/X')
@@ -158,7 +170,7 @@ it('saves the integrations settings, keeps secrets write-only and validates them
         ...integrationChannels(['slack' => ['minimum_severity' => 'high']]),
     ]);
 
-    expect(app(SettingsRepositoryService::class)->webhookSecret())->toBe(str_repeat('a', 32))
+    expect(app(SettingsRepositoryService::class)->webhookSecret())->toBe($webhookSecret)
         ->and(app(SettingsRepositoryService::class)->alertChannelFilter('slack')->eventTypes)->toBe([]);
 
     $this->actingAs($manager)->put(route('project.integrations.update'), [
@@ -168,6 +180,12 @@ it('saves the integrations settings, keeps secrets write-only and validates them
         'notifier_telegram_bot_token' => 'MyBot',
         ...integrationChannels(['slack' => ['minimum_severity' => 'loud', 'event_types' => ['users.deleted'], 'project_ids' => [999]]]),
     ])->assertSessionHasErrors(['webhook_url', 'webhook_secret', 'notifier_slack_webhook_url', 'notifier_telegram_bot_token', 'channels.slack.event_types.0', 'channels.slack.minimum_severity', 'channels.slack.project_ids.0']);
+
+    $this->actingAs($manager)->put(route('project.integrations.update'), [
+        'webhook_url' => 'https://1..2/hook',
+        'webhook_secret' => alertWebhookSecret(),
+        ...integrationChannels(),
+    ])->assertSessionHasErrors(['webhook_url']);
 
     $this->actingAs(User::factory()->create()->assignRole(RoleEnum::Reader->value))
         ->get(route('project.integrations.edit'))->assertForbidden();
@@ -218,38 +236,52 @@ it('sends Slack only the chosen events at or above the minimum severity', functi
 it('signs webhook deliveries and records the outcome', function () {
     // An IP literal: the address check needs no DNS lookup in tests.
     configureAlertChannels(['webhook_url' => 'https://93.184.216.34/excubia']);
-    Http::fake(['93.184.216.34/*' => Http::response('', 204)]);
+    $captured = null;
+    bindPinnedAlertClient(app(RemoteUrlGuard::class), function (Request $request) use (&$captured) {
+        $captured = $request;
+
+        return Http::response('', 204);
+    });
     $eventId = (string) Str::uuid();
     $payload = ['id' => $eventId, 'event' => 'finding.new', 'severity' => 'high', 'project' => null, 'occurredAt' => '2026-11-05T12:00:00Z', 'url' => 'https://excubia.test', 'data' => []];
 
-    (new DeliverAlertJob(DeliverAlertJob::WEBHOOK, $payload))->handle(app(SettingsRepositoryService::class), app(WebhookUrlGuardService::class));
+    app()->call([new DeliverAlertJob(DeliverAlertJob::WEBHOOK, $payload), 'handle']);
 
-    Http::assertSent(function ($request): bool {
-        $timestamp = $request->header('X-Excubia-Timestamp')[0];
+    expect($captured)->not->toBeNull()
+        ->and($captured->url())->toBe('https://93.184.216.34/excubia')
+        ->and($captured->hasHeader('Webhook-Id'))->toBeTrue()
+        ->and($captured->header('Webhook-Id')[0])->toBe($eventId)
+        ->and($captured->hasHeader('X-Excubia-Signature'))->toBeFalse();
 
-        return $request->url() === 'https://93.184.216.34/excubia'
-            && $request->header('X-Excubia-Signature')[0] === 'sha256='.hash_hmac('sha256', $timestamp.'.'.$request->body(), str_repeat('s', 32));
-    });
-    expect(app(SettingsRepositoryService::class)->all()['webhook_last_success']['eventId'])->toBe($eventId);
+    $body = json_decode($captured->body(), true, 512, JSON_THROW_ON_ERROR);
+    $signed = app(StandardWebhookSigner::class)->sign(
+        $eventId,
+        (int) $captured->header('Webhook-Timestamp')[0],
+        $captured->body(),
+        [WebhookSecret::parse(alertWebhookSecret())],
+    );
+
+    expect($body)->toHaveKeys(['type', 'timestamp', 'data'])
+        ->and($body['type'])->toBe('finding.new')
+        ->and($captured->header('Webhook-Signature')[0])->toBe($signed->headers['webhook-signature'])
+        ->and(app(SettingsRepositoryService::class)->all()['webhook_last_success']['eventId'])->toBe($eventId);
 });
 
 it('refuses deliveries to private addresses', function () {
     configureAlertChannels(['webhook_url' => 'https://127.0.0.1/hook']);
-    Http::fake();
+    bindPinnedAlertClient(app(RemoteUrlGuard::class), static fn () => Http::response('', 204));
 
-    (new DeliverAlertJob(DeliverAlertJob::WEBHOOK, ['id' => (string) Str::uuid(), 'event' => 'ping']))->handle(app(SettingsRepositoryService::class), app(WebhookUrlGuardService::class));
+    app()->call([new DeliverAlertJob(DeliverAlertJob::WEBHOOK, ['id' => (string) Str::uuid(), 'event' => 'ping']), 'handle']);
 
-    Http::assertNothingSent();
     expect(app(SettingsRepositoryService::class)->all()['webhook_last_error']['message'])->toContain('Refused');
 });
 
 it('refuses IPv6 loopback, private and IPv4-mapped literals (#51)', function (string $url) {
     configureAlertChannels(['webhook_url' => $url]);
-    Http::fake();
+    bindPinnedAlertClient(app(RemoteUrlGuard::class), static fn () => Http::response('', 204));
 
-    (new DeliverAlertJob(DeliverAlertJob::WEBHOOK, ['id' => (string) Str::uuid(), 'event' => 'ping']))->handle(app(SettingsRepositoryService::class), app(WebhookUrlGuardService::class));
+    app()->call([new DeliverAlertJob(DeliverAlertJob::WEBHOOK, ['id' => (string) Str::uuid(), 'event' => 'ping']), 'handle']);
 
-    Http::assertNothingSent();
     expect(app(SettingsRepositoryService::class)->all()['webhook_last_error']['message'])->toContain('Refused');
 })->with([
     'loopback' => 'https://[::1]/hook',
@@ -262,14 +294,15 @@ it('refuses IPv6 loopback, private and IPv4-mapped literals (#51)', function (st
 
 it('never quotes the delivery URL in a transport error, so channel secrets stay out of failed jobs (#51)', function () {
     configureAlertChannels(['webhook_url' => 'https://93.184.216.34/hook?key=url-secret-value']);
-    Http::fake(fn () => throw new ConnectionException('cURL error 28: timed out for https://93.184.216.34/hook?key=url-secret-value'));
+    bindPinnedAlertClient(app(RemoteUrlGuard::class), static fn () => throw new ConnectionException('cURL error 28: timed out for https://93.184.216.34/hook?key=url-secret-value'));
     $job = new DeliverAlertJob(DeliverAlertJob::WEBHOOK, ['id' => (string) Str::uuid(), 'event' => 'ping']);
 
     try {
-        $job->handle(app(SettingsRepositoryService::class), app(WebhookUrlGuardService::class));
+        app()->call([$job, 'handle']);
         $this->fail('The delivery should fail.');
     } catch (RuntimeException $exception) {
-        expect($exception->getMessage())->toBe('Alert delivery to webhook failed: ConnectionException');
+        // PinnedHttpClient replaces the transport exception with a URL-free RuntimeException.
+        expect($exception->getMessage())->toBe('Alert delivery to webhook failed: RuntimeException');
         $job->failed($exception);
     }
 
