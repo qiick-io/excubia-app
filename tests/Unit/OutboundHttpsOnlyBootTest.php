@@ -3,8 +3,6 @@
 declare(strict_types=1);
 
 use App\Providers\AppServiceProvider;
-use ReflectionMethod;
-use RuntimeException;
 use Tests\TestCase;
 
 uses(TestCase::class);
@@ -35,7 +33,7 @@ it('treats explicit true outbound https_only values as enabled', function (mixed
 
 it('refuses to boot in production when outbound https_only is not strictly true', function (): void {
     $provider = new AppServiceProvider(app());
-    $assert = new ReflectionMethod(AppServiceProvider::class, 'assertOutboundHttpsOnly');
+    $assert = new \ReflectionMethod(AppServiceProvider::class, 'assertOutboundHttpsOnly');
 
     $previousEnv = app()->environment();
     $previousHttpsOnly = config('outbound.ssrf.https_only');
@@ -44,7 +42,7 @@ it('refuses to boot in production when outbound https_only is not strictly true'
 
     try {
         expect(fn () => $assert->invoke($provider))
-            ->toThrow(RuntimeException::class, 'OUTBOUND_HTTPS_ONLY must be true in production');
+            ->toThrow(\RuntimeException::class, 'OUTBOUND_HTTPS_ONLY must be true in production');
     } finally {
         app()['env'] = $previousEnv;
         config(['outbound.ssrf.https_only' => $previousHttpsOnly]);
@@ -53,7 +51,7 @@ it('refuses to boot in production when outbound https_only is not strictly true'
 
 it('allows outbound https_only false outside production', function (): void {
     $provider = new AppServiceProvider(app());
-    $assert = new ReflectionMethod(AppServiceProvider::class, 'assertOutboundHttpsOnly');
+    $assert = new \ReflectionMethod(AppServiceProvider::class, 'assertOutboundHttpsOnly');
 
     expect(app()->environment())->not->toBe('production');
 
