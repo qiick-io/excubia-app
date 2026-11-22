@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Settings;
 
+use App\Actions\DeleteUserAction;
 use App\Data\AlertFilterData;
 use App\Enums\AlertEventEnum;
 use App\Enums\SeverityEnum;
@@ -74,12 +77,11 @@ class ProfileController extends Controller
     /**
      * Delete the user's profile.
      */
-    public function destroy(ProfileDeleteRequest $request, #[CurrentUser] User $user): RedirectResponse
+    public function destroy(ProfileDeleteRequest $request, #[CurrentUser] User $user, DeleteUserAction $deleteUser): RedirectResponse
     {
-
         Auth::logout();
 
-        $user->delete();
+        $deleteUser->execute($user);
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();

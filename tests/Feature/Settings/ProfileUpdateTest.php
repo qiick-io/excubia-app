@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Settings;
 
+use App\Models\ApiKey;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
@@ -115,6 +116,8 @@ class ProfileUpdateTest extends TestCase
     public function test_user_can_delete_their_account(): void
     {
         $user = User::factory()->create();
+        $principal = $user->principal()->firstOrFail();
+        $apiKey = ApiKey::factory()->create(['owner_id' => $user->id]);
 
         $response = $this
             ->actingAs($user)
@@ -127,7 +130,12 @@ class ProfileUpdateTest extends TestCase
             ->assertRedirect(route('home'));
 
         $this->assertGuest();
-        $this->assertNull($user->fresh());
+
+        expect($user->fresh())->not->toBeNull()
+            ->and($user->fresh()->trashed())->toBeTrue()
+            ->and($apiKey->fresh()->isRevoked())->toBeTrue()
+            ->and($principal->fresh()->user_id)->toBeNull()
+            ->and($principal->fresh()->deactivated_at)->not->toBeNull();
     }
 
     public function test_correct_password_must_be_provided_to_delete_account(): void
