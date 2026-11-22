@@ -32,8 +32,13 @@ it('treats explicit true outbound https_only values as enabled', function (mixed
 ]);
 
 it('refuses to boot in production when outbound https_only is not strictly true', function (): void {
-    $provider = new AppServiceProvider(app());
-    $assert = new \ReflectionMethod(AppServiceProvider::class, 'assertOutboundHttpsOnly');
+    $provider = new class(app()) extends AppServiceProvider
+    {
+        public function runOutboundHttpsOnlyAssert(): void
+        {
+            $this->assertOutboundHttpsOnly();
+        }
+    };
 
     $previousEnv = app()->environment();
     $previousHttpsOnly = config('outbound.ssrf.https_only');
@@ -41,8 +46,8 @@ it('refuses to boot in production when outbound https_only is not strictly true'
     config(['outbound.ssrf.https_only' => false]);
 
     try {
-        expect(fn () => $assert->invoke($provider))
-            ->toThrow(\RuntimeException::class, 'OUTBOUND_HTTPS_ONLY must be true in production');
+        expect(fn () => $provider->runOutboundHttpsOnlyAssert())
+            ->toThrow(RuntimeException::class, 'OUTBOUND_HTTPS_ONLY must be true in production');
     } finally {
         app()['env'] = $previousEnv;
         config(['outbound.ssrf.https_only' => $previousHttpsOnly]);
@@ -50,8 +55,13 @@ it('refuses to boot in production when outbound https_only is not strictly true'
 });
 
 it('allows outbound https_only false outside production', function (): void {
-    $provider = new AppServiceProvider(app());
-    $assert = new \ReflectionMethod(AppServiceProvider::class, 'assertOutboundHttpsOnly');
+    $provider = new class(app()) extends AppServiceProvider
+    {
+        public function runOutboundHttpsOnlyAssert(): void
+        {
+            $this->assertOutboundHttpsOnly();
+        }
+    };
 
     expect(app()->environment())->not->toBe('production');
 
@@ -59,7 +69,7 @@ it('allows outbound https_only false outside production', function (): void {
     config(['outbound.ssrf.https_only' => false]);
 
     try {
-        $assert->invoke($provider);
+        $provider->runOutboundHttpsOnlyAssert();
         expect(true)->toBeTrue();
     } finally {
         config(['outbound.ssrf.https_only' => $previousHttpsOnly]);
