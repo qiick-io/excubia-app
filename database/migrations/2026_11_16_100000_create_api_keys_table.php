@@ -22,7 +22,8 @@ return new class extends Migration
             $table->string('name');
             $table->string('key_prefix', 32);
             $table->string('key_hash', 64)->unique();
-            $table->foreignId('owner_id')->constrained('users')->cascadeOnDelete();
+            // Soft-deleted users keep their keys; a hard delete must be refused, not erase evidence.
+            $table->foreignId('owner_id')->constrained('users')->restrictOnDelete();
             // Fleet principal that owns the key; authorisation still uses owner_id → users.
             // Removing a principal or its creator must never erase the key or its audit trail.
             $table->foreignUuid('owner_principal_id')->nullable()->constrained('principals')->nullOnDelete();
@@ -36,7 +37,7 @@ return new class extends Migration
             $table->string('last_used_ip', 45)->nullable();
             $table->timestamp('revoked_at')->nullable();
             $table->string('previous_key_hash', 64)->nullable();
-            $table->timestamp('previous_key_valid_until')->nullable();
+            $table->dateTime('previous_key_valid_until')->nullable();
             $table->timestamps();
 
             $table->index('key_prefix');

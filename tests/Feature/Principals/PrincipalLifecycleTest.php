@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Actions\CreateApiKeyAction;
+use App\Actions\DeleteUserAction;
 use App\Data\ApiKeyData;
 use App\Enums\ApiKeyScopeEnum;
 use App\Enums\PrincipalTypeEnum;
@@ -52,6 +53,28 @@ test('creating an api key writes owner_principal_id from the owner user', functi
     expect($plain)->not->toBeEmpty()
         ->and($apiKey->owner_id)->toBe($owner->id)
         ->and($apiKey->owner_principal_id)->toBe($principal->id);
+});
+
+test('deleting a user revokes its api keys and deactivates its principal without erasing them', function (): void {
+    User::factory()->create()->assignRole(RoleEnum::Admin->value);
+    $owner = User::factory()->create();
+    $principal = $owner->principal()->firstOrFail();
+
+    app(CreateApiKeyAction::class)->execute(
+        $owner,
+        new ApiKeyData('CI', [ApiKeyScopeEnum::McpRead], null),
+    );
+    $apiKey = ApiKey::query()->sole();
+
+    app(DeleteUserAction::class)->execute($owner);
+
+    expect($owner->fresh())->not->toBeNull()
+        ->and($owner->fresh()->trashed())->toBeTrue()
+        ->and($apiKey->fresh())->not->toBeNull()
+        ->and($apiKey->fresh()->isRevoked())->toBeTrue()
+        ->and($principal->fresh())->not->toBeNull()
+        ->and($principal->fresh()->deactivated_at)->not->toBeNull()
+        ->and($principal->fresh()->user_id)->toBeNull();
 });
 
 test('deactivating a user stamps the principal deactivated_at', function (): void {

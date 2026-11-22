@@ -8,7 +8,8 @@ use App\Models\User;
 use App\Services\SuperAdminGuardService;
 
 /**
- * Deletes a dashboard user. Roles and passkeys go with the row (cascade).
+ * Soft-deletes a dashboard user. Roles and passkeys stay attached for the audit trail; the keys
+ * are revoked and the principal deactivated first, so neither can act for a deleted person.
  */
 class DeleteUserAction
 {
@@ -16,6 +17,14 @@ class DeleteUserAction
 
     public function execute(User $user): void
     {
-        $this->superAdminGuard->preventLosingLastSuperAdmin(fn () => $user->delete(), 'user');
+        $this->superAdminGuard->preventLosingLastSuperAdmin(function () use ($user): void {
+            $user->apiKeys()->whereNull('revoked_at')->update(['revoked_at' => now()]);
+            $user->principal()->update([
+                'deactivated_at' => now(),
+                'user_id' => null,
+            ]);
+
+            $user->delete();
+        }, 'user');
     }
 }
