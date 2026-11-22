@@ -41,7 +41,7 @@ class NotifyExpiringApiKeysCommand extends Command
             $notification = new ApiKeyExpiringNotification($apiKey);
             $recipients = [$apiKey->owner];
 
-            if ($apiKey->created_by !== $apiKey->owner_id) {
+            if ($apiKey->creator !== null && $apiKey->created_by !== $apiKey->owner_id) {
                 $recipients[] = $apiKey->creator;
             }
 
