@@ -22,11 +22,12 @@ import {
 } from '@/components/ui/popover';
 import { Spinner } from '@/components/ui/spinner';
 import { avatarToneClass } from '@/lib/avatar-tone';
+import type { RecordId } from '@/lib/record-id';
 import { cn } from '@/lib/utils';
 
 /** One option: a record id and its label; the name parts and email are for user rows. */
 export type PickerOption = {
-    id: number;
+    id: RecordId;
     label: string;
     first_name?: string;
     last_name?: string | null;
@@ -55,8 +56,8 @@ function formatUserDisplayName(
 }
 
 export type PaginatedMultiSelectProps = {
-    value?: number[];
-    onChange?: (value: number[]) => void;
+    value?: RecordId[];
+    onChange?: (value: RecordId[]) => void;
     fetchUrl: string;
     placeholder?: string;
     disabled?: boolean;
@@ -77,7 +78,7 @@ export type PaginatedMultiSelectProps = {
 function mapResponse(data: unknown): PickerPage {
     const payload = data as {
         data: Array<{
-            id: number;
+            id: RecordId;
             name?: string;
             label?: string;
             first_name?: string;
@@ -136,6 +137,8 @@ function optionDisplayName(option: PickerOption): string {
  * near its end. `multiple={false}` keeps at most one id: the single-select
  * picker. `fetchUrl` answers `?search=&page=&per_page=` with a Laravel
  * paginator of `{ id, label | name | first_name + last_name, email? }` rows.
+ * Ids are `RecordId`s: UUID strings and legacy numbers both work, and a value
+ * is selected by strict equality, so `'7'` and `7` stay different records.
  * @param {*} props - Component props.
  * @returns {JSX.Element}
  */
@@ -246,7 +249,7 @@ export function PaginatedMultiSelect({
         void fetchPage(1, true);
     }, [open, debouncedSearch, fetchPage]);
 
-    const toggle = (id: number): void => {
+    const toggle = (id: RecordId): void => {
         if (!multiple) {
             onChange?.(value.includes(id) ? [] : [id]);
 

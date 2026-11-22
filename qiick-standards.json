@@ -3,9 +3,7 @@
     "ref": "v0.12.0",
     "uiPreset": "Genziana",
     "php": true,
-    "frontendRoots": [
-        "resources/js"
-    ],
+    "frontendRoots": ["resources/js"],
     "oxlint": true,
     "app": true,
     "patterns": [
