@@ -11,7 +11,7 @@ upgrade from the version before (see [docs/self-hosting.md](docs/self-hosting.md
 
 ### Security
 
-- **Alibaba and Oracle cloud metadata addresses are blocked in alert webhooks.** `100.100.100.200` and `192.0.0.192` join the metadata hosts in `WebhookUrlGuardService`, so a webhook is refused as metadata in every spelling the guard reads (decimal, octal, hexadecimal, trailing dot and IPv4-mapped IPv6), including when a hostname resolves to one of them. The separate OIDC SSRF guard in `qiick/laravel-oidc` is updated to 1.0.0-beta.4, which keeps these two addresses blocked even when `OIDC_ALLOW_PRIVATE_HOSTS=true`. No migration.
+- **Alibaba and Oracle cloud metadata addresses are blocked in alert webhooks.** `100.100.100.200` and `192.0.0.192` join the metadata hosts in `WebhookUrlGuardService`, so a webhook is refused as metadata in every spelling the guard reads (decimal, octal, hexadecimal, trailing dot and IPv4-mapped IPv6), including when a hostname resolves to one of them. The separate OIDC SSRF guard in `qiick/laravel-oidc` is updated to 1.0.0-beta.5, which keeps these two addresses blocked even when `OIDC_ALLOW_PRIVATE_HOSTS=true` (from beta.4) and folds the case-sensitive identity-key migration into the create migration (final schema unchanged).
 
 ### Changed
 
@@ -41,6 +41,7 @@ upgrade from the version before (see [docs/self-hosting.md](docs/self-hosting.md
 ### Upgrade notes
 
 - **Fleet core schema (decision 2026-11-19 / 2026-11-20).** Recreate the database: `php artisan migrate:fresh --seed --force`. Existing data is lost (accepted for the beta; the production dogfood database is being recreated anyway).
+- **`qiick/laravel-oidc` 1.0.0-beta.5.** The case-sensitive identity key is now part of `2026_11_05_000000_create_user_identities_table`; `2026_11_18_000000_make_user_identity_keys_case_sensitive` is gone. Fresh installs get the same schema in one migration. Databases that already ran beta.2–beta.4 already have that schema; a leftover `migrations` row for the removed file is harmless (delete it, or recreate with `migrate:fresh`). This app loads the package migrations (not published).
 
 ### Added
 
