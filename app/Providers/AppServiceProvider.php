@@ -260,7 +260,7 @@ class AppServiceProvider extends ServiceProvider
 
     /**
      * Alert deliveries are HTTPS-only: a self-hoster must not weaken that in production via
-     * OUTBOUND_HTTPS_ONLY=false (adversarial review of #399).
+     * OUTBOUND_HTTPS_ONLY (adversarial review of #399 / #400).
      *
      * @throws RuntimeException when production would allow plain HTTP outbound
      */
@@ -270,10 +270,20 @@ class AppServiceProvider extends ServiceProvider
             return;
         }
 
-        if ($this->app->make('config')->get('outbound.ssrf.https_only') === false) {
+        if (! self::outboundHttpsOnlyIsStrictlyEnabled(env('OUTBOUND_HTTPS_ONLY', true))) {
             throw new RuntimeException(
-                'OUTBOUND_HTTPS_ONLY cannot be false in production: alert deliveries must use HTTPS.',
+                'OUTBOUND_HTTPS_ONLY must be true in production: alert deliveries must use HTTPS.',
             );
         }
+    }
+
+    /**
+     * Fail-closed parse of OUTBOUND_HTTPS_ONLY: only filter_var(…, FILTER_VALIDATE_BOOLEAN,
+     * FILTER_NULL_ON_FAILURE) === true counts as enabled. Values such as "0", "no", "off", ""
+     * or null are rejected (a PHP (bool) cast or === false would let several of those through).
+     */
+    public static function outboundHttpsOnlyIsStrictlyEnabled(mixed $raw): bool
+    {
+        return filter_var($raw, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) === true;
     }
 }
