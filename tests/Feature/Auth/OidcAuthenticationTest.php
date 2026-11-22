@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Actions\DeleteUserAction;
 use App\Enums\RoleEnum;
 use App\Models\Setting;
 use App\Models\User;
@@ -213,6 +214,21 @@ it('creates an active reader without a password for an unknown user when JIT is 
         ->and($user->first_name)->toBe('Maria Luisa')
         ->and($user->last_name)->toBe('Rossi')
         ->and($user->identities()->sole()->subject)->toBe('fake-subject-1');
+});
+
+it('re-provisions a deleted account by email when JIT is on', function () {
+    $identityProvider = FakeIdentityProvider::fake();
+    enableOidc(['oidc_jit_provisioning' => true]);
+    $deleted = User::factory()->create(['email' => 'sso.user@example.com']);
+    app(DeleteUserAction::class)->execute($deleted);
+
+    signInThroughSso($this, $identityProvider)->assertRedirect('/dashboard');
+
+    $user = User::query()->where('email', 'sso.user@example.com')->sole();
+
+    $this->assertAuthenticatedAs($user);
+    expect($user->id)->not->toBe($deleted->id)
+        ->and($user->trashed())->toBeFalse();
 });
 
 it('takes the last word of the name claim as the last name', function () {

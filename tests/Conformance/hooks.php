@@ -151,7 +151,18 @@ return [
     'assertErasure' => static function (): void {
         $email = 'erase-me-conformance@example.test';
         $username = 'erase-me-conformance';
-        $owner = User::factory()->create(['email' => $email, 'username' => $username]);
+        $firstName = 'Erase';
+        $lastName = 'Conformance';
+        $ip = '203.0.113.77';
+        $owner = User::factory()->create([
+            'email' => $email,
+            'username' => $username,
+            'first_name' => $firstName,
+            'last_name' => $lastName,
+            'last_login_ip' => $ip,
+        ]);
+        $publicId = $owner->public_id;
+        $databaseKey = (string) $owner->getKey();
         $principal = $owner->principal()->firstOrFail();
         app(CreateApiKeyAction::class)->execute(
             $owner,
@@ -159,18 +170,41 @@ return [
         );
         $apiKey = ApiKey::query()->sole();
 
+        activity()->causedBy($owner)->performedOn($owner)->withProperties([
+            'email' => $email,
+            'first_name' => $firstName,
+            'attributes' => ['username' => $username, 'last_login_ip' => $ip],
+        ])->log('c17 erasure probe');
+        $activityId = (int) Activity::query()->where('description', 'c17 erasure probe')->sole()->id;
+
         app(DeleteUserAction::class)->execute($owner);
 
         $erased = $owner->fresh();
 
         expect($erased)->not->toBeNull()
             ->and($erased->trashed())->toBeTrue()
-            ->and($erased->email)->not->toBe($email)
-            ->and($erased->username)->not->toBe($username)
+            ->and($erased->email)->toBe('deleted+'.$publicId.'@example.invalid')
+            ->and($erased->username)->toBe('deleted_'.substr(str_replace('-', '', $publicId), 0, 24))
+            ->and($erased->first_name)->toBe('Deleted')
+            ->and($erased->last_name)->toBeNull()
+            ->and($erased->last_login_ip)->toBeNull()
             ->and($apiKey->fresh())->not->toBeNull()
             ->and($apiKey->fresh()->isRevoked())->toBeTrue()
             ->and($principal->fresh()->user_id)->toBeNull()
             ->and($principal->fresh()->deactivated_at)->not->toBeNull();
+
+        $erasedActivity = Activity::query()->findOrFail($activityId);
+        $payload = json_encode($erasedActivity->properties?->toArray() ?? [], JSON_THROW_ON_ERROR);
+        $needles = [$email, $username, $firstName, $lastName, $ip];
+
+        foreach ($needles as $needle) {
+            if (str_contains($payload, $needle)) {
+                throw new RuntimeException("C17 activity still contains \"{$needle}\" after erasure.");
+            }
+        }
+
+        expect($erasedActivity->causer_id)->toBe($databaseKey)
+            ->and($erasedActivity->subject_id)->toBe($databaseKey);
     },
 
     'assertApiKeyActivityUuid' => static function () use ($seedPermissions): void {

@@ -25,7 +25,7 @@
             "review_by": "2026-12-20"
         },
         "C17": {
-            "reason": "Tracked security work, not hidden: user erasure with anonymised activity and unique tombstones is not implemented yet (#381).",
+            "reason": "Tracked security work, not hidden: erasure now releases unique email/username and anonymises personal columns, but identifying payload in existing activity rows is not scrubbed yet (#381). The C17 hook probes that gap so a stale divergence is caught.",
             "decision": "knowledge/decisions/2026-11-20-core-hardening",
             "review_by": "2026-12-20"
         },

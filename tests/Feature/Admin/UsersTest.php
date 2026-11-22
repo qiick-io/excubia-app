@@ -197,6 +197,27 @@ it('deletes a user', function () {
     expect(User::query()->whereKey($user->id)->exists())->toBeFalse();
 });
 
+it('releases the email and username of a deleted user', function () {
+    $admin = managedUser(RoleEnum::Admin);
+    $deleted = managedUser(RoleEnum::Reader, [
+        'email' => 'released@example.com',
+        'username' => 'released-user',
+    ]);
+
+    $this->actingAs($admin)->delete(route('users.destroy', $deleted))->assertRedirect(route('users.index'));
+
+    $this->actingAs($admin)
+        ->from(route('users.index'))
+        ->post(route('users.store'), userPayload([
+            'email' => 'released@example.com',
+            'username' => 'released-user',
+        ]))
+        ->assertSessionHasNoErrors()
+        ->assertRedirect(route('users.index'));
+
+    expect(User::query()->where('email', 'released@example.com')->sole()->trashed())->toBeFalse();
+});
+
 it('blocks deleting or deactivating yourself', function () {
     $admin = managedUser(RoleEnum::Admin);
 

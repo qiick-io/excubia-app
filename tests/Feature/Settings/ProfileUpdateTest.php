@@ -115,7 +115,9 @@ class ProfileUpdateTest extends TestCase
 
     public function test_user_can_delete_their_account(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['username' => 'private-user']);
+        $email = $user->email;
+        $publicId = $user->public_id;
         $principal = $user->principal()->firstOrFail();
         $apiKey = ApiKey::factory()->create(['owner_id' => $user->id]);
 
@@ -131,8 +133,14 @@ class ProfileUpdateTest extends TestCase
 
         $this->assertGuest();
 
-        expect($user->fresh())->not->toBeNull()
-            ->and($user->fresh()->trashed())->toBeTrue()
+        $erased = User::withTrashed()->findOrFail($user->id);
+
+        expect($erased->trashed())->toBeTrue()
+            ->and($erased->email)->toBe('deleted+'.$publicId.'@example.invalid')
+            ->and($erased->username)->toBe('deleted_'.substr(str_replace('-', '', $publicId), 0, 24))
+            ->and($erased->first_name)->toBe('Deleted')
+            ->and($erased->last_name)->toBeNull()
+            ->and($erased->email)->not->toBe($email)
             ->and($apiKey->fresh()->isRevoked())->toBeTrue()
             ->and($principal->fresh()->user_id)->toBeNull()
             ->and($principal->fresh()->deactivated_at)->not->toBeNull();
