@@ -48,6 +48,7 @@ use Qiick\Oidc\Contracts\SecondFactorChallengeContract;
 use Qiick\Oidc\Contracts\UserProvisioningContract;
 use Qiick\Oidc\Services\SsoOnlyModeService;
 use Qiick\Oidc\Services\UserLinkingService;
+use RuntimeException;
 use Spatie\Activitylog\Facades\Activity;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -244,6 +245,8 @@ class AppServiceProvider extends ServiceProvider
             app()->isProduction(),
         );
 
+        $this->assertOutboundHttpsOnly();
+
         // Lazy loading, silently discarded and missing attributes throw outside
         // production, so tests catch them (qiick standards, Automated checks).
         Model::shouldBeStrict(! app()->isProduction());
@@ -253,5 +256,36 @@ class AppServiceProvider extends ServiceProvider
         // Values echoed into Markdown mails (the weekly digest) come from pushed reports: escape
         // their `[` and `<`, so a package or task name cannot plant a link in the email (#51).
         Markdown::withSecuredEncoding();
+    }
+
+    /**
+     * Alert deliveries are HTTPS-only: a self-hoster must not weaken that in production via
+     * OUTBOUND_HTTPS_ONLY (adversarial review of #399 / #400).
+     *
+     * @throws RuntimeException when production would allow plain HTTP outbound
+     */
+    protected function assertOutboundHttpsOnly(): void
+    {
+        if (! $this->app->isProduction()) {
+            return;
+        }
+
+        // Read the published config (env() is forbidden outside config/). Config already
+        // fail-closes via filter_var(…, FILTER_NULL_ON_FAILURE) === true.
+        if (! self::outboundHttpsOnlyIsStrictlyEnabled(config('outbound.ssrf.https_only'))) {
+            throw new RuntimeException(
+                'OUTBOUND_HTTPS_ONLY must be true in production: alert deliveries must use HTTPS.',
+            );
+        }
+    }
+
+    /**
+     * Fail-closed parse of OUTBOUND_HTTPS_ONLY: only filter_var(…, FILTER_VALIDATE_BOOLEAN,
+     * FILTER_NULL_ON_FAILURE) === true counts as enabled. Values such as "0", "no", "off", ""
+     * or null are rejected (a PHP (bool) cast or === false would let several of those through).
+     */
+    public static function outboundHttpsOnlyIsStrictlyEnabled(mixed $raw): bool
+    {
+        return filter_var($raw, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) === true;
     }
 }

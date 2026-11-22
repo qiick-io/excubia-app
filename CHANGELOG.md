@@ -13,11 +13,13 @@ upgrade from the version before (see [docs/self-hosting.md](docs/self-hosting.md
 
 - **Alibaba and Oracle cloud metadata addresses are blocked in alert webhooks.** `100.100.100.200` and `192.0.0.192` join the metadata hosts in the SSRF guard (now `qiick/laravel-outbound` `RemoteUrlGuard`), so a webhook is refused as metadata in every spelling the guard reads (decimal, octal, hexadecimal, trailing dot and IPv4-mapped IPv6), including when a hostname resolves to one of them. The separate OIDC SSRF guard in `qiick/laravel-oidc` is updated to 1.0.0-beta.4, which keeps these two addresses blocked even when `OIDC_ALLOW_PRIVATE_HOSTS=true`. No migration.
 
+- **Outbound HTTPS cannot be disabled in production.** Boot in `APP_ENV=production` requires `OUTBOUND_HTTPS_ONLY` to be exactly true after `filter_var(…, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)` — values such as `0`, `no`, `off` or empty refuse to start. Slack incoming-webhook URLs are validated with the same SSRF rule as the alert webhook URL at save time.
+
 ### Changed
 
 - **Alert webhooks adopt `qiick/laravel-outbound` 0.1.1** (#389). The local `WebhookUrlGuardService` and hand-rolled `CURLOPT_CONNECT_TO` / HMAC are gone: deliveries go through `PinnedHttpClient` and `StandardWebhookSigner`.
     - **Receivers:** headers are now Standard Webhooks (`webhook-id`, `webhook-timestamp`, `webhook-signature: v1,<base64>`). The legacy `X-Excubia-Event`, `X-Excubia-Event-Id`, `X-Excubia-Timestamp` and `X-Excubia-Signature` headers are removed (no dual-send: Excuvia has no release yet). The body is the Standard Webhooks envelope `{type, timestamp, data}`; the delivery UUID is only in `webhook-id`. Signed content is `<webhook-id>.<webhook-timestamp>.<raw body>`.
-    - **Secret:** Settings → Integrations stores a `whsec_…` secret (Generate produces one). Raw legacy secrets are refused.
+    - **Secret:** Settings → Integrations stores a `whsec_…` secret (Generate produces one). Raw legacy secrets are refused. Rotation overwrites that single secret (no dual-signature window); multi-secret cutover is a follow-up when `qiick/laravel-outbound` 1.0 ships the secrets table.
     - **SSRF / pin:** same HTTPS-only, public-host rules as before, including Alibaba/Oracle metadata, IPv6-mapped forms, redirects refused and DNS rebinding pinned through the package client. An alert URL whose host has empty DNS labels (for example `1..2`) is now refused as an invalid URL when it is saved (and again on delivery) instead of being resolved. Delivery tables from laravel-outbound 1.0 are not part of this change.
     - Conformance C27 (Standard Webhooks) is green; the C27 divergence is removed.
 

@@ -232,6 +232,8 @@ class DeliverAlertJob implements ShouldQueue
             data: $envelopeData,
         );
         $rawBody = $message->toPayloadJson();
+        // Single secret only: Settings stores one whsec_ value. Dual-signature rotation is a
+        // follow-up when qiick/laravel-outbound 1.0 ships the webhook_endpoint_secrets table.
         $signed = $signer->sign(
             $message->id,
             $timestamp->getTimestamp(),
