@@ -11,7 +11,7 @@ upgrade from the version before (see [docs/self-hosting.md](docs/self-hosting.md
 
 ### Security
 
-- **Alibaba and Oracle cloud metadata addresses are blocked in alert webhooks.** `100.100.100.200` and `192.0.0.192` join the metadata hosts in the SSRF guard (now `qiick/laravel-outbound` `RemoteUrlGuard`), so a webhook is refused as metadata in every spelling the guard reads (decimal, octal, hexadecimal, trailing dot and IPv4-mapped IPv6), including when a hostname resolves to one of them. The separate OIDC SSRF guard in `qiick/laravel-oidc` is updated to 1.0.0-beta.4, which keeps these two addresses blocked even when `OIDC_ALLOW_PRIVATE_HOSTS=true`. No migration.
+- **Alibaba and Oracle cloud metadata addresses are blocked in alert webhooks.** `100.100.100.200` and `192.0.0.192` join the metadata hosts in the SSRF guard (now `qiick/laravel-outbound` `RemoteUrlGuard`), so a webhook is refused as metadata in every spelling the guard reads (decimal, octal, hexadecimal, trailing dot and IPv4-mapped IPv6), including when a hostname resolves to one of them. The separate OIDC SSRF guard in `qiick/laravel-oidc` is updated to 1.0.0-beta.6, which keeps these two addresses blocked even when `OIDC_ALLOW_PRIVATE_HOSTS=true` (from beta.4). No migration for this SSRF change itself; see the beta.6 upgrade note for the package schema.
 
 - **Outbound HTTPS cannot be disabled in production.** Boot in `APP_ENV=production` requires `OUTBOUND_HTTPS_ONLY` to be exactly true after `filter_var(…, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)` — values such as `0`, `no`, `off` or empty refuse to start. Slack incoming-webhook URLs are validated with the same SSRF rule as the alert webhook URL at save time.
 
@@ -51,6 +51,7 @@ upgrade from the version before (see [docs/self-hosting.md](docs/self-hosting.md
 ### Upgrade notes
 
 - **Fleet core schema (decision 2026-11-19 / 2026-11-20).** Recreate the database: `php artisan migrate:fresh --seed --force`. Existing data is lost (accepted for the beta; the production dogfood database is being recreated anyway).
+- **`qiick/laravel-oidc` 1.0.0-beta.6.** Package schema changes edit or add `create_…` migrations (pre-1.0): enriched `user_identities` columns and a new `oidc_logout_revocations` table for durable logout `jti` storage. Recreate beta databases with `php artisan migrate:fresh --seed --force` (or let the fleet core-schema recreate above cover it). This app loads the package migrations (not published). Also pulls IdP SSRF through `qiick/laravel-outbound`, `at_hash` checks when present, versioned SSO session payloads, optional front-channel logout, and `oidc.routes.except`.
 
 ### Added
 
