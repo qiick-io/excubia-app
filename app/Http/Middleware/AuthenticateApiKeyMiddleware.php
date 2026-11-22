@@ -77,7 +77,11 @@ class AuthenticateApiKeyMiddleware
             return ApiKeyRejectedException::expiredKey()->render();
         }
 
-        if (! $apiKey->owner->is_active) {
+        // A soft-deleted owner is hidden by the relation's default scope: treat the missing
+        // owner like an inactive one, never as a reason to dereference null.
+        $owner = $apiKey->owner;
+
+        if ($owner === null || ! $owner->is_active) {
             RateLimiter::hit($failuresKey);
 
             return ApiKeyRejectedException::unusableKey(__('The API key owner is no longer active.'))->render();
@@ -93,7 +97,7 @@ class AuthenticateApiKeyMiddleware
 
         // Stored scopes ∩ owner's current permissions: a key whose owner loses a permission
         // loses that scope on the next request (fleet ceiling).
-        if (! $apiKey->hasScope($requiredScope) || ! $requiredScope->isHeldBy($apiKey->owner)) {
+        if (! $apiKey->hasScope($requiredScope) || ! $requiredScope->isHeldBy($owner)) {
             RateLimiter::hit($failuresKey);
 
             return ApiKeyRejectedException::insufficientScope($requiredScope)->render();
@@ -121,7 +125,7 @@ class AuthenticateApiKeyMiddleware
         // mint a session. shouldUse makes Auth::user() (and laravel/mcp) resolve the owner; User::
         // getDefaultGuardName() keeps Spatie on `web`. Restore the previous default afterwards.
         $request->attributes->set(ApiKey::class, $apiKey);
-        Auth::guard('api_key')->setUser($apiKey->owner);
+        Auth::guard('api_key')->setUser($owner);
         $previousGuard = Auth::getDefaultDriver();
         Auth::shouldUse('api_key');
         $this->recordApiKeyUse->execute($apiKey, $request->ip());

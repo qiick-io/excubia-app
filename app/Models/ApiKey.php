@@ -43,9 +43,9 @@ use Symfony\Component\HttpFoundation\IpUtils;
  * @property Carbon|null $previous_key_valid_until
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read User $owner
- * @property-read Principal $ownerPrincipal
- * @property-read User $creator
+ * @property-read User|null $owner null once the owning user is soft-deleted
+ * @property-read Principal|null $ownerPrincipal null once the owning principal is removed
+ * @property-read User|null $creator null once the issuing user is removed
  */
 class ApiKey extends Model
 {

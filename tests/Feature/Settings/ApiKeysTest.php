@@ -294,9 +294,13 @@ it('rejects the key of a deactivated user at once, and of a deleted user', funct
     callWithApiKey($plainKey)->assertUnauthorized()->assertJsonPath('error', 'invalid_token');
 
     $user->delete();
-    callWithApiKey($plainKey)->assertUnauthorized();
+    callWithApiKey($plainKey)
+        ->assertUnauthorized()
+        ->assertJsonPath('error', 'invalid_token')
+        ->assertJsonPath('message', 'The API key owner is no longer active.');
 
-    expect(ApiKey::query()->count())->toBe(0);
+    expect(ApiKey::query()->count())->toBe(1)
+        ->and(ApiKey::query()->sole()->owner)->toBeNull();
 });
 
 it('rejects a key without the scope the route needs, including an empty scope list', function () {
