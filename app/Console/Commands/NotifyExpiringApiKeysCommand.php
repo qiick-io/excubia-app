@@ -38,8 +38,15 @@ class NotifyExpiringApiKeysCommand extends Command
         $sent = 0;
 
         foreach ($apiKeys as $apiKey) {
+            // A deleted owner no longer appears through the relation; never notify a null recipient.
+            $owner = $apiKey->owner;
+
+            if ($owner === null) {
+                continue;
+            }
+
             $notification = new ApiKeyExpiringNotification($apiKey);
-            $recipients = [$apiKey->owner];
+            $recipients = [$owner];
 
             if ($apiKey->creator !== null && $apiKey->created_by !== $apiKey->owner_id) {
                 $recipients[] = $apiKey->creator;

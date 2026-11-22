@@ -47,6 +47,22 @@ it('notifies only the owner when the issuing user is gone', function () {
     Notification::assertSentTo($owner, ApiKeyExpiringNotification::class);
 });
 
+it('skips keys whose owner has been soft-deleted', function () {
+    Notification::fake();
+    Date::setTestNow('2026-11-17 10:00:00');
+    $owner = User::factory()->create();
+
+    ApiKey::factory()->for($owner, 'owner')->create([
+        'created_by' => $owner->id,
+        'expires_at' => now()->addDays(7)->addHours(6),
+    ]);
+    $owner->delete();
+
+    $this->artisan('excubia:notify-expiring-api-keys')->assertSuccessful();
+
+    Notification::assertNothingSent();
+});
+
 it('is registered on the daily schedule', function () {
     $event = collect(app(Schedule::class)->events())
         ->first(fn ($event): bool => str_contains((string) $event->command, 'excubia:notify-expiring-api-keys'));
