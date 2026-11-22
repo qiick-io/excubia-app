@@ -189,7 +189,7 @@ it('runs a tool as the key owner, hides admin-only projects from a reader and lo
         ->and($activity->properties['surface'])->toBe('mcp')
         ->and($activity->properties['tool'])->toBe('list-projects')
         ->and($activity->properties['status'])->toBe('ok')
-        ->and($activity->properties['api_key_id'])->toBe(ApiKey::query()->where('owner_id', $reader->id)->value('id'));
+        ->and($activity->properties['api_key_id'])->toBe(ApiKey::query()->where('owner_id', $reader->id)->value('uuid'));
 });
 
 it('returns a tool error for a user without can-show-projects and for an unknown project', function () {

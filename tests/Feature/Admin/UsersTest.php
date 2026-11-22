@@ -197,6 +197,27 @@ it('deletes a user', function () {
     expect(User::query()->whereKey($user->id)->exists())->toBeFalse();
 });
 
+it('releases the email and username of a deleted user', function () {
+    $admin = managedUser(RoleEnum::Admin);
+    $deleted = managedUser(RoleEnum::Reader, [
+        'email' => 'released@example.com',
+        'username' => 'released-user',
+    ]);
+
+    $this->actingAs($admin)->delete(route('users.destroy', $deleted))->assertRedirect(route('users.index'));
+
+    $this->actingAs($admin)
+        ->from(route('users.index'))
+        ->post(route('users.store'), userPayload([
+            'email' => 'released@example.com',
+            'username' => 'released-user',
+        ]))
+        ->assertSessionHasNoErrors()
+        ->assertRedirect(route('users.index'));
+
+    expect(User::query()->where('email', 'released@example.com')->sole()->trashed())->toBeFalse();
+});
+
 it('blocks deleting or deactivating yourself', function () {
     $admin = managedUser(RoleEnum::Admin);
 
@@ -285,10 +306,10 @@ it('splits user permissions per operation, as in externa-core', function () {
 it('lists the roles the user may grant for the role picker', function () {
     $admin = managedUser(RoleEnum::Admin);
 
-    $this->actingAs($admin)->getJson(route('users.assignable-roles'))
-        ->assertOk()
-        ->assertJsonPath('last_page', 1)
-        ->assertJson(fn ($json) => $json->has('data')->etc());
+    $response = $this->actingAs($admin)->getJson(route('users.assignable-roles'))->assertOk();
+
+    expect(array_keys($response->json()))->toBe(['data', 'links', 'meta'])
+        ->and($response->json('meta.last_page'))->toBe(1);
 
     $names = collect($this->actingAs($admin)->getJson(route('users.assignable-roles'))->json('data'))->pluck('name');
     expect($names)->not->toContain(RoleEnum::SuperAdmin->value)

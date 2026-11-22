@@ -75,8 +75,10 @@ class FortifyServiceProvider extends ServiceProvider
             return $user;
         });
 
+        // A passkey may outlive its user (a soft-deleted account, or an orphaned row): the
+        // relation resolves to null, so this must be an ordinary refusal, not a TypeError → 500.
         Passkeys::authorizeLoginUsing(
-            fn (Request $request, PasskeyUser $user): bool => $user instanceof User
+            fn (Request $request, ?PasskeyUser $user): bool => $user instanceof User
                 && $user->is_active
                 && app(SsoOnlyModeService::class)->canUseLocalLogin($user),
         );

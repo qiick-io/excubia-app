@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Actions\DeleteUserAction;
 use App\Enums\RoleEnum;
 use App\Models\User;
 use App\Services\SettingsRepositoryService;
@@ -115,6 +116,19 @@ it('leaves an existing user untouched when seeding in production', function () {
         ->and(Hash::check('original-secret-password', $existing->password))->toBeTrue()
         ->and($existing->hasRole(RoleEnum::Admin->value))->toBeTrue()
         ->and($existing->hasRole(RoleEnum::SuperAdmin->value))->toBeFalse();
+});
+
+it('creates the seeded super admin even when a soft-deleted user held the email', function () {
+    configureInitialSuperAdminServer();
+    config(['super_admin.password' => 'V3ry-Str0ng-Passphrase-2026']);
+    $deleted = User::factory()->create(['email' => 'superadmin@example.com']);
+    app(DeleteUserAction::class)->execute($deleted);
+
+    $this->artisan('db:seed', ['--class' => CreateSuperAdminSeeder::class, '--force' => true])
+        ->assertSuccessful();
+
+    expect(User::query()->count())->toBe(1)
+        ->and(User::withTrashed()->findOrFail($deleted->id)->email)->not->toBe('superadmin@example.com');
 });
 
 it('creates the seeded super admin locally with the example password', function () {

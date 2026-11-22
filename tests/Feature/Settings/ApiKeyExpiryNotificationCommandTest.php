@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Models\ApiKey;
 use App\Models\User;
+use App\Notifications\ApiKeyExpiringNotification;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Notification;
@@ -25,6 +26,37 @@ it('skips revoked keys and keys outside the warning window', function () {
         'created_by' => $user->id,
         'expires_at' => null,
     ]);
+
+    $this->artisan('excubia:notify-expiring-api-keys')->assertSuccessful();
+
+    Notification::assertNothingSent();
+});
+
+it('notifies only the owner when the issuing user is gone', function () {
+    Notification::fake();
+    Date::setTestNow('2026-11-17 10:00:00');
+    $owner = User::factory()->create();
+
+    ApiKey::factory()->for($owner, 'owner')->create([
+        'created_by' => null,
+        'expires_at' => now()->addDays(7)->addHours(6),
+    ]);
+
+    $this->artisan('excubia:notify-expiring-api-keys')->assertSuccessful();
+
+    Notification::assertSentTo($owner, ApiKeyExpiringNotification::class);
+});
+
+it('skips keys whose owner has been soft-deleted', function () {
+    Notification::fake();
+    Date::setTestNow('2026-11-17 10:00:00');
+    $owner = User::factory()->create();
+
+    ApiKey::factory()->for($owner, 'owner')->create([
+        'created_by' => $owner->id,
+        'expires_at' => now()->addDays(7)->addHours(6),
+    ]);
+    $owner->delete();
 
     $this->artisan('excubia:notify-expiring-api-keys')->assertSuccessful();
 

@@ -4,11 +4,18 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Settings;
 
+use App\Actions\DeleteUserAction;
+use App\Enums\RoleEnum;
+use App\Models\ApiKey;
 use App\Models\User;
+use Database\Seeders\PermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
+use Laravel\Ai\Models\Conversation;
+use Laravel\Passkeys\Passkey;
 use Tests\TestCase;
 
 class ProfileUpdateTest extends TestCase
@@ -114,7 +121,11 @@ class ProfileUpdateTest extends TestCase
 
     public function test_user_can_delete_their_account(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['username' => 'private-user']);
+        $email = $user->email;
+        $publicId = $user->public_id;
+        $principal = $user->principal()->firstOrFail();
+        $apiKey = ApiKey::factory()->create(['owner_id' => $user->id]);
 
         $response = $this
             ->actingAs($user)
@@ -127,7 +138,95 @@ class ProfileUpdateTest extends TestCase
             ->assertRedirect(route('home'));
 
         $this->assertGuest();
-        $this->assertNull($user->fresh());
+
+        $erased = User::withTrashed()->findOrFail($user->id);
+
+        expect($erased->trashed())->toBeTrue()
+            ->and($erased->email)->toBe('deleted+'.$publicId.'@example.invalid')
+            ->and($erased->username)->toBe('deleted_'.str_replace('-', '', $publicId))
+            ->and($erased->first_name)->toBe('Deleted')
+            ->and($erased->last_name)->toBeNull()
+            ->and($erased->email)->not->toBe($email)
+            ->and($apiKey->fresh()->isRevoked())->toBeTrue()
+            ->and($principal->fresh()->user_id)->toBeNull()
+            ->and($principal->fresh()->deactivated_at)->not->toBeNull();
+    }
+
+    public function test_deleting_an_account_removes_passkeys_and_deactivates_the_row(): void
+    {
+        $user = User::factory()->create();
+        $passkey = $user->passkeys()->create([
+            'name' => 'Ada private laptop',
+            'credential_id' => 'credential-delete-'.$user->id,
+            'credential' => [],
+        ]);
+
+        app(DeleteUserAction::class)->execute($user);
+
+        expect(Passkey::query()->whereKey($passkey->getKey())->exists())->toBeFalse()
+            ->and($user->fresh()->is_active)->toBeFalse();
+    }
+
+    public function test_deleting_an_account_removes_the_users_assistant_chats(): void
+    {
+        $user = User::factory()->create();
+        $other = User::factory()->create();
+
+        $conversationId = (string) Str::uuid();
+        DB::table('agent_conversations')->insert([
+            'id' => $conversationId,
+            'participant_type' => Conversation::participantType($user),
+            'participant_id' => $user->id,
+            'title' => 'Ada private health questions',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        DB::table('agent_conversation_messages')->insert([
+            'id' => (string) Str::uuid(),
+            'conversation_id' => $conversationId,
+            'participant_type' => Conversation::participantType($user),
+            'participant_id' => $user->id,
+            'agent' => 'excubia-assistant',
+            'role' => 'user',
+            'content' => 'My diagnosis is private',
+            'attachments' => '[]',
+            'steps' => '[]',
+            'usage' => '[]',
+            'meta' => '[]',
+            'status' => 'completed',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $foreignConversationId = (string) Str::uuid();
+        DB::table('agent_conversations')->insert([
+            'id' => $foreignConversationId,
+            'participant_type' => Conversation::participantType($other),
+            'participant_id' => $other->id,
+            'title' => 'Other user chat',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        app(DeleteUserAction::class)->execute($user);
+
+        expect(DB::table('agent_conversations')->where('id', $conversationId)->exists())->toBeFalse()
+            ->and(DB::table('agent_conversation_messages')->where('conversation_id', $conversationId)->exists())->toBeFalse()
+            ->and(DB::table('agent_conversations')->where('id', $foreignConversationId)->exists())->toBeTrue();
+    }
+
+    public function test_refusing_to_delete_the_last_super_admin_keeps_the_session(): void
+    {
+        $this->seed(PermissionSeeder::class);
+        $admin = User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value);
+
+        $this->actingAs($admin)
+            ->from(route('profile.edit'))
+            ->delete(route('profile.destroy'), ['password' => 'password'])
+            ->assertSessionHasErrors('user')
+            ->assertRedirect(route('profile.edit'));
+
+        $this->assertAuthenticatedAs($admin);
+        expect($admin->fresh()->trashed())->toBeFalse();
     }
 
     public function test_correct_password_must_be_provided_to_delete_account(): void

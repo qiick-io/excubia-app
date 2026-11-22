@@ -23,6 +23,10 @@ return new class extends Migration
             $table->string('username')->nullable()->unique();
             // Fleet public id (UUID v7): exposed outside the database; primary key stays bigint.
             $table->uuid('public_id')->unique();
+            // Fleet audit columns: soft-delete marker and the last successful sign-in.
+            $table->timestamp('deleted_at')->nullable();
+            $table->timestamp('last_login_at')->nullable();
+            $table->string('last_login_ip', 45)->nullable();
             $table->string('locale')->default('en');
             // IANA timezone (fleet baseline); default UTC.
             $table->string('timezone')->default('UTC');

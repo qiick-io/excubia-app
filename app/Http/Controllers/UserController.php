@@ -14,6 +14,7 @@ use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -88,7 +89,18 @@ class UserController extends Controller
             fn (array $role): bool => $search === '' || str_contains(mb_strtolower($role['name']), $search),
         ));
 
-        return response()->json(['data' => $roles, 'current_page' => 1, 'last_page' => 1]);
+        $paginator = new LengthAwarePaginator($roles, count($roles), max(count($roles), 1), 1, [
+            'path' => $request->url(),
+            'query' => $request->query(),
+        ]);
+
+        $payload = $paginator->toArray();
+
+        return response()->json([
+            'data' => $payload['data'],
+            'links' => $payload['links'],
+            'meta' => array_diff_key($payload, array_flip(['data', 'links'])),
+        ]);
     }
 
     public function store(StoreUserRequest $request, CreateUserAction $createUser): RedirectResponse

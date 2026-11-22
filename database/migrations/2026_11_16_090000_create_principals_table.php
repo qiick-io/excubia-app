@@ -21,7 +21,8 @@ return new class extends Migration
         Schema::create('principals', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->string('type', 32);
-            $table->foreignId('user_id')->nullable()->unique()->constrained('users')->cascadeOnDelete();
+            // Keep the principal row when its user goes; the deletion action deactivates it.
+            $table->foreignId('user_id')->nullable()->unique()->constrained('users')->nullOnDelete();
             $table->string('organisation_id', 36)->nullable()->index();
             $table->string('name');
             $table->timestamp('deactivated_at')->nullable();

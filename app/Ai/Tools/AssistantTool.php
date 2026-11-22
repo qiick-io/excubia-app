@@ -25,12 +25,12 @@ abstract class AssistantTool implements Tool
 {
     /**
      * @param  'assistant'|'mcp'  $surface  where the call comes from, for the activity log
-     * @param  int|null  $apiKeyId  the issuing key when the surface is MCP (#351 attribution)
+     * @param  string|null  $apiKeyId  public UUID of the issuing key when the surface is MCP (#351 attribution)
      */
     public function __construct(
         protected User $user,
         protected string $surface = 'assistant',
-        protected ?int $apiKeyId = null,
+        protected ?string $apiKeyId = null,
     ) {}
 
     /**
