@@ -166,6 +166,9 @@ return [
             'last_name' => $lastName,
             'last_login_ip' => $ip,
         ]);
+        // A real update makes Spatie write an `updated` row whose `attribute_changes` also holds
+        // the old PII. Both this and the `created` row must be clean for erasure to be complete.
+        $owner->update(['first_name' => 'EraseRenamed']);
         $publicId = $owner->public_id;
         $databaseKey = (string) $owner->getKey();
         $principal = $owner->principal()->firstOrFail();
@@ -175,12 +178,16 @@ return [
         );
         $apiKey = ApiKey::query()->sole();
 
-        activity()->causedBy($owner)->performedOn($owner)->withProperties([
-            'email' => $email,
-            'first_name' => $firstName,
-            'attributes' => ['username' => $username, 'last_login_ip' => $ip],
-        ])->log('c17 erasure probe');
-        $activityId = (int) Activity::query()->where('description', 'c17 erasure probe')->sole()->id;
+        // These are the app's own activity rows, not a hand-built probe: Spatie writes model
+        // changes to `attribute_changes`, while `properties` only holds explicit withProperties().
+        $activityIds = Activity::query()
+            ->where('subject_type', $owner->getMorphClass())
+            ->where('subject_id', $databaseKey)
+            ->whereIn('event', ['created', 'updated'])
+            ->pluck('id')
+            ->all();
+
+        expect($activityIds)->not->toBeEmpty();
 
         app(DeleteUserAction::class)->execute($owner);
 
@@ -189,27 +196,33 @@ return [
         expect($erased)->not->toBeNull()
             ->and($erased->trashed())->toBeTrue()
             ->and($erased->email)->toBe('deleted+'.$publicId.'@example.invalid')
-            ->and($erased->username)->toBe('deleted_'.substr(str_replace('-', '', $publicId), 0, 24))
+            ->and($erased->username)->toBe('deleted_'.str_replace('-', '', $publicId))
             ->and($erased->first_name)->toBe('Deleted')
             ->and($erased->last_name)->toBeNull()
             ->and($erased->last_login_ip)->toBeNull()
+            ->and($erased->is_active)->toBeFalse()
             ->and($apiKey->fresh())->not->toBeNull()
             ->and($apiKey->fresh()->isRevoked())->toBeTrue()
             ->and($principal->fresh()->user_id)->toBeNull()
             ->and($principal->fresh()->deactivated_at)->not->toBeNull();
 
-        $erasedActivity = Activity::query()->findOrFail($activityId);
-        $payload = json_encode($erasedActivity->properties?->toArray() ?? [], JSON_THROW_ON_ERROR);
         $needles = [$email, $username, $firstName, $lastName, $ip];
 
-        foreach ($needles as $needle) {
-            if (str_contains($payload, $needle)) {
-                throw new RuntimeException("C17 activity still contains \"{$needle}\" after erasure.");
-            }
-        }
+        foreach ($activityIds as $activityId) {
+            $activity = Activity::query()->findOrFail($activityId);
+            $payload = json_encode([
+                'properties' => $activity->properties?->toArray() ?? [],
+                'attribute_changes' => $activity->attribute_changes?->toArray() ?? [],
+            ], JSON_THROW_ON_ERROR);
 
-        expect($erasedActivity->causer_id)->toBe($databaseKey)
-            ->and($erasedActivity->subject_id)->toBe($databaseKey);
+            foreach ($needles as $needle) {
+                if (str_contains($payload, $needle)) {
+                    throw new RuntimeException("C17 activity {$activityId} still contains \"{$needle}\" after erasure.");
+                }
+            }
+
+            expect($activity->subject_id)->toBe($databaseKey);
+        }
     },
 
     'assertApiKeyActivityUuid' => static function () use ($seedPermissions): void {

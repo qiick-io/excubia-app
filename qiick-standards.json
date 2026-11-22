@@ -25,7 +25,7 @@
             "review_by": "2026-12-20"
         },
         "C17": {
-            "reason": "Tracked security work, not hidden: erasure now releases unique email/username and anonymises personal columns, but identifying payload in existing activity rows is not scrubbed yet (#381). The C17 hook probes that gap so a stale divergence is caught.",
+            "reason": "Tracked security work, not hidden: erasure releases unique email/username, anonymises personal columns, deletes SSO identities, passkeys and assistant chats, and deactivates the row. Only anonymising identifying payload in existing activity rows remains (#381); the hook scans both activity columns on the app's own created/updated rows so a stale divergence is caught.",
             "decision": "knowledge/decisions/2026-11-20-core-hardening",
             "review_by": "2026-12-20"
         },
