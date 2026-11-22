@@ -533,9 +533,9 @@ jobs:
         if: steps.gate.outputs.run == 'true'
         run: npm run build
 
-      - name: Axe smoke (PR → develop)
+      - name: Axe smoke and API keys (PR → develop)
         if: steps.gate.outputs.run == 'true' && github.event_name == 'pull_request' && github.base_ref == 'develop'
-        run: vendor/bin/pest tests/Browser/A11ySmokeBrowserTest.php
+        run: vendor/bin/pest tests/Browser/A11ySmokeBrowserTest.php tests/Browser/ApiKeysBrowserTest.php
 
       - name: Browser tests
         if: steps.gate.outputs.run == 'true' && (github.event_name != 'pull_request' || github.base_ref != 'develop')
@@ -543,22 +543,23 @@ jobs:
 
   # Theme tokens and the WCAG 2.2 AA contrast of the installed theme, from app-ui at the pinned
   # ref (#258). The browser tests stay in the Accessibility job above (full suite on main).
+  # Pinned to the app-ui v0.12.0 commit (f613af9), not the moving tag tip.
   ui-quality:
-    uses: qiick-io/app-ui/.github/workflows/ui-quality.yml@v0.11.0
+    uses: qiick-io/app-ui/.github/workflows/ui-quality.yml@f613af9febfce3b6d7f7f41785e9845a610080c7
 
   # Forward-only migrations (#193): a migration on `main`, on the latest `v*` tag or in the
   # freeze baseline `database/migrations/.frozen` is never modified, renamed or deleted.
   migrations-frozen:
-    uses: qiick-io/app-ui/.github/workflows/migrations-frozen.yml@v0.11.0
+    uses: qiick-io/app-ui/.github/workflows/migrations-frozen.yml@f613af9febfce3b6d7f7f41785e9845a610080c7
 
   # PHPStan at level 8 (the level never drops, the baseline only shrinks) and Pest with
   # line coverage that never falls below `coverage-floor.txt` (app-ui v0.6.0, #259).
   php-quality:
-    uses: qiick-io/app-ui/.github/workflows/php-quality.yml@v0.11.0
+    uses: qiick-io/app-ui/.github/workflows/php-quality.yml@f613af9febfce3b6d7f7f41785e9845a610080c7
 
   # The @qiick UI registry copies and the qiick standards pack (agent files,
   # architecture test, kebab-case file names) must match app-ui.
   app-ui-drift:
-    uses: qiick-io/app-ui/.github/workflows/drift-check.yml@v0.11.0
+    uses: qiick-io/app-ui/.github/workflows/drift-check.yml@f613af9febfce3b6d7f7f41785e9845a610080c7
     with:
       standards: true

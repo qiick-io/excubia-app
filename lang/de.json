@@ -49,5 +49,9 @@
     "The logo is not a valid SVG image.": "Das Logo ist kein gültiges SVG-Bild.",
     "API key revoked.": "API-Schlüssel widerrufen.",
     "The mcp:write scope needs mcp:read.": "Der Scope mcp:write setzt mcp:read voraus.",
-    "Nothing in this chat waits for an approval.": "In diesem Chat wartet nichts auf eine Freigabe."
+    "Nothing in this chat waits for an approval.": "In diesem Chat wartet nichts auf eine Freigabe.",
+    "Only an active API key can be rotated.": "Nur ein aktiver API-Schlüssel kann rotiert werden.",
+    "This API key cannot be rotated: you no longer hold its scopes.": "Dieser API-Schlüssel kann nicht rotiert werden: Sie besitzen seine Scopes nicht mehr.",
+    "Each allowlist entry must be a valid IPv4 or IPv6 address or CIDR.": "Jeder Allowlist-Eintrag muss eine gültige IPv4-/IPv6-Adresse oder CIDR sein.",
+    "Leave the allowlist empty to allow every address; :entry means no restriction.": "Lassen Sie die Allowlist leer, um jede Adresse zuzulassen; :entry bedeutet keine Einschränkung."
 }

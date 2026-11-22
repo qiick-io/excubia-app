@@ -31,8 +31,13 @@ declare module '@inertiajs/core' {
         flashDataType: {
             toast?: FlashToast;
             pushToken?: PushTokenFlash;
-            /** A new personal API key (#315), flashed once. */
-            apiKey?: string;
+            /** One-time API key secret; Inertia strips flash from history.state. */
+            issuedApiKey?: {
+                secret: string;
+                name: string;
+                reason: 'created' | 'rotated';
+                previous_key_valid_until: string | null;
+            };
         };
     }
 }

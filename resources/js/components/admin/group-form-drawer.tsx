@@ -24,6 +24,7 @@ import {
     FieldLabel,
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import type { RecordId } from '@/lib/record-id';
 import { STRING_LIMITS } from '@/lib/string-limits';
 import groups from '@/routes/groups';
 import type { AdminGroupRow, AdminRoleRef } from '@/types/admin';
@@ -32,7 +33,7 @@ const EMPTY_GROUP_FORM = {
     name: '',
     description: '',
     roles: [] as string[],
-    users: [] as number[],
+    users: [] as RecordId[],
     project_groups: [] as number[],
 };
 

@@ -38,7 +38,7 @@ function SidebarToggle() {
                 {/* Keep the trigger's own slot name: the tooltip trigger would replace it. */}
                 <SidebarTrigger
                     data-slot="sidebar-trigger"
-                    className="-ml-1 shrink-0"
+                    className="shrink-0"
                 />
             </TooltipTrigger>
             <TooltipContent side="bottom" className="flex items-center gap-2">
@@ -74,10 +74,16 @@ export function AppSidebarHeader({
 }) {
     return (
         <header className="flex h-16 shrink-0 items-center gap-2 border-b border-sidebar-border/40 px-6 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 md:px-4">
-            <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
-                <SidebarToggle />
-                {leading}
-                <Breadcrumbs breadcrumbs={breadcrumbs} />
+            <div className="flex min-w-0 flex-1 items-center gap-2">
+                {/* Toggle and leading icons sit flush (their own padding spaces them); only the
+                    breadcrumbs clip, so hover backgrounds and focus rings of the icons stay whole. */}
+                <div className="flex shrink-0 items-center">
+                    <SidebarToggle />
+                    {leading}
+                </div>
+                <div className="min-w-0 overflow-hidden">
+                    <Breadcrumbs breadcrumbs={breadcrumbs} />
+                </div>
             </div>
             {actions ? (
                 <div className="flex min-w-0 shrink-0 items-center justify-end gap-2 overflow-x-auto sm:gap-2">
