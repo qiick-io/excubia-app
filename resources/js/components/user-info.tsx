@@ -3,11 +3,12 @@ import { ConnectionDot } from '@/components/realtime/connection-dot';
 import type { ConnectionState } from '@/components/realtime/connection-dot';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { avatarToneClass } from '@/lib/avatar-tone';
+import type { RecordId } from '@/lib/record-id';
 import { cn } from '@/lib/utils';
 
 /** The signed-in user, as the sidebar user menu shows it. */
 export type NavUserData = {
-    id: number | string;
+    id: RecordId;
     /** Display name (externa-core: `formatUserDisplayName(first, last)`). */
     name: string;
     email: string;

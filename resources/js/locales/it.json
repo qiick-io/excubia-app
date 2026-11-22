@@ -644,40 +644,15 @@
             "create": "Crea chiave API",
             "createTitle": "Crea chiave API",
             "createDescription": "Dai alla chiave il nome del client che la usa, scegli cosa può fare e, se vuoi, quando scade.",
-            "secretBanner": "Copia questa chiave ora. Non verrà mostrata di nuovo.",
-            "secretValue": "Nuova chiave API",
-            "copy": "Copia chiave",
-            "copied": "Copiata",
-            "expiresAt": "Scade il",
-            "expiresAtHelp": "Lascia vuoto per una chiave che non scade.",
-            "never": "Mai",
-            "revoke": "Revoca chiave",
-            "scopeHelp": {
-                "mcpRead": "Legge progetti, report, problemi, eccezioni, runtime e schedule tramite il server MCP.",
-                "mcpWrite": "Modifica anche i dati con gli strumenti di scrittura MCP: stato delle eccezioni, assegnazioni, finding ignorati, avvisi silenziati e finestre di manutenzione. Disattivato se non selezionato."
-            },
-            "columns": {
-                "name": "Nome",
-                "prefix": "Prefisso",
-                "scopes": "Scope",
-                "lastUsed": "Ultimo uso",
-                "expires": "Scadenza",
-                "status": "Stato",
-                "actions": "Azioni"
-            },
-            "status": {
-                "active": "Attiva",
-                "expired": "Scaduta",
-                "revoked": "Revocata"
-            },
-            "confirm": {
-                "revokeTitle": "Revocare la chiave API “{{name}}”?",
-                "revokeDescription": "Questa chiave smetterà di funzionare immediatamente.",
-                "revokeConfirm": "Revoca"
-            },
             "empty": {
                 "title": "Nessuna chiave API",
                 "description": "Crea una chiave per collegare un client AI a Excubia."
+            },
+            "resources": {
+                "mcp": {
+                    "label": "Client AI (server MCP)",
+                    "description": "Lettura: progetti, report, problemi, eccezioni, runtime e schedule. Scrittura modifica anche stato delle eccezioni, assegnazioni, finding ignorati, avvisi silenziati e finestre di manutenzione."
+                }
             }
         }
     },
@@ -2395,5 +2370,65 @@
             "blocked": "Bloccato"
         },
         "valueChange": "da {{from}} a {{to}}"
+    },
+    "apiKeys": {
+        "form": {
+            "requiredHint": "I campi contrassegnati da * sono obbligatori.",
+            "name": "Nome",
+            "nameDescription": "Indica cosa usa la chiave, così la ritrovi quando va ruotata o revocata.",
+            "restrictions": "Restrizioni",
+            "restrictionsDescription": "Facoltative. Lascia un campo vuoto per non porre limiti.",
+            "expiresAt": "Scadenza",
+            "expiresAtDescription": "La chiave smette di funzionare a questo orario (fuso del browser). Ricevi un avviso prima.",
+            "ipAllowlist": "Indirizzi IP consentiti",
+            "ipAllowlistDescription": "Indirizzi o intervalli CIDR, separati da virgole. Le richieste da qualsiasi altro indirizzo vengono rifiutate.",
+            "ipAllowlistPlaceholder": "203.0.113.4, 10.0.0.0/8",
+            "rateLimit": "Richieste al minuto",
+            "rateLimitDescription": "Le richieste oltre questo limite vengono rifiutate con 429 fino alla fine del minuto."
+        },
+        "scopes": {
+            "legend": "Permessi",
+            "description": "Cosa può fare la chiave con ogni risorsa. La scrittura include la lettura.",
+            "none": "Nessun accesso",
+            "read": "Lettura",
+            "write": "Scrittura"
+        },
+        "secret": {
+            "createdTitle": "Copia la chiave per “{{name}}”",
+            "rotatedTitle": "Copia il nuovo segreto per “{{name}}”",
+            "description": "È l’unica volta in cui la chiave viene mostrata. Non viene salvata e non si può più visualizzare: inseriscila ora nel tuo gestore di password o di segreti.",
+            "previousSecretValidUntil": "Il segreto precedente resta valido fino al {{date}}.",
+            "label": "Chiave API",
+            "copy": "Copia la chiave",
+            "copied": "Chiave copiata negli appunti",
+            "copyFailed": "Impossibile copiare la chiave. È selezionata: copiala con la tastiera.",
+            "announcement": "Chiave API per {{name}} creata. Viene mostrata una sola volta.",
+            "acknowledge": "Ho salvato la chiave in un luogo sicuro",
+            "done": "Fatto"
+        },
+        "list": {
+            "name": "Nome",
+            "key": "Chiave",
+            "permissions": "Permessi",
+            "lastUsed": "Ultimo utilizzo",
+            "expires": "Scadenza",
+            "status": "Stato",
+            "actions": "Azioni",
+            "never": "Mai",
+            "neverUsed": "Mai utilizzata",
+            "noPermissions": "Nessun permesso",
+            "rotate": "Ruota {{name}}",
+            "revoke": "Revoca {{name}}"
+        },
+        "status": {
+            "active": "Attiva",
+            "expired": "Scaduta",
+            "revoked": "Revocata"
+        },
+        "revoke": {
+            "title": "Revocare “{{name}}”?",
+            "description": "Da ora ogni richiesta con questa chiave viene rifiutata. La chiave resta nell’elenco e nel registro attività; non può più essere usata.",
+            "confirm": "Revoca"
+        }
     }
 }

@@ -6,6 +6,7 @@ import {
     AvatarImage,
 } from '@/components/ui/avatar';
 import { avatarToneClass } from '@/lib/avatar-tone';
+import type { RecordId } from '@/lib/record-id';
 import { cn } from '@/lib/utils';
 
 /**
@@ -27,7 +28,7 @@ export function getInitials(name: string, fallback = ''): string {
 
 type UserAvatarProps = {
     /** Stable id: picks the user's avatar swatch. */
-    userId: number | string;
+    userId: RecordId;
     /** Display name, for the initials and the image alt text. */
     name: string;
     /** Used for the initial when the name is empty. */
