@@ -198,7 +198,7 @@ class ApiKey extends Model
     /**
      * Whether `$entry` is a well-formed IPv4/IPv6 address or CIDR for storage (prefix at most
      * 32 or 128). Same parser as {@see allowsIp()}: a value IpUtils cannot match is refused at
-     * input so it never sits inert in the allowlist. Callers must refuse `0.0.0.0/0` and `::/0`
+     * input so it never sits inert in the allowlist. Callers must refuse any `/0` prefix
      * separately ({@see IpAllowlistEntryRule}): those mean no restriction.
      */
     public static function isValidAllowlistEntry(string $entry): bool

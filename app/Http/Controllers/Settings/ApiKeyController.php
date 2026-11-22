@@ -18,13 +18,15 @@ use App\Services\ApiKeySecretOnceService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
+use Inertia\Support\Header;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 /**
  * Settings → API keys (#315, #351), personal: the signed-in user (web session) lists, creates,
  * rotates and revokes their own keys. A new or rotated secret is handed once through
- * {@see ApiKeySecretOnceService} (encrypted session payload, never plaintext) and never
- * shown again. Unreachable over the `api_key` guard.
+ * {@see ApiKeySecretOnceService} (encrypted session payload) and flashed on the index response
+ * so Inertia strips it from history.state. Unreachable over the `api_key` guard.
  */
 class ApiKeyController extends Controller
 {
@@ -33,7 +35,7 @@ class ApiKeyController extends Controller
         /** @var User $user */
         $user = $request->user('web');
 
-        $response = Inertia::render('settings/api-keys', [
+        $page = Inertia::render('settings/api-keys', [
             'apiKeys' => ApiKeyResource::collection($user->apiKeys()
                 ->latest('id')
                 ->paginate($request->perPage())
@@ -42,8 +44,22 @@ class ApiKeyController extends Controller
                 fn (ApiKeyScopeEnum $scope): string => $scope->value,
                 ApiKeyScopeEnum::scopesCreatorMayGrant($user),
             ),
-            'issuedApiKey' => $apiKeySecretOnce->pull($request->session()),
-        ])->toResponse($request);
+        ]);
+
+        // Lazy: only pull on a full page render. A partial reload from another tab
+        // (`only: ['apiKeys']`) must not consume the encrypted payload.
+        $pullIssued = fn (): ?array => $apiKeySecretOnce->pull($request->session());
+        $isPartial = $request->header(Header::PARTIAL_COMPONENT) === 'settings/api-keys';
+
+        if (! $isPartial) {
+            $issued = $pullIssued();
+
+            if ($issued !== null) {
+                $page->flash('issuedApiKey', $issued);
+            }
+        }
+
+        $response = $page->toResponse($request);
 
         // Inertia may set Cache-Control for XHR; force no-store so the secret page is not cached.
         $response->headers->set('Cache-Control', 'no-store');
@@ -80,7 +96,21 @@ class ApiKeyController extends Controller
 
         /** @var User $user */
         $user = request()->user('web');
-        $plainSecret = $rotateApiKey->execute($apiKey, $user);
+
+        try {
+            $plainSecret = $rotateApiKey->execute($apiKey, $user);
+        } catch (HttpException $exception) {
+            if ($exception->getStatusCode() !== 409) {
+                throw $exception;
+            }
+
+            Inertia::flash('toast', [
+                'type' => 'error',
+                'message' => $exception->getMessage(),
+            ]);
+
+            return to_route('api-keys.index');
+        }
 
         $apiKeySecretOnce->store(
             request()->session(),

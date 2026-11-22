@@ -13,11 +13,34 @@ require_once __DIR__.'/BrowserSeedHelpers.php';
  * Settings → API keys (#315, #364), built from the app-ui api-key items: a user creates a key
  * with write access and the optional restrictions, sees it once in the strict secret dialog
  * (Done stays disabled until the acknowledgement is ticked), rotates it and revokes it, in light
- * and dark, with no serious axe issue.
+ * and dark, with no serious axe issue. After acknowledge, history.state must not keep the secret
+ * and Back must not reopen the dialog.
  */
 beforeEach(function () {
     $this->seed(PermissionSeeder::class);
 });
+
+/**
+ * Assert history.state has no issuedApiKey flash and does not retain the full plaintext secret.
+ * (The list's `key_prefix` may still appear; that is not the secret.)
+ */
+function historyStateHidesSecret(string $plainSecret): string
+{
+    $encodedSecret = json_encode($plainSecret, JSON_THROW_ON_ERROR);
+
+    return <<<JS
+        () => {
+            const encoded = JSON.stringify(window.history.state ?? null);
+            if (encoded.includes('"issuedApiKey"')) {
+                return false;
+            }
+            if (encoded.includes({$encodedSecret})) {
+                return false;
+            }
+            return true;
+        }
+    JS;
+}
 
 it('creates a key, shows it once, rotates and revokes it', function (string $scheme) {
     $user = User::factory()->create()->assignRole(RoleEnum::Admin->value);
@@ -52,7 +75,8 @@ it('creates a key, shows it once, rotates and revokes it', function (string $sch
         ->assertMissing('[data-test="api-key-secret-dialog"]')
         ->assertSeeIn('tbody tr:first-child', 'Claude Code')
         ->assertSeeIn('tbody tr:first-child', 'mcp:write')
-        ->assertSeeIn('tbody tr:first-child', 'Active');
+        ->assertSeeIn('tbody tr:first-child', 'Active')
+        ->assertScript(historyStateHidesSecret($secret), true);
 
     $page->click('[data-test="api-key-rotate"]')
         ->waitForText('Copy the new secret for “Claude Code”')
@@ -66,6 +90,8 @@ it('creates a key, shows it once, rotates and revokes it', function (string $sch
     $page->click('[data-test="api-key-secret-acknowledge"]')
         ->click('[data-test="api-key-secret-done"]')
         ->wait(1)
+        ->assertMissing('[data-test="api-key-secret-dialog"]')
+        ->assertScript(historyStateHidesSecret($rotatedSecret), true)
         ->click('[data-test="api-key-revoke"]')
         ->click('[data-test="confirm-destructive"]')
         ->waitForText('API key revoked.')
@@ -79,3 +105,35 @@ it('creates a key, shows it once, rotates and revokes it', function (string $sch
         ->assertMissing('[data-test="api-key-secret-dialog"]')
         ->assertNoJavaScriptErrors();
 })->with(['light', 'dark']);
+
+it('does not reopen the secret dialog when navigating Back after acknowledge', function () {
+    $user = User::factory()->create()->assignRole(RoleEnum::Admin->value);
+    $this->actingAs($user);
+
+    $page = visit(route('api-keys.index', absolute: false))
+        ->click('[data-test="api-key-create-open"]')
+        ->fill('#api-key-create-form-name', 'Back Nav')
+        ->click('[data-test="api-key-create-dialog"] [role="radio"]:nth-of-type(2)')
+        ->click('[data-test="api-key-create-submit"]')
+        ->waitForText('Copy the key for “Back Nav”');
+
+    $secret = $page->value('[data-test="api-key-secret-value"]');
+
+    $page->click('[data-test="api-key-secret-acknowledge"]')
+        ->click('[data-test="api-key-secret-done"]')
+        ->wait(1)
+        ->assertMissing('[data-test="api-key-secret-dialog"]')
+        ->assertScript(historyStateHidesSecret($secret), true);
+
+    $page->click('nav a[href="/settings/profile"][data-size="sm"]')
+        ->waitForText('Profile')
+        ->wait(1);
+
+    $page->script('() => { window.history.back(); return true; }');
+
+    $page->waitForText('API keys')
+        ->wait(1)
+        ->assertMissing('[data-test="api-key-secret-dialog"]')
+        ->assertScript(historyStateHidesSecret($secret), true)
+        ->assertNoJavaScriptErrors();
+});

@@ -2379,7 +2379,7 @@
             "restrictions": "Restrizioni",
             "restrictionsDescription": "Facoltative. Lascia un campo vuoto per non porre limiti.",
             "expiresAt": "Scadenza",
-            "expiresAtDescription": "La chiave smette di funzionare a quest’ora. Ricevi un avviso prima che accada.",
+            "expiresAtDescription": "La chiave smette di funzionare a questo orario (fuso del browser). Ricevi un avviso prima.",
             "ipAllowlist": "Indirizzi IP consentiti",
             "ipAllowlistDescription": "Indirizzi o intervalli CIDR, separati da virgole. Le richieste da qualsiasi altro indirizzo vengono rifiutate.",
             "ipAllowlistPlaceholder": "203.0.113.4, 10.0.0.0/8",

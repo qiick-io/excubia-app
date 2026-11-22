@@ -31,6 +31,13 @@ declare module '@inertiajs/core' {
         flashDataType: {
             toast?: FlashToast;
             pushToken?: PushTokenFlash;
+            /** One-time API key secret; Inertia strips flash from history.state. */
+            issuedApiKey?: {
+                secret: string;
+                name: string;
+                reason: 'created' | 'rotated';
+                previous_key_valid_until: string | null;
+            };
         };
     }
 }

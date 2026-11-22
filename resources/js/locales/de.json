@@ -2379,7 +2379,7 @@
             "restrictions": "Einschränkungen",
             "restrictionsDescription": "Optional. Lassen Sie ein Feld leer, um nichts zu begrenzen.",
             "expiresAt": "Läuft ab",
-            "expiresAtDescription": "Der Schlüssel funktioniert ab diesem Zeitpunkt nicht mehr. Sie werden vorher benachrichtigt.",
+            "expiresAtDescription": "Der Schlüssel funktioniert ab diesem Zeitpunkt nicht mehr (Browser-Zeitzone). Sie werden vorher benachrichtigt.",
             "ipAllowlist": "Erlaubte IP-Adressen",
             "ipAllowlistDescription": "Adressen oder CIDR-Bereiche, durch Kommas getrennt. Anfragen von anderen Adressen werden abgelehnt.",
             "ipAllowlistPlaceholder": "203.0.113.4, 10.0.0.0/8",

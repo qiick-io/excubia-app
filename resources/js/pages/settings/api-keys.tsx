@@ -1,6 +1,6 @@
 import { Head, router, useForm, usePage } from '@inertiajs/react';
 import { KeyRound } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DataTable } from '@/components/admin/data-table';
 import { PageEmptyState } from '@/components/admin/page-empty-state';
@@ -8,6 +8,7 @@ import { ApiKeyForm } from '@/components/api-keys/api-key-form';
 import type { ApiKeyFormValues } from '@/components/api-keys/api-key-form';
 import {
     ApiKeyRevokeDialog,
+    ApiKeyRowActions,
     useApiKeyColumns,
 } from '@/components/api-keys/api-key-list-row';
 import type { ApiKeyListRow } from '@/components/api-keys/api-key-list-row';
@@ -25,6 +26,7 @@ import {
 } from '@/components/ui/dialog';
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
+import { apiKeyStatus } from '@/lib/api-key-scopes';
 import { normalizePaginated } from '@/lib/pagination';
 import type { LaravelPaginated } from '@/lib/pagination';
 import apiKeysRoutes from '@/routes/api-keys';
@@ -48,7 +50,8 @@ const EMPTY_FORM: ApiKeyFormValues = {
 };
 
 /**
- * `datetime-local` is wall-clock in the browser; the server stores the exact instant as UTC.
+ * Expiry input uses the browser timezone: `datetime-local` has no IANA zone control.
+ * Displayed times (rotation grace) use the profile timezone (`auth.user.timezone`).
  * Send ISO 8601 with the browser's offset so a 09:30 pick stays 09:30 in that zone.
  */
 function datetimeLocalToIsoWithOffset(value: string): string {
@@ -101,38 +104,41 @@ type IssuedApiKey = {
 /**
  * Settings → API keys (#315, #364), built from the app-ui api-key items (docs/api-keys.md):
  * the signed-in user's own keys, since a key acts as its owner and there is no owner to pick.
- * A new or rotated secret comes back once as `issuedApiKey` (encrypted one-time session
- * payload, never plaintext) with name and reason from the server; React keeps only an
- * acknowledgement boolean, never the secret.
+ * A new or rotated secret arrives once as Inertia flash (`issuedApiKey`, stripped from
+ * history.state); React copies it into local state and drops it on acknowledge.
  */
 export default function ApiKeysSettingsPage({
     apiKeys: apiKeysProp,
     scopes,
-    issuedApiKey = null,
 }: {
     apiKeys: LaravelPaginated<ApiKeyRow> | Paginated<ApiKeyRow>;
     /** The scopes the signed-in user may grant (`ApiKeyScopeEnum::scopesCreatorMayGrant`). */
     scopes: string[];
-    /** One-time issued payload for this response only; null after acknowledge or a normal visit. */
-    issuedApiKey?: IssuedApiKey | null;
 }) {
     const { t, i18n } = useTranslation();
     const { auth } = usePage().props;
+    const { flash } = usePage();
     const userTimezone = auth.user?.timezone ?? 'UTC';
     const apiKeys = normalizePaginated(apiKeysProp);
     const rows = apiKeys.data;
     const [isCreateOpen, setCreateOpen] = useState(false);
-    const [hasAcknowledgedIssuedKey, setHasAcknowledgedIssuedKey] =
-        useState(false);
+    const [issuedApiKey, setIssuedApiKey] = useState<IssuedApiKey | null>(null);
     const [pendingRevokeKey, setPendingRevokeKey] = useState<ApiKeyRow | null>(
         null,
     );
     const [isRevoking, setRevoking] = useState(false);
     const form = useForm<ApiKeyFormValues>(EMPTY_FORM);
 
-    const activeIssued =
-        issuedApiKey && !hasAcknowledgedIssuedKey ? issuedApiKey : null;
-    const secret = activeIssued?.secret ?? null;
+    useEffect(() => {
+        if (flash.issuedApiKey) {
+            setIssuedApiKey(flash.issuedApiKey);
+        }
+    }, [flash.issuedApiKey]);
+
+    const secret = issuedApiKey?.secret ?? null;
+
+    const canRotateRow = (row: ApiKeyRow): boolean =>
+        row.scopes.every((scope) => scopes.includes(scope));
 
     const resources: ApiKeyScopeResource[] = useMemo(
         () => [
@@ -170,7 +176,6 @@ export default function ApiKeysSettingsPage({
         form.post(apiKeysRoutes.store.url(), {
             preserveScroll: true,
             onSuccess: () => {
-                setHasAcknowledgedIssuedKey(false);
                 setCreateOpen(false);
             },
         });
@@ -180,18 +185,33 @@ export default function ApiKeysSettingsPage({
         router.post(
             apiKeysRoutes.rotate.url(row.id),
             {},
-            {
-                preserveScroll: true,
-                onSuccess: () => {
-                    setHasAcknowledgedIssuedKey(false);
-                },
-            },
+            { preserveScroll: true },
         );
     };
 
     const columns = useApiKeyColumns<ApiKeyRow>({
         onRotate: rotate,
         onRevoke: setPendingRevokeKey,
+    }).map((column) => {
+        if (column.id !== 'actions') {
+            return column;
+        }
+
+        return {
+            ...column,
+            cell: ({ row }: { row: { original: ApiKeyRow } }) => (
+                <ApiKeyRowActions
+                    keyName={row.original.name}
+                    status={apiKeyStatus(row.original, new Date())}
+                    onRotate={
+                        canRotateRow(row.original)
+                            ? () => rotate(row.original)
+                            : undefined
+                    }
+                    onRevoke={() => setPendingRevokeKey(row.original)}
+                />
+            ),
+        };
     });
 
     // A rejected address comes back per entry (`ip_allowlist.0`); the form shows it on the field.
@@ -309,19 +329,19 @@ export default function ApiKeysSettingsPage({
 
             <ApiKeySecretDialog
                 secret={secret}
-                keyName={activeIssued?.name ?? ''}
-                reason={activeIssued?.reason ?? 'created'}
+                keyName={issuedApiKey?.name ?? ''}
+                reason={issuedApiKey?.reason ?? 'created'}
                 previousSecretValidUntil={
-                    activeIssued?.previous_key_valid_until
+                    issuedApiKey?.previous_key_valid_until
                         ? new Date(
-                              activeIssued.previous_key_valid_until,
+                              issuedApiKey.previous_key_valid_until,
                           ).toLocaleString(i18n.language, {
                               timeZone: userTimezone,
                           })
                         : undefined
                 }
                 onAcknowledge={() => {
-                    setHasAcknowledgedIssuedKey(true);
+                    setIssuedApiKey(null);
                     router.reload({ only: ['apiKeys'] });
                 }}
             />

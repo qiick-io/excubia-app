@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Testing\TestResponse;
+use Inertia\Inertia;
 use Inertia\Testing\AssertableInertia as Assert;
 
 /**
@@ -114,9 +115,10 @@ it('creates a key, shows it once and stores only the hash of the full token', fu
     $this->actingAs($user)->get(route('api-keys.index'))
         ->assertHeaderContains('Cache-Control', 'no-store')
         ->assertInertia(fn (Assert $page) => $page
-            ->where('issuedApiKey.secret', $plainKey)
-            ->where('issuedApiKey.name', 'Claude Code')
-            ->where('issuedApiKey.reason', 'created')
+            ->missing('issuedApiKey')
+            ->hasFlash('issuedApiKey.secret', $plainKey)
+            ->hasFlash('issuedApiKey.name', 'Claude Code')
+            ->hasFlash('issuedApiKey.reason', 'created')
             ->where('apiKeys.data.0.expires_at', '2099-01-31T08:30:00+00:00'));
 
     $this->actingAs($user)->get(route('api-keys.index'))
@@ -124,7 +126,7 @@ it('creates a key, shows it once and stores only the hash of the full token', fu
         ->assertDontSee($apiKey->key_hash)
         ->assertInertia(fn (Assert $page) => $page
             ->component('settings/api-keys')
-            ->where('issuedApiKey', null)
+            ->missingFlash('issuedApiKey')
             ->where('scopes', ['mcp:read', 'mcp:write'])
             ->where('apiKeys.data.0.name', 'Claude Code')
             ->where('apiKeys.data.0.is_active', true)
@@ -455,6 +457,9 @@ it('validates each IP allowlist entry and refuses unrestricted CIDRs', function 
     'ipv6 prefix too wide' => [['2001:db8::/129'], 'ip_allowlist.0'],
     'all ipv4' => [['0.0.0.0/0'], 'ip_allowlist.0'],
     'all ipv6' => [['::/0'], 'ip_allowlist.0'],
+    'all ipv4 padded' => [['0.0.0.0/00'], 'ip_allowlist.0'],
+    'non-zero host /0' => [['1.0.0.0/0'], 'ip_allowlist.0'],
+    'ipv6 subnet /0' => [['2001:db8::/0'], 'ip_allowlist.0'],
     'second entry bad' => [['203.0.113.4', '999.0.0.1'], 'ip_allowlist.1'],
 ]);
 
@@ -475,7 +480,7 @@ it('accepts a mixed IPv4 and IPv6 allowlist', function () {
     ]);
 });
 
-it('returns 409 when rotating a revoked or expired key', function () {
+it('redirects with a toast when rotating a revoked or expired key', function () {
     Date::setTestNow('2026-11-17 12:00:00');
     $user = apiKeyOwner();
     $revokedKey = ApiKey::factory()->for($user, 'owner')->create([
@@ -488,15 +493,17 @@ it('returns 409 when rotating a revoked or expired key', function () {
     ]);
 
     $this->actingAs($user)->post(route('api-keys.rotate', $revokedKey))
-        ->assertStatus(409)
-        ->assertSee(__('Only an active API key can be rotated.'), false);
+        ->assertRedirect(route('api-keys.index'))
+        ->assertInertiaFlash('toast.type', 'error')
+        ->assertInertiaFlash('toast.message', __('Only an active API key can be rotated.'));
 
     $this->actingAs($user)->post(route('api-keys.rotate', $expiredKey))
-        ->assertStatus(409)
-        ->assertSee(__('Only an active API key can be rotated.'), false);
+        ->assertRedirect(route('api-keys.index'))
+        ->assertInertiaFlash('toast.type', 'error')
+        ->assertInertiaFlash('toast.message', __('Only an active API key can be rotated.'));
 });
 
-it('returns 409 when rotating a key whose scopes the owner no longer holds', function () {
+it('redirects with a toast when rotating a key whose scopes the owner no longer holds', function () {
     $user = apiKeyOwner();
     $plainKey = plainApiKey($user, scopes: [ApiKeyScopeEnum::McpWrite]);
     $apiKey = ApiKey::query()->where('key_prefix', ApiKey::publicPrefixFromToken($plainKey))->sole();
@@ -504,8 +511,9 @@ it('returns 409 when rotating a key whose scopes the owner no longer holds', fun
     $user->syncRoles([RoleEnum::Reader->value]);
 
     $this->actingAs($user)->post(route('api-keys.rotate', $apiKey))
-        ->assertStatus(409)
-        ->assertSee(__('This API key cannot be rotated: you no longer hold its scopes.'), false);
+        ->assertRedirect(route('api-keys.index'))
+        ->assertInertiaFlash('toast.type', 'error')
+        ->assertInertiaFlash('toast.message', __('This API key cannot be rotated: you no longer hold its scopes.'));
 });
 
 it('never writes the plaintext secret into the sessions table on create or rotate', function () {
@@ -519,9 +527,12 @@ it('never writes the plaintext secret into the sessions table on create or rotat
     $plainKey = pendingIssuedApiKeySecret();
     $encrypted = session()->get(ApiKeySecretOnceService::SESSION_KEY);
     session()->save();
-    $createPayloads = DB::table('sessions')->pluck('payload')->implode("\n");
 
-    expect($createPayloads)->not->toContain($plainKey)
+    $decodedCreatePayloads = DB::table('sessions')->pluck('payload')->map(
+        fn (string $payload): mixed => json_decode(base64_decode($payload, true) ?: '', true),
+    );
+
+    expect(json_encode($decodedCreatePayloads->all()))->not->toContain($plainKey)
         ->and(json_encode(session()->all()))->not->toContain($plainKey)
         ->and(is_string($encrypted))->toBeTrue()
         ->and($encrypted)->not->toBe($plainKey);
@@ -531,10 +542,64 @@ it('never writes the plaintext secret into the sessions table on create or rotat
 
     $rotatedPlain = pendingIssuedApiKeySecret();
     session()->save();
-    $rotatePayloads = DB::table('sessions')->pluck('payload')->implode("\n");
 
-    expect($rotatePayloads)->not->toContain($rotatedPlain)
-        ->and($rotatePayloads)->not->toContain($plainKey);
+    $decodedRotatePayloads = DB::table('sessions')->pluck('payload')->map(
+        fn (string $payload): mixed => json_decode(base64_decode($payload, true) ?: '', true),
+    );
+
+    expect(json_encode($decodedRotatePayloads->all()))->not->toContain($rotatedPlain)
+        ->and(json_encode($decodedRotatePayloads->all()))->not->toContain($plainKey);
+});
+
+it('does not consume the pending secret on a partial reload from another tab', function () {
+    $user = apiKeyOwner();
+
+    $this->actingAs($user)
+        ->post(route('api-keys.store'), ['name' => 'Tab', 'scopes' => ['mcp:read']])
+        ->assertRedirect();
+
+    $plainKey = pendingIssuedApiKeySecret();
+
+    $partial = $this->actingAs($user)
+        ->withHeaders([
+            'X-Inertia' => 'true',
+            'X-Inertia-Version' => (string) Inertia::getVersion(),
+            'X-Inertia-Partial-Component' => 'settings/api-keys',
+            'X-Inertia-Partial-Data' => 'apiKeys',
+            'X-Requested-With' => 'XMLHttpRequest',
+            'Accept' => 'text/html, application/xhtml+xml',
+        ])
+        ->get(route('api-keys.index'));
+
+    $partial->assertOk()
+        ->assertJsonPath('component', 'settings/api-keys')
+        ->assertJsonPath('props.apiKeys.data.0.name', 'Tab');
+
+    expect($partial->json('flash') ?? [])->toBe([])
+        ->and(session()->has(ApiKeySecretOnceService::SESSION_KEY))->toBeTrue();
+
+    $this->flushHeaders();
+
+    $this->actingAs($user)->get(route('api-keys.index'))
+        ->assertInertia(fn (Assert $page) => $page->hasFlash('issuedApiKey.secret', $plainKey));
+});
+
+it('drops a pending secret after ten minutes', function () {
+    Date::setTestNow('2026-11-22 12:00:00');
+    $user = apiKeyOwner();
+
+    $this->actingAs($user)
+        ->post(route('api-keys.store'), ['name' => 'Stale', 'scopes' => ['mcp:read']])
+        ->assertRedirect();
+
+    expect(pendingIssuedApiKeySecret())->toBeString();
+
+    Date::setTestNow('2026-11-22 12:10:01');
+
+    $this->actingAs($user)->get(route('api-keys.index'))
+        ->assertInertia(fn (Assert $page) => $page->missingFlash('issuedApiKey'));
+
+    expect(session()->has(ApiKeySecretOnceService::SESSION_KEY))->toBeFalse();
 });
 
 it('revokes immediately so the previous secret stops working too', function () {

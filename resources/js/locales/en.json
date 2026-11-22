@@ -2379,7 +2379,7 @@
             "restrictions": "Restrictions",
             "restrictionsDescription": "Optional. Leave a field empty for no limit.",
             "expiresAt": "Expires",
-            "expiresAtDescription": "The key stops working at this time. You are notified before it does.",
+            "expiresAtDescription": "The key stops working at this time (browser timezone). You are notified before it does.",
             "ipAllowlist": "Allowed IP addresses",
             "ipAllowlistDescription": "Addresses or CIDR ranges, separated by commas. Requests from anywhere else are refused.",
             "ipAllowlistPlaceholder": "203.0.113.4, 10.0.0.0/8",

@@ -11,17 +11,22 @@ use Illuminate\Support\Facades\Crypt;
  * Hands a newly issued API key secret to the next Settings → API keys GET (#365 review).
  *
  * The plaintext never enters the session (SESSION_ENCRYPT is off by default): only an
- * APP_KEY-encrypted JSON payload is stored, and it is pulled and decrypted once.
+ * APP_KEY-encrypted JSON payload is stored. Index pulls it once and flashes it through
+ * Inertia (stripped from history.state). Payloads older than {@see self::TTL_SECONDS}
+ * are dropped unread.
  */
 final class ApiKeySecretOnceService
 {
     public const SESSION_KEY = 'api_key_secret_encrypted';
 
+    /** How long a pending secret may sit in the session before index refuses it. */
+    public const TTL_SECONDS = 600;
+
     /**
      * @param  'created'|'rotated'  $reason
      *
-     * @side-effect Puts an encrypted payload in the session until the next Settings → API keys GET.
-     * Uses put (not flash): Inertia's redirect follow can age flash bags before the page reads them.
+     * @side-effect Puts an encrypted payload in the session until the next full Settings → API keys GET.
+     * Uses put (not Laravel flash): Inertia's redirect follow can age flash bags before index reads them.
      */
     public function store(
         Session $session,
@@ -35,11 +40,12 @@ final class ApiKeySecretOnceService
             'name' => $keyName,
             'reason' => $reason,
             'previous_key_valid_until' => $previousKeyValidUntil,
+            'issued_at' => now()->getTimestamp(),
         ], JSON_THROW_ON_ERROR)));
     }
 
     /**
-     * Decrypt and consume the one-time payload, or null when nothing was stored.
+     * Decrypt and consume the one-time payload, or null when nothing was stored or it expired.
      *
      * @return array{secret: string, name: string, reason: string, previous_key_valid_until: string|null}|null
      *
@@ -53,10 +59,18 @@ final class ApiKeySecretOnceService
             return null;
         }
 
-        /** @var array{secret?: mixed, name?: mixed, reason?: mixed, previous_key_valid_until?: mixed} $payload */
+        /** @var array{secret?: mixed, name?: mixed, reason?: mixed, previous_key_valid_until?: mixed, issued_at?: mixed} $payload */
         $payload = json_decode(Crypt::decryptString($encrypted), true, 512, JSON_THROW_ON_ERROR);
 
         if (! is_string($payload['secret'] ?? null) || $payload['secret'] === '') {
+            return null;
+        }
+
+        $issuedAt = is_int($payload['issued_at'] ?? null)
+            ? $payload['issued_at']
+            : (is_numeric($payload['issued_at'] ?? null) ? (int) $payload['issued_at'] : null);
+
+        if ($issuedAt === null || now()->getTimestamp() - $issuedAt > self::TTL_SECONDS) {
             return null;
         }
 
