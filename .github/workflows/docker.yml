@@ -25,11 +25,8 @@ permissions:
   contents: read
 
 concurrency:
-  # The event is part of the group: a push run and a pull-request run on the same SHA are
-  # different evidence and must never cancel each other (externa-core#805).
-  group: docker-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
-  # A `main` or `develop` run is the release evidence: let it finish.
-  cancel-in-progress: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/develop' }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build:

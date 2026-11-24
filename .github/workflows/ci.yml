@@ -14,25 +14,9 @@ permissions:
   contents: read
 
 concurrency:
-  # The event is part of the group: a push run and a pull-request run on the same SHA are
-  # different evidence and must never cancel each other (externa-core#805).
-  group: ci-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
-  # A `main` or `develop` run is the release evidence: let it finish.
-  cancel-in-progress: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/develop' }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
-# Gate policy (CI diet, as externa-core#381 / #438):
-# - Required check NAMES never change and every required job still runs on every pull request.
-#   When the heavy work is skipped the job reports success from a stub step: a required check
-#   that is never queued stays pending forever and the pull request can never be merged, so
-#   workflow-level `paths:` is never used here.
-# - push → main/develop, pull_request → main, workflow_dispatch: everything runs (full mode).
-#   `changes` is skipped on those events, so the classification costs nothing there and the
-#   gates below default to full.
-# - pull_request → develop with code: Pest on PHP 8.4; the PHP 8.5, MySQL and PostgreSQL legs
-#   stub. The full matrix still runs on the merge to develop, before any release.
-# - pull_request → develop touching a migration, the database config or a toolchain/stack file:
-#   full mode, so a migration always meets MySQL and PostgreSQL before it reaches develop.
-# - pull_request → develop with docs only: every heavy job stubs.
 jobs:
   changes:
     # Only a pull request to `develop` is ever reduced. On every other event this job is
