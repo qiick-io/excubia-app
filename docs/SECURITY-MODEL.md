@@ -105,7 +105,7 @@ Deleting a project deletes its reports, findings, telemetry, tasks, alerts, mute
 - **Checked** by `AuthenticateApiKeyMiddleware`, with the scope the route needs: the bearer key is hashed and looked up by hash. A revoked or expired key, a key without the scope, a deactivated owner or owner principal, or a key whose stored restrictions refuse the request is rejected on the next request; deleting a user revokes their keys (`revoked_reason = owner`).
 - **Acts as its owner**, for that request only (no session): every policy and `Project::visibleTo` apply as in the UI, so a key never sees or does more than its owner. Only the owner may revoke a key.
 - **Audit**: creation, revocation and the first use go to the `auth` activity log.
-- **Rate limits**: 20 failed attempts per minute per IP (`API_KEYS_FAILED_ATTEMPTS_PER_MINUTE`; then every attempt from that IP gets 429, a correct key included), and `API_KEYS_DEFAULT_RATE_LIMIT_PER_MINUTE` (60) per key, plus optional per-key day and month quotas. The counters live in the cache when it is Redis or Memcached, otherwise in the `api_key_attempts` table (package 0.3.0-beta.2).
+- **Rate limits**: 20 failed attempts per minute per IP (`API_KEYS_FAILED_ATTEMPTS_PER_MINUTE`; then every attempt from that IP gets 429, a correct key included), and `API_KEYS_DEFAULT_RATE_LIMIT_PER_MINUTE` (60) per key, plus optional per-key day and month quotas. The counters live in the configured cache store (never `array` outside tests: it does not persist between requests).
 
 ### 7b. MCP server (off by default)
 

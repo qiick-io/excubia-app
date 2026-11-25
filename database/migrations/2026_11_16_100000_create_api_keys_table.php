@@ -8,8 +8,7 @@ use Illuminate\Support\Facades\Schema;
 
 /**
  * Personal API keys (#315, #351) on the reference schema of qiick/laravel-api-keys 0.3
- * (`docs/reference-schema.md`), plus `api_key_attempts` for the package's database attempt
- * limiter (0.3.0-beta.2): the default cache store is `database`, which the cache limiter refuses.
+ * (`docs/reference-schema.md`).
  *
  * A key acts as its owner and never more. Only the SHA-256 of the full token is stored;
  * `key_prefix` holds the public part (`exc_{env}_{id}`), unique so a prefix names one row.
@@ -68,18 +67,10 @@ return new class extends Migration
             $table->index('created_by');
             $table->index('revoked_by');
         });
-
-        Schema::create('api_key_attempts', function (Blueprint $table): void {
-            $table->string('bucket', 255)->primary();
-            $table->unsignedInteger('hits')->default(0);
-            // End of the window in Unix seconds (app clock); the row counts as empty from this second.
-            $table->unsignedBigInteger('expires_at')->index();
-        });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('api_key_attempts');
         Schema::dropIfExists('api_keys');
     }
 };
