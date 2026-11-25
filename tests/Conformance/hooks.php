@@ -49,6 +49,7 @@ use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use Laravel\Fortify\Actions\EnableTwoFactorAuthentication;
 use Laravel\Fortify\Fortify;
+use Qiick\Access\Principals\PrincipalDirectory;
 use Qiick\Outbound\Contracts\HostResolver;
 use Qiick\Outbound\Ssrf\RemoteUrlGuard;
 use Qiick\Outbound\Ssrf\UnsafeUrl;
@@ -130,7 +131,8 @@ return [
             Artisan::call('db:seed', ['--class' => CreateSuperAdminSeeder::class, '--force' => true]);
             $weakAdmin = User::query()->where('email', config('super_admin.email'))->sole();
             expect(Hash::check('s3cret', $weakAdmin->password))->toBeTrue();
-            $weakAdmin->forceDelete();
+            // A user with a principal is hard-deleted only through the access erasure.
+            app(PrincipalDirectory::class)->eraseUser($weakAdmin, fn (User $user) => $user->forceDelete());
 
             $settings->save(['password_policy' => 'strong']);
             $strongPassword = 'V3ry-Str0ng-Passphrase-2026';
