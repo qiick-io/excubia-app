@@ -8,7 +8,9 @@ use Illuminate\Contracts\Session\Session;
 use Illuminate\Support\Facades\Crypt;
 
 /**
- * Hands a newly issued API key secret to the next Settings → API keys GET (#365 review).
+ * Hands a newly issued secret to the next page GET that shows it once: an API key on Settings → API
+ * keys (#365 review), the alert webhook's signing secret on Settings → Integrations (its own
+ * session key, {@see self::WEBHOOK_SESSION_KEY}).
  *
  * The plaintext never enters the session (SESSION_ENCRYPT is off by default): only an
  * APP_KEY-encrypted JSON payload is stored. Index pulls it once and flashes it through
@@ -18,6 +20,8 @@ use Illuminate\Support\Facades\Crypt;
 final class ApiKeySecretOnceService
 {
     public const SESSION_KEY = 'api_key_secret_encrypted';
+
+    public const WEBHOOK_SESSION_KEY = 'alert_webhook_secret_encrypted';
 
     /** How long a pending secret may sit in the session before index refuses it. */
     public const TTL_SECONDS = 600;
@@ -34,8 +38,9 @@ final class ApiKeySecretOnceService
         string $keyName,
         string $reason = 'created',
         ?string $previousKeyValidUntil = null,
+        string $sessionKey = self::SESSION_KEY,
     ): void {
-        $session->put(self::SESSION_KEY, Crypt::encryptString(json_encode([
+        $session->put($sessionKey, Crypt::encryptString(json_encode([
             'secret' => $plainSecret,
             'name' => $keyName,
             'reason' => $reason,
@@ -51,9 +56,9 @@ final class ApiKeySecretOnceService
      *
      * @side-effect Removes the session key.
      */
-    public function pull(Session $session): ?array
+    public function pull(Session $session, string $sessionKey = self::SESSION_KEY): ?array
     {
-        $encrypted = $session->pull(self::SESSION_KEY);
+        $encrypted = $session->pull($sessionKey);
 
         if (! is_string($encrypted) || $encrypted === '') {
             return null;

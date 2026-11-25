@@ -48,6 +48,7 @@ class AlertDispatcherService
     public function __construct(
         private SettingsRepositoryService $settings,
         private AlertSuppressionService $suppression,
+        private AlertWebhookService $webhooks,
     ) {}
 
     /**
@@ -160,13 +161,16 @@ class AlertDispatcherService
         // The per-user channels (mail, in-app) render the alerts themselves from the summaries.
         $isPerUser = DeliverAlertJob::emailUserId($channel) !== null || DeliverAlertJob::appUserId($channel) !== null;
 
+        if ($channel === DeliverAlertJob::WEBHOOK) {
+            // Never grouped: one signed delivery per alert, the alert id as `webhook-id`.
+            $this->webhooks->send($alerts[0]['payload']);
+
+            return;
+        }
+
         if (count($alerts) === 1) {
             ['payload' => $payload, 'summary' => $summary] = $alerts[0];
-            $body = match (true) {
-                $channel === DeliverAlertJob::WEBHOOK => '',
-                $isPerUser => $summary,
-                default => $this->line($payload, $summary, true).PHP_EOL.$payload['url'],
-            };
+            $body = $isPerUser ? $summary : $this->line($payload, $summary, true).PHP_EOL.$payload['url'];
 
             DeliverAlertJob::dispatch($channel, $payload, $body)->afterCommit();
 
@@ -221,7 +225,7 @@ class AlertDispatcherService
     private function channels(AlertEventEnum $event, SeverityEnum $severity, Project $project): array
     {
         $isConfigured = [
-            DeliverAlertJob::WEBHOOK => $this->settings->webhookUrl() !== null && $this->settings->webhookSecret() !== null,
+            DeliverAlertJob::WEBHOOK => $this->webhooks->isReady(),
             DeliverAlertJob::SLACK => $this->settings->slackWebhookUrl() !== null,
             DeliverAlertJob::TELEGRAM => $this->settings->telegramBotToken() !== null && $this->settings->telegramChatId() !== null,
         ];
@@ -270,6 +274,12 @@ class AlertDispatcherService
             'url' => route('dashboard'),
             'data' => (object) [],
         ];
+
+        if ($channel === DeliverAlertJob::WEBHOOK) {
+            $this->webhooks->send($payload);
+
+            return;
+        }
 
         DeliverAlertJob::dispatch($channel, $payload, 'Excubia test notification: the channel works.');
     }

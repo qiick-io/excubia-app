@@ -700,6 +700,8 @@
             "groups_synced": "Groups synced",
             "members_synced": "Members synced",
             "token_rotated": "Push token rotated",
+            "webhook_secret_created": "Alert webhook secret created",
+            "webhook_secret_rotated": "Alert webhook secret rotated",
             "token_revoked": "Push token revoked",
             "rotated": "API key rotated",
             "revoked": "API key revoked",

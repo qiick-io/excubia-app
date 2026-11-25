@@ -2,7 +2,9 @@
 
 namespace App\Providers;
 
+use App\Actions\RecordAlertDeliveryAction;
 use App\Enums\PermissionEnum;
+use App\Jobs\DeliverAlertJob;
 use App\Models\Activity as ActivityModel;
 use App\Models\ApiKey;
 use App\Models\Project;
@@ -48,6 +50,8 @@ use Qiick\Oidc\Contracts\SecondFactorChallengeContract;
 use Qiick\Oidc\Contracts\UserProvisioningContract;
 use Qiick\Oidc\Services\SsoOnlyModeService;
 use Qiick\Oidc\Services\UserLinkingService;
+use Qiick\Outbound\Events\WebhookDeliveryFailedEvent;
+use Qiick\Outbound\Models\WebhookDelivery;
 use RuntimeException;
 use Spatie\Activitylog\Facades\Activity;
 use Spatie\Permission\Models\Permission;
@@ -110,6 +114,7 @@ class AppServiceProvider extends ServiceProvider
         $this->configureAuthorization();
         $this->configureActivityLogging();
         $this->registerAuthActivityListeners();
+        $this->registerAlertWebhookListeners();
         $this->configureApiKeyGuard();
         $this->configureRateLimiting();
         $this->configureTrustedProxies();
@@ -188,6 +193,22 @@ class AppServiceProvider extends ServiceProvider
                 'ip' => request()->ip(),
                 'user_agent' => request()->userAgent(),
             ]);
+        });
+    }
+
+    /**
+     * Writes the alert webhook's outcome on the alert's history row (#114): qiick/laravel-outbound
+     * announces a delivery that ran out of attempts (or was refused for good); the delivery's
+     * `event_id` is the alert's id.
+     */
+    protected function registerAlertWebhookListeners(): void
+    {
+        Event::listen(WebhookDeliveryFailedEvent::class, function (WebhookDeliveryFailedEvent $event): void {
+            $alertId = WebhookDelivery::query()->where('public_id', $event->deliveryPublicId)->value('event_id');
+
+            if (is_string($alertId)) {
+                app(RecordAlertDeliveryAction::class)->execute($alertId, DeliverAlertJob::WEBHOOK, false);
+            }
         });
     }
 

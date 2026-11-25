@@ -2,13 +2,14 @@
 
 declare(strict_types=1);
 
-use App\Jobs\DeliverAlertJob;
-use App\Services\SettingsRepositoryService;
+use App\Jobs\SendAlertWebhooksJob;
+use App\Services\AlertWebhookService;
 use GuzzleHttp\Promise\PromiseInterface;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Qiick\Outbound\Contracts\HostResolver;
+use Qiick\Outbound\Models\WebhookDeliveryAttempt;
 use Qiick\Outbound\Ssrf\RemoteUrlGuard;
 use Qiick\Outbound\Ssrf\UnsafeUrl;
 
@@ -265,29 +266,21 @@ it('resolves once per delivery and sends the request to the address it checked',
         return Http::response('', 204);
     });
 
-    app(SettingsRepositoryService::class)->save([
-        'webhook_url' => 'https://rebind.example.com/hook',
-        'webhook_secret' => alertWebhookSecret(),
-    ]);
+    configureAlertWebhook('https://rebind.example.com/hook');
 
-    app()->call([new DeliverAlertJob(DeliverAlertJob::WEBHOOK, [
-        'id' => (string) Str::uuid(),
-        'event' => 'ping',
-    ]), 'handle']);
+    app(AlertWebhookService::class)->send(['id' => (string) Str::uuid(), 'event' => 'ping']);
+    app()->call([new SendAlertWebhooksJob, 'handle']);
 
     expect($resolver->lookups)->toBe(1)
         ->and($sentOptions['curl'] ?? null)->toBe([CURLOPT_CONNECT_TO => ['::93.184.216.34:443']]);
 
     bindPinnedAlertClient($guard, static fn (): PromiseInterface => Http::response('', 204));
 
-    app()->call([new DeliverAlertJob(DeliverAlertJob::WEBHOOK, [
-        'id' => (string) Str::uuid(),
-        'event' => 'ping',
-    ]), 'handle']);
+    app(AlertWebhookService::class)->send(['id' => (string) Str::uuid(), 'event' => 'ping']);
+    app()->call([new SendAlertWebhooksJob, 'handle']);
 
     expect($resolver->lookups)->toBe(2)
-        ->and(app(SettingsRepositoryService::class)->all()['webhook_last_error']['message'])
-        ->toContain('Host resolves to a disallowed address.');
+        ->and(WebhookDeliveryAttempt::query()->latest('id')->firstOrFail()->error_code)->toBe('ssrf_refused');
 });
 
 it('pins a literal address in the url too, since curl reads more spellings than the guard', function (): void {
@@ -298,15 +291,10 @@ it('pins a literal address in the url too, since curl reads more spellings than 
         return Http::response('', 204);
     });
 
-    app(SettingsRepositoryService::class)->save([
-        'webhook_url' => 'https://93.184.216.34/hook',
-        'webhook_secret' => alertWebhookSecret(),
-    ]);
+    configureAlertWebhook('https://93.184.216.34/hook');
 
-    app()->call([new DeliverAlertJob(DeliverAlertJob::WEBHOOK, [
-        'id' => (string) Str::uuid(),
-        'event' => 'ping',
-    ]), 'handle']);
+    app(AlertWebhookService::class)->send(['id' => (string) Str::uuid(), 'event' => 'ping']);
+    app()->call([new SendAlertWebhooksJob, 'handle']);
 
     expect($sentOptions['curl'] ?? null)->toBe([CURLOPT_CONNECT_TO => ['::93.184.216.34:443']]);
 });

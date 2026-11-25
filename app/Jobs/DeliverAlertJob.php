@@ -8,11 +8,10 @@ use App\Actions\RecordAlertDeliveryAction;
 use App\Mail\AlertMail;
 use App\Models\User;
 use App\Notifications\AlertNotification;
+use App\Services\AlertWebhookService;
 use App\Services\SettingsRepositoryService;
-use DateTimeImmutable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
-use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Mail;
 use Qiick\Outbound\Http\HttpRequestOptions;
 use Qiick\Outbound\Http\OutboundHttpException;
@@ -20,17 +19,12 @@ use Qiick\Outbound\Http\OutboundRequest;
 use Qiick\Outbound\Http\PinnedHttpClient;
 use Qiick\Outbound\Ssrf\RemoteUrlGuard;
 use Qiick\Outbound\Ssrf\UnsafeUrl;
-use Qiick\Outbound\Webhooks\StandardWebhookSigner;
-use Qiick\Outbound\Webhooks\WebhookException;
-use Qiick\Outbound\Webhooks\WebhookMessage;
-use Qiick\Outbound\Webhooks\WebhookSecret;
 use RuntimeException;
 use Throwable;
 
 /**
- * Delivers one alert (#22) to one channel, as externa-core's outbound webhook and notifier jobs:
- * - webhook: Standard Webhooks envelope `{type, timestamp, data}` signed with
- *   {@see StandardWebhookSigner} (`webhook-id`, `webhook-timestamp`, `webhook-signature`);
+ * Delivers one alert (#22) to one channel, as externa-core's notifier jobs. The signed webhook
+ * channel is not here: qiick/laravel-outbound delivers it ({@see AlertWebhookService}).
  * - slack: an incoming-webhook message;
  * - telegram: a Bot API sendMessage;
  * - email:<user id>: an AlertMail to that user, in their locale (the user must still be active);
@@ -38,8 +32,7 @@ use Throwable;
  * HTTPS only, no redirects, and hosts that resolve to private or reserved addresses are refused
  * by {@see RemoteUrlGuard} through {@see PinnedHttpClient}; the connection
  * is pinned with CURLOPT_CONNECT_TO to the checked address, and transport errors never quote the URL.
- * Retried 3 times with backoff; the webhook's last success and last error are kept for Settings,
- * and every channel's outcome goes on the alert's history row (#114). A grouped message (one
+ * Retried 3 times with backoff; every channel's outcome goes on the alert's history row (#114). A grouped message (one
  * report push, #22) carries the worst alert's payload and lists every alert in `alerts`, whose
  * history rows all get the outcome.
  */
@@ -47,6 +40,7 @@ class DeliverAlertJob implements ShouldQueue
 {
     use Queueable;
 
+    /** The signed webhook's channel name (filters, history); qiick/laravel-outbound delivers it. */
     public const WEBHOOK = 'webhook';
 
     public const SLACK = 'slack';
@@ -88,7 +82,6 @@ class DeliverAlertJob implements ShouldQueue
     public function handle(
         SettingsRepositoryService $settings,
         PinnedHttpClient $http,
-        StandardWebhookSigner $signer,
     ): void {
         $userId = self::emailUserId($this->channel);
 
@@ -108,7 +101,6 @@ class DeliverAlertJob implements ShouldQueue
 
         try {
             match ($this->channel) {
-                self::WEBHOOK => $this->deliverWebhook($settings, $http, $signer),
                 self::SLACK => $this->deliverRaw(
                     $settings,
                     $http,
@@ -129,8 +121,6 @@ class DeliverAlertJob implements ShouldQueue
             };
         } catch (UnsafeUrl $exception) {
             $this->record($settings, false, 'Refused: '.$exception->reason());
-        } catch (WebhookException $exception) {
-            $this->record($settings, false, 'Refused: '.$exception->getMessage());
         }
     }
 
@@ -200,54 +190,6 @@ class DeliverAlertJob implements ShouldQueue
     }
 
     /**
-     * Signs and posts one Standard Webhooks alert. The delivery id lives only in `webhook-id`;
-     * the body is `{type, timestamp, data}` (no legacy `X-Excubia-*` headers: Excuvia is unreleased).
-     *
-     * @throws UnsafeUrl
-     * @throws WebhookException
-     * @throws RuntimeException
-     */
-    private function deliverWebhook(
-        SettingsRepositoryService $settings,
-        PinnedHttpClient $http,
-        StandardWebhookSigner $signer,
-    ): void {
-        $url = $settings->webhookUrl();
-        $secretValue = $settings->webhookSecret();
-
-        if ($url === null || $secretValue === null) {
-            $this->record($settings, false, 'Refused: the URL is missing, not HTTPS or points to a private address.');
-
-            return;
-        }
-
-        $timestamp = DateTimeImmutable::createFromInterface(Date::now());
-        $envelopeData = $this->payload;
-        unset($envelopeData['id'], $envelopeData['event']);
-
-        $message = new WebhookMessage(
-            id: (string) $this->payload['id'],
-            type: (string) $this->payload['event'],
-            timestamp: $timestamp,
-            data: $envelopeData,
-        );
-        $rawBody = $message->toPayloadJson();
-        // Single secret only: Settings stores one whsec_ value. Dual-signature rotation is a
-        // follow-up when qiick/laravel-outbound 1.0 ships the webhook_endpoint_secrets table.
-        $signed = $signer->sign(
-            $message->id,
-            $timestamp->getTimestamp(),
-            $rawBody,
-            [WebhookSecret::parse($secretValue)],
-        );
-
-        $this->post($http, $url, $signed->rawBody, [
-            ...$signed->headers,
-            'User-Agent' => 'Excubia-Alerts/1.0',
-        ], $settings);
-    }
-
-    /**
      * Posts a raw JSON body to a Slack or Telegram URL through the pinned client.
      *
      * @throws UnsafeUrl
@@ -310,8 +252,7 @@ class DeliverAlertJob implements ShouldQueue
     }
 
     /**
-     * Keeps the outcome on the alert's history row, and the webhook's last success and last
-     * error for the delivery status cards.
+     * Keeps the outcome on the alert's history row.
      */
     private function record(SettingsRepositoryService $settings, bool $isSuccess, string $message): void
     {
@@ -320,16 +261,5 @@ class DeliverAlertJob implements ShouldQueue
         foreach ($alertIds as $alertId) {
             app(RecordAlertDeliveryAction::class)->execute($alertId, $this->channel, $isSuccess);
         }
-
-        if ($this->channel !== self::WEBHOOK) {
-            return;
-        }
-
-        $settings->setMany([$isSuccess ? 'webhook_last_success' : 'webhook_last_error' => [
-            'event' => $this->payload['event'],
-            'eventId' => $this->payload['id'],
-            'at' => Date::now()->toIso8601ZuluString(),
-            'message' => $isSuccess ? null : mb_substr($message, 0, 300),
-        ]]);
     }
 }

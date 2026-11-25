@@ -2,10 +2,11 @@
 
 declare(strict_types=1);
 
+use App\Actions\SaveAlertWebhookAction;
 use App\Actions\StorePushedReportAction;
 use App\Enums\AlertEventEnum;
 use App\Enums\RoleEnum;
-use App\Jobs\DeliverAlertJob;
+use App\Jobs\SendAlertWebhooksJob;
 use App\Mail\WeeklyDigestMail;
 use App\Models\AlertLog;
 use App\Models\AlertMute;
@@ -35,10 +36,9 @@ beforeEach(function () {
     Http::preventStrayRequests();
     Queue::fake();
     Date::setTestNow('2026-11-10 12:00:00');
+    configureAlertWebhook('https://93.184.216.34/excubia');
     app(SettingsRepositoryService::class)->save([
         // An IP literal: the address check needs no DNS lookup in tests.
-        'webhook_url' => 'https://93.184.216.34/excubia',
-        'webhook_secret' => alertWebhookSecret(),
     ]);
 });
 
@@ -90,7 +90,7 @@ it('logs every alert and suppresses a muted rule until the mute ends', function 
     $alerts->dispatch(AlertEventEnum::ProjectStale, $project, 'no report');
 
     expect(alertHistory($project))->toBe(['project.stale:queued:-', 'project.stale:suppressed:muted', 'project.stale:queued:-']);
-    Queue::assertPushed(DeliverAlertJob::class, 2);
+    expect(alertWebhookEvents())->toBe(['project.stale', 'project.stale']);
 });
 
 it('mutes one issue without muting the rest of the rule', function () {
@@ -213,18 +213,19 @@ it('records each channel delivery on the alert history', function () {
     $project = Project::factory()->create();
     app(AlertDispatcherService::class)->dispatch(AlertEventEnum::ProjectStale, $project, 'no report');
     app(AlertDispatcherService::class)->dispatch(AlertEventEnum::ProjectStale, $project, 'no report');
-    [$delivered, $failed] = collect(Queue::pushedJobs()[DeliverAlertJob::class])->map(fn (array $job) => $job['job'])->all();
-
-    bindPinnedAlertClient(app(RemoteUrlGuard::class), static fn () => Http::response('', 204));
-    app()->call([$delivered, 'handle']);
-    $failed->failed(new RuntimeException('HTTP 500'));
+    // The first delivery is accepted; the second answers 410 Gone, which ends it at once.
+    $responses = [204, 410];
+    bindPinnedAlertClient(app(RemoteUrlGuard::class), static function () use (&$responses) {
+        return Http::response('', array_shift($responses) ?? 500);
+    });
+    app()->call([new SendAlertWebhooksJob, 'handle']);
 
     expect(AlertLog::query()->orderBy('id')->get()->map(fn (AlertLog $log): array => [$log->status, $log->deliveries])->all())
         ->toBe([['sent', ['webhook' => 'sent']], ['failed', ['webhook' => 'failed']]]);
 });
 
 it('skips an alert no channel takes', function () {
-    app(SettingsRepositoryService::class)->save(['webhook_url' => null]);
+    app(SaveAlertWebhookAction::class)->execute(null, User::factory()->create());
     $project = Project::factory()->create();
 
     app(AlertDispatcherService::class)->dispatch(AlertEventEnum::ProjectStale, $project, 'no report');

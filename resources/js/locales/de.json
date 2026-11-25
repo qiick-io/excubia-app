@@ -700,6 +700,8 @@
             "groups_synced": "Gruppen synchronisiert",
             "members_synced": "Mitglieder synchronisiert",
             "token_rotated": "Push-Token erneuert",
+            "webhook_secret_created": "Geheimnis des Alert-Webhooks erstellt",
+            "webhook_secret_rotated": "Geheimnis des Alert-Webhooks rotiert",
             "token_revoked": "Push-Token widerrufen",
             "rotated": "API-Schlüssel rotiert",
             "revoked": "API-Schlüssel widerrufen",

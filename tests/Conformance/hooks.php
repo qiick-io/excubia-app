@@ -26,13 +26,14 @@ use App\Enums\ApiKeyScopeEnum;
 use App\Enums\PermissionEnum;
 use App\Enums\RoleEnum;
 use App\Http\Resources\ApiKeyResource;
-use App\Jobs\DeliverAlertJob;
+use App\Jobs\SendAlertWebhooksJob;
 use App\Models\Activity;
 use App\Models\ApiKey;
 use App\Models\HealthReport;
 use App\Models\Project;
 use App\Models\User;
 use App\Models\UserGroup;
+use App\Services\AlertWebhookService;
 use App\Services\EffectivePermissionResolverService;
 use App\Services\SettingsRepositoryService;
 use Database\Seeders\CreateSuperAdminSeeder;
@@ -50,6 +51,7 @@ use Illuminate\Testing\TestResponse;
 use Laravel\Fortify\Actions\EnableTwoFactorAuthentication;
 use Laravel\Fortify\Fortify;
 use Qiick\Outbound\Contracts\HostResolver;
+use Qiick\Outbound\Models\WebhookDeliveryAttempt;
 use Qiick\Outbound\Ssrf\RemoteUrlGuard;
 use Qiick\Outbound\Ssrf\UnsafeUrl;
 use Spatie\Permission\Models\Role as SpatieRole;
@@ -59,11 +61,11 @@ $seedPermissions = static function (): void {
     Artisan::call('db:seed', ['--class' => PermissionSeeder::class, '--force' => true]);
 };
 
-/** A webhook job with the minimum payload its delivery recorder needs. */
-$alertJob = static fn (): DeliverAlertJob => new DeliverAlertJob(DeliverAlertJob::WEBHOOK, [
-    'id' => (string) Str::uuid(),
-    'event' => 'ping',
-]);
+/** Stores one alert webhook delivery and runs the worker once, as a queued alert does. */
+$sendAlertWebhook = static function (): void {
+    app(AlertWebhookService::class)->send(['id' => (string) Str::uuid(), 'event' => 'ping']);
+    app()->call([new SendAlertWebhooksJob, 'handle']);
+};
 
 return [
     'assertSoftDeletedGroupGrantsNothing' => static function () use ($seedPermissions): void {
@@ -369,12 +371,8 @@ return [
             ->and(HealthReport::query()->count())->toBe(1);
     },
 
-    'assertWebhooks' => static function () use ($alertJob): void {
-        $settings = app(SettingsRepositoryService::class);
-        $settings->save([
-            'webhook_url' => 'https://hooks.example.com/hook',
-            'webhook_secret' => alertWebhookSecret(),
-        ]);
+    'assertWebhooks' => static function () use ($sendAlertWebhook): void {
+        configureAlertWebhook('https://hooks.example.com/hook');
 
         $request = null;
         $body = null;
@@ -395,7 +393,7 @@ return [
             return Http::response('', 204);
         });
 
-        app()->call([$alertJob(), 'handle']);
+        $sendAlertWebhook();
 
         expect($request)->not->toBeNull()
             ->and($request->hasHeader('Webhook-Id'))->toBeTrue()
@@ -404,7 +402,7 @@ return [
             ->and($body)->toHaveKeys(['type', 'timestamp', 'data']);
     },
 
-    'assertSsrfGuard' => static function () use ($alertJob): void {
+    'assertSsrfGuard' => static function () use ($sendAlertWebhook): void {
         $guardReason = static function (RemoteUrlGuard $guard, string $url): ?string {
             try {
                 $guard->authorize($url);
@@ -456,12 +454,8 @@ return [
             return Http::response('', 204);
         });
 
-        $settings = app(SettingsRepositoryService::class);
-        $settings->save([
-            'webhook_url' => 'https://rebind.example.com/hook',
-            'webhook_secret' => alertWebhookSecret(),
-        ]);
-        app()->call([$alertJob(), 'handle']);
+        configureAlertWebhook('https://rebind.example.com/hook');
+        $sendAlertWebhook();
 
         expect($resolver->calls)->toBe(1)
             ->and($sentOptions['curl'] ?? null)->toBe([CURLOPT_CONNECT_TO => ['::93.184.216.34:443']]);
@@ -480,9 +474,12 @@ return [
                 httpsOnly: true,
             );
             bindPinnedAlertClient($blockedGuard, static fn () => Http::response('', 204));
-            app()->call([$alertJob(), 'handle']);
+            $sendAlertWebhook();
 
-            expect($settings->all()['webhook_last_error']['message'])->toContain($reason);
+            $attempt = WebhookDeliveryAttempt::query()->latest('id')->firstOrFail();
+
+            expect($attempt->error_code)->toBe('ssrf_refused')
+                ->and((string) $attempt->error_message)->toContain($reason);
         }
     },
 
@@ -556,7 +553,12 @@ return [
 
         $settings = app(SettingsRepositoryService::class);
 
-        foreach (['webhook_secret' => 'whsec_conformance-secret', 'oidc_client_secret' => 'oidc-conformance-secret', 'notifier_telegram_bot_token' => '123456:conformance-token'] as $key => $plainSecret) {
+        // The alert webhook's signing secret lives in qiick/laravel-outbound's table, encrypted.
+        $webhookSecret = configureAlertWebhook('https://hooks.example.com/hook');
+        expect($webhookSecret)->toStartWith('whsec_')
+            ->and(json_encode(DB::table('webhook_endpoint_secrets')->get()))->not->toContain($webhookSecret);
+
+        foreach (['oidc_client_secret' => 'oidc-conformance-secret', 'notifier_telegram_bot_token' => '123456:conformance-token'] as $key => $plainSecret) {
             $settings->save([$key => $plainSecret]);
 
             $stored = (string) DB::table('settings')

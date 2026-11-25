@@ -1,11 +1,16 @@
 <?php
 
+use App\Actions\IssueAlertWebhookSecretAction;
+use App\Actions\SaveAlertWebhookAction;
+use App\Models\User;
 use GuzzleHttp\Promise\PromiseInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
+use Qiick\Outbound\Delivery\WebhookDeliveryCoordinator;
 use Qiick\Outbound\Http\OutboundHttpLimits;
 use Qiick\Outbound\Http\PinnedHttpClient;
+use Qiick\Outbound\Models\WebhookDelivery;
 use Qiick\Outbound\Ssrf\RemoteUrlGuard;
 use Qiick\Outbound\Testing\FakeOutboundHttpFactory;
 use Tests\TestCase;
@@ -92,6 +97,28 @@ function alertWebhookSecret(string $byte = 's'): string
 }
 
 /**
+ * Configures the alert webhook on qiick/laravel-outbound as Settings → Integrations does: the
+ * instance endpoint for `$url` and a generated signing secret, which is returned.
+ */
+function configureAlertWebhook(string $url = 'https://93.184.216.34/excubia'): string
+{
+    $actor = User::factory()->create();
+    app(SaveAlertWebhookAction::class)->execute($url, $actor);
+
+    return app(IssueAlertWebhookSecretAction::class)->execute($actor)['secret'] ?? '';
+}
+
+/**
+ * The alert types stored for the webhook, oldest first (one qiick/laravel-outbound delivery each).
+ *
+ * @return list<string>
+ */
+function alertWebhookEvents(): array
+{
+    return WebhookDelivery::query()->orderBy('id')->pluck('event_type')->all();
+}
+
+/**
  * Bind a {@see PinnedHttpClient} over a faked private factory so
  * {@see Http::fake()} on the shared facade cannot bypass the pin.
  *
@@ -106,6 +133,8 @@ function bindPinnedAlertClient(RemoteUrlGuard $guard, ?callable $callback = null
         $guard,
         app(OutboundHttpLimits::class),
     ));
+    // The webhook coordinator keeps the client it was built with: rebuild it over the fake one.
+    app()->forgetInstance(WebhookDeliveryCoordinator::class);
 }
 
 /**

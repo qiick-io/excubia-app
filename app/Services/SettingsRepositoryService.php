@@ -27,7 +27,7 @@ use Illuminate\Validation\Rules\Password;
  * treat NULLs as distinct; signaculum-core #205), group=`app`. Public method signatures stay
  * flat-keyed so callers do not change.
  *
- * Secrets (SECRET_KEYS: the OIDC client secret, the webhook signing secret, the Slack incoming-
+ * Secrets (SECRET_KEYS: the OIDC client secret, the Slack incoming-
  * webhook URL, which is a bearer secret, and the Telegram bot token) are stored encrypted and
  * left out of forEdit().
  *
@@ -46,7 +46,7 @@ class SettingsRepositoryService
 
     public const APPEARANCES = ['system', 'light', 'dark'];
 
-    public const SECRET_KEYS = ['oidc_client_secret', 'webhook_secret', 'notifier_slack_webhook_url', 'notifier_telegram_bot_token'];
+    public const SECRET_KEYS = ['oidc_client_secret', 'notifier_slack_webhook_url', 'notifier_telegram_bot_token'];
 
     /**
      * Main sidebar modules in their default order: the single source for the sidebar settings
@@ -126,8 +126,6 @@ class SettingsRepositoryService
             // Tools switched off in Settings → AI (#320); `ai_enabled_tools` is the list saved before it.
             'ai_disabled_tools' => null,
             'ai_enabled_tools' => null,
-            'webhook_url' => null,
-            'webhook_secret' => null,
             'notifier_slack_webhook_url' => null,
             'notifier_telegram_bot_token' => null,
             'notifier_telegram_chat_id' => null,
@@ -152,8 +150,6 @@ class SettingsRepositoryService
             // AI price table (#129): null uses AiPriceService::defaults().
             'ai_prices' => null,
             'ai_prices_updated_on' => null,
-            'webhook_last_success' => null,
-            'webhook_last_error' => null,
         ];
     }
 
@@ -517,16 +513,6 @@ class SettingsRepositoryService
     public function oidcClientSecret(): ?string
     {
         return $this->secret('oidc_client_secret');
-    }
-
-    public function webhookUrl(): ?string
-    {
-        return $this->string('webhook_url');
-    }
-
-    public function webhookSecret(): ?string
-    {
-        return $this->secret('webhook_secret');
     }
 
     public function slackWebhookUrl(): ?string

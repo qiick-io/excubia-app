@@ -11,7 +11,6 @@ use App\Jobs\DeliverAlertJob;
 use App\Models\Project;
 use App\Models\Setting;
 use App\Rules\OutboundWebhookUrlRule;
-use App\Rules\WebhookSecretRule;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -51,7 +50,6 @@ class UpdateProjectIntegrationsSettingsRequest extends FormRequest
             'event_severities' => ['nullable', 'array'],
             'event_severities.*' => [Rule::enum(SeverityEnum::class)],
             'webhook_url' => ['nullable', 'url:https', 'max:2048', new OutboundWebhookUrlRule],
-            'webhook_secret' => ['nullable', 'string', 'max:512', new WebhookSecretRule],
             'notifier_slack_webhook_url' => ['nullable', 'url:https', 'starts_with:https://hooks.slack.com/', 'max:2048', new OutboundWebhookUrlRule],
             // BotFather token shape: "<bot_id>:<secret>".
             'notifier_telegram_bot_token' => ['nullable', 'string', 'max:512', 'regex:/^\d+:[A-Za-z0-9_-]+$/'],
@@ -74,6 +72,14 @@ class UpdateProjectIntegrationsSettingsRequest extends FormRequest
     }
 
     /**
+     * The alert webhook URL, saved on qiick/laravel-outbound's endpoint, not in the settings.
+     */
+    public function webhookUrl(): ?string
+    {
+        return $this->string('webhook_url')->trim()->toString() ?: null;
+    }
+
+    /**
      * The validated values to save, keyed by setting: the channel filters go in `alert_channels`
      * and the event severities in `alert_event_severities`, never as their rule keys.
      *
@@ -84,8 +90,6 @@ class UpdateProjectIntegrationsSettingsRequest extends FormRequest
         $text = fn (string $key): ?string => $this->string($key)->trim()->toString() ?: null;
 
         return [
-            'webhook_url' => $text('webhook_url'),
-            'webhook_secret' => $text('webhook_secret'),
             'notifier_slack_webhook_url' => $text('notifier_slack_webhook_url'),
             'notifier_telegram_bot_token' => $text('notifier_telegram_bot_token'),
             'notifier_telegram_chat_id' => $text('notifier_telegram_chat_id'),

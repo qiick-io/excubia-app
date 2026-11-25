@@ -29,9 +29,8 @@ beforeEach(function () {
     Queue::fake();
     Date::setTestNow('2026-11-07 12:00:00');
 
+    configureAlertWebhook('https://93.184.216.34/excubia');
     app(SettingsRepositoryService::class)->save([
-        'webhook_url' => 'https://93.184.216.34/excubia',
-        'webhook_secret' => alertWebhookSecret(),
         'notifier_slack_webhook_url' => 'https://hooks.slack.com/services/T/B/X',
         'notifier_telegram_bot_token' => '123456:ABC-def_1',
         'notifier_telegram_chat_id' => '-1001234567890',
@@ -84,6 +83,10 @@ it('sends :dataset to the webhook, Slack, Telegram and every subscriber', functi
             default => $job->channel,
         };
         $byChannel[$channel] = [...$byChannel[$channel] ?? [], ...($job->alerts === [] ? [(string) $job->payload['event']] : array_column($job->alerts, 'event'))];
+    }
+
+    if (alertWebhookEvents() !== []) {
+        $byChannel[DeliverAlertJob::WEBHOOK] = alertWebhookEvents();
     }
 
     // The subscriber's in-app alerts (#296) are on by default and read the same filters.
