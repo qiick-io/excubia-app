@@ -63,8 +63,9 @@ it('names exactly one row per public prefix', function () {
 it('requires an owner principal and refuses to delete a principal that still owns a key', function () {
     $apiKey = ApiKey::factory()->create();
 
-    expect(fn () => ApiKey::factory()->create(['owner_principal_id' => null]))->toThrow(QueryException::class)
-        ->and(fn () => DB::table('principals')->where('id', $apiKey->owner_principal_id)->delete())->toThrow(QueryException::class)
+    // Each refused write runs in its own savepoint: PostgreSQL aborts the test transaction otherwise.
+    expect(fn () => DB::transaction(fn () => ApiKey::factory()->create(['owner_principal_id' => null])))->toThrow(QueryException::class)
+        ->and(fn () => DB::transaction(fn () => DB::table('principals')->where('id', $apiKey->owner_principal_id)->delete()))->toThrow(QueryException::class)
         ->and(ApiKey::query()->whereKey($apiKey->id)->exists())->toBeTrue();
 });
 
