@@ -280,4 +280,4 @@ it('denies a key whose stored IP allowlist is corrupted instead of reading it as
     DB::table('api_keys')->update(['ip_allowlist' => '["203.0.113.10"']);
 
     callAdoptedKey($plainKey)->assertForbidden()->assertJsonPath('error', 'ip_not_allowed');
-});
+})->skip(fn (): bool => DB::getDriverName() !== 'sqlite', 'MySQL and PostgreSQL refuse invalid JSON at the column; only SQLite can store it');
