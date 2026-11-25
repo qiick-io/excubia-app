@@ -15,8 +15,8 @@ namespace Qiick\Standards\Conformance\Support;
 final class DivergenceGate
 {
     /**
-     * @param  array<string, array{reason: string, decision: string, review_by: string}>  $divergences
-     * @param  list<string>  $knownCheckIds
+     * @param array<string, array{reason: string, decision: string, review_by: string}> $divergences
+     * @param list<string> $knownCheckIds
      */
     public function __construct(
         private readonly array $divergences,
@@ -25,7 +25,7 @@ final class DivergenceGate
     ) {}
 
     /**
-     * @param  list<string>  $knownCheckIds
+     * @param list<string> $knownCheckIds
      */
     public static function fromBasePath(string $basePath, array $knownCheckIds, ?\DateTimeImmutable $today = null): self
     {
@@ -113,7 +113,7 @@ final class DivergenceGate
     }
 
     /**
-     * @param  list<string>  $passingCheckIds  Check ids that ran green without needing a skip
+     * @param list<string> $passingCheckIds Check ids that ran green without needing a skip
      *
      * @throws \RuntimeException
      */

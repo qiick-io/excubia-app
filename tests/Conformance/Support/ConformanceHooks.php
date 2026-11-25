@@ -34,8 +34,8 @@ namespace Qiick\Standards\Conformance\Support;
 final class ConformanceHooks
 {
     /**
-     * @param  ConformanceConfig  $config
-     * @param  array<string, callable(): void>  $callables
+     * @param ConformanceConfig $config
+     * @param array<string, callable(): void> $callables
      */
     public function __construct(
         private readonly array $config,
@@ -106,7 +106,7 @@ final class ConformanceHooks
     }
 
     /**
-     * @param  non-empty-string  $key
+     * @param non-empty-string $key
      */
     public function requireCallable(string $key): void
     {

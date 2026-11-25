@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Qiick\Standards\Conformance\Support;
 
-use Illuminate\Database\Schema\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
@@ -20,7 +19,7 @@ final class SchemaInspector
         private readonly ?string $connectionName = null,
     ) {}
 
-    private function schema(): Builder
+    private function schema(): \Illuminate\Database\Schema\Builder
     {
         return $this->connectionName === null
             ? Schema::connection(config('database.default'))
@@ -135,7 +134,7 @@ final class SchemaInspector
 
         // Engines wrap defaults differently: 'UTC', "UTC", 'UTC'::character varying.
         $normalized = strtolower((string) $default);
-        $normalized = preg_replace('/::[a-z _]+$/', '', $normalized) ?? $normalized;
+        $normalized = preg_replace("/::[a-z _]+$/", '', $normalized) ?? $normalized;
         $normalized = trim($normalized, " '\"");
 
         return strcasecmp($normalized, $expected) === 0;
