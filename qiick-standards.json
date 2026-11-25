@@ -19,6 +19,11 @@
         "hasUserIdentities": true
     },
     "divergences": {
+        "C3": {
+            "reason": "Runner gap in v0.13.0-v0.14.0: C3 inserts its fixture user as a raw row with only public_id, email, locale, timezone and is_active, so Excubia's NOT NULL first_name (no default) refuses it on PostgreSQL and MySQL before the case-sensitivity assertion runs. Upstream: the runner should create the user through the product's model factory or a hook. The schema itself is checked by laravel-oidc's own tests.",
+            "decision": "knowledge/decisions/2026-11-19-fleet-core-schema",
+            "review_by": "2026-12-20"
+        },
         "C17": {
             "reason": "Tracked security work, not hidden: erasure releases unique email/username, anonymises personal columns, deletes SSO identities, passkeys and assistant chats, and deactivates the row. Only anonymising identifying payload in existing activity rows remains (#381); the hook scans both activity columns on the app's own created/updated rows so a stale divergence is caught.",
             "decision": "knowledge/decisions/2026-11-20-core-hardening",
