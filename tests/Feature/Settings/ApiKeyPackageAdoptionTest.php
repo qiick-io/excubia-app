@@ -274,3 +274,10 @@ it('renders the expiry notice by mail and in the bell without the secret', funct
         ->and($bell['expires_at'])->toBe('2026-12-01T09:00:00+00:00')
         ->and(json_encode($bell))->not->toContain($apiKey->key_hash);
 });
+
+it('denies a key whose stored IP allowlist is corrupted instead of reading it as no restriction', function () {
+    $plainKey = adoptedPlainKey(adoptedKeyOwner());
+    DB::table('api_keys')->update(['ip_allowlist' => '["203.0.113.10"']);
+
+    callAdoptedKey($plainKey)->assertForbidden()->assertJsonPath('error', 'ip_not_allowed');
+});

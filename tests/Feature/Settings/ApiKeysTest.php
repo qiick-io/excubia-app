@@ -185,11 +185,10 @@ it('narrows a key at use time when the owner loses the permission the scope need
 
     $owner->syncRoles([RoleEnum::Reader->value]);
 
-    // Every scope narrows away, so the package answers that the key holds no usable scope.
     callWithApiKey($plainKey)
         ->assertForbidden()
         ->assertJsonPath('error', 'insufficient_scope')
-        ->assertJsonPath('message', 'The API key holds no scopes.');
+        ->assertJsonPath('scope', 'mcp:read');
     callWithApiKey($plainKey, '/__test/api-key-write')
         ->assertForbidden()
         ->assertJsonPath('error', 'insufficient_scope');
@@ -356,12 +355,11 @@ it('answers every API-key refusal with the fleet RFC 6750 shape', function () {
         ->assertUnauthorized()
         ->assertJsonPath('error', 'invalid_token')
         ->assertHeader('WWW-Authenticate', 'Bearer error="invalid_token"');
-    // A key with no usable scope at all: the package names no scope (qiick/laravel-api-keys 0.3).
     callWithApiKey($scopedKey)
         ->assertForbidden()
         ->assertJsonPath('error', 'insufficient_scope')
-        ->assertJsonMissingPath('scope')
-        ->assertHeader('WWW-Authenticate', 'Bearer error="insufficient_scope"');
+        ->assertJsonPath('scope', 'mcp:read')
+        ->assertHeader('WWW-Authenticate', 'Bearer error="insufficient_scope", scope="mcp:read"');
     callWithApiKey($ipKey)
         ->assertForbidden()
         ->assertJsonPath('error', 'ip_not_allowed')

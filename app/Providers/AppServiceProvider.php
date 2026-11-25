@@ -14,7 +14,6 @@ use App\Policies\PermissionPolicy;
 use App\Policies\RolePolicy;
 use App\Policies\SystemHealthPolicy;
 use App\Services\ApiKeyAuthorizerService;
-use App\Services\ApiKeyClockService;
 use App\Services\ApiKeyExpiryRecipientService;
 use App\Services\ApiKeyRepositoryService;
 use App\Services\EffectivePermissionResolverService;
@@ -95,7 +94,6 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(KeyAuthorizer::class, ApiKeyAuthorizerService::class);
         $this->app->bind(ScopeVocabulary::class, ApiKeyAuthorizerService::class);
         $this->app->bind(ExpiryRecipientResolver::class, ApiKeyExpiryRecipientService::class);
-        $this->app->singleton(Clock::class, ApiKeyClockService::class);
 
         $this->app->bind(ApiKeyAuthenticator::class, fn (Application $app): ApiKeyAuthenticator => new ApiKeyAuthenticator(
             codec: $app->make(TokenCodec::class),

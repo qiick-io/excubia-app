@@ -270,19 +270,23 @@ class ApiKey extends Model implements ApiKeyRecord
         return $this->metadata ?? [];
     }
 
+    /**
+     * The JSON columns go to the package as stored: the `array` cast would turn JSON that does
+     * not decode into null, which reads as "no restriction" (the package denies it instead).
+     */
     public function rawScopes(): mixed
     {
-        return $this->scopes;
+        return $this->getRawOriginal('scopes');
     }
 
     public function rawIpAllowlist(): mixed
     {
-        return $this->ip_allowlist;
+        return $this->getRawOriginal('ip_allowlist');
     }
 
     public function rawRestrictions(): mixed
     {
-        return $this->restrictions;
+        return $this->getRawOriginal('restrictions');
     }
 
     public function rateLimitPerMinute(): ?int

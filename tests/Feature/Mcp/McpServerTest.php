@@ -133,13 +133,13 @@ it('answers every MCP API-key refusal with the fleet RFC 6750 shape', function (
 
     ApiKey::query()->where('key_prefix', apiKeyPrefixOf($plainKey))->sole()
         ->forceFill(['scopes' => []])->save();
-    // A key with no usable scope at all: the package names no scope (qiick/laravel-api-keys 0.3).
     $missingScope = mcpCall($plainKey, 'ping')
         ->assertForbidden()
         ->assertJsonPath('error', 'insufficient_scope')
-        ->assertJsonMissingPath('scope');
+        ->assertJsonPath('scope', 'mcp:read');
     expect((string) $missingScope->headers->get('WWW-Authenticate'))
-        ->toBe('Bearer error="insufficient_scope"');
+        ->toContain('error="insufficient_scope"')
+        ->toContain('scope="mcp:read"');
 
     ApiKey::query()->where('key_prefix', apiKeyPrefixOf($plainKey))->sole()
         ->forceFill(['scopes' => ['mcp:read'], 'revoked_at' => now()])->save();
