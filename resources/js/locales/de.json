@@ -469,10 +469,10 @@
             "webhookUrl": "Webhook-URL",
             "webhookUrlHint": "Nur HTTPS. Leer lassen zum Deaktivieren. Benötigt einen Queue-Worker.",
             "webhookSecret": "Webhook-Geheimnis",
-            "webhookSecretHint": "Standard-Webhooks-Geheimnis (whsec_…). Signiert webhook-id.timestamp.body als v1,<base64>. Leer lassen, um das aktuelle zu behalten.",
+            "webhookSecretHint": "Excubia erzeugt das Standard-Webhooks-Geheimnis (whsec_…) und zeigt es nur einmal an: Geben Sie es Ihrem Empfänger. Rotieren lässt das bisherige Geheimnis 24 Stunden weiter signieren, damit der Empfänger ohne Unterbrechung wechseln kann.",
             "generateSecret": "Geheimnis erzeugen",
             "sendTest": "Testereignis senden",
-            "sendTestHint": "Erst URL und Geheimnis speichern, dann einen signierten Ping einreihen. Benötigt einen Queue-Worker.",
+            "sendTestHint": "Speichern Sie zuerst die Webhook-URL und erzeugen Sie das Geheimnis, dann stellen Sie einen signierten Ping in die Warteschlange. Erfordert einen Queue-Worker.",
             "deliveryTitle": "Zustellstatus",
             "lastSuccess": "Letzte erfolgreiche Zustellung",
             "lastError": "Letzte fehlgeschlagene Zustellung",
@@ -568,7 +568,17 @@
             "aiSpendSpike": "KI-Kosten heute über (% des 7-Tage-Durchschnitts)",
             "aiSpendSpikeHint": "Einmal am Tag alarmieren, wenn die geschätzten KI-Kosten eines Projekts heute diesen Anteil seines Durchschnittstags der 7 Tage davor erreichen, ab 1 $. 300 bedeutet das Dreifache.",
             "aiErrorRate": "KI-Fehlerrate über (%)",
-            "aiErrorRateHint": "Alarmieren, wenn mehr als dieser Anteil der KI-Aufrufe der letzten Stunde fehlschlug, bei mindestens 20 Aufrufen."
+            "aiErrorRateHint": "Alarmieren, wenn mehr als dieser Anteil der KI-Aufrufe der letzten Stunde fehlschlug, bei mindestens 20 Aufrufen.",
+            "webhookSecretNeedsUrl": "Speichern Sie zuerst die Webhook-URL und erzeugen Sie dann das Signaturgeheimnis.",
+            "rotateSecret": "Geheimnis rotieren",
+            "secretSet": "Geheimnis gesetzt",
+            "secretCreatedTitle": "Signaturgeheimnis des Alert-Webhooks kopieren",
+            "secretRotatedTitle": "Neues Signaturgeheimnis des Alert-Webhooks kopieren",
+            "secretRotatedNote": "Das bisherige Geheimnis signiert 24 Stunden weiter.",
+            "secretAnnouncement": "Signaturgeheimnis des Webhooks erzeugt. Es wird nur einmal angezeigt.",
+            "webhookDisabled": "Excubia sendet nicht mehr an diesen Webhook ({{reason}}). Beheben Sie den Fehler beim Empfänger und schalten Sie ihn dann wieder ein.",
+            "reenableWebhook": "Wieder einschalten",
+            "consecutiveFailures": "Fehler in Folge"
         },
         "aiPrices": {
             "breadcrumb": "Preise",
@@ -2432,5 +2442,14 @@
             "description": "Ab sofort wird jede Anfrage mit diesem Schlüssel abgelehnt. Der Schlüssel bleibt in der Liste und im Aktivitätsprotokoll; er kann nicht wieder verwendet werden.",
             "confirm": "Widerrufen"
         }
+    },
+    "secretOnce": {
+        "description": "Das Geheimnis wird nur dieses eine Mal angezeigt. Es wird nicht im Klartext gespeichert und kann nicht erneut angezeigt werden: Legen Sie es jetzt in Ihrem Passwort- oder Secret-Manager ab.",
+        "label": "Geheimnis",
+        "copy": "Geheimnis kopieren",
+        "copied": "Geheimnis in die Zwischenablage kopiert",
+        "copyFailed": "Das Geheimnis konnte nicht kopiert werden. Es ist markiert: Kopieren Sie es mit der Tastatur.",
+        "acknowledge": "Ich habe das Geheimnis sicher gespeichert",
+        "done": "Fertig"
     }
 }

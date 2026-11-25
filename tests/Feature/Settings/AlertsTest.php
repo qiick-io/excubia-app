@@ -25,6 +25,7 @@ use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
 use Qiick\Outbound\Contracts\HostResolver;
 use Qiick\Outbound\Delivery\DeliveryStatus;
+use Qiick\Outbound\Delivery\WebhookDeliveryCoordinator;
 use Qiick\Outbound\Models\WebhookDelivery;
 use Qiick\Outbound\Models\WebhookDeliveryAttempt;
 use Qiick\Outbound\Models\WebhookEndpoint;
@@ -412,4 +413,25 @@ it('queues a test event only for a configured channel', function () {
     Queue::assertPushed(SendAlertWebhooksJob::class);
 
     expect(alertWebhookEvents())->toBe(['ping']);
+});
+
+it('shows a webhook the package disabled and turns it back on', function () {
+    $manager = alertsManager();
+    configureAlertWebhook('https://93.184.216.34/excubia');
+    $endpoint = WebhookEndpoint::query()->sole();
+    app(WebhookDeliveryCoordinator::class)->disableEndpoint($endpoint);
+
+    expect(app(AlertWebhookService::class)->isReady())->toBeFalse();
+
+    $this->actingAs($manager)->get(route('project.integrations.edit'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('project.webhook_status.is_active', false)
+            ->where('project.has_webhook_secret', true));
+
+    $this->actingAs($manager)->post(route('project.integrations.webhook-enable'))
+        ->assertRedirect(route('project.integrations.edit'))
+        ->assertInertiaFlash('toast.type', 'success');
+
+    expect($endpoint->fresh()->is_active)->toBeTrue()
+        ->and(app(AlertWebhookService::class)->isReady())->toBeTrue();
 });
