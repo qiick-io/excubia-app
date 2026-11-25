@@ -9,6 +9,9 @@ use App\Services\ApiKeyAuthorizerService;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Qiick\Access\Contracts\ActorContext;
+use Qiick\Access\Contracts\ActorKind;
+use Qiick\Access\Laravel\AccessContext;
 use Qiick\ApiKeys\ApiKeyAuthenticator;
 use Qiick\ApiKeys\Exceptions\ApiKeyRejection;
 use Qiick\ApiKeys\Http\BearerTokenExtractor;
@@ -73,10 +76,14 @@ class AuthenticateApiKeyMiddleware
         Auth::guard('api_key')->setUser($owner);
         $previousGuard = Auth::getDefaultDriver();
         Auth::shouldUse('api_key');
+        // The bound API actor: qiick/laravel-access never gives it the super-admin or permission
+        // pass of Gate::before, and queued jobs dispatched now carry it.
+        AccessContext::enter(new ActorContext(ActorKind::ApiKey, $owner, $apiKey->uuid));
 
         try {
             return $next($request);
         } finally {
+            AccessContext::clear();
             Auth::shouldUse($previousGuard);
         }
     }

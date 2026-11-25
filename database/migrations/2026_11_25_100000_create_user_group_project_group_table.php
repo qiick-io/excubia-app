@@ -10,6 +10,9 @@ use Illuminate\Support\Facades\Schema;
  * Project access by scope (#253): the members of a user group also see the projects of the
  * project groups linked to it, admin-only ones included. The row has its own `id` so a nullable
  * `role_id` ("admin on X, read-only on Y") can come later in an additive migration.
+ *
+ * Dated after qiick/laravel-access' `create_user_groups_tables` (2026_11_22): migrations run in
+ * filename order across paths, and this table references `user_groups`.
  */
 return new class extends Migration
 {

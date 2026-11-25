@@ -4,21 +4,24 @@ declare(strict_types=1);
 
 namespace App\Actions;
 
-use App\Models\Principal;
 use App\Models\User;
 use App\Services\SuperAdminGuardService;
 use Illuminate\Validation\ValidationException;
+use Qiick\Access\Principals\DeactivationReason;
+use Qiick\Access\Principals\PrincipalDirectory;
 
 /**
  * Updates a dashboard user. A null password keeps the current one.
  *
- * Side effects: deactivating the user stamps `principals.deactivated_at`; reactivating clears it.
+ * Side effects: deactivating the user deactivates their principal as `offboarded` (their API keys
+ * stop working); reactivating brings it back (qiick/laravel-access PrincipalDirectory).
  */
 class UpdateUserAction
 {
     public function __construct(
         private SuperAdminGuardService $superAdminGuard,
         private SyncUserRolesAction $syncRoles,
+        private PrincipalDirectory $principals,
     ) {}
 
     /**
@@ -45,16 +48,11 @@ class UpdateUserAction
             $user->save();
             $this->syncRoles->execute($user, $roles);
 
-            if ($isActive) {
-                Principal::query()
-                    ->where('user_id', $user->getKey())
-                    ->whereNotNull('deactivated_at')
-                    ->update(['deactivated_at' => null]);
-            } else {
-                Principal::query()
-                    ->where('user_id', $user->getKey())
-                    ->whereNull('deactivated_at')
-                    ->update(['deactivated_at' => now()]);
+            // Offboarded, not admin: reactivating the user brings their principal (and keys) back.
+            $principal = $this->principals->forMember($user, null);
+
+            if (! $isActive) {
+                $this->principals->deactivate($principal, DeactivationReason::Offboarded);
             }
 
             return $user;

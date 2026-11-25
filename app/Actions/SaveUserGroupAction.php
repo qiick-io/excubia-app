@@ -7,6 +7,7 @@ namespace App\Actions;
 use App\Models\UserGroup;
 use App\Services\SuperAdminGuardService;
 use Illuminate\Validation\ValidationException;
+use Qiick\Access\EffectivePermissionResolver;
 use Spatie\Permission\Models\Role;
 
 /**
@@ -32,6 +33,8 @@ class SaveUserGroupAction
             $roleModels = Role::query()->whereIn('name', $roles)->orderBy('name')->get(['id', 'name']);
             $group->roles()->sync($roleModels->pluck('id'));
             $group->users()->sync($userIds);
+            // Pivot syncs fire no Spatie event: drop the resolver's per-request cache.
+            app(EffectivePermissionResolver::class)->flush();
             $projectGroupChanges = $group->projectGroups()->sync($projectGroupIds);
 
             activity()

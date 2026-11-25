@@ -3,7 +3,6 @@
 namespace App\Providers;
 
 use App\Actions\RecordApiKeyUseAction;
-use App\Enums\PermissionEnum;
 use App\Models\Activity as ActivityModel;
 use App\Models\ApiKey;
 use App\Models\Project;
@@ -13,11 +12,11 @@ use App\Policies\JobPolicy;
 use App\Policies\PermissionPolicy;
 use App\Policies\RolePolicy;
 use App\Policies\SystemHealthPolicy;
+use App\Services\AccessResponderService;
 use App\Services\ApiKeyAuthorizerService;
 use App\Services\ApiKeyClockService;
 use App\Services\ApiKeyExpiryRecipientService;
 use App\Services\ApiKeyRepositoryService;
-use App\Services\EffectivePermissionResolverService;
 use App\Services\JobMonitorQueryService;
 use App\Services\OidcBreakGlassPolicyService;
 use App\Services\OidcSecondFactorChallengeService;
@@ -26,6 +25,7 @@ use App\Services\OidcUserProvisioningService;
 use App\Services\SelfMonitoringService;
 use App\Services\SettingsRepositoryService;
 use App\Services\SystemHealthService;
+use App\Services\TwoFactorRequirementService;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Login;
@@ -45,6 +45,10 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use Qiick\Access\Contracts\AuthorizationResponder;
+use Qiick\Access\Contracts\RoleCatalog;
+use Qiick\Access\Contracts\TwoFactorPolicy;
+use Qiick\Access\Contracts\TwoFactorResponder;
 use Qiick\ApiKeys\ApiKeyAuthenticator;
 use Qiick\ApiKeys\Contracts\ApiKeyRepository;
 use Qiick\ApiKeys\Contracts\AttemptLimiter;
@@ -81,6 +85,19 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(HttpClientContract::class, fn (): HttpClientContract => new SymfonyHttpClientService);
         $this->registerOidcBindings();
         $this->registerApiKeyBindings();
+        $this->registerAccessBindings();
+    }
+
+    /**
+     * Plugs Excubia into qiick/laravel-access (Gate::before, resolver, 2FA middleware,
+     * principals): the super-admin role name, the two-factor rule and the 403 response.
+     */
+    protected function registerAccessBindings(): void
+    {
+        $this->app->bind(RoleCatalog::class, AccessResponderService::class);
+        $this->app->bind(AuthorizationResponder::class, AccessResponderService::class);
+        $this->app->bind(TwoFactorPolicy::class, TwoFactorRequirementService::class);
+        $this->app->bind(TwoFactorResponder::class, TwoFactorRequirementService::class);
     }
 
     /**
@@ -210,7 +227,9 @@ class AppServiceProvider extends ServiceProvider
     }
 
     /**
-     * Permission abilities resolve from direct and group roles; super-admin passes all of them.
+     * Policies of the models without a conventional name. qiick/laravel-access registers the only
+     * Gate::before: permission abilities resolve from direct and group roles, super-admin passes
+     * every ability without a Policy, and API actors (personal keys) never get either pass.
      * Policies still apply their own rules (for example, built-in roles stay read-only for everyone).
      */
     protected function configureAuthorization(): void
@@ -222,8 +241,6 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(JobMonitorQueryService::class, JobPolicy::class);
         Gate::policy(SystemHealthService::class, SystemHealthPolicy::class);
 
-        Gate::before(fn (User $user, string $ability): ?bool => PermissionEnum::tryFrom($ability) !== null
-            && app(EffectivePermissionResolverService::class)->hasPermission($user, $ability) ? true : null);
     }
 
     /**

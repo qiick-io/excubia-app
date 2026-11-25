@@ -6,13 +6,13 @@ use App\Actions\CreateApiKeyAction;
 use App\Actions\DeleteUserAction;
 use App\Data\ApiKeyData;
 use App\Enums\ApiKeyScopeEnum;
-use App\Enums\PrincipalTypeEnum;
 use App\Enums\RoleEnum;
 use App\Models\ApiKey;
 use App\Models\Principal;
 use App\Models\User;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Support\Facades\Schema;
+use Qiick\Access\Principals\DeactivationReason;
 
 beforeEach(function (): void {
     $this->seed(PermissionSeeder::class);
@@ -32,7 +32,7 @@ test('creating a user creates a user principal', function (): void {
 
     $principal = Principal::query()->where('user_id', $user->getKey())->sole();
 
-    expect($principal->type)->toBe(PrincipalTypeEnum::User)
+    expect($principal->type)->toBe('user')
         ->and($principal->organisation_id)->toBeNull()
         ->and($principal->name)->toBe('Ada Lovelace')
         ->and($principal->deactivated_at)->toBeNull()
@@ -74,6 +74,7 @@ test('deleting a user revokes its api keys and deactivates its principal without
         ->and($apiKey->fresh()->isRevoked())->toBeTrue()
         ->and($principal->fresh())->not->toBeNull()
         ->and($principal->fresh()->deactivated_at)->not->toBeNull()
+        ->and($principal->fresh()->deactivation_reason)->toBe(DeactivationReason::Erased)
         ->and($principal->fresh()->user_id)->toBeNull();
 });
 

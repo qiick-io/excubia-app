@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "f163372f60b69021a274995028594885",
+    "content-hash": "de1397b7bba24a3c4b184048ae783164",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -4344,6 +4344,78 @@
                 "source": "https://github.com/qiick-io/excubia-core"
             },
             "time": "2026-11-19T15:27:20+00:00"
+        },
+        {
+            "name": "qiick/laravel-access",
+            "version": "v0.1.0-beta.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/qiick-io/laravel-access.git",
+                "reference": "d2264c7780cfffb40f2172dfc1b6fff927f7d3cd"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/qiick-io/laravel-access/zipball/d2264c7780cfffb40f2172dfc1b6fff927f7d3cd",
+                "reference": "d2264c7780cfffb40f2172dfc1b6fff927f7d3cd",
+                "shasum": ""
+            },
+            "require": {
+                "illuminate/auth": "^12.0 || ^13.0",
+                "illuminate/contracts": "^12.0 || ^13.0",
+                "illuminate/database": "^12.0 || ^13.0",
+                "illuminate/http": "^12.0 || ^13.0",
+                "illuminate/support": "^12.0 || ^13.0",
+                "php": "^8.3",
+                "spatie/laravel-permission": "^8.0"
+            },
+            "require-dev": {
+                "larastan/larastan": "^3.3",
+                "laravel/pint": "^1.30",
+                "nunomaduro/collision": "^8.5",
+                "orchestra/testbench": "^10.0 || ^11.0",
+                "pestphp/pest": "^4.0",
+                "pestphp/pest-plugin-mutate": "^4.0",
+                "phpstan/phpstan": "^2.1"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Qiick\\Access\\Laravel\\AccessServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Qiick\\Access\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Qiick",
+                    "homepage": "https://qiick.io"
+                }
+            ],
+            "description": "Shared authorization core for qiick Laravel products: Gate::before, effective permissions, actor context, and enforced 2FA.",
+            "homepage": "https://github.com/qiick-io/laravel-access",
+            "keywords": [
+                "authorization",
+                "gate",
+                "laravel",
+                "permissions",
+                "qiick",
+                "two-factor"
+            ],
+            "support": {
+                "issues": "https://github.com/qiick-io/laravel-access/issues",
+                "source": "https://github.com/qiick-io/laravel-access"
+            },
+            "time": "2026-11-25T14:03:00+00:00",
+            "published-time": "2026-11-25T14:03:29+00:00"
         },
         {
             "name": "qiick/laravel-api-keys",
@@ -13979,6 +14051,7 @@
     "minimum-stability": "stable",
     "stability-flags": {
         "qiick/excubia-core": 10,
+        "qiick/laravel-access": 10,
         "qiick/laravel-api-keys": 10,
         "qiick/laravel-oidc": 10
     },

@@ -22,7 +22,7 @@ use Symfony\Component\HttpFoundation\Response;
  * for who the user is, so its signed statement of how they signed in does not lower the bar.
  *
  * The challenge itself is Fortify's (two-factor.login). A user whose only second factor is a
- * passkey has no challenge to run and signs in, as EnsureTwoFactorIsEnabledMiddleware accepts.
+ * passkey has no challenge to run and signs in, as the 2FA requirement (TwoFactorRequirementService) accepts.
  */
 class OidcSecondFactorChallengeService implements SecondFactorChallengeContract
 {

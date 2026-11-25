@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Schema;
  * `key_prefix` holds the public part (`exc_{env}_{id}`), unique so a prefix names one row.
  * `owner_id` stays as the product's owner column until qiick/laravel-access lands
  * (docs/adoption-plan.md). Edited in place: no stable release yet (decision 2026-11-20).
+ * Dated after qiick/laravel-access' `create_principals_table` (2026_11_24), which it references.
  */
 return new class extends Migration
 {

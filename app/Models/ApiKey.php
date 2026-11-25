@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\ApiKeyScopeEnum;
-use App\Enums\PrincipalTypeEnum;
 use App\Traits\LogsApplicationActivityTrait;
 use Database\Factories\ApiKeyFactory;
 use DateTimeImmutable;
@@ -362,9 +361,7 @@ class ApiKey extends Model implements ApiKeyRecord
 
     public function ownerKind(): ?string
     {
-        return $this->ownerPrincipal->type instanceof PrincipalTypeEnum
-            ? $this->ownerPrincipal->type->value
-            : $this->ownerPrincipal->type;
+        return $this->ownerPrincipal->type;
     }
 
     public function createdByIdentifier(): ?int

@@ -6,6 +6,7 @@ namespace App\Policies;
 
 use App\Enums\PermissionEnum;
 use App\Models\User;
+use App\Services\EffectivePermissionResolverService;
 
 /**
  * The queue monitor (`jobs` and `failed_jobs` tables) is viewed with `can-show-jobs` and retried or deleted with `can-manage-jobs`.
@@ -13,14 +14,16 @@ use App\Models\User;
  */
 class JobPolicy
 {
+    public function __construct(private EffectivePermissionResolverService $permissions) {}
+
     public function viewAny(User $user): bool
     {
-        return $user->can(PermissionEnum::CanShowJobs->value);
+        return $this->permissions->hasPermission($user, PermissionEnum::CanShowJobs->value);
     }
 
     public function retry(User $user): bool
     {
-        return $user->can(PermissionEnum::CanManageJobs->value);
+        return $this->permissions->hasPermission($user, PermissionEnum::CanManageJobs->value);
     }
 
     public function delete(User $user): bool

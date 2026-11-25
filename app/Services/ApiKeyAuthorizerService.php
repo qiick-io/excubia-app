@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Enums\ApiKeyScopeEnum;
+use App\Enums\PermissionEnum;
 use App\Models\ApiKey;
 use App\Models\User;
+use Qiick\Access\Principals\PrincipalDirectory;
 use Qiick\ApiKeys\AuthorizationDecision;
 use Qiick\ApiKeys\Contracts\ApiKeyRecord;
 use Qiick\ApiKeys\Contracts\KeyAuthorizer;
@@ -19,13 +21,19 @@ use Qiick\ApiKeys\ScopeSet;
 /**
  * Excubia's rules on top of qiick/laravel-api-keys (fleet ceiling): a key acts as its owner, so it
  * works only while the owner is an active user with an active principal, and each scope only
- * while the owner still holds the permissions that scope needs (checked on every request).
+ * while the owner is still assigned the permissions that scope needs (checked on every request;
+ * the super-admin grant never counts behind a key).
  *
  * Also the scope vocabulary: the values of {@see ApiKeyScopeEnum}. Excubia stores no resource
  * restrictions, so a key that carries some is refused rather than trusted (fail closed).
  */
 class ApiKeyAuthorizerService implements KeyAuthorizer, ScopeVocabulary
 {
+    public function __construct(
+        private readonly EffectivePermissionResolverService $permissions,
+        private readonly PrincipalDirectory $principals,
+    ) {}
+
     public function authorizeActor(ApiKeyRecord $record, KeyContext $context): AuthorizationDecision
     {
         if (! $record instanceof ApiKey) {
@@ -35,7 +43,7 @@ class ApiKeyAuthorizerService implements KeyAuthorizer, ScopeVocabulary
         // A soft-deleted owner is hidden by the relation's default scope: it reads as inactive.
         $owner = $record->owner;
 
-        if ($owner === null || ! $owner->is_active || $record->ownerPrincipal->deactivated_at !== null) {
+        if ($owner === null || ! $owner->is_active || ! $this->principals->isActive($record->owner_principal_id)) {
             return AuthorizationDecision::deny('The API key owner is no longer active.');
         }
 
@@ -62,10 +70,16 @@ class ApiKeyAuthorizerService implements KeyAuthorizer, ScopeVocabulary
             return [];
         }
 
-        return array_values(array_filter(
-            $knownScopes,
-            fn (string $scope): bool => ApiKeyScopeEnum::tryFrom($scope)?->isHeldBy($owner) === true,
-        ));
+        // The owner's assigned permissions only, read fresh: a key never inherits the super-admin
+        // grant (qiick/laravel-access design §6).
+        return array_values(array_filter($knownScopes, function (string $scope) use ($owner): bool {
+            $requiredPermissions = ApiKeyScopeEnum::tryFrom($scope)?->requiredCreatorPermissions() ?? [];
+
+            return $requiredPermissions !== [] && array_all(
+                $requiredPermissions,
+                fn (PermissionEnum $permission): bool => $this->permissions->hasAssignedPermission($owner, $permission->value),
+            );
+        }));
     }
 
     /**

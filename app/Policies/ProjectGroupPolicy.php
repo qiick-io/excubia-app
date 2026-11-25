@@ -7,6 +7,7 @@ namespace App\Policies;
 use App\Enums\PermissionEnum;
 use App\Models\ProjectGroup;
 use App\Models\User;
+use App\Services\EffectivePermissionResolverService;
 
 /**
  * Project groups (#252) are managed with `can-*-project-groups`. A group grants no access by
@@ -14,23 +15,25 @@ use App\Models\User;
  */
 class ProjectGroupPolicy
 {
+    public function __construct(private EffectivePermissionResolverService $permissions) {}
+
     public function viewAny(User $actor): bool
     {
-        return $actor->can(PermissionEnum::CanShowProjectGroups->value);
+        return $this->permissions->hasPermission($actor, PermissionEnum::CanShowProjectGroups->value);
     }
 
     public function create(User $actor): bool
     {
-        return $actor->can(PermissionEnum::CanCreateProjectGroups->value);
+        return $this->permissions->hasPermission($actor, PermissionEnum::CanCreateProjectGroups->value);
     }
 
     public function update(User $actor, ProjectGroup $projectGroup): bool
     {
-        return $actor->can(PermissionEnum::CanEditProjectGroups->value);
+        return $this->permissions->hasPermission($actor, PermissionEnum::CanEditProjectGroups->value);
     }
 
     public function delete(User $actor, ProjectGroup $projectGroup): bool
     {
-        return $actor->can(PermissionEnum::CanDeleteProjectGroups->value);
+        return $this->permissions->hasPermission($actor, PermissionEnum::CanDeleteProjectGroups->value);
     }
 }
