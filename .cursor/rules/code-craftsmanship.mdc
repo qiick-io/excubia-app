@@ -256,12 +256,294 @@ AI writes are on by default: read and reversible write tools work out of the box
 - `GET /health/live` (process up, no I/O) and `GET /health/ready` (database, cache and queue reachable, `503` otherwise), outside auth, from `routes/health.php`.
 - Every Artisan command of the app is in the `<app>:` namespace (`<app>:install`, `<app>:upgrade`, `<app>:sync-permissions`, `<app>:create-user`).
 
+## Fleet conventions
+
+One answer per topic for every qiick package and product (decision of 2026-11-24): where two repos solve the same problem, they solve it the same way. A repo that differs writes the exception down with its reason; an unwritten difference is a defect. `F<n>` is the convention's id in the decision and in the checks.
+
+- **F1 Config:** `config/<package>.php` is published with every nested key present; a key missing from an older published copy takes the shipped default; a value present but invalid stops the boot with an error that names the key.
+- **F2 `<package>:check`:** every package has one; it validates the config and the environment and exits non-zero, for the deploy pipeline.
+- **F3 Off means off:** a feature switched off in config registers nothing: no route, listener, binding, schedule or migration.
+- **F4 No static state:** no mutable `static` property or variable; per-request data in `scoped` bindings, so Octane and queue workers start each request and job clean.
+- **F5 Events** end with `Event`, in the past tense (`WebhookSignedEvent`).
+- **F6 Commands** are `<package>:<verb>` (one namespace, kebab-case verb); every command that deletes has `--dry-run`.
+- **F7 Environment variables** a package reads carry its prefix (`HTTP_BASICS_`, `MCP_OAUTH_`).
+- **F8 Columns:** `public_id` UUID for anything that leaves the database, `metadata` JSON, `schema_version` for versioned rows, UTC timestamps, `timestamp` for past events and `dateTime` for future instants, `organisation_id` lowercase UUID, index names within 63 characters, binary collation for case-sensitive identifiers.
+- **F9 Retention:** data that expires has a prune command scheduled at least daily with `onOneServer()`, deleting in chunks, with `--dry-run`.
+- **F10 Logs:** structured context with the same keys everywhere (`request_id`, `organisation_id`, `public_id`), snake_case; never personal data or secrets.
+- **F11 Errors:** one JSON error shape (`message`, `error`, optional `errors`) and one fleet registry of `error` codes in app-ui (`standards/error-codes.json`), without collisions.
+- **F14 Test fakes** for products ship in the package's `Testing` namespace (`src/Testing/`).
+- **F12 Package files:** `docs/public-api.md` (with its test and the deprecation policy), `docs/security-checklist.md` mapped to tests, `docs/decisions/YYYY-MM-DD-<slug>.md`, `UPGRADING.md` per version, `CHANGELOG.md` with compare links, `docs/dependencies.md`.
+- **F13 Release order:** a package is released after the packages it depends on; a `1.x` (pre-releases included) never depends on a `0.x`, and a stable release never on a pre-release.
+- **F18 Products** share one structure: `docs/beta-readiness.md` (the fleet checklist), `<app>:install` and `<app>:upgrade`, SQLite by default in `.env.example`, tests pinned to an in-memory database, and the package adoption table.
+- **F25 Strict Laravel:** products boot with strict models, destructive commands prohibited and HTTPS forced in production, immutable dates and the password defaults; every PHP repo's tests stop stray HTTP requests and processes.
+- **F27 Public APIs:** an API is versioned in its path (`/api/v1`), described by a hand-written OpenAPI file that a test compares with the routes, answers errors in the F11 shape, and retires a version only after announcing it with `Deprecation` and `Sunset` headers.
+- **F28 UI quality:** a product with a UI calls the shared `ui-quality` and drift checks, and proves its screens in a browser test in light and dark.
+- **F15–F17** (repository settings, labels and project, agent rules) are in the repository rules, **F19–F24, F26, F29 and F30** (security policy, secrets, expand / contract, backup, signed tags, supply chain, observability, privacy, runbooks) in the security, data and operations rules.
+
+With a `conventions` object in `qiick-standards.json`, `app-ui-drift / standards` runs the static checks of these rules; an exception is a `conventions.divergences` entry with `reason`, `decision` and `review_by`.
+
+### How the conventions are checked
+
+`standards/scripts/check-conventions.mjs` runs from the standards drift check (`sync-standards.mjs --check`) in a repo whose `qiick-standards.json` has a `conventions` object; a repo without one is not checked, so adopting the conventions is a PR of its own. It reads source text: it proves the shape, the repo's tests and the fleet conformance suite prove the behaviour. Run it with `--all` to see what a repo would have to fix before it adopts them.
+
+```json
+{
+    "package": true,
+    "conventions": {
+        "divergences": {
+            "F5": {
+                "reason": "Event names are the design's public API until 2.0",
+                "decision": "knowledge/decisions/2026-11-24-fleet-conventions",
+                "review_by": "2027-05-01"
+            }
+        }
+    }
+}
+```
+
+A divergence skips its check. It fails when it lacks a field, when `review_by` has passed, and when the check would pass without it (remove it). Checks marked _package_ run with `"package": true`, the others in apps too (source under `app/`, schedule in `routes/console.php` or `bootstrap/app.php`).
+
+### F1 Config: nested defaults, fail fast
+
+**Rule.** The package publishes `config/<package>.php` (tag `<package>-config`). Reads go through one typed reader with the shipped defaults as constants, as `Qiick\HttpBasics\Config\PackageConfig` does: a key that is missing takes the default, because `mergeConfigFrom()` merges only the top level and a product that published the file before the key existed would otherwise read `null`. A key that is present with an invalid value (wrong type, out of range, unknown enum value) throws at boot, from the service provider's `boot()`, with the full key in the message (`api-keys.token_version must be 1 or 2.`), as `laravel-api-keys` does. A test publishes a config without a newer key and asserts the default.
+
+**Why.** On 2026-11-24 only http-basics had the nested fallback (analysis X-1); laravel-audit failed loudly on a published config missing a new key (AU-z). http-basics in turn falls back to the default on a wrong type too, so a typo in production silently becomes the default.
+
+**Checked by.** _package_ F1: `config/<package>.php` exists. The fallback and the boot error are proved by the package's own tests (the checklist in `docs/security-checklist.md` names them).
+
+**Exceptions.** None.
+
+### F2 `<package>:check`
+
+**Rule.** Every package registers `<package>:check`. It runs the same validation as boot (F1) plus what boot must not do (reachability of the cache store, a database table, a key file), prints one line per problem with the key or the resource, and exits `1` on any error. Products run every package's check in their deploy and in `<app>:upgrade`.
+
+**Why.** No package except `laravel-api-keys` (`api-keys:check`) had one (analysis X-f), so a misconfigured deploy was found by the first request that needed the setting.
+
+**Checked by.** _package_ F2: a command named `<package>:check` is declared under `src/`.
+
+**Exceptions.** None; a package with nothing to validate ships a check that says so.
+
+### F3 Off means off
+
+**Rule.** When a feature is off in config (`<package>.<feature>.enabled = false`, or the whole package), the package registers no route, middleware alias, listener, schedule entry, migration or container binding for it, and dispatches nothing. A switch that no code reads does not ship.
+
+**Why.** `mcp-oauth.cimd.enabled` was read by no code (analysis MCP-i): turning it on did nothing, and a reviewer assumed SSRF exposure that was not there. A feature that is off but still registers routes is an attack surface the operator believes is closed.
+
+**Checked by.** _package_ F3: when `config/<package>.php` has an `enabled` key, a test must set one to `false`; that test asserts the routes, listeners and bindings are absent.
+
+**Exceptions.** A route that must answer while the feature is off (a discovery document saying it is off) is listed in the package's public API with the reason.
+
+### F4 No static state
+
+**Rule.** No mutable `static` property or `static $variable` in `src/` or `app/`. State that lives for one request or job is a `scoped` binding (Laravel resets it between requests under Octane and between queue jobs); a `singleton` holds only configuration and stateless services. Caches of immutable data (a parsed public suffix list) may be singletons.
+
+**Why.** Octane and long-running queue workers reuse the process: a static value set by one request leaks into the next tenant's. laravel-access resolves permissions through a `scoped` resolver for this reason (analysis AC-e), while laravel-api-keys kept a static translator and laravel-outbound a static `WeakMap`.
+
+**Checked by.** F4: static properties and variables outside `Testing/`; `$wrap` (API resources) and `$objectClasses` (LdapRecord models) are framework configuration and pass.
+
+**Exceptions.** A memo of immutable, request-independent data, with a divergence that names it.
+
+### F5 Event names end with `Event`
+
+**Rule.** Every event class is `<Subject><PastTenseVerb>Event` in an `Events` namespace: `OidcLoginSucceededEvent`, `WebhookEndpointDisabledEvent`. Broadcast and webhook wire names (`broadcastAs()`, webhook `type`) are separate, stable strings.
+
+**Why.** Three styles coexisted (analysis X-2, X-c): `*Event` in laravel-oidc and laravel-outbound and in every product (externa-core, signaculum-core), no suffix in laravel-mcp-oauth and laravel-api-keys, `ActivityAnonymised` in laravel-audit. The suffix is the most widespread form (four repos of seven with events) and is already what the shared architecture test requires (`Events` ⇒ `Event`); the packages without it only passed by listing every event under `ignoring`. Renaming is free before each package's 1.0.
+
+**Checked by.** F5: every class under an `Events/` directory ends with `Event` (the architecture test does the same, but its `ignoring` list is the repo's own).
+
+**Exceptions.** None after 1.0 of the package; before it, a divergence while the rename PR is open.
+
+### F6 Commands: `<package>:<verb>`, `--dry-run` when deleting
+
+**Rule.** Every Artisan command is `<package>:<verb>` or `<package>:<verb>-<object>`, kebab-case, one colon: `outbound:prune-payloads`, `instituta:create-key`, `externa:sync-permissions`. Apps use their short name (`externa`, `excubia`). A command that deletes or erases data has `--dry-run`, which reports what it would delete and changes nothing.
+
+**Why.** `outbound:webhooks:prune` and `instituta:key:create` nest a second namespace; externa-core spreads its commands over `files:`, `ai:`, `users:`, `permissions:` and others, so `php artisan list <app>` does not show what the app owns. `oidc:prune-logout-revocations` and several product prune commands could not be previewed before a first run in production.
+
+**Checked by.** F6: declared signatures (`$signature`, `#[AsCommand]`); a command whose name contains prune, purge, delete, cleanup, erase or forget needs `--dry-run`.
+
+**Exceptions.** A framework command a package extends keeps its name (`passport:*`).
+
+### F7 Environment variables carry the package prefix
+
+**Rule.** Every variable a package's config reads is `<PACKAGE>_<KEY>` (`http-basics` ⇒ `HTTP_BASICS_`). A framework variable (`APP_*`) may be read only as a fallback default.
+
+**Why.** Every package with variables already follows it; the rule keeps the next one from adding `WEBHOOK_TIMEOUT` that collides with a product's own.
+
+**Checked by.** _package_ F7: every `env('…')` in `config/`.
+
+**Exceptions.** None.
+
+### F8 Standard columns
+
+**Rule.**
+
+- `id` is a bigint primary key, never exposed. Anything that leaves the database (API, webhook, MCP, audit, URL) is `public_id`, a UUID (v7) with a unique index (decisions 2026-11-19 fleet core schema, 2026-11-20 fleet contracts).
+- A free-form JSON bag is `metadata` (`json`), never `meta`, `extra` or `data`.
+- A row whose stored format can change (a serialized payload, a fingerprint) carries `schema_version` (`unsignedSmallInteger`, default `1`). A version of a domain payload keeps its domain name (`payload_version` in laravel-outbound is not a row version).
+- Timestamps are written and compared in UTC (`now('UTC')`), whatever `app.timezone` is.
+- A past event is `timestamp` (`created_at`, `revoked_at`); an instant in the future is `dateTime` (`expires_at`, `*_until`, `next_*_at`), because MySQL `TIMESTAMP` ends in 2038 and converts through the session time zone (conformance C11).
+- An organisation reference is `organisation_id`, a UUID, stored lowercase (`Str::lower()` before writing a value that came from outside).
+- Index names stay within 63 characters (PostgreSQL truncates longer names, MySQL refuses past 64); Laravel's generated name is fine within the limit, an explicit name otherwise.
+- Identifiers compared case-sensitively (OIDC `issuer` / `subject`, external ids) use a binary collation on MySQL / MariaDB (`utf8mb4_bin`), as laravel-oidc does.
+
+**Why.** Each of these broke or was argued twice: `organization_id` and `string` organisation ids in signaculum-core, `meta` JSON columns in externa-core, `expires_at` as `TIMESTAMP` across the products, a 64-character generated index name in instituta-core, and three spellings of one id in logs and columns.
+
+**Checked by.** F8 over `database/migrations/`: `public_id` / `organisation_id` as UUID, the `organization_id` spelling, future instants as `dateTime`, `metadata` naming, generated index name length (literal table names only). Engine behaviour (collation, UUID columns on PostgreSQL and MySQL) is in the conformance suite (C1, C3, C5, C11, C12).
+
+**Exceptions.** A table shaped by an upstream package (Spatie, Passport) keeps upstream's columns; a migration frozen by a stable release is never edited (`migrations-frozen.yml`): the fix is a new migration or a divergence.
+
+### F9 Retention
+
+**Rule.** Every table whose rows expire has a prune command (`<package>:prune-<rows>`). It deletes in chunks (`chunkById` or a `limit()` loop) so a backlog never locks the table, has `--dry-run` (F6) and an `--hours` / `--days` floor where useful. The package schedules it itself, at least daily with `onOneServer()` and `withoutOverlapping()`, behind a config switch (`<package>.<area>.schedule`, default on) so a product can schedule it differently.
+
+**Why.** laravel-http-basics documented no schedule and deleted in one statement; laravel-mcp-oauth and laravel-oidc left the schedule to a README line every product had to copy (analysis X-f). laravel-audit schedules its own purge (Team Leader decision of 2026-11-24): that is the form that cannot be forgotten.
+
+**Checked by.** F9: a command whose name contains prune or purge deletes in chunks and appears in a schedule statement with `->onOneServer()` (service provider for a package; `routes/console.php`, `bootstrap/app.php` or `app/` for a product).
+
+**Exceptions.** A table pruned by `model:prune` through Laravel's `Prunable` trait, scheduled the same way.
+
+### F10 Logs
+
+**Rule.** Log through `Log::` / the injected logger with a message and a context array. Context keys are snake_case and the shared ones are spelled the same everywhere: `request_id`, `organisation_id`, `public_id` (of the subject), `user_public_id`, `package`. Never log personal data or secrets: no email, name, phone, IP address, user agent, password, token, API key, client secret or authorization header; log the `public_id` instead. The IP and user agent belong to the activity (audit) log, which has a retention.
+
+**Why.** http-basics accepts request ids up to 128 characters while laravel-audit stored 64 and dropped longer ones silently (analysis X-a): one key, two contracts. Logs are copied to third-party tools without the erasure guarantees of the database, so personal data there cannot be erased on request.
+
+**Checked by.** F10: keys in the context arrays of log calls (forbidden keys, `org_id` / `organization_id` / `requestId`-style spellings, snake_case).
+
+**Exceptions.** A security log the operator must have (a blocked SSRF target host) logs the host, never a user's data.
+
+### F11 Errors and the fleet error code registry
+
+**Rule.** A machine error (API, MCP, webhook endpoints of our own) is JSON `{"message": "…", "error": "<code>", "errors": {…}}`: `error` is a stable snake_case code, never translated and never called `code` (decision 2026-11-20 core hardening); `message` is for people; `errors` holds field errors (422). `laravel-http-basics` renders it, optionally as RFC 9457 problem details with `error` kept as an extension. Every code is registered once in app-ui's `standards/error-codes.json` with its owner and meaning; a repo that defines codes lists them in `docs/error-codes.md` (a table whose first column is the code).
+
+**Why.** The same condition had three codes: `too_many_requests` (http-basics, signaculum-core), `rate_limit_exceeded` (laravel-api-keys) and `rate_limited` (instituta-core); `bad_request` in signaculum-core is http-basics' `http_error`. A client of two products had to branch on both.
+
+**Checked by.** F11: every code in `docs/error-codes.md` is registered, owned by the repo or a shared owner (`laravel-http-basics`, `oauth`), and not a `replacedBy` duplicate; every code the registry gives the repo is listed. app-ui's own test fails on a duplicate or non-snake_case code. The response shape is conformance C20.
+
+**Exceptions.** OAuth and OIDC endpoints keep the RFC 6749 / 6750 / 7591 bodies (`error`, `error_description`); their codes are registered under the shared owner `oauth`. A registered duplicate carries `replacedBy` and is removed before its owner's 1.0, or in its next major.
+
+### F14 Test fakes in `Testing`
+
+**Rule.** A package with interfaces products implement or call ships fakes for them in `src/Testing/` (namespace `Qiick\<Package>\Testing`): `Fake*` for recording fakes, `InMemory*` for stores, `Fixed*` for clocks and ids, plus assertion helpers. They are autoloaded with the package (not `autoload-dev`), so a product's tests use them without copying code; production code never resolves them.
+
+**Why.** Every package with contracts already ships them this way (http-basics, api-keys, mcp-oauth, oidc, outbound); the rule fixes the place so a product test always looks in the same namespace.
+
+**Checked by.** _package_ F14: no `Fake*` / `InMemory*` class outside `src/Testing/`; a package with `src/Contracts/` has `src/Testing/`.
+
+**Exceptions.** None.
+
+### F12 The same files in every package
+
+**Rule.** Every package has:
+
+| File                                  | Content                                                                                                                                                            | Reference                                 |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------- |
+| `docs/public-api.md`                  | every `@api` class, config key, variable, command, event, route, table and error code; a `## Deprecation policy` section                                           | `qiick/laravel-http-basics`               |
+| `tests/Arch/PublicApiTest.php`        | fails when a class is neither `@api` nor `@internal`, or an `@api` class is missing from the page                                                                  | `qiick/laravel-http-basics`               |
+| `docs/security-checklist.md`          | one row per security property: `# \| Property \| Covering test \| Status`                                                                                          | `qiick/laravel-http-basics`               |
+| `docs/decisions/YYYY-MM-DD-<slug>.md` | one file per decision, titled `# YYYY-MM-DD: <title>`, with who decided, what and why                                                                              | `qiick/laravel-api-keys`                  |
+| `UPGRADING.md`                        | a section for every released version (`## From X to Y`), with the commands, config and schema steps                                                                | `qiick/laravel-api-keys`                  |
+| `CHANGELOG.md`                        | Keep a Changelog: `[Unreleased]`, `[X.Y.Z] - YYYY-MM-DD`, and a compare link for every version (`[X.Y.Z]: https://github.com/qiick-io/<repo>/compare/vA...vX.Y.Z`) | `qiick/laravel-oidc`                      |
+| `docs/dependencies.md`                | the dependency register: every `require` entry with its reason, maintainer, licence, risk and exit plan                                                            | the dependency register rule (app-ui#226) |
+
+`README.md`, `SECURITY.md`, `CONTRIBUTING.md` and `LICENSE` are there already in every package. When a repo adopts the conventions, the sync writes `docs/public-api.md` and `docs/security-checklist.md` from `standards/templates/` once, as starting points.
+
+**Why.** On 2026-11-24 the public API list existed in three of seven packages under two names (`public-api.md`, `PUBLIC-API.md`), the deprecation policy lived in a README, an UPGRADING file or nowhere (analysis X-g), a security checklist mapped to tests existed only in http-basics, and laravel-oidc and laravel-outbound had no upgrade section for some released versions. A reviewer or a product could not find the same thing in the same place twice.
+
+**Checked by.** _package_ F12: the files and their shape (exact file names, case included); the register's contents by the dependency register check.
+
+**Exceptions.** None.
+
+### F13 Release order
+
+**Rule.** A package is released after every qiick package it requires; a product after the packages it adopts. A version line `1.x` (a `1.0.0-beta.N` included) requires only `1.x` qiick packages; a stable release requires only stable ones (`^1.0`, never `@beta`). The order today, from the `require` graph and the decision of 2026-11-24:
+
+1. `laravel-http-basics`, `laravel-outbound`, `laravel-api-keys`, `laravel-access`, `laravel-audit` (no qiick dependency);
+2. `laravel-oidc` and `laravel-mcp-oauth` (both require `laravel-outbound`);
+3. the products, each after the packages it adopts.
+
+**Why.** `laravel-oidc` ships `1.0.0-beta.6` on `laravel-outbound ^0.1`, so its 1.0 would freeze an API on top of one that may still break (analysis X-b, OIDC-l); `externa-core 1.5.1`, a stable release, requires `laravel-oidc ^1.0@beta`.
+
+**Checked by.** F13: the repo's newest version in `CHANGELOG.md` against its `qiick/*` constraints in `composer.json`.
+
+**Exceptions.** A pre-release of a dependency in a product's pre-release (`excubia-app` beta on `laravel-oidc @beta`) is fine; F13 only fails once the product's own line is stable.
+
+### F18 The same product structure
+
+**Rule.** Every product (`"app": true`):
+
+- keeps `docs/beta-readiness.md`, the fleet checklist (`standards/templates/beta-readiness.md`, written first for signaculum-core): the items are the fleet's, the Status column is the product's, and section 7 is its package adoption table;
+- installs and upgrades with `<app>:install` and `<app>:upgrade` (the distribution rules);
+- ships `.env.example` on SQLite, so a fresh clone runs without a database server; a local MySQL or PostgreSQL database is the app's one database, named after it (`excubia_app`), never a copy per branch or version;
+- pins tests to an in-memory database in `phpunit.xml` (`DB_DATABASE=:memory:`); a test never writes `.env` or touches the development database;
+- sets in `qiick-standards.json` what its type needs:
+
+| Repo type     | `qiick-standards.json`                                                                        | Shared workflows (job id)                                                                                                                         | Rule pages                               |
+| ------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| Product       | `php`, `app`, `uiPreset`, `frontendRoots`, `oxlint` or `eslint`, `conformance`, `conventions` | `app-ui-drift`, `pr-title`, `php-quality`, `ui-quality`, `migrations-frozen`, `distribution-smoke`, `conformance`                                 | all, `stack` and `distribution` included |
+| Package       | `php`, `package`, `conventions`                                                               | `app-ui-drift` (`registry: false`), `pr-title`, `php-quality` (`phpstan-min-level: max`), `package-matrix`, `migrations-frozen` (with migrations) | all but `stack`, `distribution` and `ui` |
+| Frontend only | `uiPreset`, `frontendRoots`                                                                   | `app-ui-drift`, `pr-title`, `ui-quality`                                                                                                          | all but the PHP pages                    |
+
+**Why.** Each product invented its own: signaculum-core wrote the beta checklist, the others have none; signaculum-core#176 rewrote the shared `.env` from a test; and on 2026-11-09 per-version database copies filled the disk.
+
+**Checked by.** F18 (products): the checklist file, the two commands, `.env.example` and `phpunit.xml`. The checklist's content is reviewed in the release PR.
+
+**Exceptions.** A product without a self-hosted distribution writes ➖ with the reason in its checklist; the commands stay.
+
+### F25 Strict Laravel
+
+**Rule.** A product's `AppServiceProvider::boot()` calls:
+
+- `Model::shouldBeStrict(! app()->isProduction())`: lazy loading, silently discarded attributes and missing attributes throw outside production (the checks rules);
+- `DB::prohibitDestructiveCommands(app()->isProduction())`: no `migrate:fresh`, `db:wipe` or `migrate:reset` against production;
+- `URL::forceHttps(app()->isProduction())`: every generated URL is `https` behind a proxy that terminates TLS;
+- `Date::use(CarbonImmutable::class)`: a date passed around is never changed in place;
+- `Password::defaults(…)`: one password rule for registration, reset and the settings screen.
+
+Every PHP repo's test setup (`tests/Pest.php` or `tests/TestCase.php`) calls `Http::preventStrayRequests()` and `Process::preventStrayProcesses()`, so a test that forgot its fake fails instead of calling the network or a binary.
+
+**Why.** On 2026-11-25 the four products already did all of the boot calls but `URL::forceHttps` (only signaculum-core), from the starter kit, without a rule that keeps a new product doing them; and the testing rules forbid the network in tests, yet only externa-core enforced it with `Http::preventStrayRequests()`, and no repo stopped stray processes.
+
+**Checked by.** F25: in products, each call in `app/Providers/`; in every PHP repo, both `prevent*` calls under `tests/`.
+
+**Exceptions.** A product that never runs behind TLS (a local-only tool) writes a divergence for `URL::forceHttps`.
+
+### F27 Public APIs
+
+**Rule.** An HTTP API that clients outside the product call (REST, not the Inertia endpoints):
+
+- is versioned in its path, `/api/v1/…`; a breaking change (a removed or renamed field or route, a new required parameter, a changed type or error code) is a new version, `/api/v2`, never a change to `v1`;
+- is described by a hand-written OpenAPI 3.1 file in `resources/openapi/<api>-v<N>.yaml`, served at `/api/v<N>/openapi.json`, with a test that fails when a route in `routes/api.php` is missing from the file (`docs/api.md`);
+- answers errors in the fleet shape (F11), with named rate limiters and their `RateLimit-*` / `Retry-After` headers;
+- retires a version only after announcing it: every response of the old version carries `Deprecation` (RFC 9745) and `Sunset` (RFC 8594) headers for at least six months, the CHANGELOG and the API docs say so, and the version is removed only in a major release.
+
+**Why.** On 2026-11-25 three products had an OpenAPI file (externa-core, instituta-core, signaculum-core) and excubia-app had API routes without one; nothing said how a version ends. Clients of a self-hosted product upgrade on the operator's schedule, not ours, so an API change they cannot see coming breaks them silently.
+
+**Checked by.** F27 (_app_), when `routes/api.php` exists: a `resources/openapi/*-v<N>.yaml` or `.json` file, a test under `tests/` that reads it, and API routes under a `v<N>` prefix.
+
+**Exceptions.** An OAuth or OIDC endpoint keeps the path its RFC or discovery document gives it (`/oauth/token`, `/.well-known/…`) and its RFC error body (the F11 exception).
+
+### F28 UI quality
+
+**Rule.** A product with a UI (`uiPreset` in `qiick-standards.json`):
+
+- calls the reusable `ui-quality.yml` (theme tokens, contrast, axe smoke) and `drift-check.yml` (registry drift and the standards), with the job ids that give the required check names `ui-quality / ui-quality` and `app-ui-drift / drift`;
+- has Pest browser tests (`tests/Browser`) for the flows only a browser proves (navigation, dialogs, keyboard, focus), each run in light and dark (the testing rules);
+- copies every screen from a pattern of the UI rules; a new solution is proposed in app-ui, never designed in the product.
+
+**Why.** On 2026-11-25 externa-core, the largest UI in the fleet, did not call `ui-quality.yml`, so its theme-token and contrast regressions were found by hand; the UI rules say what the screens look like, and this convention makes the machines check that they still do.
+
+**Checked by.** F28 (_app_ with `uiPreset`): the workflows call `ui-quality.yml` and `drift-check.yml`, and `tests/Browser/` has a test.
+
+**Exceptions.** A product whose UI is only the starter kit's auth screens may write a divergence for the browser tests until it ships its first own screen.
+
 ## Automated checks
 
 Machines enforce these in CI; keep them green, and never silence one to get green. Fix the new finding; a baseline only shrinks.
 
 - **PHP quality floor:** PHPStan (Larastan) at level **8** at least in apps and **`max`** in packages; the level never drops and `phpstan-baseline.neon` only shrinks. Apps run Pest with line coverage in CI and fail below the committed `coverage-floor.txt`, which only rises; packages keep a fixed minimum per path. Both run in the reusable `php-quality.yml`.
 - **Fleet conformance:** every core-hardening decision ships with a check in `tests/Conformance` (synced from the pack). The suite runs on a freshly migrated database; engine-dependent checks need PostgreSQL and MySQL via the reusable `conformance.yml`. A product skips a check only with a `divergences` object (`reason`, `decision`, `review_by`). Catalogue: [`standards/CONFORMANCE.md`](../CONFORMANCE.md).
+- **Package compatibility matrix:** every qiick Composer package shares one Laravel / PHP matrix (`standards/package-matrix.json`, reusable [`package-matrix.yml`](../../.github/workflows/package-matrix.yml)): PHP 8.3 / 8.4 / 8.5 × Laravel 12 / 13 × `lowest` / `stable`, plus the database targets (SQLite, MySQL 8.4, MariaDB 11.4 LTS, PostgreSQL 17, digest-pinned). A package with a higher minimum PHP version excludes unsupported versions through the workflow input (laravel-audit excludes PHP 8.3). Adding a major is an app-ui release packages adopt on the next pin bump; dropping one is a **major** for each package. With `"package": true` in `qiick-standards.json`, the standards check fails when CI does not call the workflow and expand both outputs with `fromJSON`. Docs: [`docs/package-matrix.md`](../../docs/package-matrix.md).
 
 - **Dead code.** `knip` (unused files, exports, dependencies) runs in CI with the repo's committed `knip.json`. TypeScript has `noUnusedLocals` and `noUnusedParameters` on. Delete what is unused; prefix a parameter a signature forces on you with `_`. A knip `ignore*` entry needs a comment-worthy reason in the PR.
 - **Strict models.** Each app's `AppServiceProvider::boot()` calls `Model::shouldBeStrict(! app()->isProduction())`: lazy loading, silently discarded attributes and missing attributes throw outside production. Fix the query (eager load, `$fillable`, select the column), never turn it off.
@@ -273,15 +555,20 @@ Machines enforce these in CI; keep them green, and never silence one to get gree
 - **Theme tokens only.** In apps with the qiick UI, `scripts/check-ui-tokens.mjs` (synced by the pack, part of `npm run lint`) fails on arbitrary font sizes (`text-[11px]`) and on raw palette / `#hex` classes beyond `scripts/ui-token-baseline.txt`; the baseline only shrinks. The reusable `ui-quality.yml` runs it with the WCAG 2.2 AA contrast check of the installed theme and the app's axe smoke browser test (light, dark, high contrast).
 - **Ratcheted code rules.** In Vite+ apps the synced `.oxlintrc.standards.json` runs them in Oxlint (`npm run lint:standards`, `--rule eslint/<rule>`); in repos still on ESLint, `qiickRatchetedRules()` from `qiick-standards.eslint.js` does. They turn prose rules into checks: only `lucide-react` icons and shadcn primitives (`no-restricted-imports` on other icon and component libraries), toasts only through `@/lib/toast` (not `sonner`), the clipboard only through `@/lib/clipboard` (`no-restricted-properties` on `navigator.clipboard`), booleans prefixed `is` / `has` / `can` / `should` (`@typescript-eslint/naming-convention`, type-aware; destructured contract names exempt), no single-letter names (`id-length`; `i`, `j`, `k`, `t`, `_` allowed), files and functions within the size tripwire (`max-lines` 600, `max-lines-per-function` 300, lines of code; generated Wayfinder output and `components/ui` excluded; see the code standard, Size). They run only in `npm run lint:standards` (`QIICK_RATCHET=1`), ratcheted per file and rule against `qiick-lint-baseline.json`: existing debt is listed, new findings fail, paid debt must be removed (`--update`). A rule missing from the script's `--rule` list is not checked at all: when the pack adds a rule, every app adds it to `lint:standards` and seeds it with `--update`.
 - **Registry coverage.** The drift check (`app-ui-drift / drift`, `scripts/check-drift.mjs`) compares every file of the registry items an app installed with the registry, and fails on a difference that `app-ui.overrides.json` does not explain. That proves the fidelity of what an app took and nothing about what it never took: four API key screens grew under a green check because none of them was an installed item. So the app also lists in `qiick-standards.json` the items its product must install (`requiredItems`), and each one it leaves out on purpose under `divergences` with the reason, the overrides idea one level up: `"divergences": { "api-key-form": "Keys are issued per tenant; the shared form has no tenant picker (#171)" }`. The check fails on a required item that is neither installed nor declared, and on a divergence whose item is installed (a stale exception: remove it; a file that differs belongs in the overrides), is not required, or has no reason. Divergence stays allowed; it has to be written down. Which items a product requires is the maintainer's decision; until it is made, the list is empty.
+- **Package dependency register.** Packages (`"package": true` in `qiick-standards.json`) keep `docs/dependencies.md` with every runtime `composer.json` `require` name in its `Dependency` table column; `require-dev` is excluded. The standards drift check (`scripts/sync-standards.mjs --check`) fails if the register is missing or a required name is absent. See the [dependency register rule](dependencies.md) and [template](../templates/dependencies.md).
 - **Thin controllers.** The architecture test fails on a controller with more than five public methods of its own; controllers that already have more are listed with their count in `tests/Arch/naming-architecture.php` (`controllerPublicMethods`), and the test fails when a count grows or when it shrinks without the entry being lowered.
 - **Legacy web platform patterns (ratchet).** `scripts/check-legacy-web.mjs` runs Google Chrome's `legacy-scan` (`modern-web-guidance`, Apache-2.0, no dependencies) over the repo's frontend roots and ratchets it against `legacy-scan-baseline.json`. The scanner always exits 0, findings or not, so the script is the gate: it fails on a finding in a file the baseline does not list for that rule, on one more finding than it allows, and when a fixed finding is still allowed (lower it with `--update`, so paid debt cannot come back). Findings are keyed by **rule and file, never by line**, so an edit above a finding does not churn the baseline while a new file and a new rule are still caught. The scanner version is pinned in the script and recorded in each baseline; never `@latest`, which would turn every repo red the day Chrome adds a rule. Bumping the pin is its own PR: change it in the pack, sync, re-run with `--update` and review the new findings there. The findings are provisional (deterministic rules for 38 of about 200 guides, a fifth of the corpus), so read the guide with `npx modern-web-guidance retrieve <guideId>` and check the finding against its Keep/Drop criteria before fixing it. It runs as a step in the repo's existing lint job, never a job of its own.
 - **No hard-coded UI strings.** `i18next/no-literal-string` (JSX text only, not attributes such as `className` or `data-*`) flags visible text that bypasses translations: use `t('…')` with keys in every locale file. Existing debt is in `i18n-literal-baseline.json`; `scripts/qiick-ratchet.mjs lint` fails when a file's count grows, and when a count shrinks without the baseline being lowered (`--update`).
 - **graphify stays local.** The standards check (`app-ui-drift / standards`, `scripts/sync-standards.mjs --check`) fails when `.gitignore` does not ignore `graphify-out/`, when any `graphify-out/` path is tracked, or when `.gitattributes` contains `merge=graphify` (that line comes from `graphify hook install` and must stay uncommitted). Rebuild the graph locally; never commit it.
 - **Fleet conformance suite.** Synced Pest tests under `tests/Conformance/` assert schema, config, file and behaviour rules from the 2026-11-20 core-hardening decision. Scalars (user model, table names, flags) live in `qiick-standards.json` → `conformance`; behaviour hooks in the repo-owned `tests/Conformance/hooks.php`. Divergences for check ids are objects `{ reason, decision, review_by }` alongside string registry divergences. The reusable [`conformance.yml`](../../.github/workflows/conformance.yml) starts PostgreSQL 16 and MySQL 8.4 service containers and runs `pest --group=conformance` on both. App-ui proves each check RED/GREEN in `standards/php/conformance-harness/`. Full catalogue: [`CONFORMANCE.md`](../CONFORMANCE.md).
+- **Fleet conventions.** With a `conventions` object in `qiick-standards.json`, the standards check runs `standards/scripts/check-conventions.mjs`: the static checks of the fleet conventions (`.qiick/standards/conventions.md`), each with its id (`F5`). An exception is a `conventions.divergences` entry with `reason`, `decision` and `review_by`; it fails when incomplete, expired, or no longer needed. Before adopting, `node <app-ui>/standards/scripts/check-conventions.mjs --all --target .` lists what the repo must fix.
+- **Package compatibility matrix.** Composer packages set `"package": true` and call [`package-matrix.yml`](../../.github/workflows/package-matrix.yml); `standards/scripts/check-package-matrix.mjs` (from the standards drift job) fails when the workflow call or either `fromJSON` output is missing. Policy and consumption: [`docs/package-matrix.md`](../../docs/package-matrix.md).
 
 ### CI cost
 
 **GitHub bills per job, rounded up to the whole minute.** A job that runs for ten seconds costs a minute, so a seven-job workflow costs seven minutes however fast it is, and a workflow that runs twice per commit costs twice that. Measured on externa-core, one push cost ~95 billable minutes. Every rule below follows from that one fact: minutes are paid, and CI that burns them gets switched off, which blocks every repo behind it.
+
+- **A pull request runs only what its change can break; the full matrix runs after the merge and every night** (decision of 2026-11-24: the org's Actions queue was the bottleneck). Packages take the plan from `package-matrix.yml` (`pr` / `full` variants in `standards/package-matrix.json`): a docs-only PR runs nothing; otherwise lint, PHPStan and Pest on the highest PHP / Laravel cell with SQLite; the lowest cell only when `composer.json` or `src/` changes; the server databases only for database code; mutation only on the changed classes. Push to `develop`, the nightly `cron` and manual runs take the full matrix and mutation on every class, and a failed nightly run opens an issue. Jobs skip their steps, never themselves (a job-level `if:` or `paths:` filter leaves a required check pending forever), so the required checks (the highest cell, the database jobs, `Mutation (per-class ≥95%)`, lint, PHPStan) report on every PR: a docs-only PR runs no tests and passes them through the same job names (`docs-only`). Only a job that reports on every PR may be a required check. Details: [`docs/package-matrix.md`](../../docs/package-matrix.md).
 
 - **`push` only on `main` and `develop`.** Everything else arrives through `pull_request`. Without the branch filter, pushing to a branch that already has an open pull request runs every workflow twice on the same commit: twice the bill, no extra signal.
 
@@ -321,6 +608,222 @@ Machines enforce these in CI; keep them green, and never silence one to get gree
 - Never commit `.env`, secrets, tokens, personal phone numbers or email addresses; only `.env.example`.
 - Nothing personal in tracked files: no absolute local paths (`/Users/…`), no one's own editor or agent configuration (keep it in `.gitignore`), and "the maintainer" instead of people's names in code, comments and docs. Describe what code does rather than which product it imitates; naming a product is fine where it is an integration (an importer, a compatible endpoint).
 - Ask the maintainer before: a new dependency, anything outside the issue's scope, repo settings (branch protection, required checks, secrets), paid services or accounts.
+
+## Repository settings and agent rules
+
+Every qiick repo is configured the same way, so a check name, a label or a merge button means the same thing everywhere (fleet conventions F15–F17, decision of 2026-11-24).
+
+- **F15 Settings:** default branch `develop`; `develop` and `main` protected the same way (pull request, required checks with the same names on both, "up to date" on, admins included, no force push or deletion); squash merge with the PR title as the commit, merge commits for `main`, no rebase merge; head branches deleted after merge; every action and reusable workflow pinned by full commit SHA with the version in a comment.
+- **F16 Labels and project:** the fleet label set (`priority:P0`–`priority:P3`, `security`, `schema`, `documentation`, `bug`, `enhancement`, …) exists in every repo, and every repo is linked to its GitHub project.
+- **F17 Agents** working in a repo:
+    - watch CI at most once every 3 minutes, never in a tight loop;
+    - never `pkill` / `killall`: stop only processes you started, by PID;
+    - read the `.env` in use before every `migrate` (which connection, which database), and only ever migrate the database of your own worktree;
+    - run `gh` as the maintainer's account (`gh auth status` shows it active) and never as a second account logged in on the machine;
+    - no `Co-authored-by` or other attribution trailers (see the git rules).
+
+`scripts/check-repo-settings.mjs` in app-ui checks F15 and F16 through `gh api`; F15's action pins are also checked in the repo itself by the conventions check.
+
+### F15 Repository settings
+
+**Rule.**
+
+| Setting                                   | Value                                                                                                                                                                                                                                                         |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Default branch                            | `develop`                                                                                                                                                                                                                                                     |
+| Merge methods                             | squash on (commit title: the PR title, message: the PR body), merge commit on (release PRs into `main` and the merge back), rebase off                                                                                                                        |
+| After merge                               | delete the head branch                                                                                                                                                                                                                                        |
+| Branch protection on `develop` and `main` | pull request required (0 approvals), required status checks with **the same list on both**, "require branches to be up to date" on, admins included (`enforce_admins`), force push and deletion off                                                           |
+| Rulesets                                  | `main: merge commits only`, `release tags: created by admins only`, `release tags: immutable`                                                                                                                                                                 |
+| Actions                                   | every `uses:` pinned by a 40-character commit SHA with the version in a comment (`uses: actions/checkout@<sha> # v4.2.2`), the org's own reusable workflows too; "require actions to be pinned to a full-length commit SHA" on once the repo's workflows pass |
+| Required check names                      | the shared workflows are called with the job ids the release rules list (`pr-title`, `app-ui-drift`, `php-quality`, …), so a check is named the same in every repo                                                                                            |
+
+**Why.** On 2026-11-24 (`check-repo-settings.mjs` over the 19 public repos) the settings differed almost everywhere: 8 repos defaulted to `main` (app-ui, externa-core, excubia-core, the starters); 10 did not require `develop` to be up to date and 9 exempted admins on `develop`; 8 required different checks on `develop` and `main` (every package requires none on `main`); laravel-audit's `main` was unprotected; rebase merge was on in 11 repos; laravel-oidc's drift check reports as `standards / standards`, not `app-ui-drift / standards`; and three repos still called workflows by tag (instituta-core, externa-core, laravel-api-keys). A squash commit takes the PR title only when the setting says so; with the default it takes a single commit's message, which commitlint never checked. A tag can be moved; a SHA cannot.
+
+**Checked by.** `node scripts/check-repo-settings.mjs [<repo> …]` (all non-archived public repos of `qiick-io` when no repo is named) reads the settings, protections and rulesets through `gh api` and lists every difference from `standards/repo-settings.json`. The action pins are also F15 of the conventions check, on the repo's own workflows. Changing a setting is the maintainer's: an agent runs the script and reports.
+
+**Exceptions.** A private repo cannot be protected on the free plan (decision 2026-11-10): the rules apply by convention, and the script reports protection as unavailable, not as a violation. A repo's own extra required checks are its own; only the list being identical on both branches is required.
+
+### F16 Labels and project
+
+**Rule.** Every repo has the labels in `standards/repo-settings.json` (`labels`), with the same names, colours and descriptions; a repo may add its own (`area:*`, `effort:*`). Every issue gets a priority label when it is triaged. Every repo is linked to one GitHub project of the `qiick-io` organisation (one per product or package), where its issues and PRs are added on creation (the git rules).
+
+**Why.** Priorities were `priority:P1`–`P2` in some repos and `P0`–`P3` in others, `schema` existed in three repos and `security` was missing in twelve, so a fleet-wide query for open P0 or security issues missed repos. Twelve repos (app-ui, excubia-app, the starters and five packages) had no project linked, although the packages have an organisation project each.
+
+**Checked by.** `scripts/check-repo-settings.mjs` (missing labels, and `--fix-labels` creates or updates them; projects through the GraphQL API).
+
+**Exceptions.** None.
+
+### F17 Agent rules
+
+**Rule.** The list in the core above, for every agent and contributor, in every repo.
+
+**Why.**
+
+- Every session on the machine shares one GitHub API rate limit (5,000 requests an hour for the account); a watcher polling every few seconds spends it for all of them, and a check that takes ten minutes needs a few polls, not hundreds.
+- Several agents work on the same machine at once: `pkill php` or `pkill node` stops every other session's server, queue worker and test run too.
+- signaculum-core#176: a test rewrote the shared `.env`, so later commands of other worktrees ran against the wrong database; and on 2026-11-09 the disk filled up with about 150 worktrees and copied databases. Reading the `.env` before `migrate` and touching only your own worktree's database prevents both.
+- More than one GitHub account can be logged in on the maintainer's machine; a PR or comment from the wrong one is attributed to someone else and may lack access.
+
+**Checked by.** The sync writes these rules into every repo's agent files; the drift check fails when the block differs. Nothing checks behaviour, so reviewers and the coordinator do.
+
+**Exceptions.** None.
+
+## Security, data and operations
+
+What every qiick repo does so a vulnerability can be reported, a leaked secret replaced, a schema changed without downtime, the data restored, a release and its dependencies trusted, a running product watched, personal data accounted for, and an incident handled from a page instead of from memory (fleet conventions F19–F24, F26, F29 and F30, maintainer request of 2026-11-25; F25, F27 and F28 are code conventions, in the conventions rules).
+
+- **F19 Security policy:** every repo has a `SECURITY.md` (supported versions, how to report, response time) and GitHub private vulnerability reporting switched on, because the policy sends reporters there.
+- **F20 Secrets runbook:** every product has `docs/runbooks/secrets.md`: each secret of `.env.example` and each key file, where it lives, who rotates it, how, what the rotation breaks, and what to do after a leak.
+- **F21 Expand / contract:** after the first stable release a schema change never breaks the code of the release before it. Add first (expand), move the data, switch the code, and drop or rename only in a later release (contract), with a `contract:` comment naming the release that stopped using the column.
+- **F22 Backup and restore drill:** every product documents what is backed up and how to restore it in `docs/runbooks/backup.md`, and records a restore drill there before its first stable release and at least every quarter after it.
+- **F23 Signed release tags:** the maintainer creates release tags locally with `git tag -s`; the release workflow runs `signed-tag / verified`, which fails unless GitHub shows the tag as Verified, and every publishing job needs it.
+- **F24 Supply chain:** lock files committed in products; `composer audit` and `npm audit --omit=dev --audit-level=high` on every PR and every night; Dependabot for Composer, npm and GitHub Actions; every accepted advisory written down with a reason and a date; release artefacts (Docker images, archives) carry a build provenance attestation.
+- **F26 Observability with Excubia:** every product requires `qiick/excubia-core` (not `--dev`), keeps an `excubia.json`, schedules `excubia:check` daily, and serves `/health/live` and `/health/ready`; pushing to an `excubia-app` is the operator's choice, configured only through `EXCUBIA_APP_URL` and `EXCUBIA_APP_TOKEN`.
+- **F29 Privacy:** every product keeps `docs/privacy.md`: the personal data it stores (table and column), why, for how long, which processors and outbound destinations receive any of it, and how a person's data is exported and erased. No telemetry, ever, unless the operator turns it on.
+- **F30 Runbooks:** every product keeps `docs/runbooks/deploy.md` (deploy, upgrade and rollback) and `docs/runbooks/incident.md` (first steps, who to tell, what to write down afterwards), next to the secrets and backup runbooks.
+
+With a `conventions` object in `qiick-standards.json`, the standards drift check runs the static checks of F19, F20, F22–F24, F26, F29 and F30; `migrations-frozen / migrations-frozen` checks F21; `scripts/check-repo-settings.mjs` in app-ui checks that private vulnerability reporting is on. An exception is a `conventions.divergences` entry like any other convention.
+
+### F19 Security policy and private reporting
+
+**Rule.** Every repo has `SECURITY.md` at its root (or in `.github/`) with three sections: **Supported versions** (which versions get security fixes), **Reporting a vulnerability** (GitHub private vulnerability reporting on the repo's Security tab, never a public issue; acknowledgement within 72 hours) and what the repo treats as critical. "Private vulnerability reporting" is on in the repo's settings. A fix ships as a patch release with a `Security` entry in the CHANGELOG and a GitHub security advisory; a finding that spans packages is coordinated in each repo's advisory. A repo without one starts from `standards/templates/SECURITY.md`.
+
+**Why.** On 2026-11-25, 16 of the 19 repos had a `SECURITY.md` and almost all of them told reporters to use private vulnerability reporting, but it was switched on in three (excubia-app, externa-core, excubia-core): a reporter who followed the policy found no button and had only a public issue left. app-ui, externa-bruno and two starters had no policy at all.
+
+**Checked by.** F19 in the conventions check: `SECURITY.md` exists and has the supported versions and reporting sections. `scripts/check-repo-settings.mjs`: private vulnerability reporting is enabled (`gh api repos/<repo>/private-vulnerability-reporting`).
+
+**Exceptions.** A private repo (foruli-core) cannot receive outside reports; its policy names the maintainer as the only channel, and the setting check skips it.
+
+### F20 Secrets runbook
+
+**Rule.** Every product keeps `docs/runbooks/secrets.md` with one row per secret: every variable of `.env.example` whose name ends in `KEY`, `SECRET`, `TOKEN`, `PASSWORD` or `DSN` (optionally followed by `_ID`), and every key file (`storage/oauth-*.key`, signing keys in the database). Each row says where the value lives in production (never in git), what it protects, how to rotate it (the command, as `signaculum:rotate-signing-key`), what the rotation breaks (sessions, issued tokens, encrypted columns) and how often it is rotated. A last section, **After a leak**, gives the order: revoke or rotate, invalidate what the secret signed or encrypted, read the audit log for its use, write the incident down. `APP_KEY` is never rotated by replacing it: Laravel's `APP_PREVIOUS_KEYS` keeps old ciphertext readable while the new key takes over.
+
+**Why.** On 2026-11-25 only signaculum-core (`docs/key-rotation-and-backup.md`) and laravel-http-basics (one secret, in its `SECURITY.md`) wrote down how to rotate a secret. The other products had rotation code (`RotateApiKeyAction`, `RotateProjectTokenAction`) but no page that lists their secrets, so after a leak the operator has to find them in the code under pressure, and a forgotten one stays valid.
+
+**Checked by.** F20 (_app_): `docs/runbooks/secrets.md` exists, names every secret-like variable of `.env.example` and has an **After a leak** section.
+
+**Exceptions.** A variable that only looks like a secret (`PUSHER_APP_KEY`, a public client id) is still listed, with "public, not a secret" as what it protects; the list stays complete and the check stays simple.
+
+### F21 Expand / contract schema changes
+
+**Rule.** Until the first stable release, schema changes go into the `create_` migrations (the migration contract in the code rules). After it, a release runs its migrations while the previous release's code may still serve requests (rolling deploys, queue workers that finish their jobs, a rollback), so no migration may break that code:
+
+1. **Expand** (release N): add the new column or table, nullable or with a default; write both the old and the new place; backfill in chunks (a queued job or a `<app>:` command, not one `UPDATE` in the migration).
+2. **Switch** (release N or N+1): read only the new place; stop writing the old one.
+3. **Contract** (release N+1 or later, never the release that switched): drop or rename the old column or table. The migration's `up()` carries a comment `// contract: <column or table> unused since vX.Y.Z`, naming the released tag whose code no longer reads or writes it.
+
+A type change (`->change()`) that only widens (a longer string, a bigger integer, nullable) breaks nothing and carries `// expand-safe: <why>` instead. A new `NOT NULL` column without a default is an expand step done wrong: add it nullable, backfill, then make it `NOT NULL` in a later release. Packages follow the same rule, because a product upgrades the package before it deploys its own code.
+
+**Why.** The migration contract (decision of 2026-11-20) freezes released migrations, so a mistake can no longer be edited away after 1.0; and every qiick product is self-hosted with an upgrade command, so the window in which old code meets the new schema is the operator's whole deploy, not a second. A `dropColumn` in the same release as the code change turns that window into errors, and a rollback to the previous release into a broken app.
+
+**Checked by.** `migrations-frozen / migrations-frozen` (`standards/scripts/migrations-frozen.sh`), once the repo has a stable tag: every migration added since the latest stable tag whose `up()` drops, renames or changes a column or table needs the `contract:` comment with a tag that exists and is not newer than the latest stable tag, or the `expand-safe:` comment (`standards/scripts/check-expand-contract.mjs`). Packages call the same workflow.
+
+**Exceptions.** A table no released code ever used (created and dropped between two releases) needs no contract step; its migration carries `// contract: never released`. A deliberate breaking schema change in a new major version is a divergence with its upgrade notes.
+
+### F22 Backup and restore drill
+
+**Rule.** Every product keeps `docs/runbooks/backup.md` (written from `standards/templates/runbook-backup.md` when the repo adopts the conventions) with:
+
+- **What is backed up:** the database, the storage disks with user files, the `.env` (with `APP_KEY`) and every key file, each with where the copy goes (off the application host), how often, how long it is kept, and how it is encrypted. A backup without `APP_KEY` cannot decrypt encrypted columns; it is kept apart from the database copy, never next to it.
+- **Restore:** the steps in order, ending with the app's health check (`GET /health/ready`) and the commands that must not run after a restore (a key rotation that would retire the restored key).
+- **Restore drills:** a table with one row per drill (`| Date | Version | Result | Time to restore |`): a real restore of a real backup into an empty environment, following the page, with what went wrong fixed on the page in the same PR.
+
+The first drill is recorded before the first stable release; after it, at least one drill every 92 days.
+
+**Why.** On 2026-11-25 signaculum-core and instituta-core documented their backups, and no product had ever recorded a restore. A backup that has never been restored is a hope: missing `APP_KEY`, a disk nobody listed, or a dump from the wrong database are found during the first restore, and the first restore should not be the incident.
+
+**Checked by.** F22 (_app_): `docs/runbooks/backup.md` exists with the three sections; once the CHANGELOG has a stable release, the newest drill is at most 92 days old.
+
+**Exceptions.** None. A product without a production installation still records the drill against its demo or test data before 1.0.
+
+### F23 Signed release tags
+
+**Rule.** The maintainer creates every release tag on their own machine, signed: `git tag -s vX.Y.Z -m vX.Y.Z <merge commit>` with a GPG or SSH key registered on GitHub as a signing key (`git config tag.gpgSign true` makes every annotated tag signed), then pushes it. A tag created in the GitHub UI, by `gh release create` on a missing tag, or by an agent is not signed and fails. Every repo that tags releases has a workflow on `push: tags: ['v*']` that calls the reusable `signed-tag.yml` with the job id `signed-tag`; the check `signed-tag / verified` fails unless the tag is an annotated tag that GitHub shows as **Verified**. Every job that publishes from the tag (GitHub Release, Docker image, package) `needs: signed-tag`.
+
+```yaml
+on:
+    push:
+        tags: ['v*']
+
+jobs:
+    signed-tag:
+        uses: qiick-io/app-ui/.github/workflows/signed-tag.yml@<sha> # vX.Y.Z
+    docker-image:
+        needs: signed-tag
+        # …
+```
+
+**Why.** On 2026-11-25 every release tag of the fleet was a lightweight tag: it carries no signature, so nothing proves that the maintainer, and not a leaked token or a compromised account, chose that commit for the release. The `release tags: immutable` ruleset stops a tag from moving after it is pushed; the signature proves who pushed it. Composer and Packagist install by tag, so the tag is the release.
+
+**Checked by.** `signed-tag / verified` on every tag push (the reusable workflow reads `gh api repos/<repo>/git/tags/<sha>` and its `verification`). F23 in the conventions check: the repo's workflows call `signed-tag.yml`.
+
+**Exceptions.** Tags pushed before 2026-11-25 stay as they are (immutable); the rule starts with the next release of each repo.
+
+### F24 Supply chain
+
+**Rule.**
+
+- **Lock files:** a product commits `composer.lock` and its npm lock file and installs from them in CI (`composer install`, `npm ci`). A package commits neither, because the product's lock decides; its CI tests both ends (`lowest` and `stable`, the package matrix).
+- **Audits:** every PHP repo runs `composer audit` and every repo with a `package.json` runs `npm audit --omit=dev --audit-level=high` on every pull request and on the nightly run, failing on an advisory. An advisory that does not apply (the vulnerable function is never called, no fix exists yet) is accepted in `composer.json` `config.audit.ignore` with its reason, or for npm in `docs/dependencies.md`, with the date to look again; an acceptance without a reason is a finding.
+- **Dependabot:** `.github/dependabot.yml` covers `composer`, `npm` (where there is a `package.json`) and `github-actions`, weekly, with minor and patch updates grouped in one PR per ecosystem. Security updates are on in the repo settings.
+- **New dependencies** need the maintainer's OK and a row in the dependency register (the dependency rules); actions are pinned by SHA (F15).
+- **Provenance:** a workflow that publishes a Docker image or a release archive attests it with `actions/attest-build-provenance`, so an operator can check with `gh attestation verify` that the artefact was built by the repo's workflow from the signed tag (F23).
+
+**Why.** On 2026-11-25 `composer audit` ran in six of the eight packages and in one product (externa-core); `npm audit` only in externa-core, although every product ships a frontend; Dependabot was configured in eight of the nineteen repos; no workflow attested what it built. The products are what operators install, so the products are where an unaudited dependency reaches a server.
+
+**Checked by.** F24 in the conventions check: a PHP repo's workflows run `composer audit`, a repo with `package.json` runs `npm audit` (or `pnpm audit`), `.github/dependabot.yml` lists `github-actions` and the repo's package ecosystems, a product has `composer.lock`, and a workflow that pushes an image (`docker/build-push-action` with `push: true`) also runs `attest-build-provenance`.
+
+**Exceptions.** A repo without a release artefact (packages: Packagist builds from the tag) needs no attestation.
+
+### F26 Observability with Excubia
+
+**Rule.** Every product watches itself with Excubia, the fleet's own health check:
+
+- `qiick/excubia-core` in `require` (not `require-dev`), with an `excubia.json` at the repo root that says which checks apply and leaves `app`, `runtime` and `exceptions` off: the operator turns them on.
+- `excubia:check` is scheduled daily with `onOneServer()`, so the stored result is fresh for the health endpoint and the upgrade command.
+- `GET /health/live` and `GET /health/ready` (the backend rules) answer outside auth; the Excubia health endpoint (`excubia/health`, Oh Dear format) is optional and needs `EXCUBIA_HEALTH_SECRET`.
+- An operator who runs an `excubia-app` sets `EXCUBIA_APP_URL` and `EXCUBIA_APP_TOKEN` in the environment (never in `excubia.json`: the token is a secret, F20) and turns on `runtime` and `exceptions`; exceptions are masked by Excubia before they leave.
+- Logs follow F10 (structured, same keys, no personal data), so a pushed exception carries `request_id` and nothing personal.
+
+**Why.** On 2026-11-25 only excubia-app required `qiick/excubia-core`; the other products had health routes but nothing that checks their own posture (debug mode, caches, failed jobs, end-of-life PHP, vulnerable lock files) after install. The fleet already has the tool; each product finding out on its own that its scheduler stopped is the gap.
+
+**Checked by.** F26 (_app_): `composer.json` requires `qiick/excubia-core`, `excubia.json` exists and has no `app.token`, the schedule runs `excubia:check` (or `excubia:push`), and `routes/health.php` (or the routes) serve `health/live` and `health/ready`.
+
+**Exceptions.** excubia-app is Excubia's own dashboard: it requires the package like any product, and its `app.url` may point at itself.
+
+### F29 Privacy
+
+**Rule.** Every product keeps `docs/privacy.md` (from `standards/templates/privacy.md`) with:
+
+- **Personal data:** a table of every table and column that holds personal data (name, email, IP address, user agent, free text a person typed, files they uploaded), with the purpose and the retention (F9: the prune command, or "until the account is erased").
+- **Processors and outbound destinations:** every service that receives any of it (mail provider, storage, an AI provider, an OIDC provider, a webhook target the operator configures), and what it receives.
+- **Export and erasure:** how a person's data is exported (format, command or screen) and erased, and what is kept after erasure and why (the activity log, anonymised).
+- **Telemetry:** none by default. A feature that sends anything off the server is off until the operator turns it on, and this page names it.
+
+A PR that adds a column or an outbound call with personal data updates the page in the same PR.
+
+**Why.** On 2026-11-25 no product had a privacy page, although every one stores emails, IP addresses (the activity log adds `ip` and `user_agent` to every entry, the backend rules) and user content, and several send data to AI providers and mail services that the operator chooses. An operator who must answer a data protection request, or write their own record of processing, has to read the code today.
+
+**Checked by.** F29 (_app_): `docs/privacy.md` exists with the four sections. Whether it is complete is a review question; the logging check (F10) keeps personal data out of logs.
+
+**Exceptions.** None.
+
+### F30 Runbooks
+
+**Rule.** Every product keeps its runbooks in `docs/runbooks/`, written for the operator at 3 a.m.: commands to copy, in order, and what each one's success looks like.
+
+- `deploy.md`: the deploy and upgrade steps (`<app>:upgrade`, migrations, cache rebuild, queue restart), what to check after (`/health/ready`, `excubia:check`), and a **Rollback** section: the previous release's code against the current schema (expand / contract makes that safe, F21), and the restore (`backup.md`) when it is not.
+- `incident.md`: the **First steps** (maintenance mode or not, where the logs are, how to stop a runaway queue), who to tell and how (a security incident follows `SECURITY.md`), and **After the incident**: a dated entry in the page's log with cause, impact and the PR that fixes the cause.
+- `secrets.md` (F20) and `backup.md` (F22).
+
+A runbook step that turned out wrong during a real deploy or incident is corrected in the next PR.
+
+**Why.** On 2026-11-25 no repo had a runbook directory: deploy and upgrade steps were spread over READMEs and `docs/upgrade.md` pages, and no product said how to roll back or what to do first in an incident. Every qiick product is self-hosted, so the operator, not the maintainer, is the one who needs the page.
+
+**Checked by.** F30 (_app_): `docs/runbooks/deploy.md` with a **Rollback** section and `docs/runbooks/incident.md` with **First steps** and **After the incident**. Adopting the conventions writes all four runbooks from `standards/templates/`.
+
+**Exceptions.** None.
 
 ## Self-hosted app distribution
 
