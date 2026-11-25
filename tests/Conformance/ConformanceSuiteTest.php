@@ -21,6 +21,7 @@ use Qiick\Standards\Conformance\Support\ConformanceHooks;
 use Qiick\Standards\Conformance\Support\ConformanceRunner;
 use Qiick\Standards\Conformance\Support\DivergenceGate;
 use Qiick\Standards\Conformance\Support\SchemaInspector;
+use Tests\TestCase;
 
 /** @var list<array{id: string, tag: string, description: string, decision: string, engines?: list<string>}> $catalog */
 $catalog = require __DIR__.'/catalog.php';
@@ -46,7 +47,7 @@ spl_autoload_register(static function (string $class): void {
     }
 });
 
-uses(Tests\TestCase::class, RefreshDatabase::class)->group('conformance');
+uses(TestCase::class, RefreshDatabase::class)->group('conformance');
 
 describe('qiick fleet conformance', function () use ($catalog, $knownIds): void {
     beforeEach(function () use ($knownIds): void {
@@ -54,7 +55,7 @@ describe('qiick fleet conformance', function () use ($catalog, $knownIds): void 
 
         $this->conformanceHooks = ConformanceHooks::fromBasePath($basePath);
         $this->conformanceGate = DivergenceGate::fromBasePath($basePath, $knownIds);
-        $this->conformanceSchema = new SchemaInspector();
+        $this->conformanceSchema = new SchemaInspector;
         $this->conformanceRunner = new ConformanceRunner(
             $basePath,
             $this->conformanceHooks,
@@ -104,7 +105,7 @@ describe('qiick fleet conformance', function () use ($catalog, $knownIds): void 
             try {
                 $this->conformanceRunner->run($check);
                 $stillPassingWhileDiverged[] = $checkId;
-            } catch (\Throwable) {
+            } catch (Throwable) {
                 // Still red: divergence remains justified.
             }
         }

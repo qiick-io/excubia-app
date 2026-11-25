@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Enums\ApiKeyScopeEnum;
+use App\Enums\PrincipalTypeEnum;
 use App\Models\ApiKey;
 use App\Models\User;
 use Qiick\ApiKeys\AuthorizationDecision;
@@ -35,7 +36,12 @@ class ApiKeyAuthorizerService implements KeyAuthorizer, ScopeVocabulary
         // A soft-deleted owner is hidden by the relation's default scope: it reads as inactive.
         $owner = $record->owner;
 
-        if ($owner === null || ! $owner->is_active || $record->ownerPrincipal->deactivated_at !== null) {
+        // The principal must be the owner's own `user` principal: two independent foreign keys
+        // could otherwise pair an active user with someone else's (or a stale) principal.
+        $principal = $record->ownerPrincipal;
+        $isOwnersPrincipal = $principal->type === PrincipalTypeEnum::User && $principal->user_id === $record->owner_id;
+
+        if ($owner === null || ! $owner->is_active || ! $isOwnersPrincipal || $principal->deactivated_at !== null) {
             return AuthorizationDecision::deny('The API key owner is no longer active.');
         }
 

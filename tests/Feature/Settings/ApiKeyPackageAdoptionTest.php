@@ -9,6 +9,7 @@ use App\Data\ApiKeyData;
 use App\Enums\ApiKeyScopeEnum;
 use App\Enums\RoleEnum;
 use App\Http\Middleware\AuthenticateApiKeyMiddleware;
+use App\Models\Activity;
 use App\Models\ApiKey;
 use App\Models\User;
 use App\Notifications\ApiKeyExpiringNotification;
@@ -281,3 +282,76 @@ it('denies a key whose stored IP allowlist is corrupted instead of reading it as
 
     callAdoptedKey($plainKey)->assertForbidden()->assertJsonPath('error', 'ip_not_allowed');
 })->skip(fn (): bool => DB::getDriverName() !== 'sqlite', 'MySQL and PostgreSQL refuse invalid JSON at the column; only SQLite can store it');
+
+it('refuses IPv4-mapped IPv6 allowlist entries, which the matcher turns into IPv4', function (string $entry) {
+    $this->actingAs(adoptedKeyOwner())
+        ->post(route('api-keys.store'), ['name' => 'Mapped', 'scopes' => ['mcp:read'], 'ip_allowlist' => [$entry]])
+        ->assertSessionHasErrors('ip_allowlist.0');
+
+    expect(ApiKey::query()->count())->toBe(0);
+})->with([
+    'mapped /96 matches every IPv4' => ['::ffff:0.0.0.0/96'],
+    'mapped prefix below /96 makes the list unusable' => ['::ffff:203.0.113.0/64'],
+    'mapped single address' => ['::ffff:203.0.113.10'],
+]);
+
+it('refuses a key whose owner principal belongs to another user', function () {
+    $owner = adoptedKeyOwner();
+    $plainKey = adoptedPlainKey($owner);
+    $otherPrincipalId = adoptedKeyOwner()->principal()->sole()->id;
+    DB::table('api_keys')->update(['owner_principal_id' => $otherPrincipalId]);
+
+    callAdoptedKey($plainKey)
+        ->assertUnauthorized()
+        ->assertJsonPath('error', 'invalid_token');
+});
+
+it('keeps the first use unstamped when its audit entry cannot be written, so the next use logs it', function () {
+    $owner = adoptedKeyOwner();
+    $plainKey = adoptedPlainKey($owner);
+    $apiKey = ApiKey::query()->sole();
+    $isAuditFailing = true;
+    Activity::creating(function () use (&$isAuditFailing): void {
+        if ($isAuditFailing) {
+            throw new RuntimeException('audit store down');
+        }
+    });
+
+    callAdoptedKey($plainKey)->assertOk();
+
+    expect($apiKey->fresh()->last_used_at)->toBeNull()
+        ->and(Activity::query()->where('event', 'api_key_first_used')->count())->toBe(0);
+
+    $isAuditFailing = false;
+    callAdoptedKey($plainKey)->assertOk();
+    callAdoptedKey($plainKey)->assertOk();
+
+    $firstUse = Activity::query()->where('event', 'api_key_first_used')->sole();
+
+    expect($apiKey->fresh()->last_used_at)->not->toBeNull()
+        ->and($firstUse->properties['api_key_id'])->toBe($apiKey->uuid);
+});
+
+it('logs a first use once even when two requests both saw the key unused', function () {
+    $apiKey = ApiKey::factory()->create();
+    $repository = app(ApiKeyRepository::class);
+    $usedAt = now()->toDateTimeImmutable();
+
+    // Both requests read last_used_at = null before either stamped it.
+    $repository->recordUsage($apiKey, '203.0.113.10', null, $usedAt);
+    $repository->recordUsage($apiKey, '203.0.113.11', null, $usedAt);
+
+    expect(Activity::query()->where('event', 'api_key_first_used')->count())->toBe(1);
+});
+
+it('gives keys a UUIDv7 public id and puts it, not the row id, in the expiry bell', function () {
+    $owner = adoptedKeyOwner();
+    adoptedPlainKey($owner);
+    $apiKey = ApiKey::query()->sole();
+    $factoryKey = ApiKey::factory()->create();
+    $bell = (new ApiKeyExpiringNotification($apiKey, new DateTimeImmutable('2026-12-01T09:00:00+00:00')))->toArray($owner);
+
+    expect(Str::isUuid($apiKey->uuid, 7))->toBeTrue()
+        ->and(Str::isUuid($factoryKey->uuid, 7))->toBeTrue()
+        ->and($bell['api_key_id'])->toBe($apiKey->uuid);
+});

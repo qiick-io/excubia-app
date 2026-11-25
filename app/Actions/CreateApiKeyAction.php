@@ -9,7 +9,6 @@ use App\Enums\ActivityEventEnum;
 use App\Enums\ApiKeyScopeEnum;
 use App\Models\ApiKey;
 use App\Models\User;
-use Illuminate\Support\Str;
 use Qiick\ApiKeys\Contracts\Clock;
 use Qiick\ApiKeys\Contracts\LifetimePolicy;
 use Qiick\ApiKeys\LifetimeAssertion;
@@ -53,7 +52,6 @@ final class CreateApiKeyAction
             ?? $owner->principal()->firstOrFail();
 
         $apiKey->forceFill([
-            'uuid' => (string) Str::uuid(),
             'owner_id' => $owner->id,
             'owner_principal_id' => $ownerPrincipal->getKey(),
             'created_by' => $creator->id,

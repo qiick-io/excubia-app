@@ -50,13 +50,13 @@ class ApiKeyExpiringNotification extends Notification implements ShouldQueue
     }
 
     /**
-     * @return array{type: string, api_key_id: int, key_name: string, key_prefix: string, expires_at: string, url: string}
+     * @return array{type: string, api_key_id: string, key_name: string, key_prefix: string, expires_at: string, url: string}
      */
     public function toArray(object $notifiable): array
     {
         return [
             'type' => 'api_key_expiring',
-            'api_key_id' => $this->apiKey->id,
+            'api_key_id' => $this->apiKey->uuid,
             'key_name' => $this->apiKey->name,
             'key_prefix' => $this->apiKey->key_prefix,
             'expires_at' => Date::instance($this->expiresAt)->toIso8601String(),

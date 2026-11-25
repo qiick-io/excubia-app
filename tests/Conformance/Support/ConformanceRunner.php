@@ -21,7 +21,7 @@ final class ConformanceRunner
     ) {}
 
     /**
-     * @param array{id: string, tag: string, description: string, decision: string, engines?: list<string>} $check
+     * @param  array{id: string, tag: string, description: string, decision: string, engines?: list<string>}  $check
      */
     public function run(array $check): void
     {

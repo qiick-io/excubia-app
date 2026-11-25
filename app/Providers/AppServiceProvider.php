@@ -2,7 +2,6 @@
 
 namespace App\Providers;
 
-use App\Actions\RecordApiKeyUseAction;
 use App\Enums\PermissionEnum;
 use App\Models\Activity as ActivityModel;
 use App\Models\ApiKey;
@@ -84,7 +83,7 @@ class AppServiceProvider extends ServiceProvider
 
     /**
      * Plugs Excubia into qiick/laravel-api-keys: its storage, its owner and scope rules, the
-     * expiry recipients and the first-use log. The authenticator is built here because its
+     * expiry recipients (the first-use log is written by the repository, with the stamp). The authenticator is built here because its
      * limits come from config; the failed-attempt brake is the package's, sized by
      * `api-keys.failed_attempts_per_minute`.
      */
@@ -105,7 +104,6 @@ class AppServiceProvider extends ServiceProvider
             clock: $app->make(Clock::class),
             attemptLimiter: $app->make(AttemptLimiter::class),
             failedAttemptLimiter: $app->make(FailedAttemptLimiter::class),
-            usageSideEffect: $app->make(RecordApiKeyUseAction::class),
             usageThrottleSeconds: config()->integer('api-keys.usage_throttle_seconds', 60),
             bypassThrottleOnIpChange: config()->boolean('api-keys.usage_bypass_throttle_on_ip_change', true),
             defaultRateLimitPerMinute: config()->integer('api-keys.default_rate_limit_per_minute', 60),
