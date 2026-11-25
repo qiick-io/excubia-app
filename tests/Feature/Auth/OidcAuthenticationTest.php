@@ -8,6 +8,7 @@ use App\Models\Setting;
 use App\Models\User;
 use App\Services\SettingsRepositoryService;
 use Database\Seeders\PermissionSeeder;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
@@ -464,3 +465,12 @@ it('throttles the redirect and callback routes', function (string $path) {
 
     $this->get($path)->assertTooManyRequests();
 })->with(['/auth/oidc/redirect', '/auth/oidc/callback']);
+
+it('prunes expired SSO logout revocations daily on one server', function () {
+    $event = collect(app(Schedule::class)->events())
+        ->first(fn ($event): bool => str_contains((string) $event->command, 'oidc:prune-logout-revocations'));
+
+    expect($event)->not->toBeNull()
+        ->and($event->expression)->toBe('0 0 * * *')
+        ->and($event->onOneServer)->toBeTrue();
+});
