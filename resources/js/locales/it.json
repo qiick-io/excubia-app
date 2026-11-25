@@ -2430,5 +2430,14 @@
             "description": "Da ora ogni richiesta con questa chiave viene rifiutata. La chiave resta nell’elenco e nel registro attività; non può più essere usata.",
             "confirm": "Revoca"
         }
+    },
+    "secretOnce": {
+        "description": "È l’unica volta in cui il segreto viene mostrato. Non viene salvato in chiaro e non si può più visualizzare: inseriscilo ora nel tuo gestore di password o di segreti.",
+        "label": "Segreto",
+        "copy": "Copia il segreto",
+        "copied": "Segreto copiato negli appunti",
+        "copyFailed": "Impossibile copiare il segreto. È selezionato: copialo con la tastiera.",
+        "acknowledge": "Ho salvato il segreto in un luogo sicuro",
+        "done": "Fatto"
     }
 }
