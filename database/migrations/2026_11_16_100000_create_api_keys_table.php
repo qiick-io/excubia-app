@@ -7,10 +7,14 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Personal API keys (#315, #351): baseline storage from app-ui docs/api-keys.md. A key acts as
- * its owner and never more. Only the SHA-256 of the full token is stored; `key_prefix` holds the
- * public part (`exc_{env}_{id}`) for indexed lookup and display, never a slice of the secret.
- * Edited in place: this product has no releases yet (Luca, 2026-11-17).
+ * Personal API keys (#315, #351) on the reference schema of qiick/laravel-api-keys 0.3
+ * (`docs/reference-schema.md`), plus `api_key_attempts` for the package's database attempt
+ * limiter (0.3.0-beta.2): the default cache store is `database`, which the cache limiter refuses.
+ *
+ * A key acts as its owner and never more. Only the SHA-256 of the full token is stored;
+ * `key_prefix` holds the public part (`exc_{env}_{id}`), unique so a prefix names one row.
+ * `owner_id` stays as the product's owner column until qiick/laravel-access lands
+ * (docs/adoption-plan.md). Edited in place: no stable release yet (decision 2026-11-20).
  */
 return new class extends Migration
 {
@@ -20,36 +24,62 @@ return new class extends Migration
             $table->id();
             $table->uuid('uuid')->unique();
             $table->string('name');
-            $table->string('key_prefix', 32);
+            $table->text('description')->nullable();
+            $table->string('key_prefix', 32)->unique();
             $table->string('key_hash', 64)->unique();
+            $table->unsignedSmallInteger('token_version')->default(1);
+            $table->string('hash_algorithm', 16)->default('sha256');
+            $table->string('previous_key_prefix', 32)->nullable()->index();
+            $table->string('previous_key_hash', 64)->nullable();
+            // A datetime, not a timestamp: MySQL timestamps end in 2038, and grace and expiry are future instants.
+            $table->dateTime('previous_key_valid_until')->nullable();
+            $table->string('credential_kind', 16)->default('api_key');
+            $table->uuid('oauth_client_id')->nullable()->index();
             // Soft-deleted users keep their keys; a hard delete must be refused, not erase evidence.
             $table->foreignId('owner_id')->constrained('users')->restrictOnDelete();
-            // Fleet principal that owns the key; authorisation still uses owner_id → users.
-            // Removing a principal or its creator must never erase the key or its audit trail.
-            $table->foreignUuid('owner_principal_id')->nullable()->constrained('principals')->nullOnDelete();
+            // The owning principal outlives its user; removing it must never erase the key or its audit trail.
+            $table->foreignUuid('owner_principal_id')->constrained('principals')->restrictOnDelete();
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->json('scopes');
             $table->json('ip_allowlist')->nullable();
+            $table->json('restrictions')->nullable();
             $table->unsignedInteger('rate_limit_per_minute')->nullable();
-            // A datetime, not a timestamp: MySQL timestamps end in 2038, and a user may pick a later expiry.
-            $table->dateTime('expires_at')->nullable();
+            $table->unsignedInteger('rate_limit_per_day')->nullable();
+            $table->unsignedInteger('rate_limit_per_month')->nullable();
+            $table->json('metadata')->nullable();
+            $table->dateTime('expires_at')->nullable()->index();
+            $table->timestamp('expiry_notified_at')->nullable();
+            $table->timestamp('expiry_notice_claimed_at')->nullable();
             $table->timestamp('last_used_at')->nullable();
             $table->string('last_used_ip', 45)->nullable();
-            $table->timestamp('revoked_at')->nullable();
-            $table->string('previous_key_hash', 64)->nullable();
-            $table->dateTime('previous_key_valid_until')->nullable();
+            $table->string('last_used_user_agent', 512)->nullable();
+            $table->timestamp('last_rotated_at')->nullable();
+            $table->timestamp('exposed_at')->nullable()->index();
+            $table->string('exposure_source', 64)->nullable();
+            $table->timestamp('revoked_at')->nullable()->index();
+            $table->foreignId('revoked_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->string('revoked_reason', 32)->nullable();
+            $table->text('revocation_note')->nullable();
             $table->timestamps();
 
-            $table->index('key_prefix');
+            $table->index(['credential_kind', 'revoked_at']);
             $table->index('owner_id');
             $table->index('owner_principal_id');
             $table->index('created_by');
-            $table->index('revoked_at');
+            $table->index('revoked_by');
+        });
+
+        Schema::create('api_key_attempts', function (Blueprint $table): void {
+            $table->string('bucket', 255)->primary();
+            $table->unsignedInteger('hits')->default(0);
+            // End of the window in Unix seconds (app clock); the row counts as empty from this second.
+            $table->unsignedBigInteger('expires_at')->index();
         });
     }
 
     public function down(): void
     {
+        Schema::dropIfExists('api_key_attempts');
         Schema::dropIfExists('api_keys');
     }
 };

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "13bf57bc065d0020fb5a0d103461fcaf",
+    "content-hash": "f163372f60b69021a274995028594885",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -4344,6 +4344,77 @@
                 "source": "https://github.com/qiick-io/excubia-core"
             },
             "time": "2026-11-19T15:27:20+00:00"
+        },
+        {
+            "name": "qiick/laravel-api-keys",
+            "version": "v0.3.0-beta.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/qiick-io/laravel-api-keys.git",
+                "reference": "89c795a46d9c5b9eaefe448d313e148cd32036e4"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/qiick-io/laravel-api-keys/zipball/89c795a46d9c5b9eaefe448d313e148cd32036e4",
+                "reference": "89c795a46d9c5b9eaefe448d313e148cd32036e4",
+                "shasum": ""
+            },
+            "require": {
+                "illuminate/console": "^12.0 || ^13.0",
+                "illuminate/contracts": "^12.0 || ^13.0",
+                "illuminate/http": "^12.0 || ^13.0",
+                "illuminate/notifications": "^12.0 || ^13.0",
+                "illuminate/support": "^12.0 || ^13.0",
+                "php": "^8.3"
+            },
+            "require-dev": {
+                "larastan/larastan": "^3.3",
+                "laravel/pint": "^1.30",
+                "nunomaduro/collision": "^8.5",
+                "orchestra/testbench": "^10.0 || ^11.0",
+                "pestphp/pest": "^4.0",
+                "pestphp/pest-plugin-mutate": "^4.0",
+                "phpstan/phpstan": "^2.1"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Qiick\\ApiKeys\\Laravel\\ApiKeysServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Qiick\\ApiKeys\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Qiick",
+                    "homepage": "https://qiick.io"
+                }
+            ],
+            "description": "Contract-only API key mechanics for qiick Laravel products: issue, parse, verify, scopes, IP allowlist, rotation, and RFC 6750 refusals.",
+            "homepage": "https://github.com/qiick-io/laravel-api-keys",
+            "keywords": [
+                "Bearer",
+                "RFC6750",
+                "api-keys",
+                "laravel",
+                "qiick",
+                "scopes"
+            ],
+            "support": {
+                "issues": "https://github.com/qiick-io/laravel-api-keys/issues",
+                "source": "https://github.com/qiick-io/laravel-api-keys"
+            },
+            "time": "2026-11-25T11:36:20+00:00",
+            "published-time": "2026-11-25T11:36:47+00:00"
         },
         {
             "name": "qiick/laravel-oidc",
@@ -13908,6 +13979,7 @@
     "minimum-stability": "stable",
     "stability-flags": {
         "qiick/excubia-core": 10,
+        "qiick/laravel-api-keys": 10,
         "qiick/laravel-oidc": 10
     },
     "prefer-stable": true,
@@ -13916,5 +13988,5 @@
         "php": "^8.4"
     },
     "platform-dev": {},
-    "plugin-api-version": "2.9.0"
+    "plugin-api-version": "2.11.0"
 }

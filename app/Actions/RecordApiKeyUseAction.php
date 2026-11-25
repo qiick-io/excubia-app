@@ -6,40 +6,28 @@ namespace App\Actions;
 
 use App\Enums\ActivityEventEnum;
 use App\Models\ApiKey;
+use Qiick\ApiKeys\Contracts\ApiKeyRecord;
+use Qiick\ApiKeys\Contracts\UsageSideEffect;
 
 /**
- * Stamps last use of a personal API key (#315, #351) at most once a minute, with the client IP.
- * The first use is logged in the `auth` log; later uses only move the stamp so the log does not
- * grow per request.
+ * Logs the first use of a personal API key (#315, #351) in the `auth` log. qiick/laravel-api-keys
+ * stamps `last_used_*` itself (at most once a minute, or on a new IP) and calls this afterwards;
+ * later uses only move the stamp, so the log does not grow per request.
  */
-final class RecordApiKeyUseAction
+final class RecordApiKeyUseAction implements UsageSideEffect
 {
-    public function execute(ApiKey $apiKey, ?string $ipAddress = null): void
+    public function afterRecorded(ApiKeyRecord $record, ?string $ip, ?string $userAgent, bool $wasFirstUse): void
     {
-        if (
-            $apiKey->last_used_at !== null
-            && $apiKey->last_used_at->greaterThan(now()->subMinute())
-        ) {
-            return;
-        }
-
-        $isFirstUse = $apiKey->last_used_at === null;
-
-        $apiKey->forceFill([
-            'last_used_at' => now(),
-            'last_used_ip' => $ipAddress,
-        ])->saveQuietly();
-
-        if (! $isFirstUse) {
+        if (! $wasFirstUse || ! $record instanceof ApiKey) {
             return;
         }
 
         activity()
             ->useLog('auth')
-            ->causedBy($apiKey->owner)
-            ->performedOn($apiKey)
+            ->causedBy($record->owner)
+            ->performedOn($record)
             ->event(ActivityEventEnum::ApiKeyFirstUsed->value)
-            ->withProperties(['name' => $apiKey->name, 'key_prefix' => $apiKey->key_prefix])
+            ->withProperties(['name' => $record->name, 'key_prefix' => $record->key_prefix])
             ->log('API key used for the first time');
     }
 }

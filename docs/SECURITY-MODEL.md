@@ -101,11 +101,11 @@ Deleting a project deletes its reports, findings, telemetry, tasks, alerts, mute
 ### 7a. Personal API keys
 
 - **Created** by each user for themselves in Settings → API keys (#315): `exk_` + 40 random characters (`Str::random`), with a name, scopes (`mcp:read`; `mcp:write` for the MCP write tools, off unless ticked and only with `mcp:read`) and an optional expiry date. Scopes cannot be edited: a key that needs `mcp:write` is a new key.
-- **Stored** only as `sha256` in `api_keys.key_hash` (hidden from serialization and excluded from the activity log), with the first 12 characters as `key_prefix` for display. The plain key is flashed once (`apiKey` flash) and never stored or logged.
-- **Checked** by `AuthenticateApiKeyMiddleware`, with the scope the route needs: the bearer key is hashed and looked up by hash. A revoked or expired key, a key without the scope, or a deactivated owner is rejected on the next request; deleting a user deletes their keys.
+- **Issued and verified** by `qiick/laravel-api-keys`: `exc_{live|test}_{id}{secret}{checksum}` (token version 2, a 6-character CRC32 checksum). **Stored** only as `sha256` of the full token in `api_keys.key_hash` (hidden from serialization and excluded from the activity log), with the public `exc_{env}_{id}` part as the unique `key_prefix` for lookup and display. The plain key is flashed once (`apiKey` flash) and never stored or logged.
+- **Checked** by `AuthenticateApiKeyMiddleware`, with the scope the route needs: the bearer key is hashed and looked up by hash. A revoked or expired key, a key without the scope, a deactivated owner or owner principal, or a key whose stored restrictions refuse the request is rejected on the next request; deleting a user revokes their keys (`revoked_reason = owner`).
 - **Acts as its owner**, for that request only (no session): every policy and `Project::visibleTo` apply as in the UI, so a key never sees or does more than its owner. Only the owner may revoke a key.
 - **Audit**: creation, revocation and the first use go to the `auth` activity log.
-- **Rate limits**: 20 failed attempts per minute per IP (then every attempt from that IP gets 429), and `EXCUBIA_API_KEY_REQUESTS_PER_MINUTE` (60) per key.
+- **Rate limits**: 20 failed attempts per minute per IP (`API_KEYS_FAILED_ATTEMPTS_PER_MINUTE`; then every attempt from that IP gets 429, a correct key included), and `API_KEYS_DEFAULT_RATE_LIMIT_PER_MINUTE` (60) per key, plus optional per-key day and month quotas. The counters live in the cache when it is Redis or Memcached, otherwise in the `api_key_attempts` table (package 0.3.0-beta.2).
 
 ### 7b. MCP server (off by default)
 

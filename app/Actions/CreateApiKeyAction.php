@@ -10,6 +10,10 @@ use App\Enums\ApiKeyScopeEnum;
 use App\Models\ApiKey;
 use App\Models\User;
 use Illuminate\Support\Str;
+use Qiick\ApiKeys\Contracts\Clock;
+use Qiick\ApiKeys\Contracts\LifetimePolicy;
+use Qiick\ApiKeys\LifetimeAssertion;
+use Qiick\ApiKeys\TokenCodec;
 
 /**
  * Creates a personal API key (#315, #351) for an owner and returns the plain token once. The hash
@@ -17,13 +21,22 @@ use Illuminate\Support\Str;
  */
 final class CreateApiKeyAction
 {
+    public function __construct(
+        private readonly TokenCodec $tokenCodec,
+        private readonly LifetimePolicy $lifetimePolicy,
+        private readonly Clock $clock,
+    ) {}
+
     /**
      * @return string the plain token, shown once to the caller
+     *
+     * @throws \InvalidArgumentException when the expiry breaks `api-keys.max_lifetime_days`
      */
     public function execute(User $owner, ApiKeyData $apiKeyData, ?User $creator = null): string
     {
         $creator ??= $owner;
-        $token = ApiKey::generateToken();
+        LifetimeAssertion::assertAllows($this->lifetimePolicy, $apiKeyData->expiresAt, $this->clock->now());
+        $token = $this->tokenCodec->issue();
         $scopes = array_map(
             fn (ApiKeyScopeEnum $scope): string => $scope->value,
             ApiKeyScopeEnum::normalize($apiKeyData->scopes),
@@ -44,8 +57,9 @@ final class CreateApiKeyAction
             'owner_id' => $owner->id,
             'owner_principal_id' => $ownerPrincipal->getKey(),
             'created_by' => $creator->id,
-            'key_prefix' => $token['prefix'],
-            'key_hash' => $token['hash'],
+            'key_prefix' => $token->keyPrefix,
+            'key_hash' => $token->keyHash,
+            'token_version' => $token->tokenVersion,
         ])->saveQuietly();
 
         activity('api-keys')
@@ -55,6 +69,6 @@ final class CreateApiKeyAction
             ->withProperties(['name' => $apiKey->name, 'scopes' => $scopes, 'key_prefix' => $apiKey->key_prefix])
             ->log('API key created');
 
-        return $token['plain'];
+        return $token->plainText;
     }
 }

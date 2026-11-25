@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Services\SuperAdminGuardService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Qiick\ApiKeys\RevocationReason;
 
 /**
  * Soft-deletes a dashboard user and releases their unique identifiers.
@@ -29,7 +30,12 @@ class DeleteUserAction
             $originalEmail = $user->email;
             $publicIdHex = str_replace('-', '', $publicId);
 
-            $user->apiKeys()->whereNull('revoked_at')->update(['revoked_at' => now()]);
+            $user->apiKeys()->whereNull('revoked_at')->update([
+                'revoked_at' => now(),
+                'revoked_reason' => RevocationReason::Owner->value,
+                'previous_key_hash' => null,
+                'previous_key_valid_until' => null,
+            ]);
             $user->apiKeys()->update(['name' => 'Deleted key '.$publicId]);
             $user->principal()->update([
                 'deactivated_at' => now(),

@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Actions\RecordApiKeyUseAction;
 use App\Enums\PermissionEnum;
 use App\Models\Activity as ActivityModel;
 use App\Models\ApiKey;
@@ -12,6 +13,10 @@ use App\Policies\JobPolicy;
 use App\Policies\PermissionPolicy;
 use App\Policies\RolePolicy;
 use App\Policies\SystemHealthPolicy;
+use App\Services\ApiKeyAuthorizerService;
+use App\Services\ApiKeyClockService;
+use App\Services\ApiKeyExpiryRecipientService;
+use App\Services\ApiKeyRepositoryService;
 use App\Services\EffectivePermissionResolverService;
 use App\Services\JobMonitorQueryService;
 use App\Services\OidcBreakGlassPolicyService;
@@ -40,6 +45,17 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use Qiick\ApiKeys\ApiKeyAuthenticator;
+use Qiick\ApiKeys\Contracts\ApiKeyRepository;
+use Qiick\ApiKeys\Contracts\AttemptLimiter;
+use Qiick\ApiKeys\Contracts\Clock;
+use Qiick\ApiKeys\Contracts\ExpiryRecipientResolver;
+use Qiick\ApiKeys\Contracts\KeyAuthorizer;
+use Qiick\ApiKeys\Contracts\ScopeVocabulary;
+use Qiick\ApiKeys\FailedAttemptLimiter;
+use Qiick\ApiKeys\IpAllowlist;
+use Qiick\ApiKeys\TokenCodec;
+use Qiick\ApiKeys\UsageRecorder;
 use Qiick\Excubia\Contracts\HttpClientContract;
 use Qiick\Excubia\Services\SymfonyHttpClientService;
 use Qiick\Oidc\Contracts\BreakGlassPolicyContract;
@@ -64,6 +80,38 @@ class AppServiceProvider extends ServiceProvider
         // The HTTP client excubia-core uses for the system report (#70); tests bind a fake.
         $this->app->bind(HttpClientContract::class, fn (): HttpClientContract => new SymfonyHttpClientService);
         $this->registerOidcBindings();
+        $this->registerApiKeyBindings();
+    }
+
+    /**
+     * Plugs Excubia into qiick/laravel-api-keys: its storage, its owner and scope rules, the
+     * expiry recipients and the first-use log. The authenticator is built here because its
+     * limits come from config; the failed-attempt brake is the package's, sized by
+     * `api-keys.failed_attempts_per_minute`.
+     */
+    protected function registerApiKeyBindings(): void
+    {
+        $this->app->bind(ApiKeyRepository::class, ApiKeyRepositoryService::class);
+        $this->app->bind(KeyAuthorizer::class, ApiKeyAuthorizerService::class);
+        $this->app->bind(ScopeVocabulary::class, ApiKeyAuthorizerService::class);
+        $this->app->bind(ExpiryRecipientResolver::class, ApiKeyExpiryRecipientService::class);
+        $this->app->singleton(Clock::class, ApiKeyClockService::class);
+
+        $this->app->bind(ApiKeyAuthenticator::class, fn (Application $app): ApiKeyAuthenticator => new ApiKeyAuthenticator(
+            codec: $app->make(TokenCodec::class),
+            repository: $app->make(ApiKeyRepository::class),
+            authorizer: $app->make(KeyAuthorizer::class),
+            vocabulary: $app->make(ScopeVocabulary::class),
+            ipAllowlist: new IpAllowlist,
+            usageRecorder: new UsageRecorder,
+            clock: $app->make(Clock::class),
+            attemptLimiter: $app->make(AttemptLimiter::class),
+            failedAttemptLimiter: $app->make(FailedAttemptLimiter::class),
+            usageSideEffect: $app->make(RecordApiKeyUseAction::class),
+            usageThrottleSeconds: config()->integer('api-keys.usage_throttle_seconds', 60),
+            bypassThrottleOnIpChange: config()->boolean('api-keys.usage_bypass_throttle_on_ip_change', true),
+            defaultRateLimitPerMinute: config()->integer('api-keys.default_rate_limit_per_minute', 60),
+        ));
     }
 
     /**

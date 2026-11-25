@@ -5,68 +5,75 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\ApiKeyScopeEnum;
-use App\Rules\IpAllowlistEntryRule;
+use App\Enums\PrincipalTypeEnum;
 use App\Traits\LogsApplicationActivityTrait;
 use Database\Factories\ApiKeyFactory;
+use DateTimeImmutable;
+use DateTimeInterface;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Str;
+use Qiick\ApiKeys\Contracts\ApiKeyRecord;
+use Qiick\ApiKeys\CredentialKind;
+use Qiick\ApiKeys\RevocationReason;
 use Spatie\Activitylog\Support\LogOptions;
-use Symfony\Component\HttpFoundation\IpUtils;
 
 /**
  * A personal API key (#315, #351): acts as its owner, scopes only narrow what it may do. The plain
  * token is shown once; only SHA-256 of the full token is stored. `key_prefix` is the public part
- * (`exc_{env}_{id}`), generated independently of the secret, for lookup and display.
+ * (`exc_{env}_{id}`), for lookup and display.
  *
- * Token shape: `exc_(live|test)_<8-char-id><≥32-char-secret>` (fleet: ext|exc|ins|sig).
+ * Token issue, verification, rotation and the refusal format belong to qiick/laravel-api-keys:
+ * this model is the product's storage behind its {@see ApiKeyRecord} contract.
  *
  * @property int $id
  * @property string $uuid
  * @property string $name
+ * @property string|null $description
  * @property string $key_prefix
  * @property string $key_hash
+ * @property int $token_version
+ * @property string $hash_algorithm
+ * @property string|null $previous_key_prefix
+ * @property string|null $previous_key_hash
+ * @property Carbon|null $previous_key_valid_until
+ * @property string $credential_kind
+ * @property string|null $oauth_client_id
  * @property int $owner_id
- * @property string|null $owner_principal_id null once the owning principal is removed
+ * @property string $owner_principal_id
  * @property int|null $created_by null once the issuing user is removed
  * @property list<string> $scopes
  * @property list<string>|null $ip_allowlist
+ * @property array<string, mixed>|null $restrictions
  * @property int|null $rate_limit_per_minute
+ * @property int|null $rate_limit_per_day
+ * @property int|null $rate_limit_per_month
+ * @property array<string, mixed>|null $metadata
  * @property Carbon|null $expires_at
+ * @property Carbon|null $expiry_notified_at
+ * @property Carbon|null $expiry_notice_claimed_at
  * @property Carbon|null $last_used_at
  * @property string|null $last_used_ip
+ * @property string|null $last_used_user_agent
+ * @property Carbon|null $last_rotated_at
+ * @property Carbon|null $exposed_at
+ * @property string|null $exposure_source
  * @property Carbon|null $revoked_at
- * @property string|null $previous_key_hash
- * @property Carbon|null $previous_key_valid_until
+ * @property int|null $revoked_by
+ * @property string|null $revoked_reason
+ * @property string|null $revocation_note
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read User|null $owner null once the owning user is soft-deleted
- * @property-read Principal|null $ownerPrincipal null once the owning principal is removed
+ * @property-read Principal $ownerPrincipal
  * @property-read User|null $creator null once the issuing user is removed
  */
-class ApiKey extends Model
+class ApiKey extends Model implements ApiKeyRecord
 {
     /** @use HasFactory<ApiKeyFactory> */
     use HasFactory, HasUuids, LogsApplicationActivityTrait;
-
-    /** Three-letter product prefix in the fleet token format. */
-    public const PRODUCT_PREFIX = 'exc';
-
-    public const PUBLIC_ID_LENGTH = 8;
-
-    public const SECRET_LENGTH = 32;
-
-    /**
-     * Full presented token: public part + secret. Group 1 is stored in `key_prefix`.
-     */
-    /** `D` = PCRE_DOLLAR_ENDONLY: `$` is the real end, not before a trailing newline. */
-    public const TOKEN_PATTERN = '/^(exc_(?:live|test)_[A-Za-z0-9]{8})([A-Za-z0-9]{32,})$/D';
-
-    /** Fleet scanner regex covering every product's issued tokens. */
-    public const FLEET_SCANNER_PATTERN = '/^(ext|exc|ins|sig)_(live|test)_[A-Za-z0-9]{40,}$/D';
 
     /** @var list<string> */
     protected $fillable = [
@@ -96,11 +103,20 @@ class ApiKey extends Model
         return [
             'scopes' => 'array',
             'ip_allowlist' => 'array',
+            'restrictions' => 'array',
+            'metadata' => 'array',
+            'token_version' => 'integer',
             'rate_limit_per_minute' => 'integer',
-            'expires_at' => 'datetime',
-            'last_used_at' => 'datetime',
-            'revoked_at' => 'datetime',
+            'rate_limit_per_day' => 'integer',
+            'rate_limit_per_month' => 'integer',
             'previous_key_valid_until' => 'datetime',
+            'expires_at' => 'datetime',
+            'expiry_notified_at' => 'datetime',
+            'expiry_notice_claimed_at' => 'datetime',
+            'last_used_at' => 'datetime',
+            'last_rotated_at' => 'datetime',
+            'exposed_at' => 'datetime',
+            'revoked_at' => 'datetime',
         ];
     }
 
@@ -111,7 +127,15 @@ class ApiKey extends Model
     {
         return $this->applicationActivityLogOptions()
             ->useLogName('api-keys')
-            ->logExcept(['key_hash', 'previous_key_hash', 'last_used_at', 'last_used_ip', 'updated_at']);
+            ->logExcept([
+                'key_hash',
+                'previous_key_hash',
+                'last_used_at',
+                'last_used_ip',
+                'last_used_user_agent',
+                'expiry_notice_claimed_at',
+                'updated_at',
+            ]);
     }
 
     /**
@@ -123,7 +147,7 @@ class ApiKey extends Model
     }
 
     /**
-     * Fleet principal that owns the key (additive; authorisation still uses {@see owner()}).
+     * Fleet principal that owns the key; the key works only while it is active.
      *
      * @return BelongsTo<Principal, $this>
      */
@@ -175,130 +199,206 @@ class ApiKey extends Model
         return $this->revoked_at !== null;
     }
 
-    public function isExpired(): bool
+    public function id(): int
     {
-        return $this->expires_at !== null && $this->expires_at->isPast();
+        return $this->id;
+    }
+
+    public function publicId(): string
+    {
+        return $this->uuid;
+    }
+
+    public function keyPrefix(): string
+    {
+        return $this->key_prefix;
+    }
+
+    public function keyHash(): string
+    {
+        return $this->key_hash;
+    }
+
+    public function tokenVersion(): int
+    {
+        return $this->token_version;
+    }
+
+    public function hashAlgorithm(): string
+    {
+        return $this->hash_algorithm;
+    }
+
+    public function previousKeyPrefix(): ?string
+    {
+        return $this->previous_key_prefix;
+    }
+
+    public function previousKeyHash(): ?string
+    {
+        return $this->previous_key_hash;
+    }
+
+    public function previousKeyValidUntil(): ?DateTimeImmutable
+    {
+        return self::immutable($this->previous_key_valid_until);
     }
 
     /**
-     * Null or empty allowlist permits every address; otherwise the client IP must match an entry
-     * or CIDR (Symfony IpUtils).
+     * An unknown stored kind reads as an OAuth grant, which the authenticator refuses (fail closed).
      */
-    public function allowsIp(string $ipAddress): bool
+    public function credentialKind(): CredentialKind
     {
-        $allowlist = $this->ip_allowlist;
+        return CredentialKind::tryFrom($this->credential_kind) ?? CredentialKind::OauthGrant;
+    }
 
-        if ($allowlist === null || $allowlist === []) {
-            return true;
-        }
+    public function oauthClientId(): ?string
+    {
+        return $this->oauth_client_id;
+    }
 
-        return IpUtils::checkIp($ipAddress, $allowlist);
+    public function description(): ?string
+    {
+        return $this->description;
     }
 
     /**
-     * Whether `$entry` is a well-formed IPv4/IPv6 address or CIDR for storage (prefix at most
-     * 32 or 128). Same parser as {@see allowsIp()}: a value IpUtils cannot match is refused at
-     * input so it never sits inert in the allowlist. Callers must refuse any `/0` prefix
-     * separately ({@see IpAllowlistEntryRule}): those mean no restriction.
+     * @return array<string, mixed>
      */
-    public static function isValidAllowlistEntry(string $entry): bool
+    public function metadata(): array
     {
-        if ($entry === '') {
-            return false;
-        }
+        return $this->metadata ?? [];
+    }
 
-        if (! str_contains($entry, '/')) {
-            return filter_var($entry, FILTER_VALIDATE_IP) !== false;
-        }
+    public function rawScopes(): mixed
+    {
+        return $this->scopes;
+    }
 
-        [$subnet, $prefixLength] = array_pad(explode('/', $entry, 2), 2, null);
+    public function rawIpAllowlist(): mixed
+    {
+        return $this->ip_allowlist;
+    }
 
-        if (! is_string($subnet) || $subnet === '' || filter_var($subnet, FILTER_VALIDATE_IP) === false) {
-            return false;
-        }
+    public function rawRestrictions(): mixed
+    {
+        return $this->restrictions;
+    }
 
-        if (! is_string($prefixLength) || ! ctype_digit($prefixLength)) {
-            return false;
-        }
+    public function rateLimitPerMinute(): ?int
+    {
+        return $this->rate_limit_per_minute;
+    }
 
-        $maxPrefix = filter_var($subnet, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false ? 32 : 128;
-        $prefix = (int) $prefixLength;
+    public function rateLimitPerDay(): ?int
+    {
+        return $this->rate_limit_per_day;
+    }
 
-        if ($prefix < 0 || $prefix > $maxPrefix) {
-            return false;
-        }
+    public function rateLimitPerMonth(): ?int
+    {
+        return $this->rate_limit_per_month;
+    }
 
-        return IpUtils::checkIp($subnet, $entry);
+    public function expiresAt(): ?DateTimeImmutable
+    {
+        return self::immutable($this->expires_at);
+    }
+
+    public function expiryNotifiedAt(): ?DateTimeImmutable
+    {
+        return self::immutable($this->expiry_notified_at);
+    }
+
+    public function expiryNoticeClaimedAt(): ?DateTimeImmutable
+    {
+        return self::immutable($this->expiry_notice_claimed_at);
+    }
+
+    public function revokedAt(): ?DateTimeImmutable
+    {
+        return self::immutable($this->revoked_at);
+    }
+
+    public function revokedByIdentifier(): ?int
+    {
+        return $this->revoked_by;
+    }
+
+    public function revokedReason(): ?RevocationReason
+    {
+        return $this->revoked_reason === null ? null : RevocationReason::tryFrom($this->revoked_reason);
+    }
+
+    public function revocationNote(): ?string
+    {
+        return $this->revocation_note;
+    }
+
+    public function exposedAt(): ?DateTimeImmutable
+    {
+        return self::immutable($this->exposed_at);
+    }
+
+    public function exposureSource(): ?string
+    {
+        return $this->exposure_source;
+    }
+
+    public function lastRotatedAt(): ?DateTimeImmutable
+    {
+        return self::immutable($this->last_rotated_at);
+    }
+
+    public function ownerIdentifier(): int
+    {
+        return $this->owner_id;
+    }
+
+    public function ownerPrincipalIdentifier(): string
+    {
+        return $this->owner_principal_id;
+    }
+
+    public function ownerKind(): ?string
+    {
+        return $this->ownerPrincipal->type instanceof PrincipalTypeEnum
+            ? $this->ownerPrincipal->type->value
+            : $this->ownerPrincipal->type;
+    }
+
+    public function createdByIdentifier(): ?int
+    {
+        return $this->created_by;
     }
 
     /**
-     * Whether `$presentedToken` matches the current hash, or the previous hash inside the grace
-     * window. Comparison is always `hash_equals` on SHA-256 of the full presented string.
-     */
-    public function matchesPresentedToken(string $presentedToken): bool
-    {
-        $presentedHash = self::hashToken($presentedToken);
-
-        if (hash_equals($this->key_hash, $presentedHash)) {
-            return true;
-        }
-
-        if (
-            $this->previous_key_hash === null
-            || $this->previous_key_valid_until === null
-            || $this->previous_key_valid_until->isPast()
-        ) {
-            return false;
-        }
-
-        return hash_equals($this->previous_key_hash, $presentedHash);
-    }
-
-    /**
-     * Issue a new token: public part `exc_{env}_{id}`, secret ≥32 base62 chars. The hash covers
-     * the full string the client receives.
+     * The row as arrays see it: the hashes stay hidden.
      *
-     * @return array{plain: string, prefix: string, hash: string}
+     * @return array<string, mixed>
      */
-    public static function generateToken(?string $existingPublicPrefix = null): array
+    public function attributes(): array
     {
-        $prefix = $existingPublicPrefix ?? self::newPublicPrefix();
-        $plain = $prefix.Str::random(self::SECRET_LENGTH);
-
-        return [
-            'plain' => $plain,
-            'prefix' => $prefix,
-            'hash' => self::hashToken($plain),
-        ];
+        return $this->attributesToArray();
     }
 
-    /**
-     * Public lookup part only: `exc_{live|test}_{8-char-id}`.
-     */
-    public static function newPublicPrefix(): string
+    public function lastUsedAt(): ?DateTimeImmutable
     {
-        $environment = app()->isProduction() ? 'live' : 'test';
-
-        return self::PRODUCT_PREFIX.'_'.$environment.'_'.Str::random(self::PUBLIC_ID_LENGTH);
+        return self::immutable($this->last_used_at);
     }
 
-    /**
-     * Extract the public `key_prefix` from a presented token, or null when the shape is wrong.
-     */
-    public static function publicPrefixFromToken(string $presentedToken): ?string
+    public function lastUsedIp(): ?string
     {
-        if (preg_match(self::TOKEN_PATTERN, $presentedToken, $matches) !== 1) {
-            return null;
-        }
-
-        return $matches[1];
+        return $this->last_used_ip;
     }
 
-    /**
-     * SHA-256 of the full token (prefix, env, id and secret together), never bcrypt/argon2.
-     */
-    public static function hashToken(string $fullToken): string
+    public function lastUsedUserAgent(): ?string
     {
-        return hash('sha256', $fullToken);
+        return $this->last_used_user_agent;
+    }
+
+    private static function immutable(?DateTimeInterface $instant): ?DateTimeImmutable
+    {
+        return $instant === null ? null : DateTimeImmutable::createFromInterface($instant);
     }
 }

@@ -241,7 +241,7 @@ return [
             $user,
             new ApiKeyData('MCP key', [ApiKeyScopeEnum::McpRead], null),
         );
-        $apiKey = ApiKey::query()->where('key_prefix', ApiKey::publicPrefixFromToken($plainKey))->sole();
+        $apiKey = ApiKey::query()->where('key_prefix', apiKeyPrefixOf($plainKey))->sole();
 
         test()->postJson('/mcp', [
             'jsonrpc' => '2.0',
