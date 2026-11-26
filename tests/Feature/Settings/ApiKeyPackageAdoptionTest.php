@@ -355,3 +355,14 @@ it('gives keys a UUIDv7 public id and puts it, not the row id, in the expiry bel
         ->and(Str::isUuid($factoryKey->uuid, 7))->toBeTrue()
         ->and($bell['api_key_id'])->toBe($apiKey->uuid);
 });
+
+it('writes the first-use entry inside the stamp transaction even when activity is buffered', function () {
+    config(['activitylog.buffer.enabled' => true]);
+    $plainKey = adoptedPlainKey(adoptedKeyOwner());
+
+    callAdoptedKey($plainKey)->assertOk();
+
+    // Written now, not left in the in-memory buffer that is only flushed after the response.
+    expect(DB::table('activity_log')->where('event', 'api_key_first_used')->count())->toBe(1)
+        ->and(config('activitylog.buffer.enabled'))->toBeTrue();
+});
