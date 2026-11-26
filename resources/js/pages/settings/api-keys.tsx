@@ -39,11 +39,11 @@ type ApiKeyRow = ApiKeyListRow & {
 };
 
 /** A new key reads by default; writing is an explicit choice (#320). */
-const DEFAULT_SCOPES = ['mcp:read'];
+const DEFAULT_SCOPE = 'mcp:read';
 
 const EMPTY_FORM: ApiKeyFormValues = {
     name: '',
-    scopes: DEFAULT_SCOPES,
+    scopes: [],
     expires_at: '',
     ip_allowlist: '',
     rate_limit_per_minute: '',
@@ -128,6 +128,7 @@ export default function ApiKeysSettingsPage({
     );
     const [isRevoking, setRevoking] = useState(false);
     const form = useForm<ApiKeyFormValues>(EMPTY_FORM);
+    const hasGrantableScopes = scopes.length > 0;
 
     useEffect(() => {
         if (flash.issuedApiKey) {
@@ -166,12 +167,19 @@ export default function ApiKeysSettingsPage({
     );
 
     const openCreate = (): void => {
-        form.setData(EMPTY_FORM);
+        form.setData({
+            ...EMPTY_FORM,
+            scopes: scopes.includes(DEFAULT_SCOPE) ? [DEFAULT_SCOPE] : [],
+        });
         form.clearErrors();
         setCreateOpen(true);
     };
 
     const submit = (): void => {
+        if (!hasGrantableScopes) {
+            return;
+        }
+
         form.transform(toApiKeyPayload);
         form.post(apiKeysRoutes.store.url(), {
             preserveScroll: true,
@@ -288,7 +296,9 @@ export default function ApiKeysSettingsPage({
                             {t('settings.apiKeys.createTitle')}
                         </DialogTitle>
                         <DialogDescription>
-                            {t('settings.apiKeys.createDescription')}
+                            {hasGrantableScopes
+                                ? t('settings.apiKeys.createDescription')
+                                : t('settings.apiKeys.noGrantableScopes')}
                         </DialogDescription>
                     </DialogHeader>
 
@@ -317,7 +327,7 @@ export default function ApiKeysSettingsPage({
                         <Button
                             type="submit"
                             form="api-key-create-form"
-                            disabled={form.processing}
+                            disabled={form.processing || !hasGrantableScopes}
                             data-test="api-key-create-submit"
                         >
                             <KeyRound className="mr-1 size-4" />

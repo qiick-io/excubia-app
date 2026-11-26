@@ -3,10 +3,18 @@
  * `navigator.clipboard` often fails when focus leaves the document (e.g. Radix tooltips)
  * or outside a secure context.
  *
+ * Inside a focus trap (a modal dialog) pass `sourceField`, the field that already shows the
+ * text: the fallback selects and copies from it, because a textarea appended to the body
+ * cannot take focus there and the copy would pick up whatever the trap selects instead.
+ *
  * @param text - Plain text to copy
+ * @param sourceField - Optional field holding `text`, used by the execCommand fallback
  * @returns Whether the copy succeeded
  */
-export async function copyTextToClipboard(text: string): Promise<boolean> {
+export async function copyTextToClipboard(
+    text: string,
+    sourceField?: HTMLInputElement | HTMLTextAreaElement | null,
+): Promise<boolean> {
     try {
         if (navigator.clipboard?.writeText) {
             await navigator.clipboard.writeText(text);
@@ -15,6 +23,17 @@ export async function copyTextToClipboard(text: string): Promise<boolean> {
         }
     } catch {
         /* Clipboard API unavailable — try execCommand fallback */
+    }
+
+    if (sourceField && sourceField.value === text) {
+        try {
+            sourceField.focus();
+            sourceField.select();
+
+            return document.execCommand('copy');
+        } catch {
+            return false;
+        }
     }
 
     try {

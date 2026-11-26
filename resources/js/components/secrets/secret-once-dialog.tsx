@@ -79,6 +79,16 @@ export function SecretOnceDialog({
     const isCopied = isOpen && copiedSecret === secret;
     const copiedText = copiedLabel ?? t('secretOnce.copied');
 
+    // Once the app has dropped the secret, drop this component's copies of it too (adjusting
+    // state during render, so no stale copy survives even one frame).
+    if (
+        secret === null &&
+        (acknowledgedSecret !== null || copiedSecret !== null)
+    ) {
+        setAcknowledgedSecret(null);
+        setCopiedSecret(null);
+    }
+
     useEffect(() => {
         if (secret !== null) {
             announce(announcement);
@@ -90,7 +100,10 @@ export function SecretOnceDialog({
             return;
         }
 
-        const hasCopied = await copyTextToClipboard(secret);
+        const hasCopied = await copyTextToClipboard(
+            secret,
+            secretInputRef.current,
+        );
 
         if (hasCopied) {
             setCopiedSecret(secret);

@@ -658,6 +658,7 @@
             "create": "Create API key",
             "createTitle": "Create API key",
             "createDescription": "Name the key after the client that uses it, pick what it may do and, optionally, when it expires.",
+            "noGrantableScopes": "To create an MCP key, your account needs a role with Can use AI, such as Admin. A Super Admin can assign the role in Users, including to their own account.",
             "empty": {
                 "title": "No API keys yet",
                 "description": "Create a key to connect an AI client to Excubia."
@@ -665,7 +666,7 @@
             "resources": {
                 "mcp": {
                     "label": "AI clients (MCP server)",
-                    "description": "Read: projects, reports, findings, exceptions, runtime and schedules. Write also changes exception status, assignments, finding dismissals, alert mutes and maintenance windows."
+                    "description": "Read: projects, reports, findings, exceptions, runtime and schedules. Write includes Read and can change exception status, assignments, finding dismissals, alert mutes and maintenance windows."
                 }
             }
         }
@@ -2406,6 +2407,8 @@
             "legend": "Permissions",
             "description": "What the key can do with each resource. Write includes read.",
             "none": "No access",
+            "unavailable": "Your account cannot grant access to this resource.",
+            "unavailableLevel": "The selected access level is unavailable. Choose another level.",
             "read": "Read",
             "write": "Write"
         },

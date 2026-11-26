@@ -30,15 +30,19 @@ client brings its own model.
 
 1. Sign in to Excubia and open **Settings → API keys**.
 2. Click **Create API key**, name it after the client (for example "Claude Code on my laptop"),
-   keep the `mcp:read` scope and, if you want, pick an expiry date. Tick `mcp:write` too if the
-   client should use the [write tools](#write-tools); it is off unless you tick it, and needs
-   `mcp:read`. Scopes cannot be changed later: to add `mcp:write`, create a new key and revoke the
-   old one.
-3. Copy the key (`exk_…`). It is shown once; Excubia stores only a hash of it.
+   and choose **Read** or **Write** under **AI clients (MCP server)**. **Read** is the default
+   when available. **Write** includes Read and enables the [write tools](#write-tools).
+   You can also pick an expiry date. To change scopes later, create a new key and revoke the old one.
+3. Copy the key (`exc_live_…` or `exc_test_…`). It is shown once; Excubia stores only a hash of it.
 
-The key acts as you. To see projects, you need the `can-show-projects` permission (every built-in
-role has it). Revoke the key in the same page when you no longer use it; deactivating or deleting
-your account stops all your keys at once. Creating, revoking and the first use of a key are in the
+Your account needs an explicit assignment of `can-use-ai`. In **Users**, assign the account a
+role that grants this permission, such as **Admin** or a dedicated role. A **Super Admin** can
+add that role to their own account. When your account has no MCP scope to grant, the selector
+and Create button are disabled.
+
+The key uses your assigned permissions. To see projects over MCP, you also need `can-show-projects`
+from a role such as Reader or Admin. Revoke the key on the same page when you no longer use it.
+Deactivating or deleting your account stops all your keys at once. Creating, revoking and the first use of a key are in the
 activity log, and so is every MCP tool call (`ai` log, event "AI tool", with `surface: mcp`, the
 tool, the arguments and the outcome).
 
@@ -95,7 +99,7 @@ Claude Desktop's custom connectors sign in with OAuth, which Excubia does not of
                 "Authorization:${EXCUBIA_AUTH}"
             ],
             "env": {
-                "EXCUBIA_AUTH": "Bearer exk_your_key"
+                "EXCUBIA_AUTH": "Bearer exc_live_your_key"
             }
         }
     }
