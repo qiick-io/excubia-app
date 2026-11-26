@@ -39,6 +39,9 @@ class SearchFindingsTool extends AssistantTool
         return [
             'project' => ['nullable', 'string'],
             'minimum_severity' => ['nullable', Rule::in(SeverityEnum::values())],
+            'package' => ['nullable', 'string'],
+            'advisory_id' => ['nullable', 'string'],
+            'check_id' => ['nullable', 'string'],
             'from' => ['nullable', 'date_format:Y-m-d'],
             'to' => ['nullable', 'date_format:Y-m-d'],
         ];
@@ -52,8 +55,9 @@ class SearchFindingsTool extends AssistantTool
             'package' => $request['package'] ?? null,
             'advisoryId' => $request['advisory_id'] ?? null,
             'checkId' => $request['check_id'] ?? null,
-            'from' => $request['from'] ?? null,
-            'to' => $request['to'] ?? null,
+            // Optional rules skip a blank string, so a blank date counts as no date.
+            'from' => filled($request['from'] ?? null) ? $request['from'] : null,
+            'to' => filled($request['to'] ?? null) ? $request['to'] : null,
         ]);
     }
 }

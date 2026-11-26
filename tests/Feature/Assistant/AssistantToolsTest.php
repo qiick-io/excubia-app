@@ -194,7 +194,17 @@ it('refuses invalid filters instead of ignoring them', function (string $tool, a
     'runtime range' => [GetRuntimeSummaryTool::class, ['project' => 'shop', 'range' => '10y'], 'The range must be one of: 1h, 6h, 24h, 7d, 14d.'],
     'severity' => [SearchFindingsTool::class, ['minimum_severity' => 'bogus'], 'The minimum severity must be one of: critical, high, medium, low, info.'],
     'date' => [SearchFindingsTool::class, ['from' => 'garbage'], 'The from field must match the format Y-m-d.'],
+    'package' => [SearchFindingsTool::class, ['package' => ['a']], 'The package field must be a string.'],
 ]);
+
+it('treats a blank date as no date, so the search stays on the latest reports', function () {
+    $shop = Project::factory()->create(['slug' => 'shop']);
+    toolReport($shop, '2026-11-01 08:00:00', [toolFinding('monolog/monolog', 'low')]);
+    toolReport($shop, '2026-11-02 08:00:00', [toolFinding('guzzlehttp/guzzle', 'high')]);
+    $user = toolUser();
+
+    expect(runTool(SearchFindingsTool::class, $user, ['from' => '', 'to' => '']))->toBe(runTool(SearchFindingsTool::class, $user, []));
+});
 
 it('says why there is nothing to compare', function () {
     $shop = Project::factory()->create(['slug' => 'shop']);
