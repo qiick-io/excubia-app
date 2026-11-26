@@ -46,10 +46,15 @@ function DrawerContent({
     children,
     showOverlay = true,
     onOpenAutoFocus,
+    onCloseAutoFocus,
     ...props
 }: React.ComponentProps<typeof DrawerPrimitive.Content> & {
     showOverlay?: boolean;
 }) {
+    // Drawers opened from a plain button (controlled `open`, no DrawerTrigger) have no trigger
+    // for Radix to refocus on close, so remember what had focus and return it (WCAG 2.4.3).
+    const returnFocusRef = React.useRef<HTMLElement | null>(null);
+
     const inner = (
         <DrawerPrimitive.Content
             data-slot="drawer-content"
@@ -59,6 +64,8 @@ function DrawerContent({
                 className,
             )}
             onOpenAutoFocus={(event) => {
+                returnFocusRef.current =
+                    document.activeElement instanceof HTMLElement ? document.activeElement : null;
                 onOpenAutoFocus?.(event);
 
                 if (event.defaultPrevented) {
@@ -80,6 +87,18 @@ function DrawerContent({
 
                 event.preventDefault();
                 focusTarget.focus();
+            }}
+            onCloseAutoFocus={(event) => {
+                onCloseAutoFocus?.(event);
+                const returnFocusTo = returnFocusRef.current;
+                returnFocusRef.current = null;
+
+                if (event.defaultPrevented || !returnFocusTo?.isConnected) {
+                    return;
+                }
+
+                event.preventDefault();
+                returnFocusTo.focus();
             }}
             {...props}
         >
