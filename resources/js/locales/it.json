@@ -103,9 +103,7 @@
         "accessibilityOnCount": "{{count}} attive",
         "highContrast": "Alto contrasto",
         "reduceMotion": "Riduci movimento",
-        "logOut": "Esci",
-        "compactTables": "Tabelle compatte",
-        "singleKeyShortcuts": "Scorciatoie a un tasto"
+        "logOut": "Esci"
     },
     "a11y": {
         "skipToContent": "Vai al contenuto",
@@ -224,7 +222,7 @@
     "settings": {
         "layout": {
             "title": "Impostazioni",
-            "description": "Gestisci il profilo e le impostazioni dell'account",
+            "description": "Gestisci il tuo account e il funzionamento di questo Excubia",
             "navAria": "Impostazioni",
             "sectionAccount": "Account",
             "sectionProject": "Progetto",
@@ -671,6 +669,14 @@
                     "description": "Lettura: progetti, report, problemi, eccezioni, runtime e schedule. Scrittura include Lettura e permette di modificare lo stato delle eccezioni, le assegnazioni, i finding ignorati, gli avvisi silenziati e le finestre di manutenzione."
                 }
             }
+        },
+        "preferences": {
+            "title": "Preferenze",
+            "description": "Come appaiono e rispondono gli elenchi per te, in questo browser.",
+            "compactTables": "Tabelle compatte",
+            "compactTablesDescription": "Righe delle tabelle più fitte, per vederne di più sullo schermo.",
+            "singleKeyShortcuts": "Scorciatoie a tasto singolo",
+            "singleKeyShortcutsDescription": "Scorciatoie da tastiera senza tasti modificatori, come j / k negli elenchi. Disattivale se interferiscono con l’input vocale o altre tecnologie assistive."
         }
     },
     "activityLog": {
@@ -1124,7 +1130,7 @@
             "systemProjectHint": "Excubia che controlla se stessa. Invia un report ogni giorno da sola e non si può eliminare.",
             "attention": {
                 "title": "Da sistemare",
-                "description": "{{shown}} di {{total}} problemi aperti, i più gravi prima.",
+                "description": "{{shown}} di {{total}} problemi aperti: prima i problemi di infrastruttura che fallisce, poi per gravità; poi le eccezioni aperte.",
                 "allFindings": "Tutti i problemi",
                 "exception": "Eccezione",
                 "emptyTitle": "Niente da sistemare"
