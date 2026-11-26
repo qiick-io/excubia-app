@@ -23,7 +23,7 @@ class ProjectPolicy
 
     public function viewAny(User $actor): bool
     {
-        return $actor->can(PermissionEnum::CanShowProjects->value);
+        return $this->permissions->hasPermission($actor, PermissionEnum::CanShowProjects->value);
     }
 
     public function view(User $actor, Project $project): bool
@@ -34,18 +34,18 @@ class ProjectPolicy
 
     public function create(User $actor): bool
     {
-        return $actor->can(PermissionEnum::CanCreateProjects->value);
+        return $this->permissions->hasPermission($actor, PermissionEnum::CanCreateProjects->value);
     }
 
     public function update(User $actor, Project $project): bool
     {
-        return $actor->can(PermissionEnum::CanEditProjects->value) && $this->view($actor, $project);
+        return $this->permissions->hasPermission($actor, PermissionEnum::CanEditProjects->value) && $this->view($actor, $project);
     }
 
     public function delete(User $actor, Project $project): bool
     {
         return ! $project->is_system
-            && $actor->can(PermissionEnum::CanDeleteProjects->value)
+            && $this->permissions->hasPermission($actor, PermissionEnum::CanDeleteProjects->value)
             && $this->view($actor, $project);
     }
 
@@ -64,7 +64,7 @@ class ProjectPolicy
      */
     public function manageExceptions(User $actor, Project $project): bool
     {
-        return $actor->can(PermissionEnum::CanManageExceptions->value) && $this->view($actor, $project);
+        return $this->permissions->hasPermission($actor, PermissionEnum::CanManageExceptions->value) && $this->view($actor, $project);
     }
 
     /**
@@ -72,7 +72,7 @@ class ProjectPolicy
      */
     public function manageFindings(User $actor, Project $project): bool
     {
-        return $actor->can(PermissionEnum::CanDismissFindings->value) && $this->view($actor, $project);
+        return $this->permissions->hasPermission($actor, PermissionEnum::CanDismissFindings->value) && $this->view($actor, $project);
     }
 
     /**
@@ -80,13 +80,13 @@ class ProjectPolicy
      */
     public function manageAlerts(User $actor, Project $project): bool
     {
-        return $actor->can(PermissionEnum::CanManageAlerts->value) && $this->view($actor, $project);
+        return $this->permissions->hasPermission($actor, PermissionEnum::CanManageAlerts->value) && $this->view($actor, $project);
     }
 
     public function refreshReport(User $actor, Project $project): bool
     {
         return $project->is_system
-            && $actor->can(PermissionEnum::CanRunChecks->value)
+            && $this->permissions->hasPermission($actor, PermissionEnum::CanRunChecks->value)
             && $this->view($actor, $project);
     }
 }

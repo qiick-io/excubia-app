@@ -6,6 +6,7 @@ namespace App\Policies;
 
 use App\Enums\PermissionEnum;
 use App\Models\User;
+use App\Services\EffectivePermissionResolverService;
 
 /**
  * Permissions come from PermissionEnum, so they are only listed and re-synced, with
@@ -13,13 +14,15 @@ use App\Models\User;
  */
 class PermissionPolicy
 {
+    public function __construct(private EffectivePermissionResolverService $permissions) {}
+
     public function viewAny(User $user): bool
     {
-        return $user->can(PermissionEnum::CanShowPermissions->value);
+        return $this->permissions->hasPermission($user, PermissionEnum::CanShowPermissions->value);
     }
 
     public function sync(User $user): bool
     {
-        return $user->can(PermissionEnum::CanEditPermissions->value);
+        return $this->permissions->hasPermission($user, PermissionEnum::CanEditPermissions->value);
     }
 }

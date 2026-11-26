@@ -7,6 +7,7 @@ namespace App\Policies;
 use App\Enums\PermissionEnum;
 use App\Models\User;
 use App\Models\UserGroup;
+use App\Services\EffectivePermissionResolverService;
 use App\Services\RoleGrantService;
 
 /**
@@ -17,26 +18,29 @@ use App\Services\RoleGrantService;
  */
 class UserGroupPolicy
 {
-    public function __construct(private RoleGrantService $roleGrants) {}
+    public function __construct(
+        private RoleGrantService $roleGrants,
+        private EffectivePermissionResolverService $permissions,
+    ) {}
 
     public function viewAny(User $actor): bool
     {
-        return $actor->can(PermissionEnum::CanShowGroups->value);
+        return $this->permissions->hasPermission($actor, PermissionEnum::CanShowGroups->value);
     }
 
     public function create(User $actor): bool
     {
-        return $actor->can(PermissionEnum::CanCreateGroups->value);
+        return $this->permissions->hasPermission($actor, PermissionEnum::CanCreateGroups->value);
     }
 
     public function update(User $actor, UserGroup $group): bool
     {
-        return $actor->can(PermissionEnum::CanEditGroups->value) && $this->canTouch($actor, $group);
+        return $this->permissions->hasPermission($actor, PermissionEnum::CanEditGroups->value) && $this->canTouch($actor, $group);
     }
 
     public function delete(User $actor, UserGroup $group): bool
     {
-        return $actor->can(PermissionEnum::CanDeleteGroups->value) && $this->canTouch($actor, $group);
+        return $this->permissions->hasPermission($actor, PermissionEnum::CanDeleteGroups->value) && $this->canTouch($actor, $group);
     }
 
     /** The group carries no role the actor could not grant (super-admins pass). */

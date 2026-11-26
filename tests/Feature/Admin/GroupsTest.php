@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\UserGroup;
 use App\Services\SuperAdminGuardService;
 use Database\Seeders\PermissionSeeder;
+use Illuminate\Validation\ValidationException;
 use Inertia\Testing\AssertableInertia as Assert;
 use Spatie\Permission\Models\Role;
 
@@ -152,4 +153,20 @@ it('searches and sorts groups', function () {
             ->where('groups.data.0.name', 'operators')
             ->where('groups.data.1.name', 'auditors')
             ->where('filters', ['search' => 'operators', 'sort' => 'name', 'direction' => 'desc']));
+});
+
+it('counts only usable group super-admins when guarding the last one', function () {
+    $owner = groupMember(RoleEnum::SuperAdmin);
+    $expired = groupMember();
+    $group = groupWithRoles('owners', [RoleEnum::SuperAdmin->value], [$expired]);
+    // The resolver ignores an expired membership: that user is no super-admin any more.
+    $group->users()->updateExistingPivot($expired->id, ['expires_at' => now()->subMinute()]);
+
+    expect(app(SuperAdminGuardService::class)->isLastSuperAdmin($owner))->toBeTrue();
+
+    expect(fn () => app(SuperAdminGuardService::class)->preventLosingLastSuperAdmin(
+        fn () => $owner->removeRole(RoleEnum::SuperAdmin->value),
+    ))->toThrow(ValidationException::class);
+
+    expect($owner->fresh()->hasRole(RoleEnum::SuperAdmin->value))->toBeTrue();
 });

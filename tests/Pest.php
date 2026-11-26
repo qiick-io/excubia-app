@@ -253,3 +253,14 @@ function pendingIssuedApiKeySecret(string $sessionKey = ApiKeySecretOnceService:
 
     return $payload['secret'];
 }
+
+/** Issued tokens: product prefix, environment, 8-character id, 32-character secret, 6-character checksum (v2). */
+const EXCUBIA_TOKEN_PATTERN = '/^exc_test_[A-Za-z0-9]{8}[A-Za-z0-9]{32}[A-Za-z0-9]{6}$/D';
+
+/**
+ * The public `key_prefix` of a plain Excubia token: `exc_{live|test}_` plus the 8-character id.
+ */
+function apiKeyPrefixOf(string $plainKey): string
+{
+    return substr($plainKey, 0, strlen('exc_test_') + 8);
+}

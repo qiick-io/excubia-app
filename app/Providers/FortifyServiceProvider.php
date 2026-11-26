@@ -68,7 +68,11 @@ class FortifyServiceProvider extends ServiceProvider
                 return null;
             }
 
-            if (! app(SsoOnlyModeService::class)->canUseLocalLogin($user)) {
+            $ssoOnlyMode = app(SsoOnlyModeService::class);
+
+            // A break-glass password sign-in needs a confirmed TOTP, which Fortify then challenges:
+            // a passkey qualifies the account for the passkey login, never for a password alone.
+            if (! $ssoOnlyMode->canUseLocalLogin($user) || ($ssoOnlyMode->isActive() && ! $user->hasEnabledTwoFactorAuthentication())) {
                 throw ValidationException::withMessages([Fortify::username() => __('Password sign-in is disabled. Use single sign-on.')]);
             }
 

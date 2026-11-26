@@ -62,8 +62,9 @@ Schedule::command('outbound:webhooks:prune')->daily()->onOneServer()
 // SSO back-channel logouts (qiick/laravel-oidc): drop stored logout revocations once they expire.
 Schedule::command('oidc:prune-logout-revocations')->daily()->onOneServer();
 
-// Personal API keys (#351): warn owners seven days before expiry (the [7, 8) day window).
-Schedule::command('excubia:notify-expiring-api-keys')->daily();
+// Personal API keys (#351): warn owners once when a key enters its expiry notice window
+// (qiick/laravel-api-keys, claim-leased so overlapping runs cannot send twice).
+Schedule::command('api-keys:notify-expiring')->daily();
 
 // Queue worker heartbeat for the System page (#117); the scheduler's own is excubia-core's excubia:heartbeat.
 Schedule::job(new RecordQueueHeartbeatJob)->everyMinute();

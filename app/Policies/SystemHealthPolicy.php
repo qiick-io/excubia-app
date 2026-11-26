@@ -6,6 +6,7 @@ namespace App\Policies;
 
 use App\Enums\PermissionEnum;
 use App\Models\User;
+use App\Services\EffectivePermissionResolverService;
 
 /**
  * The System page (#117) is viewed with `can-show-system` (super-admin by default). It has no
@@ -13,8 +14,10 @@ use App\Models\User;
  */
 class SystemHealthPolicy
 {
+    public function __construct(private EffectivePermissionResolverService $permissions) {}
+
     public function viewAny(User $user): bool
     {
-        return $user->can(PermissionEnum::CanShowSystem->value);
+        return $this->permissions->hasPermission($user, PermissionEnum::CanShowSystem->value);
     }
 }
