@@ -28,6 +28,15 @@ class CompareReportsTool extends AssistantTool
         ];
     }
 
+    protected function rules(Request $request): array
+    {
+        return [
+            'project' => ['required', 'string'],
+            'from_report_id' => ['nullable', 'integer'],
+            'to_report_id' => ['nullable', 'integer'],
+        ];
+    }
+
     protected function read(AssistantQueryService $query, Request $request): ?array
     {
         return $query->compareReports(

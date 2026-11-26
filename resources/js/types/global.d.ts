@@ -19,6 +19,8 @@ declare module '@inertiajs/core' {
             availableLocales: Record<string, string>;
             sidebarOpen: boolean;
             appVersion: string;
+            /** Build ID (short commit, linked, or a build label); null without one (#425). */
+            appBuild: { id: string; url: string | null } | null;
             isAssistantEnabled: boolean;
             projectSettings: SharedProjectSettings;
             projectAppearance: ProjectAppearance;

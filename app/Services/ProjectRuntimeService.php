@@ -489,7 +489,8 @@ class ProjectRuntimeService
     {
         return $this->table($series, $dimensions, fn (Collection $group): array => [
             ...$this->totals($group),
-            'outcomes' => $group->groupBy(fn (array $one): string => $one['dimensions']['outcome'] ?? '')
+            // An object even when empty, so JSON always carries a map of outcome => count (#439).
+            'outcomes' => (object) $group->groupBy(fn (array $one): string => $one['dimensions']['outcome'] ?? '')
                 ->filter(fn (Collection $rows, string $outcome): bool => $outcome !== '')
                 ->map(fn (Collection $rows): int => $this->estimate($rows, fn (array $one): float => $one['count']))
                 ->all(),

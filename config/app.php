@@ -16,6 +16,12 @@ return [
     'name' => env('APP_NAME', 'Laravel'),
 
     /*
+    | The build ID shown under the version (#425): a commit SHA or any build label, set by
+    | whatever deploys the app. Empty falls back to the commit `excubia:record-build` recorded.
+    */
+    'build' => env('APP_BUILD'),
+
+    /*
     |--------------------------------------------------------------------------
     | Application Environment
     |--------------------------------------------------------------------------

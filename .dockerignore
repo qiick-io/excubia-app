@@ -15,6 +15,7 @@ public/build
 public/hot
 public/storage
 bootstrap/cache/*.php
+bootstrap/cache/build.json
 storage/*.key
 storage/app.key
 storage/*.sqlite

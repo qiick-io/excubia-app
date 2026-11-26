@@ -91,7 +91,8 @@
         "groups": "Gruppen",
         "settings": "Einstellungen",
         "repository": "Repository",
-        "documentation": "Dokumentation"
+        "documentation": "Dokumentation",
+        "buildCommit": "Build {{id}}: Commit öffnen"
     },
     "userMenu": {
         "settings": "Einstellungen",
@@ -123,7 +124,8 @@
         "notifications": "Benachrichtigungen",
         "notificationsUnread": "Benachrichtigungen, {{count}} ungelesen",
         "unreadCount": "{{count}} ungelesen",
-        "scrollableTable": "Scrollbare Tabelle"
+        "scrollableTable": "Scrollbare Tabelle",
+        "openTableRow": "Drücken Sie die Eingabe- oder Leertaste, um diese Zeile zu öffnen."
     },
     "auth": {
         "login": {

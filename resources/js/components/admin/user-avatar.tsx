@@ -9,19 +9,28 @@ import { avatarToneClass } from '@/lib/avatar-tone';
 import type { RecordId } from '@/lib/record-id';
 import { cn } from '@/lib/utils';
 
+const initialsSegmenter = new Intl.Segmenter(undefined, {
+    granularity: 'grapheme',
+});
+
+function firstGrapheme(word: string): string {
+    return initialsSegmenter.segment(word).containing(0)?.segment ?? '';
+}
+
 /**
- * Two-letter initials from a display name (first + last word), one letter for
- * a single word, else the first letter of `fallback` (an email, say).
+ * The first grapheme of the first and last words of a display name, or the
+ * first grapheme of `fallback` when the name is blank. Keep emoji sequences
+ * and combining marks intact.
  */
 export function getInitials(name: string, fallback = ''): string {
     const words = name.trim().split(/\s+/).filter(Boolean);
 
     if (words.length === 0) {
-        return fallback.trim().charAt(0).toUpperCase();
+        return firstGrapheme(fallback.trim()).toUpperCase();
     }
 
-    const first = words[0].charAt(0);
-    const last = words.length > 1 ? words[words.length - 1].charAt(0) : '';
+    const first = firstGrapheme(words[0]);
+    const last = words.length > 1 ? firstGrapheme(words[words.length - 1]) : '';
 
     return `${first}${last}`.toUpperCase();
 }
