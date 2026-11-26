@@ -4660,16 +4660,16 @@
         },
         {
             "name": "qiick/laravel-oidc",
-            "version": "v1.0.0-beta.7",
+            "version": "v1.0.0-beta.8",
             "source": {
                 "type": "git",
                 "url": "https://github.com/qiick-io/laravel-oidc.git",
-                "reference": "77ee6a2a90561fab469b2397ee82d6ecc67bb676"
+                "reference": "13a80f7568cbb3b341dba5f349e9218e2d6249c7"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/qiick-io/laravel-oidc/zipball/77ee6a2a90561fab469b2397ee82d6ecc67bb676",
-                "reference": "77ee6a2a90561fab469b2397ee82d6ecc67bb676",
+                "url": "https://api.github.com/repos/qiick-io/laravel-oidc/zipball/13a80f7568cbb3b341dba5f349e9218e2d6249c7",
+                "reference": "13a80f7568cbb3b341dba5f349e9218e2d6249c7",
                 "shasum": ""
             },
             "require": {
@@ -4730,8 +4730,8 @@
                 "issues": "https://github.com/qiick-io/laravel-oidc/issues",
                 "source": "https://github.com/qiick-io/laravel-oidc"
             },
-            "time": "2026-11-25T18:41:55+00:00",
-            "published-time": "2026-11-25T18:42:26+00:00"
+            "time": "2026-11-26T14:45:31+00:00",
+            "published-time": "2026-11-26T14:47:31+00:00"
         },
         {
             "name": "qiick/laravel-outbound",

@@ -50,8 +50,9 @@ Schedule::command('excubia:evaluate-runtime-alerts')->everyFifteenMinutes()->wit
 // Weekly email digest (#114) for the users who turned it on.
 Schedule::command('excubia:send-digests')->weeklyOn(1, '08:00');
 
-// SSO back-channel logouts (qiick/laravel-oidc): drop stored logout revocations once they expire.
-Schedule::command('oidc:prune-logout-revocations')->daily()->onOneServer();
+// SSO back-channel logouts (qiick/laravel-oidc): drop stored logout revocations once they expire
+// (hourly, as oidc 1.0.0-beta.8 asks; the retention ceiling is oidc.backchannel_logout.max_retention_seconds).
+Schedule::command('oidc:prune-logout-revocations')->hourly()->onOneServer();
 
 // Personal API keys (#351): warn owners once when a key enters its expiry notice window
 // (qiick/laravel-api-keys, claim-leased so overlapping runs cannot send twice).
