@@ -8,6 +8,7 @@ use App\Enums\SeverityEnum;
 use App\Models\ExceptionGroup;
 use App\Models\Project;
 use App\Models\User;
+use App\Services\SetupTokenService;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Auth\Middleware\RequirePassword;
 use Illuminate\Support\Str;
@@ -189,7 +190,7 @@ function seededVisualProject(): Project
 
 it('screenshots the guest pages', function () {
     // The first-run wizard needs a fresh install without users (#116).
-    screenshotEverywhere('setup-admin', '/setup');
+    screenshotEverywhere('setup-admin', '/setup?token='.app(SetupTokenService::class)->issue());
 
     $admin = User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value);
     screenshotEverywhere('login', '/login');

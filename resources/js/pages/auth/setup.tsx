@@ -20,7 +20,8 @@ import { store as storeProject } from '@/routes/setup/project';
 import type { PushTokenFlash } from '@/types';
 
 type Props =
-    | { step: 'admin'; passwordRules: string }
+    | { step: 'locked' }
+    | { step: 'admin'; setupToken: string; passwordRules: string }
     | { step: 'project' }
     | { step: 'done'; pushToken: PushTokenFlash };
 
@@ -43,7 +44,7 @@ const CRON_LINE =
  */
 export default function Setup(props: Props) {
     const { t } = useTranslation();
-    const stepNumber = { admin: 1, project: 2, done: 3 }[props.step];
+    const stepNumber = { locked: 1, admin: 1, project: 2, done: 3 }[props.step];
 
     return (
         <AuthLayout
@@ -51,8 +52,16 @@ export default function Setup(props: Props) {
             description={t('auth.setup.stepOf', { step: stepNumber, total: 3 })}
         >
             <Head title={t('auth.setup.head')} />
+            {props.step === 'locked' && (
+                <p className="text-sm text-muted-foreground">
+                    {t('auth.setup.locked.description')}
+                </p>
+            )}
             {props.step === 'admin' && (
-                <AdminStep passwordRules={props.passwordRules} />
+                <AdminStep
+                    setupToken={props.setupToken}
+                    passwordRules={props.passwordRules}
+                />
             )}
             {props.step === 'project' && <ProjectStep />}
             {props.step === 'done' && <DoneStep pushToken={props.pushToken} />}
@@ -61,9 +70,16 @@ export default function Setup(props: Props) {
 }
 
 /**
- * Step 1: the first account, created as super-admin and logged in.
+ * Step 1: the first account, created as super-admin and logged in. The one-time setup link's
+ * token rides along: the server creates the account only for its holder.
  */
-function AdminStep({ passwordRules }: { passwordRules: string }) {
+function AdminStep({
+    setupToken,
+    passwordRules,
+}: {
+    setupToken: string;
+    passwordRules: string;
+}) {
     const { t } = useTranslation();
 
     return (
@@ -74,6 +90,11 @@ function AdminStep({ passwordRules }: { passwordRules: string }) {
         >
             {({ processing, errors }) => (
                 <FieldGroup className="gap-6">
+                    <input
+                        type="hidden"
+                        name="setup_token"
+                        value={setupToken}
+                    />
                     <p className="text-sm text-muted-foreground">
                         {t('auth.setup.admin.description')}
                     </p>

@@ -6,6 +6,7 @@ namespace App\Actions;
 
 use App\Enums\RoleEnum;
 use App\Models\User;
+use App\Services\SetupTokenService;
 use Illuminate\Support\Facades\Cache;
 
 /**
@@ -19,6 +20,7 @@ class CreateFirstAdminAction
     public function __construct(
         private SyncPermissionsAction $syncPermissions,
         private CreateUserAction $createUser,
+        private SetupTokenService $setupTokens,
     ) {}
 
     /**
@@ -32,8 +34,11 @@ class CreateFirstAdminAction
             }
 
             $this->syncPermissions->execute();
+            $user = $this->createUser->execute($firstName, $lastName, $email, null, $password, [RoleEnum::SuperAdmin->value]);
+            // The setup link works once.
+            $this->setupTokens->consume();
 
-            return $this->createUser->execute($firstName, $lastName, $email, null, $password, [RoleEnum::SuperAdmin->value]);
+            return $user;
         });
     }
 }

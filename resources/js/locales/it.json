@@ -192,6 +192,10 @@
                 "description": "Questa installazione non ha account. Crea il primo amministratore per iniziare.",
                 "link": "Configura Excubia"
             },
+            "locked": {
+                "title": "Apri il link di configurazione",
+                "description": "Questa installazione non ha ancora un account. Sul server esegui php artisan excubia:setup-link e apri il link che stampa: crea il primo admin, funziona una sola volta e scade dopo un'ora."
+            },
             "admin": {
                 "title": "Crea l’account amministratore",
                 "description": "Questo account diventa il super-admin dell’installazione. Non c’è registrazione pubblica: aggiungi altri utenti più tardi in Utenti.",

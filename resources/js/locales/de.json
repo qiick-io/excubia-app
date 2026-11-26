@@ -192,6 +192,10 @@
                 "description": "Diese Installation hat noch kein Konto. Lege den ersten Admin an, um zu beginnen.",
                 "link": "Excubia einrichten"
             },
+            "locked": {
+                "title": "Einrichtungslink öffnen",
+                "description": "Diese Installation hat noch kein Konto. Führe auf dem Server php artisan excubia:setup-link aus und öffne den ausgegebenen Link: Er legt den ersten Admin an, funktioniert einmal und läuft nach einer Stunde ab."
+            },
             "admin": {
                 "title": "Admin-Konto anlegen",
                 "description": "Dieses Konto wird Super-Admin dieser Installation. Es gibt keine öffentliche Registrierung: Weitere Benutzer fügst du später unter Benutzer hinzu.",

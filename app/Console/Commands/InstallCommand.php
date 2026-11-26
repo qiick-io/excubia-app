@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use App\Console\Concerns\ManagesDotEnvTrait;
+use App\Services\SetupTokenService;
 use Illuminate\Console\Command;
 use Illuminate\Encryption\Encrypter;
 use Illuminate\Support\Facades\DB;
@@ -159,7 +160,7 @@ class InstallCommand extends Command
 
         $this->newLine();
         $this->info('Install complete.');
-        $this->line('Next: open '.rtrim($appUrl, '/').'/setup to create the first admin and project.');
+        $this->line('Next: open '.rtrim($appUrl, '/').'/setup?token='.app(SetupTokenService::class)->issue().' to create the first admin and project (the link works once, for an hour; php artisan excubia:setup-link prints a new one).');
         $this->line('Run the scheduler and a queue worker: docs/self-hosting.md');
 
         return self::SUCCESS;
