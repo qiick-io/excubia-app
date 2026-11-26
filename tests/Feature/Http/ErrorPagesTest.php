@@ -15,7 +15,8 @@ use Inertia\Testing\AssertableInertia;
 beforeEach(function (): void {
     $this->seed(PermissionSeeder::class);
 
-    Route::middleware('web')->get('/__error/{status}', fn (int $status) => abort($status));
+    Route::middleware('web')->get('/__error/{status}', fn (int $status) => abort($status, headers: $status === 503 ? ['Retry-After' => '60'] : []));
+    Route::middleware('web')->post('/__error/{status}', fn (int $status) => abort($status));
 });
 
 it('renders the error page with the shared props for each status', function (int $status) {
@@ -62,8 +63,22 @@ it('keeps the debug page for a 500 in debug mode', function () {
         ->and($this->get('/__error/500')->getContent())->not->toContain('errors/error-page');
 });
 
-it('sends an expired session back with a toast', function () {
+it('sends an expired session back with a toast, never to a foreign page', function () {
     $this->actingAs(User::factory()->create());
 
-    $this->from('/dashboard')->get('/__error/419')->assertRedirect('/dashboard');
+    $this->from('/projects')->post('/__error/419')->assertRedirect('/projects');
+    $this->from('https://evil.example/phish')->post('/__error/419')->assertRedirect(route('dashboard'));
+});
+
+it('sends a failed action back to its page instead of rendering the action URL', function () {
+    config(['app.debug' => false]);
+    $this->actingAs(User::factory()->create());
+
+    $this->from('/projects')->post('/__error/500')->assertRedirect('/projects');
+});
+
+it('keeps the Retry-After header of a 503 and varies on X-Inertia', function () {
+    $this->actingAs(User::factory()->create());
+
+    $this->get('/__error/503')->assertStatus(503)->assertHeader('Retry-After', '60')->assertHeader('Vary', 'X-Inertia');
 });

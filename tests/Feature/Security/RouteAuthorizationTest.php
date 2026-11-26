@@ -201,10 +201,15 @@ it('walks every named route as a reader without reading the hidden project or ch
         $url = hiddenTargetUrl($entry, $this->hidden);
         $response = $this->actingAs($reader)->call($entry['method'], $url, $entry['method'] === 'GET' ? [] : plausibleBody($this->alert));
         $status = $response->getStatusCode();
-        // The error page's Inertia `url` echoes the path the reader typed (#423). Remove exactly that
-        // one value; the slug or name anywhere else (props, title, links) still fails below.
-        $echoedUrl = '"url":'.json_encode(parse_url($url, PHP_URL_PATH));
-        $content = preg_replace('/'.preg_quote($echoedUrl, '/').'/', '"url":""', (string) $response->getContent(), 1);
+        // The error page's top-level Inertia `url` echoes the path the reader typed (#423). On that
+        // page only, remove exactly that one value; the slug or name anywhere else (props, title,
+        // links) still fails below.
+        $content = (string) $response->getContent();
+
+        if (str_contains($content, '"component":"errors\\/error-page"')) {
+            $echoedUrl = '"url":'.json_encode(parse_url($url, PHP_URL_PATH)).',"version":';
+            $content = preg_replace('/'.preg_quote($echoedUrl, '/').'/', '"url":"","version":', $content, 1);
+        }
         $label = "{$entry['method']} {$entry['name']} ({$url}) → {$status}";
 
         if ($entry['method'] !== 'GET' && ! in_array($status, [403, 404], true)) {

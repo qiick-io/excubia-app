@@ -64,8 +64,11 @@ function DrawerContent({
                 className,
             )}
             onOpenAutoFocus={(event) => {
+                // <body> (Safari does not focus clicked buttons) is no opener: Radix's own
+                // DrawerTrigger return stays in charge then.
+                const opener = document.activeElement;
                 returnFocusRef.current =
-                    document.activeElement instanceof HTMLElement ? document.activeElement : null;
+                    opener instanceof HTMLElement && opener !== document.body ? opener : null;
                 onOpenAutoFocus?.(event);
 
                 if (event.defaultPrevented) {
