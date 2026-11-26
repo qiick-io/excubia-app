@@ -11,6 +11,7 @@ use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
+use Qiick\Access\Rules\ExclusiveSuperAdminRoleRule;
 use Spatie\Permission\Models\Role;
 
 /**
@@ -84,7 +85,8 @@ class StoreUserRequest extends FormRequest
     protected function roleRules(): array
     {
         return [
-            'roles' => ['required', 'array', 'min:1'],
+            // Super-admin stands alone; other roles combine (decision 2026-11-26).
+            'roles' => ['required', 'array', 'min:1', new ExclusiveSuperAdminRoleRule],
             'roles.*' => ['string', 'distinct', Rule::in(self::assignableRolesFor($this->user()))],
         ];
     }

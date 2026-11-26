@@ -26,7 +26,7 @@ use Qiick\Access\Principals\DeactivationReason;
 /**
  * What adopting qiick/laravel-access adds to Excubia's authorization (docs/adoption-plan.md §2):
  * an API key never carries the super-admin or permission pass of Gate::before, its owner
- * ceiling counts only assigned permissions, principals follow the package lifecycle, and
+ * ceiling counts assigned permissions (every PermissionEnum case for a super-admin), principals follow the package lifecycle, and
  * Excubia's groups are instance groups.
  */
 beforeEach(function () {
@@ -49,20 +49,35 @@ it('gives a super-admin web session every permission ability', function () {
     expect($superAdmin->can(PermissionEnum::CanShowSystem->value))->toBeTrue();
 });
 
-it('never gives a key the super-admin pass, only what its owner is assigned', function () {
-    $owner = User::factory()->create()->assignRole([RoleEnum::SuperAdmin->value, RoleEnum::Admin->value]);
+it('limits a key to what its owner is assigned', function () {
+    $owner = User::factory()->create()->assignRole(RoleEnum::Admin->value);
     $plainKey = accessKeyFor($owner);
 
-    // Admin is assigned can-show-projects but not can-show-system, which only super-admin grants.
+    // Admin is assigned can-show-projects but not can-show-system.
     $this->withToken($plainKey)->getJson('/__test/access-gate')
         ->assertOk()
         ->assertJsonPath('can_show_system', false)
         ->assertJsonPath('can_view_projects', true);
 });
 
-it('refuses the key of a super-admin whose can-use-ai comes only from the super-admin role', function () {
+it('gives the key of a super-admin alone every permission, never the super-admin pass', function () {
+    // Decision 2026-11-26: a super-admin's key ceiling is every PermissionEnum case.
     $owner = User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value);
     $plainKey = accessKeyFor($owner);
+    Route::middleware(AuthenticateApiKeyMiddleware::class.':mcp:read')
+        ->get('/__test/access-undefined', fn () => response()->json(['allowed' => Gate::allows('not-a-permission')]));
+
+    // Policies see the permissions; a Gate ability by name stays closed to keys.
+    $this->withToken($plainKey)->getJson('/__test/access-gate')
+        ->assertOk()
+        ->assertJsonPath('can_show_system', false)
+        ->assertJsonPath('can_view_projects', true);
+    $this->withToken($plainKey)->getJson('/__test/access-undefined')
+        ->assertOk()
+        ->assertJsonPath('allowed', false);
+
+    // Demoted: the next request reads the ceiling fresh.
+    $owner->syncRoles([RoleEnum::Reader->value]);
 
     $this->withToken($plainKey)->getJson('/__test/access-gate')
         ->assertForbidden()

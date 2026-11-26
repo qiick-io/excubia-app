@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "ee0ed79b4a006ad7a79ffb46df00c031",
+    "content-hash": "6f9d09725e0f90db8050c8d88e428358",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -4517,16 +4517,16 @@
         },
         {
             "name": "qiick/laravel-access",
-            "version": "v0.1.0-beta.2",
+            "version": "dev-feat/57-super-admin-key-ceiling",
             "source": {
                 "type": "git",
                 "url": "https://github.com/qiick-io/laravel-access.git",
-                "reference": "33ea9221d2c3836187d6513bf0628edc45ca6930"
+                "reference": "7f5460826a1ca8d23844516a9ac4a2f932ad8e25"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/qiick-io/laravel-access/zipball/33ea9221d2c3836187d6513bf0628edc45ca6930",
-                "reference": "33ea9221d2c3836187d6513bf0628edc45ca6930",
+                "url": "https://api.github.com/repos/qiick-io/laravel-access/zipball/7f5460826a1ca8d23844516a9ac4a2f932ad8e25",
+                "reference": "7f5460826a1ca8d23844516a9ac4a2f932ad8e25",
                 "shasum": ""
             },
             "require": {
@@ -4584,8 +4584,8 @@
                 "issues": "https://github.com/qiick-io/laravel-access/issues",
                 "source": "https://github.com/qiick-io/laravel-access"
             },
-            "time": "2026-11-26T13:21:08+00:00",
-            "published-time": "2026-11-26T13:21:36+00:00"
+            "time": "2026-11-26T20:43:31+00:00",
+            "published-time": "2026-11-26T20:43:36+00:00"
         },
         {
             "name": "qiick/laravel-api-keys",
@@ -14225,11 +14225,18 @@
             "time": "2026-02-17T17:25:14+00:00"
         }
     ],
-    "aliases": [],
+    "aliases": [
+        {
+            "package": "qiick/laravel-access",
+            "version": "dev-feat/57-super-admin-key-ceiling",
+            "alias": "0.1.0-beta.3",
+            "alias_normalized": "0.1.0.0-beta3"
+        }
+    ],
     "minimum-stability": "stable",
     "stability-flags": {
         "qiick/excubia-core": 10,
-        "qiick/laravel-access": 10,
+        "qiick/laravel-access": 20,
         "qiick/laravel-api-keys": 10,
         "qiick/laravel-oidc": 10,
         "qiick/laravel-outbound": 10

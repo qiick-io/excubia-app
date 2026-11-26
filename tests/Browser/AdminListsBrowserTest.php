@@ -31,6 +31,21 @@ it('sorts the users list from the column header', function () {
         ->assertNoJavaScriptErrors();
 });
 
+it('keeps super-admin exclusive in the user form role picker', function (string $scheme) {
+    $this->actingAs(User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value));
+
+    visitA11y(route('users.index', absolute: false), $scheme)
+        ->click('New user')
+        ->assertSee('Permissions from every selected role add up.')
+        ->click('[id$="-role-admin"]')
+        ->assertAttribute('[id$="-role-admin"]', 'aria-checked', 'true')
+        ->click('[id$="-role-super-admin"]')
+        ->assertAttribute('[id$="-role-admin"]', 'aria-checked', 'false')
+        ->assertDisabled('[id$="-role-admin"]')
+        ->assertDisabled('[id$="-role-reader"]')
+        ->assertNoJavaScriptErrors();
+})->with(['light', 'dark']);
+
 it('expands an activity log row with its details', function () {
     $admin = User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value);
     activity()->causedBy($admin)->log('Browser check');
