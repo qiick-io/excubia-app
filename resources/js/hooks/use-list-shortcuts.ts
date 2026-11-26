@@ -1,6 +1,11 @@
 import { useState } from 'react';
+import type { FocusEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useShortcut } from '@/components/keyboard-shortcuts';
+
+/** Elements whose own Enter behaviour wins over "open the active row". */
+const CONTROL_SELECTOR =
+    'a[href], button, [role="button"], [role="menuitem"], [role="checkbox"], summary';
 
 type ListAction<TRow> = {
     /** One letter (`e`, `a`). */
@@ -58,9 +63,46 @@ export function useListShortcuts<TRow>({
 
         const id = getRowId(row);
         setActiveId(id);
-        document
-            .querySelector(`[data-list-row-id="${CSS.escape(id)}"]`)
-            ?.scrollIntoView({ block: 'nearest' });
+        const element = document.querySelector<HTMLElement>(
+            `[data-list-row-id="${CSS.escape(id)}"]`,
+        );
+        element?.scrollIntoView({ block: 'nearest' });
+
+        // A row the table opens itself (DataTable `onRowClick`) is focusable: move focus with
+        // the active row, so Tab, Enter and the letter keys all act on the same row (#424).
+        if (element !== null && element.tabIndex >= 0) {
+            element.focus({ preventScroll: true });
+        }
+    };
+
+    /**
+     * Enter opens the active row, except where Enter already means something: on a focused
+     * control it activates that control (the shortcut provider prevented the native press), and
+     * on a focused row the table has opened it already.
+     */
+    const handleEnter = (): void => {
+        const focused = document.activeElement;
+
+        if (
+            focused instanceof HTMLElement &&
+            focused.matches(CONTROL_SELECTOR)
+        ) {
+            focused.click();
+
+            return;
+        }
+
+        if (
+            focused instanceof HTMLElement &&
+            focused.dataset.listRowId !== undefined &&
+            focused.tabIndex >= 0
+        ) {
+            return;
+        }
+
+        if (activeRow !== null) {
+            onOpen(activeRow);
+        }
     };
 
     useShortcut({
@@ -82,7 +124,7 @@ export function useListShortcuts<TRow>({
         description: t('listShortcuts.open'),
         group,
         isEnabled: isListEnabled && activeRow !== null,
-        handler: () => activeRow !== null && onOpen(activeRow),
+        handler: handleEnter,
     });
     useShortcut({
         keys: 'x',
@@ -124,6 +166,13 @@ export function useListShortcuts<TRow>({
 
             return {
                 'data-list-row-id': id,
+                // Tab onto a row makes it the active one, so `x` and the actions follow focus.
+                // Only the row itself: focus moving to a control inside it changes nothing.
+                onFocus: (event: FocusEvent<HTMLElement>) => {
+                    if (event.target === event.currentTarget) {
+                        setActiveId(id);
+                    }
+                },
                 'data-active': isActive ? 'true' : undefined,
                 'aria-current': isActive ? ('true' as const) : undefined,
                 // An outline on the active row: the selection keeps its own background.

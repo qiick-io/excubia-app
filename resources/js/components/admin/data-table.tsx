@@ -6,14 +6,18 @@ import {
 import type {
     ColumnDef,
     OnChangeFn,
-    Row,
     RowData,
     RowSelectionState,
     SortingState,
 } from '@tanstack/react-table';
 import { ChevronDown, ChevronRight } from 'lucide-react';
-import { Fragment } from 'react';
-import type { HTMLAttributes, ReactNode } from 'react';
+import { Fragment, useId, useRef } from 'react';
+import type {
+    FocusEvent,
+    HTMLAttributes,
+    KeyboardEvent,
+    ReactNode,
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import {
     TablePaginationFooter,
@@ -68,7 +72,7 @@ export type DataTableProps<TData> = {
     onRowSelectionChange?: OnChangeFn<RowSelectionState>;
     /** Server paginator; renders the shared pagination footer when it is needed. */
     pagination?: TablePaginationState;
-    /** Opens a row (edit drawer, detail page). */
+    /** Opens a row by click or by pressing Enter or Space on the focused row. */
     onRowClick?: (row: TData) => void;
     /** Extra props per `<tr>` (`data-test`, classes). */
     getRowProps?: (row: TData) => HTMLAttributes<HTMLTableRowElement> & {
@@ -109,6 +113,8 @@ export function DataTable<TData>({
     className,
 }: DataTableProps<TData>) {
     const { t } = useTranslation();
+    const rowActionHintId = useId();
+    const spacePressedRow = useRef<HTMLTableRowElement>(null);
     const sorting: SortingState = sort
         ? [{ id: sort.id, desc: sort.direction === 'desc' }]
         : [];
@@ -152,10 +158,6 @@ export function DataTable<TData>({
         onRowSelectionChange,
     });
 
-    const handleRowClick = (row: Row<TData>): void => {
-        onRowClick?.(row.original);
-    };
-
     return (
         <TablePanel
             className={className}
@@ -165,6 +167,13 @@ export function DataTable<TData>({
                 ) : undefined
             }
         >
+            {onRowClick ? (
+                <span id={rowActionHintId} hidden>
+                    {t('a11y.openTableRow', {
+                        defaultValue: 'Press Enter or Space to open this row.',
+                    })}
+                </span>
+            ) : null}
             <Table>
                 <TableHeader>
                     {table.getHeaderGroups().map((headerGroup) => (
@@ -193,6 +202,68 @@ export function DataTable<TData>({
                     {table.getRowModel().rows.length > 0 ? (
                         table.getRowModel().rows.map((row) => {
                             const rowProps = getRowProps?.(row.original);
+                            const openRow = onRowClick
+                                ? () => onRowClick(row.original)
+                                : undefined;
+
+                            function handleRowKey(
+                                event: KeyboardEvent<HTMLTableRowElement>,
+                            ): void {
+                                const isKeyDown = event.type === 'keydown';
+                                const handleConsumerKey = isKeyDown
+                                    ? rowProps?.onKeyDown
+                                    : rowProps?.onKeyUp;
+                                handleConsumerKey?.(event);
+
+                                const isSpaceRelease =
+                                    !isKeyDown && event.key === ' ';
+                                const hasSpacePress =
+                                    spacePressedRow.current ===
+                                    event.currentTarget;
+
+                                if (isSpaceRelease && hasSpacePress) {
+                                    spacePressedRow.current = null;
+                                }
+
+                                if (
+                                    event.defaultPrevented ||
+                                    event.target !== event.currentTarget
+                                ) {
+                                    return;
+                                }
+
+                                // Stop Space from scrolling on press and activate on release.
+                                if (isKeyDown && event.key === ' ') {
+                                    event.preventDefault();
+
+                                    if (!event.repeat) {
+                                        spacePressedRow.current =
+                                            event.currentTarget;
+                                    }
+                                }
+
+                                if (
+                                    (isKeyDown &&
+                                        event.key === 'Enter' &&
+                                        !event.repeat) ||
+                                    (isSpaceRelease && hasSpacePress)
+                                ) {
+                                    openRow?.();
+                                }
+                            }
+
+                            function handleRowBlur(
+                                event: FocusEvent<HTMLTableRowElement>,
+                            ): void {
+                                if (
+                                    spacePressedRow.current ===
+                                    event.currentTarget
+                                ) {
+                                    spacePressedRow.current = null;
+                                }
+
+                                rowProps?.onBlur?.(event);
+                            }
 
                             return (
                                 <Fragment key={row.id}>
@@ -202,15 +273,43 @@ export function DataTable<TData>({
                                                 ? 'selected'
                                                 : undefined
                                         }
+                                        tabIndex={openRow ? 0 : undefined}
+                                        aria-keyshortcuts={
+                                            openRow ? 'Enter Space' : undefined
+                                        }
                                         {...rowProps}
+                                        aria-describedby={
+                                            openRow
+                                                ? [
+                                                      rowProps?.[
+                                                          'aria-describedby'
+                                                      ],
+                                                      rowActionHintId,
+                                                  ]
+                                                      .filter(Boolean)
+                                                      .join(' ')
+                                                : rowProps?.['aria-describedby']
+                                        }
                                         className={cn(
-                                            onRowClick && 'cursor-pointer',
+                                            openRow &&
+                                                'cursor-pointer focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring',
                                             rowProps?.className,
                                         )}
-                                        onClick={
-                                            onRowClick
-                                                ? () => handleRowClick(row)
-                                                : undefined
+                                        onClick={openRow}
+                                        onKeyDown={
+                                            openRow
+                                                ? handleRowKey
+                                                : rowProps?.onKeyDown
+                                        }
+                                        onKeyUp={
+                                            openRow
+                                                ? handleRowKey
+                                                : rowProps?.onKeyUp
+                                        }
+                                        onBlur={
+                                            openRow
+                                                ? handleRowBlur
+                                                : rowProps?.onBlur
                                         }
                                     >
                                         {row.getVisibleCells().map((cell) => {
