@@ -125,7 +125,8 @@
         "notifications": "Notifications",
         "notificationsUnread": "Notifications, {{count}} unread",
         "unreadCount": "{{count}} unread",
-        "scrollableTable": "Scrollable table"
+        "scrollableTable": "Scrollable table",
+        "openTableRow": "Press Enter or Space to open this row."
     },
     "auth": {
         "login": {

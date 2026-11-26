@@ -80,3 +80,15 @@ it('creates a project group with the project picker and narrows the dashboard to
         ->assertSee('All projects (1)')
         ->assertNoJavaScriptErrors();
 });
+
+it('opens a user from the keyboard: the row takes focus and Enter opens it', function () {
+    $this->actingAs(User::factory()->create(['first_name' => 'Zed', 'last_name' => 'Admin'])->assignRole(RoleEnum::SuperAdmin->value));
+    User::factory()->create(['first_name' => 'Ada', 'last_name' => 'Lovelace']);
+
+    // #424: rows opened only with a mouse click; the registry DataTable (app-ui #268) makes them focusable.
+    $page = visit(route('users.index', absolute: false));
+    $page->script("() => [...document.querySelectorAll('tbody tr')].find((row) => row.innerText.includes('Ada Lovelace')).focus()");
+    $page->keys('tbody tr:focus', 'Enter')
+        ->assertVisible('[role="dialog"]')
+        ->assertNoJavaScriptErrors();
+});

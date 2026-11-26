@@ -39,3 +39,20 @@ it('opens a group from its link and resolves the selection in bulk', function (s
 
     expect($group->fresh()->status->value)->toBe('resolved');
 })->with(['light', 'dark']);
+
+it('opens an exception from the keyboard: Tab reaches the row and Enter opens it', function () {
+    $this->actingAs(User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value));
+    $project = seededA11yProject();
+    $group = ExceptionGroup::query()->where('project_id', $project->id)->firstOrFail();
+
+    // #424: the row was mouse-only; now it is in the tab order and opens with Enter.
+    $page = visit(route('projects.view', [$project->slug, 'exceptions'], false));
+
+    expect($page->script("() => document.querySelector('tbody tr')?.tabIndex"))->toBe(0);
+
+    $page->script("() => document.querySelector('tbody tr').focus()");
+    $page->keys('tbody tr:focus', 'Enter')
+        ->assertVisible('[role="dialog"]')
+        ->assertSee($group->class)
+        ->assertNoJavaScriptErrors();
+});

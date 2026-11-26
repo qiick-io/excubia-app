@@ -243,6 +243,7 @@ export function CommandPalette({
             onOpenChange={onOpenChange}
             title={t('commandPalette.title')}
             description={t('commandPalette.description')}
+            inputLabel={t('commandPalette.placeholder')}
             className="sm:max-w-xl"
         >
             <CommandInput

@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
+use Symfony\Component\Yaml\Yaml;
 
 /**
  * Executes one fleet conformance check against the product's migrated database
@@ -30,7 +31,7 @@ final class ConformanceRunner
     ) {}
 
     /**
-     * @param array{id: string, tag: string, description: string, decision: string, engines?: list<string>} $check
+     * @param  array{id: string, tag: string, description: string, decision: string, engines?: list<string>}  $check
      */
     public function run(array $check): void
     {
@@ -40,7 +41,7 @@ final class ConformanceRunner
     }
 
     /**
-     * @param array{id: string, tag: string, description: string, decision: string, engines?: list<string>} $check
+     * @param  array{id: string, tag: string, description: string, decision: string, engines?: list<string>}  $check
      */
     private function runIsolated(array $check): void
     {
@@ -656,7 +657,7 @@ final class ConformanceRunner
 
         if ($teamKey !== 'organisation_id') {
             throw new \RuntimeException(
-                "permission team_foreign_key must be organisation_id, got ".(is_scalar($teamKey) ? (string) $teamKey : 'null').'.',
+                'permission team_foreign_key must be organisation_id, got '.(is_scalar($teamKey) ? (string) $teamKey : 'null').'.',
             );
         }
     }
@@ -1124,7 +1125,7 @@ final class ConformanceRunner
     }
 
     /**
-     * @param list<string> $typeNeedles
+     * @param  list<string>  $typeNeedles
      */
     private function assertSpatieColumnType(string $table, string $column, array $typeNeedles): void
     {
@@ -1299,9 +1300,9 @@ final class ConformanceRunner
             return $decoded;
         }
 
-        if (class_exists(\Symfony\Component\Yaml\Yaml::class)) {
+        if (class_exists(Yaml::class)) {
             /** @var array<string, mixed>|null $parsed */
-            $parsed = \Symfony\Component\Yaml\Yaml::parse($content);
+            $parsed = Yaml::parse($content);
 
             return is_array($parsed) ? $parsed : [];
         }

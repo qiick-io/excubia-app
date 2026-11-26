@@ -125,7 +125,8 @@
         "notifications": "Benachrichtigungen",
         "notificationsUnread": "Benachrichtigungen, {{count}} ungelesen",
         "unreadCount": "{{count}} ungelesen",
-        "scrollableTable": "Scrollbare Tabelle"
+        "scrollableTable": "Scrollbare Tabelle",
+        "openTableRow": "Drücken Sie die Eingabe- oder Leertaste, um diese Zeile zu öffnen."
     },
     "auth": {
         "login": {
