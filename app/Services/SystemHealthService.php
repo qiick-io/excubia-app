@@ -42,6 +42,9 @@ class SystemHealthService
     /** The excubia-core constraint this app accepts (`docs/compatibility.md`), as the first-run wizard shows. */
     public const CORE_CONSTRAINT = '^1.0@beta';
 
+    /** Where the sidebar's build ID links to (#425). */
+    private const UPSTREAM_COMMIT_URL = 'https://github.com/qiick-io/excubia-app/commit/';
+
     /** A heartbeat older than this means the scheduler or the queue worker stopped. */
     private const HEARTBEAT_MINUTES = 5;
 
@@ -93,6 +96,60 @@ class SystemHealthService
 
             return is_array($composer) && is_string($composer['version'] ?? null) ? $composer['version'] : 'dev';
         });
+    }
+
+    /**
+     * The build ID under the version in the sidebar (#425), from the first source that has one:
+     *
+     * 1. `APP_BUILD` (`app.build`), set by whatever deploys the app: CI, a Docker build arg, a
+     *    deploy script. Any string; a commit SHA is shortened and linked.
+     * 2. The commit `excubia:record-build` wrote at build time (Composer runs it after every
+     *    install), so a host that builds from a git checkout needs no extra step even when it
+     *    removes `.git` before the app runs.
+     *
+     * Null when neither has one: the sidebar shows only the version. docs/self-hosting.md
+     * documents it.
+     *
+     * @param  string|null  $build  the build to describe, by default the configured or recorded one
+     * @return array{id: string, url: string|null}|null
+     */
+    public static function appBuild(?string $build = null): ?array
+    {
+        $build ??= self::configuredOrRecordedBuild();
+
+        if ($build === null) {
+            return null;
+        }
+
+        if (preg_match('/^[0-9a-f]{7,40}$/', $build) === 1) {
+            return ['id' => substr($build, 0, 7), 'url' => self::UPSTREAM_COMMIT_URL.$build];
+        }
+
+        return ['id' => mb_substr($build, 0, 40), 'url' => null];
+    }
+
+    /**
+     * Where `excubia:record-build` writes the build commit and time.
+     */
+    public static function buildFile(): string
+    {
+        return base_path('bootstrap/cache/build.json');
+    }
+
+    private static function configuredOrRecordedBuild(): ?string
+    {
+        $configuredBuild = config('app.build');
+
+        if (is_string($configuredBuild) && trim($configuredBuild) !== '') {
+            return trim($configuredBuild);
+        }
+
+        // Best effort: an unreadable or broken file shows no build ID, never an error page.
+        $recordedBuild = is_file(self::buildFile()) && is_readable(self::buildFile())
+            ? json_decode((string) file_get_contents(self::buildFile()), true)
+            : null;
+
+        return is_array($recordedBuild) && is_string($recordedBuild['commit'] ?? null) ? $recordedBuild['commit'] : null;
     }
 
     /**
