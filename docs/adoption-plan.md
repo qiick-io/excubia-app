@@ -449,24 +449,33 @@ For the maintainer, after the group's last merge is deployed:
        `php artisan migrate --force` on the empty database and the permission and system project
        seeders.
     5. With the bypass (`{APP_URL}/<random>`, which sets the bypass cookie), run
-       `php artisan excubia:setup-link` and open the link it prints: `/setup` creates the first
+       `php artisan excubia:setup-link` and open the `…/setup#token=…` link it prints: `/setup` creates the first
        super-admin only for the holder of that one-time link, so nobody else can claim the empty
        install.
-       Rollback: put the old database back on the environment, keep the same `APP_KEY`, and redeploy
-       the previous commit.
-6. Still behind the bypass, re-enter: OIDC provider and client secret, Slack webhook URL, Telegram
-   bot token and chat, the alert webhook URL and the alert settings; then generate the webhook's
-   signing secret (Settings → Integrations → Generate), configure the receiver with the new one,
-   and send a test event.
-7. Rebuild what the reset removed: the projects (each gets a new push token, so every watched
-   app needs its new `EXCUBIA_APP_TOKEN`), the users, groups and custom roles, and new API keys
-   for the MCP clients (every key is gone). Webhook jobs of the old `DeliverAlertJob` still
-   waiting in a queue would fail on the new code: the `database` queue starts empty with the new
-   database; with Redis, clear only this environment's queue
-   (`php artisan queue:clear redis --queue=<its queue>`, never a shared Redis flush). Then start
-   the queue workers and the scheduler.
-8. Wait for at least one new report from a project and one test alert at each channel, then
-   `php artisan up`.
+6. Still behind the bypass (every browser step below opens `{APP_URL}/<random>` first), re-enter:
+   OIDC provider and client secret, Slack webhook URL, Telegram bot token and chat, the alert
+   webhook URL and the alert settings; then generate the webhook's signing secret
+   (Settings → Integrations → Generate) and configure the receiver with the new one.
+7. Rebuild what the reset removed, still behind the bypass: the projects (each gets a new push
+   token), the users, groups and custom roles, and new API keys for the MCP clients (every key is
+   gone). Webhook jobs of the old `DeliverAlertJob` still waiting in a queue would fail on the new
+   code: the `database` queue starts empty with the new database; with Redis, clear only this
+   environment's queue (`php artisan queue:clear redis --queue=<its queue>`, never a shared Redis
+   flush) before any worker runs.
+8. **Smoke test while still down.** Laravel's queue workers pause in maintenance mode and the
+   project push API answers 503 without the bypass cookie, so the checks run from the CLI:
+    1. `php artisan excubia:system-report`: Excubia checks itself and stores a report on the
+       system project without HTTP; it appears on the dashboard (through the bypass).
+    2. Settings → Integrations → send a test event to each channel, then deliver it with
+       `php artisan queue:work --force --stop-when-empty` (`--force` runs in maintenance mode)
+       and `php artisan outbound:webhooks:work`. Each channel receives it, and the alert history
+       shows `sent`.
+       Rollback (if a check fails): put the old database back on the environment, keep the same
+       `APP_KEY`, and redeploy the previous commit.
+9. `php artisan up`, then start the queue workers and the scheduler. Give each watched app its new
+   `EXCUBIA_APP_TOKEN` and run `php artisan excubia:push` there: its first report on the new
+   database closes the cutover. The push API accepts only those new project tokens, so opening it
+   now exposes nothing the maintainer has not issued.
 
 ## Open questions
 

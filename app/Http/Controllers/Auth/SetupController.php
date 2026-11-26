@@ -12,7 +12,6 @@ use App\Http\Requests\StoreFirstAdminRequest;
 use App\Http\Requests\StoreProjectRequest;
 use App\Models\Project;
 use App\Models\User;
-use App\Services\SetupTokenService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -31,19 +30,13 @@ class SetupController extends Controller
     /** Session key of the push token shown once on the last step. */
     private const TOKEN_SESSION_KEY = 'setup.pushToken';
 
-    public function show(Request $request, SetupTokenService $setupTokens): Response|RedirectResponse
+    public function show(Request $request): Response|RedirectResponse
     {
         if (! User::query()->exists()) {
-            $token = $request->query('token');
-
-            // Only the holder of the one-time link creates the first super-admin.
-            if (! $setupTokens->isValid($token)) {
-                return Inertia::render('auth/setup', ['step' => 'locked']);
-            }
-
+            // The one-time token stays in the link's `#token=` fragment: the browser reads it and
+            // posts it with the form, so no GET (and no previous-URL session entry) carries it.
             return Inertia::render('auth/setup', [
                 'step' => 'admin',
-                'setupToken' => $token,
                 'passwordRules' => Password::defaults()->toPasswordRulesString(),
             ]);
         }
@@ -68,6 +61,7 @@ class SetupController extends Controller
             $request->filled('last_name') ? $request->string('last_name')->trim()->toString() : null,
             $request->string('email')->toString(),
             $request->string('password')->toString(),
+            $request->string('setup_token')->toString(),
         );
 
         abort_if($user === null, 403);

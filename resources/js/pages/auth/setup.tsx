@@ -1,4 +1,5 @@
 import { Form, Head, Link } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import PasswordInput from '@/components/password-input';
 import { CopySnippet, SCHEDULE_LINE } from '@/components/projects/copy-snippet';
@@ -20,8 +21,7 @@ import { store as storeProject } from '@/routes/setup/project';
 import type { PushTokenFlash } from '@/types';
 
 type Props =
-    | { step: 'locked' }
-    | { step: 'admin'; setupToken: string; passwordRules: string }
+    | { step: 'admin'; passwordRules: string }
     | { step: 'project' }
     | { step: 'done'; pushToken: PushTokenFlash };
 
@@ -44,7 +44,7 @@ const CRON_LINE =
  */
 export default function Setup(props: Props) {
     const { t } = useTranslation();
-    const stepNumber = { locked: 1, admin: 1, project: 2, done: 3 }[props.step];
+    const stepNumber = { admin: 1, project: 2, done: 3 }[props.step];
 
     return (
         <AuthLayout
@@ -52,16 +52,8 @@ export default function Setup(props: Props) {
             description={t('auth.setup.stepOf', { step: stepNumber, total: 3 })}
         >
             <Head title={t('auth.setup.head')} />
-            {props.step === 'locked' && (
-                <p className="text-sm text-muted-foreground">
-                    {t('auth.setup.locked.description')}
-                </p>
-            )}
             {props.step === 'admin' && (
-                <AdminStep
-                    setupToken={props.setupToken}
-                    passwordRules={props.passwordRules}
-                />
+                <AdminStep passwordRules={props.passwordRules} />
             )}
             {props.step === 'project' && <ProjectStep />}
             {props.step === 'done' && <DoneStep pushToken={props.pushToken} />}
@@ -69,18 +61,32 @@ export default function Setup(props: Props) {
     );
 }
 
+/** The one-time token of `excubia:setup-link`, from the `#token=` fragment the server never sees. */
+function readSetupToken(): string {
+    return (
+        new URLSearchParams(window.location.hash.slice(1)).get('token') ?? ''
+    );
+}
+
 /**
  * Step 1: the first account, created as super-admin and logged in. The one-time setup link's
- * token rides along: the server creates the account only for its holder.
+ * token rides along in the form: the server creates the account only for its holder. Without
+ * it, the step explains how to get the link.
  */
-function AdminStep({
-    setupToken,
-    passwordRules,
-}: {
-    setupToken: string;
-    passwordRules: string;
-}) {
+function AdminStep({ passwordRules }: { passwordRules: string }) {
     const { t } = useTranslation();
+    // Read after mount: the fragment exists only in the browser.
+    const [setupToken, setSetupToken] = useState('');
+
+    useEffect(() => setSetupToken(readSetupToken()), []);
+
+    if (setupToken === '') {
+        return (
+            <p className="text-sm text-muted-foreground">
+                {t('auth.setup.locked.description')}
+            </p>
+        );
+    }
 
     return (
         <Form

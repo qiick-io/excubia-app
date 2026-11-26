@@ -24,12 +24,15 @@ class CreateFirstAdminAction
     ) {}
 
     /**
-     * @return User|null The new super-admin, or null when a user already exists (setup is locked).
+     * @return User|null The new super-admin, or null when a user already exists or the one-time
+     *                   setup token is not (or no longer) valid: setup is locked.
      */
-    public function execute(string $firstName, ?string $lastName, string $email, string $password): ?User
+    public function execute(string $firstName, ?string $lastName, string $email, string $password, string $setupToken): ?User
     {
-        return Cache::lock('excubia:first-run-setup', 10)->block(5, function () use ($firstName, $lastName, $email, $password): ?User {
-            if (User::query()->exists()) {
+        return Cache::lock('excubia:first-run-setup', 10)->block(5, function () use ($firstName, $lastName, $email, $password, $setupToken): ?User {
+            // Checked again under the lock: a token replaced or expired after the request was
+            // authorized creates nobody.
+            if (User::query()->exists() || ! $this->setupTokens->isValid($setupToken)) {
                 return null;
             }
 
