@@ -243,12 +243,13 @@ it('releases a claimed expiry notice so the next run can claim it again', functi
     $repository = app(ApiKeyRepository::class);
     $now = now()->toDateTimeImmutable();
 
-    expect($repository->claimExpiryNotice($apiKey, $now, 900))->toBeTrue();
+    expect($repository->claimExpiryNotice($apiKey, $now, 900, 'token'))->toBeTrue();
 
-    $repository->releaseExpiryNotice($apiKey);
+    $repository->releaseExpiryNotice($apiKey, 'token');
 
     expect($apiKey->fresh()->expiry_notice_claimed_at)->toBeNull()
-        ->and($repository->claimExpiryNotice($apiKey, $now, 900))->toBeTrue();
+        ->and($apiKey->fresh()->expiry_notice_claim_token)->toBeNull()
+        ->and($repository->claimExpiryNotice($apiKey, $now, 900, 'next'))->toBeTrue();
 });
 
 it('lists the scope vocabulary from the scope enum', function () {
@@ -366,3 +367,30 @@ it('writes the first-use entry inside the stamp transaction even when activity i
     expect(DB::table('activity_log')->where('event', 'api_key_first_used')->count())->toBe(1)
         ->and(config('activitylog.buffer.enabled'))->toBeTrue();
 });
+
+it('refuses a key whose stored policy has the wrong shape, instead of reading it as unrestricted', function (string $column, string $storedJson) {
+    $plainKey = adoptedPlainKey(adoptedKeyOwner());
+    DB::table('api_keys')->update([$column => $storedJson]);
+
+    $response = callAdoptedKey($plainKey);
+
+    expect($response->status())->toBeIn([401, 403]);
+})->with([
+    'allowlist as an object' => ['ip_allowlist', '{}'],
+    'allowlist as JSON null' => ['ip_allowlist', 'null'],
+    'restrictions as an empty object' => ['restrictions', '{}'],
+    'restrictions without a version' => ['restrictions', '{"request":{"methods":["GET"]}}'],
+    'restrictions with a list for a section' => ['restrictions', '{"v":1,"request":[]}'],
+    'scopes as an object' => ['scopes', '{"0":"mcp:read"}'],
+]);
+
+it('names the required scope when the stored scopes do not decode', function () {
+    $plainKey = adoptedPlainKey(adoptedKeyOwner());
+    DB::table('api_keys')->update(['scopes' => '["mcp:read"']);
+
+    callAdoptedKey($plainKey)
+        ->assertForbidden()
+        ->assertJsonPath('error', 'insufficient_scope')
+        ->assertJsonPath('scope', 'mcp:read')
+        ->assertHeader('WWW-Authenticate', 'Bearer error="insufficient_scope", scope="mcp:read"');
+})->skip(fn (): bool => DB::getDriverName() !== 'sqlite', 'MySQL and PostgreSQL refuse invalid JSON at the column; only SQLite can store it');
