@@ -50,6 +50,7 @@ use Qiick\Oidc\Contracts\SecondFactorChallengeContract;
 use Qiick\Oidc\Contracts\UserProvisioningContract;
 use Qiick\Oidc\Services\SsoOnlyModeService;
 use Qiick\Oidc\Services\UserLinkingService;
+use Qiick\Outbound\Events\WebhookDeliveredEvent;
 use Qiick\Outbound\Events\WebhookDeliveryFailedEvent;
 use Qiick\Outbound\Models\WebhookDelivery;
 use RuntimeException;
@@ -198,18 +199,21 @@ class AppServiceProvider extends ServiceProvider
 
     /**
      * Writes the alert webhook's outcome on the alert's history row (#114): qiick/laravel-outbound
-     * announces a delivery that ran out of attempts (or was refused for good); the delivery's
-     * `event_id` is the alert's id.
+     * announces a delivery the receiver accepted, or one that ran out of attempts (or was refused
+     * for good). The delivery's `event_id` is the alert's id.
      */
     protected function registerAlertWebhookListeners(): void
     {
-        Event::listen(WebhookDeliveryFailedEvent::class, function (WebhookDeliveryFailedEvent $event): void {
-            $alertId = WebhookDelivery::query()->where('public_id', $event->deliveryPublicId)->value('event_id');
+        $recordOutcome = function (string $deliveryPublicId, bool $isSent): void {
+            $alertId = WebhookDelivery::query()->where('public_id', $deliveryPublicId)->value('event_id');
 
             if (is_string($alertId)) {
-                app(RecordAlertDeliveryAction::class)->execute($alertId, DeliverAlertJob::WEBHOOK, false);
+                app(RecordAlertDeliveryAction::class)->execute($alertId, DeliverAlertJob::WEBHOOK, $isSent);
             }
-        });
+        };
+
+        Event::listen(WebhookDeliveredEvent::class, fn (WebhookDeliveredEvent $event) => $recordOutcome($event->deliveryPublicId, true));
+        Event::listen(WebhookDeliveryFailedEvent::class, fn (WebhookDeliveryFailedEvent $event) => $recordOutcome($event->deliveryPublicId, false));
     }
 
     /**
