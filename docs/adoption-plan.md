@@ -433,21 +433,32 @@ For the maintainer, after the group's last merge is deployed:
 5. **Fresh database.** `migrate:fresh` and `db:wipe` refuse to run in production
    (`DB::prohibitDestructiveCommands()`), and a plain `migrate` on the old database stops at the
    first re-dated `create_` migration ("table already exists"). So the database is replaced, not
-   migrated:
-    1. Take a database snapshot in the Cloud panel and write down the settings of step 6 (the
-       secrets are encrypted with `APP_KEY` and are re-entered, not copied).
-    2. `php artisan down` on the running environment.
-    3. In the Cloud panel, attach a new empty database to the environment (or empty the
-       existing one from its console). Never point the app at a copy of the old schema.
-    4. Deploy the group's last merge: the deploy runs `php artisan migrate --force` on the empty
-       database and the permission and system project seeders.
-    5. `php artisan up`, then `/setup` for the first admin.
-       Rollback: point the environment back at the snapshot and redeploy the previous commit.
-6. Re-enter: OIDC provider and client secret, Slack webhook URL, Telegram bot token and chat,
-   the alert webhook URL and the alert settings; then generate the webhook's signing secret
-   (Settings → Integrations → Generate), configure the receiver with the new one, and send a
-   test event before relying on alerts.
-7. MCP clients need new API keys (every key is gone with the reset).
+   migrated, and the site stays closed to everyone but the maintainer until it is verified:
+    1. Write down the settings of step 6 (the secrets are encrypted with `APP_KEY` and are
+       re-entered, not copied) and keep the current `APP_KEY`: the rollback needs both.
+    2. `php artisan down --secret=<random>` and stop the queue workers and the scheduler, so
+       nothing writes to the old database any more; then take its snapshot in the Cloud panel and
+       keep the old database itself until the new one is verified.
+    3. In the Cloud panel, attach a new empty database to the environment. Never point the app
+       at a copy of the old schema.
+    4. Deploy the group's last merge with the site still down: the deploy runs
+       `php artisan migrate --force` on the empty database and the permission and system project
+       seeders.
+    5. With the bypass (`{APP_URL}/<random>`, which sets the bypass cookie), run
+       `php artisan excubia:setup-link` and open the link it prints: `/setup` creates the first
+       super-admin only for the holder of that one-time link, so nobody else can claim the empty
+       install.
+       Rollback: put the old database back on the environment, keep the same `APP_KEY`, and redeploy
+       the previous commit.
+6. Still behind the bypass, re-enter: OIDC provider and client secret, Slack webhook URL, Telegram
+   bot token and chat, the alert webhook URL and the alert settings; then generate the webhook's
+   signing secret (Settings → Integrations → Generate), configure the receiver with the new one,
+   and send a test event.
+7. Rebuild what the reset removed: the projects (each gets a new push token, so every watched
+   app needs its new `EXCUBIA_APP_TOKEN`), the users, groups and custom roles, and new API keys
+   for the MCP clients (every key is gone). Start the queue workers and the scheduler.
+8. Wait for at least one new report from a project and one test alert at each channel, then
+   `php artisan up`.
 
 ## Open questions
 

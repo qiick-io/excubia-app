@@ -6,6 +6,7 @@ use App\Enums\RoleEnum;
 use App\Models\Project;
 use App\Models\User;
 use App\Providers\AppServiceProvider;
+use App\Services\SetupTokenService;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\SystemProjectSeeder;
 use Illuminate\Http\Middleware\TrustProxies;
@@ -17,6 +18,7 @@ use Inertia\Testing\AssertableInertia as Assert;
 function setupAdminInput(array $overrides = []): array
 {
     return [
+        'setup_token' => $overrides['setup_token'] ?? app(SetupTokenService::class)->issue(),
         'first_name' => 'Ada',
         'last_name' => 'Lovelace',
         'email' => 'ada@example.com',
@@ -36,9 +38,42 @@ it('links the login page to the wizard while no user exists', function () {
         ->assertInertia(fn (Assert $page) => $page->where('needsSetup', false));
 });
 
-it('shows the admin step on a fresh install', function () {
-    $this->get(route('setup.show'))
-        ->assertInertia(fn (Assert $page) => $page->component('auth/setup')->where('step', 'admin')->has('passwordRules'));
+it('shows the admin step on a fresh install to the holder of a setup link', function () {
+    $token = app(SetupTokenService::class)->issue();
+
+    $this->get(route('setup.show', ['token' => $token]))
+        ->assertInertia(fn (Assert $page) => $page->component('auth/setup')->where('step', 'admin')->where('setupToken', $token)->has('passwordRules'));
+});
+
+it('keeps the admin step locked without a valid setup link, so nobody can claim a fresh install', function (?string $token) {
+    app(SetupTokenService::class)->issue();
+
+    $this->get(route('setup.show', array_filter(['token' => $token])))
+        ->assertInertia(fn (Assert $page) => $page->component('auth/setup')->where('step', 'locked')->missing('setupToken'));
+    $this->post(route('setup.admin.store'), [...setupAdminInput(), 'setup_token' => $token])->assertForbidden();
+
+    expect(User::query()->exists())->toBeFalse();
+})->with([
+    'no token' => [null],
+    'a wrong token' => ['not-the-issued-token'],
+]);
+
+it('uses a setup link once', function () {
+    $token = app(SetupTokenService::class)->issue();
+
+    $this->post(route('setup.admin.store'), setupAdminInput(['setup_token' => $token]))->assertRedirect(route('setup.show'));
+
+    expect(app(SetupTokenService::class)->isValid($token))->toBeFalse();
+});
+
+it('prints a setup link with the command, only while no user exists', function () {
+    $this->artisan('excubia:setup-link')
+        ->expectsOutputToContain(url('/setup').'?token=')
+        ->assertSuccessful();
+
+    User::factory()->create();
+
+    $this->artisan('excubia:setup-link')->assertFailed();
 });
 
 it('creates the first admin as super-admin, logs them in and moves to the project step', function () {
@@ -117,7 +152,7 @@ it('uses the forwarded scheme only behind a trusted proxy', function () {
     $headers = ['X-Forwarded-Proto' => 'https', 'X-Forwarded-Host' => 'excubia.example.com'];
 
     $this->get(route('setup.show'), $headers)
-        ->assertInertia(fn (Assert $page) => $page->where('step', 'admin'));
+        ->assertInertia(fn (Assert $page) => $page->where('step', 'locked'));
     expect(url('/'))->toStartWith('http://');
 
     config(['excubia.trusted_proxies' => '*']);

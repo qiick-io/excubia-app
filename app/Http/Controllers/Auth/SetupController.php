@@ -12,6 +12,7 @@ use App\Http\Requests\StoreFirstAdminRequest;
 use App\Http\Requests\StoreProjectRequest;
 use App\Models\Project;
 use App\Models\User;
+use App\Services\SetupTokenService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -22,7 +23,7 @@ use Inertia\Response;
 /**
  * First-run wizard at /setup (#116): create the first admin, then the first project, then show
  * its push token with the excubia-core install snippet. The admin step exists only while the
- * database has no user; the project step only for a user who may create projects while no
+ * database has no user, and only through the one-time link of `excubia:setup-link`; the project step only for a user who may create projects while no
  * project other than the system one exists. Anything else redirects to the dashboard.
  */
 class SetupController extends Controller
@@ -30,11 +31,19 @@ class SetupController extends Controller
     /** Session key of the push token shown once on the last step. */
     private const TOKEN_SESSION_KEY = 'setup.pushToken';
 
-    public function show(Request $request): Response|RedirectResponse
+    public function show(Request $request, SetupTokenService $setupTokens): Response|RedirectResponse
     {
         if (! User::query()->exists()) {
+            $token = $request->query('token');
+
+            // Only the holder of the one-time link creates the first super-admin.
+            if (! $setupTokens->isValid($token)) {
+                return Inertia::render('auth/setup', ['step' => 'locked']);
+            }
+
             return Inertia::render('auth/setup', [
                 'step' => 'admin',
+                'setupToken' => $token,
                 'passwordRules' => Password::defaults()->toPasswordRulesString(),
             ]);
         }

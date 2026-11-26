@@ -33,7 +33,7 @@ cd excubia-app
 docker compose up -d --build
 ```
 
-Open `http://localhost:8080/setup` and follow the [first run](#first-run). The `app` container is healthy once `/health/ready` answers (see [Health probes](#health-probes)); `queue` and `scheduler` start after it.
+Print the one-time setup link with `docker compose exec app php artisan excubia:setup-link`, open it and follow the [first run](#first-run). The `app` container is healthy once `/health/ready` answers (see [Health probes](#health-probes)); `queue` and `scheduler` start after it.
 
 On start, the `app` container:
 
@@ -103,7 +103,7 @@ php artisan excubia:install -n --force \
   --db=pgsql --db-host=127.0.0.1 --db-port=5432 --db-database=excubia --db-username=excubia --db-password=secret
 ```
 
-The installer creates no user: open `APP_URL/setup` to create the admin and the first project ([First run](#first-run)). Then add the cron entry and the queue worker ([Scheduler and queue](#scheduler-and-queue)).
+The installer creates no user: it prints a one-time `APP_URL/setup?token=…` link to create the admin and the first project ([First run](#first-run)). Then add the cron entry and the queue worker ([Scheduler and queue](#scheduler-and-queue)).
 
 > **Install only, not the update channel.** Composer copies the app once and never updates it. To upgrade, follow [Upgrades](#upgrades).
 
@@ -143,7 +143,7 @@ Add the cron entry and a queue worker as in [Scheduler and queue](#scheduler-and
 
 ## First run
 
-Open `/setup` (the login page links to it while no account exists):
+Open the one-time setup link: `php artisan excubia:setup-link` prints it on the server (the installer prints one too). It works once and expires after an hour; a new one replaces the previous. Without it `/setup` only explains how to get one, so nobody who finds a fresh install first can claim its super-admin account.
 
 1. **Admin.** Create the first account. It becomes super-admin and is logged in. There is no public sign-up: add more users later under **Users**. Once an account exists, the step is locked.
 2. **First project.** Name the first Laravel app to watch (or skip and add projects later under **Projects**).

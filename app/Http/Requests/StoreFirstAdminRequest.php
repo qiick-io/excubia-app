@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests;
 
 use App\Models\User;
+use App\Services\SetupTokenService;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rules\Password;
@@ -17,7 +18,8 @@ class StoreFirstAdminRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return ! User::query()->exists();
+        // A fresh install is public: only the holder of the one-time setup link may claim it.
+        return ! User::query()->exists() && app(SetupTokenService::class)->isValid($this->input('setup_token'));
     }
 
     /**
@@ -26,6 +28,7 @@ class StoreFirstAdminRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'setup_token' => ['required', 'string'],
             'first_name' => ['required', 'string', 'max:255'],
             'last_name' => ['nullable', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255'],
