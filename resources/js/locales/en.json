@@ -2430,5 +2430,14 @@
             "description": "Every request with this key is refused from now on. The key stays in the list and in the activity log; it cannot be used again.",
             "confirm": "Revoke"
         }
+    },
+    "secretOnce": {
+        "description": "This is the only time the secret is shown. It is not stored in plain text and cannot be shown again: put it in your password manager or secret store now.",
+        "label": "Secret",
+        "copy": "Copy the secret",
+        "copied": "Secret copied to the clipboard",
+        "copyFailed": "The secret could not be copied. It is selected: copy it with your keyboard.",
+        "acknowledge": "I have stored the secret somewhere safe",
+        "done": "Done"
     }
 }

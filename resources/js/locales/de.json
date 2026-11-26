@@ -2430,5 +2430,14 @@
             "description": "Ab sofort wird jede Anfrage mit diesem Schlüssel abgelehnt. Der Schlüssel bleibt in der Liste und im Aktivitätsprotokoll; er kann nicht wieder verwendet werden.",
             "confirm": "Widerrufen"
         }
+    },
+    "secretOnce": {
+        "description": "Das Geheimnis wird nur dieses eine Mal angezeigt. Es wird nicht im Klartext gespeichert und kann nicht erneut angezeigt werden: Legen Sie es jetzt in Ihrem Passwort- oder Secret-Manager ab.",
+        "label": "Geheimnis",
+        "copy": "Geheimnis kopieren",
+        "copied": "Geheimnis in die Zwischenablage kopiert",
+        "copyFailed": "Das Geheimnis konnte nicht kopiert werden. Es ist markiert: Kopieren Sie es mit der Tastatur.",
+        "acknowledge": "Ich habe das Geheimnis sicher gespeichert",
+        "done": "Fertig"
     }
 }
