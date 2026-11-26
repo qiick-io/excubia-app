@@ -37,9 +37,11 @@ class ApiKeyAuthorizerService implements KeyAuthorizer, ScopeVocabulary
         $owner = $record->owner;
 
         // The principal must be the owner's own `user` principal: two independent foreign keys
-        // could otherwise pair an active user with someone else's (or a stale) principal.
+        // could otherwise pair an active user with someone else's (or a stale) principal. The type
+        // is compared raw: an unknown stored value must deny (401), not throw from the enum cast.
         $principal = $record->ownerPrincipal;
-        $isOwnersPrincipal = $principal->type === PrincipalTypeEnum::User && $principal->user_id === $record->owner_id;
+        $isOwnersPrincipal = $principal->getRawOriginal('type') === PrincipalTypeEnum::User->value
+            && $principal->user_id === $record->owner_id;
 
         if ($owner === null || ! $owner->is_active || ! $isOwnersPrincipal || $principal->deactivated_at !== null) {
             return AuthorizationDecision::deny('The API key owner is no longer active.');

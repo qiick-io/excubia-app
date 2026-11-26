@@ -406,14 +406,27 @@ For the maintainer, after the group's last merge is deployed:
    for scheduled tasks; a task every minute keeps it awake), and a queue worker that processes
    the alert jobs.
 2. The cache store is `database` (or Redis), never `array` or `null`.
-3. At the IdP, register `{APP_URL}/auth/oidc/logged-out` as a post-logout redirect URI (oidc
+3. **Renamed environment variables.** The package reads new names, and the old ones are ignored
+   silently (the defaults apply: 60 requests per minute, 24 hours, 7 days). In the Cloud
+   environment, copy any value that is set to its new name, then delete the old one:
+
+    | Old name (removed)                    | New name                                 | Default |
+    | ------------------------------------- | ---------------------------------------- | ------- |
+    | `EXCUBIA_API_KEY_REQUESTS_PER_MINUTE` | `API_KEYS_DEFAULT_RATE_LIMIT_PER_MINUTE` | 60      |
+    | `API_KEY_ROTATION_GRACE_HOURS`        | `API_KEYS_ROTATION_GRACE_HOURS`          | 24      |
+    | `API_KEY_EXPIRY_NOTICE_DAYS`          | `API_KEYS_EXPIRY_NOTICE_DAYS`            | 7       |
+
+    New, no old equivalent: `API_KEYS_FAILED_ATTEMPTS_PER_MINUTE` (failed key lookups per IP,
+    default 20).
+
+4. At the IdP, register `{APP_URL}/auth/oidc/logged-out` as a post-logout redirect URI (oidc
    beta.7; until it is registered, SSO logout does not end the IdP session).
    `php artisan oidc:configure` prints it and checks the rest.
-4. `php artisan migrate:fresh --force`, then `/setup` for the first admin.
-5. Re-enter: OIDC provider and client secret, Slack webhook URL, Telegram bot token and chat,
+5. `php artisan migrate:fresh --force`, then `/setup` for the first admin.
+6. Re-enter: OIDC provider and client secret, Slack webhook URL, Telegram bot token and chat,
    the alert webhook URL and the alert settings; then generate the webhook's signing secret
    (Settings → Integrations → Generate) and configure the receiver with the new one.
-6. MCP clients need new API keys (every key is gone with the reset).
+7. MCP clients need new API keys (every key is gone with the reset).
 
 ## Open questions
 

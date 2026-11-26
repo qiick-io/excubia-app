@@ -307,6 +307,17 @@ it('refuses a key whose owner principal belongs to another user', function () {
         ->assertJsonPath('error', 'invalid_token');
 });
 
+it('refuses a key whose owner principal has an unknown stored type, instead of failing with a 500', function () {
+    $owner = adoptedKeyOwner();
+    $plainKey = adoptedPlainKey($owner);
+    // An import or repair can leave a value the enum does not know: the cast would throw on read.
+    DB::table('principals')->where('id', $owner->principal()->sole()->id)->update(['type' => 'robot']);
+
+    callAdoptedKey($plainKey)
+        ->assertUnauthorized()
+        ->assertJsonPath('error', 'invalid_token');
+});
+
 it('keeps the first use unstamped when its audit entry cannot be written, so the next use logs it', function () {
     $owner = adoptedKeyOwner();
     $plainKey = adoptedPlainKey($owner);
