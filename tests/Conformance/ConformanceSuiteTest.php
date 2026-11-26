@@ -101,6 +101,9 @@ describe('qiick fleet conformance', function () use ($catalog, $knownIds): void 
                 continue;
             }
 
+            // Each re-run is isolated inside ConformanceRunner (SAVEPOINT), so a
+            // failing diverged check cannot abort this test's transaction and
+            // make a later empty-hook divergence look still-red.
             try {
                 $this->conformanceRunner->run($check);
                 $stillPassingWhileDiverged[] = $checkId;
@@ -110,5 +113,10 @@ describe('qiick fleet conformance', function () use ($catalog, $knownIds): void 
         }
 
         $this->conformanceGate->assertNoStaleDeclarations($stillPassingWhileDiverged);
+
+        // Real Pest assertions so the check is never "risky" when there are no divergences,
+        // and so a declared hook reduced to a no-op (stale) fails this test.
+        expect($stillPassingWhileDiverged)->toBeEmpty();
+        expect($this->conformanceGate->declaredCheckIds())->toBeArray();
     });
 });

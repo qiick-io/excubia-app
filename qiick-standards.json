@@ -1,6 +1,6 @@
 {
-    "$comment": "qiick standards pack: https://github.com/qiick-io/app-ui/tree/v0.12.0/standards. Sync: node <app-ui>/scripts/sync-standards.mjs --target .",
-    "ref": "v0.12.0",
+    "$comment": "qiick standards pack: https://github.com/qiick-io/app-ui/tree/v0.14.0/standards. Sync: node <app-ui>/scripts/sync-standards.mjs --target .",
+    "ref": "v0.14.0",
     "uiPreset": "Genziana",
     "php": true,
     "frontendRoots": ["resources/js"],
@@ -20,7 +20,7 @@
     },
     "divergences": {
         "C3": {
-            "reason": "Fixture bug in the v0.12.0 runner: the C3 probe inserts a user_identities row with user_id=1 without creating a user, so the qiick/laravel-oidc foreign key rejects it on PostgreSQL and MySQL before the case-sensitivity assertion runs. Tracked in #380; upstream fix pending.",
+            "reason": "Runner gap in v0.13.0-v0.14.0: C3 inserts its fixture user as a raw row with only public_id, email, locale, timezone and is_active, so Excubia's NOT NULL first_name (no default) refuses it on PostgreSQL and MySQL before the case-sensitivity assertion runs. Upstream: the runner should create the user through the product's model factory or a hook. The schema itself is checked by laravel-oidc's own tests.",
             "decision": "knowledge/decisions/2026-11-19-fleet-core-schema",
             "review_by": "2026-12-20"
         },
@@ -52,11 +52,6 @@
         "C26": {
             "reason": "No OpenAPI 3.1 document covering the named /api routes (reports, runtime, exceptions) exists yet. Tracked in #378, not hidden.",
             "decision": "knowledge/decisions/2026-11-20-core-hardening",
-            "review_by": "2026-12-20"
-        },
-        "C29": {
-            "reason": "Excubia has no organisations or Spatie teams today, so team switching is out of scope. It will add principals.organisation_id as NOT NULL together with Spatie teams when organisations arrive. Tracked in #387, not hidden.",
-            "decision": "knowledge/decisions/2026-11-22-principal-organisation-required-in-multi-tenant-products",
             "review_by": "2026-12-20"
         },
         "C31": {
