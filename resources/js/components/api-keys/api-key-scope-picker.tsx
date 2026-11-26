@@ -5,11 +5,14 @@ import {
     FieldContent,
     FieldDescription,
     FieldError,
+    FieldLabel,
     FieldLegend,
     FieldSet,
-    FieldTitle,
 } from '@/components/ui/field';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import {
+    NativeSelect,
+    NativeSelectOption,
+} from '@/components/ui/native-select';
 import { apiKeyAccessLevel, withApiKeyAccessLevel } from '@/lib/api-key-scopes';
 import type {
     ApiKeyAccessLevel,
@@ -37,10 +40,8 @@ export type ApiKeyScopePickerProps = {
 };
 
 /**
- * The permissions of an API key: one row per resource with a No access / Read / Write
- * segmented control (a radio group for assistive technology), so the vocabulary of
- * docs/api-keys.md is the only thing the screen can produce. Write includes read, so a row
- * holds one level and the value carries at most one scope per resource.
+ * Each resource has a labelled native select so the browser handles the menu and keyboard
+ * focus inside dialogs. Write includes read, so the value carries at most one scope per resource.
  */
 export function ApiKeyScopePicker({
     resources,
@@ -67,15 +68,25 @@ export function ApiKeyScopePicker({
             </FieldDescription>
             <div className="flex flex-col divide-y rounded-md border">
                 {resources.map((scopeResource) => {
-                    const titleId = `${pickerId}-${scopeResource.resource}`;
+                    const selectId = `${pickerId}-${scopeResource.resource}`;
+                    const descriptionId = `${selectId}-description`;
                     const availableActions = scopeResource.availableActions ?? [
                         'read',
                         'write',
                     ];
+                    const hasActions = availableActions.length > 0;
                     const level = apiKeyAccessLevel(
                         value,
                         scopeResource.resource,
                     );
+                    // Keep a stale level visible until the user changes or clears it.
+                    const isLevelUnavailable =
+                        level !== 'none' && !availableActions.includes(level);
+                    const description = isLevelUnavailable
+                        ? t('apiKeys.scopes.unavailableLevel')
+                        : hasActions
+                          ? scopeResource.description
+                          : t('apiKeys.scopes.unavailable');
 
                     return (
                         <Field
@@ -84,49 +95,53 @@ export function ApiKeyScopePicker({
                             className="items-center justify-between gap-4 px-3 py-2"
                         >
                             <FieldContent>
-                                <FieldTitle id={titleId}>
+                                <FieldLabel htmlFor={selectId}>
                                     {scopeResource.label}
-                                </FieldTitle>
-                                {scopeResource.description ? (
-                                    <FieldDescription>
-                                        {scopeResource.description}
+                                </FieldLabel>
+                                {description ? (
+                                    <FieldDescription id={descriptionId}>
+                                        {description}
                                     </FieldDescription>
                                 ) : null}
                             </FieldContent>
-                            <ToggleGroup
-                                type="single"
-                                variant="outline"
+                            <NativeSelect
+                                id={selectId}
                                 value={level}
-                                aria-labelledby={titleId}
-                                disabled={isDisabled}
-                                className="shrink-0"
-                                onValueChange={(nextLevel) => {
-                                    // A single toggle group clears on a second click; a row always holds a level.
-                                    if (nextLevel === '') {
-                                        return;
-                                    }
-
+                                aria-describedby={
+                                    description ? descriptionId : undefined
+                                }
+                                disabled={
+                                    isDisabled ||
+                                    (!hasActions && !isLevelUnavailable)
+                                }
+                                onChange={(event) =>
                                     onChange(
                                         withApiKeyAccessLevel(
                                             value,
                                             scopeResource.resource,
-                                            nextLevel as ApiKeyAccessLevel,
+                                            event.currentTarget
+                                                .value as ApiKeyAccessLevel,
                                         ),
-                                    );
-                                }}
+                                    )
+                                }
                             >
-                                <ToggleGroupItem value="none">
+                                <NativeSelectOption value="none">
                                     {t('apiKeys.scopes.none')}
-                                </ToggleGroupItem>
+                                </NativeSelectOption>
+                                {isLevelUnavailable ? (
+                                    <NativeSelectOption value={level} disabled>
+                                        {t(`apiKeys.scopes.${level}`)}
+                                    </NativeSelectOption>
+                                ) : null}
                                 {availableActions.map((action) => (
-                                    <ToggleGroupItem
+                                    <NativeSelectOption
                                         key={action}
                                         value={action}
                                     >
                                         {t(`apiKeys.scopes.${action}`)}
-                                    </ToggleGroupItem>
+                                    </NativeSelectOption>
                                 ))}
-                            </ToggleGroup>
+                            </NativeSelect>
                         </Field>
                     );
                 })}

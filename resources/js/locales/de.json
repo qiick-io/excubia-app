@@ -658,6 +658,7 @@
             "create": "API-Schlüssel erstellen",
             "createTitle": "API-Schlüssel erstellen",
             "createDescription": "Benennen Sie den Schlüssel nach dem Client, der ihn nutzt, wählen Sie, was er darf, und optional, wann er abläuft.",
+            "noGrantableScopes": "Um einen MCP-Schlüssel zu erstellen, lassen Sie sich die Berechtigung zur KI-Nutzung direkt oder über eine andere Rolle als Super Admin zuweisen.",
             "empty": {
                 "title": "Noch keine API-Schlüssel",
                 "description": "Erstellen Sie einen Schlüssel, um einen KI-Client mit Excubia zu verbinden."
@@ -665,7 +666,7 @@
             "resources": {
                 "mcp": {
                     "label": "KI-Clients (MCP-Server)",
-                    "description": "Lesen: Projekte, Berichte, Befunde, Exceptions, Runtime und Zeitpläne. Schreiben ändert zusätzlich Exception-Status, Zuweisungen, verworfene Findings, stummgeschaltete Alerts und Wartungsfenster."
+                    "description": "Lesen: Projekte, Berichte, Befunde, Exceptions, Runtime und Zeitpläne. Schreiben schließt Lesen ein und erlaubt Änderungen am Exception-Status, an Zuweisungen, verworfenen Findings, stummgeschalteten Alerts und Wartungsfenstern."
                 }
             }
         }
@@ -2406,6 +2407,8 @@
             "legend": "Berechtigungen",
             "description": "Was der Schlüssel mit jeder Ressource tun darf. Schreiben schließt Lesen ein.",
             "none": "Kein Zugriff",
+            "unavailable": "Mit Ihrem Konto können Sie keinen Zugriff auf diese Ressource gewähren.",
+            "unavailableLevel": "Die gewählte Zugriffsstufe ist nicht verfügbar. Wählen Sie eine andere Stufe.",
             "read": "Lesen",
             "write": "Schreiben"
         },

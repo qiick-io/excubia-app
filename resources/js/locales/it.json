@@ -658,6 +658,7 @@
             "create": "Crea chiave API",
             "createTitle": "Crea chiave API",
             "createDescription": "Dai alla chiave il nome del client che la usa, scegli cosa può fare e, se vuoi, quando scade.",
+            "noGrantableScopes": "Per creare una chiave MCP, chiedi a un amministratore di assegnarti il permesso per usare l’IA direttamente o tramite un ruolo diverso da Super Admin.",
             "empty": {
                 "title": "Nessuna chiave API",
                 "description": "Crea una chiave per collegare un client AI a Excubia."
@@ -665,7 +666,7 @@
             "resources": {
                 "mcp": {
                     "label": "Client AI (server MCP)",
-                    "description": "Lettura: progetti, report, problemi, eccezioni, runtime e schedule. Scrittura modifica anche stato delle eccezioni, assegnazioni, finding ignorati, avvisi silenziati e finestre di manutenzione."
+                    "description": "Lettura: progetti, report, problemi, eccezioni, runtime e schedule. Scrittura include Lettura e permette di modificare lo stato delle eccezioni, le assegnazioni, i finding ignorati, gli avvisi silenziati e le finestre di manutenzione."
                 }
             }
         }
@@ -2406,6 +2407,8 @@
             "legend": "Permessi",
             "description": "Cosa può fare la chiave con ogni risorsa. La scrittura include la lettura.",
             "none": "Nessun accesso",
+            "unavailable": "Il tuo account non può concedere l’accesso a questa risorsa.",
+            "unavailableLevel": "Il livello di accesso selezionato non è disponibile. Scegli un altro livello.",
             "read": "Lettura",
             "write": "Scrittura"
         },

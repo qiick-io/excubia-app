@@ -2,12 +2,15 @@
 
 declare(strict_types=1);
 
+use App\Enums\PermissionEnum;
 use App\Enums\RoleEnum;
 use App\Models\ApiKey;
 use App\Models\User;
 use Database\Seeders\PermissionSeeder;
 
 require_once __DIR__.'/BrowserSeedHelpers.php';
+
+const MCP_PERMISSION_SELECT = '[data-test="api-key-create-dialog"] select';
 
 /**
  * Settings → API keys (#315, #364), built from the app-ui api-key items: a user creates a key
@@ -43,14 +46,18 @@ function historyStateHidesSecret(string $plainSecret): string
 }
 
 it('creates a key, shows it once, rotates and revokes it', function (string $scheme) {
-    $user = User::factory()->create()->assignRole(RoleEnum::Admin->value);
+    $user = User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value);
+    $user->givePermissionTo(PermissionEnum::CanUseAi->value);
     $this->actingAs($user);
 
     $page = visitA11y(route('api-keys.index', absolute: false), $scheme)
         ->assertSee('No API keys yet')
         ->click('[data-test="api-key-create-open"]')
         ->fill('#api-key-create-form-name', 'Claude Code')
-        ->click('[data-test="api-key-create-dialog"] [role="radio"]:nth-of-type(3)')
+        ->assertSee('Write includes Read')
+        ->assertValue(MCP_PERMISSION_SELECT, 'read')
+        ->keys(MCP_PERMISSION_SELECT, 'w')
+        ->assertValue(MCP_PERMISSION_SELECT, 'write')
         ->fill('#api-key-create-form-ip_allowlist', '203.0.113.4, 10.0.0.0/8')
         ->fill('#api-key-create-form-rate_limit_per_minute', '120')
         ->click('[data-test="api-key-create-submit"]')
@@ -106,6 +113,20 @@ it('creates a key, shows it once, rotates and revokes it', function (string $sch
         ->assertNoJavaScriptErrors();
 })->with(['light', 'dark']);
 
+it('explains why a super-admin without assigned MCP permissions cannot create a key', function (string $scheme) {
+    $user = User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value);
+    $this->actingAs($user);
+
+    visitA11y(route('api-keys.index', absolute: false), $scheme)
+        ->click('[data-test="api-key-create-open"]')
+        ->assertSee('To create an MCP key, ask an administrator to assign the Can use AI permission')
+        ->assertValue(MCP_PERMISSION_SELECT, 'none')
+        ->assertDisabled(MCP_PERMISSION_SELECT)
+        ->assertDisabled('[data-test="api-key-create-submit"]')
+        ->assertNoJavaScriptErrors()
+        ->assertNoAccessibilityIssues(1);
+})->with(['light', 'dark']);
+
 it('does not reopen the secret dialog when navigating Back after acknowledge', function () {
     $user = User::factory()->create()->assignRole(RoleEnum::Admin->value);
     $this->actingAs($user);
@@ -113,7 +134,7 @@ it('does not reopen the secret dialog when navigating Back after acknowledge', f
     $page = visit(route('api-keys.index', absolute: false))
         ->click('[data-test="api-key-create-open"]')
         ->fill('#api-key-create-form-name', 'Back Nav')
-        ->click('[data-test="api-key-create-dialog"] [role="radio"]:nth-of-type(2)')
+        ->assertValue(MCP_PERMISSION_SELECT, 'read')
         ->click('[data-test="api-key-create-submit"]')
         ->waitForText('Copy the key for “Back Nav”');
 
