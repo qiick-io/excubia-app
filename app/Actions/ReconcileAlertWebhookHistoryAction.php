@@ -17,8 +17,11 @@ use Qiick\Outbound\Models\WebhookEndpoint;
  * delivery the prune exhausted because its body expired (the package fires no failed event for
  * either). Without this, those alerts would read `queued` forever.
  *
- * Runs when the URL is cleared and before the daily prune (which can exhaust and delete a
- * delivery in one run, with nothing left to read afterwards). Only rows still `queued` change, so a
+ * It also catches the deliveries that no longer exist: the prune can exhaust and delete a row in
+ * one run (and an operator may run it by hand), but an alert's delivery is stored in the alert's
+ * own transaction, so a `queued` alert without one is abandoned for good.
+ *
+ * Runs when the URL is cleared and around the daily prune. Only rows still `queued` change, so a
  * delivery already recorded `sent` or `failed` keeps its outcome.
  */
 class ReconcileAlertWebhookHistoryAction
@@ -53,6 +56,20 @@ class ReconcileAlertWebhookHistoryAction
                     ->pluck('uuid');
 
                 foreach ($queuedAlertIds as $alertId) {
+                    $this->recordDelivery->execute($alertId, DeliverAlertJob::WEBHOOK, false);
+                    $marked++;
+                }
+            });
+
+        // Queued alerts whose delivery row is gone. Compared in PHP, for the same uuid/string reason.
+        AlertLog::query()
+            ->where('deliveries->'.DeliverAlertJob::WEBHOOK, AlertLog::QUEUED)
+            ->select(['id', 'uuid'])
+            ->chunkById(500, function ($alerts) use (&$marked): void {
+                $alertIds = $alerts->pluck('uuid')->map(fn (mixed $uuid): string => (string) $uuid);
+                $alertIdsWithDelivery = WebhookDelivery::query()->whereIn('event_id', $alertIds)->pluck('event_id')->all();
+
+                foreach ($alertIds->diff($alertIdsWithDelivery) as $alertId) {
                     $this->recordDelivery->execute($alertId, DeliverAlertJob::WEBHOOK, false);
                     $marked++;
                 }

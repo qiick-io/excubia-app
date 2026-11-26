@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Actions\IssueAlertWebhookSecretAction;
+use App\Actions\ReconcileAlertWebhookHistoryAction;
 use App\Actions\SaveAlertWebhookAction;
 use App\Actions\StorePushedReportAction;
 use App\Enums\AlertEventEnum;
@@ -640,6 +641,21 @@ it('marks the webhook failed for alerts whose body the daily prune expires, even
     'body expired' => [false],
     'body and row expired' => [true],
 ]);
+
+it('marks the webhook failed for an alert whose delivery a direct prune run already deleted', function () {
+    $project = Project::factory()->create();
+    app(AlertDispatcherService::class)->dispatch(AlertEventEnum::ProjectStale, $project, 'no report');
+    DB::table('webhook_deliveries')->update(['payload_expires_at' => Date::now()->subMinute(), 'created_at' => Date::now()->subDays(100)]);
+
+    // Run by hand, without the scheduler's callbacks: the prune exhausts and deletes the row.
+    $this->artisan('outbound:webhooks:prune')->assertSuccessful();
+
+    expect(WebhookDelivery::query()->count())->toBe(0);
+
+    app(ReconcileAlertWebhookHistoryAction::class)->execute();
+
+    expect(AlertLog::query()->sole()->deliveries)->toBe(['webhook' => AlertLog::FAILED]);
+});
 
 it('commits a scheduled alert only together with its webhook delivery', function () {
     $project = Project::factory()->create(['last_report_at' => Date::now()->subDays(30)]);
