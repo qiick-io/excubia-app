@@ -13,7 +13,9 @@ return [
 
         /*
          * Allow private, ULA, link-local and CGNAT destinations. Metadata,
-         * NAT64, 6to4 and Teredo stay blocked either way.
+         * NAT64, 6to4 and Teredo stay blocked either way. The ceiling (outbound
+         * 0.2.0-beta.2): a call's UrlGuardOptions or an endpoint's
+         * `allow_private_hosts` can only narrow it, never allow what this refuses.
          */
         'allow_private_hosts' => (bool) env('OUTBOUND_ALLOW_PRIVATE_HOSTS', false),
 
