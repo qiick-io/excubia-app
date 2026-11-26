@@ -91,7 +91,8 @@
         "groups": "Groups",
         "settings": "Settings",
         "repository": "Repository",
-        "documentation": "Documentation"
+        "documentation": "Documentation",
+        "buildCommit": "Build {{id}}: open the commit"
     },
     "userMenu": {
         "settings": "Settings",
@@ -102,9 +103,7 @@
         "accessibilityOnCount": "{{count}} on",
         "highContrast": "High contrast",
         "reduceMotion": "Reduce motion",
-        "logOut": "Log out",
-        "compactTables": "Compact tables",
-        "singleKeyShortcuts": "Single-key shortcuts"
+        "logOut": "Log out"
     },
     "a11y": {
         "skipToContent": "Skip to content",
@@ -125,7 +124,8 @@
         "notifications": "Notifications",
         "notificationsUnread": "Notifications, {{count}} unread",
         "unreadCount": "{{count}} unread",
-        "scrollableTable": "Scrollable table"
+        "scrollableTable": "Scrollable table",
+        "openTableRow": "Press Enter or Space to open this row."
     },
     "auth": {
         "login": {
@@ -222,7 +222,7 @@
     "settings": {
         "layout": {
             "title": "Settings",
-            "description": "Manage your profile and account settings",
+            "description": "Manage your account and how this Excubia works",
             "navAria": "Settings",
             "sectionAccount": "Account",
             "sectionProject": "Project",
@@ -669,6 +669,14 @@
                     "description": "Read: projects, reports, findings, exceptions, runtime and schedules. Write includes Read and can change exception status, assignments, finding dismissals, alert mutes and maintenance windows."
                 }
             }
+        },
+        "preferences": {
+            "title": "Preferences",
+            "description": "How lists look and respond for you, in this browser.",
+            "compactTables": "Compact tables",
+            "compactTablesDescription": "Denser table rows, so more fit on the screen.",
+            "singleKeyShortcuts": "Single-key shortcuts",
+            "singleKeyShortcutsDescription": "Keyboard shortcuts without modifier keys, such as j / k in lists. Turn them off if they get in the way of speech input or other assistive technology."
         }
     },
     "activityLog": {
@@ -1134,7 +1142,7 @@
             "systemProjectHint": "Excubia monitoring itself. It reports every day on its own, and it cannot be deleted.",
             "attention": {
                 "title": "Needs attention",
-                "description": "{{shown}} of {{total}} open problems, worst first.",
+                "description": "{{shown}} of {{total}} open problems: findings with failing infrastructure first, then by severity; then open exceptions.",
                 "allFindings": "All findings",
                 "exception": "Exception",
                 "emptyTitle": "Nothing needs attention"

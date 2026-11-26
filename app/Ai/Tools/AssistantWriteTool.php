@@ -47,13 +47,6 @@ abstract class AssistantWriteTool extends AssistantTool implements Approvable
     abstract protected function ability(Request $request): string;
 
     /**
-     * The rules of the tool's own arguments, besides `project`.
-     *
-     * @return array<string, mixed>
-     */
-    abstract protected function rules(Request $request): array;
-
-    /**
      * @return array<mixed>
      */
     protected function run(Request $request): array

@@ -14,6 +14,7 @@ import ProfileLocaleFields from '@/components/settings/profile-locale-fields';
 import { Button } from '@/components/ui/button';
 import DeleteUser from '@/components/delete-user';
 import Heading from '@/components/heading';
+import { ListPreferences } from '@/components/settings/list-preferences';
 import { SettingsFormActions } from '@/components/settings-form-actions';
 import {
     Field,
@@ -325,6 +326,10 @@ export default function Profile({
                             <AlertEmails subscription={alertSubscription} />
                         </>
                     ) : null}
+
+                    <Separator />
+
+                    <ListPreferences />
 
                     <Separator />
 

@@ -57,7 +57,8 @@ const AI_PANEL_SHORTCUT =
 export function AppSidebar() {
     const { t } = useTranslation();
     const { isCurrentUrl } = useCurrentUrl();
-    const { appVersion, sidebarProjects, notifications } = usePage().props;
+    const { appVersion, appBuild, sidebarProjects, notifications } =
+        usePage().props;
     const { state: sidebarState, isMobile } = useSidebar();
     const isIconOnly = sidebarState === 'collapsed' && !isMobile;
     const toSidebarEntity = (project: SidebarProject): SidebarEntity => {
@@ -251,7 +252,31 @@ export function AppSidebar() {
                     <AppNavUser />
                     {appVersion ? (
                         <p className="truncate px-2 text-center text-xs leading-none text-muted-foreground group-data-[collapsible=icon]:hidden">
-                            {`v${appVersion}`}
+                            {/^\d/.test(appVersion)
+                                ? `v${appVersion}`
+                                : appVersion}
+                            {appBuild ? (
+                                <>
+                                    {' · '}
+                                    {appBuild.url ? (
+                                        <a
+                                            href={appBuild.url}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="font-mono underline-offset-2 hover:underline"
+                                            aria-label={t('nav.buildCommit', {
+                                                id: appBuild.id,
+                                            })}
+                                        >
+                                            {appBuild.id}
+                                        </a>
+                                    ) : (
+                                        <span className="font-mono">
+                                            {appBuild.id}
+                                        </span>
+                                    )}
+                                </>
+                            ) : null}
                         </p>
                     ) : null}
                 </SidebarFooter>

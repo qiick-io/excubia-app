@@ -9,6 +9,7 @@ use App\Enums\AiToolKindEnum;
 use App\Models\Project;
 use App\Models\User;
 use App\Services\AssistantQueryService;
+use Illuminate\Validation\ValidationException;
 use Laravel\Ai\Contracts\Tool;
 use Laravel\Ai\Tools\Request;
 use Qiick\ApiKeys\Audit;
@@ -86,8 +87,26 @@ abstract class AssistantTool implements Tool
             return ['error' => 'The user lacks the can-show-projects permission.'];
         }
 
+        // A missing or invalid argument is an error the model can act on, never a silent default
+        // or an exception (#435, #436).
+        try {
+            $request->validate($this->rules($request), ['in' => 'The :attribute must be one of: :values.']);
+        } catch (ValidationException $exception) {
+            return ['error' => $exception->validator->errors()->first()];
+        }
+
         return $this->read(app(AssistantQueryService::class)->forUser($this->user), $request)
             ?? ['error' => 'No project or report matches these arguments. Call ListProjects for the slugs.'];
+    }
+
+    /**
+     * The rules of the tool's arguments, checked before the tool runs.
+     *
+     * @return array<string, mixed>
+     */
+    protected function rules(Request $request): array
+    {
+        return [];
     }
 
     /**

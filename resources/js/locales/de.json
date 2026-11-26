@@ -91,7 +91,8 @@
         "groups": "Gruppen",
         "settings": "Einstellungen",
         "repository": "Repository",
-        "documentation": "Dokumentation"
+        "documentation": "Dokumentation",
+        "buildCommit": "Build {{id}}: Commit öffnen"
     },
     "userMenu": {
         "settings": "Einstellungen",
@@ -102,9 +103,7 @@
         "accessibilityOnCount": "{{count}} an",
         "highContrast": "Hoher Kontrast",
         "reduceMotion": "Bewegung reduzieren",
-        "logOut": "Abmelden",
-        "compactTables": "Kompakte Tabellen",
-        "singleKeyShortcuts": "Einzeltasten-Kürzel"
+        "logOut": "Abmelden"
     },
     "a11y": {
         "skipToContent": "Zum Inhalt springen",
@@ -125,7 +124,8 @@
         "notifications": "Benachrichtigungen",
         "notificationsUnread": "Benachrichtigungen, {{count}} ungelesen",
         "unreadCount": "{{count}} ungelesen",
-        "scrollableTable": "Scrollbare Tabelle"
+        "scrollableTable": "Scrollbare Tabelle",
+        "openTableRow": "Drücken Sie die Eingabe- oder Leertaste, um diese Zeile zu öffnen."
     },
     "auth": {
         "login": {
@@ -222,7 +222,7 @@
     "settings": {
         "layout": {
             "title": "Einstellungen",
-            "description": "Profil und Kontoeinstellungen verwalten",
+            "description": "Verwalten Sie Ihr Konto und wie dieses Excubia arbeitet",
             "navAria": "Einstellungen",
             "sectionAccount": "Konto",
             "sectionProject": "Projekt",
@@ -669,6 +669,14 @@
                     "description": "Lesen: Projekte, Berichte, Befunde, Exceptions, Runtime und Zeitpläne. Schreiben schließt Lesen ein und erlaubt Änderungen am Exception-Status, an Zuweisungen, verworfenen Findings, stummgeschalteten Alerts und Wartungsfenstern."
                 }
             }
+        },
+        "preferences": {
+            "title": "Einstellungen für Listen",
+            "description": "Wie Listen für Sie aussehen und reagieren, in diesem Browser.",
+            "compactTables": "Kompakte Tabellen",
+            "compactTablesDescription": "Dichtere Tabellenzeilen, damit mehr auf den Bildschirm passt.",
+            "singleKeyShortcuts": "Einzeltasten-Kürzel",
+            "singleKeyShortcutsDescription": "Tastenkürzel ohne Zusatztasten, etwa j / k in Listen. Schalten Sie sie aus, wenn sie Spracheingabe oder andere assistive Technik stören."
         }
     },
     "activityLog": {
@@ -1134,7 +1142,7 @@
             "systemProjectHint": "Excubia überwacht sich selbst. Es berichtet täglich von allein und kann nicht gelöscht werden.",
             "attention": {
                 "title": "Handlungsbedarf",
-                "description": "{{shown}} von {{total}} offenen Problemen, die schwersten zuerst.",
+                "description": "{{shown}} von {{total}} offenen Problemen: zuerst Befunde mit fehlschlagender Infrastruktur, dann nach Schweregrad; danach offene Ausnahmen.",
                 "allFindings": "Alle Befunde",
                 "exception": "Exception",
                 "emptyTitle": "Kein Handlungsbedarf"

@@ -7,6 +7,7 @@ namespace App\Actions;
 use App\Enums\AlertEventEnum;
 use App\Models\Project;
 use App\Services\AlertDispatcherService;
+use App\Services\SidebarProjectsService;
 
 /**
  * Deletes a project; its push token stops working with it. `project.deleted` (#22) is raised
@@ -21,6 +22,8 @@ class DeleteProjectAction
     {
         $this->alerts->dispatch(AlertEventEnum::ProjectDeleted, $project, 'project deleted');
         $project->delete();
+        // No sidebar keeps listing it from its cache (#432).
+        SidebarProjectsService::forgetAll();
         $this->saveLogo->deleteFile($project);
     }
 }
