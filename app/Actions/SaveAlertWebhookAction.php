@@ -47,8 +47,8 @@ class SaveAlertWebhookAction
                 return null;
             }
 
-            // Never null (null inherits, and outbound before beta.3 reads it as permission): the
-            // operator's strict opt-in, which the package also enforces as the ceiling.
+            // Always explicit: the operator's strict opt-in, which the package also enforces as
+            // the ceiling (outbound 0.2.0-beta.3 stores false by default and never inherits).
             $isPrivateHostAllowed = config('outbound.ssrf.allow_private_hosts') === true;
 
             if ($endpoint !== null) {
