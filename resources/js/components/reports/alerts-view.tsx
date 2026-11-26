@@ -236,8 +236,17 @@ export function AlertsView({
                                                 className="flex items-center gap-3 py-2"
                                             >
                                                 <div className="min-w-0 flex-1">
-                                                    <div className="truncate font-mono text-sm">
-                                                        {mute.event}
+                                                    <div className="truncate text-sm">
+                                                        {t(
+                                                            `alerts.eventLabels.${mute.event}`,
+                                                            {
+                                                                defaultValue:
+                                                                    mute.event,
+                                                            },
+                                                        )}{' '}
+                                                        <span className="font-mono text-xs text-muted-foreground">
+                                                            {mute.event}
+                                                        </span>
                                                     </div>
                                                     <div className="truncate text-xs text-muted-foreground">
                                                         {mute.is_issue
@@ -377,7 +386,14 @@ function HistoryRow({
             <TableCell className="max-w-[36rem]">
                 <div className="flex items-center gap-2">
                     <SeverityBadge severity={alert.severity} />
-                    <span className="font-mono text-xs">{alert.event}</span>
+                    <span className="text-sm font-medium">
+                        {t(`alerts.eventLabels.${alert.event}`, {
+                            defaultValue: alert.event,
+                        })}
+                    </span>
+                    <span className="font-mono text-xs text-muted-foreground">
+                        {alert.event}
+                    </span>
                 </div>
                 <div className="truncate text-sm">{alert.summary}</div>
             </TableCell>

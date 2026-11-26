@@ -158,8 +158,12 @@ export default function AdminActivityLogsIndex({
             return '—';
         }
 
+        // An event without its own label still reads as words: `status_changed` → "Status changed".
+        const humanized = eventName.replaceAll('_', ' ');
+
         return t(`activityLog.events.${eventName}`, {
-            defaultValue: eventName,
+            defaultValue:
+                humanized.charAt(0).toUpperCase() + humanized.slice(1),
         });
     };
 
@@ -232,7 +236,14 @@ export default function AdminActivityLogsIndex({
             header: t('activityLog.columns.description'),
             meta: { cellClassName: 'max-w-xs text-sm' },
             cell: ({ row }) => (
-                <TruncatedText text={row.original.description || '—'} />
+                <TruncatedText
+                    text={
+                        // Model events store their event name as the description ("created").
+                        row.original.description === row.original.event
+                            ? eventLabel(row.original.event)
+                            : row.original.description || '—'
+                    }
+                />
             ),
         },
         {
