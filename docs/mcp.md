@@ -35,13 +35,14 @@ client brings its own model.
    You can also pick an expiry date. To change scopes later, create a new key and revoke the old one.
 3. Copy the key (`exc_live_…` or `exc_test_…`). It is shown once; Excubia stores only a hash of it.
 
-Your account needs the `can-use-ai` permission assigned directly or through a role other than
-**Super Admin**. For example, an administrator can assign the permission through a dedicated role.
-When your account has no MCP scope to grant, the selector and Create button are disabled.
+Your account needs an explicit assignment of `can-use-ai`. In **Users**, assign the account a
+role that grants this permission, such as **Admin** or a dedicated role. A **Super Admin** can
+add that role to their own account. When your account has no MCP scope to grant, the selector
+and Create button are disabled.
 
 The key uses your assigned permissions. To see projects over MCP, you also need `can-show-projects`
-assigned directly or through another role such as Reader. Revoke the key in the same page when you no longer use it; deactivating or deleting
-your account stops all your keys at once. Creating, revoking and the first use of a key are in the
+from a role such as Reader or Admin. Revoke the key on the same page when you no longer use it.
+Deactivating or deleting your account stops all your keys at once. Creating, revoking and the first use of a key are in the
 activity log, and so is every MCP tool call (`ai` log, event "AI tool", with `surface: mcp`, the
 tool, the arguments and the outcome).
 

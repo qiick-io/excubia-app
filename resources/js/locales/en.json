@@ -658,7 +658,7 @@
             "create": "Create API key",
             "createTitle": "Create API key",
             "createDescription": "Name the key after the client that uses it, pick what it may do and, optionally, when it expires.",
-            "noGrantableScopes": "To create an MCP key, ask an administrator to assign the Can use AI permission directly or through a role other than Super Admin.",
+            "noGrantableScopes": "To create an MCP key, your account needs a role with Can use AI, such as Admin. A Super Admin can assign the role in Users, including to their own account.",
             "empty": {
                 "title": "No API keys yet",
                 "description": "Create a key to connect an AI client to Excubia."

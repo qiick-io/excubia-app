@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Enums\PermissionEnum;
 use App\Enums\RoleEnum;
 use App\Models\ApiKey;
 use App\Models\User;
@@ -46,8 +45,7 @@ function historyStateHidesSecret(string $plainSecret): string
 }
 
 it('creates a key, shows it once, rotates and revokes it', function (string $scheme) {
-    $user = User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value);
-    $user->givePermissionTo(PermissionEnum::CanUseAi->value);
+    $user = User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value, RoleEnum::Admin->value);
     $this->actingAs($user);
 
     $page = visitA11y(route('api-keys.index', absolute: false), $scheme)
@@ -119,7 +117,7 @@ it('explains why a super-admin without assigned MCP permissions cannot create a 
 
     visitA11y(route('api-keys.index', absolute: false), $scheme)
         ->click('[data-test="api-key-create-open"]')
-        ->assertSee('To create an MCP key, ask an administrator to assign the Can use AI permission')
+        ->assertSee('your account needs a role with Can use AI, such as Admin')
         ->assertValue(MCP_PERMISSION_SELECT, 'none')
         ->assertDisabled(MCP_PERMISSION_SELECT)
         ->assertDisabled('[data-test="api-key-create-submit"]')
