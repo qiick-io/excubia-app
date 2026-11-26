@@ -7,6 +7,7 @@ namespace App\Ai\Tools;
 use App\Enums\SeverityEnum;
 use App\Services\AssistantQueryService;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
+use Illuminate\Validation\Rule;
 use Laravel\Ai\Tools\Request;
 use Stringable;
 
@@ -33,6 +34,19 @@ class SearchFindingsTool extends AssistantTool
         ];
     }
 
+    protected function rules(Request $request): array
+    {
+        return [
+            'project' => ['nullable', 'string'],
+            'minimum_severity' => ['nullable', Rule::in(SeverityEnum::values())],
+            'package' => ['nullable', 'string'],
+            'advisory_id' => ['nullable', 'string'],
+            'check_id' => ['nullable', 'string'],
+            'from' => ['nullable', 'date_format:Y-m-d'],
+            'to' => ['nullable', 'date_format:Y-m-d'],
+        ];
+    }
+
     protected function read(AssistantQueryService $query, Request $request): ?array
     {
         return $query->searchFindings([
@@ -41,13 +55,9 @@ class SearchFindingsTool extends AssistantTool
             'package' => $request['package'] ?? null,
             'advisoryId' => $request['advisory_id'] ?? null,
             'checkId' => $request['check_id'] ?? null,
-            'from' => $this->date($request['from'] ?? null),
-            'to' => $this->date($request['to'] ?? null),
+            // Optional rules skip a blank string, so a blank date counts as no date.
+            'from' => filled($request['from'] ?? null) ? $request['from'] : null,
+            'to' => filled($request['to'] ?? null) ? $request['to'] : null,
         ]);
-    }
-
-    private function date(mixed $value): ?string
-    {
-        return is_string($value) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) === 1 ? $value : null;
     }
 }
