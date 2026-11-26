@@ -108,3 +108,26 @@ it('has no critical or serious axe issues on the dashboard in high contrast', fu
 
     assertAxeCheckedColorContrast($page)->assertNoJavaScriptErrors();
 });
+
+it('has no critical or serious axe issues on the error pages in light and dark', function () {
+    foreach (['light', 'dark'] as $mode) {
+        // Guest on an unknown URL: the auth layout (#423).
+        $page = visitA11y('/no-such-page', $mode)
+            ->assertSee('Page not found')
+            ->assertSee('Sign in')
+            ->assertNoAccessibilityIssues(1);
+        assertAxeCheckedColorContrast($page)->assertNoJavaScriptErrors();
+    }
+
+    $this->actingAs(User::factory()->create()->assignRole(RoleEnum::Reader->value));
+
+    foreach (['light', 'dark'] as $mode) {
+        foreach (['/projects/no-such-project' => 'Page not found', '/users' => 'Access denied'] as $path => $title) {
+            $page = visitA11y($path, $mode)
+                ->assertSee($title)
+                ->assertSee('Back to dashboard')
+                ->assertNoAccessibilityIssues(1);
+            assertAxeCheckedColorContrast($page)->assertNoJavaScriptErrors();
+        }
+    }
+});

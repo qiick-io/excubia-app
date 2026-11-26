@@ -2458,5 +2458,26 @@
         "copyFailed": "The secret could not be copied. It is selected: copy it with your keyboard.",
         "acknowledge": "I have stored the secret somewhere safe",
         "done": "Done"
+    },
+    "errors": {
+        "403": {
+            "title": "Access denied",
+            "description": "You do not have permission to open this page."
+        },
+        "404": {
+            "title": "Page not found",
+            "description": "This page does not exist or is no longer available."
+        },
+        "500": {
+            "title": "Something went wrong",
+            "description": "The server could not complete the request. Try again in a moment."
+        },
+        "503": {
+            "title": "Back soon",
+            "description": "Excubia is under maintenance or a service it needs is down. Try again in a few minutes."
+        },
+        "backToDashboard": "Back to dashboard",
+        "signIn": "Sign in",
+        "tryAgain": "Try again"
     }
 }
