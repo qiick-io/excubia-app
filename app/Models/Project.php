@@ -170,6 +170,20 @@ class Project extends Model
     }
 
     /**
+     * Route model binding only finds projects the signed-in user may see, so a hidden project
+     * answers 404 like a slug that does not exist: no 403 tells a reader that it exists (#423).
+     *
+     * @param  mixed  $value
+     * @param  string|null  $field
+     */
+    public function resolveRouteBinding($value, $field = null): ?Model
+    {
+        $user = auth()->user();
+
+        return $this->resolveRouteBindingQuery(self::query()->visibleTo($user instanceof User ? $user : null), $value, $field)->first();
+    }
+
+    /**
      * Whether the user may see this project: one query with the same rules as visibleTo(), for
      * the policies and the alert recipients.
      */

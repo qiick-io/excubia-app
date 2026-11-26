@@ -80,7 +80,7 @@ it('refuses to pin a project the user cannot see, and drops a pin that became hi
     $hidden = Project::factory()->create(['slug' => 'hidden', 'visibility' => ProjectVisibilityEnum::Admins]);
     $open = Project::factory()->create(['slug' => 'open']);
 
-    $this->actingAs($reader)->post(route('projects.pin.store', $hidden->slug))->assertForbidden();
+    $this->actingAs($reader)->post(route('projects.pin.store', $hidden->slug))->assertNotFound();
     $this->actingAs($reader)->post(route('projects.pin.store', $open->slug))->assertRedirect();
 
     $open->update(['visibility' => ProjectVisibilityEnum::Admins]);

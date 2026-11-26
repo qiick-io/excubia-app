@@ -6,6 +6,7 @@ use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\RecordIngestRejectionMiddleware;
 use App\Http\Middleware\SecurityHeadersMiddleware;
 use App\Http\Middleware\SetLocaleMiddleware;
+use App\Http\Responses\ErrorPageResponse;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -13,6 +14,7 @@ use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Middleware\ThrottleRequests;
 use Qiick\Access\Http\EnsureTwoFactorIsEnabled;
+use Symfony\Component\HttpFoundation\Response;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -57,4 +59,6 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->is('mcp') || $request->expectsJson(),
         );
+        // The qiick 403 / 404 / 500 / 503 pages for browser requests (#423).
+        $exceptions->respond(fn (Response $response, Throwable $exception, Request $request): Response => ErrorPageResponse::from($response, $request));
     })->create();

@@ -1,5 +1,6 @@
 import { createInertiaApp } from '@inertiajs/react';
 import { AppErrorBoundary } from '@/components/app-error-boundary';
+import { FlashToasts } from '@/components/flash-toasts';
 import { FocusAfterNavigation } from '@/components/focus-after-navigation';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -22,6 +23,8 @@ void createInertiaApp({
             <AppErrorBoundary>
                 <TooltipProvider delayDuration={0}>
                     <FocusAfterNavigation />
+                    {/* At the root so auth and error pages show flashed toasts too (#423). */}
+                    <FlashToasts />
                     {app}
                     {/* bottom-right: top-right toast was intercepting header Save/Create clicks */}
                     <Toaster

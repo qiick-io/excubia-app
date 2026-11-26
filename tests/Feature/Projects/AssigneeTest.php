@@ -152,7 +152,7 @@ it('needs the permission of the item, a visible project and an item of the proje
     $triager = assigneeUser(RoleEnum::Reader, 'Linus')->assignRole('triager');
     $hiddenGroup = assigneeException($hidden, 'b');
 
-    $this->actingAs($triager)->put(route('projects.exceptions.assignee', [$hidden, $hiddenGroup]), ['assigned_user_id' => null])->assertForbidden();
+    $this->actingAs($triager)->put(route('projects.exceptions.assignee', [$hidden, $hiddenGroup]), ['assigned_user_id' => null])->assertNotFound();
     $this->actingAs($triager)->put(route('projects.findings.assignee', [$project, $finding]), ['assigned_user_id' => $triager->id])->assertSessionHasNoErrors();
     $this->actingAs($triager)->put(route('projects.exceptions.assignee', [$project, $group]), [])->assertSessionHasErrors('assigned_user_id');
 });
