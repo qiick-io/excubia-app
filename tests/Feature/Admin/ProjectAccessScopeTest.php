@@ -53,8 +53,8 @@ it('shows an admin-only project to the members of a user group scoped to its pro
         ->and($outsider->can('view', $scoped))->toBeFalse();
 
     $this->actingAs($reader)->get(route('projects.show', $scoped->slug))->assertOk();
-    $this->actingAs($reader)->get(route('projects.show', $hidden->slug))->assertForbidden();
-    $this->actingAs($outsider)->get(route('projects.show', $scoped->slug))->assertForbidden();
+    $this->actingAs($reader)->get(route('projects.show', $hidden->slug))->assertNotFound();
+    $this->actingAs($outsider)->get(route('projects.show', $scoped->slug))->assertNotFound();
 });
 
 it('applies the scope to the lists, the picker, the fleet and the AI tools', function () {

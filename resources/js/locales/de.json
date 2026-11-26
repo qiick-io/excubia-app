@@ -2457,6 +2457,27 @@
         "acknowledge": "Ich habe das Geheimnis sicher gespeichert",
         "done": "Fertig"
     },
+    "errors": {
+        "403": {
+            "title": "Zugriff verweigert",
+            "description": "Sie haben keine Berechtigung, diese Seite zu öffnen."
+        },
+        "404": {
+            "title": "Seite nicht gefunden",
+            "description": "Diese Seite existiert nicht oder ist nicht mehr verfügbar."
+        },
+        "500": {
+            "title": "Etwas ist schiefgelaufen",
+            "description": "Der Server konnte die Anfrage nicht abschließen. Versuchen Sie es gleich noch einmal."
+        },
+        "503": {
+            "title": "Bald wieder da",
+            "description": "Excubia wird gewartet oder ein benötigter Dienst ist nicht erreichbar. Versuchen Sie es in ein paar Minuten noch einmal."
+        },
+        "backToDashboard": "Zurück zum Dashboard",
+        "signIn": "Anmelden",
+        "tryAgain": "Erneut versuchen"
+    },
     "rolePicker": {
         "legend": "Rollen",
         "description": "Die Berechtigungen aller ausgewählten Rollen gelten gemeinsam.",

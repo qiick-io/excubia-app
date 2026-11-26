@@ -27,6 +27,14 @@ class GetReportHistoryTool extends AssistantTool
         ];
     }
 
+    protected function rules(Request $request): array
+    {
+        return [
+            'project' => ['required', 'string'],
+            'limit' => ['nullable', 'integer', 'between:1,100'],
+        ];
+    }
+
     protected function read(AssistantQueryService $query, Request $request): ?array
     {
         return $query->reportHistory((string) $request['project'], max(1, min(100, (int) ($request['limit'] ?? 20))));

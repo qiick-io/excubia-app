@@ -39,19 +39,21 @@ class StoreMaintenanceWindowRequest extends FormRequest
      */
     public static function windowRules(): array
     {
-        $once = 'required_if:recurrence,'.MaintenanceWindow::ONCE;
-        $weekly = 'required_if:recurrence,'.MaintenanceWindow::WEEKLY;
+        // Each recurrence validates only its own fields: the form always sends both sets, and an
+        // empty `weekdays` of a one-off window must not fail `min:1` (#421).
+        $once = 'exclude_unless:recurrence,'.MaintenanceWindow::ONCE;
+        $weekly = 'exclude_unless:recurrence,'.MaintenanceWindow::WEEKLY;
 
         return [
             'name' => ['required', 'string', 'max:100'],
             'recurrence' => ['required', Rule::in([MaintenanceWindow::ONCE, MaintenanceWindow::WEEKLY])],
             'timezone' => ['required', 'timezone:all'],
-            'starts_at' => ['nullable', $once, 'date_format:Y-m-d\TH:i'],
-            'ends_at' => ['nullable', $once, 'date_format:Y-m-d\TH:i', 'after:starts_at'],
-            'weekdays' => ['nullable', $weekly, 'array', 'min:1'],
-            'weekdays.*' => ['integer', 'between:1,7', 'distinct'],
-            'start_time' => ['nullable', $weekly, 'date_format:H:i'],
-            'duration_minutes' => ['nullable', $weekly, 'integer', 'min:1', 'max:10080'],
+            'starts_at' => [$once, 'required', 'date_format:Y-m-d\TH:i'],
+            'ends_at' => [$once, 'required', 'date_format:Y-m-d\TH:i', 'after:starts_at'],
+            'weekdays' => [$weekly, 'required', 'array', 'min:1'],
+            'weekdays.*' => [$weekly, 'integer', 'between:1,7', 'distinct'],
+            'start_time' => [$weekly, 'required', 'date_format:H:i'],
+            'duration_minutes' => [$weekly, 'required', 'integer', 'min:1', 'max:10080'],
         ];
     }
 }
