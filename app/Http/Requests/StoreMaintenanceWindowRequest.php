@@ -6,7 +6,7 @@ namespace App\Http\Requests;
 
 use App\Models\MaintenanceWindow;
 use App\Models\Project;
-use App\Rules\EndsInFutureRule;
+use App\Rules\OneOffWindowTimeRule;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -49,8 +49,8 @@ class StoreMaintenanceWindowRequest extends FormRequest
             'name' => ['required', 'string', 'max:100'],
             'recurrence' => ['required', Rule::in([MaintenanceWindow::ONCE, MaintenanceWindow::WEEKLY])],
             'timezone' => ['required', 'timezone:all'],
-            'starts_at' => [$once, 'required', 'date_format:Y-m-d\TH:i'],
-            'ends_at' => [$once, 'required', 'date_format:Y-m-d\TH:i', 'after:starts_at', new EndsInFutureRule],
+            'starts_at' => [$once, 'required', 'date_format:Y-m-d\TH:i', new OneOffWindowTimeRule(isEnd: false)],
+            'ends_at' => [$once, 'required', 'date_format:Y-m-d\TH:i', new OneOffWindowTimeRule],
             'weekdays' => [$weekly, 'required', 'array', 'min:1'],
             'weekdays.*' => [$weekly, 'integer', 'between:1,7', 'distinct'],
             'start_time' => [$weekly, 'required', 'date_format:H:i'],

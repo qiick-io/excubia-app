@@ -174,6 +174,15 @@ it('stores maintenance windows in UTC and suppresses alerts while one is in forc
         ->post(route('projects.maintenance-windows.store', $project), ['name' => 'Late', 'recurrence' => 'once', 'timezone' => 'Europe/Rome', 'starts_at' => '2026-11-10T12:00', 'ends_at' => '2026-11-10T12:45'])
         ->assertSessionHasErrors(['ends_at' => 'The end must be in the future: this window would silence nothing.']);
 
+    // Rome skips 02:00–03:00 on 2027-03-28: such a time would be stored shifted.
+    $this->actingAs($admin)
+        ->post(route('projects.maintenance-windows.store', $project), ['name' => 'Gap', 'recurrence' => 'once', 'timezone' => 'Europe/Rome', 'starts_at' => '2027-03-28T02:30', 'ends_at' => '2027-03-28T04:00'])
+        ->assertSessionHasErrors(['starts_at' => 'This time does not exist in the chosen timezone (the clocks skip it).']);
+
+    $this->actingAs($admin)
+        ->post(route('projects.maintenance-windows.store', $project), ['name' => 'Backwards', 'recurrence' => 'once', 'timezone' => 'UTC', 'starts_at' => '2026-12-01T10:00', 'ends_at' => '2026-12-01T10:00'])
+        ->assertSessionHasErrors(['ends_at' => 'The end must be after the start.']);
+
     // 12:30–14:00 in Rome is 11:30–13:00 UTC: in force at 12:00 UTC. The drawer also sends the
     // (empty) weekly fields; a one-off window ignores them (#421).
     $this->actingAs($admin)

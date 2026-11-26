@@ -58,5 +58,7 @@
     "The signing secret could not be generated now: too many previous secrets are still in their grace period. Try again later.": "Non è possibile generare ora il segreto di firma: troppi segreti precedenti sono ancora nel periodo di tolleranza. Riprova più tardi.",
     "Your session expired. Please try again.": "La sessione è scaduta. Riprova.",
     "Something went wrong. Please try again.": "Qualcosa è andato storto. Riprova.",
-    "The end must be in the future: this window would silence nothing.": "La fine deve essere nel futuro: questa finestra non silenzierebbe nulla."
+    "The end must be in the future: this window would silence nothing.": "La fine deve essere nel futuro: questa finestra non silenzierebbe nulla.",
+    "This time does not exist in the chosen timezone (the clocks skip it).": "Questo orario non esiste nel fuso scelto (l’ora viene saltata).",
+    "The end must be after the start.": "La fine deve essere dopo l’inizio."
 }
