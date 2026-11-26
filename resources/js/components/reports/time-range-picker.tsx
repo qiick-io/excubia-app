@@ -222,8 +222,13 @@ function bucketFormatter(
     format: (at: string, options: Intl.DateTimeFormatOptions) => string,
 ): (at: string) => string {
     return (at) => {
+        // Daily buckets start at UTC midnight: label them in UTC so no zone shows the day before.
         if (bucketSeconds >= DAY_SECONDS) {
-            return format(at, { day: '2-digit', month: 'short' });
+            return format(at, {
+                day: '2-digit',
+                month: 'short',
+                timeZone: 'UTC',
+            });
         }
 
         if (spanSeconds > DAY_SECONDS) {
@@ -273,11 +278,13 @@ export function useRangeTexts(range: TimeRange): {
         };
     }
 
+    // In the browser's zone, like the picker that edits these bounds (`toLocalWire`).
     const spanFormat: Intl.DateTimeFormatOptions = {
         day: '2-digit',
         month: 'short',
         hour: '2-digit',
         minute: '2-digit',
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     };
     const span = `${dates.format(rangeWindow.from, spanFormat)} – ${dates.format(rangeWindow.to, spanFormat)}`;
 

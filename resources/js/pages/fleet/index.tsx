@@ -42,6 +42,7 @@ import { cn } from '@/lib/utils';
 import fleetRoutes from '@/routes/fleet';
 import projectsRoutes from '@/routes/projects';
 import type { BreadcrumbItem, RuntimeName, Severity } from '@/types';
+import { useDateFormat } from '@/lib/date-format';
 
 type FleetView = 'readiness' | 'advisories' | 'eol';
 
@@ -241,10 +242,14 @@ function FleetTabs({ view }: { view: FleetView }) {
 }
 
 /** "Dismissed until 2026-12-31: reason", the reason only when given. */
-function dismissalText(t: TFunction, dismissal: Dismissal): string {
+function dismissalText(
+    t: TFunction,
+    day: (day: string) => string,
+    dismissal: Dismissal,
+): string {
     const status =
         dismissal.until !== null
-            ? t('findings.dismissedUntil', { date: dismissal.until })
+            ? t('findings.dismissedUntil', { date: day(dismissal.until) })
             : t('findings.dismissedForGood');
 
     return dismissal.reason !== null
@@ -254,8 +259,9 @@ function dismissalText(t: TFunction, dismissal: Dismissal): string {
 
 function DismissalText({ dismissal }: { dismissal: Dismissal }) {
     const { t } = useTranslation();
+    const dates = useDateFormat();
 
-    return <>{dismissalText(t, dismissal)}</>;
+    return <>{dismissalText(t, dates.day, dismissal)}</>;
 }
 
 /**
@@ -289,6 +295,7 @@ function ProjectLink({ project }: { project: ProjectRef }) {
  */
 function ReadinessView({ readiness }: { readiness: Readiness }) {
     const { t } = useTranslation();
+    const dates = useDateFormat();
 
     if (readiness.projects.length === 0) {
         return (
@@ -402,7 +409,7 @@ function ReadinessView({ readiness }: { readiness: Readiness }) {
                                         items={row.dismissedBlockers.map(
                                             (blocker) => ({
                                                 id: blocker.package,
-                                                label: `${blocker.package} · ${dismissalText(t, blocker.dismissal)}`,
+                                                label: `${blocker.package} · ${dismissalText(t, dates.day, blocker.dismissal)}`,
                                             }),
                                         )}
                                     />

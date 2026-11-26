@@ -13,6 +13,7 @@ import {
 import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
 import projectsRoutes from '@/routes/projects';
 import type { EndOfSupportRow } from '@/types/dashboard';
+import { useDateFormat } from '@/lib/date-format';
 
 /**
  * Dashboard card of the runtimes whose security support has ended or ends soon, per project,
@@ -20,6 +21,7 @@ import type { EndOfSupportRow } from '@/types/dashboard';
  */
 export function EndOfSupportCard({ rows }: { rows: EndOfSupportRow[] }) {
     const { t } = useTranslation();
+    const dates = useDateFormat();
 
     return (
         <Card className="xl:col-span-4">
@@ -68,7 +70,9 @@ export function EndOfSupportCard({ rows }: { rows: EndOfSupportRow[] }) {
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <div className="text-xs tabular-nums">
-                                                {row.securitySupportEndsOn}
+                                                {dates.day(
+                                                    row.securitySupportEndsOn,
+                                                )}
                                             </div>
                                             <RuntimeSupportBadge
                                                 runtime={{
