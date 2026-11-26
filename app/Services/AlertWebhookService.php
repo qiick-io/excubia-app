@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Actions\RecordAlertDeliveryAction;
+use App\Jobs\DeliverAlertJob;
 use App\Jobs\SendAlertWebhooksJob;
 use DateTimeImmutable;
 use Illuminate\Support\Facades\Date;
@@ -27,6 +29,7 @@ class AlertWebhookService
     public function __construct(
         private readonly WebhookDeliveryCoordinator $coordinator,
         private readonly WebhookSecretResolver $secrets,
+        private readonly RecordAlertDeliveryAction $recordDelivery,
     ) {}
 
     public function endpoint(): ?WebhookEndpoint
@@ -56,12 +59,13 @@ class AlertWebhookService
     }
 
     /**
-     * Stores the delivery of one alert payload once the surrounding transaction commits, then
-     * queues the worker run that sends it.
+     * Stores the delivery of one alert payload, then queues the worker run that sends it once the
+     * surrounding transaction commits.
      *
      * @param  array<string, mixed>  $payload  see AlertDispatcherService
      *
-     * @side-effect Writes webhook_deliveries rows; queues SendAlertWebhooksJob.
+     * @side-effect Writes webhook_deliveries rows (or marks the alert's webhook failed without an
+     * endpoint); queues SendAlertWebhooksJob after the commit.
      */
     public function send(array $payload): void
     {
@@ -75,9 +79,16 @@ class AlertWebhookService
             $data,
         );
 
-        DB::afterCommit(function () use ($message): void {
-            $this->coordinator->dispatch($message);
-            SendAlertWebhooksJob::dispatch();
-        });
+        // Stored with the alert, in the caller's transaction: a rollback drops both, and once the
+        // alert is committed its delivery is too, for the schedule to send if the job never runs.
+        if ($this->coordinator->dispatch($message)->isEmpty()) {
+            // The endpoint was cleared or disabled since the alert chose its channels: nothing
+            // will send it, so the history says so instead of waiting forever.
+            $this->recordDelivery->execute($message->id, DeliverAlertJob::WEBHOOK, false);
+
+            return;
+        }
+
+        DB::afterCommit(fn () => SendAlertWebhooksJob::dispatch());
     }
 }

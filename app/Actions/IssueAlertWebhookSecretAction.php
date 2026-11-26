@@ -8,6 +8,7 @@ use App\Enums\ActivityEventEnum;
 use App\Models\User;
 use App\Services\AlertWebhookService;
 use Qiick\Outbound\Models\WebhookEndpoint;
+use Qiick\Outbound\Models\WebhookEndpointSecret;
 use Qiick\Outbound\Webhooks\SecretRotator;
 use Qiick\Outbound\Webhooks\WebhookException;
 
@@ -29,7 +30,9 @@ class IssueAlertWebhookSecretAction
     /**
      * @return array{secret: string, reason: 'created'|'rotated'}|null null without an endpoint
      *
-     * @throws WebhookException when the endpoint already holds the most signing secrets allowed
+     * @throws WebhookException when the endpoint already holds the most signing secrets allowed (the
+     *                          previous ones still in their grace period), or a concurrent request
+     *                          issued or rotated first
      */
     public function execute(User $actor): ?array
     {
@@ -39,7 +42,13 @@ class IssueAlertWebhookSecretAction
             return null;
         }
 
-        $isRotation = $this->webhooks->isReady();
+        // From the stored secrets, not delivery readiness: a disabled endpoint keeps its primary,
+        // and rotating it (a new receiver, a retired credential) must not need it turned on first.
+        $isRotation = WebhookEndpointSecret::query()
+            ->where('endpoint_id', $endpoint->id)
+            ->where('is_primary', true)
+            ->whereNull('revoked_at')
+            ->exists();
         $secret = $isRotation ? $this->rotator->rotate($endpoint) : $this->rotator->issue($endpoint);
 
         activity('settings')

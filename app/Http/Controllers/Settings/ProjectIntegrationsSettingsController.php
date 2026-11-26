@@ -23,6 +23,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Qiick\Outbound\Delivery\WebhookDeliveryCoordinator;
+use Qiick\Outbound\Webhooks\WebhookException;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 /**
@@ -127,7 +128,13 @@ class ProjectIntegrationsSettingsController extends Controller
      */
     public function issueWebhookSecret(Request $request, IssueAlertWebhookSecretAction $issueSecret, ApiKeySecretOnceService $secretOnce): RedirectResponse
     {
-        $issued = $issueSecret->execute($this->actor($request));
+        try {
+            $issued = $issueSecret->execute($this->actor($request));
+        } catch (WebhookException) {
+            Inertia::flash('toast', ['type' => 'error', 'message' => __('The signing secret could not be generated now: too many previous secrets are still in their grace period. Try again later.')]);
+
+            return to_route('project.integrations.edit');
+        }
 
         if ($issued === null) {
             Inertia::flash('toast', ['type' => 'error', 'message' => __('Save the webhook URL first.')]);

@@ -256,7 +256,7 @@ retries, `Retry-After`, auto-disable, redelivery and body retention.
 `webhook_endpoint_secrets`, `webhook_subscriptions`, `webhook_deliveries`,
 `webhook_delivery_attempts`). No Excubia migration changes; no scope column (one instance scope).
 
-**Config**: `routes/console.php` schedules `outbound:webhooks:work` (`everyFiveSeconds()`) and
+**Config**: `routes/console.php` schedules `outbound:webhooks:work` (`everyMinute()`, on one server) and
 `outbound:webhooks:prune` (`daily()`); `OUTBOUND_WEBHOOK_TIMEOUT_SECONDS` (15 s) is shorter than
 the scheduler's own timeout; `User` already uses `Notifiable` (auto-disable email to `created_by`).
 Seeders never `create()` secrets directly (`SecretRotator`).
@@ -275,6 +275,14 @@ export).
 **Reset:** not required by the tables (all new). It rides with group A because the webhook moves
 out of `settings` at the same time, and because 0.2 itself says to recreate the database after
 each pre-1.0 upgrade.
+
+**Webhook cutover** (part of the group A reset): restoring the old `settings` rows does not bring
+the webhook back, because the URL now lives on the package's endpoint and the secret is generated
+by Excubia. After the reset, save the URL in Settings → Integrations, generate the signing secret,
+configure the receiver with it, and send a test event before relying on alerts. Webhook jobs of
+the old `DeliverAlertJob` still waiting in a queue would fail on the new code: with the
+`database` queue the reset empties the `jobs` table; with Redis, run `php artisan queue:clear`
+before the new workers start.
 
 ---
 

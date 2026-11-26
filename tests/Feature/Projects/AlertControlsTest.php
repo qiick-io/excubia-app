@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Actions\IssueAlertWebhookSecretAction;
 use App\Actions\SaveAlertWebhookAction;
 use App\Actions\StorePushedReportAction;
 use App\Enums\AlertEventEnum;
@@ -16,14 +17,21 @@ use App\Models\Project;
 use App\Models\RuntimeAggregate;
 use App\Models\User;
 use App\Services\AlertDispatcherService;
+use App\Services\AlertWebhookService;
 use App\Services\SettingsRepositoryService;
 use Database\Seeders\PermissionSeeder;
+use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Contracts\Cache\LockTimeoutException;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Date;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
+use Qiick\Outbound\Models\WebhookDelivery;
+use Qiick\Outbound\Models\WebhookEndpoint;
 use Qiick\Outbound\Ssrf\RemoteUrlGuard;
 
 /**
@@ -567,4 +575,98 @@ it('prunes old alert history and ended mutes', function () {
 
     expect(AlertLog::query()->pluck('summary')->all())->toBe(['new'])
         ->and(AlertMute::query()->pluck('event')->all())->toBe(['finding.new']);
+});
+
+it('stores the webhook delivery in the same transaction as its alert', function () {
+    $project = Project::factory()->create();
+
+    DB::transaction(function () use ($project): void {
+        app(AlertDispatcherService::class)->dispatch(AlertEventEnum::ProjectStale, $project, 'no report');
+
+        // Before the commit: an interrupted process cannot leave a committed alert without its delivery.
+        expect(WebhookDelivery::query()->count())->toBe(1);
+        Queue::assertNotPushed(SendAlertWebhooksJob::class);
+    });
+
+    Queue::assertPushed(SendAlertWebhooksJob::class);
+});
+
+it('marks the webhook failed when its endpoint is gone before the delivery is stored', function () {
+    $project = Project::factory()->create();
+    $alert = AlertLog::query()->create([
+        'uuid' => (string) Str::uuid(),
+        'project_id' => $project->id,
+        'event' => AlertEventEnum::ProjectStale->value,
+        'severity' => 'high',
+        'summary' => 'no report',
+        'status' => AlertLog::QUEUED,
+        'deliveries' => ['webhook' => AlertLog::QUEUED],
+    ]);
+    WebhookEndpoint::query()->sole()->forceFill(['is_active' => false])->save();
+
+    app(AlertWebhookService::class)->send(['id' => $alert->uuid, 'event' => AlertEventEnum::ProjectStale->value]);
+
+    expect($alert->fresh()->deliveries)->toBe(['webhook' => AlertLog::FAILED]);
+    Queue::assertNotPushed(SendAlertWebhooksJob::class);
+});
+
+it('marks the webhook failed for alerts whose endpoint was cleared before the delivery went out', function () {
+    $project = Project::factory()->create();
+    app(AlertDispatcherService::class)->dispatch(AlertEventEnum::ProjectStale, $project, 'no report');
+
+    app(SaveAlertWebhookAction::class)->execute(null, User::factory()->create());
+
+    expect(AlertLog::query()->sole()->deliveries)->toBe(['webhook' => AlertLog::FAILED]);
+});
+
+it('marks the webhook failed for alerts whose body the daily prune expired', function () {
+    $project = Project::factory()->create();
+    app(AlertDispatcherService::class)->dispatch(AlertEventEnum::ProjectStale, $project, 'no report');
+    DB::table('webhook_deliveries')->update(['payload_expires_at' => Date::now()->subMinute()]);
+    $prune = collect(app(Schedule::class)->events())
+        ->first(fn ($event): bool => str_contains((string) $event->command, 'outbound:webhooks:prune'));
+
+    $this->artisan('outbound:webhooks:prune')->assertSuccessful();
+    $prune->callAfterCallbacks(app());
+
+    expect(AlertLog::query()->sole()->deliveries)->toBe(['webhook' => AlertLog::FAILED]);
+});
+
+it('waits for a concurrent save instead of creating a second webhook endpoint', function () {
+    // The lock's wait is measured on the clock: a frozen one would wait forever.
+    Date::setTestNow();
+    $concurrentSave = Cache::lock(SaveAlertWebhookAction::LOCK, 10);
+    $concurrentSave->get();
+
+    try {
+        expect(fn () => app(SaveAlertWebhookAction::class)->execute('https://93.184.216.34/other', User::factory()->create()))
+            ->toThrow(LockTimeoutException::class);
+    } finally {
+        $concurrentSave->release();
+    }
+
+    expect(WebhookEndpoint::query()->sole()->url)->toBe('https://93.184.216.34/excubia');
+});
+
+it('stores the private-host flag of the webhook endpoint explicitly, from the strict opt-in', function () {
+    expect(WebhookEndpoint::query()->sole()->allow_private_hosts)->toBeFalse();
+
+    config(['outbound.ssrf.allow_private_hosts' => true]);
+    app(SaveAlertWebhookAction::class)->execute('https://93.184.216.34/excubia', User::factory()->create());
+
+    expect(WebhookEndpoint::query()->sole()->allow_private_hosts)->toBeTrue();
+});
+
+it('rotates the signing secret of a disabled endpoint, and refuses past the secret limit with a message', function () {
+    WebhookEndpoint::query()->sole()->forceFill(['is_active' => false])->save();
+    $admin = controlsAdmin();
+
+    expect(app(IssueAlertWebhookSecretAction::class)->execute($admin)['reason'] ?? null)->toBe('rotated');
+
+    // Four signing secrets at most: the primary and three still in their grace period.
+    $this->actingAs($admin)->post(route('project.integrations.webhook-secret'));
+    $this->actingAs($admin)->post(route('project.integrations.webhook-secret'));
+    $this->actingAs($admin)->post(route('project.integrations.webhook-secret'))
+        ->assertRedirect(route('project.integrations.edit'))
+        ->assertInertiaFlash('toast.type', 'error');
 });

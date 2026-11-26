@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\ReconcileAlertWebhookHistoryAction;
 use App\Jobs\RecordQueueHeartbeatJob;
 use App\Services\SettingsRepositoryService;
 use Illuminate\Foundation\Inspiring;
@@ -53,8 +54,10 @@ Schedule::command('excubia:send-digests')->weeklyOn(1, '08:00');
 // Alert webhook (qiick/laravel-outbound): the first attempt is queued when the alert is stored;
 // this run sends retries once a minute (no sub-minute task, so a scale-to-zero host can sleep).
 Schedule::command('outbound:webhooks:work')->everyMinute()->withoutOverlapping()->onOneServer();
-// Clears delivery bodies after 30 days and settled delivery rows after 90 (package defaults).
-Schedule::command('outbound:webhooks:prune')->daily()->onOneServer();
+// Clears delivery bodies after 30 days and settled delivery rows after 90 (package defaults);
+// then alerts whose delivery the prune gave up on stop reading `queued` in the history.
+Schedule::command('outbound:webhooks:prune')->daily()->onOneServer()
+    ->after(fn () => app(ReconcileAlertWebhookHistoryAction::class)->execute());
 
 // SSO back-channel logouts (qiick/laravel-oidc): drop stored logout revocations once they expire.
 Schedule::command('oidc:prune-logout-revocations')->daily()->onOneServer();
