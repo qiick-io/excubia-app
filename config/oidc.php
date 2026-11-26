@@ -33,7 +33,8 @@ return [
     /*
      * The package defaults, listed so .env.example documents their env vars. `discovery_base` and
      * `server_origin` serve Docker setups where the app reaches the IdP under another host than
-     * the browser; `allow_private_hosts` lets the SSRF guard accept a private-network IdP.
+     * the browser; `allow_private_hosts` lets the SSRF guard accept a private-network IdP (only an explicit true:
+     * an off value or a typo keeps private hosts refused).
      */
     'http' => [
 
@@ -43,7 +44,7 @@ return [
 
         'server_origin' => env('OIDC_SERVER_ORIGIN'),
 
-        'allow_private_hosts' => (bool) env('OIDC_ALLOW_PRIVATE_HOSTS', false),
+        'allow_private_hosts' => filter_var(env('OIDC_ALLOW_PRIVATE_HOSTS', false), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) === true,
 
     ],
 

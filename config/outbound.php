@@ -16,8 +16,10 @@ return [
          * NAT64, 6to4 and Teredo stay blocked either way. The ceiling (outbound
          * 0.2.0-beta.2): a call's UrlGuardOptions or an endpoint's
          * `allow_private_hosts` can only narrow it, never allow what this refuses.
+         * Fail-closed like https_only: only an explicit true (true/1/yes/on) opens
+         * private hosts; an off value or a typo keeps them refused.
          */
-        'allow_private_hosts' => (bool) env('OUTBOUND_ALLOW_PRIVATE_HOSTS', false),
+        'allow_private_hosts' => filter_var(env('OUTBOUND_ALLOW_PRIVATE_HOSTS', false), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) === true,
 
         /*
          * Restrict server-side fetches to https. Browser-target checks may use
