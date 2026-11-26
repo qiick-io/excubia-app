@@ -91,7 +91,8 @@
         "groups": "Gruppen",
         "settings": "Einstellungen",
         "repository": "Repository",
-        "documentation": "Dokumentation"
+        "documentation": "Dokumentation",
+        "buildCommit": "Build {{id}}: Commit öffnen"
     },
     "userMenu": {
         "settings": "Einstellungen",
@@ -102,9 +103,7 @@
         "accessibilityOnCount": "{{count}} an",
         "highContrast": "Hoher Kontrast",
         "reduceMotion": "Bewegung reduzieren",
-        "logOut": "Abmelden",
-        "compactTables": "Kompakte Tabellen",
-        "singleKeyShortcuts": "Einzeltasten-Kürzel"
+        "logOut": "Abmelden"
     },
     "a11y": {
         "skipToContent": "Zum Inhalt springen",
@@ -125,7 +124,8 @@
         "notifications": "Benachrichtigungen",
         "notificationsUnread": "Benachrichtigungen, {{count}} ungelesen",
         "unreadCount": "{{count}} ungelesen",
-        "scrollableTable": "Scrollbare Tabelle"
+        "scrollableTable": "Scrollbare Tabelle",
+        "openTableRow": "Drücken Sie die Eingabe- oder Leertaste, um diese Zeile zu öffnen."
     },
     "auth": {
         "login": {
@@ -222,7 +222,7 @@
     "settings": {
         "layout": {
             "title": "Einstellungen",
-            "description": "Profil und Kontoeinstellungen verwalten",
+            "description": "Verwalten Sie Ihr Konto und wie dieses Excubia arbeitet",
             "navAria": "Einstellungen",
             "sectionAccount": "Konto",
             "sectionProject": "Projekt",
@@ -669,6 +669,14 @@
                     "description": "Lesen: Projekte, Berichte, Befunde, Exceptions, Runtime und Zeitpläne. Schreiben schließt Lesen ein und erlaubt Änderungen am Exception-Status, an Zuweisungen, verworfenen Findings, stummgeschalteten Alerts und Wartungsfenstern."
                 }
             }
+        },
+        "preferences": {
+            "title": "Einstellungen für Listen",
+            "description": "Wie Listen für Sie aussehen und reagieren, in diesem Browser.",
+            "compactTables": "Kompakte Tabellen",
+            "compactTablesDescription": "Dichtere Tabellenzeilen, damit mehr auf den Bildschirm passt.",
+            "singleKeyShortcuts": "Einzeltasten-Kürzel",
+            "singleKeyShortcutsDescription": "Tastenkürzel ohne Zusatztasten, etwa j / k in Listen. Schalten Sie sie aus, wenn sie Spracheingabe oder andere assistive Technik stören."
         }
     },
     "activityLog": {
@@ -722,7 +730,19 @@
             "revoked": "API-Schlüssel widerrufen",
             "api_key_first_used": "API-Schlüssel erstmals verwendet",
             "collection_permissions_synced": "Collection-Berechtigungen synchronisiert",
-            "file_permissions_synced": "Datei-Berechtigungen synchronisiert"
+            "file_permissions_synced": "Datei-Berechtigungen synchronisiert",
+            "status_changed": "Status geändert",
+            "assigned": "Zugewiesen",
+            "unassigned": "Zuweisung entfernt",
+            "projects_synced": "Projekte synchronisiert",
+            "ai_tool_approval": "KI-Tool-Freigabe",
+            "alert_muted": "Alarm stummgeschaltet",
+            "alert_unmuted": "Alarm wieder aktiv",
+            "maintenance_window_created": "Wartungsfenster hinzugefügt",
+            "maintenance_window_deleted": "Wartungsfenster entfernt",
+            "finding_dismissed": "Befund ausgeblendet",
+            "finding_restored": "Befund wiederhergestellt",
+            "project_groups_synced": "Projektgruppen synchronisiert"
         },
         "logs": {
             "default": "Anwendung",
@@ -1122,7 +1142,7 @@
             "systemProjectHint": "Excubia überwacht sich selbst. Es berichtet täglich von allein und kann nicht gelöscht werden.",
             "attention": {
                 "title": "Handlungsbedarf",
-                "description": "{{shown}} von {{total}} offenen Problemen, die schwersten zuerst.",
+                "description": "{{shown}} von {{total}} offenen Problemen: zuerst Befunde mit fehlschlagender Infrastruktur, dann nach Schweregrad; danach offene Ausnahmen.",
                 "allFindings": "Alle Befunde",
                 "exception": "Exception",
                 "emptyTitle": "Kein Handlungsbedarf"
@@ -1737,6 +1757,67 @@
             "5": "Fr",
             "6": "Sa",
             "7": "So"
+        },
+        "eventLabels": {
+            "finding": {
+                "new": "Neuer Befund",
+                "resolved": "Befund behoben"
+            },
+            "infrastructure": {
+                "failed": "Infrastruktur fehlerhaft"
+            },
+            "health": {
+                "failed": "Health-Check fehlgeschlagen",
+                "recovered": "Health-Check wiederhergestellt",
+                "stale": "Server-Messwerte fehlen"
+            },
+            "project": {
+                "worsened": "Projekt verschlechtert",
+                "recovered": "Projekt verbessert",
+                "stale": "Projekt ohne Bericht",
+                "reporting_again": "Projekt berichtet wieder",
+                "token_changed": "Push-Token geändert",
+                "created": "Projekt erstellt",
+                "deleted": "Projekt gelöscht",
+                "disabled": "Projekt deaktiviert"
+            },
+            "report": {
+                "checks_skipped": "Prüfungen übersprungen"
+            },
+            "push": {
+                "rejected": "Push abgelehnt"
+            },
+            "schedule": {
+                "missed": "Geplante Aufgabe verpasst",
+                "failed": "Geplante Aufgabe fehlgeschlagen",
+                "scheduler_down": "Scheduler ausgefallen"
+            },
+            "runtime": {
+                "cache_hit_ratio_low": "Niedrige Cache-Trefferquote",
+                "delivery_failed": "Zustellung fehlgeschlagen",
+                "log_spike": "Log-Spitze"
+            },
+            "ai": {
+                "budget_warning": "KI-Budget-Warnung",
+                "budget_exceeded": "KI-Budget überschritten",
+                "spend_spike": "KI-Ausgabenspitze",
+                "error_rate": "KI-Fehlerrate"
+            },
+            "billing": {
+                "webhook_failures": "Fehlerhafte Abrechnungs-Webhooks",
+                "payment_failed": "Zahlung fehlgeschlagen"
+            },
+            "auth": {
+                "failed_login_spike": "Spitze fehlgeschlagener Anmeldungen"
+            },
+            "scout": {
+                "index_failures": "Suchindex-Fehler"
+            },
+            "eol": {
+                "approaching": "Supportende naht",
+                "reached": "Supportende erreicht"
+            },
+            "ping": "Testalarm"
         }
     },
     "timeRange": {

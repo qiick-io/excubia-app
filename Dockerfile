@@ -32,7 +32,11 @@ RUN apk add --no-cache libstdc++ libatomic \
 RUN npm ci --no-audit --no-fund && npm run build
 
 FROM base AS runtime
-ENV APP_ENV=production \
+# The build ID under the version in the sidebar (#425): the image has no .git, so pass the
+# commit when building, `--build-arg APP_BUILD=$(git rev-parse HEAD)`. Empty shows the version only.
+ARG APP_BUILD=
+ENV APP_BUILD=${APP_BUILD} \
+    APP_ENV=production \
     APP_DEBUG=false \
     LOG_CHANNEL=stderr \
     DB_CONNECTION=sqlite \

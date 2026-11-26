@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
+use App\Enums\RoleEnum;
 use App\Http\Requests\Concerns\ValidatesUsernameTrait;
 use App\Models\User;
 use App\Services\RoleGrantService;
@@ -56,7 +57,7 @@ class StoreUserRequest extends FormRequest
     /**
      * The assignable roles with their ids, for the role pickers of the user and group drawers.
      *
-     * @return list<array{id: int, name: string}>
+     * @return list<array{id: int, name: string, label: string}>
      */
     public static function assignableRoleOptionsFor(?User $actor): array
     {
@@ -64,7 +65,7 @@ class StoreUserRequest extends FormRequest
             ->whereIn('name', self::assignableRolesFor($actor))
             ->orderBy('name')
             ->get(['id', 'name'])
-            ->map(fn (Role $role): array => ['id' => (int) $role->id, 'name' => $role->name])
+            ->map(fn (Role $role): array => ['id' => (int) $role->id, 'name' => $role->name, 'label' => RoleEnum::labelFor($role->name)])
             ->all());
     }
 

@@ -26,6 +26,13 @@ class GetLatestReportTool extends AssistantTool
         ];
     }
 
+    protected function rules(Request $request): array
+    {
+        return [
+            'project' => ['required', 'string'],
+        ];
+    }
+
     protected function read(AssistantQueryService $query, Request $request): ?array
     {
         return $query->latestReport((string) $request['project']);

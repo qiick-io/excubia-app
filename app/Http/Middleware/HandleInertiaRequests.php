@@ -49,6 +49,7 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'name' => $settings->appName(),
             'appVersion' => SystemHealthService::appVersion(),
+            'appBuild' => SystemHealthService::appBuild(),
             'auth' => [
                 'user' => $user,
                 // Only hides UI: the server still checks every request.

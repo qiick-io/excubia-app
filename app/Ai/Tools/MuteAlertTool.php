@@ -73,7 +73,7 @@ class MuteAlertTool extends AssistantWriteTool
         if ($request['target'] === 'maintenance_window') {
             /** @var array{name: string, recurrence: string, timezone: string, starts_at?: string|null, ends_at?: string|null, weekdays?: list<int>|null, start_time?: string|null, duration_minutes?: int|null} $values */
             $values = $request->all(array_keys(StoreMaintenanceWindowRequest::windowRules()));
-            $window = app(CreateMaintenanceWindowAction::class)->execute($project, $values);
+            $window = app(CreateMaintenanceWindowAction::class)->execute($project, $values, $this->user);
 
             return ['project' => $project->slug, 'maintenanceWindow' => ['id' => $window->id, 'name' => $window->name, 'recurrence' => $window->recurrence]];
         }
