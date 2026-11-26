@@ -15,7 +15,7 @@ use App\Notifications\ApiKeyExpiringNotification;
 use App\Services\ApiKeySecretOnceService;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
@@ -62,24 +62,6 @@ function plainApiKey(User $user, ?string $expiresAt = null, array $scopes = [Api
 function callWithApiKey(?string $plainKey, string $path = '/__test/api-key'): TestResponse
 {
     return test()->withHeaders($plainKey === null ? [] : ['Authorization' => 'Bearer '.$plainKey])->getJson($path);
-}
-
-/**
- * Peek at the encrypted one-time secret still in the session after create/rotate
- * (before the index GET pulls it).
- */
-function pendingIssuedApiKeySecret(): string
-{
-    $encrypted = session()->get(ApiKeySecretOnceService::SESSION_KEY);
-
-    expect($encrypted)->toBeString();
-
-    /** @var array{secret?: mixed} $payload */
-    $payload = json_decode(Crypt::decryptString($encrypted), true, 512, JSON_THROW_ON_ERROR);
-
-    expect($payload['secret'] ?? null)->toBeString();
-
-    return $payload['secret'];
 }
 
 it('creates a key, shows it once and stores only the hash of the full token', function () {
@@ -529,7 +511,7 @@ it('never writes the plaintext secret into the sessions table on create or rotat
         ->assertRedirect();
 
     $plainKey = pendingIssuedApiKeySecret();
-    $encrypted = session()->get(ApiKeySecretOnceService::SESSION_KEY);
+    $token = session()->get(ApiKeySecretOnceService::SESSION_KEY);
     session()->save();
 
     $decodedCreatePayloads = DB::table('sessions')->pluck('payload')->map(
@@ -538,8 +520,8 @@ it('never writes the plaintext secret into the sessions table on create or rotat
 
     expect(json_encode($decodedCreatePayloads->all()))->not->toContain($plainKey)
         ->and(json_encode(session()->all()))->not->toContain($plainKey)
-        ->and(is_string($encrypted))->toBeTrue()
-        ->and($encrypted)->not->toBe($plainKey);
+        ->and(is_string($token))->toBeTrue()
+        ->and(json_encode(session()->all()))->not->toContain(Cache::get(ApiKeySecretOnceService::CACHE_PREFIX.$token));
 
     $apiKey = ApiKey::query()->sole();
     $this->actingAs($user)->post(route('api-keys.rotate', $apiKey))->assertRedirect();

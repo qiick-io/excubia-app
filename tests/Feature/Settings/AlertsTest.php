@@ -16,12 +16,12 @@ use App\Services\SettingsRepositoryService;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Request;
-use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
+use Inertia\Inertia;
 use Inertia\Testing\AssertableInertia as Assert;
 use Qiick\Outbound\Contracts\HostResolver;
 use Qiick\Outbound\Delivery\DeliveryStatus;
@@ -228,7 +228,7 @@ it('generates the webhook signing secret, shows it once and rotates it with a gr
         ...integrationChannels(),
     ]);
     $this->actingAs($manager)->post(route('project.integrations.webhook-secret'))->assertRedirect(route('project.integrations.edit'));
-    $first = json_decode(Crypt::decryptString((string) session()->get(ApiKeySecretOnceService::WEBHOOK_SESSION_KEY)), true)['secret'];
+    $first = pendingIssuedApiKeySecret(ApiKeySecretOnceService::WEBHOOK_SESSION_KEY);
 
     $this->actingAs($manager)->get(route('project.integrations.edit'))
         ->assertHeaderContains('Cache-Control', 'no-store')
@@ -255,6 +255,57 @@ it('generates the webhook signing secret, shows it once and rotates it with a gr
 
     expect($signingSet->secretPublicIds())->toHaveCount(2)
         ->and(Activity::query()->where('event', 'webhook_secret_rotated')->count())->toBe(1);
+});
+
+it('keeps the plaintext signing secret out of the session when the page fails to render', function () {
+    $manager = alertsManager();
+    $this->actingAs($manager)->put(route('project.integrations.update'), [
+        'webhook_url' => 'https://hooks.example.com/excubia',
+        ...integrationChannels(),
+    ]);
+    $this->actingAs($manager)->post(route('project.integrations.webhook-secret'));
+    // A shared prop that throws (a database error in the notification count) fails the render
+    // after the page took the secret: Laravel still saves the session with the error page.
+    Inertia::share('explodes', fn () => throw new RuntimeException('render failed'));
+
+    $this->actingAs($manager)->get(route('project.integrations.edit'))->assertServerError();
+
+    expect(json_encode(session()->all()))->not->toContain('whsec_');
+});
+
+it('shows the signing secret to one page only when two requests loaded the same session', function () {
+    $manager = alertsManager();
+    $this->actingAs($manager)->put(route('project.integrations.update'), [
+        'webhook_url' => 'https://hooks.example.com/excubia',
+        ...integrationChannels(),
+    ]);
+    $this->actingAs($manager)->post(route('project.integrations.webhook-secret'));
+    $staleSessionValue = session()->get(ApiKeySecretOnceService::WEBHOOK_SESSION_KEY);
+
+    $this->actingAs($manager)->get(route('project.integrations.edit'))
+        ->assertInertia(fn (Assert $page) => $page->hasFlash('issuedWebhookSecret.reason', 'created'));
+
+    // The second request read the session before the first one saved it.
+    session()->put(ApiKeySecretOnceService::WEBHOOK_SESSION_KEY, $staleSessionValue);
+
+    $this->actingAs($manager)->get(route('project.integrations.edit'))
+        ->assertInertia(fn (Assert $page) => $page->missingFlash('issuedWebhookSecret'));
+});
+
+it('does not consume the signing secret on a prefetch', function () {
+    $manager = alertsManager();
+    $this->actingAs($manager)->put(route('project.integrations.update'), [
+        'webhook_url' => 'https://hooks.example.com/excubia',
+        ...integrationChannels(),
+    ]);
+    $this->actingAs($manager)->post(route('project.integrations.webhook-secret'));
+
+    $this->actingAs($manager)->withHeaders(['Purpose' => 'prefetch'])->get(route('project.integrations.edit'))
+        ->assertInertia(fn (Assert $page) => $page->missingFlash('issuedWebhookSecret'));
+    $this->flushHeaders();
+
+    $this->actingAs($manager)->get(route('project.integrations.edit'))
+        ->assertInertia(fn (Assert $page) => $page->hasFlash('issuedWebhookSecret.reason', 'created'));
 });
 
 it('keeps using a Slack URL saved in plain text before it was encrypted (#51)', function () {

@@ -22,7 +22,6 @@ use App\Services\SettingsRepositoryService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use Inertia\Support\Header;
 use Qiick\Outbound\Delivery\WebhookDeliveryCoordinator;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
@@ -75,20 +74,17 @@ class ProjectIntegrationsSettingsController extends Controller
             'projectGroups' => ProjectGroup::query()->orderBy('name')->get(['id', 'name'])->map(fn (ProjectGroup $projectGroup): array => ['id' => $projectGroup->id, 'name' => $projectGroup->name])->all(),
         ]);
 
-        // Only a full page render takes the one-time secret: a partial reload must not consume it.
-        if ($request->header(Header::PARTIAL_COMPONENT) !== 'settings/project/integrations') {
-            $issuedSecret = $secretOnce->pull($request->session(), ApiKeySecretOnceService::WEBHOOK_SESSION_KEY);
+        // Only a full page visit takes the one-time secret: a partial reload must not consume it.
+        $issuedSecret = $secretOnce->isShowingRequest($request, 'settings/project/integrations')
+            ? $secretOnce->pull($request->session(), ApiKeySecretOnceService::WEBHOOK_SESSION_KEY)
+            : null;
 
-            if ($issuedSecret !== null) {
-                $page->flash('issuedWebhookSecret', ['secret' => $issuedSecret['secret'], 'reason' => $issuedSecret['reason']]);
-            }
-        }
-
-        $response = $page->toResponse($request);
-        // The page can carry a secret: never cache it.
-        $response->headers->set('Cache-Control', 'no-store');
-
-        return $response;
+        return $secretOnce->render(
+            $request,
+            $page,
+            'issuedWebhookSecret',
+            $issuedSecret === null ? null : ['secret' => $issuedSecret['secret'], 'reason' => $issuedSecret['reason']],
+        );
     }
 
     public function update(UpdateProjectIntegrationsSettingsRequest $request, SaveAlertWebhookAction $saveAlertWebhook): RedirectResponse

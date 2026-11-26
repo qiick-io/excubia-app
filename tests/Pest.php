@@ -3,9 +3,12 @@
 use App\Actions\IssueAlertWebhookSecretAction;
 use App\Actions\SaveAlertWebhookAction;
 use App\Models\User;
+use App\Services\ApiKeySecretOnceService;
 use GuzzleHttp\Promise\PromiseInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Http;
 use Qiick\Outbound\Delivery\WebhookDeliveryCoordinator;
 use Qiick\Outbound\Http\OutboundHttpLimits;
@@ -227,4 +230,26 @@ function coreSchemaErrors(mixed $value, array $schema, array $root, string $path
     }
 
     return $errors;
+}
+
+/**
+ * Peek at the one-time secret still pending after create/rotate (before the index GET claims
+ * it): the session holds a token, the cache the encrypted payload.
+ */
+function pendingIssuedApiKeySecret(string $sessionKey = ApiKeySecretOnceService::SESSION_KEY): string
+{
+    $token = session()->get($sessionKey);
+
+    expect($token)->toBeString();
+
+    $encrypted = Cache::get(ApiKeySecretOnceService::CACHE_PREFIX.$token);
+
+    expect($encrypted)->toBeString();
+
+    /** @var array{secret?: mixed} $payload */
+    $payload = json_decode(Crypt::decryptString($encrypted), true, 512, JSON_THROW_ON_ERROR);
+
+    expect($payload['secret'] ?? null)->toBeString();
+
+    return $payload['secret'];
 }
