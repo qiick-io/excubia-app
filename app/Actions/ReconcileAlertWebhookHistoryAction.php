@@ -6,6 +6,7 @@ namespace App\Actions;
 
 use App\Jobs\DeliverAlertJob;
 use App\Models\AlertLog;
+use Illuminate\Support\Str;
 use Qiick\Outbound\Delivery\DeliveryStatus;
 use Qiick\Outbound\Models\WebhookDelivery;
 use Qiick\Outbound\Models\WebhookEndpoint;
@@ -28,20 +29,29 @@ class ReconcileAlertWebhookHistoryAction
      */
     public function execute(): int
     {
-        $abandonedAlertIds = WebhookDelivery::query()
+        $marked = 0;
+
+        // Two queries, not a subquery: `event_id` is a string and `alert_logs.uuid` a uuid, which
+        // PostgreSQL refuses to compare in SQL; bound values cast fine.
+        WebhookDelivery::query()
             ->where(fn ($abandoned) => $abandoned
                 ->whereIn('status', [DeliveryStatus::Exhausted->value, DeliveryStatus::Cancelled->value])
                 ->orWhere(fn ($orphaned) => $orphaned
                     ->where('status', DeliveryStatus::Pending->value)
                     ->whereIn('endpoint_id', WebhookEndpoint::onlyTrashed()->select('id'))))
-            ->whereIn('event_id', AlertLog::query()->where('deliveries->'.DeliverAlertJob::WEBHOOK, AlertLog::QUEUED)->select('uuid'))
-            ->distinct()
-            ->pluck('event_id');
+            ->select(['id', 'event_id'])
+            ->chunkById(500, function ($deliveries) use (&$marked): void {
+                $queuedAlertIds = AlertLog::query()
+                    ->whereIn('uuid', $deliveries->pluck('event_id')->unique()->filter(fn (mixed $eventId): bool => Str::isUuid($eventId))->values())
+                    ->where('deliveries->'.DeliverAlertJob::WEBHOOK, AlertLog::QUEUED)
+                    ->pluck('uuid');
 
-        foreach ($abandonedAlertIds as $alertId) {
-            $this->recordDelivery->execute($alertId, DeliverAlertJob::WEBHOOK, false);
-        }
+                foreach ($queuedAlertIds as $alertId) {
+                    $this->recordDelivery->execute($alertId, DeliverAlertJob::WEBHOOK, false);
+                    $marked++;
+                }
+            });
 
-        return $abandonedAlertIds->count();
+        return $marked;
     }
 }
