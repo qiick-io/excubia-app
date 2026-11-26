@@ -35,8 +35,8 @@ namespace Qiick\Standards\Conformance\Support;
 final class ConformanceHooks
 {
     /**
-     * @param  ConformanceConfig  $config
-     * @param  array<string, callable(ConformanceBehaviourProbe|null): void>  $callables
+     * @param ConformanceConfig $config
+     * @param array<string, callable(ConformanceBehaviourProbe|null): void> $callables
      */
     public function __construct(
         private readonly array $config,
@@ -107,7 +107,7 @@ final class ConformanceHooks
     }
 
     /**
-     * @param  non-empty-string  $key
+     * @param non-empty-string $key
      */
     public function requireCallable(string $key): void
     {
@@ -126,7 +126,7 @@ final class ConformanceHooks
      * Require a behaviour hook that receives a probe and must call {@see ConformanceBehaviourProbe::pass()}
      * after exercising the real product path. An empty no-op stays red.
      *
-     * @param  non-empty-string  $key
+     * @param non-empty-string $key
      */
     public function requireProved(string $key): void
     {
@@ -138,7 +138,7 @@ final class ConformanceHooks
             );
         }
 
-        $probe = new ConformanceBehaviourProbe;
+        $probe = new ConformanceBehaviourProbe();
         $callback($probe);
 
         if (! $probe->hasPassed()) {
