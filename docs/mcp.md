@@ -17,7 +17,7 @@ Add to `.env` and clear the config cache (`php artisan config:clear`, or `excubi
 ```dotenv
 EXCUBIA_MCP_ENABLED=true
 # Optional: requests per minute for one API key (default 60)
-# EXCUBIA_API_KEY_REQUESTS_PER_MINUTE=60
+# API_KEYS_DEFAULT_RATE_LIMIT_PER_MINUTE=60
 ```
 
 The endpoint is `POST /mcp` on your Excubia URL, for example `https://excubia.example.com/mcp`.
@@ -180,9 +180,11 @@ test for both the assistant and the MCP server.
 - `401`: the key is missing, unknown, revoked or expired, or its owner is deactivated.
 - `403`: the key lacks the `mcp:read` scope. (A missing `mcp:write` hides the write tools instead.)
 - `404`: `EXCUBIA_MCP_ENABLED` is not `true`.
-- `429`: more than 20 failed attempts per minute from one IP, or more than
-  `EXCUBIA_API_KEY_REQUESTS_PER_MINUTE` requests per minute with one key. The `Retry-After`
-  header says when to try again.
+- `403 request_not_allowed`: the key's request restrictions refuse this request.
+- `429`: more than 20 failed attempts per minute from one IP (`API_KEYS_FAILED_ATTEMPTS_PER_MINUTE`;
+  then even a correct key gets 429 until the window ends), or more than
+  `API_KEYS_DEFAULT_RATE_LIMIT_PER_MINUTE` requests per minute with one key. The `Retry-After`
+  and `X-RateLimit-*` headers say when to try again.
 
 Behind a reverse proxy, set `TRUSTED_PROXIES` so the failed-attempt limit counts the client's IP,
 not the proxy's.

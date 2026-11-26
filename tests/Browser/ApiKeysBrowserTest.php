@@ -64,7 +64,7 @@ it('creates a key, shows it once, rotates and revokes it', function (string $sch
     $apiKey = ApiKey::query()->sole();
     $secret = $page->value('[data-test="api-key-secret-value"]');
     expect($secret)->toStartWith($apiKey->key_prefix)
-        ->and($secret)->toMatch(ApiKey::TOKEN_PATTERN)
+        ->and($secret)->toMatch(EXCUBIA_TOKEN_PATTERN)
         ->and($apiKey->scopes)->toBe(['mcp:write'])
         ->and($apiKey->ip_allowlist)->toBe(['203.0.113.4', '10.0.0.0/8'])
         ->and($apiKey->rate_limit_per_minute)->toBe(120);

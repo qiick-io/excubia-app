@@ -87,7 +87,8 @@ it('logs user creation, updates, role changes and deletion with the acting user'
     expect($created->causer_id)->toBe((string) $admin->id)
         ->and($created->subject_id)->toBe((string) $user->id)
         ->and($created->attribute_changes['attributes']['email'])->toBe('grace@example.com')
-        ->and($created->attribute_changes['attributes'])->not->toHaveKey('password')
+        // The secret floor (qiick/laravel-audit): the change is logged, never the value.
+        ->and($created->attribute_changes['attributes']['password'])->toBe('[redacted]')
         ->and(latestActivity('roles_synced')->properties['role_names'])->toBe([RoleEnum::Reader->value]);
 
     $this->actingAs($admin)->put(route('users.update', $user), [
@@ -188,7 +189,7 @@ it('logs every project settings section with the saved keys', function (string $
         ->and($activity->properties['section'])->toBe($section)
         ->and($activity->properties['keys'])->toContain(array_key_first($payload));
 })->with([
-    'general' => ['project.update', ['app_name' => 'Acme', 'reports_kept_per_project' => 10, 'stale_after_hours' => 12, 'pennant_stale_after_days' => 30, 'runtime_retention_days' => 14, 'exceptions_retention_days' => 90, 'activity_retention_days' => 365], 'general'],
+    'general' => ['project.update', ['app_name' => 'Acme', 'reports_kept_per_project' => 10, 'stale_after_hours' => 12, 'pennant_stale_after_days' => 30, 'runtime_retention_days' => 14, 'exceptions_retention_days' => 90], 'general'],
     'localization' => ['project.localization.update', ['default_language' => 'de'], 'localization'],
     'authentication & security' => ['project.security.update', ['password_policy' => 'medium', 'login_max_attempts' => 3, 'two_factor_required' => '0'], 'security'],
     'appearance' => ['appearance.update', ['default_appearance' => 'dark'], 'appearance'],

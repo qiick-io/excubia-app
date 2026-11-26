@@ -40,7 +40,6 @@ function generalSettingsPayload(array $overrides = []): array
         'pennant_stale_after_days' => 45,
         'runtime_retention_days' => 7,
         'exceptions_retention_days' => 30,
-        'activity_retention_days' => 180,
         ...$overrides,
     ];
 }
@@ -119,7 +118,8 @@ it('shows defaults from config until a value is saved', function () {
             ->where('project.pennant_stale_after_days', 30)
             ->where('project.runtime_retention_days', 14)
             ->where('project.exceptions_retention_days', 90)
-            ->where('project.activity_retention_days', 365));
+            // The activity log keeps qiick/laravel-audit's fixed floors: no setting.
+            ->missing('project.activity_retention_days'));
 
     $this->actingAs($manager)->get(route('project.security.edit'))
         ->assertInertia(fn (Assert $page) => $page
@@ -145,7 +145,6 @@ it('saves the general settings and the app uses them', function () {
         ->and($settings->pennantStaleAfterDays())->toBe(45)
         ->and($settings->runtimeRetentionDays())->toBe(7)
         ->and($settings->exceptionsRetentionDays())->toBe(30)
-        ->and($settings->activityRetentionDays())->toBe(180)
         ->and($settings->all())->toMatchArray([
             'description' => 'Health of the Acme apps.',
             'url' => 'https://acme.example.com',
@@ -178,9 +177,8 @@ it('validates the general settings', function () {
             'stale_after_hours' => 9999,
             'pennant_stale_after_days' => 0,
             'runtime_retention_days' => 0,
-            'activity_retention_days' => 4000,
         ]))
-        ->assertSessionHasErrors(['app_name', 'description', 'url', 'report_bug_url', 'report_error_url', 'reports_kept_per_project', 'stale_after_hours', 'pennant_stale_after_days', 'runtime_retention_days', 'activity_retention_days']);
+        ->assertSessionHasErrors(['app_name', 'description', 'url', 'report_bug_url', 'report_error_url', 'reports_kept_per_project', 'stale_after_hours', 'pennant_stale_after_days', 'runtime_retention_days']);
 });
 
 it('saves the authentication and security settings and the app uses them', function () {

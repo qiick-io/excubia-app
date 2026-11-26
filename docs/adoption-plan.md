@@ -90,12 +90,13 @@ reference schema (`docs/reference-schema.md`).
   (6-character checksum), version 1 stays accepted. The current `exc_…` shape is the package's
   version 1, so no legacy matcher is needed.
 - `excubia.api_key_requests_per_minute` becomes the package default rate limit.
-- **The package's attempt limiter refuses the `database` cache store**, which is Excubia's
-  default (`.env.example`: `CACHE_STORE=database`). It needs Redis or Memcached in every
-  environment where the API or MCP runs. Production needs a Redis (Laravel Cloud KV) cache, and
-  `php artisan api-keys:check` joins the deploy pipeline and `excubia:install` / `excubia:upgrade`.
-  Self-hosting docs (`docs/self-hosting.md`) change accordingly. This is the main risk of the
-  adoption; see [Open questions](#open-questions).
+- **Attempt counting** (decided for 0.3.0-beta.2): the package counts failed attempts and
+  per-key limits with Laravel's `RateLimiter` on the configured cache store, so Excubia's default
+  `database` store works and no extra table is needed. The store must not be `array` outside
+  tests (it keeps nothing between requests) or `null` (`php artisan api-keys:check` fails on it).
+  On SQLite the database store needs `transaction_mode = IMMEDIATE` and a `busy_timeout`, which
+  `config/database.php` already sets; MySQL and PostgreSQL need nothing. `api-keys:check` is not
+  wired into `excubia:install` / `excubia:upgrade`: with these defaults it only reports.
 
 **Routes**: none change. `routes/mcp.php` keeps `AuthenticateApiKeyMiddleware::class.':mcp:read'`.
 
@@ -119,8 +120,7 @@ form until the registry form has them.
 
 **Risks**
 
-- Cache store requirement (above). Without Redis in production, the first API or MCP request
-  throws.
+- The cache store behind the limits (above): never `array` or `null` in production.
 - Refusal bodies change slightly (new codes, `X-RateLimit-*` headers). MCP clients see the same
   401 / 403 / 429 statuses.
 - Existing keys are lost with the reset; MCP clients need new keys after the deploy.
@@ -392,18 +392,37 @@ production with the next reset (A or B).
 Until `laravel-settings` exists there is no `settings:export`. For group A the maintainer re-enters
 the OIDC client secret, Slack URL, Telegram token and alert settings after the reset (or copies
 the `settings` rows before `migrate:fresh` and restores them under the same `APP_KEY`: the
-encrypted values decrypt again). Group B uses `settings:export` / `settings:import`.
+encrypted values decrypt again). With the outbound adoption the alert webhook URL and signing
+secret leave `settings` for the package's webhook tables, so they are re-entered in
+Settings → Alerts in every case. Group B uses `settings:export` / `settings:import`.
+
+### Group A reset checklist
+
+For the maintainer, after the group's last merge is deployed:
+
+1. **Laravel Cloud panel** (not in the repository): the Scheduler toggle is on, on which cluster
+   (App or a worker cluster), the number of replicas (more than one needs `onOneServer()`, which
+   Excubia's webhook schedule uses), whether scale-to-zero is on (a sleeping environment wakes
+   for scheduled tasks; a task every minute keeps it awake), and a queue worker that processes
+   the alert jobs.
+2. The cache store is `database` (or Redis), never `array` or `null`.
+3. At the IdP, register `{APP_URL}/auth/oidc/logged-out` as a post-logout redirect URI (oidc
+   beta.7; until it is registered, SSO logout does not end the IdP session).
+   `php artisan oidc:configure` prints it and checks the rest.
+4. `php artisan migrate:fresh --force`, then `/setup` for the first admin.
+5. Re-enter: OIDC provider and client secret, Slack webhook URL, Telegram bot token and chat,
+   the alert webhook URL and the alert settings; then generate the webhook's signing secret
+   (Settings → Integrations → Generate) and configure the receiver with the new one.
+6. MCP clients need new API keys (every key is gone with the reset).
 
 ## Open questions
 
-1. **Cache store for API keys.** api-keys 0.3 needs Redis or Memcached for its attempt limiter
-   and refuses `database`. Options: (a) require Redis wherever the API or MCP is used, and
-   provision it on Laravel Cloud; (b) ask the package for an atomic database-backed limiter, so
-   self-hosters on SQLite keep a one-process setup. Recommended: (b) in the package before 1.0,
-   (a) for production now.
+1. ~~**Cache store for API keys.**~~ Decided: 0.3.0-beta.2 counts on the configured cache store
+   with Laravel's `RateLimiter` (see §1).
 2. **`api_keys.owner_id`**: keep until access lands (recommended), or drop now in favour of the
    principal.
-3. **Outbound webhook**: move the alert webhook onto the package tables (recommended), or only
-   upgrade.
+3. ~~**Outbound webhook**~~ Decided: the alert webhook moves onto the package tables, built on
+   top of a plain upgrade (two stacked PRs). The first attempt is sent right away by a queued
+   job; the scheduler retries `everyMinute()->onOneServer()` (no task every few seconds).
 4. **Tags.** access, http-basics and audit have no tag yet, and outbound 0.2 is untagged. Each
    adoption waits for its tag (no branch dependencies).

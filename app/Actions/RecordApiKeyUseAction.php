@@ -6,40 +6,42 @@ namespace App\Actions;
 
 use App\Enums\ActivityEventEnum;
 use App\Models\ApiKey;
+use Qiick\Audit\AuditContext;
 
 /**
- * Stamps last use of a personal API key (#315, #351) at most once a minute, with the client IP.
- * The first use is logged in the `auth` log; later uses only move the stamp so the log does not
- * grow per request.
+ * Logs the first use of a personal API key (#315, #351) in the `auth` log, attributed to the key
+ * by qiick/laravel-audit (its public UUID as `api_key_id`, never set by hand). Called by ApiKeyRepositoryService inside the transaction that takes the
+ * first-use stamp, so the entry and the stamp are written together or not at all: the entry is
+ * always inserted at once, even when the activity buffer is on.
  */
 final class RecordApiKeyUseAction
 {
-    public function execute(ApiKey $apiKey, ?string $ipAddress = null): void
+    public function execute(ApiKey $apiKey): void
     {
-        if (
-            $apiKey->last_used_at !== null
-            && $apiKey->last_used_at->greaterThan(now()->subMinute())
-        ) {
-            return;
+        // Spatie's buffer would insert the row after the response, outside the stamp's
+        // transaction: a lost flush would leave the stamp set and the first use unlogged forever.
+        $isBuffered = config('activitylog.buffer.enabled');
+        config(['activitylog.buffer.enabled' => false]);
+
+        try {
+            $this->log($apiKey);
+        } finally {
+            config(['activitylog.buffer.enabled' => $isBuffered]);
         }
+    }
 
-        $isFirstUse = $apiKey->last_used_at === null;
-
-        $apiKey->forceFill([
-            'last_used_at' => now(),
-            'last_used_ip' => $ipAddress,
-        ])->saveQuietly();
-
-        if (! $isFirstUse) {
-            return;
-        }
+    private function log(ApiKey $apiKey): void
+    {
+        // The package attributes the row (api_key_id, prefix, creator) to the bound credential; the
+        // authenticator stamps the first use before the middleware binds it, so bind it here too.
+        AuditContext::bindCredential($apiKey->auditActor());
 
         activity()
             ->useLog('auth')
             ->causedBy($apiKey->owner)
             ->performedOn($apiKey)
             ->event(ActivityEventEnum::ApiKeyFirstUsed->value)
-            ->withProperties(['name' => $apiKey->name, 'key_prefix' => $apiKey->key_prefix])
+            ->withProperties(['name' => $apiKey->name])
             ->log('API key used for the first time');
     }
 }

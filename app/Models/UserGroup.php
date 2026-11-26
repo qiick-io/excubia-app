@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Traits\LogsApplicationActivityTrait;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
+use Qiick\Audit\Concerns\LogsActivity;
 use Spatie\Permission\Models\Role;
 
 /**
@@ -27,7 +27,7 @@ use Spatie\Permission\Models\Role;
 #[Fillable(['name', 'description'])]
 class UserGroup extends Model
 {
-    use LogsApplicationActivityTrait, SoftDeletes;
+    use LogsActivity, SoftDeletes;
 
     /**
      * @return BelongsToMany<User, $this>

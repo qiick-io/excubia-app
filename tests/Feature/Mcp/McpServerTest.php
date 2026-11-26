@@ -118,7 +118,7 @@ it('answers every MCP API-key refusal with the fleet RFC 6750 shape', function (
     $user = mcpUser();
     $plainKey = mcpKey($user);
     $ipKey = mcpKey($user);
-    ApiKey::query()->where('key_prefix', ApiKey::publicPrefixFromToken($ipKey))->sole()
+    ApiKey::query()->where('key_prefix', apiKeyPrefixOf($ipKey))->sole()
         ->forceFill(['ip_allowlist' => ['203.0.113.10']])->save();
 
     // Laravel MCP may prefix `realm="mcp"` on WWW-Authenticate; the fleet error token still wins.
@@ -131,7 +131,7 @@ it('answers every MCP API-key refusal with the fleet RFC 6750 shape', function (
         ->assertUnauthorized()
         ->assertJsonPath('error', 'invalid_token');
 
-    ApiKey::query()->where('key_prefix', ApiKey::publicPrefixFromToken($plainKey))->sole()
+    ApiKey::query()->where('key_prefix', apiKeyPrefixOf($plainKey))->sole()
         ->forceFill(['scopes' => []])->save();
     $missingScope = mcpCall($plainKey, 'ping')
         ->assertForbidden()
@@ -141,7 +141,7 @@ it('answers every MCP API-key refusal with the fleet RFC 6750 shape', function (
         ->toContain('error="insufficient_scope"')
         ->toContain('scope="mcp:read"');
 
-    ApiKey::query()->where('key_prefix', ApiKey::publicPrefixFromToken($plainKey))->sole()
+    ApiKey::query()->where('key_prefix', apiKeyPrefixOf($plainKey))->sole()
         ->forceFill(['scopes' => ['mcp:read'], 'revoked_at' => now()])->save();
     mcpCall($plainKey, 'ping')
         ->assertUnauthorized()
