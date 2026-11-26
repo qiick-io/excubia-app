@@ -22,7 +22,8 @@
         "resources/js/components/sidebar-unread-badge.tsx",
         "resources/js/lib/notification-sound.ts",
         "resources/js/components/api-keys/api-key-list-row.tsx",
-        "resources/js/lib/api-key-scopes.ts"
+        "resources/js/lib/api-key-scopes.ts",
+        "resources/js/components/admin/role-picker.tsx"
     ],
     "ignoreDependencies": ["concurrently"],
     "ignoreBinaries": ["oxlint"]
