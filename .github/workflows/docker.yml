@@ -164,4 +164,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          # The build ID under the version in the sidebar (#425): the image has no .git.
+          build-args: |
+            APP_BUILD=${{ github.sha }}
           cache-from: type=gha

@@ -28,6 +28,8 @@ class RecordBuildCommand extends Command
             $commit = $this->checkoutCommit();
 
             if ($commit === null) {
+                // A stamp from an earlier build would describe other code: no build ID beats a wrong one.
+                File::delete(SystemHealthService::buildFile());
                 $this->components->info('No git checkout of this app here: no build ID recorded.');
 
                 return self::SUCCESS;
