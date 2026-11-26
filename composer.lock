@@ -4592,16 +4592,16 @@
         },
         {
             "name": "qiick/laravel-outbound",
-            "version": "v0.2.0-beta.2",
+            "version": "v0.2.0-beta.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/qiick-io/laravel-outbound.git",
-                "reference": "47ea6f3c3d27543831f88cf0e196dc6c71bf71e3"
+                "reference": "71a6be04b1dd2091d592483b9f737910aa052c55"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/qiick-io/laravel-outbound/zipball/47ea6f3c3d27543831f88cf0e196dc6c71bf71e3",
-                "reference": "47ea6f3c3d27543831f88cf0e196dc6c71bf71e3",
+                "url": "https://api.github.com/repos/qiick-io/laravel-outbound/zipball/71a6be04b1dd2091d592483b9f737910aa052c55",
+                "reference": "71a6be04b1dd2091d592483b9f737910aa052c55",
                 "shasum": ""
             },
             "require": {
@@ -4662,8 +4662,8 @@
                 "issues": "https://github.com/qiick-io/laravel-outbound/issues",
                 "source": "https://github.com/qiick-io/laravel-outbound"
             },
-            "time": "2026-11-26T12:09:19+00:00",
-            "published-time": "2026-11-26T12:10:04+00:00"
+            "time": "2026-11-26T14:35:05+00:00",
+            "published-time": "2026-11-26T14:35:47+00:00"
         },
         {
             "name": "ramsey/collection",
