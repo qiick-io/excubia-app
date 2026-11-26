@@ -15,8 +15,10 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Testing\TestResponse;
 use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Passkeys\Passkeys;
+use Qiick\Oidc\Factories\OidcOutboundStackFactory;
 use Qiick\Oidc\Models\UserIdentity;
 use Qiick\Oidc\Testing\FakeIdentityProvider;
+use Qiick\Outbound\Testing\FakeHostResolver;
 use Tests\TestCase;
 
 /*
@@ -134,6 +136,30 @@ it('sends the browser to the IdP with PKCE S256 and the settings client id', fun
         ->and($query['scope'] ?? null)->toBe('openid profile email')
         ->and($query['code_challenge_method'] ?? null)->toBe('S256');
 });
+
+it('signs in through an IdP on a private network only with OIDC_ALLOW_PRIVATE_HOSTS', function (bool $isPrivateHostAllowed) {
+    $identityProvider = FakeIdentityProvider::fake();
+    // The IdP's host resolves to a private address, as an internal Keycloak would.
+    app()->instance(OidcOutboundStackFactory::HostResolverBinding, (new FakeHostResolver)->with('idp.example.com', ['10.0.0.5']));
+    config(['oidc.http.allow_private_hosts' => $isPrivateHostAllowed]);
+    enableOidc();
+    $user = User::factory()->create();
+    linkIdentity($user, 'sub-private');
+
+    if (! $isPrivateHostAllowed) {
+        // Discovery is refused before the browser is sent anywhere near the IdP.
+        expect((string) $this->get(route('oidc.redirect'))->headers->get('Location'))->not->toStartWith('https://idp.example.com');
+        $this->assertGuest();
+
+        return;
+    }
+
+    signInThroughSso($this, $identityProvider, ['sub' => 'sub-private'])->assertRedirect('/dashboard');
+    $this->assertAuthenticatedAs($user);
+})->with([
+    'refused by default' => [false],
+    'allowed with the opt-in' => [true],
+]);
 
 it('signs in the user linked to the identity, whatever the email', function () {
     $identityProvider = FakeIdentityProvider::fake();
@@ -474,11 +500,11 @@ it('throttles the redirect and callback routes', function (string $path) {
     $this->get($path)->assertTooManyRequests();
 })->with(['/auth/oidc/redirect', '/auth/oidc/callback']);
 
-it('prunes expired SSO logout revocations daily on one server', function () {
+it('prunes expired SSO logout revocations hourly on one server', function () {
     $event = collect(app(Schedule::class)->events())
         ->first(fn ($event): bool => str_contains((string) $event->command, 'oidc:prune-logout-revocations'));
 
     expect($event)->not->toBeNull()
-        ->and($event->expression)->toBe('0 0 * * *')
+        ->and($event->expression)->toBe('0 * * * *')
         ->and($event->onOneServer)->toBeTrue();
 });

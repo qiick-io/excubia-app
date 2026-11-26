@@ -12,6 +12,7 @@ use Illuminate\Support\Str;
 use Qiick\Access\Principals\DeactivationReason;
 use Qiick\Access\Principals\PrincipalDirectory;
 use Qiick\ApiKeys\RevocationReason;
+use Qiick\Oidc\Erasure\OidcEraser;
 
 /**
  * Soft-deletes a dashboard user and releases their unique identifiers.
@@ -27,6 +28,7 @@ class DeleteUserAction
     public function __construct(
         private SuperAdminGuardService $superAdminGuard,
         private PrincipalDirectory $principals,
+        private OidcEraser $oidcEraser,
     ) {}
 
     public function execute(User $user): void
@@ -57,7 +59,8 @@ class DeleteUserAction
 
             // Login links are credentials, not audit: leaving an identity behind points SSO at a
             // soft-deleted user forever, and a passkey keeps its PII-bearing name and breaks auth.
-            $user->identities()->delete();
+            // qiick/laravel-oidc's eraser removes the identities and the logout state tied to them.
+            $this->oidcEraser->erase((string) $user->getKey(), $publicId, OidcEraser::DELETE);
             $user->passkeys()->delete();
 
             $conversationIds = DB::table('agent_conversations')
