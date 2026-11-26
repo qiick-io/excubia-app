@@ -48,6 +48,8 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // Never flashed back as old input on a validation error (the session is not encrypted).
+        $exceptions->dontFlash(['current_password', 'password', 'password_confirmation', 'setup_token']);
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->is('mcp') || $request->expectsJson(),
         );

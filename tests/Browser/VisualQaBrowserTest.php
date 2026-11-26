@@ -190,7 +190,7 @@ function seededVisualProject(): Project
 
 it('screenshots the guest pages', function () {
     // The first-run wizard needs a fresh install without users (#116).
-    screenshotEverywhere('setup-admin', '/setup?token='.app(SetupTokenService::class)->issue());
+    screenshotEverywhere('setup-admin', '/setup#token='.app(SetupTokenService::class)->issue());
 
     $admin = User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value);
     screenshotEverywhere('login', '/login');

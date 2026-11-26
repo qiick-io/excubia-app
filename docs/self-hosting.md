@@ -103,7 +103,7 @@ php artisan excubia:install -n --force \
   --db=pgsql --db-host=127.0.0.1 --db-port=5432 --db-database=excubia --db-username=excubia --db-password=secret
 ```
 
-The installer creates no user: run `php artisan excubia:setup-link` and open the one-time `APP_URL/setup?token=…` link it prints to create the admin and the first project ([First run](#first-run)). Then add the cron entry and the queue worker ([Scheduler and queue](#scheduler-and-queue)).
+The installer creates no user: run `php artisan excubia:setup-link` and open the one-time `APP_URL/setup#token=…` link it prints to create the admin and the first project ([First run](#first-run)). Then add the cron entry and the queue worker ([Scheduler and queue](#scheduler-and-queue)).
 
 > **Install only, not the update channel.** Composer copies the app once and never updates it. To upgrade, follow [Upgrades](#upgrades).
 

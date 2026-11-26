@@ -26,7 +26,8 @@ class SetupLinkCommand extends Command
             return self::FAILURE;
         }
 
-        $this->line(url('/setup').'?token='.$setupTokens->issue());
+        // A fragment: the browser keeps it, and no request URL (or log) carries the token.
+        $this->line(url('/setup').'#token='.$setupTokens->issue());
         $this->line('Open it within an hour; it works once.');
 
         return self::SUCCESS;

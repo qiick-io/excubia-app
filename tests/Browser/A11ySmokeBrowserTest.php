@@ -33,7 +33,7 @@ it('has no critical or serious axe issues on the first-run wizard in light, dark
     $setupToken = app(SetupTokenService::class)->issue();
 
     foreach (['light', 'dark', 'high-contrast'] as $mode) {
-        $page = visitA11y('/setup?token='.$setupToken, $mode)
+        $page = visitA11y('/setup#token='.$setupToken, $mode)
             ->assertPresent('#main-content')
             ->assertNoAccessibilityIssues(1);
 
