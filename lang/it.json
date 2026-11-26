@@ -57,5 +57,6 @@
     "Leave the allowlist empty to allow every address; :entry means no restriction.": "Lascia l'allowlist vuota per consentire ogni indirizzo; :entry significa nessuna restrizione.",
     "The signing secret could not be generated now: too many previous secrets are still in their grace period. Try again later.": "Non è possibile generare ora il segreto di firma: troppi segreti precedenti sono ancora nel periodo di tolleranza. Riprova più tardi.",
     "Your session expired. Please try again.": "La sessione è scaduta. Riprova.",
-    "Something went wrong. Please try again.": "Qualcosa è andato storto. Riprova."
+    "Something went wrong. Please try again.": "Qualcosa è andato storto. Riprova.",
+    "The end must be in the future: this window would silence nothing.": "La fine deve essere nel futuro: questa finestra non silenzierebbe nulla."
 }
