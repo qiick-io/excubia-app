@@ -10,6 +10,7 @@ use App\Services\AlertDispatcherService;
 use App\Services\ProjectStalenessService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Date;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Sends `project.stale` (#22) once per stale period: for each enabled project that has
@@ -35,10 +36,13 @@ class AlertStaleProjectsCommand extends Command
                     return;
                 }
 
-                $alerts->dispatch(AlertEventEnum::ProjectStale, $project, 'no report since '.$project->last_report_at?->toDateTimeString(), [
-                    'lastReportAt' => $project->last_report_at?->toIso8601ZuluString(),
-                ]);
-                $project->forceFill(['stale_alerted_at' => Date::now()])->save();
+                // The alert and its "already alerted" mark commit together.
+                DB::transaction(function () use ($alerts, $project): void {
+                    $alerts->dispatch(AlertEventEnum::ProjectStale, $project, 'no report since '.$project->last_report_at?->toDateTimeString(), [
+                        'lastReportAt' => $project->last_report_at?->toIso8601ZuluString(),
+                    ]);
+                    $project->forceFill(['stale_alerted_at' => Date::now()])->save();
+                });
                 $count++;
             });
 

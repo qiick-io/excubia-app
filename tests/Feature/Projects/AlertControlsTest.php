@@ -619,17 +619,36 @@ it('marks the webhook failed for alerts whose endpoint was cleared before the de
     expect(AlertLog::query()->sole()->deliveries)->toBe(['webhook' => AlertLog::FAILED]);
 });
 
-it('marks the webhook failed for alerts whose body the daily prune expired', function () {
+it('marks the webhook failed for alerts whose body the daily prune expires, even when the same run deletes the delivery', function (bool $isPastDeliveryRetention) {
     $project = Project::factory()->create();
     app(AlertDispatcherService::class)->dispatch(AlertEventEnum::ProjectStale, $project, 'no report');
-    DB::table('webhook_deliveries')->update(['payload_expires_at' => Date::now()->subMinute()]);
+    // Past the body retention; and, for the second case, past the 90-day row retention too, so
+    // the prune exhausts and deletes the delivery in one run.
+    DB::table('webhook_deliveries')->update(array_filter([
+        'payload_expires_at' => Date::now()->subMinute(),
+        'created_at' => $isPastDeliveryRetention ? Date::now()->subDays(100) : null,
+    ]));
     $prune = collect(app(Schedule::class)->events())
         ->first(fn ($event): bool => str_contains((string) $event->command, 'outbound:webhooks:prune'));
 
+    $prune->callBeforeCallbacks(app());
     $this->artisan('outbound:webhooks:prune')->assertSuccessful();
     $prune->callAfterCallbacks(app());
 
     expect(AlertLog::query()->sole()->deliveries)->toBe(['webhook' => AlertLog::FAILED]);
+})->with([
+    'body expired' => [false],
+    'body and row expired' => [true],
+]);
+
+it('commits a scheduled alert only together with its webhook delivery', function () {
+    $project = Project::factory()->create(['last_report_at' => Date::now()->subDays(30)]);
+    WebhookDelivery::creating(fn () => throw new RuntimeException('delivery store down'));
+
+    expect(fn () => $this->artisan('excubia:alert-stale'))->toThrow(RuntimeException::class);
+
+    expect(AlertLog::query()->count())->toBe(0)
+        ->and($project->fresh()->stale_alerted_at)->toBeNull();
 });
 
 it('waits for a concurrent save instead of creating a second webhook endpoint', function () {

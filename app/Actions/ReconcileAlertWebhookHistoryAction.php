@@ -17,7 +17,8 @@ use Qiick\Outbound\Models\WebhookEndpoint;
  * delivery the prune exhausted because its body expired (the package fires no failed event for
  * either). Without this, those alerts would read `queued` forever.
  *
- * Runs when the URL is cleared and after the daily prune. Only rows still `queued` change, so a
+ * Runs when the URL is cleared and before the daily prune (which can exhaust and delete a
+ * delivery in one run, with nothing left to read afterwards). Only rows still `queued` change, so a
  * delivery already recorded `sent` or `failed` keeps its outcome.
  */
 class ReconcileAlertWebhookHistoryAction
@@ -38,7 +39,12 @@ class ReconcileAlertWebhookHistoryAction
                 ->whereIn('status', [DeliveryStatus::Exhausted->value, DeliveryStatus::Cancelled->value])
                 ->orWhere(fn ($orphaned) => $orphaned
                     ->where('status', DeliveryStatus::Pending->value)
-                    ->whereIn('endpoint_id', WebhookEndpoint::onlyTrashed()->select('id'))))
+                    ->whereIn('endpoint_id', WebhookEndpoint::onlyTrashed()->select('id')))
+                // Pending past its body retention: the next prune exhausts it, and may delete the
+                // row in the same run, so it is reconciled before the prune.
+                ->orWhere(fn ($expiring) => $expiring
+                    ->where('status', DeliveryStatus::Pending->value)
+                    ->where('payload_expires_at', '<=', now())))
             ->select(['id', 'event_id'])
             ->chunkById(500, function ($deliveries) use (&$marked): void {
                 $queuedAlertIds = AlertLog::query()
