@@ -31,6 +31,11 @@ it('opens a view from its group menu and keeps the group active', function (stri
         ->assertSee('Issues: Exceptions')
         ->assertNoJavaScriptErrors();
 
-    expect($page->script("() => document.querySelector('[role=\"tab\"][data-state=\"active\"], [role=\"tab\"][aria-current=\"page\"]')?.innerText ?? ''"))
-        ->toContain('Issues');
+    $openExceptions = $project->exceptionGroups()->where('status', 'open')->count();
+    $activeTab = $page->script("() => document.querySelector('[role=\"tab\"][data-state=\"active\"], [role=\"tab\"][aria-current=\"page\"]')?.innerText ?? ''");
+
+    // #426: the trigger names the open view and shows its count, not findings + exceptions.
+    expect($activeTab)->toContain('Issues')
+        ->and(preg_match('/Issues: Exceptions\s*(\d*)/', $activeTab, $match))->toBe(1)
+        ->and((int) $match[1])->toBe($openExceptions);
 })->with(['light', 'dark']);
