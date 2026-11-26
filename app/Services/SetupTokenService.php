@@ -19,6 +19,9 @@ class SetupTokenService
 {
     private const CACHE_KEY = 'excubia:setup-token';
 
+    /** Serializes issuing a link with checking and consuming it while the first admin is created. */
+    public const LOCK = 'excubia:first-run-setup';
+
     public const TTL_SECONDS = 3600;
 
     /**

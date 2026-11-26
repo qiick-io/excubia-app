@@ -29,7 +29,7 @@ class CreateFirstAdminAction
      */
     public function execute(string $firstName, ?string $lastName, string $email, string $password, string $setupToken): ?User
     {
-        return Cache::lock('excubia:first-run-setup', 10)->block(5, function () use ($firstName, $lastName, $email, $password, $setupToken): ?User {
+        return Cache::lock(SetupTokenService::LOCK, 10)->block(5, function () use ($firstName, $lastName, $email, $password, $setupToken): ?User {
             // Checked again under the lock: a token replaced or expired after the request was
             // authorized creates nobody.
             if (User::query()->exists() || ! $this->setupTokens->isValid($setupToken)) {
