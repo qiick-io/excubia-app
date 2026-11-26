@@ -47,9 +47,12 @@ class DeleteUserAction
             // own eraseUser() leaves it (that one needs a hard delete; Excubia soft-deletes).
             $principal = $this->principals->forMember($user, null);
             $this->principals->deactivate($principal, DeactivationReason::Erased);
+            // Erased wins over an earlier reason: the package keeps the first reason of a principal
+            // already deactivated (an admin's, say), but the person is now gone.
             Principal::query()->whereKey($principal->id)->update([
                 'name' => 'Deleted principal '.$publicId,
                 'user_id' => null,
+                'deactivation_reason' => DeactivationReason::Erased->value,
             ]);
 
             // Login links are credentials, not audit: leaving an identity behind points SSO at a

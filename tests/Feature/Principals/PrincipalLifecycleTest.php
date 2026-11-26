@@ -13,6 +13,7 @@ use App\Models\User;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Support\Facades\Schema;
 use Qiick\Access\Principals\DeactivationReason;
+use Qiick\Access\Principals\PrincipalDirectory;
 
 beforeEach(function (): void {
     $this->seed(PermissionSeeder::class);
@@ -113,4 +114,16 @@ test('deactivating a user stamps the principal deactivated_at', function (): voi
         ->assertSessionHasNoErrors();
 
     expect($principal->refresh()->deactivated_at)->toBeNull();
+});
+
+test('deleting a user whose principal was already deactivated leaves an erased tombstone', function (): void {
+    User::factory()->create()->assignRole(RoleEnum::Admin->value);
+    $owner = User::factory()->create();
+    $principal = $owner->principal()->firstOrFail();
+    app(PrincipalDirectory::class)->deactivate($principal, DeactivationReason::Admin);
+
+    app(DeleteUserAction::class)->execute($owner);
+
+    expect($principal->fresh()->deactivation_reason)->toBe(DeactivationReason::Erased)
+        ->and($principal->fresh()->user_id)->toBeNull();
 });
