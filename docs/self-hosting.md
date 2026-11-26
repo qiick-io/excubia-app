@@ -491,6 +491,17 @@ EXCUBIA_SELF_MONITORING_TYPES=requests,slowQueries,jobs,scheduler,outgoingHttp,q
 
 Every minute `excubia:system-telemetry` also takes this machine's `server` sample (CPU, memory, disk) and, at most once a minute, the `health` samples of the core's local checks (database, cache, storage, disk, queue, scheduler, Redis), as `excubia:push-runtime` does in a monitored project, so the system project has a **Servers** row and the **Live health** card. The server is named by `EXCUBIA_SERVER_NAME`, else a hashed id.
 
+## Version and build ID
+
+The sidebar shows the installed version and, after it, the build ID: `v1.0.0 · 3f9c2ab`. A commit SHA is shortened to seven characters and links to the commit on GitHub. The build ID comes from the first of these that has one; it never depends on a hosting platform:
+
+1. **`APP_BUILD`**, set by whatever deploys the app: a commit SHA or any build label. Examples: `APP_BUILD=${{ github.sha }}` in a GitHub Actions deploy, `--build-arg APP_BUILD=$(git rev-parse HEAD)` with an `ENV APP_BUILD=$APP_BUILD` line in your Dockerfile, or `echo "APP_BUILD=$(git rev-parse HEAD)" >> .env` in a Forge, Ploi or Envoyer deploy script (before `php artisan config:cache`).
+2. **The commit recorded at build time.** After every `composer install` (and `composer dump-autoload`), Composer runs `php artisan excubia:record-build`, which writes the checkout's commit and the build time to `bootstrap/cache/build.json`. A host that builds from the repository (Laravel Cloud, Forge, a server with `git pull`) shows it with no extra step, even when it removes `.git` before the app runs. Without git it records nothing and does not fail the install.
+
+Hosting platforms' own variables are never required. With neither source (for example a Docker image built without `.git` and without `APP_BUILD`), the sidebar shows only the version.
+
+The version itself is the `version` of `composer.json`, set by the release.
+
 ## System page
 
 **Settings → System** shows the health of this install. Super-admins see it; give other roles the `can-show-system` permission. Each item links to its section below.

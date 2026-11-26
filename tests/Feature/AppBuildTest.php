@@ -1,0 +1,51 @@
+<?php
+
+declare(strict_types=1);
+
+use App\Services\SystemHealthService;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Process;
+
+/**
+ * The sidebar build ID (#425): APP_BUILD first, then the commit `excubia:record-build` wrote at
+ * build time, else none.
+ */
+beforeEach(function (): void {
+    $this->recordedBuild = File::exists(SystemHealthService::buildFile()) ? File::get(SystemHealthService::buildFile()) : null;
+    File::delete(SystemHealthService::buildFile());
+});
+
+afterEach(function (): void {
+    $this->recordedBuild === null ? File::delete(SystemHealthService::buildFile()) : File::put(SystemHealthService::buildFile(), $this->recordedBuild);
+});
+
+it('links the short commit of the build', function () {
+    expect(SystemHealthService::appBuild('c415dddc8ce55859f31ee7c1f20135d6514b2d2c'))->toBe([
+        'id' => 'c415ddd',
+        'url' => 'https://github.com/qiick-io/excubia-app/commit/c415dddc8ce55859f31ee7c1f20135d6514b2d2c',
+    ]);
+});
+
+it('shows a build label that is not a commit as is, without a link', function () {
+    expect(SystemHealthService::appBuild('2026.11.26-3'))->toBe(['id' => '2026.11.26-3', 'url' => null]);
+});
+
+it('records the commit at build time and shows it, unless APP_BUILD says otherwise', function () {
+    Process::fake(['git rev-parse HEAD' => Process::result("c415dddc8ce55859f31ee7c1f20135d6514b2d2c\n")]);
+
+    $this->artisan('excubia:record-build')->assertSuccessful();
+
+    expect(SystemHealthService::appBuild()['id'] ?? null)->toBe('c415ddd');
+
+    config(['app.build' => 'abcdef1234567']);
+    expect(SystemHealthService::appBuild()['id'] ?? null)->toBe('abcdef1');
+});
+
+it('records nothing and still succeeds without a git checkout', function () {
+    Process::fake(['git rev-parse HEAD' => Process::result('', 'fatal: not a git repository', 128)]);
+
+    $this->artisan('excubia:record-build')->assertSuccessful();
+
+    expect(File::exists(SystemHealthService::buildFile()))->toBeFalse()
+        ->and(SystemHealthService::appBuild())->toBeNull();
+});
