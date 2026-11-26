@@ -1128,7 +1128,7 @@
             "systemProjectHint": "Excubia monitoring itself. It reports every day on its own, and it cannot be deleted.",
             "attention": {
                 "title": "Needs attention",
-                "description": "{{shown}} of {{total}} open problems: failing infrastructure first, then by severity.",
+                "description": "{{shown}} of {{total}} open problems: findings with failing infrastructure first, then by severity; then open exceptions.",
                 "allFindings": "All findings",
                 "exception": "Exception",
                 "emptyTitle": "Nothing needs attention"

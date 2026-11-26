@@ -57,6 +57,7 @@ export function ListPreferences() {
                         <Switch
                             id={preference.id}
                             data-test={preference.id}
+                            aria-describedby={`${preference.id}-description`}
                             checked={preference.isChecked}
                             onCheckedChange={() => preference.onToggle()}
                         />
@@ -64,7 +65,9 @@ export function ListPreferences() {
                             <FieldLabel htmlFor={preference.id}>
                                 {preference.label}
                             </FieldLabel>
-                            <FieldDescription>
+                            <FieldDescription
+                                id={`${preference.id}-description`}
+                            >
                                 {preference.description}
                             </FieldDescription>
                         </FieldContent>

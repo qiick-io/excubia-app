@@ -1128,7 +1128,7 @@
             "systemProjectHint": "Excubia überwacht sich selbst. Es berichtet täglich von allein und kann nicht gelöscht werden.",
             "attention": {
                 "title": "Handlungsbedarf",
-                "description": "{{shown}} von {{total}} offenen Problemen: zuerst fehlschlagende Infrastruktur, dann nach Schweregrad.",
+                "description": "{{shown}} von {{total}} offenen Problemen: zuerst Befunde mit fehlschlagender Infrastruktur, dann nach Schweregrad; danach offene Ausnahmen.",
                 "allFindings": "Alle Befunde",
                 "exception": "Exception",
                 "emptyTitle": "Kein Handlungsbedarf"

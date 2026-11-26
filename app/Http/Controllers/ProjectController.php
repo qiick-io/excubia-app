@@ -15,12 +15,9 @@ use App\Http\Requests\StoreProjectRequest;
 use App\Http\Requests\UpdateProjectRequest;
 use App\Http\Resources\ProjectResource;
 use App\Models\Project;
-use App\Models\User;
 use App\Services\EffectivePermissionResolverService;
 use App\Services\ProjectListService;
-use App\Services\SidebarProjectsService;
 use App\Traits\FlashesPushTokenTrait;
-use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Gate;
@@ -95,13 +92,11 @@ class ProjectController extends Controller
         return to_route('projects.index');
     }
 
-    public function destroy(Project $project, DeleteProjectAction $deleteProject, #[CurrentUser] User $user): RedirectResponse
+    public function destroy(Project $project, DeleteProjectAction $deleteProject): RedirectResponse
     {
         Gate::authorize('delete', $project);
 
         $deleteProject->execute($project);
-        // The sidebar's cached projects would list the deleted one until the cache expires (#432).
-        SidebarProjectsService::forget($user);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Project deleted.')]);
 

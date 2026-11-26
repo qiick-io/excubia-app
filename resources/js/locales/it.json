@@ -1128,7 +1128,7 @@
             "systemProjectHint": "Excubia che controlla se stessa. Invia un report ogni giorno da sola e non si può eliminare.",
             "attention": {
                 "title": "Da sistemare",
-                "description": "{{shown}} di {{total}} problemi aperti: prima l’infrastruttura che fallisce, poi per gravità.",
+                "description": "{{shown}} di {{total}} problemi aperti: prima i problemi di infrastruttura che fallisce, poi per gravità; poi le eccezioni aperte.",
                 "allFindings": "Tutti i problemi",
                 "exception": "Eccezione",
                 "emptyTitle": "Niente da sistemare"
