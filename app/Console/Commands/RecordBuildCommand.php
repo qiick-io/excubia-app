@@ -6,7 +6,9 @@ namespace App\Console\Commands;
 
 use App\Services\SystemHealthService;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Process;
+use Throwable;
 
 /**
  * Records the commit and time of this build in `bootstrap/cache/build.json` (#425), so the
@@ -22,18 +24,44 @@ class RecordBuildCommand extends Command
 
     public function handle(): int
     {
-        $result = Process::path(base_path())->run('git rev-parse HEAD');
-        $commit = trim($result->output());
+        try {
+            $commit = $this->checkoutCommit();
 
-        if (! $result->successful() || preg_match('/^[0-9a-f]{40}$/', $commit) !== 1) {
-            $this->components->info('No git checkout here: no build ID recorded.');
+            if ($commit === null) {
+                $this->components->info('No git checkout of this app here: no build ID recorded.');
 
-            return self::SUCCESS;
+                return self::SUCCESS;
+            }
+
+            // Written to a temporary file and renamed, so a reader never sees half a file.
+            $temporaryFile = SystemHealthService::buildFile().'.'.getmypid().'.tmp';
+            File::put($temporaryFile, (string) json_encode(['commit' => $commit, 'built_at' => now()->utc()->toIso8601ZuluString()]));
+            File::move($temporaryFile, SystemHealthService::buildFile());
+            $this->components->info('Recorded build '.substr($commit, 0, 7).'.');
+        } catch (Throwable $exception) {
+            // Best effort: a missing git binary, a timeout or a read-only directory never fails
+            // `composer install`.
+            $this->components->warn('No build ID recorded: '.$exception->getMessage());
         }
 
-        file_put_contents(SystemHealthService::buildFile(), (string) json_encode(['commit' => $commit, 'built_at' => now()->utc()->toIso8601ZuluString()]));
-        $this->components->info('Recorded build '.substr($commit, 0, 7).'.');
-
         return self::SUCCESS;
+    }
+
+    /**
+     * HEAD of the git checkout whose root is this app, or null: not a checkout, or this app sits
+     * inside another repository (an unpacked archive in someone's project), whose commit is not ours.
+     */
+    private function checkoutCommit(): ?string
+    {
+        $result = Process::path(base_path())->timeout(10)->run('git rev-parse --show-toplevel HEAD');
+        $lines = explode("\n", trim($result->output()));
+
+        if (! $result->successful() || count($lines) !== 2 || realpath(trim($lines[0])) !== realpath(base_path())) {
+            return null;
+        }
+
+        $commit = trim($lines[1]);
+
+        return preg_match('/^[0-9a-f]{40}$/', $commit) === 1 ? $commit : null;
     }
 }

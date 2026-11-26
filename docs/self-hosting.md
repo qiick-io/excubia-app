@@ -495,10 +495,13 @@ Every minute `excubia:system-telemetry` also takes this machine's `server` sampl
 
 The sidebar shows the installed version and, after it, the build ID: `v1.0.0 · 3f9c2ab`. A commit SHA is shortened to seven characters and links to the commit on GitHub. The build ID comes from the first of these that has one; it never depends on a hosting platform:
 
-1. **`APP_BUILD`**, set by whatever deploys the app: a commit SHA or any build label. Examples: `APP_BUILD=${{ github.sha }}` in a GitHub Actions deploy, `--build-arg APP_BUILD=$(git rev-parse HEAD)` with an `ENV APP_BUILD=$APP_BUILD` line in your Dockerfile, or `echo "APP_BUILD=$(git rev-parse HEAD)" >> .env` in a Forge, Ploi or Envoyer deploy script (before `php artisan config:cache`).
-2. **The commit recorded at build time.** After every `composer install` (and `composer dump-autoload`), Composer runs `php artisan excubia:record-build`, which writes the checkout's commit and the build time to `bootstrap/cache/build.json`. A host that builds from the repository (Laravel Cloud, Forge, a server with `git pull`) shows it with no extra step, even when it removes `.git` before the app runs. Without git it records nothing and does not fail the install.
+1. **`APP_BUILD`**, set by whatever deploys the app: a commit SHA or any build label. Run `php artisan config:cache` after changing it, as for any setting. Examples:
+    - GitHub Actions or any CI: export `APP_BUILD=${{ github.sha }}` (or `$CI_COMMIT_SHA`) into the environment the app runs with.
+    - Docker: the image declares `ARG APP_BUILD`; build with `docker build --build-arg APP_BUILD=$(git rev-parse HEAD) .`.
+    - Forge, Ploi or Envoyer deploy script, before `php artisan config:cache`: `sed -i '/^APP_BUILD=/d' .env && echo "APP_BUILD=$(git rev-parse HEAD)" >> .env` (replaces the value of the previous deploy instead of adding a line each time).
+2. **The commit recorded at build time.** After every `composer install` (and `composer dump-autoload`) with scripts enabled, Composer runs `php artisan excubia:record-build`, which writes the commit and the build time to `bootstrap/cache/build.json` when the app is the root of a git checkout and the `git` binary is available during the build. A host that builds from the repository (Laravel Cloud, Forge, a server with `git pull`) then shows it with no extra step, even when it removes `.git` before the app runs. Without git it records nothing and never fails the install.
 
-Hosting platforms' own variables are never required. With neither source (for example a Docker image built without `.git` and without `APP_BUILD`), the sidebar shows only the version.
+Hosting platforms' own variables are never required. With neither source (for example a Docker image built without `--build-arg APP_BUILD`), the sidebar shows only the version. A SHA links to the commit in `qiick-io/excubia-app`; on a fork, set `APP_BUILD` to a label if that link would be wrong.
 
 The version itself is the `version` of `composer.json`, set by the release.
 

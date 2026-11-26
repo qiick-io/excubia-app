@@ -31,7 +31,7 @@ it('shows a build label that is not a commit as is, without a link', function ()
 });
 
 it('records the commit at build time and shows it, unless APP_BUILD says otherwise', function () {
-    Process::fake(['git rev-parse HEAD' => Process::result("c415dddc8ce55859f31ee7c1f20135d6514b2d2c\n")]);
+    Process::fake(['git rev-parse --show-toplevel HEAD' => Process::result(base_path()."\nc415dddc8ce55859f31ee7c1f20135d6514b2d2c\n")]);
 
     $this->artisan('excubia:record-build')->assertSuccessful();
 
@@ -42,10 +42,24 @@ it('records the commit at build time and shows it, unless APP_BUILD says otherwi
 });
 
 it('records nothing and still succeeds without a git checkout', function () {
-    Process::fake(['git rev-parse HEAD' => Process::result('', 'fatal: not a git repository', 128)]);
+    Process::fake(['git rev-parse --show-toplevel HEAD' => Process::result('', 'fatal: not a git repository', 128)]);
 
     $this->artisan('excubia:record-build')->assertSuccessful();
 
     expect(File::exists(SystemHealthService::buildFile()))->toBeFalse()
         ->and(SystemHealthService::appBuild())->toBeNull();
+});
+
+it('does not record the commit of an enclosing repository', function () {
+    Process::fake(['git rev-parse --show-toplevel HEAD' => Process::result(dirname(base_path())."\nc415dddc8ce55859f31ee7c1f20135d6514b2d2c\n")]);
+
+    $this->artisan('excubia:record-build')->assertSuccessful();
+
+    expect(File::exists(SystemHealthService::buildFile()))->toBeFalse();
+});
+
+it('still succeeds when git cannot run at all', function () {
+    Process::fake(fn () => throw new RuntimeException('proc_open failed'));
+
+    $this->artisan('excubia:record-build')->assertSuccessful();
 });

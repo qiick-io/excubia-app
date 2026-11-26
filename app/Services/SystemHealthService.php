@@ -144,7 +144,10 @@ class SystemHealthService
             return trim($configuredBuild);
         }
 
-        $recordedBuild = is_file(self::buildFile()) ? json_decode((string) file_get_contents(self::buildFile()), true) : null;
+        // Best effort: an unreadable or broken file shows no build ID, never an error page.
+        $recordedBuild = is_file(self::buildFile()) && is_readable(self::buildFile())
+            ? json_decode((string) file_get_contents(self::buildFile()), true)
+            : null;
 
         return is_array($recordedBuild) && is_string($recordedBuild['commit'] ?? null) ? $recordedBuild['commit'] : null;
     }
