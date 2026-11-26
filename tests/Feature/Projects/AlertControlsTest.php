@@ -169,9 +169,10 @@ it('stores maintenance windows in UTC and suppresses alerts while one is in forc
         ->post(route('projects.maintenance-windows.store', $project), ['name' => 'Upgrade', 'recurrence' => 'once', 'timezone' => 'Europe/Rome', 'starts_at' => '2026-11-10 13:00', 'ends_at' => '2026-11-10 12:00'])
         ->assertSessionHasErrors(['starts_at', 'ends_at']);
 
-    // 12:30–14:00 in Rome is 11:30–13:00 UTC: in force at 12:00 UTC.
+    // 12:30–14:00 in Rome is 11:30–13:00 UTC: in force at 12:00 UTC. The drawer also sends the
+    // (empty) weekly fields; a one-off window ignores them (#421).
     $this->actingAs($admin)
-        ->post(route('projects.maintenance-windows.store', $project), ['name' => 'Upgrade', 'recurrence' => 'once', 'timezone' => 'Europe/Rome', 'starts_at' => '2026-11-10T12:30', 'ends_at' => '2026-11-10T14:00'])
+        ->post(route('projects.maintenance-windows.store', $project), ['name' => 'Upgrade', 'recurrence' => 'once', 'timezone' => 'Europe/Rome', 'starts_at' => '2026-11-10T12:30', 'ends_at' => '2026-11-10T14:00', 'weekdays' => [], 'start_time' => '02:00', 'duration_minutes' => '60'])
         ->assertSessionHasNoErrors();
 
     $window = MaintenanceWindow::query()->sole();
