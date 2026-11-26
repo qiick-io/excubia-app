@@ -26,6 +26,7 @@ import {
 import { cn } from '@/lib/utils';
 import projectsRoutes from '@/routes/projects';
 import type { LiveHealthSummary, ProjectRow } from '@/types';
+import { useDateFormat } from '@/lib/date-format';
 
 const LIVE_HEALTH_POLL_MS = 60_000;
 /**
@@ -40,6 +41,7 @@ export function ProjectsCard({
     liveHealth: Record<string, LiveHealthSummary>;
 }) {
     const { t } = useTranslation();
+    const dates = useDateFormat();
 
     usePoll(LIVE_HEALTH_POLL_MS, { only: ['liveHealth'] });
 
@@ -203,9 +205,9 @@ export function ProjectsCard({
                                         )}
                                         <TableCell className="text-right text-xs text-muted-foreground tabular-nums">
                                             {project.last_report_at
-                                                ? new Date(
+                                                ? dates.dateTime(
                                                       project.last_report_at,
-                                                  ).toLocaleString()
+                                                  )
                                                 : t('projects.never')}
                                         </TableCell>
                                     </TableRow>
