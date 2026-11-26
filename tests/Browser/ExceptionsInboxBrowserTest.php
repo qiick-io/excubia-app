@@ -40,19 +40,31 @@ it('opens a group from its link and resolves the selection in bulk', function (s
     expect($group->fresh()->status->value)->toBe('resolved');
 })->with(['light', 'dark']);
 
-it('opens an exception from the keyboard: Tab reaches the row and Enter opens it', function () {
+it('opens an exception from the keyboard: Tab reaches the row and Enter opens it', function (string $scheme) {
     $this->actingAs(User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value));
     $project = seededA11yProject();
     $group = ExceptionGroup::query()->where('project_id', $project->id)->firstOrFail();
 
-    // #424: the row was mouse-only; now it is in the tab order and opens with Enter.
-    $page = visit(route('projects.view', [$project->slug, 'exceptions'], false));
+    // #424: the row was mouse-only. From the last header control, Tab lands on the first row.
+    $path = route('projects.view', [$project->slug, 'exceptions'], false);
+    $page = $scheme === 'dark' ? visit($path)->inDarkMode() : visit($path)->inLightMode();
+    $page->script("() => [...document.querySelectorAll('thead button, thead [role=\"checkbox\"]')].at(-1).focus()");
+    $page->keys('thead :focus', 'Tab');
 
-    expect($page->script("() => document.querySelector('tbody tr')?.tabIndex"))->toBe(0);
+    expect($page->script("() => document.activeElement?.matches('tbody tr:first-child')"))->toBeTrue();
 
-    $page->script("() => document.querySelector('tbody tr').focus()");
-    $page->keys('tbody tr:focus', 'Enter')
+    $page->keys('tbody tr:first-child', 'Enter')
         ->assertVisible('[role="dialog"]')
-        ->assertSee($group->class)
+        ->assertSeeIn('[role="dialog"]', $group->class)
         ->assertNoJavaScriptErrors();
+})->with(['light', 'dark']);
+
+it('moves focus with j and k, so Enter opens the row they point at', function () {
+    $this->actingAs(User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value));
+    $project = seededA11yProject();
+
+    $page = visit(route('projects.view', [$project->slug, 'exceptions'], false))
+        ->keys('#main-content', 'j');
+
+    expect($page->script("() => document.activeElement?.matches('tbody tr[data-active=\"true\"]')"))->toBeTrue();
 });
