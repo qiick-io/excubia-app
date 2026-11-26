@@ -81,6 +81,19 @@ it('creates a project group with the project picker and narrows the dashboard to
         ->assertNoJavaScriptErrors();
 });
 
+it('returns focus to the button that opened a drawer when it closes', function () {
+    $this->actingAs(User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value));
+
+    $page = visit(route('projects.index', absolute: false))
+        ->click('New project')
+        ->assertVisible('[role="dialog"]');
+
+    // #422: a drawer opened from a plain button used to leave focus on <body>.
+    $page->keys('[role="dialog"]', 'Escape')->wait(1);
+
+    expect($page->script('() => document.activeElement?.textContent?.trim()'))->toBe('New project');
+});
+
 it('opens a user from the keyboard: the row takes focus and Enter opens it', function () {
     $this->actingAs(User::factory()->create(['first_name' => 'Zed', 'last_name' => 'Admin'])->assignRole(RoleEnum::SuperAdmin->value));
     User::factory()->create(['first_name' => 'Ada', 'last_name' => 'Lovelace']);

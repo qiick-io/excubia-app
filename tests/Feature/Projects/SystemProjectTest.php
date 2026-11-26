@@ -120,7 +120,7 @@ it('hides a project restricted to admins from everyone else, assistant included'
         ->assertInertia(fn (Assert $page) => $page->has('projects.data', 0));
     $this->actingAs($reader)->get(route('dashboard'))
         ->assertInertia(fn (Assert $page) => $page->has('projects', 0));
-    $this->actingAs($reader)->get(route('projects.show', $project->slug))->assertForbidden();
+    $this->actingAs($reader)->get(route('projects.show', $project->slug))->assertNotFound();
     expect((string) (new ListProjectsTool($reader))->handle(new ToolRequest([])))->not->toContain('excubia');
 
     $this->actingAs($admin)->get(route('projects.index'))
