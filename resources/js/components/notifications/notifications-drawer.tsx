@@ -27,7 +27,6 @@ import type {
 } from '@/lib/notifications-api';
 import { toast } from '@/lib/toast';
 import { cn } from '@/lib/utils';
-import { useDateFormat } from '@/lib/date-format';
 
 type NotificationsDrawerProps = {
     open: boolean;
@@ -57,8 +56,7 @@ export function NotificationsDrawer({
     onUnreadCountChange,
     reloadToken = 0,
 }: NotificationsDrawerProps) {
-    const { t } = useTranslation();
-    const dates = useDateFormat();
+    const { t, i18n } = useTranslation();
     const [notifications, setNotifications] = useState<NotificationItem[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [hasLoadFailed, setHasLoadFailed] = useState(false);
@@ -283,7 +281,9 @@ export function NotificationsDrawer({
                                             dateTime={notification.time}
                                             className="mt-1 text-xs text-muted-foreground"
                                         >
-                                            {dates.dateTime(notification.time)}
+                                            {new Date(
+                                                notification.time,
+                                            ).toLocaleString(i18n.language)}
                                         </time>
                                     </ItemContent>
                                     <ItemFooter className="relative z-10 flex-wrap justify-start gap-x-3 gap-y-1">
