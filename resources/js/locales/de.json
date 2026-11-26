@@ -733,7 +733,8 @@
             "maintenance_window_created": "Wartungsfenster hinzugefügt",
             "maintenance_window_deleted": "Wartungsfenster entfernt",
             "finding_dismissed": "Befund ausgeblendet",
-            "finding_restored": "Befund wiederhergestellt"
+            "finding_restored": "Befund wiederhergestellt",
+            "project_groups_synced": "Projektgruppen synchronisiert"
         },
         "logs": {
             "default": "Anwendung",
@@ -1760,7 +1761,7 @@
             "health": {
                 "failed": "Health-Check fehlgeschlagen",
                 "recovered": "Health-Check wiederhergestellt",
-                "stale": "Health-Check ohne Meldung"
+                "stale": "Server-Messwerte fehlen"
             },
             "project": {
                 "worsened": "Projekt verschlechtert",

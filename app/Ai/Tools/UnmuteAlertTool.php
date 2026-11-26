@@ -60,7 +60,7 @@ class UnmuteAlertTool extends AssistantWriteTool
                 return ['error' => 'This project has no maintenance window with this id.'];
             }
 
-            app(DeleteMaintenanceWindowAction::class)->execute($window);
+            app(DeleteMaintenanceWindowAction::class)->execute($window, $this->user);
 
             return ['project' => $project->slug, 'closedMaintenanceWindowId' => $window->id];
         }
@@ -68,7 +68,7 @@ class UnmuteAlertTool extends AssistantWriteTool
         $mutes = AlertMute::query()->where('project_id', $project->id)->where('event', (string) $request['event'])->get();
 
         foreach ($mutes as $mute) {
-            app(UnmuteAlertAction::class)->execute($mute);
+            app(UnmuteAlertAction::class)->execute($mute, $this->user);
         }
 
         return ['project' => $project->slug, 'event' => (string) $request['event'], 'endedMutes' => $mutes->count()];

@@ -7,6 +7,8 @@ use App\Actions\ReconcileAlertWebhookHistoryAction;
 use App\Actions\SaveAlertWebhookAction;
 use App\Actions\StorePushedReportAction;
 use App\Enums\AlertEventEnum;
+use App\Enums\PermissionEnum;
+use App\Enums\ProjectVisibilityEnum;
 use App\Enums\RoleEnum;
 use App\Jobs\SendAlertWebhooksJob;
 use App\Mail\WeeklyDigestMail;
@@ -35,6 +37,7 @@ use Inertia\Testing\AssertableInertia as Assert;
 use Qiick\Outbound\Models\WebhookDelivery;
 use Qiick\Outbound\Models\WebhookEndpoint;
 use Qiick\Outbound\Ssrf\RemoteUrlGuard;
+use Spatie\Permission\Models\Role;
 
 /**
  * Alert controls (#114): mutes of a rule or an issue, maintenance windows and maintenance mode,
@@ -722,6 +725,17 @@ it('writes mutes and maintenance windows to the activity log with the acting use
 
     expect($audit->pluck('event')->all())->toBe(['alert_muted', 'alert_unmuted', 'maintenance_window_created', 'maintenance_window_deleted'])
         ->and($audit->pluck('causer_id')->unique()->all())->toBe([(string) $admin->id])
-        ->and($audit->pluck('properties.project_id')->unique()->all())->toBe([$project->id])
-        ->and($audit->first()->properties['event'])->toBe('project.stale');
+        // On the project, so the activity log shows them only to those who may see it.
+        ->and($audit->pluck('subject_type')->unique()->all())->toBe([$project->getMorphClass()])
+        ->and($audit->pluck('subject_id')->unique()->all())->toBe([(string) $project->id])
+        ->and($audit->first()->properties['event'])->toBe('project.stale')
+        // No free text (window name) in the retained metadata.
+        ->and($audit->pluck('properties')->flatten()->all())->not->toContain('Nightly');
+
+    // An auditor who cannot see the project does not see its entries.
+    Role::findOrCreate('auditor')->givePermissionTo(PermissionEnum::CanShowActivityLogs->value);
+    $project->update(['visibility' => ProjectVisibilityEnum::Admins]);
+    $auditor = User::factory()->create()->assignRole('auditor');
+    $this->actingAs($auditor)->get(route('activity-logs.index'))
+        ->assertInertia(fn ($page) => $page->where('activityLogs.data', fn ($rows) => collect($rows)->whereIn('event', ['alert_muted', 'maintenance_window_created'])->isEmpty()));
 });

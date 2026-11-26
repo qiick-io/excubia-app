@@ -733,7 +733,8 @@
             "maintenance_window_created": "Maintenance window added",
             "maintenance_window_deleted": "Maintenance window removed",
             "finding_dismissed": "Finding dismissed",
-            "finding_restored": "Finding restored"
+            "finding_restored": "Finding restored",
+            "project_groups_synced": "Project groups synced"
         },
         "logs": {
             "default": "Application",
@@ -1760,7 +1761,7 @@
             "health": {
                 "failed": "Health check failing",
                 "recovered": "Health check recovered",
-                "stale": "Health check silent"
+                "stale": "Server samples missing"
             },
             "project": {
                 "worsened": "Project worsened",

@@ -19,6 +19,7 @@ import type { LaravelPaginated } from '@/lib/pagination';
 import { edit as editProfile } from '@/routes/profile';
 import rolesRoutes from '@/routes/roles';
 import type { AdminRoleRow, BreadcrumbItem, Paginated } from '@/types';
+import { roleLabel } from '@/lib/role-label';
 
 /**
  * Admin roles list with permissions overview and icon row actions.
@@ -59,7 +60,7 @@ export default function AdminRolesIndex({
             meta: { cellClassName: 'font-medium' },
             cell: ({ row }) => (
                 <span className="inline-flex items-center gap-2">
-                    {t(`roles.names.${row.original.name}`, row.original.name)}
+                    {roleLabel(t, row.original.name)}
                     {row.original.is_built_in ? (
                         <span className="font-mono text-xs text-muted-foreground">
                             {row.original.name}

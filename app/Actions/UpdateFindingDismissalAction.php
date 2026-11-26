@@ -41,13 +41,14 @@ class UpdateFindingDismissalAction
                 'occurred_at' => $now,
             ]);
 
-            // Also in the activity log (#431): a dismissal silences the finding's alerts.
+            // Also in the activity log (#431), on the project (see MuteAlertAction); the reason
+            // stays in the finding's own history.
             activity()
-                ->performedOn($finding)
+                ->performedOn($finding->loadMissing('project')->project ?? $finding)
                 ->causedBy($actor)
                 ->event(($isDismissal ? ActivityEventEnum::FindingDismissed : ActivityEventEnum::FindingRestored)->value)
-                ->withProperties(['project_id' => $finding->project_id, 'check_id' => $finding->check_id, 'reason' => $reason, 'until' => $isDismissal ? $until?->toDateString() : null])
-                ->log($isDismissal ? 'Finding dismissed' : 'Finding restored');
+                ->withProperties(['finding_id' => $finding->id, 'check_id' => $finding->check_id, 'until' => $isDismissal ? $until?->toDateString() : null])
+                ->log(($isDismissal ? ActivityEventEnum::FindingDismissed : ActivityEventEnum::FindingRestored)->value);
 
             return $finding;
         });

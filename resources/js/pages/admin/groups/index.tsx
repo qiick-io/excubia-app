@@ -39,6 +39,7 @@ import type {
     BreadcrumbItem,
     Paginated,
 } from '@/types';
+import { roleLabel } from '@/lib/role-label';
 
 type GroupSortField = 'name' | 'created_at' | 'updated_at';
 type GroupSortDirection = 'asc' | 'desc';
@@ -223,7 +224,7 @@ export default function AdminGroupsIndex({
                 <div className="flex flex-wrap gap-1">
                     {row.original.roles.map((role) => (
                         <Badge key={role.id} variant="secondary">
-                            {t(`roles.names.${role.name}`, role.name)}
+                            {roleLabel(t, role.name)}
                         </Badge>
                     ))}
                 </div>

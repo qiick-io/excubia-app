@@ -733,7 +733,8 @@
             "maintenance_window_created": "Finestra di manutenzione aggiunta",
             "maintenance_window_deleted": "Finestra di manutenzione rimossa",
             "finding_dismissed": "Problema ignorato",
-            "finding_restored": "Problema ripristinato"
+            "finding_restored": "Problema ripristinato",
+            "project_groups_synced": "Gruppi di progetti sincronizzati"
         },
         "logs": {
             "default": "Applicazione",
@@ -1760,7 +1761,7 @@
             "health": {
                 "failed": "Controllo di salute fallito",
                 "recovered": "Controllo di salute ripristinato",
-                "stale": "Controllo di salute muto"
+                "stale": "Campioni del server mancanti"
             },
             "project": {
                 "worsened": "Progetto peggiorato",

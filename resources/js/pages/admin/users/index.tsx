@@ -50,6 +50,7 @@ import type {
     BreadcrumbItem,
     Paginated,
 } from '@/types';
+import { roleLabel } from '@/lib/role-label';
 
 type UserSortField = 'name' | 'email' | 'created_at' | 'updated_at';
 type UserSortDirection = 'asc' | 'desc';
@@ -268,7 +269,7 @@ export default function AdminUsersIndex({
                 <div className="flex flex-wrap gap-1">
                     {row.original.roles.map((role) => (
                         <Badge key={role.id} variant="secondary">
-                            {t(`roles.names.${role.name}`, role.name)}
+                            {roleLabel(t, role.name)}
                         </Badge>
                     ))}
                 </div>
