@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\ReconcileAlertWebhookHistoryAction;
 use App\Jobs\RecordQueueHeartbeatJob;
 use App\Services\SettingsRepositoryService;
 use Illuminate\Foundation\Inspiring;
@@ -50,8 +51,21 @@ Schedule::command('excubia:evaluate-runtime-alerts')->everyFifteenMinutes()->wit
 // Weekly email digest (#114) for the users who turned it on.
 Schedule::command('excubia:send-digests')->weeklyOn(1, '08:00');
 
-// Personal API keys (#351): warn owners seven days before expiry (the [7, 8) day window).
-Schedule::command('excubia:notify-expiring-api-keys')->daily();
+// Alert webhook (qiick/laravel-outbound): the first attempt is queued when the alert is stored;
+// this run sends retries once a minute (no sub-minute task, so a scale-to-zero host can sleep).
+Schedule::command('outbound:webhooks:work')->everyMinute()->withoutOverlapping()->onOneServer();
+// Clears delivery bodies after 30 days and settled delivery rows after 90 (package defaults);
+// then alerts whose delivery the prune gave up on, or already deleted, stop reading `queued`.
+Schedule::command('outbound:webhooks:prune')->daily()->onOneServer()
+    ->after(fn () => app(ReconcileAlertWebhookHistoryAction::class)->execute());
+
+// SSO back-channel logouts (qiick/laravel-oidc): drop stored logout revocations once they expire
+// (hourly, as oidc 1.0.0-beta.8 asks; the retention ceiling is oidc.backchannel_logout.max_retention_seconds).
+Schedule::command('oidc:prune-logout-revocations')->hourly()->onOneServer();
+
+// Personal API keys (#351): warn owners once when a key enters its expiry notice window
+// (qiick/laravel-api-keys, claim-leased so overlapping runs cannot send twice).
+Schedule::command('api-keys:notify-expiring')->daily();
 
 // Queue worker heartbeat for the System page (#117); the scheduler's own is excubia-core's excubia:heartbeat.
 Schedule::job(new RecordQueueHeartbeatJob)->everyMinute();

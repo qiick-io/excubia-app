@@ -33,7 +33,7 @@ cd excubia-app
 docker compose up -d --build
 ```
 
-Open `http://localhost:8080/setup` and follow the [first run](#first-run). The `app` container is healthy once `/health/ready` answers (see [Health probes](#health-probes)); `queue` and `scheduler` start after it.
+Print the one-time setup link with `docker compose exec app php artisan excubia:setup-link`, open it and follow the [first run](#first-run). The `app` container is healthy once `/health/ready` answers (see [Health probes](#health-probes)); `queue` and `scheduler` start after it.
 
 On start, the `app` container:
 
@@ -103,7 +103,7 @@ php artisan excubia:install -n --force \
   --db=pgsql --db-host=127.0.0.1 --db-port=5432 --db-database=excubia --db-username=excubia --db-password=secret
 ```
 
-The installer creates no user: open `APP_URL/setup` to create the admin and the first project ([First run](#first-run)). Then add the cron entry and the queue worker ([Scheduler and queue](#scheduler-and-queue)).
+The installer creates no user: run `php artisan excubia:setup-link` and open the one-time `APP_URL/setup#token=…` link it prints to create the admin and the first project ([First run](#first-run)). Then add the cron entry and the queue worker ([Scheduler and queue](#scheduler-and-queue)).
 
 > **Install only, not the update channel.** Composer copies the app once and never updates it. To upgrade, follow [Upgrades](#upgrades).
 
@@ -143,7 +143,7 @@ Add the cron entry and a queue worker as in [Scheduler and queue](#scheduler-and
 
 ## First run
 
-Open `/setup` (the login page links to it while no account exists):
+Open the one-time setup link: `php artisan excubia:setup-link` prints it on the server. It works once and expires after an hour; a new one replaces the previous. Without it `/setup` only explains how to get one, so nobody who finds a fresh install first can claim its super-admin account.
 
 1. **Admin.** Create the first account. It becomes super-admin and is logged in. There is no public sign-up: add more users later under **Users**. Once an account exists, the step is locked.
 2. **First project.** Name the first Laravel app to watch (or skip and add projects later under **Projects**).
@@ -379,7 +379,9 @@ Read the [changelog](../CHANGELOG.md) first: every version has **Upgrade notes**
 
 ### Database migrations
 
-From `1.0.0-beta.1` on, migrations are **forward-only**: a released migration is never edited, renamed or deleted, and every schema change ships as a new migration. Every release therefore upgrades the database of the one before in place, with your data:
+**Before `1.0.0`** (the betas) a release may edit a table's `create_` migration instead of adding a new one (qiick decision of 2026-11-20). Its release notes say so, and such a release cannot upgrade the database of the one before: `excubia:upgrade` and the Docker start stop at the first changed table ("table already exists"). For that release, back up, note the settings you will re-enter, and start on a new empty database (SQLite: move the old file away; MySQL or PostgreSQL: a new database). `migrate:fresh` refuses to run with `APP_ENV=production`.
+
+From **`1.0.0`** on, migrations are **forward-only**: a released migration is never edited, renamed or deleted, and every schema change ships as a new migration. Every release then upgrades the database of the one before in place, with your data:
 
 1. **Back up first** ([Backups](#backups)): the database and the `APP_KEY`. A migration cannot be rolled back on a production database without that backup.
 2. Run the migrations: `php artisan excubia:upgrade --force` runs `php artisan migrate --force` for you (`--force` because `APP_ENV` is `production`). Docker runs them when the `app` container starts. Never `migrate:fresh` or `migrate:refresh` on an install you keep: they drop every table.

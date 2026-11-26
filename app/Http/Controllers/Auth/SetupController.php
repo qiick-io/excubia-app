@@ -22,7 +22,7 @@ use Inertia\Response;
 /**
  * First-run wizard at /setup (#116): create the first admin, then the first project, then show
  * its push token with the excubia-core install snippet. The admin step exists only while the
- * database has no user; the project step only for a user who may create projects while no
+ * database has no user, and only through the one-time link of `excubia:setup-link`; the project step only for a user who may create projects while no
  * project other than the system one exists. Anything else redirects to the dashboard.
  */
 class SetupController extends Controller
@@ -33,6 +33,8 @@ class SetupController extends Controller
     public function show(Request $request): Response|RedirectResponse
     {
         if (! User::query()->exists()) {
+            // The one-time token stays in the link's `#token=` fragment: the browser reads it and
+            // posts it with the form, so no GET (and no previous-URL session entry) carries it.
             return Inertia::render('auth/setup', [
                 'step' => 'admin',
                 'passwordRules' => Password::defaults()->toPasswordRulesString(),
@@ -59,6 +61,7 @@ class SetupController extends Controller
             $request->filled('last_name') ? $request->string('last_name')->trim()->toString() : null,
             $request->string('email')->toString(),
             $request->string('password')->toString(),
+            $request->string('setup_token')->toString(),
         );
 
         abort_if($user === null, 403);

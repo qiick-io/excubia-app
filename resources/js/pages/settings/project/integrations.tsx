@@ -6,6 +6,10 @@ import Heading from '@/components/heading';
 import { SettingsFormActions } from '@/components/settings-form-actions';
 import BooleanField from '@/components/boolean-field';
 import AlertFilterFields from '@/components/settings/alert-filter-fields';
+import AlertWebhookSigning, {
+    AlertWebhookDeliveryStatus,
+} from '@/components/settings/alert-webhook-signing';
+import type { AlertWebhookStatus } from '@/components/settings/alert-webhook-signing';
 import type {
     AlertFilter,
     AlertFilterProject,
@@ -20,7 +24,6 @@ import {
     FieldLabel,
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
     Select,
     SelectContent,
@@ -34,13 +37,6 @@ import SettingsLayout from '@/layouts/settings/layout';
 import { edit as editProfile } from '@/routes/profile';
 import integrationsRoutes from '@/routes/project/integrations';
 import type { BreadcrumbItem } from '@/types';
-
-type Delivery = {
-    event: string;
-    eventId: string;
-    at: string;
-    message: string | null;
-} | null;
 
 type IntegrationsSettings = {
     webhook_url: string | null;
@@ -59,8 +55,7 @@ type IntegrationsSettings = {
     alert_billing_payment_failed_enabled: boolean;
     alert_auth_failed_logins_per_hour: number | null;
     alert_scout_index_failures_per_hour: number | null;
-    webhook_last_success: Delivery;
-    webhook_last_error: Delivery;
+    webhook_status: AlertWebhookStatus;
 };
 
 type Channel = 'webhook' | 'slack' | 'telegram';
@@ -88,7 +83,6 @@ export default function ProjectIntegrationsSettings({
     const { t } = useTranslation();
     const [form, setForm] = useState({
         webhook_url: project.webhook_url ?? '',
-        webhook_secret: '',
         notifier_slack_webhook_url: '',
         notifier_telegram_bot_token: '',
         notifier_telegram_chat_id: project.notifier_telegram_chat_id ?? '',
@@ -159,18 +153,6 @@ export default function ProjectIntegrationsSettings({
         );
     };
 
-    // Standard Webhooks secret: whsec_ + base64 of 32 random bytes.
-    const generateSecret = (): void => {
-        const bytes = crypto.getRandomValues(new Uint8Array(32));
-        let binary = '';
-
-        for (const byte of bytes) {
-            binary += String.fromCharCode(byte);
-        }
-
-        setValue('webhook_secret', `whsec_${btoa(binary)}`);
-    };
-
     const isSlackConfigured = project.has_notifier_slack_webhook_url;
     const isTelegramConfigured =
         project.has_notifier_telegram_bot_token &&
@@ -189,7 +171,6 @@ export default function ProjectIntegrationsSettings({
                     onSuccess={() =>
                         setForm((current) => ({
                             ...current,
-                            webhook_secret: '',
                             notifier_slack_webhook_url: '',
                             notifier_telegram_bot_token: '',
                         }))
@@ -227,67 +208,12 @@ export default function ProjectIntegrationsSettings({
                                         }
                                     />
 
-                                    <Field
-                                        data-invalid={
-                                            errors.webhook_secret
-                                                ? true
-                                                : undefined
-                                        }
-                                    >
-                                        <FieldLabel htmlFor="webhook_secret">
-                                            {t(
-                                                'settings.integrations.webhookSecret',
-                                            )}
-                                        </FieldLabel>
-                                        <div className="flex flex-col gap-2 sm:flex-row">
-                                            <Input
-                                                id="webhook_secret"
-                                                name="webhook_secret"
-                                                type="password"
-                                                autoComplete="new-password"
-                                                value={form.webhook_secret}
-                                                onChange={(event) =>
-                                                    setValue(
-                                                        'webhook_secret',
-                                                        event.target.value,
-                                                    )
-                                                }
-                                                placeholder={
-                                                    project.has_webhook_secret
-                                                        ? '••••••••'
-                                                        : undefined
-                                                }
-                                                className="sm:flex-1"
-                                                aria-invalid={
-                                                    errors.webhook_secret
-                                                        ? true
-                                                        : undefined
-                                                }
-                                                aria-describedby={
-                                                    errors.webhook_secret
-                                                        ? 'webhook-secret-error'
-                                                        : 'webhook-secret-hint'
-                                                }
-                                            />
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                onClick={generateSecret}
-                                            >
-                                                {t(
-                                                    'settings.integrations.generateSecret',
-                                                )}
-                                            </Button>
-                                        </div>
-                                        <FieldDescription id="webhook-secret-hint">
-                                            {t(
-                                                'settings.integrations.webhookSecretHint',
-                                            )}
-                                        </FieldDescription>
-                                        <FieldError id="webhook-secret-error">
-                                            {errors.webhook_secret}
-                                        </FieldError>
-                                    </Field>
+                                    <AlertWebhookSigning
+                                        hasSavedUrl={Boolean(
+                                            project.webhook_url,
+                                        )}
+                                        hasSecret={project.has_webhook_secret}
+                                    />
                                 </FieldGroup>
 
                                 {channelFilter('webhook', errors)}
@@ -305,32 +231,9 @@ export default function ProjectIntegrationsSettings({
                                     onClick={() => sendTest('webhook')}
                                 />
 
-                                <div className="grid gap-3">
-                                    <Label>
-                                        {t(
-                                            'settings.integrations.deliveryTitle',
-                                        )}
-                                    </Label>
-                                    <div className="grid gap-3 sm:grid-cols-2">
-                                        <DeliveryCard
-                                            title={t(
-                                                'settings.integrations.lastSuccess',
-                                            )}
-                                            delivery={
-                                                project.webhook_last_success
-                                            }
-                                        />
-                                        <DeliveryCard
-                                            title={t(
-                                                'settings.integrations.lastError',
-                                            )}
-                                            delivery={
-                                                project.webhook_last_error
-                                            }
-                                            isError
-                                        />
-                                    </div>
-                                </div>
+                                <AlertWebhookDeliveryStatus
+                                    status={project.webhook_status}
+                                />
                             </div>
 
                             <Separator />
@@ -825,42 +728,3 @@ function TestRow({
 }
 
 /** Last success / last error of the webhook, as externa-core's delivery cards. */
-function DeliveryCard({
-    title,
-    delivery,
-    isError = false,
-}: {
-    title: string;
-    delivery: Delivery;
-    isError?: boolean;
-}) {
-    const { t } = useTranslation();
-
-    return (
-        <div className="space-y-1 rounded-md border p-3">
-            <p className="text-sm font-medium">{title}</p>
-            {delivery === null ? (
-                <p className="text-sm text-muted-foreground">
-                    {t('settings.integrations.deliveryNone')}
-                </p>
-            ) : (
-                <>
-                    <p className="text-sm">
-                        <code className="font-mono">{delivery.event}</code>{' '}
-                        <span className="text-muted-foreground">
-                            · {new Date(delivery.at).toLocaleString()}
-                        </span>
-                    </p>
-                    {isError && delivery.message ? (
-                        <p className="text-sm break-words text-destructive">
-                            {delivery.message}
-                        </p>
-                    ) : null}
-                    <p className="font-mono text-xs text-muted-foreground">
-                        {delivery.eventId}
-                    </p>
-                </>
-            )}
-        </div>
-    );
-}

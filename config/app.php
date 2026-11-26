@@ -119,7 +119,8 @@ return [
     */
 
     'maintenance' => [
-        'driver' => env('APP_MAINTENANCE_DRIVER', 'file'),
+        // `excubia`: the file driver, plus EXCUBIA_MAINTENANCE_SECRET (EnvironmentMaintenanceModeService).
+        'driver' => env('APP_MAINTENANCE_DRIVER', 'excubia'),
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 

@@ -192,6 +192,10 @@
                 "description": "This install has no account. Create the first admin to start.",
                 "link": "Set up Excubia"
             },
+            "locked": {
+                "title": "Open the setup link",
+                "description": "This install has no account yet. On the server, run php artisan excubia:setup-link and open the link it prints: it creates the first admin, works once and expires after an hour."
+            },
             "admin": {
                 "title": "Create the admin account",
                 "description": "This account becomes the super-admin of this install. There is no public sign-up: add more users later under Users.",
@@ -469,10 +473,10 @@
             "webhookUrl": "Webhook URL",
             "webhookUrlHint": "HTTPS only. Leave empty to disable. Requires a queue worker.",
             "webhookSecret": "Webhook secret",
-            "webhookSecretHint": "Standard Webhooks secret (whsec_…). Signs webhook-id.timestamp.body as v1,<base64>. Leave blank to keep the current secret.",
+            "webhookSecretHint": "Excubia generates the Standard Webhooks secret (whsec_…) and shows it once: give it to your receiver. Rotate keeps the previous secret signing for 24 hours, so the receiver can switch without a gap.",
             "generateSecret": "Generate secret",
             "sendTest": "Send test event",
-            "sendTestHint": "Save the webhook URL and secret first, then queue a signed ping. Requires a queue worker.",
+            "sendTestHint": "Save the webhook URL and generate its secret first, then queue a signed ping. Requires a queue worker.",
             "deliveryTitle": "Delivery status",
             "lastSuccess": "Last successful delivery",
             "lastError": "Last failed delivery",
@@ -568,7 +572,17 @@
             "aiSpendSpike": "Today's AI spend above (% of the 7-day average)",
             "aiSpendSpikeHint": "Alert once a day when a project's estimated AI spend today reaches this share of its average day over the 7 days before, from $1. 300 means three times the average.",
             "aiErrorRate": "AI error rate above (%)",
-            "aiErrorRateHint": "Alert when more than this share of the AI calls of the last hour failed, with at least 20 calls."
+            "aiErrorRateHint": "Alert when more than this share of the AI calls of the last hour failed, with at least 20 calls.",
+            "webhookSecretNeedsUrl": "Save the webhook URL first, then generate its signing secret.",
+            "rotateSecret": "Rotate secret",
+            "secretSet": "Secret set",
+            "secretCreatedTitle": "Copy the signing secret of the alert webhook",
+            "secretRotatedTitle": "Copy the new signing secret of the alert webhook",
+            "secretRotatedNote": "The previous secret keeps signing for 24 hours.",
+            "secretAnnouncement": "Webhook signing secret generated. It is shown only once.",
+            "webhookDisabled": "Excubia stopped sending to this webhook ({{reason}}). Fix the receiver, then turn it back on.",
+            "reenableWebhook": "Turn back on",
+            "consecutiveFailures": "Failures in a row"
         },
         "aiPrices": {
             "breadcrumb": "Prices",
@@ -700,6 +714,8 @@
             "groups_synced": "Groups synced",
             "members_synced": "Members synced",
             "token_rotated": "Push token rotated",
+            "webhook_secret_created": "Alert webhook secret created",
+            "webhook_secret_rotated": "Alert webhook secret rotated",
             "token_revoked": "Push token revoked",
             "rotated": "API key rotated",
             "revoked": "API key revoked",

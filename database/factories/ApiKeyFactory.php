@@ -9,7 +9,7 @@ use App\Models\ApiKey;
 use App\Models\Principal;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Illuminate\Support\Str;
+use Qiick\ApiKeys\TokenCodec;
 
 /**
  * A personal API key with the `mcp:read` scope. The plain key is not kept: tests that send a key
@@ -24,13 +24,13 @@ class ApiKeyFactory extends Factory
      */
     public function definition(): array
     {
-        $token = ApiKey::generateToken();
+        $token = app(TokenCodec::class)->issue();
 
         return [
-            'uuid' => (string) Str::uuid(),
             'name' => fake()->words(2, true),
-            'key_prefix' => $token['prefix'],
-            'key_hash' => $token['hash'],
+            'key_prefix' => $token->keyPrefix,
+            'key_hash' => $token->keyHash,
+            'token_version' => $token->tokenVersion,
             'owner_id' => User::factory(),
             'owner_principal_id' => fn (array $attributes): string => (string) Principal::query()
                 ->where('user_id', $attributes['owner_id'])

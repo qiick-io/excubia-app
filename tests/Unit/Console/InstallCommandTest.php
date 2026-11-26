@@ -94,8 +94,11 @@ it('installs without questions under --no-interaction, seeding permissions and t
             '--url' => 'https://excubia.example.com',
         ]);
 
+        $output = Artisan::output();
+
         expect($exitCode)->toBe(0)
-            ->and(Artisan::output())->toContain('/setup to create the first admin');
+            ->and($output)->toContain('php artisan excubia:setup-link')
+            ->and($output)->toContain('https://excubia.example.com/setup, to create the first admin');
 
         $env = File::get($envPath);
 

@@ -45,6 +45,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->whereIn('channel', ['webhook', 'slack', 'telegram'])
             ->middleware('throttle:10,1')
             ->name('project.integrations.test');
+        Route::post('settings/project/integrations/webhook-secret', [ProjectIntegrationsSettingsController::class, 'issueWebhookSecret'])
+            ->middleware('throttle:10,1')
+            ->name('project.integrations.webhook-secret');
+        Route::post('settings/project/integrations/webhook-enable', [ProjectIntegrationsSettingsController::class, 'enableWebhook'])
+            ->name('project.integrations.webhook-enable');
 
         // AI price table (#129), which the AI budgets and alerts use: a sub-page of Settings → AI (#331).
         Route::get('settings/ai/prices', [AiPricesSettingsController::class, 'edit'])->name('ai-prices.edit');

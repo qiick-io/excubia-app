@@ -1,11 +1,19 @@
 <?php
 
+use App\Actions\IssueAlertWebhookSecretAction;
+use App\Actions\SaveAlertWebhookAction;
+use App\Models\User;
+use App\Services\ApiKeySecretOnceService;
 use GuzzleHttp\Promise\PromiseInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Http;
+use Qiick\Outbound\Delivery\WebhookDeliveryCoordinator;
 use Qiick\Outbound\Http\OutboundHttpLimits;
 use Qiick\Outbound\Http\PinnedHttpClient;
+use Qiick\Outbound\Models\WebhookDelivery;
 use Qiick\Outbound\Ssrf\RemoteUrlGuard;
 use Qiick\Outbound\Testing\FakeOutboundHttpFactory;
 use Tests\TestCase;
@@ -92,6 +100,28 @@ function alertWebhookSecret(string $byte = 's'): string
 }
 
 /**
+ * Configures the alert webhook on qiick/laravel-outbound as Settings → Integrations does: the
+ * instance endpoint for `$url` and a generated signing secret, which is returned.
+ */
+function configureAlertWebhook(string $url = 'https://93.184.216.34/excubia'): string
+{
+    $actor = User::factory()->create();
+    app(SaveAlertWebhookAction::class)->execute($url, $actor);
+
+    return app(IssueAlertWebhookSecretAction::class)->execute($actor)['secret'] ?? '';
+}
+
+/**
+ * The alert types stored for the webhook, oldest first (one qiick/laravel-outbound delivery each).
+ *
+ * @return list<string>
+ */
+function alertWebhookEvents(): array
+{
+    return WebhookDelivery::query()->orderBy('id')->pluck('event_type')->all();
+}
+
+/**
  * Bind a {@see PinnedHttpClient} over a faked private factory so
  * {@see Http::fake()} on the shared facade cannot bypass the pin.
  *
@@ -106,6 +136,8 @@ function bindPinnedAlertClient(RemoteUrlGuard $guard, ?callable $callback = null
         $guard,
         app(OutboundHttpLimits::class),
     ));
+    // The webhook coordinator keeps the client it was built with: rebuild it over the fake one.
+    app()->forgetInstance(WebhookDeliveryCoordinator::class);
 }
 
 /**
@@ -198,4 +230,37 @@ function coreSchemaErrors(mixed $value, array $schema, array $root, string $path
     }
 
     return $errors;
+}
+
+/**
+ * Peek at the one-time secret still pending after create/rotate (before the index GET claims
+ * it): the session holds a token, the cache the encrypted payload.
+ */
+function pendingIssuedApiKeySecret(string $sessionKey = ApiKeySecretOnceService::SESSION_KEY): string
+{
+    $token = session()->get($sessionKey);
+
+    expect($token)->toBeString();
+
+    $encrypted = Cache::get(ApiKeySecretOnceService::CACHE_PREFIX.$token);
+
+    expect($encrypted)->toBeString();
+
+    /** @var array{secret?: mixed} $payload */
+    $payload = json_decode(Crypt::decryptString($encrypted), true, 512, JSON_THROW_ON_ERROR);
+
+    expect($payload['secret'] ?? null)->toBeString();
+
+    return $payload['secret'];
+}
+
+/** Issued tokens: product prefix, environment, 8-character id, 32-character secret, 6-character checksum (v2). */
+const EXCUBIA_TOKEN_PATTERN = '/^exc_test_[A-Za-z0-9]{8}[A-Za-z0-9]{32}[A-Za-z0-9]{6}$/D';
+
+/**
+ * The public `key_prefix` of a plain Excubia token: `exc_{live|test}_` plus the 8-character id.
+ */
+function apiKeyPrefixOf(string $plainKey): string
+{
+    return substr($plainKey, 0, strlen('exc_test_') + 8);
 }

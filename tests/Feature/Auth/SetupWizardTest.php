@@ -2,13 +2,17 @@
 
 declare(strict_types=1);
 
+use App\Actions\CreateFirstAdminAction;
 use App\Enums\RoleEnum;
 use App\Models\Project;
 use App\Models\User;
 use App\Providers\AppServiceProvider;
+use App\Services\SetupTokenService;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\SystemProjectSeeder;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Http\Middleware\TrustProxies;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Testing\AssertableInertia as Assert;
 
 /**
@@ -17,6 +21,7 @@ use Inertia\Testing\AssertableInertia as Assert;
 function setupAdminInput(array $overrides = []): array
 {
     return [
+        'setup_token' => $overrides['setup_token'] ?? app(SetupTokenService::class)->issue(),
         'first_name' => 'Ada',
         'last_name' => 'Lovelace',
         'email' => 'ada@example.com',
@@ -36,9 +41,66 @@ it('links the login page to the wizard while no user exists', function () {
         ->assertInertia(fn (Assert $page) => $page->where('needsSetup', false));
 });
 
-it('shows the admin step on a fresh install', function () {
+it('shows the admin step on a fresh install, the token staying in the link fragment', function () {
+    // The page reads the token from `#token=` in the browser: the GET never carries it, so it
+    // never lands in the session's previous URL.
     $this->get(route('setup.show'))
-        ->assertInertia(fn (Assert $page) => $page->component('auth/setup')->where('step', 'admin')->has('passwordRules'));
+        ->assertInertia(fn (Assert $page) => $page->component('auth/setup')->where('step', 'admin')->missing('setupToken')->has('passwordRules'));
+
+    expect((string) session('_previous.url'))->not->toContain('token');
+});
+
+it('refuses the admin step without a valid setup token, so nobody can claim a fresh install', function (?string $token) {
+    app(SetupTokenService::class)->issue();
+
+    $this->post(route('setup.admin.store'), [...setupAdminInput(), 'setup_token' => $token])->assertForbidden();
+
+    expect(User::query()->exists())->toBeFalse();
+})->with([
+    'no token' => [null],
+    'a wrong token' => ['not-the-issued-token'],
+]);
+
+it('never keeps the setup token in the session after a failed submit', function () {
+    $token = app(SetupTokenService::class)->issue();
+
+    $this->post(route('setup.admin.store'), setupAdminInput(['setup_token' => $token, 'email' => 'not-an-email']))
+        ->assertSessionHasErrors('email');
+
+    expect(json_encode(session()->all()))->not->toContain($token);
+});
+
+it('checks the setup token again under the creation lock and uses it once', function () {
+    $token = app(SetupTokenService::class)->issue();
+    $createFirstAdmin = app(CreateFirstAdminAction::class);
+
+    // A token replaced (or expired) after the request was authorized creates nobody.
+    expect($createFirstAdmin->execute('Ada', null, 'ada@example.com', 'correct-horse-battery', 'replaced-token'))->toBeNull()
+        ->and(User::query()->exists())->toBeFalse();
+
+    expect($createFirstAdmin->execute('Ada', null, 'ada@example.com', 'correct-horse-battery', $token))->not->toBeNull()
+        ->and(app(SetupTokenService::class)->isValid($token))->toBeFalse();
+});
+
+it('issues a setup link only under the creation lock, so a new link cannot race the first admin', function () {
+    $creation = Cache::lock('excubia:first-run-setup', 10);
+    $creation->get();
+
+    try {
+        expect(fn () => $this->artisan('excubia:setup-link')->run())->toThrow(LockTimeoutException::class);
+    } finally {
+        $creation->release();
+    }
+});
+
+it('prints a setup link with the command, only while no user exists', function () {
+    $this->artisan('excubia:setup-link')
+        ->expectsOutputToContain(url('/setup').'#token=')
+        ->assertSuccessful();
+
+    User::factory()->create();
+
+    $this->artisan('excubia:setup-link')->assertFailed();
 });
 
 it('creates the first admin as super-admin, logs them in and moves to the project step', function () {

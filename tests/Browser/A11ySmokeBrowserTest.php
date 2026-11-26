@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Enums\RoleEnum;
 use App\Models\User;
+use App\Services\SetupTokenService;
 use Database\Seeders\PermissionSeeder;
 
 require_once __DIR__.'/BrowserSeedHelpers.php';
@@ -28,9 +29,11 @@ it('has no critical or serious axe issues on login in light, dark and high contr
 });
 
 it('has no critical or serious axe issues on the first-run wizard in light, dark and high contrast', function () {
-    // Admin step: a fresh install without users (#116).
+    // Admin step: a fresh install without users (#116), opened with the one-time setup link.
+    $setupToken = app(SetupTokenService::class)->issue();
+
     foreach (['light', 'dark', 'high-contrast'] as $mode) {
-        $page = visitA11y('/setup', $mode)
+        $page = visitA11y('/setup#token='.$setupToken, $mode)
             ->assertPresent('#main-content')
             ->assertNoAccessibilityIssues(1);
 

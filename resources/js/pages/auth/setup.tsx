@@ -1,4 +1,5 @@
 import { Form, Head, Link } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import PasswordInput from '@/components/password-input';
 import { CopySnippet, SCHEDULE_LINE } from '@/components/projects/copy-snippet';
@@ -60,11 +61,32 @@ export default function Setup(props: Props) {
     );
 }
 
+/** The one-time token of `excubia:setup-link`, from the `#token=` fragment the server never sees. */
+function readSetupToken(): string {
+    return (
+        new URLSearchParams(window.location.hash.slice(1)).get('token') ?? ''
+    );
+}
+
 /**
- * Step 1: the first account, created as super-admin and logged in.
+ * Step 1: the first account, created as super-admin and logged in. The one-time setup link's
+ * token rides along in the form: the server creates the account only for its holder. Without
+ * it, the step explains how to get the link.
  */
 function AdminStep({ passwordRules }: { passwordRules: string }) {
     const { t } = useTranslation();
+    // Read after mount: the fragment exists only in the browser.
+    const [setupToken, setSetupToken] = useState('');
+
+    useEffect(() => setSetupToken(readSetupToken()), []);
+
+    if (setupToken === '') {
+        return (
+            <p className="text-sm text-muted-foreground">
+                {t('auth.setup.locked.description')}
+            </p>
+        );
+    }
 
     return (
         <Form
@@ -74,6 +96,11 @@ function AdminStep({ passwordRules }: { passwordRules: string }) {
         >
             {({ processing, errors }) => (
                 <FieldGroup className="gap-6">
+                    <input
+                        type="hidden"
+                        name="setup_token"
+                        value={setupToken}
+                    />
                     <p className="text-sm text-muted-foreground">
                         {t('auth.setup.admin.description')}
                     </p>

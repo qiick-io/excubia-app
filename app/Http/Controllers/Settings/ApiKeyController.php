@@ -18,14 +18,13 @@ use App\Services\ApiKeySecretOnceService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
-use Inertia\Support\Header;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 /**
  * Settings → API keys (#315, #351), personal: the signed-in user (web session) lists, creates,
  * rotates and revokes their own keys. A new or rotated secret is handed once through
- * {@see ApiKeySecretOnceService} (encrypted session payload) and flashed on the index response
+ * {@see ApiKeySecretOnceService} (a session token for an encrypted cached payload) and flashed on the index response
  * so Inertia strips it from history.state. Unreachable over the `api_key` guard.
  */
 class ApiKeyController extends Controller
@@ -46,25 +45,12 @@ class ApiKeyController extends Controller
             ),
         ]);
 
-        // Lazy: only pull on a full page render. A partial reload from another tab
-        // (`only: ['apiKeys']`) must not consume the encrypted payload.
-        $pullIssued = fn (): ?array => $apiKeySecretOnce->pull($request->session());
-        $isPartial = $request->header(Header::PARTIAL_COMPONENT) === 'settings/api-keys';
+        // Only a full page visit takes the one-time secret (not a partial reload from another tab).
+        $issued = $apiKeySecretOnce->isShowingRequest($request, 'settings/api-keys')
+            ? $apiKeySecretOnce->pull($request->session())
+            : null;
 
-        if (! $isPartial) {
-            $issued = $pullIssued();
-
-            if ($issued !== null) {
-                $page->flash('issuedApiKey', $issued);
-            }
-        }
-
-        $response = $page->toResponse($request);
-
-        // Inertia may set Cache-Control for XHR; force no-store so the secret page is not cached.
-        $response->headers->set('Cache-Control', 'no-store');
-
-        return $response;
+        return $apiKeySecretOnce->render($request, $page, 'issuedApiKey', $issued);
     }
 
     public function store(

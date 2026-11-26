@@ -26,6 +26,8 @@ enum ActivityEventEnum: string
     case ApiKeyRotated = 'rotated';
     case ApiKeyRevoked = 'revoked';
     case ApiKeyFirstUsed = 'api_key_first_used';
+    case WebhookSecretCreated = 'webhook_secret_created';
+    case WebhookSecretRotated = 'webhook_secret_rotated';
 
     /**
      * @return list<string>

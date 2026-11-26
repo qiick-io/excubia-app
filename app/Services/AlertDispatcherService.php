@@ -12,6 +12,7 @@ use App\Models\AlertLog;
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Support\Facades\Date;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Throwable;
 
@@ -48,6 +49,7 @@ class AlertDispatcherService
     public function __construct(
         private SettingsRepositoryService $settings,
         private AlertSuppressionService $suppression,
+        private AlertWebhookService $webhooks,
     ) {}
 
     /**
@@ -77,32 +79,36 @@ class AlertDispatcherService
             ?? ($this->suppression->isThrottled($project, $event, $subject, $severity, $fingerprints) ? AlertSuppressionService::THROTTLED : null);
         $channels = $reason === null ? $this->channels($event, $severity, $project) : [];
 
-        AlertLog::query()->create([
-            'uuid' => $payload['id'],
-            'project_id' => $project->id,
-            'event' => $event->value,
-            'severity' => $severity->value,
-            'subject' => $subject,
-            'summary' => mb_substr($summary, 0, 500),
-            'status' => match (true) {
-                $reason !== null => AlertLog::SUPPRESSED,
-                $channels === [] => AlertLog::SKIPPED,
-                default => AlertLog::QUEUED,
-            },
-            'reason' => $reason,
-            'fingerprints' => $fingerprints === [] ? null : $fingerprints,
-            'deliveries' => array_fill_keys($channels, AlertLog::QUEUED),
-        ]);
+        // One transaction, also for a caller without its own (the scheduled stale and EOL
+        // checks): the history row commits only with the webhook delivery stored for it.
+        DB::transaction(function () use ($payload, $project, $event, $severity, $subject, $summary, $reason, $channels, $fingerprints): void {
+            AlertLog::query()->create([
+                'uuid' => $payload['id'],
+                'project_id' => $project->id,
+                'event' => $event->value,
+                'severity' => $severity->value,
+                'subject' => $subject,
+                'summary' => mb_substr($summary, 0, 500),
+                'status' => match (true) {
+                    $reason !== null => AlertLog::SUPPRESSED,
+                    $channels === [] => AlertLog::SKIPPED,
+                    default => AlertLog::QUEUED,
+                },
+                'reason' => $reason,
+                'fingerprints' => $fingerprints === [] ? null : $fingerprints,
+                'deliveries' => array_fill_keys($channels, AlertLog::QUEUED),
+            ]);
 
-        foreach ($channels as $channel) {
-            if ($this->group !== null && $channel !== DeliverAlertJob::WEBHOOK) {
-                $this->group[$channel][] = ['payload' => $payload, 'summary' => $summary];
+            foreach ($channels as $channel) {
+                if ($this->group !== null && $channel !== DeliverAlertJob::WEBHOOK) {
+                    $this->group[$channel][] = ['payload' => $payload, 'summary' => $summary];
 
-                continue;
+                    continue;
+                }
+
+                $this->queue($channel, [['payload' => $payload, 'summary' => $summary]]);
             }
-
-            $this->queue($channel, [['payload' => $payload, 'summary' => $summary]]);
-        }
+        });
     }
 
     /**
@@ -160,13 +166,16 @@ class AlertDispatcherService
         // The per-user channels (mail, in-app) render the alerts themselves from the summaries.
         $isPerUser = DeliverAlertJob::emailUserId($channel) !== null || DeliverAlertJob::appUserId($channel) !== null;
 
+        if ($channel === DeliverAlertJob::WEBHOOK) {
+            // Never grouped: one signed delivery per alert, the alert id as `webhook-id`.
+            $this->webhooks->send($alerts[0]['payload']);
+
+            return;
+        }
+
         if (count($alerts) === 1) {
             ['payload' => $payload, 'summary' => $summary] = $alerts[0];
-            $body = match (true) {
-                $channel === DeliverAlertJob::WEBHOOK => '',
-                $isPerUser => $summary,
-                default => $this->line($payload, $summary, true).PHP_EOL.$payload['url'],
-            };
+            $body = $isPerUser ? $summary : $this->line($payload, $summary, true).PHP_EOL.$payload['url'];
 
             DeliverAlertJob::dispatch($channel, $payload, $body)->afterCommit();
 
@@ -221,7 +230,7 @@ class AlertDispatcherService
     private function channels(AlertEventEnum $event, SeverityEnum $severity, Project $project): array
     {
         $isConfigured = [
-            DeliverAlertJob::WEBHOOK => $this->settings->webhookUrl() !== null && $this->settings->webhookSecret() !== null,
+            DeliverAlertJob::WEBHOOK => $this->webhooks->isReady(),
             DeliverAlertJob::SLACK => $this->settings->slackWebhookUrl() !== null,
             DeliverAlertJob::TELEGRAM => $this->settings->telegramBotToken() !== null && $this->settings->telegramChatId() !== null,
         ];
@@ -270,6 +279,12 @@ class AlertDispatcherService
             'url' => route('dashboard'),
             'data' => (object) [],
         ];
+
+        if ($channel === DeliverAlertJob::WEBHOOK) {
+            $this->webhooks->send($payload);
+
+            return;
+        }
 
         DeliverAlertJob::dispatch($channel, $payload, 'Excubia test notification: the channel works.');
     }

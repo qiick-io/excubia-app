@@ -192,6 +192,10 @@
                 "description": "Questa installazione non ha account. Crea il primo amministratore per iniziare.",
                 "link": "Configura Excubia"
             },
+            "locked": {
+                "title": "Apri il link di configurazione",
+                "description": "Questa installazione non ha ancora un account. Sul server esegui php artisan excubia:setup-link e apri il link che stampa: crea il primo admin, funziona una sola volta e scade dopo un'ora."
+            },
             "admin": {
                 "title": "Crea l’account amministratore",
                 "description": "Questo account diventa il super-admin dell’installazione. Non c’è registrazione pubblica: aggiungi altri utenti più tardi in Utenti.",
@@ -469,10 +473,10 @@
             "webhookUrl": "URL del webhook",
             "webhookUrlHint": "Solo HTTPS. Lascia vuoto per disattivare. Serve un queue worker.",
             "webhookSecret": "Segreto del webhook",
-            "webhookSecretHint": "Segreto Standard Webhooks (whsec_…). Firma webhook-id.timestamp.body come v1,<base64>. Lascia vuoto per mantenere quello attuale.",
+            "webhookSecretHint": "Excubia genera il segreto Standard Webhooks (whsec_…) e lo mostra una volta sola: consegnalo al ricevente. Ruota mantiene valido il segreto precedente per 24 ore, così il ricevente può passare al nuovo senza interruzioni.",
             "generateSecret": "Genera segreto",
             "sendTest": "Invia evento di test",
-            "sendTestHint": "Salva prima URL e segreto, poi metti in coda un ping firmato. Serve un queue worker.",
+            "sendTestHint": "Salva l'URL del webhook e genera il segreto, poi metti in coda un ping firmato. Serve un worker della coda.",
             "deliveryTitle": "Stato delle consegne",
             "lastSuccess": "Ultima consegna riuscita",
             "lastError": "Ultima consegna fallita",
@@ -568,7 +572,17 @@
             "aiSpendSpike": "Spesa AI di oggi oltre (% della media di 7 giorni)",
             "aiSpendSpikeHint": "Avvisa una volta al giorno quando la spesa AI stimata di oggi di un progetto raggiunge questa quota della sua giornata media dei 7 giorni precedenti, da 1 $. 300 significa tre volte la media.",
             "aiErrorRate": "Tasso di errore AI oltre (%)",
-            "aiErrorRateHint": "Avvisa quando è fallita più di questa quota delle chiamate AI dell'ultima ora, con almeno 20 chiamate."
+            "aiErrorRateHint": "Avvisa quando è fallita più di questa quota delle chiamate AI dell'ultima ora, con almeno 20 chiamate.",
+            "webhookSecretNeedsUrl": "Salva prima l'URL del webhook, poi genera il segreto di firma.",
+            "rotateSecret": "Ruota il segreto",
+            "secretSet": "Segreto impostato",
+            "secretCreatedTitle": "Copia il segreto di firma del webhook degli alert",
+            "secretRotatedTitle": "Copia il nuovo segreto di firma del webhook degli alert",
+            "secretRotatedNote": "Il segreto precedente continua a firmare per 24 ore.",
+            "secretAnnouncement": "Segreto di firma del webhook generato. Viene mostrato una sola volta.",
+            "webhookDisabled": "Excubia ha smesso di inviare a questo webhook ({{reason}}). Sistema il ricevente, poi riattivalo.",
+            "reenableWebhook": "Riattiva",
+            "consecutiveFailures": "Errori consecutivi"
         },
         "aiPrices": {
             "breadcrumb": "Prezzi",
@@ -700,6 +714,8 @@
             "groups_synced": "Gruppi sincronizzati",
             "members_synced": "Membri sincronizzati",
             "token_rotated": "Token di push rinnovato",
+            "webhook_secret_created": "Segreto del webhook degli alert creato",
+            "webhook_secret_rotated": "Segreto del webhook degli alert ruotato",
             "token_revoked": "Token di push revocato",
             "rotated": "Chiave API ruotata",
             "revoked": "Chiave API revocata",

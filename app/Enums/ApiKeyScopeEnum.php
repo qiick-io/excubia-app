@@ -38,14 +38,16 @@ enum ApiKeyScopeEnum: string
     }
 
     /**
-     * Whether the user currently holds every permission this scope needs.
+     * Whether the user is assigned every permission this scope needs. Assigned only, never the
+     * super-admin grant: the same ceiling the key meets on every request, so issuance, rotation
+     * and use agree (a key a super-admin can create always works).
      */
     public function isHeldBy(User $user): bool
     {
         $permissionResolver = app(EffectivePermissionResolverService::class);
 
         foreach ($this->requiredCreatorPermissions() as $requiredPermission) {
-            if (! $permissionResolver->hasPermission($user, $requiredPermission->value)) {
+            if (! $permissionResolver->hasAssignedPermission($user, $requiredPermission->value)) {
                 return false;
             }
         }

@@ -21,18 +21,21 @@ declare(strict_types=1);
 use App\Actions\CreateApiKeyAction;
 use App\Actions\DeleteUserAction;
 use App\Actions\RotateProjectTokenAction;
+use App\Actions\SaveUserGroupAction;
+use App\Actions\SyncUserRolesAction;
 use App\Data\ApiKeyData;
 use App\Enums\ApiKeyScopeEnum;
 use App\Enums\PermissionEnum;
 use App\Enums\RoleEnum;
 use App\Http\Resources\ApiKeyResource;
-use App\Jobs\DeliverAlertJob;
+use App\Jobs\SendAlertWebhooksJob;
 use App\Models\Activity;
 use App\Models\ApiKey;
 use App\Models\HealthReport;
 use App\Models\Project;
 use App\Models\User;
 use App\Models\UserGroup;
+use App\Services\AlertWebhookService;
 use App\Services\EffectivePermissionResolverService;
 use App\Services\SettingsRepositoryService;
 use Database\Seeders\CreateSuperAdminSeeder;
@@ -42,6 +45,7 @@ use Illuminate\Http\Client\Request as ClientRequest;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
@@ -49,9 +53,16 @@ use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use Laravel\Fortify\Actions\EnableTwoFactorAuthentication;
 use Laravel\Fortify\Fortify;
+use Qiick\Access\Contracts\ActorContext;
+use Qiick\Access\Contracts\ActorKind;
+use Qiick\Access\EffectivePermissionResolver;
+use Qiick\Access\Laravel\AccessContext;
+use Qiick\Access\Principals\PrincipalDirectory;
 use Qiick\Outbound\Contracts\HostResolver;
+use Qiick\Outbound\Models\WebhookDeliveryAttempt;
 use Qiick\Outbound\Ssrf\RemoteUrlGuard;
 use Qiick\Outbound\Ssrf\UnsafeUrl;
+use Qiick\Standards\Conformance\Support\ConformanceBehaviourProbe;
 use Spatie\Permission\Models\Role as SpatieRole;
 
 /** Seeds the built-in roles the behaviour hooks assert against. */
@@ -59,11 +70,11 @@ $seedPermissions = static function (): void {
     Artisan::call('db:seed', ['--class' => PermissionSeeder::class, '--force' => true]);
 };
 
-/** A webhook job with the minimum payload its delivery recorder needs. */
-$alertJob = static fn (): DeliverAlertJob => new DeliverAlertJob(DeliverAlertJob::WEBHOOK, [
-    'id' => (string) Str::uuid(),
-    'event' => 'ping',
-]);
+/** Stores one alert webhook delivery and runs the worker once, as a queued alert does. */
+$sendAlertWebhook = static function (): void {
+    app(AlertWebhookService::class)->send(['id' => (string) Str::uuid(), 'event' => 'ping']);
+    app()->call([new SendAlertWebhooksJob, 'handle']);
+};
 
 return [
     'assertSoftDeletedGroupGrantsNothing' => static function () use ($seedPermissions): void {
@@ -130,7 +141,8 @@ return [
             Artisan::call('db:seed', ['--class' => CreateSuperAdminSeeder::class, '--force' => true]);
             $weakAdmin = User::query()->where('email', config('super_admin.email'))->sole();
             expect(Hash::check('s3cret', $weakAdmin->password))->toBeTrue();
-            $weakAdmin->forceDelete();
+            // A user with a principal is hard-deleted only through the access erasure.
+            app(PrincipalDirectory::class)->eraseUser($weakAdmin, fn (User $user) => $user->forceDelete());
 
             $settings->save(['password_policy' => 'strong']);
             $strongPassword = 'V3ry-Str0ng-Passphrase-2026';
@@ -241,7 +253,7 @@ return [
             $user,
             new ApiKeyData('MCP key', [ApiKeyScopeEnum::McpRead], null),
         );
-        $apiKey = ApiKey::query()->where('key_prefix', ApiKey::publicPrefixFromToken($plainKey))->sole();
+        $apiKey = ApiKey::query()->where('key_prefix', apiKeyPrefixOf($plainKey))->sole();
 
         test()->postJson('/mcp', [
             'jsonrpc' => '2.0',
@@ -369,12 +381,8 @@ return [
             ->and(HealthReport::query()->count())->toBe(1);
     },
 
-    'assertWebhooks' => static function () use ($alertJob): void {
-        $settings = app(SettingsRepositoryService::class);
-        $settings->save([
-            'webhook_url' => 'https://hooks.example.com/hook',
-            'webhook_secret' => alertWebhookSecret(),
-        ]);
+    'assertWebhooks' => static function () use ($sendAlertWebhook): void {
+        configureAlertWebhook('https://hooks.example.com/hook');
 
         $request = null;
         $body = null;
@@ -395,7 +403,7 @@ return [
             return Http::response('', 204);
         });
 
-        app()->call([$alertJob(), 'handle']);
+        $sendAlertWebhook();
 
         expect($request)->not->toBeNull()
             ->and($request->hasHeader('Webhook-Id'))->toBeTrue()
@@ -404,7 +412,7 @@ return [
             ->and($body)->toHaveKeys(['type', 'timestamp', 'data']);
     },
 
-    'assertSsrfGuard' => static function () use ($alertJob): void {
+    'assertSsrfGuard' => static function () use ($sendAlertWebhook): void {
         $guardReason = static function (RemoteUrlGuard $guard, string $url): ?string {
             try {
                 $guard->authorize($url);
@@ -456,12 +464,8 @@ return [
             return Http::response('', 204);
         });
 
-        $settings = app(SettingsRepositoryService::class);
-        $settings->save([
-            'webhook_url' => 'https://rebind.example.com/hook',
-            'webhook_secret' => alertWebhookSecret(),
-        ]);
-        app()->call([$alertJob(), 'handle']);
+        configureAlertWebhook('https://rebind.example.com/hook');
+        $sendAlertWebhook();
 
         expect($resolver->calls)->toBe(1)
             ->and($sentOptions['curl'] ?? null)->toBe([CURLOPT_CONNECT_TO => ['::93.184.216.34:443']]);
@@ -480,9 +484,12 @@ return [
                 httpsOnly: true,
             );
             bindPinnedAlertClient($blockedGuard, static fn () => Http::response('', 204));
-            app()->call([$alertJob(), 'handle']);
+            $sendAlertWebhook();
 
-            expect($settings->all()['webhook_last_error']['message'])->toContain($reason);
+            $attempt = WebhookDeliveryAttempt::query()->latest('id')->firstOrFail();
+
+            expect($attempt->error_code)->toBe('ssrf_refused')
+                ->and((string) $attempt->error_message)->toContain($reason);
         }
     },
 
@@ -556,7 +563,12 @@ return [
 
         $settings = app(SettingsRepositoryService::class);
 
-        foreach (['webhook_secret' => 'whsec_conformance-secret', 'oidc_client_secret' => 'oidc-conformance-secret', 'notifier_telegram_bot_token' => '123456:conformance-token'] as $key => $plainSecret) {
+        // The alert webhook's signing secret lives in qiick/laravel-outbound's table, encrypted.
+        $webhookSecret = configureAlertWebhook('https://hooks.example.com/hook');
+        expect($webhookSecret)->toStartWith('whsec_')
+            ->and(json_encode(DB::table('webhook_endpoint_secrets')->get()))->not->toContain($webhookSecret);
+
+        foreach (['oidc_client_secret' => 'oidc-conformance-secret', 'notifier_telegram_bot_token' => '123456:conformance-token'] as $key => $plainSecret) {
             $settings->save([$key => $plainSecret]);
 
             $stored = (string) DB::table('settings')
@@ -630,5 +642,83 @@ return [
             config()->set('app', $originalAppConfig);
             app()->forgetInstance('encrypter');
         }
+    },
+
+    // C71: a role detach reaches the resolver at once (Spatie's events clear its cache).
+    'assertRoleDetachClearsResolver' => static function (ConformanceBehaviourProbe $probe) use ($seedPermissions): void {
+        $seedPermissions();
+
+        $user = User::factory()->create()->assignRole(RoleEnum::Reader->value);
+        $resolver = app(EffectivePermissionResolverService::class);
+
+        expect($resolver->hasPermission($user, PermissionEnum::CanShowProjects->value))->toBeTrue();
+
+        $user->removeRole(RoleEnum::Reader->value);
+
+        expect($resolver->hasPermission($user, PermissionEnum::CanShowProjects->value))->toBeFalse();
+        $probe->pass();
+    },
+
+    // C71: behind an API key the owner's super-admin grant is gone, in the Gate and in the policies.
+    'assertApiActorDeniedSuperAdmin' => static function (ConformanceBehaviourProbe $probe) use ($seedPermissions): void {
+        $seedPermissions();
+
+        $owner = User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value);
+        $resolver = app(EffectivePermissionResolverService::class);
+
+        AccessContext::enter(new ActorContext(ActorKind::ApiKey, $owner, (string) Str::uuid()));
+
+        try {
+            expect(Gate::forUser($owner)->allows(PermissionEnum::CanShowSystem->value))->toBeFalse()
+                ->and(Gate::forUser($owner)->allows('viewAny', Project::class))->toBeFalse()
+                ->and($resolver->isSuperAdmin($owner))->toBeFalse();
+        } finally {
+            AccessContext::clear();
+        }
+
+        expect($resolver->isSuperAdmin($owner))->toBeTrue();
+        $probe->pass();
+    },
+
+    // C73: an expired membership grants nothing, super-admin through the group included.
+    'assertExpiredMembershipGrantsNothing' => static function (ConformanceBehaviourProbe $probe) use ($seedPermissions): void {
+        $seedPermissions();
+
+        $member = User::factory()->create();
+        $group = UserGroup::query()->create(['name' => 'conformance-owners']);
+        $group->roles()->sync([SpatieRole::query()->where('name', RoleEnum::SuperAdmin->value)->sole()->id]);
+        $group->users()->sync([$member->id => ['expires_at' => now()->subMinute()]]);
+        app(EffectivePermissionResolver::class)->flush();
+
+        $resolver = app(EffectivePermissionResolverService::class);
+
+        expect($resolver->isSuperAdmin($member))->toBeFalse()
+            ->and($resolver->hasPermission($member, PermissionEnum::CanShowProjects->value))->toBeFalse();
+        $probe->pass();
+    },
+
+    // C74: group, membership and role activity carries public ids and names, never row ids.
+    'assertAccessActivityUuidOnly' => static function (ConformanceBehaviourProbe $probe) use ($seedPermissions): void {
+        $seedPermissions();
+
+        User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value);
+        $member = User::factory()->create();
+        $group = UserGroup::query()->create(['name' => 'conformance-activity']);
+        app(SaveUserGroupAction::class)->execute($group, 'conformance-activity', null, [RoleEnum::Reader->value], [$member->id]);
+        app(SyncUserRolesAction::class)->execute($member, [RoleEnum::Reader->value]);
+
+        $properties = Activity::query()
+            ->whereIn('event', ['members_synced', 'roles_synced'])
+            ->pluck('properties')
+            ->map(fn (mixed $value): array => is_array($value) ? $value : (array) json_decode((string) json_encode($value), true));
+
+        expect($properties)->not->toBeEmpty();
+
+        foreach ($properties as $propertySet) {
+            array_walk_recursive($propertySet, fn (mixed $value) => expect(is_int($value))->toBeFalse());
+        }
+
+        expect($properties->pluck('user_public_ids')->filter()->flatten()->all())->toBe([$member->public_id]);
+        $probe->pass();
     },
 ];

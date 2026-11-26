@@ -159,7 +159,9 @@ class InstallCommand extends Command
 
         $this->newLine();
         $this->info('Install complete.');
-        $this->line('Next: open '.rtrim($appUrl, '/').'/setup to create the first admin and project.');
+        // The link is printed by its own command: it lands in the cache the app reads (the
+        // installer's own config may still point at the store it booted with).
+        $this->line('Next: run php artisan excubia:setup-link and open the link it prints, at '.rtrim($appUrl, '/').'/setup, to create the first admin and project.');
         $this->line('Run the scheduler and a queue worker: docs/self-hosting.md');
 
         return self::SUCCESS;

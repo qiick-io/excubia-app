@@ -24,6 +24,7 @@ use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use Inertia\Testing\AssertableInertia as Assert;
+use Qiick\Outbound\Models\WebhookDelivery;
 
 /**
  * Minute-level health samples (#115): ingest and merge of the core `health` type, its hourly
@@ -36,9 +37,8 @@ beforeEach(function () {
     Http::preventStrayRequests();
     Queue::fake();
     Date::setTestNow('2026-11-07 10:00:30');
+    configureAlertWebhook('https://hooks.example.com/excubia');
     app(SettingsRepositoryService::class)->save([
-        'webhook_url' => 'https://hooks.example.com/excubia',
-        'webhook_secret' => alertWebhookSecret(),
     ]);
 });
 
@@ -176,9 +176,13 @@ it('alerts health.failed after two failing readings of a server, once, and recov
         ->and($failed->severity)->toBe('critical')
         ->and($failed->subject)->toBe('laravel-database')
         ->and($failed->summary)->toBe('laravel-database fails on 1 of 1 servers');
-    Queue::assertPushed(DeliverAlertJob::class, fn (DeliverAlertJob $job): bool => $job->payload['event'] === 'health.failed'
-        && $job->payload['data']->failingServers === 1
-        && $job->payload['data']->fingerprints === [str_repeat('a', 64)]);
+    $healthFailedData = collect(WebhookDelivery::query()->orderBy('id')->get())
+        ->map(fn (WebhookDelivery $delivery): array => json_decode((string) $delivery->payload, true, 512, JSON_THROW_ON_ERROR))
+        ->filter(fn (array $body): bool => $body['type'] === 'health.failed')
+        ->map(fn (array $body): array => $body['data']['data'])
+        ->all();
+
+    expect(collect($healthFailedData)->contains(fn (array $data): bool => $data['failingServers'] === 1 && $data['fingerprints'] === [str_repeat('a', 64)]))->toBeTrue();
 
     // Still failing, and skipped: no new alert, and skipped is no recovery.
     pushHealth($headers, [healthEntry('2026-11-07T09:59:00Z', 'fail'), healthEntry('2026-11-07T10:00:00Z', 'skipped')]);
@@ -352,8 +356,9 @@ it('alerts again when the failing fingerprints change while the check still fail
 
     expect(failureAlerts($project))->toBe(['health.failed:queued', 'health.failed:queued'])
         ->and(healthAlerts()->orderBy('id')->pluck('fingerprints')->all())->toBe([[$first], [$first, $second]]);
-    Queue::assertPushed(DeliverAlertJob::class, fn (DeliverAlertJob $job): bool => $job->payload['event'] === 'health.failed'
-        && $job->payload['data']->fingerprints === [$first, $second]);
+    expect(collect(WebhookDelivery::query()->orderBy('id')->get())
+        ->map(fn (WebhookDelivery $delivery): array => json_decode((string) $delivery->payload, true, 512, JSON_THROW_ON_ERROR))
+        ->contains(fn (array $body): bool => $body['type'] === 'health.failed' && $body['data']['data']['fingerprints'] === [$first, $second]))->toBeTrue();
 });
 
 it('alerts a server that stopped sending once per silence, and recovers without it', function () {

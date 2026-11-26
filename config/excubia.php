@@ -6,6 +6,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Maintenance from the environment
+    |--------------------------------------------------------------------------
+    |
+    | While set, the app is in maintenance and `{APP_URL}/{secret}` is the only way in (the
+    | bypass cookie of `artisan down --secret`). Unlike `artisan down` it survives a deploy and a
+    | new database; remove it and redeploy to reopen. A long random value, never a guessable word.
+    |
+    */
+
+    'maintenance_secret' => env('EXCUBIA_MAINTENANCE_SECRET'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Report history and stale projects
     |--------------------------------------------------------------------------
     |
@@ -31,18 +44,6 @@ return [
     'push_max_kilobytes' => (int) env('EXCUBIA_PUSH_MAX_KILOBYTES', 1024),
 
     'push_requests_per_minute' => (int) env('EXCUBIA_PUSH_REQUESTS_PER_MINUTE', 30),
-
-    /*
-    |--------------------------------------------------------------------------
-    | Personal API keys
-    |--------------------------------------------------------------------------
-    |
-    | Requests per minute one personal API key may make (#315). Failed key
-    | lookups are limited per IP on their own, before this limit applies.
-    |
-    */
-
-    'api_key_requests_per_minute' => (int) env('EXCUBIA_API_KEY_REQUESTS_PER_MINUTE', 60),
 
     /*
     |--------------------------------------------------------------------------

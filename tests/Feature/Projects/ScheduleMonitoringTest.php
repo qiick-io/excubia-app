@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use App\Actions\RotateProjectTokenAction;
 use App\Enums\RoleEnum;
-use App\Jobs\DeliverAlertJob;
 use App\Models\ExceptionGroup;
 use App\Models\Project;
 use App\Models\ScheduledTask;
@@ -27,9 +26,8 @@ beforeEach(function () {
     Http::preventStrayRequests();
     Queue::fake();
     Date::setTestNow('2026-11-05 08:00:00');
+    configureAlertWebhook('https://hooks.example.com/excubia');
     app(SettingsRepositoryService::class)->save([
-        'webhook_url' => 'https://hooks.example.com/excubia',
-        'webhook_secret' => alertWebhookSecret(),
     ]);
 });
 
@@ -179,8 +177,7 @@ function taskStatus(Project $project, string $task): string
  */
 function scheduleAlerts(): array
 {
-    return collect(Queue::pushedJobs()[DeliverAlertJob::class] ?? [])
-        ->map(fn (array $pushed): string => $pushed['job']->payload['event'])
+    return collect(alertWebhookEvents())
         ->filter(fn (string $event): bool => str_starts_with($event, 'schedule.'))
         ->values()
         ->all();

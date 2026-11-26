@@ -15,7 +15,7 @@ use App\Notifications\ApiKeyExpiringNotification;
 use App\Services\ApiKeySecretOnceService;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
@@ -23,6 +23,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Testing\TestResponse;
 use Inertia\Inertia;
 use Inertia\Testing\AssertableInertia as Assert;
+use Qiick\ApiKeys\TokenCodec;
 
 /**
  * Personal API keys (#315, #351): Settings → API keys (web session only); AuthenticateApiKeyMiddleware
@@ -64,24 +65,6 @@ function callWithApiKey(?string $plainKey, string $path = '/__test/api-key'): Te
     return test()->withHeaders($plainKey === null ? [] : ['Authorization' => 'Bearer '.$plainKey])->getJson($path);
 }
 
-/**
- * Peek at the encrypted one-time secret still in the session after create/rotate
- * (before the index GET pulls it).
- */
-function pendingIssuedApiKeySecret(): string
-{
-    $encrypted = session()->get(ApiKeySecretOnceService::SESSION_KEY);
-
-    expect($encrypted)->toBeString();
-
-    /** @var array{secret?: mixed} $payload */
-    $payload = json_decode(Crypt::decryptString($encrypted), true, 512, JSON_THROW_ON_ERROR);
-
-    expect($payload['secret'] ?? null)->toBeString();
-
-    return $payload['secret'];
-}
-
 it('creates a key, shows it once and stores only the hash of the full token', function () {
     $user = apiKeyOwner();
 
@@ -96,14 +79,16 @@ it('creates a key, shows it once and stores only the hash of the full token', fu
     $plainKey = pendingIssuedApiKeySecret();
     $apiKey = ApiKey::query()->sole();
 
-    expect($plainKey)->toMatch(ApiKey::TOKEN_PATTERN)
+    expect($plainKey)->toMatch(EXCUBIA_TOKEN_PATTERN)
         ->and($apiKey->owner_id)->toBe($user->id)
         ->and($apiKey->created_by)->toBe($user->id)
         ->and($apiKey->uuid)->not->toBeEmpty()
         ->and($apiKey->key_hash)->toBe(hash('sha256', $plainKey))
-        ->and($apiKey->key_prefix)->toBe(ApiKey::publicPrefixFromToken($plainKey))
+        ->and($apiKey->key_prefix)->toBe(apiKeyPrefixOf($plainKey))
         ->and($apiKey->key_prefix)->toStartWith('exc_test_')
-        ->and(strlen($apiKey->key_prefix))->toBe(strlen('exc_test_') + ApiKey::PUBLIC_ID_LENGTH)
+        ->and(strlen($apiKey->key_prefix))->toBe(strlen('exc_test_') + 8)
+        ->and($apiKey->token_version)->toBe(2)
+        ->and($apiKey->hash_algorithm)->toBe('sha256')
         ->and($apiKey->scopes)->toBe(['mcp:read'])
         ->and($apiKey->expires_at?->toDateTimeString())->toBe('2099-01-31 08:30:00')
         ->and($apiKey->getAttributes())->not->toContain($plainKey)
@@ -252,8 +237,8 @@ it('refuses a presented token with a trailing newline at the pattern boundary', 
     $user = apiKeyOwner();
     $plainKey = plainApiKey($user);
 
-    expect(ApiKey::publicPrefixFromToken($plainKey."\n"))->toBeNull()
-        ->and(preg_match(ApiKey::TOKEN_PATTERN, $plainKey."\n"))->toBe(0);
+    expect(app(TokenCodec::class)->prefixOf($plainKey."\n", now()->toDateTimeImmutable()))->toBeNull()
+        ->and(preg_match(EXCUBIA_TOKEN_PATTERN, $plainKey."\n"))->toBe(0);
 
     callWithApiKey($plainKey."\n")->assertUnauthorized()->assertJsonPath('error', 'invalid_token');
 });
@@ -332,11 +317,12 @@ it('answers every API-key refusal with the fleet RFC 6750 shape', function () {
     $revokedKey = plainApiKey($user);
     $scopedKey = plainApiKey($user);
     $ipKey = plainApiKey($user);
-    ApiKey::query()->where('key_prefix', ApiKey::publicPrefixFromToken($revokedKey))->sole()
+    $readKey = plainApiKey($user);
+    ApiKey::query()->where('key_prefix', apiKeyPrefixOf($revokedKey))->sole()
         ->forceFill(['revoked_at' => now()])->save();
-    ApiKey::query()->where('key_prefix', ApiKey::publicPrefixFromToken($scopedKey))->sole()
+    ApiKey::query()->where('key_prefix', apiKeyPrefixOf($scopedKey))->sole()
         ->forceFill(['scopes' => []])->save();
-    ApiKey::query()->where('key_prefix', ApiKey::publicPrefixFromToken($ipKey))->sole()
+    ApiKey::query()->where('key_prefix', apiKeyPrefixOf($ipKey))->sole()
         ->forceFill(['ip_allowlist' => ['203.0.113.10']])->save();
 
     callWithApiKey(null)
@@ -360,7 +346,7 @@ it('answers every API-key refusal with the fleet RFC 6750 shape', function () {
         ->assertForbidden()
         ->assertJsonPath('error', 'ip_not_allowed')
         ->assertHeaderMissing('WWW-Authenticate');
-    callWithApiKey($scopedKey, '/__test/api-key-write')
+    callWithApiKey($readKey, '/__test/api-key-write')
         ->assertForbidden()
         ->assertJsonPath('error', 'insufficient_scope')
         ->assertJsonPath('scope', 'mcp:write')
@@ -510,7 +496,7 @@ it('redirects with a toast when rotating a revoked or expired key', function () 
 it('redirects with a toast when rotating a key whose scopes the owner no longer holds', function () {
     $user = apiKeyOwner();
     $plainKey = plainApiKey($user, scopes: [ApiKeyScopeEnum::McpWrite]);
-    $apiKey = ApiKey::query()->where('key_prefix', ApiKey::publicPrefixFromToken($plainKey))->sole();
+    $apiKey = ApiKey::query()->where('key_prefix', apiKeyPrefixOf($plainKey))->sole();
 
     $user->syncRoles([RoleEnum::Reader->value]);
 
@@ -529,7 +515,7 @@ it('never writes the plaintext secret into the sessions table on create or rotat
         ->assertRedirect();
 
     $plainKey = pendingIssuedApiKeySecret();
-    $encrypted = session()->get(ApiKeySecretOnceService::SESSION_KEY);
+    $token = session()->get(ApiKeySecretOnceService::SESSION_KEY);
     session()->save();
 
     $decodedCreatePayloads = DB::table('sessions')->pluck('payload')->map(
@@ -538,8 +524,8 @@ it('never writes the plaintext secret into the sessions table on create or rotat
 
     expect(json_encode($decodedCreatePayloads->all()))->not->toContain($plainKey)
         ->and(json_encode(session()->all()))->not->toContain($plainKey)
-        ->and(is_string($encrypted))->toBeTrue()
-        ->and($encrypted)->not->toBe($plainKey);
+        ->and(is_string($token))->toBeTrue()
+        ->and(json_encode(session()->all()))->not->toContain(Cache::get(ApiKeySecretOnceService::CACHE_PREFIX.$token));
 
     $apiKey = ApiKey::query()->sole();
     $this->actingAs($user)->post(route('api-keys.rotate', $apiKey))->assertRedirect();
@@ -629,7 +615,9 @@ it('enforces the per-key rate_limit_per_minute column', function () {
 });
 
 it('limits failed attempts per IP and requests per key via the default config', function () {
-    for ($attempt = 0; $attempt < AuthenticateApiKeyMiddleware::FAILED_ATTEMPTS_PER_MINUTE; $attempt++) {
+    expect(config('api-keys.failed_attempts_per_minute'))->toBe(20);
+
+    for ($attempt = 0; $attempt < 20; $attempt++) {
         callWithApiKey('exc_test_'.str_repeat('x', 40))->assertUnauthorized();
     }
 
@@ -639,7 +627,7 @@ it('limits failed attempts per IP and requests per key via the default config', 
 });
 
 it('limits the requests of one key per minute from the app default', function () {
-    config(['excubia.api_key_requests_per_minute' => 2]);
+    config(['api-keys.default_rate_limit_per_minute' => 2]);
     $plainKey = plainApiKey(apiKeyOwner());
 
     callWithApiKey($plainKey)->assertOk();
@@ -647,7 +635,7 @@ it('limits the requests of one key per minute from the app default', function ()
     callWithApiKey($plainKey)->assertTooManyRequests()->assertHeader('Retry-After');
 });
 
-it('notifies the owner once for keys in the seven-to-eight-day expiry window', function () {
+it('notifies the owner and the issuer once for every key within the seven-day notice window', function () {
     Notification::fake();
     Date::setTestNow('2026-11-17 10:00:00');
     $owner = User::factory()->create();
@@ -655,9 +643,9 @@ it('notifies the owner once for keys in the seven-to-eight-day expiry window', f
 
     $inWindow = ApiKey::factory()->for($owner, 'owner')->create([
         'created_by' => $issuer->id,
-        'expires_at' => now()->addDays(7)->addHours(12),
+        'expires_at' => now()->addDays(6)->addHours(12),
     ]);
-    ApiKey::factory()->for($owner, 'owner')->create([
+    $soon = ApiKey::factory()->for($owner, 'owner')->create([
         'created_by' => $owner->id,
         'expires_at' => now()->addDays(3),
     ]);
@@ -666,13 +654,15 @@ it('notifies the owner once for keys in the seven-to-eight-day expiry window', f
         'expires_at' => now()->addDays(10),
     ]);
 
-    $this->artisan('excubia:notify-expiring-api-keys')->assertSuccessful();
+    $this->artisan('api-keys:notify-expiring')->assertSuccessful();
 
     Notification::assertSentTo($owner, ApiKeyExpiringNotification::class, fn (ApiKeyExpiringNotification $notification): bool => $notification->apiKey->is($inWindow));
-    Notification::assertSentTo($issuer, ApiKeyExpiringNotification::class);
-    Notification::assertCount(2);
+    Notification::assertSentTo($owner, ApiKeyExpiringNotification::class, fn (ApiKeyExpiringNotification $notification): bool => $notification->apiKey->is($soon));
+    Notification::assertSentTo($issuer, ApiKeyExpiringNotification::class, fn (ApiKeyExpiringNotification $notification): bool => $notification->apiKey->is($inWindow));
+    Notification::assertCount(3);
 
-    $this->artisan('excubia:notify-expiring-api-keys')->assertSuccessful();
-    // Same calendar window → would notify again without extra state; the daily schedule and
-    // [7,8) window mean a key is only selected on one calendar day in practice.
+    // expiry_notified_at makes the next daily run skip both keys.
+    $this->artisan('api-keys:notify-expiring')->assertSuccessful();
+
+    Notification::assertCount(3);
 });

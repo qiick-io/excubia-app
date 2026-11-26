@@ -38,6 +38,11 @@ declare module '@inertiajs/core' {
                 reason: 'created' | 'rotated';
                 previous_key_valid_until: string | null;
             };
+            /** One-time alert webhook signing secret; Inertia strips flash from history.state. */
+            issuedWebhookSecret?: {
+                secret: string;
+                reason: 'created' | 'rotated';
+            };
         };
     }
 }

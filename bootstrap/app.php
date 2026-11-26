@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Middleware\EnsureTwoFactorIsEnabledMiddleware;
 use App\Http\Middleware\EnsureUserIsActiveMiddleware;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
@@ -13,6 +12,7 @@ use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Middleware\ThrottleRequests;
+use Qiick\Access\Http\EnsureTwoFactorIsEnabled;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -37,17 +37,23 @@ return Application::configure(basePath: dirname(__DIR__))
         // counter upsert per endpoint, status, reason and hour, never a row per request.
         $middleware->prependToPriorityList(ThrottleRequests::class, RecordIngestRejectionMiddleware::class);
 
+        // Health probes answer in maintenance too, so a platform (Laravel Cloud, Docker) does not
+        // mark a deploy failed or restart a container that is down on purpose.
+        $middleware->preventRequestsDuringMaintenance(except: ['health/live', 'health/ready']);
+
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state', 'locale', 'accessibility_high_contrast', 'accessibility_reduce_motion', 'table_density_compact']);
         $middleware->web(prepend: [SecurityHeadersMiddleware::class], append: [
             EnsureUserIsActiveMiddleware::class,
             SetLocaleMiddleware::class,
-            EnsureTwoFactorIsEnabledMiddleware::class,
+            EnsureTwoFactorIsEnabled::class,
             HandleAppearance::class,
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // Never flashed back as old input on a validation error (the session is not encrypted).
+        $exceptions->dontFlash(['current_password', 'password', 'password_confirmation', 'setup_token']);
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->is('mcp') || $request->expectsJson(),
         );

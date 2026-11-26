@@ -12,6 +12,7 @@ use App\Enums\AlertEventEnum;
 use App\Enums\RoleEnum;
 use App\Enums\SeverityEnum;
 use App\Jobs\DeliverAlertJob;
+use App\Jobs\SendAlertWebhooksJob;
 use App\Mail\AlertMail;
 use App\Models\AlertLog;
 use App\Models\IngestRejection;
@@ -27,6 +28,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
+use Qiick\Outbound\Models\WebhookDelivery;
 use Qiick\Outbound\Ssrf\RemoteUrlGuard;
 
 /**
@@ -42,9 +44,8 @@ beforeEach(function () {
 
     // Every channel, every event, from `info`. The webhook host is an IP literal: the address
     // check needs no DNS lookup in tests.
+    configureAlertWebhook();
     app(SettingsRepositoryService::class)->save([
-        'webhook_url' => 'https://93.184.216.34/excubia',
-        'webhook_secret' => alertWebhookSecret(),
         'notifier_slack_webhook_url' => 'https://hooks.slack.com/services/T/B/X',
         'notifier_telegram_bot_token' => '123456:ABC-def_1',
         'notifier_telegram_chat_id' => '-1001234567890',
@@ -125,12 +126,18 @@ function eventsByChannel(): array
         $byChannel[$channel] = [...$byChannel[$channel] ?? [], ...$events];
     }
 
+    // The signed webhook is qiick/laravel-outbound's: one stored delivery per alert, not a job.
+    if (alertWebhookEvents() !== []) {
+        $byChannel[DeliverAlertJob::WEBHOOK] = alertWebhookEvents();
+    }
+
     return $byChannel;
 }
 
 function clearEventsQueue(): void
 {
     Queue::fake();
+    WebhookDelivery::query()->delete();
 }
 
 /**
@@ -235,6 +242,11 @@ it('delivers every event to the signed webhook and by email, one webhook request
         app()->call([$job, 'handle']);
     }
 
+    // Each stored alert queued its own worker run; one run takes at most the endpoint's concurrency.
+    foreach (Queue::pushedJobs()[SendAlertWebhooksJob::class] ?? [] as $pushed) {
+        app()->call([$pushed['job'], 'handle']);
+    }
+
     $sent = collect($sentBodies);
 
     expect($sent->pluck('type')->all())->toBe(['report.checks_skipped', 'finding.new', 'project.worsened', 'project.token_changed', 'project.disabled'])
@@ -259,7 +271,7 @@ it('sends one Slack, Telegram and email message per report, worst first, but one
     $jobs = collect(eventsJobs());
     $slack = $jobs->where('channel', DeliverAlertJob::SLACK)->sole();
 
-    expect($jobs->where('channel', DeliverAlertJob::WEBHOOK))->toHaveCount(5)
+    expect(alertWebhookEvents())->toHaveCount(5)
         ->and($jobs->where('channel', DeliverAlertJob::TELEGRAM))->toHaveCount(1)
         ->and($jobs->filter(fn (DeliverAlertJob $job): bool => DeliverAlertJob::emailUserId($job->channel) !== null))->toHaveCount(1)
         ->and(array_column($slack->alerts, 'severity'))->toBe(['critical', 'critical', 'high', 'medium', 'info'])
@@ -327,7 +339,7 @@ it('sends the same event, project and subject at most once an hour, unless it ge
         'project.token_changed:queued',
         'schedule.failed:queued',
     ]);
-    expect(collect(eventsJobs())->where('channel', DeliverAlertJob::WEBHOOK))->toHaveCount(7);
+    expect(alertWebhookEvents())->toHaveCount(7);
 });
 
 it('throttles only alerts that reached a channel, and can be turned off', function () {
@@ -393,8 +405,8 @@ it('raises push.rejected once per burst of token rejections, without keeping the
         [$system->id, 'token', 'high'],
         [$disabled->id, 'disabled', 'high'],
     ])
-        ->and(collect(eventsJobs())->first(fn (DeliverAlertJob $job): bool => $job->channel === DeliverAlertJob::WEBHOOK)->payload['data'])
-        ->toEqual((object) ['reason' => 'token', 'count' => 10, 'endpoint' => 'reports'])
+        ->and(json_decode((string) WebhookDelivery::query()->orderBy('id')->firstOrFail()->payload, true)['data']['data'])
+        ->toEqual(['reason' => 'token', 'count' => 10, 'endpoint' => 'reports'])
         ->and(json_encode(AlertLog::query()->get()))->not->toContain('127.0.0.1')
         ->and(IngestRejection::query()->sum('count'))->toEqual(50);
 

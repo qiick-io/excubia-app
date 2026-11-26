@@ -65,10 +65,17 @@ class SuperAdminGuardService
     {
         $isSuperAdmin = fn (Builder $roles) => $roles->where('name', RoleEnum::SuperAdmin->value);
 
+        // The same rule as the resolver: a group counts only while it is a live instance group and
+        // the membership has not expired (soft-deleted groups drop out through the model scope).
         return User::query()
             ->where('is_active', true)
             ->where(fn (Builder $users) => $users
                 ->whereHas('roles', $isSuperAdmin)
-                ->orWhereHas('groups.roles', $isSuperAdmin));
+                ->orWhereHas('groups', fn (Builder $groups) => $groups
+                    ->where('user_groups.is_instance', true)
+                    ->where(fn (Builder $membership) => $membership
+                        ->whereNull('user_group_user.expires_at')
+                        ->orWhere('user_group_user.expires_at', '>', now()))
+                    ->whereHas('roles', $isSuperAdmin)));
     }
 }

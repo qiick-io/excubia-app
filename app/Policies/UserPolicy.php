@@ -6,6 +6,7 @@ namespace App\Policies;
 
 use App\Enums\PermissionEnum;
 use App\Models\User;
+use App\Services\EffectivePermissionResolverService;
 use App\Services\RoleGrantService;
 use App\Services\SuperAdminGuardService;
 
@@ -18,13 +19,14 @@ use App\Services\SuperAdminGuardService;
 class UserPolicy
 {
     public function __construct(
+        private EffectivePermissionResolverService $permissions,
         private RoleGrantService $roleGrants,
         private SuperAdminGuardService $superAdminGuard,
     ) {}
 
     public function viewAny(User $actor): bool
     {
-        return $actor->can(PermissionEnum::CanShowUsers->value);
+        return $this->permissions->hasPermission($actor, PermissionEnum::CanShowUsers->value);
     }
 
     /**
@@ -33,23 +35,23 @@ class UserPolicy
     public function pick(User $actor): bool
     {
         return $this->viewAny($actor)
-            || $actor->can(PermissionEnum::CanCreateGroups->value)
-            || $actor->can(PermissionEnum::CanEditGroups->value);
+            || $this->permissions->hasPermission($actor, PermissionEnum::CanCreateGroups->value)
+            || $this->permissions->hasPermission($actor, PermissionEnum::CanEditGroups->value);
     }
 
     public function create(User $actor): bool
     {
-        return $actor->can(PermissionEnum::CanCreateUsers->value);
+        return $this->permissions->hasPermission($actor, PermissionEnum::CanCreateUsers->value);
     }
 
     public function update(User $actor, User $target): bool
     {
-        return $actor->can(PermissionEnum::CanEditUsers->value) && $this->canTouch($actor, $target);
+        return $this->permissions->hasPermission($actor, PermissionEnum::CanEditUsers->value) && $this->canTouch($actor, $target);
     }
 
     public function delete(User $actor, User $target): bool
     {
-        return $actor->can(PermissionEnum::CanDeleteUsers->value)
+        return $this->permissions->hasPermission($actor, PermissionEnum::CanDeleteUsers->value)
             && $this->canTouch($actor, $target)
             && ! $actor->is($target)
             && ! $this->superAdminGuard->isLastSuperAdmin($target);

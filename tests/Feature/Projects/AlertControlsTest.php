@@ -2,10 +2,13 @@
 
 declare(strict_types=1);
 
+use App\Actions\IssueAlertWebhookSecretAction;
+use App\Actions\ReconcileAlertWebhookHistoryAction;
+use App\Actions\SaveAlertWebhookAction;
 use App\Actions\StorePushedReportAction;
 use App\Enums\AlertEventEnum;
 use App\Enums\RoleEnum;
-use App\Jobs\DeliverAlertJob;
+use App\Jobs\SendAlertWebhooksJob;
 use App\Mail\WeeklyDigestMail;
 use App\Models\AlertLog;
 use App\Models\AlertMute;
@@ -15,14 +18,21 @@ use App\Models\Project;
 use App\Models\RuntimeAggregate;
 use App\Models\User;
 use App\Services\AlertDispatcherService;
+use App\Services\AlertWebhookService;
 use App\Services\SettingsRepositoryService;
 use Database\Seeders\PermissionSeeder;
+use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Contracts\Cache\LockTimeoutException;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Date;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
+use Qiick\Outbound\Models\WebhookDelivery;
+use Qiick\Outbound\Models\WebhookEndpoint;
 use Qiick\Outbound\Ssrf\RemoteUrlGuard;
 
 /**
@@ -35,10 +45,9 @@ beforeEach(function () {
     Http::preventStrayRequests();
     Queue::fake();
     Date::setTestNow('2026-11-10 12:00:00');
+    configureAlertWebhook('https://93.184.216.34/excubia');
     app(SettingsRepositoryService::class)->save([
         // An IP literal: the address check needs no DNS lookup in tests.
-        'webhook_url' => 'https://93.184.216.34/excubia',
-        'webhook_secret' => alertWebhookSecret(),
     ]);
 });
 
@@ -90,7 +99,7 @@ it('logs every alert and suppresses a muted rule until the mute ends', function 
     $alerts->dispatch(AlertEventEnum::ProjectStale, $project, 'no report');
 
     expect(alertHistory($project))->toBe(['project.stale:queued:-', 'project.stale:suppressed:muted', 'project.stale:queued:-']);
-    Queue::assertPushed(DeliverAlertJob::class, 2);
+    expect(alertWebhookEvents())->toBe(['project.stale', 'project.stale']);
 });
 
 it('mutes one issue without muting the rest of the rule', function () {
@@ -213,18 +222,19 @@ it('records each channel delivery on the alert history', function () {
     $project = Project::factory()->create();
     app(AlertDispatcherService::class)->dispatch(AlertEventEnum::ProjectStale, $project, 'no report');
     app(AlertDispatcherService::class)->dispatch(AlertEventEnum::ProjectStale, $project, 'no report');
-    [$delivered, $failed] = collect(Queue::pushedJobs()[DeliverAlertJob::class])->map(fn (array $job) => $job['job'])->all();
-
-    bindPinnedAlertClient(app(RemoteUrlGuard::class), static fn () => Http::response('', 204));
-    app()->call([$delivered, 'handle']);
-    $failed->failed(new RuntimeException('HTTP 500'));
+    // The first delivery is accepted; the second answers 410 Gone, which ends it at once.
+    $responses = [204, 410];
+    bindPinnedAlertClient(app(RemoteUrlGuard::class), static function () use (&$responses) {
+        return Http::response('', array_shift($responses) ?? 500);
+    });
+    app()->call([new SendAlertWebhooksJob, 'handle']);
 
     expect(AlertLog::query()->orderBy('id')->get()->map(fn (AlertLog $log): array => [$log->status, $log->deliveries])->all())
         ->toBe([['sent', ['webhook' => 'sent']], ['failed', ['webhook' => 'failed']]]);
 });
 
 it('skips an alert no channel takes', function () {
-    app(SettingsRepositoryService::class)->save(['webhook_url' => null]);
+    app(SaveAlertWebhookAction::class)->execute(null, User::factory()->create());
     $project = Project::factory()->create();
 
     app(AlertDispatcherService::class)->dispatch(AlertEventEnum::ProjectStale, $project, 'no report');
@@ -566,4 +576,132 @@ it('prunes old alert history and ended mutes', function () {
 
     expect(AlertLog::query()->pluck('summary')->all())->toBe(['new'])
         ->and(AlertMute::query()->pluck('event')->all())->toBe(['finding.new']);
+});
+
+it('stores the webhook delivery in the same transaction as its alert', function () {
+    $project = Project::factory()->create();
+
+    DB::transaction(function () use ($project): void {
+        app(AlertDispatcherService::class)->dispatch(AlertEventEnum::ProjectStale, $project, 'no report');
+
+        // Before the commit: an interrupted process cannot leave a committed alert without its delivery.
+        expect(WebhookDelivery::query()->count())->toBe(1);
+        Queue::assertNotPushed(SendAlertWebhooksJob::class);
+    });
+
+    Queue::assertPushed(SendAlertWebhooksJob::class);
+});
+
+it('marks the webhook failed when its endpoint is gone before the delivery is stored', function () {
+    $project = Project::factory()->create();
+    $alert = AlertLog::query()->create([
+        'uuid' => (string) Str::uuid(),
+        'project_id' => $project->id,
+        'event' => AlertEventEnum::ProjectStale->value,
+        'severity' => 'high',
+        'summary' => 'no report',
+        'status' => AlertLog::QUEUED,
+        'deliveries' => ['webhook' => AlertLog::QUEUED],
+    ]);
+    WebhookEndpoint::query()->sole()->forceFill(['is_active' => false])->save();
+
+    app(AlertWebhookService::class)->send(['id' => $alert->uuid, 'event' => AlertEventEnum::ProjectStale->value]);
+
+    expect($alert->fresh()->deliveries)->toBe(['webhook' => AlertLog::FAILED]);
+    Queue::assertNotPushed(SendAlertWebhooksJob::class);
+});
+
+it('marks the webhook failed for alerts whose endpoint was cleared before the delivery went out', function () {
+    $project = Project::factory()->create();
+    app(AlertDispatcherService::class)->dispatch(AlertEventEnum::ProjectStale, $project, 'no report');
+
+    app(SaveAlertWebhookAction::class)->execute(null, User::factory()->create());
+
+    expect(AlertLog::query()->sole()->deliveries)->toBe(['webhook' => AlertLog::FAILED]);
+});
+
+it('marks the webhook failed for alerts whose body the daily prune expires, even when the same run deletes the delivery', function (bool $isPastDeliveryRetention) {
+    $project = Project::factory()->create();
+    app(AlertDispatcherService::class)->dispatch(AlertEventEnum::ProjectStale, $project, 'no report');
+    // Past the body retention; and, for the second case, past the 90-day row retention too, so
+    // the prune exhausts and deletes the delivery in one run.
+    DB::table('webhook_deliveries')->update(array_filter([
+        'payload_expires_at' => Date::now()->subMinute(),
+        'created_at' => $isPastDeliveryRetention ? Date::now()->subDays(100) : null,
+    ]));
+    $prune = collect(app(Schedule::class)->events())
+        ->first(fn ($event): bool => str_contains((string) $event->command, 'outbound:webhooks:prune'));
+
+    $prune->callBeforeCallbacks(app());
+    $this->artisan('outbound:webhooks:prune')->assertSuccessful();
+    $prune->callAfterCallbacks(app());
+
+    expect(AlertLog::query()->sole()->deliveries)->toBe(['webhook' => AlertLog::FAILED]);
+})->with([
+    'body expired' => [false],
+    'body and row expired' => [true],
+]);
+
+it('marks the webhook failed for an alert whose delivery a direct prune run already deleted', function () {
+    $project = Project::factory()->create();
+    app(AlertDispatcherService::class)->dispatch(AlertEventEnum::ProjectStale, $project, 'no report');
+    DB::table('webhook_deliveries')->update(['payload_expires_at' => Date::now()->subMinute(), 'created_at' => Date::now()->subDays(100)]);
+
+    // Run by hand, without the scheduler's callbacks: the prune exhausts and deletes the row.
+    $this->artisan('outbound:webhooks:prune')->assertSuccessful();
+
+    expect(WebhookDelivery::query()->count())->toBe(0);
+
+    app(ReconcileAlertWebhookHistoryAction::class)->execute();
+
+    expect(AlertLog::query()->sole()->deliveries)->toBe(['webhook' => AlertLog::FAILED]);
+});
+
+it('commits a scheduled alert only together with its webhook delivery', function () {
+    $project = Project::factory()->create(['last_report_at' => Date::now()->subDays(30)]);
+    WebhookDelivery::creating(fn () => throw new RuntimeException('delivery store down'));
+
+    expect(fn () => $this->artisan('excubia:alert-stale'))->toThrow(RuntimeException::class);
+
+    expect(AlertLog::query()->count())->toBe(0)
+        ->and($project->fresh()->stale_alerted_at)->toBeNull();
+});
+
+it('waits for a concurrent save instead of creating a second webhook endpoint', function () {
+    // The lock's wait is measured on the clock: a frozen one would wait forever.
+    Date::setTestNow();
+    $concurrentSave = Cache::lock(SaveAlertWebhookAction::LOCK, 10);
+    $concurrentSave->get();
+
+    try {
+        expect(fn () => app(SaveAlertWebhookAction::class)->execute('https://93.184.216.34/other', User::factory()->create()))
+            ->toThrow(LockTimeoutException::class);
+    } finally {
+        $concurrentSave->release();
+    }
+
+    expect(WebhookEndpoint::query()->sole()->url)->toBe('https://93.184.216.34/excubia');
+});
+
+it('stores the private-host flag of the webhook endpoint explicitly, from the strict opt-in', function () {
+    expect(WebhookEndpoint::query()->sole()->allow_private_hosts)->toBeFalse();
+
+    config(['outbound.ssrf.allow_private_hosts' => true]);
+    app(SaveAlertWebhookAction::class)->execute('https://93.184.216.34/excubia', User::factory()->create());
+
+    expect(WebhookEndpoint::query()->sole()->allow_private_hosts)->toBeTrue();
+});
+
+it('rotates the signing secret of a disabled endpoint, and refuses past the secret limit with a message', function () {
+    WebhookEndpoint::query()->sole()->forceFill(['is_active' => false])->save();
+    $admin = controlsAdmin();
+
+    expect(app(IssueAlertWebhookSecretAction::class)->execute($admin)['reason'] ?? null)->toBe('rotated');
+
+    // Four signing secrets at most: the primary and three still in their grace period.
+    $this->actingAs($admin)->post(route('project.integrations.webhook-secret'));
+    $this->actingAs($admin)->post(route('project.integrations.webhook-secret'));
+    $this->actingAs($admin)->post(route('project.integrations.webhook-secret'))
+        ->assertRedirect(route('project.integrations.edit'))
+        ->assertInertiaFlash('toast.type', 'error');
 });
