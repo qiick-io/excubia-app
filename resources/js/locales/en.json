@@ -722,7 +722,18 @@
             "revoked": "API key revoked",
             "api_key_first_used": "API key first used",
             "collection_permissions_synced": "Collection permissions synced",
-            "file_permissions_synced": "File permissions synced"
+            "file_permissions_synced": "File permissions synced",
+            "status_changed": "Status changed",
+            "assigned": "Assigned",
+            "unassigned": "Unassigned",
+            "projects_synced": "Projects synced",
+            "ai_tool_approval": "AI tool approval",
+            "alert_muted": "Alert muted",
+            "alert_unmuted": "Alert unmuted",
+            "maintenance_window_created": "Maintenance window added",
+            "maintenance_window_deleted": "Maintenance window removed",
+            "finding_dismissed": "Finding dismissed",
+            "finding_restored": "Finding restored"
         },
         "logs": {
             "default": "Application",
@@ -1737,6 +1748,67 @@
             "5": "Fri",
             "6": "Sat",
             "7": "Sun"
+        },
+        "eventLabels": {
+            "finding": {
+                "new": "New finding",
+                "resolved": "Finding resolved"
+            },
+            "infrastructure": {
+                "failed": "Infrastructure failing"
+            },
+            "health": {
+                "failed": "Health check failing",
+                "recovered": "Health check recovered",
+                "stale": "Health check silent"
+            },
+            "project": {
+                "worsened": "Project worsened",
+                "recovered": "Project recovered",
+                "stale": "Project silent",
+                "reporting_again": "Project reporting again",
+                "token_changed": "Push token changed",
+                "created": "Project created",
+                "deleted": "Project deleted",
+                "disabled": "Project disabled"
+            },
+            "report": {
+                "checks_skipped": "Checks skipped"
+            },
+            "push": {
+                "rejected": "Push rejected"
+            },
+            "schedule": {
+                "missed": "Scheduled task missed",
+                "failed": "Scheduled task failed",
+                "scheduler_down": "Scheduler down"
+            },
+            "runtime": {
+                "cache_hit_ratio_low": "Low cache hit ratio",
+                "delivery_failed": "Delivery failed",
+                "log_spike": "Log spike"
+            },
+            "ai": {
+                "budget_warning": "AI budget warning",
+                "budget_exceeded": "AI budget exceeded",
+                "spend_spike": "AI spend spike",
+                "error_rate": "AI error rate"
+            },
+            "billing": {
+                "webhook_failures": "Billing webhook failures",
+                "payment_failed": "Payment failed"
+            },
+            "auth": {
+                "failed_login_spike": "Failed login spike"
+            },
+            "scout": {
+                "index_failures": "Search index failures"
+            },
+            "eol": {
+                "approaching": "End of support approaching",
+                "reached": "End of support reached"
+            },
+            "ping": "Test alert"
         }
     },
     "timeRange": {

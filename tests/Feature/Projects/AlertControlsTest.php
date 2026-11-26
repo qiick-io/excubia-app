@@ -10,6 +10,7 @@ use App\Enums\AlertEventEnum;
 use App\Enums\RoleEnum;
 use App\Jobs\SendAlertWebhooksJob;
 use App\Mail\WeeklyDigestMail;
+use App\Models\Activity;
 use App\Models\AlertLog;
 use App\Models\AlertMute;
 use App\Models\ExceptionGroup;
@@ -704,4 +705,23 @@ it('rotates the signing secret of a disabled endpoint, and refuses past the secr
     $this->actingAs($admin)->post(route('project.integrations.webhook-secret'))
         ->assertRedirect(route('project.integrations.edit'))
         ->assertInertiaFlash('toast.type', 'error');
+});
+
+it('writes mutes and maintenance windows to the activity log with the acting user', function () {
+    $project = Project::factory()->create();
+    app(AlertDispatcherService::class)->dispatch(AlertEventEnum::ProjectStale, $project, 'no report');
+    $admin = controlsAdmin();
+
+    $this->actingAs($admin)->post(route('projects.alert-mutes.store', $project), ['alert_id' => AlertLog::query()->value('id'), 'scope' => 'rule', 'duration' => '24h']);
+    $this->actingAs($admin)->delete(route('projects.alert-mutes.destroy', [$project, AlertMute::query()->sole()]));
+    $this->actingAs($admin)->post(route('projects.maintenance-windows.store', $project), ['name' => 'Nightly', 'recurrence' => 'weekly', 'timezone' => 'UTC', 'weekdays' => [1], 'start_time' => '02:00', 'duration_minutes' => 30]);
+    $this->actingAs($admin)->delete(route('projects.maintenance-windows.destroy', [$project, MaintenanceWindow::query()->sole()]));
+
+    // #431: silencing alerts left no trace in the audit trail.
+    $audit = Activity::query()->whereIn('event', ['alert_muted', 'alert_unmuted', 'maintenance_window_created', 'maintenance_window_deleted'])->orderBy('id')->get();
+
+    expect($audit->pluck('event')->all())->toBe(['alert_muted', 'alert_unmuted', 'maintenance_window_created', 'maintenance_window_deleted'])
+        ->and($audit->pluck('causer_id')->unique()->all())->toBe([(string) $admin->id])
+        ->and($audit->pluck('properties.project_id')->unique()->all())->toBe([$project->id])
+        ->and($audit->first()->properties['event'])->toBe('project.stale');
 });

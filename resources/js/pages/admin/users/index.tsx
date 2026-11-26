@@ -268,7 +268,7 @@ export default function AdminUsersIndex({
                 <div className="flex flex-wrap gap-1">
                     {row.original.roles.map((role) => (
                         <Badge key={role.id} variant="secondary">
-                            {role.name}
+                            {t(`roles.names.${role.name}`, role.name)}
                         </Badge>
                     ))}
                 </div>

@@ -49,7 +49,11 @@ export function RoleMultiSelect({
     ...props
 }: RoleMultiSelectProps) {
     const options = useMemo(
-        () => roles.map((role) => ({ id: role.id, label: role.name })),
+        () =>
+            roles.map((role) => ({
+                id: role.id,
+                label: role.label ?? role.name,
+            })),
         [roles],
     );
 

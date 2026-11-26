@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions;
 
+use App\Enums\ActivityEventEnum;
 use App\Enums\FindingEventEnum;
 use App\Models\Finding;
 use App\Models\User;
@@ -39,6 +40,14 @@ class UpdateFindingDismissalAction
                 'until' => $isDismissal ? $until?->toDateString() : null,
                 'occurred_at' => $now,
             ]);
+
+            // Also in the activity log (#431): a dismissal silences the finding's alerts.
+            activity()
+                ->performedOn($finding)
+                ->causedBy($actor)
+                ->event(($isDismissal ? ActivityEventEnum::FindingDismissed : ActivityEventEnum::FindingRestored)->value)
+                ->withProperties(['project_id' => $finding->project_id, 'check_id' => $finding->check_id, 'reason' => $reason, 'until' => $isDismissal ? $until?->toDateString() : null])
+                ->log($isDismissal ? 'Finding dismissed' : 'Finding restored');
 
             return $finding;
         });

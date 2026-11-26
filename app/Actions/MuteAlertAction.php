@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions;
 
+use App\Enums\ActivityEventEnum;
 use App\Models\AlertLog;
 use App\Models\AlertMute;
 use App\Models\User;
@@ -22,7 +23,7 @@ class MuteAlertAction
     {
         $hours = self::DURATIONS[$duration] ?? null;
 
-        return AlertMute::query()->create([
+        $mute = AlertMute::query()->create([
             'project_id' => $alert->project_id,
             'event' => $alert->event,
             'subject' => $isIssue ? $alert->subject : null,
@@ -30,5 +31,15 @@ class MuteAlertAction
             'until' => $hours === null ? null : Date::now()->addHours($hours),
             'user_id' => $user->id,
         ]);
+
+        // Silencing alerts is audited like the other domain writes (#431), from the UI and the AI tools.
+        activity()
+            ->performedOn($mute)
+            ->causedBy($user)
+            ->event(ActivityEventEnum::AlertMuted->value)
+            ->withProperties(['project_id' => $mute->project_id, 'event' => $mute->event, 'subject' => $mute->subject, 'until' => $mute->until?->toIso8601String()])
+            ->log('Alert muted');
+
+        return $mute;
     }
 }

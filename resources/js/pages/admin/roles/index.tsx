@@ -59,7 +59,12 @@ export default function AdminRolesIndex({
             meta: { cellClassName: 'font-medium' },
             cell: ({ row }) => (
                 <span className="inline-flex items-center gap-2">
-                    {row.original.name}
+                    {t(`roles.names.${row.original.name}`, row.original.name)}
+                    {row.original.is_built_in ? (
+                        <span className="font-mono text-xs text-muted-foreground">
+                            {row.original.name}
+                        </span>
+                    ) : null}
                     {row.original.is_built_in ? (
                         <Badge variant="muted">{t('roles.systemBadge')}</Badge>
                     ) : null}

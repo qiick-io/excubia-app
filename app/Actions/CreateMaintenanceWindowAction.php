@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions;
 
+use App\Enums\ActivityEventEnum;
 use App\Models\MaintenanceWindow;
 use App\Models\Project;
 use Carbon\CarbonImmutable;
@@ -22,7 +23,7 @@ class CreateMaintenanceWindowAction
         $isOnce = $values['recurrence'] === MaintenanceWindow::ONCE;
         $utc = fn (?string $local): ?CarbonImmutable => $local === null ? null : CarbonImmutable::parse($local, $values['timezone'])->utc();
 
-        return MaintenanceWindow::query()->create([
+        $window = MaintenanceWindow::query()->create([
             'project_id' => $project->id,
             'name' => $values['name'],
             'recurrence' => $values['recurrence'],
@@ -33,5 +34,14 @@ class CreateMaintenanceWindowAction
             'start_time' => $isOnce ? null : ($values['start_time'] ?? null),
             'duration_minutes' => $isOnce ? null : ($values['duration_minutes'] ?? null),
         ]);
+
+        // Audited with the acting user (#431), from the UI and the AI tools.
+        activity()
+            ->performedOn($window)
+            ->event(ActivityEventEnum::MaintenanceWindowCreated->value)
+            ->withProperties(['project_id' => $project->id, 'name' => $window->name, 'recurrence' => $window->recurrence, 'starts_at' => $window->starts_at?->toIso8601String(), 'ends_at' => $window->ends_at?->toIso8601String()])
+            ->log('Maintenance window added');
+
+        return $window;
     }
 }
