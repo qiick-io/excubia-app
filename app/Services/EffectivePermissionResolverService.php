@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Enums\RoleEnum;
 use App\Models\User;
+use Qiick\Access\Contracts\ActorResolver;
 use Qiick\Access\EffectivePermissionResolver;
 
 /**
@@ -14,11 +15,19 @@ use Qiick\Access\EffectivePermissionResolver;
  * memberships grant nothing). Super-admin holds every permission, but only through a direct
  * role or an instance group.
  *
+ * Actor-aware: under an API actor (a personal API key, bound by AuthenticateApiKeyMiddleware)
+ * a policy sees only the owner's assigned permissions, read fresh, and never the super-admin
+ * grant (qiick/laravel-access design §6), the same ceiling the key authorizer applies. Gate::before
+ * already abstains for API actors; this keeps the policies and the project filter in line.
+ *
  * Excubia's own question stays here: {@see isAdmin()}, who may see and restrict any project.
  */
 class EffectivePermissionResolverService
 {
-    public function __construct(private readonly EffectivePermissionResolver $resolver) {}
+    public function __construct(
+        private readonly EffectivePermissionResolver $resolver,
+        private readonly ActorResolver $actors,
+    ) {}
 
     /**
      * @return list<string>
@@ -36,9 +45,12 @@ class EffectivePermissionResolverService
         return $this->isSuperAdmin($user) || in_array(RoleEnum::Admin->value, $this->roleNamesFor($user), true);
     }
 
+    /**
+     * Never under an API actor: a key does not carry its owner's super-admin grant.
+     */
     public function isSuperAdmin(User $user): bool
     {
-        return $this->resolver->isSuperAdmin($user);
+        return ! $this->isApiActor() && $this->resolver->isSuperAdmin($user);
     }
 
     /**
@@ -51,7 +63,9 @@ class EffectivePermissionResolverService
 
     public function hasPermission(User $user, string $permission): bool
     {
-        return $this->resolver->hasPermission($user, $permission);
+        return $this->isApiActor()
+            ? $this->hasAssignedPermission($user, $permission)
+            : $this->resolver->hasPermission($user, $permission);
     }
 
     /**
@@ -61,5 +75,10 @@ class EffectivePermissionResolverService
     public function hasAssignedPermission(User $user, string $permission): bool
     {
         return $this->resolver->hasAssignedPermission($user, $permission, fresh: true);
+    }
+
+    private function isApiActor(): bool
+    {
+        return $this->actors->current()->isApiActor();
     }
 }
