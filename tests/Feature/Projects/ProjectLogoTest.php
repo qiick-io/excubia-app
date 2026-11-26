@@ -154,8 +154,8 @@ it('hides the logo of a project the user may not see', function () {
     updateProjectLogo($admin, $project, ['logo' => UploadedFile::fake()->image('logo.png', 32, 32)]);
     $url = (string) $project->refresh()->logoUrl();
 
-    $this->actingAs(logoActor(RoleEnum::Reader))->get($url)->assertForbidden();
-    $this->get($url)->assertForbidden();
+    $this->actingAs(logoActor(RoleEnum::Reader))->get($url)->assertNotFound();
+    $this->get($url)->assertNotFound();
     auth()->logout();
     $this->get($url)->assertRedirect(route('login'));
 });

@@ -28,6 +28,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Route as RouteFacade;
 use Illuminate\Support\Str;
+use Inertia\Testing\AssertableInertia;
 use Laravel\Ai\Models\Conversation;
 use Spatie\Permission\Models\Role;
 
@@ -200,7 +201,15 @@ it('walks every named route as a reader without reading the hidden project or ch
         $url = hiddenTargetUrl($entry, $this->hidden);
         $response = $this->actingAs($reader)->call($entry['method'], $url, $entry['method'] === 'GET' ? [] : plausibleBody($this->alert));
         $status = $response->getStatusCode();
+        // The error page's top-level Inertia `url` echoes the path the reader typed (#423). On that
+        // page only, remove exactly that one value; the slug or name anywhere else (props, title,
+        // links) still fails below.
         $content = (string) $response->getContent();
+
+        if (str_contains($content, '"component":"errors\\/error-page"')) {
+            $echoedUrl = '"url":'.json_encode(parse_url($url, PHP_URL_PATH)).',"version":';
+            $content = preg_replace('/'.preg_quote($echoedUrl, '/').'/', '"url":"","version":', $content, 1);
+        }
         $label = "{$entry['method']} {$entry['name']} ({$url}) → {$status}";
 
         if ($entry['method'] !== 'GET' && ! in_array($status, [403, 404], true)) {
@@ -223,6 +232,17 @@ it('walks every named route as a reader without reading the hidden project or ch
         ->and(AlertMute::query()->whereKey($this->children['alertMute']->id)->exists())->toBeTrue()
         ->and(MaintenanceWindow::query()->whereKey($this->children['maintenanceWindow']->id)->exists())->toBeTrue()
         ->and($this->adminApiKey->fresh()->revoked_at)->toBeNull();
+});
+
+it('answers a hidden project like a slug that does not exist', function () {
+    $reader = User::factory()->create()->assignRole(RoleEnum::Reader->value);
+    $hidden = $this->actingAs($reader)->get(route('projects.show', HIDDEN_PROJECT_SLUG));
+    $missing = $this->actingAs($reader)->get(route('projects.show', 'no-such-project'));
+
+    // Same status and the same page: a 403 would tell the reader the hidden project exists (#423).
+    expect($hidden->getStatusCode())->toBe(404)->toBe($missing->getStatusCode());
+    $hidden->assertInertia(fn (AssertableInertia $page) => $page->component('errors/error-page')->where('status', 404));
+    $missing->assertInertia(fn (AssertableInertia $page) => $page->component('errors/error-page')->where('status', 404));
 });
 
 it('keeps the hidden project and its children out of reach of a non-admin holding every permission', function () {
