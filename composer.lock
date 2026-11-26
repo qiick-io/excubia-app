@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "bfbacb4de22e20e832d1b9c0de6f57de",
+    "content-hash": "0f09edfe9a570d0e0901bd41b7019ccd",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -4665,6 +4665,82 @@
             "published-time": "2026-11-27T14:25:41+00:00"
         },
         {
+            "name": "qiick/laravel-audit",
+            "version": "dev-develop",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/qiick-io/laravel-audit.git",
+                "reference": "ff18c94"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/qiick-io/laravel-audit/zipball/ff18c94",
+                "reference": "ff18c94",
+                "shasum": ""
+            },
+            "require": {
+                "illuminate/console": "^12.0 || ^13.0",
+                "illuminate/contracts": "^12.0 || ^13.0",
+                "illuminate/database": "^12.0 || ^13.0",
+                "illuminate/http": "^12.0 || ^13.0",
+                "illuminate/support": "^12.0 || ^13.0",
+                "php": "^8.4",
+                "spatie/laravel-activitylog": "^5.1.3"
+            },
+            "require-dev": {
+                "larastan/larastan": "^3.3",
+                "laravel/pint": "^1.30",
+                "nunomaduro/collision": "^8.5",
+                "orchestra/testbench": "^10.0 || ^11.0",
+                "pestphp/pest": "^4.0",
+                "pestphp/pest-plugin-mutate": "^4.0",
+                "phpstan/phpstan": "^2.1"
+            },
+            "suggest": {
+                "qiick/laravel-access": "Fills actor_kind from its ActorContext (design §4)."
+            },
+            "default-branch": true,
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Qiick\\Audit\\Laravel\\AuditServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Qiick\\Audit\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Qiick",
+                    "homepage": "https://qiick.io"
+                }
+            ],
+            "description": "Shared audit log for qiick Laravel products: the activity_log table, a secret-safe logging trait, server-side attribution, GDPR anonymisation and two-floor retention.",
+            "homepage": "https://github.com/qiick-io/laravel-audit",
+            "keywords": [
+                "Audit",
+                "activity-log",
+                "gdpr",
+                "laravel",
+                "qiick",
+                "security"
+            ],
+            "support": {
+                "issues": "https://github.com/qiick-io/laravel-audit/issues",
+                "source": "https://github.com/qiick-io/laravel-audit"
+            },
+            "time": "2026-11-27T19:16:30+00:00",
+            "published-time": "2026-11-27T19:16:35+00:00"
+        },
+        {
             "name": "qiick/laravel-http-basics",
             "version": "v1.0.0-beta.1",
             "source": {
@@ -5137,7 +5213,8 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-11-13T09:33:51+00:00"
+            "time": "2026-11-13T09:33:51+00:00",
+            "published-time": "2026-11-13T09:35:09+00:00"
         },
         {
             "name": "spatie/laravel-package-tools",
@@ -14330,12 +14407,20 @@
             "time": "2026-02-17T17:25:14+00:00"
         }
     ],
-    "aliases": [],
+    "aliases": [
+        {
+            "package": "qiick/laravel-audit",
+            "version": "dev-develop",
+            "alias": "0.1.0-beta.2",
+            "alias_normalized": "0.1.0.0-beta2"
+        }
+    ],
     "minimum-stability": "stable",
     "stability-flags": {
         "qiick/excubia-core": 10,
         "qiick/laravel-access": 10,
         "qiick/laravel-api-keys": 10,
+        "qiick/laravel-audit": 20,
         "qiick/laravel-http-basics": 10,
         "qiick/laravel-oidc": 10,
         "qiick/laravel-outbound": 10

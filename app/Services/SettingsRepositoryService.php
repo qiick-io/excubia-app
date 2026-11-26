@@ -114,7 +114,6 @@ class SettingsRepositoryService
             'pennant_stale_after_days' => config('excubia.pennant_stale_after_days'),
             'runtime_retention_days' => config('excubia.runtime_retention_days'),
             'exceptions_retention_days' => config('excubia.exceptions_retention_days'),
-            'activity_retention_days' => config('activitylog.clean_after_days'),
             'oidc_enabled' => false,
             'oidc_issuer' => null,
             'oidc_client_id' => null,
@@ -471,12 +470,6 @@ class SettingsRepositoryService
     public function exceptionsRetentionDays(): int
     {
         return $this->integer('exceptions_retention_days', 1, 3650);
-    }
-
-    /** Days activity log entries are kept (Data retention). */
-    public function activityRetentionDays(): int
-    {
-        return $this->integer('activity_retention_days', 1, 3650);
     }
 
     public function isOidcEnabled(): bool

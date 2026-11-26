@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use App\Actions\ReconcileAlertWebhookHistoryAction;
 use App\Jobs\RecordQueueHeartbeatJob;
-use App\Services\SettingsRepositoryService;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -13,12 +12,8 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-// Drops activity log entries past the Data retention setting (default `activitylog.clean_after_days`).
-// A closure, so the setting is read when the task runs, not on every artisan boot.
-Schedule::call(fn () => Artisan::call('activitylog:clean', [
-    '--days' => app(SettingsRepositoryService::class)->activityRetentionDays(),
-    '--force' => true,
-]))->name('activitylog:clean')->daily();
+// The activity log is purged by qiick/laravel-audit's own daily `audit:purge` (365 days, 730 for
+// the security logs: the maintainer's retention decision of 2026-11-23); nothing else deletes it.
 
 // Keeps the newest reports of each project (setting "Reports kept per project").
 Schedule::command('excubia:prune-reports')->daily()->withoutOverlapping()->onOneServer();

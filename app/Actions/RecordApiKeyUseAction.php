@@ -6,11 +6,11 @@ namespace App\Actions;
 
 use App\Enums\ActivityEventEnum;
 use App\Models\ApiKey;
-use Qiick\ApiKeys\Audit;
+use Qiick\Audit\AuditContext;
 
 /**
- * Logs the first use of a personal API key (#315, #351) in the `auth` log, with the key's public
- * UUID as `api_key_id`. Called by ApiKeyRepositoryService inside the transaction that takes the
+ * Logs the first use of a personal API key (#315, #351) in the `auth` log, attributed to the key
+ * by qiick/laravel-audit (its public UUID as `api_key_id`, never set by hand). Called by ApiKeyRepositoryService inside the transaction that takes the
  * first-use stamp, so the entry and the stamp are written together or not at all: the entry is
  * always inserted at once, even when the activity buffer is on.
  */
@@ -32,12 +32,16 @@ final class RecordApiKeyUseAction
 
     private function log(ApiKey $apiKey): void
     {
+        // The package attributes the row (api_key_id, prefix, creator) to the bound credential; the
+        // authenticator stamps the first use before the middleware binds it, so bind it here too.
+        AuditContext::bindCredential($apiKey->auditActor());
+
         activity()
             ->useLog('auth')
             ->causedBy($apiKey->owner)
             ->performedOn($apiKey)
             ->event(ActivityEventEnum::ApiKeyFirstUsed->value)
-            ->withProperties(Audit::withApiKeyId(['name' => $apiKey->name, 'key_prefix' => $apiKey->key_prefix], $apiKey->uuid))
+            ->withProperties(['name' => $apiKey->name])
             ->log('API key used for the first time');
     }
 }

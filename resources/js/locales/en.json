@@ -372,9 +372,7 @@
             "runtimeRetentionDays": "Runtime data (days)",
             "runtimeRetentionDaysHint": "Request, query, job and HTTP aggregates older than this are deleted.",
             "exceptionsRetentionDays": "Exceptions (days)",
-            "exceptionsRetentionDaysHint": "Exception groups not seen for this many days are deleted.",
-            "activityRetentionDays": "Activity log (days)",
-            "activityRetentionDaysHint": "Activity log entries older than this are deleted."
+            "exceptionsRetentionDaysHint": "Exception groups not seen for this many days are deleted."
         },
         "appearance": {
             "head": "Appearance settings",

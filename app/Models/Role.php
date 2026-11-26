@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Traits\LogsApplicationActivityTrait;
+use Qiick\Audit\Concerns\LogsActivity;
 use Spatie\Permission\Models\Role as SpatieRole;
 
 /**
@@ -12,5 +12,5 @@ use Spatie\Permission\Models\Role as SpatieRole;
  */
 class Role extends SpatieRole
 {
-    use LogsApplicationActivityTrait;
+    use LogsActivity;
 }

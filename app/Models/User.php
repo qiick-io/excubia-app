@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Notifications\ResetPasswordNotification;
-use App\Traits\LogsApplicationActivityTrait;
+use App\Enums\PrincipalTypeEnum;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -23,8 +23,8 @@ use Laravel\Fortify\Contracts\PasskeyUser;
 use Laravel\Fortify\PasskeyAuthenticatable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Qiick\Access\Principals\PrincipalDirectory;
+use Qiick\Audit\Concerns\LogsActivity;
 use Qiick\Oidc\Models\UserIdentity;
-use Spatie\Activitylog\Support\LogOptions;
 use Spatie\Permission\Traits\HasRoles;
 
 /**
@@ -58,7 +58,7 @@ use Spatie\Permission\Traits\HasRoles;
 class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, HasRoles, HasUuids, LogsApplicationActivityTrait, Notifiable, PasskeyAuthenticatable, SoftDeletes, TwoFactorAuthenticatable;
+    use HasFactory, HasRoles, HasUuids, LogsActivity, Notifiable, PasskeyAuthenticatable, SoftDeletes, TwoFactorAuthenticatable;
 
     /**
      * The full name travels with the user to the pages (avatar, menus).
@@ -103,15 +103,6 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
     public function uniqueIds(): array
     {
         return ['public_id'];
-    }
-
-    /**
-     * Activity log options excluding sensitive credential fields.
-     */
-    public function getActivitylogOptions(): LogOptions
-    {
-        return $this->applicationActivityLogOptions()
-            ->logExcept(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token']);
     }
 
     /**

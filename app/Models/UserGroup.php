@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Traits\LogsApplicationActivityTrait;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -12,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use Qiick\Access\EffectivePermissionResolver;
+use Qiick\Audit\Concerns\LogsActivity;
 use Spatie\Permission\Models\Role;
 
 /**
@@ -35,7 +35,7 @@ use Spatie\Permission\Models\Role;
 #[Fillable(['name', 'description'])]
 class UserGroup extends Model
 {
-    use HasUuids, LogsApplicationActivityTrait, SoftDeletes;
+    use HasUuids, LogsActivity, SoftDeletes;
 
     /** @var array<string, mixed> */
     protected $attributes = ['is_instance' => true];

@@ -372,9 +372,7 @@
             "runtimeRetentionDays": "Laufzeitdaten (Tage)",
             "runtimeRetentionDaysHint": "Ältere Aggregate von Anfragen, Abfragen, Jobs und HTTP werden gelöscht.",
             "exceptionsRetentionDays": "Exceptions (Tage)",
-            "exceptionsRetentionDaysHint": "Exception-Gruppen, die so viele Tage nicht gesehen wurden, werden gelöscht.",
-            "activityRetentionDays": "Aktivitätsprotokoll (Tage)",
-            "activityRetentionDaysHint": "Ältere Einträge im Aktivitätsprotokoll werden gelöscht."
+            "exceptionsRetentionDaysHint": "Exception-Gruppen, die so viele Tage nicht gesehen wurden, werden gelöscht."
         },
         "appearance": {
             "head": "Darstellungseinstellungen",
