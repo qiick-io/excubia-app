@@ -9,6 +9,7 @@ use App\Data\ApiKeyData;
 use App\Enums\ApiKeyScopeEnum;
 use App\Enums\RoleEnum;
 use App\Http\Middleware\AuthenticateApiKeyMiddleware;
+use App\Models\Activity;
 use App\Models\ApiKey;
 use App\Models\User;
 use App\Notifications\ApiKeyExpiringNotification;
@@ -242,12 +243,13 @@ it('releases a claimed expiry notice so the next run can claim it again', functi
     $repository = app(ApiKeyRepository::class);
     $now = now()->toDateTimeImmutable();
 
-    expect($repository->claimExpiryNotice($apiKey, $now, 900))->toBeTrue();
+    expect($repository->claimExpiryNotice($apiKey, $now, 900, 'token'))->toBeTrue();
 
-    $repository->releaseExpiryNotice($apiKey);
+    $repository->releaseExpiryNotice($apiKey, 'token');
 
     expect($apiKey->fresh()->expiry_notice_claimed_at)->toBeNull()
-        ->and($repository->claimExpiryNotice($apiKey, $now, 900))->toBeTrue();
+        ->and($apiKey->fresh()->expiry_notice_claim_token)->toBeNull()
+        ->and($repository->claimExpiryNotice($apiKey, $now, 900, 'next'))->toBeTrue();
 });
 
 it('lists the scope vocabulary from the scope enum', function () {
@@ -274,3 +276,132 @@ it('renders the expiry notice by mail and in the bell without the secret', funct
         ->and($bell['expires_at'])->toBe('2026-12-01T09:00:00+00:00')
         ->and(json_encode($bell))->not->toContain($apiKey->key_hash);
 });
+
+it('denies a key whose stored IP allowlist is corrupted instead of reading it as no restriction', function () {
+    $plainKey = adoptedPlainKey(adoptedKeyOwner());
+    DB::table('api_keys')->update(['ip_allowlist' => '["203.0.113.10"']);
+
+    callAdoptedKey($plainKey)->assertForbidden()->assertJsonPath('error', 'ip_not_allowed');
+})->skip(fn (): bool => DB::getDriverName() !== 'sqlite', 'MySQL and PostgreSQL refuse invalid JSON at the column; only SQLite can store it');
+
+it('refuses IPv4-mapped IPv6 allowlist entries, which the matcher turns into IPv4', function (string $entry) {
+    $this->actingAs(adoptedKeyOwner())
+        ->post(route('api-keys.store'), ['name' => 'Mapped', 'scopes' => ['mcp:read'], 'ip_allowlist' => [$entry]])
+        ->assertSessionHasErrors('ip_allowlist.0');
+
+    expect(ApiKey::query()->count())->toBe(0);
+})->with([
+    'mapped /96 matches every IPv4' => ['::ffff:0.0.0.0/96'],
+    'mapped prefix below /96 makes the list unusable' => ['::ffff:203.0.113.0/64'],
+    'mapped single address' => ['::ffff:203.0.113.10'],
+]);
+
+it('refuses a key whose owner principal belongs to another user', function () {
+    $owner = adoptedKeyOwner();
+    $plainKey = adoptedPlainKey($owner);
+    $otherPrincipalId = adoptedKeyOwner()->principal()->sole()->id;
+    DB::table('api_keys')->update(['owner_principal_id' => $otherPrincipalId]);
+
+    callAdoptedKey($plainKey)
+        ->assertUnauthorized()
+        ->assertJsonPath('error', 'invalid_token');
+});
+
+it('refuses a key whose owner principal has an unknown stored type, instead of failing with a 500', function () {
+    $owner = adoptedKeyOwner();
+    $plainKey = adoptedPlainKey($owner);
+    // An import or repair can leave a value the enum does not know: the cast would throw on read.
+    DB::table('principals')->where('id', $owner->principal()->sole()->id)->update(['type' => 'robot']);
+
+    callAdoptedKey($plainKey)
+        ->assertUnauthorized()
+        ->assertJsonPath('error', 'invalid_token');
+});
+
+it('keeps the first use unstamped when its audit entry cannot be written, so the next use logs it', function () {
+    $owner = adoptedKeyOwner();
+    $plainKey = adoptedPlainKey($owner);
+    $apiKey = ApiKey::query()->sole();
+    $isAuditFailing = true;
+    Activity::creating(function () use (&$isAuditFailing): void {
+        if ($isAuditFailing) {
+            throw new RuntimeException('audit store down');
+        }
+    });
+
+    callAdoptedKey($plainKey)->assertOk();
+
+    expect($apiKey->fresh()->last_used_at)->toBeNull()
+        ->and(Activity::query()->where('event', 'api_key_first_used')->count())->toBe(0);
+
+    $isAuditFailing = false;
+    callAdoptedKey($plainKey)->assertOk();
+    callAdoptedKey($plainKey)->assertOk();
+
+    $firstUse = Activity::query()->where('event', 'api_key_first_used')->sole();
+
+    expect($apiKey->fresh()->last_used_at)->not->toBeNull()
+        ->and($firstUse->properties['api_key_id'])->toBe($apiKey->uuid);
+});
+
+it('logs a first use once even when two requests both saw the key unused', function () {
+    $apiKey = ApiKey::factory()->create();
+    $repository = app(ApiKeyRepository::class);
+    $usedAt = now()->toDateTimeImmutable();
+
+    // Both requests read last_used_at = null before either stamped it.
+    $repository->recordUsage($apiKey, '203.0.113.10', null, $usedAt);
+    $repository->recordUsage($apiKey, '203.0.113.11', null, $usedAt);
+
+    expect(Activity::query()->where('event', 'api_key_first_used')->count())->toBe(1);
+});
+
+it('gives keys a UUIDv7 public id and puts it, not the row id, in the expiry bell', function () {
+    $owner = adoptedKeyOwner();
+    adoptedPlainKey($owner);
+    $apiKey = ApiKey::query()->sole();
+    $factoryKey = ApiKey::factory()->create();
+    $bell = (new ApiKeyExpiringNotification($apiKey, new DateTimeImmutable('2026-12-01T09:00:00+00:00')))->toArray($owner);
+
+    expect(Str::isUuid($apiKey->uuid, 7))->toBeTrue()
+        ->and(Str::isUuid($factoryKey->uuid, 7))->toBeTrue()
+        ->and($bell['api_key_id'])->toBe($apiKey->uuid);
+});
+
+it('writes the first-use entry inside the stamp transaction even when activity is buffered', function () {
+    config(['activitylog.buffer.enabled' => true]);
+    $plainKey = adoptedPlainKey(adoptedKeyOwner());
+
+    callAdoptedKey($plainKey)->assertOk();
+
+    // Written now, not left in the in-memory buffer that is only flushed after the response.
+    expect(DB::table('activity_log')->where('event', 'api_key_first_used')->count())->toBe(1)
+        ->and(config('activitylog.buffer.enabled'))->toBeTrue();
+});
+
+it('refuses a key whose stored policy has the wrong shape, instead of reading it as unrestricted', function (string $column, string $storedJson) {
+    $plainKey = adoptedPlainKey(adoptedKeyOwner());
+    DB::table('api_keys')->update([$column => $storedJson]);
+
+    $response = callAdoptedKey($plainKey);
+
+    expect($response->status())->toBeIn([401, 403]);
+})->with([
+    'allowlist as an object' => ['ip_allowlist', '{}'],
+    'allowlist as JSON null' => ['ip_allowlist', 'null'],
+    'restrictions as an empty object' => ['restrictions', '{}'],
+    'restrictions without a version' => ['restrictions', '{"request":{"methods":["GET"]}}'],
+    'restrictions with a list for a section' => ['restrictions', '{"v":1,"request":[]}'],
+    'scopes as an object' => ['scopes', '{"0":"mcp:read"}'],
+]);
+
+it('names the required scope when the stored scopes do not decode', function () {
+    $plainKey = adoptedPlainKey(adoptedKeyOwner());
+    DB::table('api_keys')->update(['scopes' => '["mcp:read"']);
+
+    callAdoptedKey($plainKey)
+        ->assertForbidden()
+        ->assertJsonPath('error', 'insufficient_scope')
+        ->assertJsonPath('scope', 'mcp:read')
+        ->assertHeader('WWW-Authenticate', 'Bearer error="insufficient_scope", scope="mcp:read"');
+})->skip(fn (): bool => DB::getDriverName() !== 'sqlite', 'MySQL and PostgreSQL refuse invalid JSON at the column; only SQLite can store it');

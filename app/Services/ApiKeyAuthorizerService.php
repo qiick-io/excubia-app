@@ -43,7 +43,14 @@ class ApiKeyAuthorizerService implements KeyAuthorizer, ScopeVocabulary
         // A soft-deleted owner is hidden by the relation's default scope: it reads as inactive.
         $owner = $record->owner;
 
-        if ($owner === null || ! $owner->is_active || ! $this->principals->isActive($record->owner_principal_id)) {
+        // The principal must be the owner's own `user` principal: two independent foreign keys
+        // could otherwise pair an active user with someone else's (or a stale) principal. Only the
+        // exact `user` type passes, so an unknown stored type denies (401). The directory then
+        // checks the principal's whole owner chain (deactivated, expired, unlinked).
+        $principal = $record->ownerPrincipal;
+        $isOwnersPrincipal = $principal->type === 'user' && $principal->user_id === $record->owner_id;
+
+        if ($owner === null || ! $owner->is_active || ! $isOwnersPrincipal || ! $this->principals->isActive($record->owner_principal_id)) {
             return AuthorizationDecision::deny('The API key owner is no longer active.');
         }
 

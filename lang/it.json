@@ -53,5 +53,6 @@
     "Only an active API key can be rotated.": "Solo una chiave API attiva può essere ruotata.",
     "This API key cannot be rotated: you no longer hold its scopes.": "Questa chiave API non può essere ruotata: non detieni più i suoi scope.",
     "Each allowlist entry must be a valid IPv4 or IPv6 address or CIDR.": "Ogni voce dell'allowlist deve essere un indirizzo IPv4 o IPv6 o un CIDR valido.",
+    "Write :entry as its IPv4 form: IPv4-mapped IPv6 entries are matched as IPv4.": "Scrivi :entry nella forma IPv4: le voci IPv6 mappate su IPv4 vengono confrontate come IPv4.",
     "Leave the allowlist empty to allow every address; :entry means no restriction.": "Lascia l'allowlist vuota per consentire ogni indirizzo; :entry significa nessuna restrizione."
 }

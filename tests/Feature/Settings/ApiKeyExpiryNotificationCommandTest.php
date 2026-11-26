@@ -90,13 +90,27 @@ it('lets only one of two overlapping runs claim a notice until its lease lapses'
     $repository = app(ApiKeyRepository::class);
     $now = now()->toDateTimeImmutable();
 
-    expect($repository->claimExpiryNotice($apiKey, $now, 900))->toBeTrue()
-        ->and($repository->claimExpiryNotice($apiKey, $now, 900))->toBeFalse()
-        ->and($repository->claimExpiryNotice($apiKey, $now->modify('+901 seconds'), 900))->toBeTrue();
+    expect($repository->claimExpiryNotice($apiKey, $now, 900, 'first'))->toBeTrue()
+        ->and($repository->claimExpiryNotice($apiKey, $now, 900, 'second'))->toBeFalse()
+        ->and($repository->claimExpiryNotice($apiKey, $now->modify('+901 seconds'), 900, 'third'))->toBeTrue()
+        // The first worker lost its lease: it cannot stamp the notice any more.
+        ->and($repository->markExpiryNotified($apiKey, $now, 'first'))->toBeFalse()
+        ->and($repository->markExpiryNotified($apiKey, $now, 'third'))->toBeTrue()
+        ->and($repository->claimExpiryNotice($apiKey, $now->modify('+1 day'), 900, 'fourth'))->toBeFalse();
+});
 
-    $repository->markExpiryNotified($apiKey, $now);
+it('drops a claim when the key changed expiry in between, as after a rotation', function () {
+    Date::setTestNow('2026-11-17 10:00:00');
+    $apiKey = ApiKey::factory()->create(['expires_at' => now()->addDays(6)]);
+    $repository = app(ApiKeyRepository::class);
+    $selected = ApiKey::query()->findOrFail($apiKey->id);
 
-    expect($repository->claimExpiryNotice($apiKey, $now->modify('+1 day'), 900))->toBeFalse();
+    expect($repository->claimExpiryNotice($selected, now()->toDateTimeImmutable(), 900, 'token'))->toBeTrue();
+
+    $apiKey->forceFill(['expires_at' => now()->addDays(30)])->save();
+
+    expect($repository->markExpiryNotified($selected, now()->toDateTimeImmutable(), 'token'))->toBeFalse()
+        ->and($apiKey->fresh()->expiry_notified_at)->toBeNull();
 });
 
 it('is registered on the daily schedule', function () {

@@ -9,7 +9,6 @@ use App\Models\ApiKey;
 use App\Models\Principal;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Illuminate\Support\Str;
 use Qiick\ApiKeys\TokenCodec;
 
 /**
@@ -28,7 +27,6 @@ class ApiKeyFactory extends Factory
         $token = app(TokenCodec::class)->issue();
 
         return [
-            'uuid' => (string) Str::uuid(),
             'name' => fake()->words(2, true),
             'key_prefix' => $token->keyPrefix,
             'key_hash' => $token->keyHash,

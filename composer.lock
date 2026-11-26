@@ -4419,16 +4419,16 @@
         },
         {
             "name": "qiick/laravel-api-keys",
-            "version": "v0.3.0-beta.1",
+            "version": "v0.3.0-beta.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/qiick-io/laravel-api-keys.git",
-                "reference": "89c795a46d9c5b9eaefe448d313e148cd32036e4"
+                "reference": "565e8821403528d2570273c08e715919a51582a6"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/qiick-io/laravel-api-keys/zipball/89c795a46d9c5b9eaefe448d313e148cd32036e4",
-                "reference": "89c795a46d9c5b9eaefe448d313e148cd32036e4",
+                "url": "https://api.github.com/repos/qiick-io/laravel-api-keys/zipball/565e8821403528d2570273c08e715919a51582a6",
+                "reference": "565e8821403528d2570273c08e715919a51582a6",
                 "shasum": ""
             },
             "require": {
@@ -4485,8 +4485,8 @@
                 "issues": "https://github.com/qiick-io/laravel-api-keys/issues",
                 "source": "https://github.com/qiick-io/laravel-api-keys"
             },
-            "time": "2026-11-25T11:36:20+00:00",
-            "published-time": "2026-11-25T11:36:47+00:00"
+            "time": "2026-11-26T11:44:14+00:00",
+            "published-time": "2026-11-26T11:45:16+00:00"
         },
         {
             "name": "qiick/laravel-oidc",
