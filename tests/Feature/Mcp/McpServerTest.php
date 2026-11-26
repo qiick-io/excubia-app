@@ -121,11 +121,17 @@ it('answers every MCP API-key refusal with the fleet RFC 6750 shape', function (
     ApiKey::query()->where('key_prefix', apiKeyPrefixOf($ipKey))->sole()
         ->forceFill(['ip_allowlist' => ['203.0.113.10']])->save();
 
-    // Laravel MCP may prefix `realm="mcp"` on WWW-Authenticate; the fleet error token still wins.
+    // No credentials: RFC 6750 §3.1 sends the challenge without an error code (laravel-api-keys
+    // #90), and Laravel MCP's own header no longer overwrites it. The JSON code stays stable.
     mcpCall(null, 'ping')
         ->assertUnauthorized()
         ->assertJsonPath('error', 'invalid_token');
-    expect((string) mcpCall(null, 'ping')->headers->get('WWW-Authenticate'))->toContain('error="invalid_token"');
+    expect((string) mcpCall(null, 'ping')->headers->get('WWW-Authenticate'))
+        ->toStartWith('Bearer')
+        ->not->toContain('error=');
+    expect((string) mcpCall('exc_test_'.str_repeat('z', 40), 'ping')->headers->get('WWW-Authenticate'))
+        ->toContain('error="invalid_token"')
+        ->not->toContain('realm="mcp"');
 
     mcpCall('exc_test_'.str_repeat('z', 40), 'ping')
         ->assertUnauthorized()
