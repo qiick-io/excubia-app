@@ -440,42 +440,51 @@ For the maintainer, after the group's last merge is deployed:
    migrated, and the site stays closed to everyone but the maintainer until it is verified:
     1. Write down the settings of step 6 (the secrets are encrypted with `APP_KEY` and are
        re-entered, not copied) and keep the current `APP_KEY`: the rollback needs both.
-    2. `php artisan down --secret=<random>` and stop the queue workers and the scheduler, so
-       nothing writes to the old database any more; then take its snapshot in the Cloud panel and
-       keep the old database itself until the new one is verified.
-    3. In the Cloud panel, attach a new empty database to the environment. Never point the app
+    2. **Close the site in a way that survives the deploy.** `artisan down` writes a file that a
+       Laravel Cloud deploy resets, and a cache flag would go with the old database. Instead, in
+       the Cloud environment set `EXCUBIA_MAINTENANCE_SECRET=<long random value>` and check that
+       `APP_MAINTENANCE_DRIVER` is unset or `excubia` (the driver that reads it), then redeploy
+       the current commit. Verify from a browser without the bypass cookie (a private window) or
+       `curl -sI {APP_URL}/login`: `503`, while `{APP_URL}/health/live` answers `200` so the
+       platform keeps the deploy. The bypass is `{APP_URL}/<secret>`, which sets the cookie.
+    3. Stop the queue workers and the scheduler (in maintenance they pause anyway), take the old
+       database's snapshot in the Cloud panel, and keep the old database itself until the new
+       one is verified.
+    4. In the Cloud panel, attach a new empty database to the environment. Never point the app
        at a copy of the old schema.
-    4. Deploy the group's last merge with the site still down: the deploy runs
-       `php artisan migrate --force` on the empty database and the permission and system project
-       seeders.
-    5. With the bypass (`{APP_URL}/<random>`, which sets the bypass cookie), run
-       `php artisan excubia:setup-link` and open the `…/setup#token=…` link it prints: `/setup` creates the first
-       super-admin only for the holder of that one-time link, so nobody else can claim the empty
-       install.
-6. Still behind the bypass (every browser step below opens `{APP_URL}/<random>` first), re-enter:
-   OIDC provider and client secret, Slack webhook URL, Telegram bot token and chat, the alert
-   webhook URL and the alert settings; then generate the webhook's signing secret
-   (Settings → Integrations → Generate) and configure the receiver with the new one.
-7. Rebuild what the reset removed, still behind the bypass: the projects (each gets a new push
+    5. Deploy the group's last merge. The variable keeps it closed: check the `503` again. The
+       deploy runs `php artisan migrate --force` on the empty database and the permission and
+       system project seeders.
+    6. Run `php artisan excubia:setup-link` and, through the bypass, open the `…/setup#token=…`
+       link it prints: `/setup` creates the first super-admin only for the holder of that
+       one-time link, so nobody else can claim the empty install.
+6. Through the bypass, re-enter: OIDC provider and client secret, Slack webhook URL, Telegram bot
+   token and chat, the alert webhook URL and the alert settings; then generate the webhook's
+   signing secret (Settings → Integrations → Generate) and configure the receiver with the new
+   one.
+7. Rebuild what the reset removed, through the bypass: the projects (each gets a new push
    token), the users, groups and custom roles, and new API keys for the MCP clients (every key is
    gone). Webhook jobs of the old `DeliverAlertJob` still waiting in a queue would fail on the new
    code: the `database` queue starts empty with the new database; with Redis, clear only this
    environment's queue (`php artisan queue:clear redis --queue=<its queue>`, never a shared Redis
    flush) before any worker runs.
-8. **Smoke test while still down.** Laravel's queue workers pause in maintenance mode and the
-   project push API answers 503 without the bypass cookie, so the checks run from the CLI:
+8. **Smoke test while still closed.** Queue workers pause in maintenance mode and the project push
+   API answers `503` without the bypass cookie, so the checks run from the CLI:
     1. `php artisan excubia:system-report`: Excubia checks itself and stores a report on the
        system project without HTTP; it appears on the dashboard (through the bypass).
     2. Settings → Integrations → send a test event to each channel, then deliver it with
        `php artisan queue:work --force --stop-when-empty` (`--force` runs in maintenance mode)
-       and `php artisan outbound:webhooks:work`. Each channel receives it, and the alert history
-       shows `sent`.
+       and `php artisan outbound:webhooks:work`. Test events have no alert history row: the check
+       is the receiver. Slack and Telegram show the test message; the webhook receiver gets a
+       `ping` it verifies with the new signing secret, and the webhook card in Settings →
+       Integrations shows the last success.
        Rollback (if a check fails): put the old database back on the environment, keep the same
-       `APP_KEY`, and redeploy the previous commit.
-9. `php artisan up`, then start the queue workers and the scheduler. Give each watched app its new
-   `EXCUBIA_APP_TOKEN` and run `php artisan excubia:push` there: its first report on the new
-   database closes the cutover. The push API accepts only those new project tokens, so opening it
-   now exposes nothing the maintainer has not issued.
+       `APP_KEY`, and redeploy the previous commit with the variable still set.
+9. **Reopen.** Remove `EXCUBIA_MAINTENANCE_SECRET` and redeploy (or restart the environment);
+   `curl -sI {APP_URL}/login` answers `200`. Start the queue workers and the scheduler. Give each
+   watched app its new `EXCUBIA_APP_TOKEN` and run `php artisan excubia:push` there: its first
+   report on the new database closes the cutover. The push API accepts only the project tokens
+   the maintainer has just issued.
 
 ## Open questions
 

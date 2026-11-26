@@ -6,6 +6,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Maintenance from the environment
+    |--------------------------------------------------------------------------
+    |
+    | While set, the app is in maintenance and `{APP_URL}/{secret}` is the only way in (the
+    | bypass cookie of `artisan down --secret`). Unlike `artisan down` it survives a deploy and a
+    | new database; remove it and redeploy to reopen. A long random value, never a guessable word.
+    |
+    */
+
+    'maintenance_secret' => env('EXCUBIA_MAINTENANCE_SECRET'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Report history and stale projects
     |--------------------------------------------------------------------------
     |

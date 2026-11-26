@@ -17,6 +17,7 @@ use App\Services\AccessResponderService;
 use App\Services\ApiKeyAuthorizerService;
 use App\Services\ApiKeyExpiryRecipientService;
 use App\Services\ApiKeyRepositoryService;
+use App\Services\EnvironmentMaintenanceModeService;
 use App\Services\JobMonitorQueryService;
 use App\Services\OidcBreakGlassPolicyService;
 use App\Services\OidcSecondFactorChallengeService;
@@ -34,6 +35,8 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\FileBasedMaintenanceMode;
+use Illuminate\Foundation\MaintenanceModeManager;
 use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Http\Request;
 use Illuminate\Mail\Markdown;
@@ -84,6 +87,11 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(SettingsRepositoryService::class);
+        // The `excubia` maintenance driver (config/app.php): the file one, plus EXCUBIA_MAINTENANCE_SECRET.
+        $this->app->afterResolving(MaintenanceModeManager::class, fn (MaintenanceModeManager $manager) => $manager->extend(
+            'excubia',
+            fn (): EnvironmentMaintenanceModeService => new EnvironmentMaintenanceModeService(new FileBasedMaintenanceMode),
+        ));
         // The HTTP client excubia-core uses for the system report (#70); tests bind a fake.
         $this->app->bind(HttpClientContract::class, fn (): HttpClientContract => new SymfonyHttpClientService);
         $this->registerOidcBindings();

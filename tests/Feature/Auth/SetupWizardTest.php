@@ -10,7 +10,9 @@ use App\Providers\AppServiceProvider;
 use App\Services\SetupTokenService;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\SystemProjectSeeder;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Http\Middleware\TrustProxies;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Testing\AssertableInertia as Assert;
 
 /**
@@ -78,6 +80,17 @@ it('checks the setup token again under the creation lock and uses it once', func
 
     expect($createFirstAdmin->execute('Ada', null, 'ada@example.com', 'correct-horse-battery', $token))->not->toBeNull()
         ->and(app(SetupTokenService::class)->isValid($token))->toBeFalse();
+});
+
+it('issues a setup link only under the creation lock, so a new link cannot race the first admin', function () {
+    $creation = Cache::lock('excubia:first-run-setup', 10);
+    $creation->get();
+
+    try {
+        expect(fn () => $this->artisan('excubia:setup-link')->run())->toThrow(LockTimeoutException::class);
+    } finally {
+        $creation->release();
+    }
 });
 
 it('prints a setup link with the command, only while no user exists', function () {
