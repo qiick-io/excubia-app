@@ -2458,5 +2458,26 @@
         "copyFailed": "Impossibile copiare il segreto. È selezionato: copialo con la tastiera.",
         "acknowledge": "Ho salvato il segreto in un luogo sicuro",
         "done": "Fatto"
+    },
+    "errors": {
+        "403": {
+            "title": "Accesso negato",
+            "description": "Non hai il permesso di aprire questa pagina."
+        },
+        "404": {
+            "title": "Pagina non trovata",
+            "description": "Questa pagina non esiste o non è più disponibile."
+        },
+        "500": {
+            "title": "Qualcosa è andato storto",
+            "description": "Il server non è riuscito a completare la richiesta. Riprova tra un momento."
+        },
+        "503": {
+            "title": "Torniamo presto",
+            "description": "Excubia è in manutenzione o un servizio necessario non è disponibile. Riprova tra qualche minuto."
+        },
+        "backToDashboard": "Torna alla dashboard",
+        "signIn": "Accedi",
+        "tryAgain": "Riprova"
     }
 }
