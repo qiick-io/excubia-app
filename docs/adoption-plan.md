@@ -441,18 +441,29 @@ For the maintainer, after the group's last merge is deployed:
     1. Write down the settings of step 6 (the secrets are encrypted with `APP_KEY` and are
        re-entered, not copied) and keep the current `APP_KEY`: the rollback needs both.
     2. **Close the site in a way that survives the deploy.** `artisan down` writes a file that a
-       Laravel Cloud deploy resets, and a cache flag would go with the old database. Instead, in
-       the Cloud environment set `EXCUBIA_MAINTENANCE_SECRET=<long random value>` and check that
-       `APP_MAINTENANCE_DRIVER` is unset or `excubia` (the driver that reads it), then redeploy
-       the current commit. Verify from a browser without the bypass cookie (a private window) or
-       `curl -sI {APP_URL}/login`: `503`, while `{APP_URL}/health/live` answers `200` so the
-       platform keeps the deploy. The bypass is `{APP_URL}/<secret>`, which sets the cookie.
+       Laravel Cloud deploy resets, and a cache flag would go with the old database; the group's
+       code adds `EXCUBIA_MAINTENANCE_SECRET`, which survives both, but the code running before
+       the merge does not read it yet. So, for this cutover:
+        1. On the running (old) deploy: `php artisan down --secret=<long random value>`. The file
+           flag holds until the next deploy, which is the group's merge. It is per instance:
+           scale the environment to one replica first, or run it on each.
+        2. In the Cloud environment set `EXCUBIA_MAINTENANCE_SECRET` to the same value, and check
+           that `APP_MAINTENANCE_DRIVER` is unset or `excubia` (the driver that reads it): from
+           the merge on, the new code stays closed through every deploy.
+        3. Verify from a browser without the bypass cookie (a private window) or
+           `curl -sI {APP_URL}/login`: `503`. The bypass is `{APP_URL}/<secret>`, which sets the
+           cookie.
+           Later cutovers, with this code already deployed, only set the variable and redeploy; the
+           new code also answers `200` on `{APP_URL}/health/live` while closed, so the platform keeps
+           the deploy.
     3. Stop the queue workers and the scheduler (in maintenance they pause anyway), take the old
        database's snapshot in the Cloud panel, and keep the old database itself until the new
        one is verified.
     4. In the Cloud panel, attach a new empty database to the environment. Never point the app
        at a copy of the old schema.
-    5. Deploy the group's last merge. The variable keeps it closed: check the `503` again. The
+    5. Merge and deploy the group (one squash merge of #416, which contains #410 and #412). The
+       variable keeps the new deploy closed: check the `503` again and `200` on
+       `{APP_URL}/health/live`. The
        deploy runs `php artisan migrate --force` on the empty database and the permission and
        system project seeders.
     6. Run `php artisan excubia:setup-link` and, through the bypass, open the `…/setup#token=…`
