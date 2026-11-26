@@ -93,3 +93,20 @@ it('returns focus to the button that opened a drawer when it closes', function (
 
     expect($page->script('() => document.activeElement?.textContent?.trim()'))->toBe('New project');
 });
+
+it('opens a user from the keyboard: the row takes focus and Enter opens it', function () {
+    $this->actingAs(User::factory()->create(['first_name' => 'Zed', 'last_name' => 'Admin'])->assignRole(RoleEnum::SuperAdmin->value));
+    User::factory()->create(['first_name' => 'Ada', 'last_name' => 'Lovelace']);
+
+    // #424: rows opened only with a mouse click; the registry DataTable (app-ui #268) makes them focusable.
+    $page = visit(route('users.index', ['sort' => 'name', 'direction' => 'asc'], false));
+    $page->script("() => [...document.querySelectorAll('thead button, thead [role=\"checkbox\"]')].at(-1).focus()");
+    $page->keys('thead :focus', 'Tab');
+
+    expect($page->script("() => document.activeElement?.innerText.includes('Ada Lovelace') ?? false"))->toBeTrue();
+
+    $page->keys('tbody tr:focus', 'Enter')
+        ->assertVisible('[role="dialog"]')
+        ->assertValue('#user_first_name', 'Ada')
+        ->assertNoJavaScriptErrors();
+});

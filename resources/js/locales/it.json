@@ -126,7 +126,8 @@
         "notifications": "Notifiche",
         "notificationsUnread": "Notifiche, {{count}} non lette",
         "unreadCount": "{{count}} non lette",
-        "scrollableTable": "Tabella scorrevole"
+        "scrollableTable": "Tabella scorrevole",
+        "openTableRow": "Premi Invio o Spazio per aprire questa riga."
     },
     "auth": {
         "login": {
