@@ -11,7 +11,6 @@ use App\Models\User;
 use App\Services\AssistantQueryService;
 use Laravel\Ai\Contracts\Tool;
 use Laravel\Ai\Tools\Request;
-use Qiick\ApiKeys\Audit;
 use Stringable;
 
 /**
@@ -25,13 +24,13 @@ use Stringable;
 abstract class AssistantTool implements Tool
 {
     /**
+     * Over MCP the issuing key is attributed by qiick/laravel-audit (the bound credential).
+     *
      * @param  'assistant'|'mcp'  $surface  where the call comes from, for the activity log
-     * @param  string|null  $apiKeyId  public UUID of the issuing key when the surface is MCP (#351 attribution)
      */
     public function __construct(
         protected User $user,
         protected string $surface = 'assistant',
-        protected ?string $apiKeyId = null,
     ) {}
 
     /**
@@ -62,10 +61,6 @@ abstract class AssistantTool implements Tool
             'arguments' => $request->all(),
             'status' => $isError ? 'error' : 'ok',
         ];
-
-        if ($this->apiKeyId !== null) {
-            $properties = Audit::withApiKeyId($properties, $this->apiKeyId);
-        }
 
         activity()
             ->useLog('ai')

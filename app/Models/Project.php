@@ -6,7 +6,6 @@ namespace App\Models;
 
 use App\Enums\ProjectVisibilityEnum;
 use App\Services\EffectivePermissionResolverService;
-use App\Traits\LogsApplicationActivityTrait;
 use Database\Factories\ProjectFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -20,6 +19,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Qiick\Audit\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
 /**
@@ -51,7 +51,7 @@ class Project extends Model
     public const ENVIRONMENT_PATTERN = '/^[A-Za-z0-9_-]{1,64}$/';
 
     /** @use HasFactory<ProjectFactory> */
-    use HasFactory, LogsApplicationActivityTrait;
+    use HasFactory, LogsActivity;
 
     /**
      * Column defaults, so a new model has them before it is refreshed.
@@ -69,7 +69,7 @@ class Project extends Model
      */
     public function getActivitylogOptions(): LogOptions
     {
-        return $this->applicationActivityLogOptions()->logExcept(['push_token_hash', 'last_report_at', 'environment', 'stale_alerted_at', 'skipped_runtime_aggregates']);
+        return $this->auditActivityLogOptions()->logExcept(['push_token_hash', 'last_report_at', 'environment', 'stale_alerted_at', 'skipped_runtime_aggregates']);
     }
 
     /**

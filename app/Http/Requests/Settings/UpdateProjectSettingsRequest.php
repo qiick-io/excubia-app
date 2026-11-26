@@ -25,7 +25,6 @@ class UpdateProjectSettingsRequest extends FormRequest
         'reports_kept_per_project' => [1, 1000],
         'runtime_retention_days' => [1, 3650],
         'exceptions_retention_days' => [1, 3650],
-        'activity_retention_days' => [1, 3650],
     ];
 
     /**

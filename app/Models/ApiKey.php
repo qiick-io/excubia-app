@@ -6,7 +6,6 @@ namespace App\Models;
 
 use App\Enums\ApiKeyScopeEnum;
 use App\Enums\PrincipalTypeEnum;
-use App\Traits\LogsApplicationActivityTrait;
 use Database\Factories\ApiKeyFactory;
 use DateTimeImmutable;
 use DateTimeInterface;
@@ -18,6 +17,8 @@ use Illuminate\Support\Carbon;
 use Qiick\ApiKeys\Contracts\ApiKeyRecord;
 use Qiick\ApiKeys\CredentialKind;
 use Qiick\ApiKeys\RevocationReason;
+use Qiick\Audit\Concerns\LogsActivity;
+use Qiick\Audit\Contracts\AuditActor;
 use Spatie\Activitylog\Support\LogOptions;
 
 /**
@@ -73,7 +74,7 @@ use Spatie\Activitylog\Support\LogOptions;
 class ApiKey extends Model implements ApiKeyRecord
 {
     /** @use HasFactory<ApiKeyFactory> */
-    use HasFactory, HasUuids, LogsApplicationActivityTrait;
+    use HasFactory, HasUuids, LogsActivity;
 
     /** @var list<string> */
     protected $fillable = [
@@ -125,7 +126,7 @@ class ApiKey extends Model implements ApiKeyRecord
      */
     public function getActivitylogOptions(): LogOptions
     {
-        return $this->applicationActivityLogOptions()
+        return $this->auditActivityLogOptions()
             ->useLogName('api-keys')
             ->logExcept([
                 'key_hash',
@@ -192,6 +193,22 @@ class ApiKey extends Model implements ApiKeyRecord
     public function isActive(): bool
     {
         return $this->revoked_at === null && ($this->expires_at === null || $this->expires_at->isFuture());
+    }
+
+    /**
+     * The credential qiick/laravel-audit attributes every activity row under this key to: the
+     * owner (Excubia's activity page and filters are per user; the key's principal is the owner's
+     * own, which ApiKeyAuthorizerService checks), the public UUID, prefix and creator's public id.
+     */
+    public function auditActor(): AuditActor
+    {
+        return new AuditActor(
+            causer: $this->owner,
+            actorKind: 'api_key',
+            apiKeyId: $this->uuid,
+            apiKeyPrefix: $this->key_prefix,
+            apiKeyCreatedBy: $this->creator?->public_id,
+        );
     }
 
     public function isRevoked(): bool

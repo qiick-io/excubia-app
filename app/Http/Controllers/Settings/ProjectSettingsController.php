@@ -28,7 +28,7 @@ class ProjectSettingsController extends Controller
         return Inertia::render('settings/project', [
             'project' => $this->settings->forEditOnly([
                 'app_name', 'description', 'url', 'report_issue_url', 'report_bug_url', 'report_error_url',
-                'stale_after_hours', 'pennant_stale_after_days', 'reports_kept_per_project', 'runtime_retention_days', 'exceptions_retention_days', 'activity_retention_days',
+                'stale_after_hours', 'pennant_stale_after_days', 'reports_kept_per_project', 'runtime_retention_days', 'exceptions_retention_days',
             ]),
         ]);
     }

@@ -63,7 +63,6 @@ use Qiick\Oidc\Contracts\UserProvisioningContract;
 use Qiick\Oidc\Services\SsoOnlyModeService;
 use Qiick\Oidc\Services\UserLinkingService;
 use RuntimeException;
-use Spatie\Activitylog\Facades\Activity;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
@@ -152,7 +151,6 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureDefaults();
         $this->configureAuthorization();
-        $this->configureActivityLogging();
         $this->registerAuthActivityListeners();
         $this->configureApiKeyGuard();
         $this->configureRateLimiting();
@@ -220,19 +218,6 @@ class AppServiceProvider extends ServiceProvider
 
         Gate::before(fn (User $user, string $ability): ?bool => PermissionEnum::tryFrom($ability) !== null
             && app(EffectivePermissionResolverService::class)->hasPermission($user, $ability) ? true : null);
-    }
-
-    /**
-     * Every activity also records the request IP and user agent.
-     */
-    protected function configureActivityLogging(): void
-    {
-        Activity::beforeLogging(function (ActivityModel $activity): void {
-            $activity->properties = ($activity->properties ?? collect())->merge([
-                'ip' => request()->ip(),
-                'user_agent' => request()->userAgent(),
-            ]);
-        });
     }
 
     /**

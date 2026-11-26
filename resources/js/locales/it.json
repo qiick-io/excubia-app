@@ -367,9 +367,7 @@
             "runtimeRetentionDays": "Dati di runtime (giorni)",
             "runtimeRetentionDaysHint": "Gli aggregati di richieste, query, job e HTTP più vecchi vengono eliminati.",
             "exceptionsRetentionDays": "Eccezioni (giorni)",
-            "exceptionsRetentionDaysHint": "I gruppi di eccezioni non visti da questo numero di giorni vengono eliminati.",
-            "activityRetentionDays": "Registro attività (giorni)",
-            "activityRetentionDaysHint": "Le voci del registro attività più vecchie vengono eliminate."
+            "exceptionsRetentionDaysHint": "I gruppi di eccezioni non visti da questo numero di giorni vengono eliminati."
         },
         "appearance": {
             "head": "Impostazioni aspetto",

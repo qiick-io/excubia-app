@@ -14,6 +14,7 @@ use Qiick\ApiKeys\Exceptions\ApiKeyRejection;
 use Qiick\ApiKeys\Http\BearerTokenExtractor;
 use Qiick\ApiKeys\Http\KeyContextFactory;
 use Qiick\ApiKeys\Scope;
+use Qiick\Audit\AuditContext;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -73,10 +74,13 @@ class AuthenticateApiKeyMiddleware
         Auth::guard('api_key')->setUser($owner);
         $previousGuard = Auth::getDefaultDriver();
         Auth::shouldUse('api_key');
+        // Every activity row written under the key names it (qiick/laravel-audit attribution).
+        AuditContext::bindCredential($apiKey->auditActor());
 
         try {
             return $next($request);
         } finally {
+            AuditContext::clear();
             Auth::shouldUse($previousGuard);
         }
     }

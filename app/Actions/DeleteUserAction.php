@@ -4,11 +4,15 @@ declare(strict_types=1);
 
 namespace App\Actions;
 
+use App\Models\Principal;
 use App\Models\User;
 use App\Services\SuperAdminGuardService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Qiick\ApiKeys\RevocationReason;
+use Qiick\Audit\Contracts\AuditAnonymiser;
+use Qiick\Audit\Contracts\ErasureSubject;
+use Qiick\Audit\Contracts\MorphRef;
 
 /**
  * Soft-deletes a dashboard user and releases their unique identifiers.
@@ -21,7 +25,10 @@ use Qiick\ApiKeys\RevocationReason;
  */
 class DeleteUserAction
 {
-    public function __construct(private SuperAdminGuardService $superAdminGuard) {}
+    public function __construct(
+        private SuperAdminGuardService $superAdminGuard,
+        private AuditAnonymiser $anonymiser,
+    ) {}
 
     public function execute(User $user): void
     {
@@ -29,6 +36,8 @@ class DeleteUserAction
             $publicId = $user->public_id;
             $originalEmail = $user->email;
             $publicIdHex = str_replace('-', '', $publicId);
+            $principal = $user->principal;
+            $identifiers = array_values(array_filter([$originalEmail, $user->username, $user->first_name, $user->last_name, $user->name]));
 
             $user->apiKeys()->whereNull('revoked_at')->update([
                 'revoked_at' => now(),
@@ -83,7 +92,33 @@ class DeleteUserAction
                 'has_weekly_digest' => false,
             ])->saveQuietly();
 
+            $this->anonymiseActivity($user, $principal, $publicIdHex, $identifiers);
+
             $user->delete();
         }, 'user');
+    }
+
+    /**
+     * Scrubs the person from the activity log (qiick/laravel-audit): the rows about or by the user
+     * and their principal keep their event and dates, while personal properties, the identifiers
+     * (as whole words) and any email or phone-like text become the tombstone. Runs inside the
+     * deletion transaction, on the activity model's connection, so it rolls back with it.
+     *
+     * @param  list<string>  $identifiers  the user's email, username and names before tombstoning
+     */
+    private function anonymiseActivity(User $user, ?Principal $principal, string $publicIdHex, array $identifiers): void
+    {
+        $tombstone = 'erased-user-'.$publicIdHex;
+        // An identifier inside the tombstone (a one-letter name) could never settle; it is too short to identify anyone.
+        $identifiers = array_values(array_filter(
+            $identifiers,
+            fn (string $identifier): bool => mb_stripos($tombstone, $identifier) === false,
+        ));
+
+        $this->anonymiser->anonymise(new ErasureSubject(
+            refs: $principal === null ? [MorphRef::of($user)] : [MorphRef::of($user), MorphRef::of($principal)],
+            tombstone: $tombstone,
+            identifiers: $identifiers,
+        ));
     }
 }
