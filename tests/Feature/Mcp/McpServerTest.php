@@ -126,12 +126,8 @@ it('answers every MCP API-key refusal with the fleet RFC 6750 shape', function (
     mcpCall(null, 'ping')
         ->assertUnauthorized()
         ->assertJsonPath('error', 'invalid_token');
-    expect((string) mcpCall(null, 'ping')->headers->get('WWW-Authenticate'))
-        ->toStartWith('Bearer')
-        ->not->toContain('error=');
-    expect((string) mcpCall('exc_test_'.str_repeat('z', 40), 'ping')->headers->get('WWW-Authenticate'))
-        ->toContain('error="invalid_token"')
-        ->not->toContain('realm="mcp"');
+    expect(mcpCall(null, 'ping')->headers->get('WWW-Authenticate'))->toBe('Bearer realm="api-keys"')
+        ->and(mcpCall('exc_test_'.str_repeat('z', 40), 'ping')->headers->get('WWW-Authenticate'))->toBe('Bearer error="invalid_token"');
 
     mcpCall('exc_test_'.str_repeat('z', 40), 'ping')
         ->assertUnauthorized()
