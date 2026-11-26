@@ -379,7 +379,9 @@ Read the [changelog](../CHANGELOG.md) first: every version has **Upgrade notes**
 
 ### Database migrations
 
-From `1.0.0-beta.1` on, migrations are **forward-only**: a released migration is never edited, renamed or deleted, and every schema change ships as a new migration. Every release therefore upgrades the database of the one before in place, with your data:
+**Before `1.0.0`** (the betas) a release may edit a table's `create_` migration instead of adding a new one (qiick decision of 2026-11-20). Its release notes say so, and such a release cannot upgrade the database of the one before: `excubia:upgrade` and the Docker start stop at the first changed table ("table already exists"). For that release, back up, note the settings you will re-enter, and start on a new empty database (SQLite: move the old file away; MySQL or PostgreSQL: a new database). `migrate:fresh` refuses to run with `APP_ENV=production`.
+
+From **`1.0.0`** on, migrations are **forward-only**: a released migration is never edited, renamed or deleted, and every schema change ships as a new migration. Every release then upgrades the database of the one before in place, with your data:
 
 1. **Back up first** ([Backups](#backups)): the database and the `APP_KEY`. A migration cannot be rolled back on a production database without that backup.
 2. Run the migrations: `php artisan excubia:upgrade --force` runs `php artisan migrate --force` for you (`--force` because `APP_ENV` is `production`). Docker runs them when the `app` container starts. Never `migrate:fresh` or `migrate:refresh` on an install you keep: they drop every table.

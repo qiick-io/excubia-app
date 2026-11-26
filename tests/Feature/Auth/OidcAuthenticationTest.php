@@ -380,6 +380,14 @@ describe('SSO-only mode', function () {
     })->with([
         'admin with TOTP' => [fn () => User::factory()->withTwoFactor()->create()->assignRole(RoleEnum::Admin->value)],
         'super-admin without a second factor' => [fn () => User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value)],
+        // A passkey is a break-glass factor for the passkey login only: with a password and no
+        // TOTP there is no second factor to challenge, so the password would be enough.
+        'super-admin with a passkey but no TOTP' => [function () {
+            $user = User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value);
+            $user->passkeys()->create(['name' => 'Laptop', 'credential_id' => 'credential-'.$user->id, 'credential' => []]);
+
+            return $user;
+        }],
     ]);
 
     it('lets a super-admin with TOTP through to the two-factor challenge', function () {

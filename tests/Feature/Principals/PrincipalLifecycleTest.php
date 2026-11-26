@@ -6,13 +6,14 @@ use App\Actions\CreateApiKeyAction;
 use App\Actions\DeleteUserAction;
 use App\Data\ApiKeyData;
 use App\Enums\ApiKeyScopeEnum;
-use App\Enums\PrincipalTypeEnum;
 use App\Enums\RoleEnum;
 use App\Models\ApiKey;
 use App\Models\Principal;
 use App\Models\User;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Support\Facades\Schema;
+use Qiick\Access\Principals\DeactivationReason;
+use Qiick\Access\Principals\PrincipalDirectory;
 
 beforeEach(function (): void {
     $this->seed(PermissionSeeder::class);
@@ -32,7 +33,7 @@ test('creating a user creates a user principal', function (): void {
 
     $principal = Principal::query()->where('user_id', $user->getKey())->sole();
 
-    expect($principal->type)->toBe(PrincipalTypeEnum::User)
+    expect($principal->type)->toBe('user')
         ->and($principal->organisation_id)->toBeNull()
         ->and($principal->name)->toBe('Ada Lovelace')
         ->and($principal->deactivated_at)->toBeNull()
@@ -74,6 +75,7 @@ test('deleting a user revokes its api keys and deactivates its principal without
         ->and($apiKey->fresh()->isRevoked())->toBeTrue()
         ->and($principal->fresh())->not->toBeNull()
         ->and($principal->fresh()->deactivated_at)->not->toBeNull()
+        ->and($principal->fresh()->deactivation_reason)->toBe(DeactivationReason::Erased)
         ->and($principal->fresh()->user_id)->toBeNull();
 });
 
@@ -112,4 +114,16 @@ test('deactivating a user stamps the principal deactivated_at', function (): voi
         ->assertSessionHasNoErrors();
 
     expect($principal->refresh()->deactivated_at)->toBeNull();
+});
+
+test('deleting a user whose principal was already deactivated leaves an erased tombstone', function (): void {
+    User::factory()->create()->assignRole(RoleEnum::Admin->value);
+    $owner = User::factory()->create();
+    $principal = $owner->principal()->firstOrFail();
+    app(PrincipalDirectory::class)->deactivate($principal, DeactivationReason::Admin);
+
+    app(DeleteUserAction::class)->execute($owner);
+
+    expect($principal->fresh()->deactivation_reason)->toBe(DeactivationReason::Erased)
+        ->and($principal->fresh()->user_id)->toBeNull();
 });

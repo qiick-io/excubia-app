@@ -4,23 +4,30 @@ declare(strict_types=1);
 
 namespace App\Actions;
 
+use App\Models\Principal;
 use App\Models\User;
 use App\Services\SuperAdminGuardService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Qiick\Access\Principals\DeactivationReason;
+use Qiick\Access\Principals\PrincipalDirectory;
+use Qiick\ApiKeys\RevocationReason;
 
 /**
  * Soft-deletes a dashboard user and releases their unique identifiers.
  *
  * Roles and audit activity stay attached for the trail, but login links and the user's own data
  * go with the account: SSO identities and passkeys are deleted (they are credentials, not audit),
- * assistant chats and their messages are removed, and the principal is detached and deactivated.
+ * assistant chats and their messages are removed, and the principal becomes an erased tombstone.
  * Personal columns become unique tombstones from the full public-id UUID so the email and username
  * can be reused on every database engine. The deleted row itself is inactive.
  */
 class DeleteUserAction
 {
-    public function __construct(private SuperAdminGuardService $superAdminGuard) {}
+    public function __construct(
+        private SuperAdminGuardService $superAdminGuard,
+        private PrincipalDirectory $principals,
+    ) {}
 
     public function execute(User $user): void
     {
@@ -29,12 +36,23 @@ class DeleteUserAction
             $originalEmail = $user->email;
             $publicIdHex = str_replace('-', '', $publicId);
 
-            $user->apiKeys()->whereNull('revoked_at')->update(['revoked_at' => now()]);
+            $user->apiKeys()->whereNull('revoked_at')->update([
+                'revoked_at' => now(),
+                'revoked_reason' => RevocationReason::Owner->value,
+                'previous_key_hash' => null,
+                'previous_key_valid_until' => null,
+            ]);
             $user->apiKeys()->update(['name' => 'Deleted key '.$publicId]);
-            $user->principal()->update([
-                'deactivated_at' => now(),
+            // The principal becomes an erased tombstone, unlinked and anonymised as the package's
+            // own eraseUser() leaves it (that one needs a hard delete; Excubia soft-deletes).
+            $principal = $this->principals->forMember($user, null);
+            $this->principals->deactivate($principal, DeactivationReason::Erased);
+            // Erased wins over an earlier reason: the package keeps the first reason of a principal
+            // already deactivated (an admin's, say), but the person is now gone.
+            Principal::query()->whereKey($principal->id)->update([
                 'name' => 'Deleted principal '.$publicId,
                 'user_id' => null,
+                'deactivation_reason' => DeactivationReason::Erased->value,
             ]);
 
             // Login links are credentials, not audit: leaving an identity behind points SSO at a

@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Middleware\EnsureTwoFactorIsEnabledMiddleware;
 use App\Http\Middleware\EnsureUserIsActiveMiddleware;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
@@ -13,6 +12,7 @@ use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Middleware\ThrottleRequests;
+use Qiick\Access\Http\EnsureTwoFactorIsEnabled;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -41,7 +41,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(prepend: [SecurityHeadersMiddleware::class], append: [
             EnsureUserIsActiveMiddleware::class,
             SetLocaleMiddleware::class,
-            EnsureTwoFactorIsEnabledMiddleware::class,
+            EnsureTwoFactorIsEnabled::class,
             HandleAppearance::class,
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,

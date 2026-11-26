@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace App\Actions;
 
+use App\Models\ProjectGroup;
+use App\Models\User;
 use App\Models\UserGroup;
 use App\Services\SuperAdminGuardService;
 use Illuminate\Validation\ValidationException;
+use Qiick\Access\EffectivePermissionResolver;
 use Spatie\Permission\Models\Role;
 
 /**
@@ -32,28 +35,28 @@ class SaveUserGroupAction
             $roleModels = Role::query()->whereIn('name', $roles)->orderBy('name')->get(['id', 'name']);
             $group->roles()->sync($roleModels->pluck('id'));
             $group->users()->sync($userIds);
+            // Pivot syncs fire no Spatie event: drop the resolver's per-request cache.
+            app(EffectivePermissionResolver::class)->flush();
             $projectGroupChanges = $group->projectGroups()->sync($projectGroupIds);
 
+            // Public ids and names only: the activity log never carries numeric row ids (C74).
             activity()
                 ->performedOn($group)
                 ->event('members_synced')
-                ->withProperties(['user_ids' => $userIds])
+                ->withProperties(['user_public_ids' => User::query()->whereKey($userIds)->orderBy('id')->pluck('public_id')->all()])
                 ->log('Group members synced');
 
             activity()
                 ->performedOn($group)
                 ->event('roles_synced')
-                ->withProperties([
-                    'role_ids' => $roleModels->pluck('id')->values()->all(),
-                    'role_names' => $roleModels->pluck('name')->values()->all(),
-                ])
+                ->withProperties(['role_names' => $roleModels->pluck('name')->values()->all()])
                 ->log('Group roles synced');
 
             if (array_filter($projectGroupChanges) !== []) {
                 activity()
                     ->performedOn($group)
                     ->event('project_groups_synced')
-                    ->withProperties(['project_group_ids' => $projectGroupIds])
+                    ->withProperties(['project_group_names' => ProjectGroup::query()->whereKey($projectGroupIds)->orderBy('name')->pluck('name')->all()])
                     ->log('Group project scope synced');
             }
 

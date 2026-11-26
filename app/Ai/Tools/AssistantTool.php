@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Services\AssistantQueryService;
 use Laravel\Ai\Contracts\Tool;
 use Laravel\Ai\Tools\Request;
+use Qiick\ApiKeys\Audit;
 use Stringable;
 
 /**
@@ -63,7 +64,7 @@ abstract class AssistantTool implements Tool
         ];
 
         if ($this->apiKeyId !== null) {
-            $properties['api_key_id'] = $this->apiKeyId;
+            $properties = Audit::withApiKeyId($properties, $this->apiKeyId);
         }
 
         activity()

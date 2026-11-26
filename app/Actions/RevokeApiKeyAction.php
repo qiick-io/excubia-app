@@ -7,6 +7,7 @@ namespace App\Actions;
 use App\Enums\ActivityEventEnum;
 use App\Models\ApiKey;
 use App\Models\User;
+use Qiick\ApiKeys\RevocationReason;
 
 /**
  * Revokes a personal API key (#315, #351): the next request with it is rejected immediately. The
@@ -20,8 +21,17 @@ final class RevokeApiKeyAction
             return;
         }
 
+        // The owner revokes from Settings; anyone else (an admin, a job) is recorded apart.
+        $revokedReason = match (true) {
+            $actor === null => RevocationReason::System,
+            $actor->id === $apiKey->owner_id => RevocationReason::User,
+            default => RevocationReason::Admin,
+        };
+
         $apiKey->forceFill([
             'revoked_at' => now(),
+            'revoked_by' => $actor?->id,
+            'revoked_reason' => $revokedReason->value,
             'previous_key_hash' => null,
             'previous_key_valid_until' => null,
         ])->saveQuietly();

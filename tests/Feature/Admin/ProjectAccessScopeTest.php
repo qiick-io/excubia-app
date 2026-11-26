@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Actions\DeleteUserGroupAction;
 use App\Enums\PermissionEnum;
 use App\Enums\ProjectVisibilityEnum;
 use App\Enums\RoleEnum;
@@ -184,4 +185,24 @@ it('stops a non-admin from joining a user group that carries a project scope', f
     ])->assertSessionHasErrors('users');
 
     expect($userGroup->users()->whereKey($editor->id)->exists())->toBeFalse();
+});
+
+it('drops the access when the user group is deleted or the membership has expired', function () {
+    ['reader' => $reader, 'scoped' => $scoped, 'userGroup' => $userGroup] = scopedAccessFixture();
+
+    // Deleting a group soft-deletes it and keeps its pivots: they grant nothing any more.
+    app(DeleteUserGroupAction::class)->execute($userGroup);
+
+    expect(Project::query()->visibleTo($reader)->pluck('name')->all())->toBe(['Shared'])
+        ->and($reader->can('view', $scoped))->toBeFalse();
+
+    $userGroup->restore();
+    $userGroup->users()->updateExistingPivot($reader->id, ['expires_at' => now()->subMinute()]);
+
+    expect(Project::query()->visibleTo($reader)->pluck('name')->all())->toBe(['Shared'])
+        ->and($reader->can('view', $scoped))->toBeFalse();
+
+    $userGroup->users()->updateExistingPivot($reader->id, ['expires_at' => now()->addDay()]);
+
+    expect($reader->can('view', $scoped))->toBeTrue();
 });

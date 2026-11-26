@@ -25,10 +25,7 @@ class SaveRoleAction
         activity()
             ->performedOn($role)
             ->event('permissions_synced')
-            ->withProperties([
-                'permission_ids' => $synced->pluck('id')->values()->all(),
-                'permission_names' => $synced->pluck('name')->values()->all(),
-            ])
+            ->withProperties(['permission_names' => $synced->pluck('name')->values()->all()])
             ->log('Role permissions synced');
 
         return $role;

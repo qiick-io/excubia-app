@@ -6,10 +6,12 @@ namespace App\Models;
 
 use App\Traits\LogsApplicationActivityTrait;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
+use Qiick\Access\EffectivePermissionResolver;
 use Spatie\Permission\Models\Role;
 
 /**
@@ -17,7 +19,13 @@ use Spatie\Permission\Models\Role;
  * sees the projects of the project groups linked to the group (#253), admin-only ones included.
  * Soft-deleted (fleet shape): the effective-permission resolver must ignore deleted groups.
  *
+ * The table is qiick/laravel-access' (`user_groups`, `user_group_user`, `user_group_role`); the
+ * product generates `public_id` (UUID v7). Excubia has no organisations, so every group is an
+ * instance group (`is_instance`): the only kind whose super-admin role makes its members
+ * super-admins (C30), as every Excubia group did before the package.
+ *
  * @property int $id
+ * @property string $public_id
  * @property string $name
  * @property string|null $description
  * @property Carbon|null $created_at
@@ -27,7 +35,28 @@ use Spatie\Permission\Models\Role;
 #[Fillable(['name', 'description'])]
 class UserGroup extends Model
 {
-    use LogsApplicationActivityTrait, SoftDeletes;
+    use HasUuids, LogsApplicationActivityTrait, SoftDeletes;
+
+    /** @var array<string, mixed> */
+    protected $attributes = ['is_instance' => true];
+
+    /**
+     * Deleting or restoring a group changes its members' roles without a Spatie event: drop the
+     * resolver's per-request cache so the very next check sees it.
+     */
+    protected static function booted(): void
+    {
+        static::deleted(fn () => app(EffectivePermissionResolver::class)->flush());
+        static::restored(fn () => app(EffectivePermissionResolver::class)->flush());
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function uniqueIds(): array
+    {
+        return ['public_id'];
+    }
 
     /**
      * @return BelongsToMany<User, $this>

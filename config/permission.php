@@ -110,15 +110,19 @@ return [
          * foreign key is other than `team_id`.
          */
 
-        'team_foreign_key' => 'team_id',
+        // Fleet name (qiick/laravel-access, decision 2026-11-22); teams stay off in Excubia.
+        'team_foreign_key' => 'organisation_id',
     ],
 
     /*
      * When set to true, the method for checking permissions will be registered on the gate.
      * Set this to false if you want to implement custom logic for checking permissions.
+     *
+     * Excubia: false. qiick/laravel-access registers the only Gate::before (API actors never
+     * get the super-admin pass) and refuses to boot otherwise.
      */
 
-    'register_permission_check_method' => true,
+    'register_permission_check_method' => false,
 
     /*
      * When set to true, Laravel\Octane\Events\OperationTerminated event listener will be registered
@@ -135,8 +139,11 @@ return [
      * \Spatie\Permission\Events\PermissionDetachedEvent
      *
      * To enable, set to true, and then create listeners to watch these events.
+     *
+     * Excubia: true. qiick/laravel-access clears its resolver on these events, and refuses
+     * to boot otherwise.
      */
-    'events_enabled' => false,
+    'events_enabled' => true,
 
     /*
      * Teams Feature.

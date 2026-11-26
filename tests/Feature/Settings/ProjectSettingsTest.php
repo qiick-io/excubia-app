@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Testing\AssertableInertia as Assert;
+use Spatie\Permission\PermissionRegistrar;
 
 /**
  * Project settings pages copied from externa-core (General, Localization, Authentication &
@@ -393,7 +394,8 @@ it('flushes the permission cache', function () {
     $manager = projectSettingsManager();
     $cacheKey = (string) config('permission.cache.key');
 
-    $this->actingAs($manager)->get(route('performance.edit'))->assertOk();
+    // Spatie's Gate hook no longer warms it (qiick/laravel-access resolves permissions): warm it here.
+    app(PermissionRegistrar::class)->getPermissions();
     expect(Cache::has($cacheKey))->toBeTrue();
 
     $this->actingAs($manager)

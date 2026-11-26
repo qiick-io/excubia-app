@@ -7,6 +7,7 @@ namespace App\Policies;
 use App\Enums\PermissionEnum;
 use App\Enums\RoleEnum;
 use App\Models\User;
+use App\Services\EffectivePermissionResolverService;
 use App\Services\RoleGrantService;
 use Spatie\Permission\Models\Role;
 
@@ -17,26 +18,29 @@ use Spatie\Permission\Models\Role;
  */
 class RolePolicy
 {
-    public function __construct(private RoleGrantService $roleGrants) {}
+    public function __construct(
+        private RoleGrantService $roleGrants,
+        private EffectivePermissionResolverService $permissions,
+    ) {}
 
     public function viewAny(User $user): bool
     {
-        return $user->can(PermissionEnum::CanShowRoles->value);
+        return $this->permissions->hasPermission($user, PermissionEnum::CanShowRoles->value);
     }
 
     public function create(User $user): bool
     {
-        return $user->can(PermissionEnum::CanCreateRoles->value);
+        return $this->permissions->hasPermission($user, PermissionEnum::CanCreateRoles->value);
     }
 
     public function update(User $user, Role $role): bool
     {
-        return $user->can(PermissionEnum::CanEditRoles->value) && $this->isCustomRoleWithinReach($user, $role);
+        return $this->permissions->hasPermission($user, PermissionEnum::CanEditRoles->value) && $this->isCustomRoleWithinReach($user, $role);
     }
 
     public function delete(User $user, Role $role): bool
     {
-        return $user->can(PermissionEnum::CanDeleteRoles->value) && $this->isCustomRoleWithinReach($user, $role);
+        return $this->permissions->hasPermission($user, PermissionEnum::CanDeleteRoles->value) && $this->isCustomRoleWithinReach($user, $role);
     }
 
     private function isCustomRoleWithinReach(User $user, Role $role): bool

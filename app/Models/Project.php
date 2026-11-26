@@ -179,8 +179,8 @@ class Project extends Model
     }
 
     /**
-     * The ids of the projects in a project group linked to one of the user's groups (#253), as a
-     * subquery: no extra round trip for visibleTo().
+     * The ids of the projects in a project group linked to one of the user's live groups (#253),
+     * through an unexpired membership, as a subquery: no extra round trip for visibleTo().
      */
     private static function scopedProjectIds(User $user): QueryBuilder
     {
@@ -188,6 +188,13 @@ class Project extends Model
             ->select('project_group_project.project_id')
             ->join('user_group_project_group', 'user_group_project_group.project_group_id', '=', 'project_group_project.project_group_id')
             ->join('user_group_user', 'user_group_user.user_group_id', '=', 'user_group_project_group.user_group_id')
+            // A deleted group (soft-deleted, its pivots kept) and an expired membership grant
+            // nothing, as for the group's roles.
+            ->join('user_groups', 'user_groups.id', '=', 'user_group_user.user_group_id')
+            ->whereNull('user_groups.deleted_at')
+            ->where(fn (QueryBuilder $membership) => $membership
+                ->whereNull('user_group_user.expires_at')
+                ->orWhere('user_group_user.expires_at', '>', now()))
             ->where('user_group_user.user_id', $user->getKey());
     }
 

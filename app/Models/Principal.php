@@ -4,18 +4,18 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Enums\PrincipalTypeEnum;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use Qiick\Access\Principals\Principal as AccessPrincipal;
+use Qiick\Access\Principals\PrincipalDirectory;
 
 /**
- * Actor that can own API keys: a person (`user`) or, later, a service account.
+ * Actor that can own API keys: a person (`user`) or, later, a service account. The table and
+ * the lifecycle are qiick/laravel-access' (`access.principals.model` points here): rows are
+ * created and deactivated only through {@see PrincipalDirectory}, never written directly.
  *
  * @property string $id
- * @property PrincipalTypeEnum|string $type
+ * @property string $type `user` or `service`
  * @property int|null $user_id
  * @property string|null $organisation_id
  * @property string $name
@@ -23,40 +23,8 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-class Principal extends Model
+class Principal extends AccessPrincipal
 {
-    use HasUuids;
-
-    /**
-     * @var list<string>
-     */
-    protected $fillable = [
-        'type',
-        'user_id',
-        'organisation_id',
-        'name',
-        'deactivated_at',
-    ];
-
-    /**
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'type' => PrincipalTypeEnum::class,
-            'deactivated_at' => 'datetime',
-        ];
-    }
-
-    /**
-     * @return BelongsTo<User, $this>
-     */
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(User::class);
-    }
-
     /**
      * @return HasMany<ApiKey, $this>
      */

@@ -16,7 +16,8 @@
         "hasPrincipals": true,
         "hasApiKeys": true,
         "hasSettings": true,
-        "hasUserIdentities": true
+        "hasUserIdentities": true,
+        "usesLaravelAccess": true
     },
     "divergences": {
         "C3": {
@@ -58,6 +59,11 @@
             "reason": "Tracked security work, not hidden: API resources still expose internal bigint ids instead of public UUIDs (#379).",
             "decision": "knowledge/decisions/2026-11-20-core-hardening",
             "review_by": "2026-12-20"
+        },
+        "C71": {
+            "reason": "Runner/package mismatch: C71's assertSpatiePermissionGateBeforeIsInactive() calls Gate::forUser() with an anonymous Authorizable that is not Authenticatable, and qiick/laravel-access 0.1.0-beta.2's GateBefore::__invoke(?Authenticatable $user) throws a TypeError before any assertion. The config checks and both proved hooks (assertRoleDetachClearsResolver, assertApiActorDeniedSuperAdmin) pass on their own; reported upstream.",
+            "decision": "knowledge/decisions/2026-11-20-core-hardening",
+            "review_by": "2026-12-20"
         }
     },
     "requiredItems": [
@@ -77,5 +83,27 @@
         "table-cell-details",
         "table-density",
         "timeline"
-    ]
+    ],
+    "access": {
+        "direct_checks": [
+            {
+                "site": "App\\Services\\EffectivePermissionResolverService::hasPermission",
+                "reason": "The product's one resolver entry point the policies call: it forwards to the package resolver, with the assigned-only ceiling under an API actor.",
+                "decision": "docs/adoption-plan.md",
+                "review_by": "2027-03-01"
+            },
+            {
+                "site": "App\\Services\\EffectivePermissionResolverService::hasAssignedPermission",
+                "reason": "The API-key owner ceiling (design §6): assigned permissions only, read fresh.",
+                "decision": "docs/adoption-plan.md",
+                "review_by": "2027-03-01"
+            },
+            {
+                "site": "App\\Enums\\ApiKeyScopeEnum::isHeldBy",
+                "reason": "Which scopes a key may carry and keep: checked at issuance, rotation and on every request, before any policy subject exists.",
+                "decision": "docs/adoption-plan.md",
+                "review_by": "2027-03-01"
+            }
+        ]
+    }
 }

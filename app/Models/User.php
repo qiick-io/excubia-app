@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Enums\PrincipalTypeEnum;
 use App\Traits\LogsApplicationActivityTrait;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -22,6 +21,7 @@ use Illuminate\Support\Carbon;
 use Laravel\Fortify\Contracts\PasskeyUser;
 use Laravel\Fortify\PasskeyAuthenticatable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
+use Qiick\Access\Principals\PrincipalDirectory;
 use Qiick\Oidc\Models\UserIdentity;
 use Spatie\Activitylog\Support\LogOptions;
 use Spatie\Permission\Traits\HasRoles;
@@ -67,21 +67,12 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
     protected $appends = ['name'];
 
     /**
-     * Every user gets a fleet `user` principal (API-key owner) on create.
+     * Every user gets a fleet `user` principal (API-key owner) on create, at instance level.
      */
     protected static function booted(): void
     {
         static::created(function (User $user): void {
-            if (Principal::query()->where('user_id', $user->getKey())->exists()) {
-                return;
-            }
-
-            Principal::query()->create([
-                'type' => PrincipalTypeEnum::User,
-                'user_id' => $user->getKey(),
-                'organisation_id' => null,
-                'name' => $user->name !== '' ? $user->name : $user->email,
-            ]);
+            app(PrincipalDirectory::class)->forMember($user, null);
         });
     }
 
