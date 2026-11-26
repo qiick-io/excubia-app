@@ -168,11 +168,41 @@ it('returns the exception groups, the runtime summary and the schedule status of
         ->and($runtime['runtime']['requests'])->not->toHaveKey('timeline')
         ->and($runtime['runtime']['requests']['routes'][0])->toMatchArray(['route' => 'checkout.store', 'method' => 'POST', 'count' => 10])
         ->and($runtime['runtime'])->not->toHaveKeys(['servers', 'deprecations', 'deploys'])
+        // #439: outcomes is always a map, `{}` when empty.
+        ->and((string) (new GetRuntimeSummaryTool($user))->handle(new Request(['project' => 'shop'])))->toContain('"outcomes":{}')->not->toContain('"outcomes":[]')
         ->and($schedule['scheduledTasks'][0])->toMatchArray(['task' => 'artisan reports:send', 'expression' => '0 3 * * *', 'runs' => ['finished' => 0, 'failed' => 0, 'skipped' => 0]])
         ->and(runTool(GetRuntimeSummaryTool::class, $user, ['project' => 'unknown']))->toHaveKey('error');
 
     Project::factory()->create(['slug' => 'quiet']);
     expect(runTool(GetRuntimeSummaryTool::class, $user, ['project' => 'quiet'])['runtime'])->toBeNull();
+});
+
+it('answers a missing project with an error the model can act on', function (string $tool) {
+    // #435: these crashed with "An internal server error occurred." when project was missing.
+    expect(runTool($tool, toolUser(), []))->toBe(['error' => 'The project field is required.']);
+})->with([
+    GetLatestReportTool::class, CompareReportsTool::class, GetReportHistoryTool::class, GetUpgradePlanTool::class,
+    ListExceptionGroupsTool::class, GetRuntimeSummaryTool::class, GetScheduleStatusTool::class,
+]);
+
+it('refuses invalid filters instead of ignoring them', function (string $tool, array $arguments, string $error) {
+    Project::factory()->create(['slug' => 'shop']);
+
+    expect(runTool($tool, toolUser(), $arguments))->toBe(['error' => $error]);
+})->with([
+    'range' => [ListExceptionGroupsTool::class, ['project' => 'shop', 'range' => '10y'], 'The range must be one of: 1h, 6h, 24h, 7d, 14d.'],
+    'runtime range' => [GetRuntimeSummaryTool::class, ['project' => 'shop', 'range' => '10y'], 'The range must be one of: 1h, 6h, 24h, 7d, 14d.'],
+    'severity' => [SearchFindingsTool::class, ['minimum_severity' => 'bogus'], 'The minimum severity must be one of: critical, high, medium, low, info.'],
+    'date' => [SearchFindingsTool::class, ['from' => 'garbage'], 'The from field must match the format Y-m-d.'],
+]);
+
+it('says why there is nothing to compare', function () {
+    $shop = Project::factory()->create(['slug' => 'shop']);
+    toolReport($shop, '2026-11-01 08:00:00', [toolFinding('monolog/monolog', 'low')]);
+    $user = toolUser();
+
+    expect(runTool(CompareReportsTool::class, $user, ['project' => 'shop']))->toBe(['error' => 'This project has no earlier report to compare with yet.'])
+        ->and(runTool(CompareReportsTool::class, $user, ['project' => 'shop', 'to_report_id' => 999999]))->toBe(['error' => 'This project has no report with this id. Call GetReportHistory for the report ids.']);
 });
 
 it('gives nothing to a user without can-show-projects', function (string $tool) {

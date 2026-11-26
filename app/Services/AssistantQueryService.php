@@ -145,7 +145,7 @@ class AssistantQueryService
     /**
      * New and resolved findings between two reports of a project, by default the latest two.
      *
-     * @return array<string, mixed>|null null when the project or a report does not exist
+     * @return array<string, mixed>|null null when the project does not exist, an `error` when a report does not
      */
     public function compareReports(string $slug, ?int $fromReportId, ?int $toReportId): ?array
     {
@@ -164,8 +164,15 @@ class AssistantQueryService
             default => null,
         };
 
+        // Say why there is nothing to compare (#436): a wrong id, or no earlier report yet.
+        $missingId = ($toReportId !== null && ! $to instanceof HealthReport) || ($fromReportId !== null && ! $from instanceof HealthReport);
+
+        if ($missingId) {
+            return ['error' => 'This project has no report with this id. Call GetReportHistory for the report ids.'];
+        }
+
         if (! $to instanceof HealthReport || ! $from instanceof HealthReport) {
-            return null;
+            return ['error' => 'This project has no earlier report to compare with yet.'];
         }
 
         return [
