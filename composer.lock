@@ -4347,16 +4347,16 @@
         },
         {
             "name": "qiick/laravel-access",
-            "version": "v0.1.0-beta.1",
+            "version": "v0.1.0-beta.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/qiick-io/laravel-access.git",
-                "reference": "d2264c7780cfffb40f2172dfc1b6fff927f7d3cd"
+                "reference": "33ea9221d2c3836187d6513bf0628edc45ca6930"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/qiick-io/laravel-access/zipball/d2264c7780cfffb40f2172dfc1b6fff927f7d3cd",
-                "reference": "d2264c7780cfffb40f2172dfc1b6fff927f7d3cd",
+                "url": "https://api.github.com/repos/qiick-io/laravel-access/zipball/33ea9221d2c3836187d6513bf0628edc45ca6930",
+                "reference": "33ea9221d2c3836187d6513bf0628edc45ca6930",
                 "shasum": ""
             },
             "require": {
@@ -4414,8 +4414,8 @@
                 "issues": "https://github.com/qiick-io/laravel-access/issues",
                 "source": "https://github.com/qiick-io/laravel-access"
             },
-            "time": "2026-11-25T14:03:00+00:00",
-            "published-time": "2026-11-25T14:03:29+00:00"
+            "time": "2026-11-26T13:21:08+00:00",
+            "published-time": "2026-11-26T13:21:36+00:00"
         },
         {
             "name": "qiick/laravel-api-keys",
