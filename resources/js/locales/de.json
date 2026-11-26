@@ -91,7 +91,8 @@
         "groups": "Gruppen",
         "settings": "Einstellungen",
         "repository": "Repository",
-        "documentation": "Dokumentation"
+        "documentation": "Dokumentation",
+        "buildCommit": "Build {{id}}: Commit öffnen"
     },
     "userMenu": {
         "settings": "Einstellungen",
