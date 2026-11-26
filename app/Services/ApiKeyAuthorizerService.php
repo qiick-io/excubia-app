@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Enums\ApiKeyScopeEnum;
-use App\Enums\PermissionEnum;
 use App\Models\ApiKey;
 use App\Models\User;
 use Qiick\Access\Principals\PrincipalDirectory;
@@ -29,10 +28,7 @@ use Qiick\ApiKeys\ScopeSet;
  */
 class ApiKeyAuthorizerService implements KeyAuthorizer, ScopeVocabulary
 {
-    public function __construct(
-        private readonly EffectivePermissionResolverService $permissions,
-        private readonly PrincipalDirectory $principals,
-    ) {}
+    public function __construct(private readonly PrincipalDirectory $principals) {}
 
     public function authorizeActor(ApiKeyRecord $record, KeyContext $context): AuthorizationDecision
     {
@@ -78,15 +74,11 @@ class ApiKeyAuthorizerService implements KeyAuthorizer, ScopeVocabulary
         }
 
         // The owner's assigned permissions only, read fresh: a key never inherits the super-admin
-        // grant (qiick/laravel-access design §6).
-        return array_values(array_filter($knownScopes, function (string $scope) use ($owner): bool {
-            $requiredPermissions = ApiKeyScopeEnum::tryFrom($scope)?->requiredCreatorPermissions() ?? [];
-
-            return $requiredPermissions !== [] && array_all(
-                $requiredPermissions,
-                fn (PermissionEnum $permission): bool => $this->permissions->hasAssignedPermission($owner, $permission->value),
-            );
-        }));
+        // grant (qiick/laravel-access design §6). The same rule issuance and rotation apply.
+        return array_values(array_filter(
+            $knownScopes,
+            fn (string $scope): bool => ApiKeyScopeEnum::tryFrom($scope)?->isHeldBy($owner) === true,
+        ));
     }
 
     /**

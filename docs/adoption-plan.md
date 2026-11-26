@@ -422,7 +422,19 @@ For the maintainer, after the group's last merge is deployed:
 4. At the IdP, register `{APP_URL}/auth/oidc/logged-out` as a post-logout redirect URI (oidc
    beta.7; until it is registered, SSO logout does not end the IdP session).
    `php artisan oidc:configure` prints it and checks the rest.
-5. `php artisan migrate:fresh --force`, then `/setup` for the first admin.
+5. **Fresh database.** `migrate:fresh` and `db:wipe` refuse to run in production
+   (`DB::prohibitDestructiveCommands()`), and a plain `migrate` on the old database stops at the
+   first re-dated `create_` migration ("table already exists"). So the database is replaced, not
+   migrated:
+    1. Take a database snapshot in the Cloud panel and write down the settings of step 6 (the
+       secrets are encrypted with `APP_KEY` and are re-entered, not copied).
+    2. `php artisan down` on the running environment.
+    3. In the Cloud panel, attach a new empty database to the environment (or empty the
+       existing one from its console). Never point the app at a copy of the old schema.
+    4. Deploy the group's last merge: the deploy runs `php artisan migrate --force` on the empty
+       database and the permission and system project seeders.
+    5. `php artisan up`, then `/setup` for the first admin.
+       Rollback: point the environment back at the snapshot and redeploy the previous commit.
 6. Re-enter: OIDC provider and client secret, Slack webhook URL, Telegram bot token and chat,
    the alert webhook URL and the alert settings; then generate the webhook's signing secret
    (Settings → Integrations → Generate) and configure the receiver with the new one.

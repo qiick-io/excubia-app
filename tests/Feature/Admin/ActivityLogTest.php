@@ -129,7 +129,7 @@ it('logs group changes with their members and roles', function () {
 
     expect(latestActivity('created', $group->getMorphClass()))
         ->causer_id->toBe((string) $admin->id)
-        ->and(latestActivity('members_synced')->properties['user_ids'])->toBe([$member->id])
+        ->and(latestActivity('members_synced')->properties['user_public_ids'])->toBe([$member->public_id])
         ->and(latestActivity('roles_synced', $group->getMorphClass())->properties['role_names'])->toBe([RoleEnum::Reader->value]);
 
     $this->actingAs($admin)->put(route('groups.update', $group), [
@@ -142,7 +142,7 @@ it('logs group changes with their members and roles', function () {
 
     expect($updated->attribute_changes['attributes']['name'])->toBe('readers')
         ->and($updated->attribute_changes['old']['name'])->toBe('viewers')
-        ->and(latestActivity('members_synced')->properties['user_ids'])->toBe([]);
+        ->and(latestActivity('members_synced')->properties['user_public_ids'])->toBe([]);
 
     $this->actingAs($admin)->delete(route('groups.destroy', $group))->assertRedirect(route('groups.index'));
 

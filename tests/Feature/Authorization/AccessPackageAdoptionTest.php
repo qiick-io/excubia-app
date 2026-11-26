@@ -12,9 +12,15 @@ use App\Http\Middleware\AuthenticateApiKeyMiddleware;
 use App\Models\Project;
 use App\Models\User;
 use App\Models\UserGroup;
+use App\Services\EffectivePermissionResolverService;
 use Database\Seeders\PermissionSeeder;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Str;
+use Qiick\Access\Contracts\ActorContext;
+use Qiick\Access\Contracts\ActorKind;
+use Qiick\Access\Laravel\AccessContext;
 use Qiick\Access\Principals\DeactivationReason;
 
 /**
@@ -87,4 +93,23 @@ it('creates every group as an instance group', function () {
 
     expect($group->fresh()->is_instance)->toBeTruthy()
         ->and($group->fresh()->public_id)->toBeString();
+});
+
+it('keeps the API actor limits in a job dispatched behind a key', function () {
+    config(['queue.default' => 'database']);
+    $owner = User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value);
+
+    AccessContext::enter(new ActorContext(ActorKind::ApiKey, $owner, (string) Str::uuid()));
+
+    try {
+        dispatch(function () use ($owner): void {
+            Cache::put('access-actor-probe', app(EffectivePermissionResolverService::class)->isSuperAdmin($owner) ? 'super-admin' : 'limited');
+        });
+    } finally {
+        AccessContext::clear();
+    }
+
+    $this->artisan('queue:work', ['--once' => true, '--stop-when-empty' => true])->assertSuccessful();
+
+    expect(Cache::get('access-actor-probe'))->toBe('limited');
 });

@@ -23,10 +23,7 @@ class SyncUserRolesAction
         activity()
             ->performedOn($user)
             ->event('roles_synced')
-            ->withProperties([
-                'role_ids' => $synced->pluck('id')->values()->all(),
-                'role_names' => $synced->pluck('name')->values()->all(),
-            ])
+            ->withProperties(['role_names' => $synced->pluck('name')->values()->all()])
             ->log('User roles synced');
     }
 }
