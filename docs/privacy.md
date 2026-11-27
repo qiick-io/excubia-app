@@ -19,6 +19,7 @@ runtime and exception data, which is about software, not people, except where no
 | `api_keys`: `name`, `description`, `last_used_ip`, `last_used_user_agent`, `created_by`, `revoked_by`, `revocation_note` | Personal API keys and who acted on them | Anonymised at erasure; the revoked row stays |
 | `activity_log`: `causer_*`, `subject_*`, `properties`, `attribute_changes` | The audit trail of changes and sign-ins | Data retention setting (365 days by default); at erasure the person's values in the payloads are replaced by `[erased]` |
 | `webhook_deliveries` (qiick/laravel-outbound): `subject_public_id`, the encrypted payload | An alert webhook about an assigned finding names the assignee | Payload 30 days at most; at erasure a pending delivery is cancelled and every payload about the person is dropped |
+| `alert_logs.summary`, other users' `notifications.data`, queued alert messages | An alert about an assigned finding names the assignee | Alert history retention; at erasure the name is replaced by `[erased]` and queued alert messages that name them are dropped (database queue) |
 | `findings.assigned_user_id`, `exception_groups.assigned_user_id` | Who works on a finding or an exception | The assignment, or erasure (the link points at the tombstone) |
 | `erasure_requests`: `subject` (encrypted), `user_id` | An erasure in progress | The end of the erasure: both become null when the case closes |
 
@@ -46,17 +47,24 @@ qiick fleet erasure standard (`.qiick/standards/erasure.md`, `ErasureOrchestrato
 3. Webhook deliveries (`OutboundEraser`, `delete`): pending ones about the person are cancelled,
    payloads dropped.
 4. Idempotency records (`HttpBasicsEraser`, `delete`; none while they live in the cache store).
-5. Excubia's own data: assistant chats, passkeys, reset tokens, notifications deleted; the
-   person's values replaced by `[erased]` in the activity log payloads.
+5. Excubia's own data: assistant chats, passkeys, their reset token and notifications deleted;
+   `[erased]` replaces their values in the activity log (their own model events, the request IP
+   and user agent of the rows they caused, failed logins under their email or username), in the
+   alert history and in other users' notifications; queued alert messages that name them are
+   dropped.
 6. Access: the user row becomes an anonymised, soft-deleted tombstone (`deleted+<public id>@…`,
-   `deleted_<public id>`, every personal column cleared); the principal stays erased with an
+   `deleted_<public id>`, every personal column cleared, locale and timezone reset); the principal stays erased with an
    anonymised name.
 7. Close: one `erasure_completed` audit entry (case id and counts, no personal data), then the
    case is `completed` and its snapshot and user link are dropped.
 
-A step that fails leaves the case `failed` with a code; `excubia:resume-erasures` (hourly, also
+Only one executor advances a case (a claim with a 15-minute lease, checked at every checkpoint
+and at the close), and once step 0 commits, a write that a request authorised earlier (profile,
+a new API key, an admin's update) is refused. A step that fails leaves the case `failed` with a
+code and logs only the case id, the step and the exception class; `excubia:resume-erasures` (hourly, also
 `--dry-run`) replays the steps not done, from the snapshot. A snapshot that no longer decrypts (a
-changed `APP_KEY`) is marked `snapshot_unreadable` and needs an admin.
+changed `APP_KEY`) is marked `snapshot_unreadable`, logged as an error and listed by every run of
+the command, which then fails; it needs an admin.
 
 ### Deviation from the standard: a tombstone instead of a hard delete
 
@@ -77,6 +85,8 @@ and username become unique values derived from the public id, so the person can 
 ### Not covered by the erasure
 
 - Backups and logs keep their own retention; restore drills must not bring an erased person back.
-- Alert texts already sent to Slack, Telegram or email stay with those services.
+- Alert texts already sent to Slack, Telegram or email stay with those services. Queued alert
+  messages are dropped on the `database` queue only; with Redis, a message already queued is
+  still sent.
 - There is no legal hold or restriction (Art. 18) switch yet; answering within one month is the
   operator's duty.
