@@ -96,6 +96,12 @@ The check also uses the current Application Name (`app_name`, with `APP_NAME` as
 
 For release verification, compare the list with `composer.json`, `database/seeders/SystemProjectSeeder.php`, `app/Enums/RoleEnum.php` and the labels in `lang/` and `resources/js/locales/`. Update the list when the public identifiers or built-in role labels change.
 
+#### Password length and breach lookup
+
+Weak, Medium and Strong require at least 8, 12 and 15 characters respectively. The saved `password_policy` is a name that resolves to the corresponding minimum when read. The new minimums take effect on password creation, reset and change.
+
+The Strong policy checks new passwords with a padded HTTPS range request to `api.pwnedpasswords.com`. Excubia sends the first five hexadecimal characters of a SHA-1 digest and checks the returned suffixes locally. `PwnedPasswordVerifierService` disables redirects and sets a three-second connection and request timeout. An unavailable provider produces a warning with the HTTP status when available and allows the password if local checks pass. [Have I Been Pwned API documentation](https://haveibeenpwned.com/API/v3#PwnedPasswords).
+
 ### 6. Alerts, digest and outbound requests
 
 - **Settings** (Settings → Integrations, `can-manage-project-settings`): the webhook signing secret, the Slack incoming-webhook URL and the Telegram bot token are encrypted with `APP_KEY`, never sent to the browser (`has_*` flags only) and logged only as "a secret was updated". The webhook URL and the Telegram chat id are not secrets and are shown.
