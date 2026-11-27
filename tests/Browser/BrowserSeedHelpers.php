@@ -57,10 +57,30 @@ function assertAxeCheckedColorContrast(mixed $page): mixed
 
     if ($wcag22AxeScript !== false) {
         expect(is_file($wcag22AxeScript))->toBeTrue();
-        expect($page->script((string) file_get_contents($wcag22AxeScript)))->toBe([]);
+        assertSharedWcag22Result(
+            $page->script((string) file_get_contents($wcag22AxeScript)),
+            $page->script('() => location.pathname'),
+        );
     }
 
     return $page;
+}
+
+/**
+ * Records machine findings before asserting so CI can surface manual review even if a check fails.
+ *
+ * @param  array{rule: string, violations: array, needsReview: array}  $result
+ */
+function assertSharedWcag22Result(array $result, string $pageLabel): void
+{
+    $reportPath = getenv('QIICK_WCAG22_REPORT');
+
+    if ($reportPath !== false) {
+        $line = json_encode([...$result, 'page' => $pageLabel], JSON_THROW_ON_ERROR).PHP_EOL;
+        expect(file_put_contents($reportPath, $line, FILE_APPEND | LOCK_EX))->not->toBeFalse();
+    }
+
+    expect($result['violations'])->toBe([]);
 }
 
 /**

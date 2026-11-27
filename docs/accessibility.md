@@ -14,8 +14,12 @@ Excubia App targets [WCAG 2.2 AA](https://www.w3.org/TR/WCAG22/). The first revi
 Run the existing smoke with the shared target-size script and the product flow tests from an app checkout with its test dependencies installed and assets built.
 
 ```sh
-QIICK_WCAG22_AXE_SCRIPT="$APP_UI_WORKTREE/scripts/wcag22-axe.js" \
-  vendor/bin/pest tests/Browser/A11ySmokeBrowserTest.php tests/Browser/Wcag22BrowserTest.php tests/Browser/TimeRangeBrowserTest.php
+export QIICK_WCAG22_AXE_SCRIPT="$APP_UI_WORKTREE/scripts/wcag22-axe.js"
+export QIICK_WCAG22_FOCUS_SCRIPT="$APP_UI_WORKTREE/scripts/wcag22-focus.js"
+export QIICK_WCAG22_REPORT=$(mktemp)
+vendor/bin/pest tests/Browser/A11ySmokeBrowserTest.php tests/Browser/Wcag22BrowserTest.php tests/Browser/TimeRangeBrowserTest.php
+node "$APP_UI_WORKTREE/scripts/check-wcag22-report.mjs" "$QIICK_WCAG22_REPORT"
+rm -f "$QIICK_WCAG22_REPORT"
 ```
 
-`APP_UI_WORKTREE` is the path to a checkout with the [shared WCAG 2.2 assertion](https://github.com/qiick-io/app-ui/pull/295). Adopt the workflow input after the shared change is reachable from app-ui `develop` or a release tag. This audit covers the sampled routes and interactions. A full WCAG 2.2 AA review also needs the remaining states, browser and assistive technology combinations, and manual checks.
+`APP_UI_WORKTREE` points to a checkout of the app-ui commit used by the [`ui-quality` workflow](../.github/workflows/ci.yml). The workflow fails if the suite records no target-size evaluation or reports violations. It prints any needs-review findings. Review the remaining states and browser and assistive technology combinations using the [manual review template](https://github.com/qiick-io/app-ui/blob/develop/docs/accessibility.md#manual-review-template).

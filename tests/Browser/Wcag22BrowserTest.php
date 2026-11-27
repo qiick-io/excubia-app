@@ -19,16 +19,27 @@ beforeEach(function (): void {
 it('keeps the focused Groups controls visible above the desktop Save bar', function (string $mode) {
     $this->actingAs(User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value));
 
-    visitA11y(route('appearance.sidebar.edit', absolute: false), $mode)
+    $page = visitA11y(route('appearance.sidebar.edit', absolute: false), $mode)
         ->keys('[data-id=groups] .drag-handle', 'Shift+Tab')
         ->keys('css=body', 'Tab')
-        ->assertScript(<<<'JS'
+        ->assertScript("() => document.activeElement.matches('[data-id=groups] .drag-handle')", true);
+
+    $focusScriptPath = getenv('QIICK_WCAG22_FOCUS_SCRIPT');
+
+    if ($focusScriptPath !== false) {
+        expect(is_file($focusScriptPath))->toBeTrue();
+        $focusAssertion = rtrim(trim((string) file_get_contents($focusScriptPath)), ';');
+        // The Save bar is translucent. This desktop case requires the focused control's centre to stay exposed.
+        $result = $page->script("() => ({$focusAssertion})(null)");
+        assertSharedWcag22Result($result, 'appearance.sidebar.edit');
+        expect($result['needsReview'])->toBe([]);
+
+        return;
+    }
+
+    $page->assertScript(<<<'JS'
             () => {
                 const active = document.activeElement;
-                if (!active.matches('[data-id=groups] .drag-handle')) {
-                    return false;
-                }
-
                 const bounds = active.getBoundingClientRect();
                 const hit = document.elementFromPoint(bounds.left + bounds.width / 2, bounds.top + bounds.height / 2);
 
