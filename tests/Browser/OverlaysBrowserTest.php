@@ -26,5 +26,5 @@ it('closes the assistant panel with a visible button on a phone and keeps focus 
         ->wait(1)
         ->assertNotPresent('[role="dialog"]');
 
-    expect($page->script("() => document.activeElement?.id"))->toBe('main-content');
+    expect($page->script('() => document.activeElement?.id'))->toBe('main-content');
 });
