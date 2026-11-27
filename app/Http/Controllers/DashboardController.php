@@ -7,12 +7,15 @@ namespace App\Http\Controllers;
 use App\Http\Resources\ProjectResource;
 use App\Models\Project;
 use App\Models\ProjectGroup;
+use App\Services\DashboardHistoryService;
 use App\Services\DashboardOverviewService;
 use App\Services\FindingsTrendService;
 use App\Services\HealthStatusService;
 use App\Services\ProjectAssigneeService;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Date;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -45,6 +48,7 @@ class DashboardController extends Controller
                 'scope' => ['project' => null, 'group' => null, 'period' => $period, 'isAssignedToMe' => false],
                 'overview' => null,
                 'trend' => [],
+                'kpiHistory' => [],
                 'liveHealth' => (object) [],
                 'assignedToMe' => [],
             ]);
@@ -64,6 +68,10 @@ class DashboardController extends Controller
         // `?assigned=me` narrows the top issues to the user's findings (#332), as on the lists.
         $isAssignedToMe = $request->query('assigned') === 'me';
         $scoped = fn (): Collection => ($selected === null ? $projects : $projects->where('id', $selected->id)->values())->loadMissing('latestReport');
+        $findingsHistory = null;
+        $dailyFindings = function () use (&$findingsHistory, $scoped, $period, $trend): array {
+            return $findingsHistory ??= $trend->daily($scoped(), max($period, DashboardHistoryService::DAYS));
+        };
 
         return Inertia::render('dashboard', [
             'canViewProjects' => true,
@@ -71,7 +79,22 @@ class DashboardController extends Controller
             'projectGroups' => fn (): array => $projectGroups->map(fn (ProjectGroup $projectGroup): array => ['id' => $projectGroup->id, 'name' => $projectGroup->name])->all(),
             'scope' => ['project' => $selected?->slug, 'group' => $group?->id, 'period' => $period, 'isAssignedToMe' => $isAssignedToMe],
             'overview' => fn (): array => $overview->overview($scoped(), $period, $isAssignedToMe ? $request->user() : null),
-            'trend' => fn (): array => $trend->daily($scoped(), $period),
+            'trend' => fn (): array => array_slice($dailyFindings(), -$period),
+            'kpiHistory' => function () use ($scoped, $dailyFindings, $period): array {
+                $now = CarbonImmutable::instance(Date::now());
+                $projects = $scoped();
+                $projectIds = array_values($projects->pluck('id')->all());
+                $history = app(DashboardHistoryService::class);
+
+                return [
+                    'findings' => ['values' => array_map(
+                        fn (array $point): int => $point['critical'] + $point['high'] + $point['medium'] + $point['low'] + $point['info'],
+                        array_slice($dailyFindings(), -DashboardHistoryService::DAYS),
+                    )],
+                    ...$history->requests($projectIds, $now),
+                    'exceptions' => $history->exceptions($projectIds, $now, $period),
+                ];
+            },
             'liveHealth' => fn (): object => (object) $health->summaries($projects),
             // Open exception groups and findings assigned to the user, per project (#254).
             'assignedToMe' => fn (): array => app(ProjectAssigneeService::class)->assignedTo($request->user(), $projects),

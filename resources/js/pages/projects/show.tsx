@@ -46,6 +46,7 @@ import type {
 } from '@/components/projects/project-tabs';
 import { ProjectTabs } from '@/components/projects/project-tabs';
 import { SystemProjectBadge } from '@/components/projects/system-project-badge';
+import type { DashboardHistory } from '@/types/dashboard';
 import { OverviewView } from '@/components/projects/overview/overview-view';
 import { FindingsView } from '@/components/projects/findings-view';
 import { PlanView } from '@/components/projects/plan-view';
@@ -68,6 +69,7 @@ export default function ProjectShow({
     canDismissFindings = false,
     health = null,
     liveHealth = [],
+    kpiHistory = {},
     range = DEFAULT_TIME_RANGE,
     runtime = null,
     ai = null,
@@ -118,6 +120,7 @@ export default function ProjectShow({
     health?: ReportHealth | null;
     /** Minute-level health per check and server (#115), on the overview only. */
     liveHealth?: LiveHealthCheck[];
+    kpiHistory?: DashboardHistory;
     project: ProjectRow;
     /** The tab, from the URL (`/projects/{slug}` or `/projects/{slug}/{view}`). */
     view: ProjectView;
@@ -203,6 +206,7 @@ export default function ProjectShow({
                     slug={project.slug}
                     groups={exceptions}
                     hasExceptions={hasExceptions}
+                    kpiHistory={kpiHistory.exceptions}
                     range={range}
                     deploys={deploys}
                     canManage={canManageExceptions}
@@ -225,7 +229,11 @@ export default function ProjectShow({
                     {view === 'history' ? (
                         <HistoryView reports={reports} />
                     ) : view === 'runtime' ? (
-                        <RuntimeView runtime={runtime} slug={project.slug} />
+                        <RuntimeView
+                            runtime={runtime}
+                            slug={project.slug}
+                            kpiHistory={kpiHistory}
+                        />
                     ) : view === 'ai' ? (
                         <AiUsageView
                             projectId={project.id}
@@ -251,7 +259,7 @@ export default function ProjectShow({
                         <OverviewView
                             project={project}
                             latest={latest}
-                            previous={reports[1] ?? null}
+                            kpiHistory={kpiHistory}
                             deploys={reports.filter(
                                 (summary) => summary.deployed_at !== null,
                             )}

@@ -192,6 +192,15 @@
     --color-chart-3: var(--chart-3);
     --color-chart-4: var(--chart-4);
     --color-chart-5: var(--chart-5);
+    --color-chart-critical: var(--chart-critical);
+    --color-chart-high: var(--chart-high);
+    --color-chart-medium: var(--chart-medium);
+    --color-chart-low: var(--chart-low);
+    --color-chart-info: var(--chart-info);
+    --color-chart-pass: var(--chart-pass);
+    --color-chart-warn: var(--chart-warn);
+    --color-chart-fail: var(--chart-fail);
+    --color-chart-skipped: var(--chart-skipped);
 
     --color-sidebar: var(--sidebar);
     --color-sidebar-foreground: var(--sidebar-foreground);
@@ -275,6 +284,20 @@
         --chart-3: #a85c0b;
         --chart-4: #1f7a4e;
         --chart-5: var(--color-ink-400);
+        /*
+         * Semantic chart palette (severity, then check outcome), fixed in every
+         * preset. Validated as stacked neighbours (critical→info, fail→skipped):
+         * each ≥ 3:1 on the card, adjacent ΔE ≥ 15 normal and ≥ 8 colour-blind.
+         */
+        --chart-critical: #7f1a28;
+        --chart-high: #c8401c;
+        --chart-medium: #b7882a;
+        --chart-low: #2f6fd6;
+        --chart-info: var(--color-ink-400);
+        --chart-pass: var(--color-green-600);
+        --chart-warn: var(--chart-medium);
+        --chart-fail: var(--chart-critical);
+        --chart-skipped: var(--chart-info);
         --radius: 0.5rem;
         --sidebar: var(--color-ink-50);
         --sidebar-foreground: var(--color-ink-600);
@@ -368,6 +391,16 @@
         --chart-3: #f1ab27;
         --chart-4: #4ab57e;
         --chart-5: var(--color-ink-300);
+        /* Semantic chart palette, stepped for the dark card (ink-900), same checks. */
+        --chart-critical: #ef4a5c;
+        --chart-high: #f49a6e;
+        --chart-medium: #fbe060;
+        --chart-low: #5f93e8;
+        --chart-info: var(--color-ink-500);
+        --chart-pass: var(--color-green-400);
+        --chart-warn: var(--chart-medium);
+        --chart-fail: var(--chart-critical);
+        --chart-skipped: var(--chart-info);
         /* Shell (sidebar + inset frame) one step lighter than the content, as before 1.4. */
         --sidebar: var(--color-ink-900);
         --sidebar-foreground: var(--color-ink-300);

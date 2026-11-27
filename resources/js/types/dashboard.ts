@@ -8,6 +8,21 @@ import type { FlaggedLicense, RuntimeName, Severity } from '@/types';
 export type TrendPoint = { date: string } & Record<Severity, number>;
 type ProjectRef = { slug: string; name: string };
 
+/** Daily values oldest first. Null means the source has no observation for that date. */
+export type KpiHistory = {
+    values: (number | null)[];
+    previous?: number | null;
+};
+
+/** Scope-specific history sent to the dashboard and project tabs. */
+export type DashboardHistory = {
+    findings?: KpiHistory;
+    checks?: KpiHistory;
+    exceptions?: KpiHistory & { current: number };
+    requests?: KpiHistory;
+    latency?: KpiHistory;
+};
+
 export type TopIssue = {
     key: string;
     severity: Severity;
@@ -76,7 +91,7 @@ export type Overview = {
     runtime: {
         requests: number;
         errors: number;
-        previousRequests: number;
+        previousRequests: number | null;
     } | null;
     exceptions: {
         open: number;
