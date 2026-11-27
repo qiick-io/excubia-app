@@ -126,6 +126,16 @@ it('validates the admin step', function () {
     expect(User::query()->exists())->toBeFalse();
 });
 
+it('rejects a context word in the first admin password', function () {
+    $this->postJson(route('setup.admin.store'), setupAdminInput([
+        'password' => 'Excubia2026!',
+        'password_confirmation' => 'Excubia2026!',
+    ]))->assertUnprocessable()
+        ->assertJsonPath('errors.password.0', __('validation.password.context_specific'));
+
+    expect(User::query()->exists())->toBeFalse();
+});
+
 it('locks the admin step once a user exists', function () {
     User::factory()->create();
 

@@ -90,7 +90,7 @@ These terms come from identifiers visible to an Excubia user or operator and are
 | Built-in self-monitoring project     | `excubia`, `excubia system`                          |
 | Built-in roles and translated labels | `super admin`, `admin`, `reader`, `lettore`, `leser` |
 
-`ContextSpecificPasswordRule` screens new local passwords under every password policy. It compares the whole password case-insensitively after stripping spaces, hyphens, underscores and any leading or trailing digits. For example, `Excubia-App` and `excubia_app2026` both match `excubia app`.
+`ContextSpecificPasswordRule` screens new local passwords under every policy. It rejects passwords containing a denylisted term of at least four characters after case folding and removing punctuation and spaces. The check recognises inserted digits, number prefixes and suffixes, and common letter substitutions such as `0` for `o` and `@` for `a`.
 
 The check also uses the current Application Name (`app_name`, with `APP_NAME` as its default). Set `EXCUBIA_PASSWORD_DENYLIST` to a comma-separated list of the deployment's organisation names, aliases and project slugs that users already know. Keep the list current when those public identifiers change.
 

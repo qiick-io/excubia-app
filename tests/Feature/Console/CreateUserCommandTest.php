@@ -52,6 +52,23 @@ it('refuses a weak password from excubia:create-user on a server', function () {
     expect(User::query()->exists())->toBeFalse();
 });
 
+it('refuses a context word from excubia:create-user on a server', function () {
+    app()['env'] = 'production';
+    app(SettingsRepositoryService::class)->save(['password_policy' => 'strong']);
+
+    $this->artisan('excubia:create-user', [
+        '--first-name' => 'Ada',
+        '--last-name' => 'Lovelace',
+        '--email' => 'ada@example.com',
+    ])
+        ->expectsQuestion('Password', 'Excubia2026!')
+        ->expectsChoice('Role', 'super-admin', ['admin', 'reader', 'super-admin'])
+        ->expectsOutputToContain(__('validation.password.context_specific'))
+        ->assertFailed();
+
+    expect(User::query()->exists())->toBeFalse();
+});
+
 it('accepts a strong password from excubia:create-user on a server', function () {
     app()['env'] = 'production';
     app(SettingsRepositoryService::class)->save(['password_policy' => 'strong']);
