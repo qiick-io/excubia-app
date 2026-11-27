@@ -34,6 +34,7 @@ if [ "${EXCUBIA_RUN_MIGRATIONS:-true}" != "false" ]; then
     # schema stops the container before it serves.
     php artisan access:check --no-interaction
     php artisan api-keys:check --no-interaction
+    php artisan http-basics:check --no-interaction
 fi
 
 php artisan optimize --no-interaction > /dev/null

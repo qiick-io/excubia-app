@@ -296,7 +296,7 @@ For inherited evidence, the owner column names the Composer package and the evid
 | v5.0.0-14.2.3 | Partial | `tests/Feature/Assistant/AssistantToolsTest.php` verifies a tool-output allowlist. Review operator-configured external processors and runtime exposure across channels.                                |               |
 | v5.0.0-14.2.4 | Partial | `tests/Feature/Settings/DataRetentionTest.php` and `tests/Feature/Mcp/McpServerTest.php` prove selected retention and access controls. Verify all controls against the protection policy once defined. |               |
 | v5.0.0-14.3.1 | Partial | `tests/Feature/Auth/AuthenticationTest.php` proves server logout, and the browser receives new navigation state. Verify records remaining in DOM, client caches and page history.                      |               |
-| v5.0.0-14.3.2 | Gap     | `app/Http/Middleware/SecurityHeadersMiddleware.php` defines web response headers. Define and verify cache handling for sensitive responses. [#533](https://github.com/qiick-io/excubia-app/issues/533) |               |
+| v5.0.0-14.3.2 | Gap     | qiick/laravel-http-basics `SetSecurityHeadersMiddleware` (configured in `config/http-basics.php`) defines the response headers. Define and verify cache handling for sensitive responses. [#533](https://github.com/qiick-io/excubia-app/issues/533) |               |
 | v5.0.0-14.3.3 | Partial | `app/Http/Middleware/HandleAppearance.php` and `docs/SECURITY-MODEL.md` describe session and display preferences. A full browser-storage inventory remains open.                                       |               |
 
 ## V15 Secure Coding and Architecture

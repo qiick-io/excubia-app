@@ -105,3 +105,10 @@ it('keeps the Retry-After header of a 503 and varies on X-Inertia', function () 
 
     $this->get('/__error/503')->assertStatus(503)->assertHeader('Retry-After', '60')->assertHeader('Vary', 'X-Inertia');
 });
+
+it('names the html type of an unmatched URL, which is sent with nosniff', function () {
+    $this->get('/no-such-page')
+        ->assertNotFound()
+        ->assertHeader('X-Content-Type-Options', 'nosniff')
+        ->assertHeader('Content-Type', 'text/html; charset=UTF-8');
+});
