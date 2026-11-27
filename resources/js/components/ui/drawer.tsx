@@ -53,6 +53,8 @@ function DrawerContent({
 }) {
     // Drawers opened from a plain button (controlled `open`, no DrawerTrigger) have no trigger
     // for Radix to refocus on close, so remember what had focus and return it (WCAG 2.4.3).
+    // ponytail: a Safari pointer click does not focus the button, so nothing is remembered and
+    // focus still ends on <body> there; upgrade with an `opener` prop if an app needs it.
     const returnFocusRef = React.useRef<HTMLElement | null>(null);
 
     const inner = (
@@ -100,8 +102,16 @@ function DrawerContent({
                     return;
                 }
 
-                event.preventDefault();
-                returnFocusTo.focus();
+                // Radix refocuses its own DrawerTrigger after this handler; only a drawer without
+                // one leaves focus on <body>, so step in only then.
+                queueMicrotask(() => {
+                    if (
+                        document.activeElement === null ||
+                        document.activeElement === document.body
+                    ) {
+                        returnFocusTo.focus();
+                    }
+                });
             }}
             {...props}
         >

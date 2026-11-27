@@ -9,6 +9,10 @@ upgrade from the version before (see [docs/self-hosting.md](docs/self-hosting.md
 
 ## [Unreleased]
 
+### Changed
+
+- **Registry pinned to app-ui 7bd30c4**: the drawer focus return and the grouped tab count are now the registry's own (app-ui#279), so their overrides are gone; the theme gains the chart colour tokens.
+
 ## [0.1.0-beta.1] - 2026-11-27
 
 ### Added
