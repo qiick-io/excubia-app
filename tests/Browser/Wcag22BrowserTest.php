@@ -9,12 +9,33 @@ use Database\Seeders\PermissionSeeder;
 require_once __DIR__.'/BrowserSeedHelpers.php';
 
 /**
- * WCAG 2.2 AA flow evidence for authentication assistance, reused entry and consistent help.
+ * WCAG 2.2 AA flow evidence for focus visibility, authentication assistance, reused entry and help.
  * The target-size assertion runs in the existing axe smoke with the shared script.
  */
 beforeEach(function (): void {
     $this->seed(PermissionSeeder::class);
 });
+
+it('keeps the focused Groups controls visible above the desktop Save bar', function (string $mode) {
+    $this->actingAs(User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value));
+
+    visitA11y(route('appearance.sidebar.edit', absolute: false), $mode)
+        ->keys('[data-id=groups] .drag-handle', 'Shift+Tab')
+        ->keys('css=body', 'Tab')
+        ->assertScript(<<<'JS'
+            () => {
+                const active = document.activeElement;
+                if (!active.matches('[data-id=groups] .drag-handle')) {
+                    return false;
+                }
+
+                const bounds = active.getBoundingClientRect();
+                const hit = document.elementFromPoint(bounds.left + bounds.width / 2, bounds.top + bounds.height / 2);
+
+                return active.contains(hit);
+            }
+            JS, true);
+})->with(['light', 'dark']);
 
 it('supports password paste and password-manager autocomplete at sign-in', function () {
     visit('/login')
