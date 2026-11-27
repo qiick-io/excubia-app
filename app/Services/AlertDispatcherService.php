@@ -91,6 +91,7 @@ class AlertDispatcherService
                 'severity' => $severity->value,
                 'subject' => $subject,
                 'summary' => mb_substr($summary, 0, 500),
+                'subject_public_id' => $subjectPublicId,
                 'status' => match (true) {
                     $reason !== null => AlertLog::SUPPRESSED,
                     $channels === [] => AlertLog::SKIPPED,
