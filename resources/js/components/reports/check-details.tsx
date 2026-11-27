@@ -22,6 +22,7 @@ import type {
     FindingLifecycle,
     IssueRow,
 } from '@/types';
+import { DrawerCloseButton } from '@/components/drawer-close-button';
 
 /** The checks table of the excubia-core README: what each check id looks at and when it warns. */
 export const CHECKS_DOCS_URL =
@@ -196,7 +197,7 @@ export function FindingDrawer({
 
     return (
         <DrawerContent className="data-[vaul-drawer-direction=right]:max-w-2xl">
-            <DrawerHeader>
+            <DrawerHeader className="pr-14">
                 <DrawerTitle>
                     {checkLabel(t, finding.checkId, finding.checkName)}
                 </DrawerTitle>
@@ -284,6 +285,8 @@ export function FindingDrawer({
                     <FixActions fix={fix} />
                 </DrawerFooter>
             ) : null}
+            {/* Last in the DOM so a key press that opened the drawer cannot land on it. */}
+            <DrawerCloseButton />
         </DrawerContent>
     );
 }

@@ -157,3 +157,17 @@ it('does not reopen the secret dialog when navigating Back after acknowledge', f
         ->assertScript(historyStateHidesSecret($secret), true)
         ->assertNoJavaScriptErrors();
 });
+
+it('returns focus to the create button when the create dialog closes', function () {
+    $this->actingAs(User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value));
+
+    $page = visit(route('api-keys.index', absolute: false));
+    $page->script("() => document.querySelector('[data-test=\"api-key-create-open\"]').focus()");
+    $page->keys('[data-test="api-key-create-open"]', 'Enter')
+        ->assertVisible('[data-test="api-key-create-dialog"]')
+        ->keys('[data-test="api-key-create-dialog"]', 'Escape')
+        ->wait(1);
+
+    // #422 (reopened): the dialog opens from a plain button and used to leave focus on <body>.
+    expect($page->script("() => document.activeElement?.getAttribute('data-test')"))->toBe('api-key-create-open');
+});

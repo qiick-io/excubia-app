@@ -1,6 +1,6 @@
 import { Head, router, useForm, usePage } from '@inertiajs/react';
 import { KeyRound } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DataTable } from '@/components/admin/data-table';
 import { PageEmptyState } from '@/components/admin/page-empty-state';
@@ -166,7 +166,15 @@ export default function ApiKeysSettingsPage({
         [t],
     );
 
+    // The dialog opens from a plain button, so Radix has no trigger to refocus on close (#422).
+    const returnFocusRef = useRef<HTMLElement | null>(null);
+
     const openCreate = (): void => {
+        returnFocusRef.current =
+            document.activeElement instanceof HTMLElement &&
+            document.activeElement !== document.body
+                ? document.activeElement
+                : null;
         form.setData({
             ...EMPTY_FORM,
             scopes: scopes.includes(DEFAULT_SCOPE) ? [DEFAULT_SCOPE] : [],
@@ -290,6 +298,12 @@ export default function ApiKeysSettingsPage({
                 <DialogContent
                     className="sm:max-w-2xl"
                     data-test="api-key-create-dialog"
+                    onCloseAutoFocus={(event) => {
+                        if (returnFocusRef.current?.isConnected) {
+                            event.preventDefault();
+                            returnFocusRef.current.focus();
+                        }
+                    }}
                 >
                     <DialogHeader>
                         <DialogTitle>
