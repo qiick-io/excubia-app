@@ -1,5 +1,5 @@
 import { router, useHttp, usePage } from '@inertiajs/react';
-import { Maximize2, Sparkles } from 'lucide-react';
+import { Maximize2, Sparkles, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { HeaderIconButton } from '@/components/admin/header-icon-button';
@@ -10,6 +10,7 @@ import { ChatComposer } from '@/components/layout/chat-layout';
 import {
     Drawer,
     DrawerBody,
+    DrawerClose,
     DrawerContent,
     DrawerDescription,
     DrawerFooter,
@@ -29,6 +30,7 @@ import { AI_TOGGLE_EVENT } from '@/lib/ai-open';
 import { toast } from '@/lib/toast';
 import aiRoutes from '@/routes/ai';
 import type { AssistantMessage } from '@/types';
+import { useReturnFocus } from '@/hooks/use-return-focus';
 
 type PanelResponse = {
     conversationId: string;
@@ -43,6 +45,7 @@ type PanelResponse = {
  */
 export function AiAssistantPanel() {
     const { t } = useTranslation();
+    const returnFocus = useReturnFocus();
     const { can } = useCan();
     const { isAssistantEnabled } = usePage().props;
     const { isCurrentUrl } = useCurrentUrl();
@@ -139,7 +142,9 @@ export function AiAssistantPanel() {
     return (
         <Drawer open={open} onOpenChange={setOpen} direction="right">
             <DrawerContent
+                onCloseAutoFocus={returnFocus.onCloseAutoFocus}
                 onOpenAutoFocus={(event) => {
+                    returnFocus.rememberOpener();
                     // Land in the composer (⌘J then type), never on the header button.
                     const panel = event.currentTarget;
 
@@ -164,23 +169,35 @@ export function AiAssistantPanel() {
                             {t('assistant.panelDescription')}
                         </DrawerDescription>
                     </div>
-                    <HeaderIconButton
-                        type="button"
-                        variant="ghost"
-                        label={t('assistant.openFullPage')}
-                        onClick={() => {
-                            setOpen(false);
-                            router.visit(
-                                http.data.conversation_id
-                                    ? aiRoutes.show.url(
-                                          http.data.conversation_id,
-                                      )
-                                    : aiRoutes.index.url(),
-                            );
-                        }}
-                    >
-                        <Maximize2 className="size-4" />
-                    </HeaderIconButton>
+                    <div className="flex shrink-0 items-center gap-1">
+                        <HeaderIconButton
+                            type="button"
+                            variant="ghost"
+                            label={t('assistant.openFullPage')}
+                            onClick={() => {
+                                setOpen(false);
+                                router.visit(
+                                    http.data.conversation_id
+                                        ? aiRoutes.show.url(
+                                              http.data.conversation_id,
+                                          )
+                                        : aiRoutes.index.url(),
+                                );
+                            }}
+                        >
+                            <Maximize2 className="size-4" />
+                        </HeaderIconButton>
+                        {/* Full width on a phone: no backdrop to tap (#456). */}
+                        <DrawerClose asChild>
+                            <HeaderIconButton
+                                type="button"
+                                variant="ghost"
+                                label={t('a11y.close')}
+                            >
+                                <X className="size-4" />
+                            </HeaderIconButton>
+                        </DrawerClose>
+                    </div>
                 </DrawerHeader>
 
                 <DrawerBody className="gap-4" aria-live="polite">
