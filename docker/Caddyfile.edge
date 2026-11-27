@@ -1,0 +1,15 @@
+# Set EXCUBIA_HOST to the public DNS name and EXCUBIA_UPSTREAM to the private origin address.
+http://{$EXCUBIA_HOST} {
+	@browser {
+		method GET HEAD
+		not path /api /api/* /mcp /mcp/* /health /health/* /up /up/* /auth/oidc/backchannel-logout /auth/oidc/backchannel-logout/*
+	}
+	route {
+		redir @browser https://{$EXCUBIA_HOST}{uri} 308
+		respond "HTTPS required" 400
+	}
+}
+
+{$EXCUBIA_HOST} {
+	reverse_proxy {$EXCUBIA_UPSTREAM}
+}

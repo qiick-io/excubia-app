@@ -6,7 +6,7 @@ The scope covers the browser UI, push API, personal keys, MCP, optional OIDC and
 
 | Met | Partial | Not applicable | Gap |
 | --- | ------- | -------------- | --- |
-| 53  | 137     | 49             | 14  |
+| 54  | 137     | 49             | 13  |
 
 **Met** has evidence for the complete requirement. **Partial** identifies an implemented control and the remaining scope. **Not applicable** records why the feature or architecture is outside scope. Each **Gap** links to a remediation issue. Report sensitive security findings through [the security policy](../SECURITY.md).
 
@@ -89,7 +89,7 @@ For inherited evidence, the owner column names the Composer package and the evid
 | Requirement  | Status         | Evidence                                                                                                                                                                                                                  | Owner package |
 | ------------ | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
 | v5.0.0-4.1.1 | Partial        | `tests/Feature/Api/ErrorContractBasicsTest.php` covers JSON errors and `tests/Feature/Settings/BrandingTest.php` covers image MIME. Audit all served types and charsets.                                                  |               |
-| v5.0.0-4.1.2 | Gap            | `docs/self-hosting.md` requires HTTPS and delegates its configuration to a reverse proxy. Add a reference edge policy that rejects cleartext machine requests. [#516](https://github.com/qiick-io/excubia-app/issues/516) |               |
+| v5.0.0-4.1.2 | Met            | `docker/Caddyfile.edge` returns `400` for cleartext API, MCP, and health requests. [Deployment probes](self-hosting.md#reject-cleartext-machine-requests-at-the-edge) verify rejection at the edge and browser redirects. |               |
 | v5.0.0-4.1.3 | Partial        | `bootstrap/app.php` and `docs/SECURITY-MODEL.md` describe trusted proxies. Verification at the deployed proxy boundary remains open.                                                                                      |               |
 | v5.0.0-4.2.1 | Gap            | `Dockerfile` identifies the server. Document and verify HTTP framing across the app server and supported proxy chains. [#517](https://github.com/qiick-io/excubia-app/issues/517)                                         |               |
 | v5.0.0-4.3.1 | Not applicable | `routes/api.php` and `docs/API.md` expose JSON ingest, with no GraphQL query endpoint.                                                                                                                                    |               |

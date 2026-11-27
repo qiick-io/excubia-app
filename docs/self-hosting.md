@@ -64,6 +64,27 @@ Any other setting of `.env.example` (another database, `EXCUBIA_AI_ENABLED`, ret
 
 Put a TLS reverse proxy (Caddy, Traefik, nginx) in front of port 8080, set `APP_URL` to the public `https://` URL and `TRUSTED_PROXIES` to the address of the proxy (`*` when only the proxy can reach the container). Without `TRUSTED_PROXIES`, the app ignores the forwarded headers: it would build `http://` links and see the proxy's IP for every visitor, which also breaks the login rate limit. The app sends `X-Frame-Options`, `nosniff`, `Referrer-Policy` and `Permissions-Policy` itself; in production with an `https://` `APP_URL` the app also sends `Strict-Transport-Security` (one year) by default on requests it sees as https, which behind a proxy needs `TRUSTED_PROXIES` (Laravel Cloud's load balancer is trusted automatically); set `HTTP_BASICS_HSTS_MAX_AGE=0` if your proxy sends its own, or another number of seconds (it was `EXCUBIA_HSTS_MAX_AGE` before 1.0). `excubia:upgrade` warns when `APP_URL` is https and no proxy is trusted.
 
+#### Reject cleartext machine requests at the edge
+
+The [reference Caddy edge configuration](../docker/Caddyfile.edge) redirects cleartext `GET` and `HEAD` requests for browser pages to HTTPS. Cleartext requests to `/api`, `/mcp`, health endpoints and the OIDC back-channel logout endpoint receive a `400` at the edge. HTTPS requests continue to the application's private origin address.
+
+Set `EXCUBIA_HOST` to the public DNS name and `EXCUBIA_UPSTREAM` to the private origin address. For a proxy on the Docker host, publish `127.0.0.1:${EXCUBIA_PORT:-8080}:8080` in Compose and point the proxy at that local port. For a proxy on the same private Docker network, remove the origin's published host port and point the proxy at `app:8080`. On a managed platform or a different proxy, configure the same rejection at the first public listener ahead of any protocol redirect. Use HTTPS URLs for API clients, push jobs, MCP and public health monitoring. Internal readiness probes can reach the private origin directly.
+
+After applying the edge configuration in a deployment you operate, set `excubia_host` to its public DNS name and verify the first response to each request. These probes use empty requests without credentials.
+
+```sh
+for endpoint in /api/reports /api/runtime /api/exceptions /mcp /auth/oidc/backchannel-logout; do
+    curl -sS -D - -o /dev/null -X POST "http://$excubia_host$endpoint"
+done
+for endpoint in /health/live /health/ready /up; do
+    curl -sS -D - -o /dev/null "http://$excubia_host$endpoint"
+done
+curl -sS -D - -o /dev/null "http://$excubia_host/login"
+curl -sS -D - -o /dev/null "https://$excubia_host/health/live"
+```
+
+Expect `400` with no `Location` header for each cleartext machine request, `308` with an HTTPS location for the browser login request, and `200` for the HTTPS health request when the app is live. Check that the origin port is reachable from the proxy and inaccessible from outside its private network.
+
 ### Image without compose
 
 ```bash
