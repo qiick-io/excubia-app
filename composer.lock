@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "4ab9556e3630ac4485c829a57826fa63",
+    "content-hash": "4e2a3bb591695fb702e3d12a99927700",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -4595,16 +4595,16 @@
         },
         {
             "name": "qiick/laravel-api-keys",
-            "version": "dev-develop",
+            "version": "v0.3.0-beta.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/qiick-io/laravel-api-keys.git",
-                "reference": "d417e514e1085210373ad4fd339aa26d99bef852"
+                "reference": "56d4144b489e9b7526de46e3f5a2e85db02d6cb2"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/qiick-io/laravel-api-keys/zipball/d417e514e1085210373ad4fd339aa26d99bef852",
-                "reference": "d417e514e1085210373ad4fd339aa26d99bef852",
+                "url": "https://api.github.com/repos/qiick-io/laravel-api-keys/zipball/56d4144b489e9b7526de46e3f5a2e85db02d6cb2",
+                "reference": "56d4144b489e9b7526de46e3f5a2e85db02d6cb2",
                 "shasum": ""
             },
             "require": {
@@ -4624,7 +4624,6 @@
                 "pestphp/pest-plugin-mutate": "^4.0",
                 "phpstan/phpstan": "^2.1"
             },
-            "default-branch": true,
             "type": "library",
             "extra": {
                 "laravel": {
@@ -4662,8 +4661,8 @@
                 "issues": "https://github.com/qiick-io/laravel-api-keys/issues",
                 "source": "https://github.com/qiick-io/laravel-api-keys"
             },
-            "time": "2026-11-26T20:32:33+00:00",
-            "published-time": "2026-11-26T20:32:38+00:00"
+            "time": "2026-11-27T14:25:30+00:00",
+            "published-time": "2026-11-27T14:25:41+00:00"
         },
         {
             "name": "qiick/laravel-oidc",
@@ -14252,19 +14251,12 @@
             "time": "2026-02-17T17:25:14+00:00"
         }
     ],
-    "aliases": [
-        {
-            "package": "qiick/laravel-api-keys",
-            "version": "dev-develop",
-            "alias": "0.3.0-beta.4",
-            "alias_normalized": "0.3.0.0-beta4"
-        }
-    ],
+    "aliases": [],
     "minimum-stability": "stable",
     "stability-flags": {
         "qiick/excubia-core": 10,
         "qiick/laravel-access": 10,
-        "qiick/laravel-api-keys": 20,
+        "qiick/laravel-api-keys": 10,
         "qiick/laravel-oidc": 10,
         "qiick/laravel-outbound": 10
     },

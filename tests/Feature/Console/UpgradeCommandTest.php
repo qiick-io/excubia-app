@@ -55,6 +55,7 @@ it('syncs the permissions and the system project, and restarts the workers', fun
 it('runs the qiick package checks', function () {
     $this->artisan(UpgradeCommand::class, ['--force' => true, '--no-migrate' => true, '--no-permissions' => true])
         ->expectsOutputToContain('Running access:check')
+        ->expectsOutputToContain('Running api-keys:check')
         ->assertSuccessful();
 });
 

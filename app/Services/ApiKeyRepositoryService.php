@@ -112,13 +112,15 @@ class ApiKeyRepositoryService implements ApiKeyRepository
     /**
      * Wins only when the notice is unsent and unclaimed, or its lease (app clock) has lapsed, and
      * the key still has the expiry the command selected: a rotation in between never matches.
+     * A revoked key is never claimed, in the same atomic update (qiick/laravel-api-keys 0.3.0-beta.4).
      */
     public function claimExpiryNotice(ApiKeyRecord $record, DateTimeImmutable $now, int $leaseSeconds, string $claimToken): bool
     {
         $leaseCutoff = $now->modify('-'.$leaseSeconds.' seconds');
 
         return $this->forSelectedExpiry($record)
-            ?->where(fn ($query) => $query
+            ?->whereNull('revoked_at')
+            ->where(fn ($query) => $query
                 ->whereNull('expiry_notice_claimed_at')
                 ->orWhere('expiry_notice_claimed_at', '<', $leaseCutoff))
             ->update(['expiry_notice_claimed_at' => $now, 'expiry_notice_claim_token' => $claimToken]) === 1;
