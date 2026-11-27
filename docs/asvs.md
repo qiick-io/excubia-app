@@ -6,7 +6,7 @@ The scope covers the browser UI, push API, personal keys, MCP, optional OIDC and
 
 | Met | Partial | Not applicable | Gap |
 | --- | ------- | -------------- | --- |
-| 46  | 138     | 49             | 20  |
+| 47  | 138     | 49             | 19  |
 
 **Met** has evidence for the complete requirement. **Partial** identifies an implemented control and the remaining scope. **Not applicable** records why the feature or architecture is outside scope. Each **Gap** links to a remediation issue. Report sensitive security findings through [the security policy](../SECURITY.md).
 
@@ -124,7 +124,7 @@ For inherited evidence, the owner column names the Composer package and the evid
 | v5.0.0-6.2.2  | Met            | `tests/Feature/Settings/SecurityTest.php` proves an authenticated user can change their password.                                                                                                                                                |                      |
 | v5.0.0-6.2.3  | Met            | `tests/Feature/Settings/SecurityTest.php` checks current-password verification and new-password validation.                                                                                                                                      |                      |
 | v5.0.0-6.2.4  | Partial        | `app/Services/SettingsRepositoryService.php` uses breach screening in one policy. Verify the baseline password set across all supported policies.                                                                                                |                      |
-| v5.0.0-6.2.5  | Gap            | `app/Services/SettingsRepositoryService.php` defines composition rules. Bring the supported policies into alignment with the ASVS requirement. [#520](https://github.com/qiick-io/excubia-app/issues/520)                                        |                      |
+| v5.0.0-6.2.5  | Met            | `app/Services/SettingsRepositoryService.php` accepts every character mix. `PasswordCompositionTest` verifies each policy and password-manager hints. `AdminListsBrowserTest` covers the advisory meter.                                          |                      |
 | v5.0.0-6.2.6  | Met            | `resources/js/pages/auth/login.tsx` and the password input component render masked fields with optional reveal. Setup, confirmation and reset use password fields as well.                                                                       |                      |
 | v5.0.0-6.2.7  | Partial        | The sign-in browser probe on Chromium pasted into the password field and found an appropriate autocomplete hint. External password managers and other challenges remain to verify.                                                               |                      |
 | v5.0.0-6.2.8  | Partial        | `app/Concerns/PasswordValidationRules.php` accepts an exact password string. Verify whitespace, Unicode and long-input handling through authentication and reset.                                                                                |                      |

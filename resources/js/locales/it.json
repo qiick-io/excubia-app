@@ -294,15 +294,15 @@
             "passwordPolicies": {
                 "weak": {
                     "label": "Debole",
-                    "description": "Minimo 6 caratteri. Nessun requisito di maiuscole/minuscole, numeri o simboli."
+                    "description": "Minimo 6 caratteri."
                 },
                 "medium": {
                     "label": "Media",
-                    "description": "Minimo 8 caratteri, con maiuscole e minuscole e almeno un numero."
+                    "description": "Minimo 8 caratteri."
                 },
                 "strong": {
                     "label": "Forte",
-                    "description": "Minimo 12 caratteri, maiuscole/minuscole, lettere, numeri, simboli e non presente in breach note."
+                    "description": "Minimo 12 caratteri. Le password vengono confrontate con quelle presenti nelle violazioni di dati note."
                 }
             },
             "loginMaxAttempts": "Tentativi di login massimi al minuto",

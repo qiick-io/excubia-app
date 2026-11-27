@@ -400,8 +400,8 @@ class SettingsRepositoryService
     {
         $passwordRule = match ($this->passwordPolicy()) {
             'weak' => Password::min(6),
-            'medium' => Password::min(8)->mixedCase()->numbers(),
-            default => Password::min(12)->mixedCase()->letters()->numbers()->symbols()->uncompromised(),
+            'medium' => Password::min(8),
+            default => Password::min(12)->uncompromised(),
         };
 
         $deploymentTerms = [$this->appName(), ...explode(',', (string) config('excubia.password_denylist'))];

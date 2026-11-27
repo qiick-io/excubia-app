@@ -196,7 +196,8 @@ it('saves the authentication and security settings and the app uses them', funct
         ->and($settings->loginMaxAttempts())->toBe(3)
         ->and($settings->isTwoFactorRequired())->toBeFalse();
 
-    expect(validator(['password' => 'alllowercase'], ['password' => Password::default()])->fails())->toBeTrue()
+    expect(validator(['password' => 'juniper'], ['password' => Password::default()])->fails())->toBeTrue()
+        ->and(validator(['password' => 'sumacfir'], ['password' => Password::default()])->passes())->toBeTrue()
         ->and(validator(['password' => 'Mixed1Case'], ['password' => Password::default()])->passes())->toBeTrue();
 });
 

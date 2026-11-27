@@ -294,15 +294,15 @@
             "passwordPolicies": {
                 "weak": {
                     "label": "Schwach",
-                    "description": "Mindestens 6 Zeichen. Keine Groß-/Kleinschreibung, Zahlen oder Sonderzeichen erforderlich."
+                    "description": "Mindestens 6 Zeichen."
                 },
                 "medium": {
                     "label": "Mittel",
-                    "description": "Mindestens 8 Zeichen, mit Groß- und Kleinbuchstaben sowie mindestens einer Zahl."
+                    "description": "Mindestens 8 Zeichen."
                 },
                 "strong": {
                     "label": "Stark",
-                    "description": "Mindestens 12 Zeichen, Groß-/Kleinbuchstaben, Buchstaben, Zahlen, Sonderzeichen und nicht in bekannten Datenlecks."
+                    "description": "Mindestens 12 Zeichen. Passwörter werden mit bekannten Datenlecks abgeglichen."
                 }
             },
             "loginMaxAttempts": "Max. Login-Versuche pro Minute",

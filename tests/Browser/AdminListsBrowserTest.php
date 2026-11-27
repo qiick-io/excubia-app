@@ -46,6 +46,18 @@ it('keeps super-admin exclusive in the user form role picker', function (string 
         ->assertNoJavaScriptErrors();
 })->with(['light', 'dark']);
 
+it('treats the new user password meter as advice without composition warnings', function (string $scheme) {
+    $this->actingAs(User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value));
+
+    visitA11y(route('users.index', absolute: false), $scheme)
+        ->click('New user')
+        ->fill('#user_password', 'chestnutmoonflowers')
+        ->assertValue('#user_password', 'chestnutmoonflowers')
+        ->assertSee('Password strength')
+        ->assertDontSee('Keep going to meet project password policy.')
+        ->assertNoJavaScriptErrors();
+})->with(['light', 'dark']);
+
 it('expands an activity log row with its details', function () {
     $admin = User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value);
     activity()->causedBy($admin)->log('Browser check');
