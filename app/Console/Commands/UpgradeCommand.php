@@ -105,6 +105,14 @@ class UpgradeCommand extends Command
             }
         }
 
+        // A config cached by the previous release would make the checks pass on stale values
+        // (`composer install`, which every upgrade path runs first, removes that cache).
+        if ($this->laravel->configurationIsCached()) {
+            $this->error('The configuration is cached by the previous release: run `php artisan config:clear` (or `composer install`), then excubia:upgrade again.');
+
+            return self::FAILURE;
+        }
+
         foreach (self::PACKAGE_CHECKS as $packageCheck) {
             $this->info("Running {$packageCheck}…");
             $code = $this->call($packageCheck);
@@ -112,6 +120,8 @@ class UpgradeCommand extends Command
                 return $code;
             }
         }
+
+        $this->warnAboutUntrustedHttpsProxy();
 
         $this->info('Clearing caches…');
         $this->call('optimize:clear');
@@ -123,6 +133,22 @@ class UpgradeCommand extends Command
         $this->line('Full checklist: docs/self-hosting.md#upgrades');
 
         return self::SUCCESS;
+    }
+
+    /**
+     * qiick/laravel-http-basics sends HSTS only on requests the app sees as https. Behind a TLS
+     * proxy that is only true when the proxy is trusted, so an https APP_URL without
+     * TRUSTED_PROXIES (outside Laravel Cloud, whose load balancer the framework trusts) would
+     * silently drop the header. A warning, not a failure: a proxy may send HSTS itself.
+     */
+    private function warnAboutUntrustedHttpsProxy(): void
+    {
+        $isHttpsSite = str_starts_with((string) config('app.url'), 'https://');
+        $hasTrustedProxy = trim((string) config('excubia.trusted_proxies')) !== '' || laravel_cloud();
+
+        if ($isHttpsSite && ! $hasTrustedProxy && (int) config('http-basics.security.hsts.max_age') > 0) {
+            $this->warn('APP_URL is https but TRUSTED_PROXIES is empty: behind a TLS proxy requests look like http, so no Strict-Transport-Security is sent. Set TRUSTED_PROXIES to the proxy.');
+        }
     }
 
     /**

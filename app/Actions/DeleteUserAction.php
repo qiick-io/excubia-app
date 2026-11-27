@@ -14,6 +14,7 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Qiick\Access\Principals\PrincipalDirectory;
 use Qiick\ApiKeys\RevocationReason;
+use Qiick\HttpBasics\Erasure\HttpBasicsEraser;
 use Qiick\Oidc\Erasure\OidcEraser;
 use Qiick\Outbound\Erasure\OutboundEraser;
 

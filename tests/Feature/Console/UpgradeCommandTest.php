@@ -62,6 +62,29 @@ it('runs the qiick package checks', function () {
         ->assertSuccessful();
 });
 
+it('warns when an https site trusts no proxy, so HSTS would never be sent', function () {
+    config(['app.url' => 'https://excubia.example', 'excubia.trusted_proxies' => null, 'http-basics.security.hsts.max_age' => 31536000]);
+
+    $this->artisan(UpgradeCommand::class, ['--force' => true, '--no-migrate' => true, '--no-permissions' => true])
+        ->expectsOutputToContain('TRUSTED_PROXIES is empty')
+        ->assertSuccessful();
+
+    config(['excubia.trusted_proxies' => '10.0.0.0/8']);
+
+    $this->artisan(UpgradeCommand::class, ['--force' => true, '--no-migrate' => true, '--no-permissions' => true])
+        ->doesntExpectOutputToContain('TRUSTED_PROXIES is empty')
+        ->assertSuccessful();
+});
+
+it('refuses to run the package checks on a configuration cached by the previous release', function () {
+    // As when the process booted from bootstrap/cache/config.php.
+    app()->instance('config_loaded_from_cache', true);
+
+    $this->artisan(UpgradeCommand::class, ['--force' => true, '--no-migrate' => true, '--no-permissions' => true])
+        ->expectsOutputToContain('The configuration is cached')
+        ->assertFailed();
+});
+
 it('stops when a qiick package check fails', function () {
     // A mixed super-admin is one of the states access:check refuses.
     $this->seed(PermissionSeeder::class);

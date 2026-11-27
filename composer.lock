@@ -4665,6 +4665,85 @@
             "published-time": "2026-11-27T14:25:41+00:00"
         },
         {
+            "name": "qiick/laravel-http-basics",
+            "version": "v1.0.0-beta.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/qiick-io/laravel-http-basics.git",
+                "reference": "3c8db051e3080fb9b205ee333f3717f21f83594c"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/qiick-io/laravel-http-basics/zipball/3c8db051e3080fb9b205ee333f3717f21f83594c",
+                "reference": "3c8db051e3080fb9b205ee333f3717f21f83594c",
+                "shasum": ""
+            },
+            "require": {
+                "ext-fileinfo": "*",
+                "illuminate/cache": "^12.0 || ^13.0",
+                "illuminate/contracts": "^12.0 || ^13.0",
+                "illuminate/http": "^12.0 || ^13.0",
+                "illuminate/support": "^12.0 || ^13.0",
+                "php": "^8.3"
+            },
+            "require-dev": {
+                "illuminate/database": "^12.0 || ^13.0",
+                "larastan/larastan": "^3.3",
+                "laravel/pint": "^1.30",
+                "nunomaduro/collision": "^8.5",
+                "orchestra/testbench": "^10.0 || ^11.0",
+                "pestphp/pest": "^4.0",
+                "pestphp/pest-plugin-mutate": "^4.0",
+                "phpstan/phpstan": "^2.1"
+            },
+            "suggest": {
+                "illuminate/database": "Required for the optional DatabaseIdempotencyStore adapter."
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Qiick\\HttpBasics\\Laravel\\HttpBasicsServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "files": [
+                    "src/Testing/functions.php"
+                ],
+                "psr-4": {
+                    "Qiick\\HttpBasics\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Qiick",
+                    "homepage": "https://qiick.io"
+                }
+            ],
+            "description": "Shared HTTP runtime for qiick Laravel products: X-Request-Id, Accept-Language / Content-Language, security headers, and Idempotency-Key.",
+            "homepage": "https://github.com/qiick-io/laravel-http-basics",
+            "keywords": [
+                "http",
+                "idempotency",
+                "laravel",
+                "locale",
+                "qiick",
+                "request-id",
+                "security-headers"
+            ],
+            "support": {
+                "issues": "https://github.com/qiick-io/laravel-http-basics/issues",
+                "source": "https://github.com/qiick-io/laravel-http-basics"
+            },
+            "time": "2026-11-27T12:23:01+00:00",
+            "published-time": "2026-11-27T12:23:13+00:00"
+        },
+        {
             "name": "qiick/laravel-oidc",
             "version": "v1.0.0-beta.8",
             "source": {
@@ -14257,6 +14336,7 @@
         "qiick/excubia-core": 10,
         "qiick/laravel-access": 10,
         "qiick/laravel-api-keys": 10,
+        "qiick/laravel-http-basics": 10,
         "qiick/laravel-oidc": 10,
         "qiick/laravel-outbound": 10
     },

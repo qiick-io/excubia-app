@@ -18,6 +18,7 @@ use App\Http\Middleware\EnsureMcpEnabledMiddleware;
 use App\Mcp\Servers\ExcubiaServer;
 use Laravel\Mcp\Facades\Mcp;
 use Laravel\Mcp\Server\Middleware\AddWwwAuthenticateHeader;
+use Qiick\HttpBasics\Locale\SetLocaleMiddleware;
 
 Mcp::web('/mcp', ExcubiaServer::class)
     // qiick/laravel-api-keys answers 401s with the RFC 6750 challenge (no error code when no
@@ -25,6 +26,8 @@ Mcp::web('/mcp', ExcubiaServer::class)
     ->withoutMiddleware(AddWwwAuthenticateHeader::class)
     ->middleware([
         EnsureMcpEnabledMiddleware::class,
+        // Accept-Language first on a machine door (qiick/laravel-http-basics).
+        SetLocaleMiddleware::class,
         AuthenticateApiKeyMiddleware::class.':'.ApiKeyScopeEnum::McpRead->value,
     ])
     ->name('mcp');

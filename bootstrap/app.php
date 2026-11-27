@@ -7,8 +7,6 @@ use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\PreventSensitiveResponseCachingMiddleware;
 use App\Http\Middleware\RecordIngestRejectionMiddleware;
-use App\Http\Middleware\SecurityHeadersMiddleware;
-use App\Http\Middleware\SetLocaleMiddleware;
 use App\Http\Responses\ErrorPageResponse;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -19,6 +17,9 @@ use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Validation\ValidationException;
 use Qiick\Access\ExclusiveSuperAdminException;
 use Qiick\Access\Http\EnsureTwoFactorIsEnabled;
+use Qiick\HttpBasics\Locale\SetLocaleMiddleware;
+use Qiick\HttpBasics\RequestId\AssignRequestIdMiddleware;
+use Qiick\HttpBasics\Security\SetSecurityHeadersMiddleware;
 use Symfony\Component\HttpFoundation\Response;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -52,7 +53,12 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->preventRequestsDuringMaintenance(except: ['health/live', 'health/ready']);
 
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state', 'locale', 'accessibility_high_contrast', 'accessibility_reduce_motion', 'table_density_compact']);
-        $middleware->web(prepend: [SecurityHeadersMiddleware::class], append: [
+        // qiick/laravel-http-basics: the request id outermost, so every response carries
+        // X-Request-Id (401, 404, maintenance); the security headers on every response, the full
+        // set on web pages and the baseline on the API and MCP.
+        $middleware->prepend([AssignRequestIdMiddleware::class, SetSecurityHeadersMiddleware::class]);
+        $middleware->api(append: [SetLocaleMiddleware::class]);
+        $middleware->web(append: [
             EnsureUserIsActiveMiddleware::class,
             SetLocaleMiddleware::class,
             EnsureTwoFactorIsEnabled::class,

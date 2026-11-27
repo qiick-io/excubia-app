@@ -20,6 +20,7 @@ use App\Services\ApiKeyExpiryRecipientService;
 use App\Services\ApiKeyRepositoryService;
 use App\Services\EnvironmentMaintenanceModeService;
 use App\Services\JobMonitorQueryService;
+use App\Services\LocalePreferencesService;
 use App\Services\OidcBreakGlassPolicyService;
 use App\Services\OidcSecondFactorChallengeService;
 use App\Services\OidcSettingsRepositoryService;
@@ -67,6 +68,8 @@ use Qiick\ApiKeys\TokenCodec;
 use Qiick\ApiKeys\UsageRecorder;
 use Qiick\Excubia\Contracts\HttpClientContract;
 use Qiick\Excubia\Services\SymfonyHttpClientService;
+use Qiick\HttpBasics\Contracts\DefaultLocaleResolver;
+use Qiick\HttpBasics\Contracts\SupportedLocales;
 use Qiick\Oidc\Contracts\BreakGlassPolicyContract;
 use Qiick\Oidc\Contracts\ProviderConfigurationRepositoryContract;
 use Qiick\Oidc\Contracts\SecondFactorChallengeContract;
@@ -99,6 +102,16 @@ class AppServiceProvider extends ServiceProvider
         $this->registerOidcBindings();
         $this->registerApiKeyBindings();
         $this->registerAccessBindings();
+        $this->registerHttpBasicsBindings();
+    }
+
+    /**
+     * Plugs Excubia's locales into qiick/laravel-http-basics' locale negotiation.
+     */
+    protected function registerHttpBasicsBindings(): void
+    {
+        $this->app->bind(SupportedLocales::class, LocalePreferencesService::class);
+        $this->app->bind(DefaultLocaleResolver::class, LocalePreferencesService::class);
     }
 
     /**
