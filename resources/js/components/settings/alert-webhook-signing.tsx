@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field';
 import { Label } from '@/components/ui/label';
 import integrationsRoutes from '@/routes/project/integrations';
+import { useDateFormat } from '@/lib/date-format';
 
 export type AlertWebhookStatus = {
     is_active: boolean;
@@ -115,6 +116,7 @@ export function AlertWebhookDeliveryStatus({
     status: AlertWebhookStatus;
 }) {
     const { t } = useTranslation();
+    const dates = useDateFormat();
 
     if (status === null) {
         return null;
@@ -131,7 +133,7 @@ export function AlertWebhookDeliveryStatus({
     const formatTime = (value: string | null): string =>
         value === null
             ? t('settings.integrations.deliveryNone')
-            : new Date(value).toLocaleString();
+            : dates.dateTime(value);
 
     return (
         <div className="grid gap-3">

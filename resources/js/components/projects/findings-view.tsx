@@ -36,10 +36,7 @@ import {
     useCurrentUserId,
     type AssigneeOption,
 } from '@/components/reports/assignee-select';
-import {
-    formatDateTime,
-    LifecycleBadges,
-} from '@/components/reports/finding-lifecycle';
+import { LifecycleBadges } from '@/components/reports/finding-lifecycle';
 import type { FindingFix } from '@/components/reports/fix-actions';
 import {
     combinedPrompt,
@@ -71,6 +68,7 @@ import { isFirstSeenWithinLastDay, savedViewHref } from '@/lib/inbox-views';
 import projectsRoutes from '@/routes/projects';
 import type { CheckCategory, IssueRow, LifecycleRow, Severity } from '@/types';
 import { relativeTime, findingKey } from '@/lib/report-format';
+import { useDateFormat } from '@/lib/date-format';
 
 type FindingStatusFilter = LifecycleRow['lifecycle']['status'] | 'all';
 
@@ -115,6 +113,7 @@ export function FindingsView({
     assignees: AssigneeOption[];
 }) {
     const { t, i18n } = useTranslation();
+    const dates = useDateFormat();
     const [status, setStatusFilter] =
         useState<FindingStatusFilter>(findingStatusFromUrl);
     const currentUserId = useCurrentUserId();
@@ -407,10 +406,7 @@ export function FindingsView({
                     <>
                         <time
                             dateTime={row.lifecycle.firstSeenAt}
-                            title={formatDateTime(
-                                row.lifecycle.firstSeenAt,
-                                i18n.language,
-                            )}
+                            title={dates.dateTime(row.lifecycle.firstSeenAt)}
                             className="text-sm"
                         >
                             {relativeTime(
@@ -422,9 +418,8 @@ export function FindingsView({
                             {row.lifecycle.resolvedAt !== null ? (
                                 <Badge variant="success">
                                     {t('findings.fixedOn', {
-                                        date: formatDateTime(
+                                        date: dates.dateTime(
                                             row.lifecycle.resolvedAt,
-                                            i18n.language,
                                         ),
                                     })}
                                 </Badge>

@@ -28,6 +28,16 @@ enum ActivityEventEnum: string
     case ApiKeyFirstUsed = 'api_key_first_used';
     case WebhookSecretCreated = 'webhook_secret_created';
     case WebhookSecretRotated = 'webhook_secret_rotated';
+    // Writes that silence alerts (#431), filterable in the activity log.
+    case AlertMuted = 'alert_muted';
+    case AlertUnmuted = 'alert_unmuted';
+    case MaintenanceWindowCreated = 'maintenance_window_created';
+    case MaintenanceWindowDeleted = 'maintenance_window_deleted';
+    case FindingDismissed = 'finding_dismissed';
+    case FindingRestored = 'finding_restored';
+    case StatusChanged = 'status_changed';
+    case Assigned = 'assigned';
+    case Unassigned = 'unassigned';
 
     /**
      * @return list<string>

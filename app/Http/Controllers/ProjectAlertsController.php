@@ -35,31 +35,31 @@ class ProjectAlertsController extends Controller
         return $this->done(__('Alert muted.'));
     }
 
-    public function destroyMute(Project $project, AlertMute $alertMute, UnmuteAlertAction $unmute): RedirectResponse
+    public function destroyMute(Project $project, AlertMute $alertMute, UnmuteAlertAction $unmute, #[CurrentUser] User $user): RedirectResponse
     {
         Gate::authorize('manageAlerts', $project);
         abort_unless($alertMute->project_id === $project->id, 404);
 
-        $unmute->execute($alertMute);
+        $unmute->execute($alertMute, $user);
 
         return $this->done(__('Alert unmuted.'));
     }
 
-    public function storeWindow(StoreMaintenanceWindowRequest $request, Project $project, CreateMaintenanceWindowAction $create): RedirectResponse
+    public function storeWindow(StoreMaintenanceWindowRequest $request, Project $project, CreateMaintenanceWindowAction $create, #[CurrentUser] User $user): RedirectResponse
     {
         /** @var array{name: string, recurrence: string, timezone: string, starts_at?: string|null, ends_at?: string|null, weekdays?: list<int>|null, start_time?: string|null, duration_minutes?: int|null} $values */
         $values = $request->validated();
-        $create->execute($project, $values);
+        $create->execute($project, $values, $user);
 
         return $this->done(__('Maintenance window added.'));
     }
 
-    public function destroyWindow(Project $project, MaintenanceWindow $maintenanceWindow, DeleteMaintenanceWindowAction $delete): RedirectResponse
+    public function destroyWindow(Project $project, MaintenanceWindow $maintenanceWindow, DeleteMaintenanceWindowAction $delete, #[CurrentUser] User $user): RedirectResponse
     {
         Gate::authorize('manageAlerts', $project);
         abort_unless($maintenanceWindow->project_id === $project->id, 404);
 
-        $delete->execute($maintenanceWindow);
+        $delete->execute($maintenanceWindow, $user);
 
         return $this->done(__('Maintenance window removed.'));
     }

@@ -30,6 +30,7 @@ import type {
     BreadcrumbItem,
     Paginated,
 } from '@/types';
+import { useDateFormat } from '@/lib/date-format';
 
 type Filters = {
     search?: string;
@@ -73,6 +74,7 @@ export default function AdminActivityLogsIndex({
     filters?: Filters;
 }) {
     const { t } = useTranslation();
+    const dates = useDateFormat();
     const activityLogs = normalizePaginated(activityLogsProp);
     const users = useMemo(() => usersProp ?? [], [usersProp]);
     const [search, setSearch] = useState(filters.search ?? '');
@@ -150,16 +152,19 @@ export default function AdminActivityLogsIndex({
 
     useDebouncedServerSearch(search, filters.search ?? '', onDebouncedSearch);
 
-    const formatDate = (value: string): string =>
-        new Date(value).toLocaleString();
+    const formatDate = (value: string): string => dates.dateTime(value);
 
     const eventLabel = (eventName: string | null | undefined): string => {
         if (!eventName) {
             return '—';
         }
 
+        // An event without its own label still reads as words: `status_changed` → "Status changed".
+        const humanized = eventName.replaceAll('_', ' ');
+
         return t(`activityLog.events.${eventName}`, {
-            defaultValue: eventName,
+            defaultValue:
+                humanized.charAt(0).toUpperCase() + humanized.slice(1),
         });
     };
 
@@ -232,7 +237,14 @@ export default function AdminActivityLogsIndex({
             header: t('activityLog.columns.description'),
             meta: { cellClassName: 'max-w-xs text-sm' },
             cell: ({ row }) => (
-                <TruncatedText text={row.original.description || '—'} />
+                <TruncatedText
+                    text={
+                        // Model events store their event name as the description ("created").
+                        row.original.description === row.original.event
+                            ? eventLabel(row.original.event)
+                            : row.original.description || '—'
+                    }
+                />
             ),
         },
         {

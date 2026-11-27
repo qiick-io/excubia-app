@@ -116,3 +116,30 @@ it('lists troubled projects that are not pinned, critical first, capped at five'
 
     expect(app(SidebarProjectsService::class)->forUser($admin)['needsAttention'])->toHaveCount(SidebarProjectsService::ATTENTION_LIMIT);
 });
+
+it('drops a deleted project from the sidebar at once', function () {
+    $admin = User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value);
+    $shop = Project::factory()->create(['slug' => 'shop']);
+    sidebarFinding($shop, 'critical');
+
+    // Warm the per-user cache, as the page before the delete does (#432).
+    expect(app(SidebarProjectsService::class)->forUser($admin)['needsAttention'])->toHaveCount(1);
+
+    $this->actingAs($admin)->delete(route('projects.destroy', $shop))->assertRedirect();
+
+    $this->actingAs($admin)->get(route('projects.index'))
+        ->assertInertia(fn (Assert $page) => $page->where('sidebarProjects.needsAttention', []));
+});
+
+it('drops a project from every user\'s cached sidebar when it becomes hidden', function () {
+    $reader = User::factory()->create()->assignRole(RoleEnum::Reader->value);
+    $admin = User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value);
+    $shop = Project::factory()->create(['slug' => 'shop']);
+    sidebarFinding($shop, 'critical');
+
+    expect(app(SidebarProjectsService::class)->forUser($reader)['needsAttention'])->toHaveCount(1);
+
+    $this->actingAs($admin)->put(route('projects.update', $shop), ['name' => $shop->name, 'visibility' => ProjectVisibilityEnum::Admins->value])->assertSessionHasNoErrors();
+
+    expect(app(SidebarProjectsService::class)->forUser($reader)['needsAttention'])->toBe([]);
+});

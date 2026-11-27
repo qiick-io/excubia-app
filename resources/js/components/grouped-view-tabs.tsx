@@ -291,8 +291,12 @@ function GroupMenuTab({
     group: ViewTabGroup;
     activeViewId: string;
 }) {
-    const summary = summarize(group.views);
     const activeView = group.views.find((view) => view.id === activeViewId);
+    // A trigger that names the open view ("Issues: Findings") shows that view's count, not
+    // the group's sum, so it matches the list below it.
+    const summary = activeView
+        ? { count: activeView.count ?? 0, severity: activeView.severity }
+        : summarize(group.views);
 
     return (
         <DropdownMenu>

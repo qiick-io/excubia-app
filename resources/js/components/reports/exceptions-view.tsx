@@ -70,6 +70,7 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { cn } from '@/lib/utils';
 import projectsRoutes from '@/routes/projects';
 import type { ExceptionGroupRow, RuntimeDeploy, TimeRange } from '@/types';
+import { useDateFormat } from '@/lib/date-format';
 
 const EXCEPTIONS_GUIDE_URL =
     'https://github.com/qiick-io/excubia-core/blob/main/docs/guides/exception-capture.md';
@@ -129,6 +130,7 @@ export function ExceptionsView({
     assignees?: AssigneeOption[];
 }) {
     const { t } = useTranslation();
+    const dates = useDateFormat();
     const rangeTexts = useRangeTexts(range);
     const zoom = useZoomToRange(slug, 'exceptions');
     const [search, setSearch] = useState('');
@@ -478,7 +480,7 @@ export function ExceptionsView({
             cell: ({ row }) => {
                 const group = row.original;
 
-                return <>{new Date(group.last_seen_at).toLocaleString()}</>;
+                return <>{dates.dateTime(group.last_seen_at)}</>;
             },
         },
         {
@@ -695,6 +697,7 @@ function ExceptionDrawer({
     onZoom: ChartZoomHandler;
 }) {
     const { t } = useTranslation();
+    const dates = useDateFormat();
     const rangeTexts = useRangeTexts(range);
     const phrases = { bucket: rangeTexts.bucket, during: rangeTexts.during };
     const copyWithToast = useCopyWithToast();
@@ -720,8 +723,8 @@ function ExceptionDrawer({
                     {t('exceptions.summary', {
                         count: group.count,
                         environment: group.environment,
-                        first: new Date(group.first_seen_at).toLocaleString(),
-                        last: new Date(group.last_seen_at).toLocaleString(),
+                        first: dates.dateTime(group.first_seen_at),
+                        last: dates.dateTime(group.last_seen_at),
                     })}
                 </DrawerDescription>
             </DrawerHeader>

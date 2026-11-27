@@ -8,6 +8,7 @@ use App\Enums\ExceptionStatusEnum;
 use App\Enums\TimeRangeEnum;
 use App\Services\AssistantQueryService;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
+use Illuminate\Validation\Rule;
 use Laravel\Ai\Tools\Request;
 use Stringable;
 
@@ -27,6 +28,15 @@ class ListExceptionGroupsTool extends AssistantTool
             'project' => $schema->string()->description('Project slug, from ListProjects.')->required(),
             'range' => $schema->string()->enum(array_column(TimeRangeEnum::cases(), 'value'))->description('Time range, ending now. Default 24h.'),
             'status' => $schema->string()->enum(array_column(ExceptionStatusEnum::cases(), 'value'))->description('Only groups with this status.'),
+        ];
+    }
+
+    protected function rules(Request $request): array
+    {
+        return [
+            'project' => ['required', 'string'],
+            'range' => ['nullable', Rule::in(array_column(TimeRangeEnum::cases(), 'value'))],
+            'status' => ['nullable', Rule::in(array_column(ExceptionStatusEnum::cases(), 'value'))],
         ];
     }
 
