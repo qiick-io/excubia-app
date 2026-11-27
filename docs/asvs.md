@@ -6,7 +6,7 @@ The scope covers the browser UI, push API, personal keys, MCP, optional OIDC and
 
 | Met | Partial | Not applicable | Gap |
 | --- | ------- | -------------- | --- |
-| 45  | 138     | 49             | 21  |
+| 46  | 138     | 49             | 20  |
 
 **Met** has evidence for the complete requirement. **Partial** identifies an implemented control and the remaining scope. **Not applicable** records why the feature or architecture is outside scope. Each **Gap** links to a remediation issue. Report sensitive security findings through [the security policy](../SECURITY.md).
 
@@ -130,7 +130,7 @@ For inherited evidence, the owner column names the Composer package and the evid
 | v5.0.0-6.2.8  | Partial        | `app/Concerns/PasswordValidationRules.php` accepts an exact password string. Verify whitespace, Unicode and long-input handling through authentication and reset.                                                                                |                      |
 | v5.0.0-6.2.9  | Partial        | `app/Concerns/PasswordValidationRules.php` has no 64-character ceiling. Prove acceptance of long Unicode passwords with the configured hasher.                                                                                                   |                      |
 | v5.0.0-6.2.10 | Met            | `config/fortify.php` and `docs/SECURITY-MODEL.md` describe voluntary change and reset. No scheduled password expiry is configured.                                                                                                               |                      |
-| v5.0.0-6.2.11 | Gap            | `app/Services/SettingsRepositoryService.php` defines the current rules. Add enforcement for the documented product password vocabulary. [#521](https://github.com/qiick-io/excubia-app/issues/521)                                               |                      |
+| v5.0.0-6.2.11 | Met            | `app/Rules/ContextSpecificPasswordRule.php` screens built-in and `EXCUBIA_PASSWORD_DENYLIST` terms. `ContextSpecificPasswordTest`, `SetupWizardTest`, `UsersTest` and `CreateUserCommandTest` cover enforcement.                                 |                      |
 | v5.0.0-6.2.12 | Partial        | The strongest setting uses Laravel's uncompromised rule in `app/Services/SettingsRepositoryService.php`. Coverage across other configurable policies remains open.                                                                               |                      |
 | v5.0.0-6.3.1  | Partial        | `tests/Feature/Auth/AuthenticationTest.php` and `app/Providers/FortifyServiceProvider.php` cover selected limits. Verify documented controls across all sign-in methods.                                                                         |                      |
 | v5.0.0-6.3.2  | Met            | `tests/Feature/Security/SeededAdminTest.php` rejects known production credentials. `tests/Feature/Auth/SetupWizardTest.php` exercises first-user creation.                                                                                       |                      |

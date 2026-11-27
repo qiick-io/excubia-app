@@ -17,6 +17,9 @@ return [
 
     'maintenance_secret' => env('EXCUBIA_MAINTENANCE_SECRET'),
 
+    // Comma-separated identifiers already known to users, such as the organisation and public project slugs.
+    'password_denylist' => (string) env('EXCUBIA_PASSWORD_DENYLIST', ''),
+
     /*
     |--------------------------------------------------------------------------
     | Report history and stale projects
