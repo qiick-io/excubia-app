@@ -11,6 +11,7 @@ use Database\Seeders\PermissionSeeder;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Testing\TestResponse;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -122,7 +123,7 @@ it('stores the client secret encrypted and never shares it', function () {
             ->where('oidcBackchannelLogoutUrl', url('/auth/oidc/backchannel-logout')));
 });
 
-it('sends the browser to the IdP with PKCE S256 and the settings client id', function () {
+it('sends the browser to the IdP with PKCE S256, the settings client id and a fresh authentication request', function () {
     Http::preventStrayRequests();
     FakeIdentityProvider::fake();
     enableOidc();
@@ -134,7 +135,22 @@ it('sends the browser to the IdP with PKCE S256 and the settings client id', fun
         ->and($query['client_id'] ?? null)->toBe('laravel-app')
         ->and($query['redirect_uri'] ?? null)->toBe(url('/auth/oidc/callback'))
         ->and($query['scope'] ?? null)->toBe('openid profile email')
-        ->and($query['code_challenge_method'] ?? null)->toBe('S256');
+        ->and($query['code_challenge_method'] ?? null)->toBe('S256')
+        ->and($query['max_age'] ?? null)->toBe('0');
+});
+
+it('refuses an SSO login with a stale authentication time', function () {
+    $identityProvider = FakeIdentityProvider::fake();
+    enableOidc();
+    $user = User::factory()->create();
+    linkIdentity($user, 'sub-stale');
+
+    signInThroughSso($this, $identityProvider, [
+        'sub' => 'sub-stale',
+        'auth_time' => Date::now()->subHour()->getTimestamp(),
+    ])->assertRedirect(route('login'));
+
+    $this->assertGuest();
 });
 
 it('signs in through an IdP on a private network only with OIDC_ALLOW_PRIVATE_HOSTS', function (bool $isPrivateHostAllowed) {

@@ -47,6 +47,7 @@ class OidcSettingsRepositoryService implements ProviderConfigurationRepositoryCo
             redirectUri: route('oidc.callback'),
             scopes: ['openid', 'profile', 'email'],
             postLogoutRedirectUri: route('login'),
+            maxAge: 0,
         );
     }
 }

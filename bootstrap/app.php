@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Middleware\EnforceAbsoluteSessionLifetimeMiddleware;
 use App\Http\Middleware\EnsureUserIsActiveMiddleware;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
@@ -14,6 +15,7 @@ use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Middleware\ThrottleRequests;
+use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Validation\ValidationException;
 use Qiick\Access\ExclusiveSuperAdminException;
 use Qiick\Access\Http\EnsureTwoFactorIsEnabled;
@@ -47,6 +49,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // recorder, so its 429s were never counted (#244). Rate-limited pushes still cost one
         // counter upsert per endpoint, status, reason and hour, never a row per request.
         $middleware->prependToPriorityList(ThrottleRequests::class, RecordIngestRejectionMiddleware::class);
+        $middleware->appendToPriorityList(StartSession::class, EnforceAbsoluteSessionLifetimeMiddleware::class);
 
         // Health probes answer in maintenance too, so a platform (Laravel Cloud, Docker) does not
         // mark a deploy failed or restart a container that is down on purpose.
@@ -59,6 +62,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->prepend([AssignRequestIdMiddleware::class, SetSecurityHeadersMiddleware::class]);
         $middleware->api(append: [SetLocaleMiddleware::class]);
         $middleware->web(append: [
+            EnforceAbsoluteSessionLifetimeMiddleware::class,
             EnsureUserIsActiveMiddleware::class,
             SetLocaleMiddleware::class,
             EnsureTwoFactorIsEnabled::class,

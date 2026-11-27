@@ -108,6 +108,12 @@ Excubia sets no per-account limit on concurrent browser sessions. Signing in fro
 
 Verify the policy by signing in to the same account from two separate browser profiles. Open the dashboard in both, sign out of the first, then reload the dashboard in the second. The first profile returns to sign-in and the second still opens the dashboard. `ConcurrentSessionsBrowserTest` exercises this with the default database session driver.
 
+#### Absolute browser session lifetime
+
+`config/session.php` caps each browser session at 24 hours from sign-in. The cap limits how long a continuous dashboard session can be used and follows the overall reauthentication interval recommended for AAL2. The configurable inactivity timeout measures time between requests. [NIST SP 800-63B reauthentication](https://pages.nist.gov/800-63-4/sp800-63b/aal/#reauthentication-1).
+
+`EnforceAbsoluteSessionLifetimeMiddleware` invalidates the session at the cap, including during continued activity. A remember cookie can restore a session until the original deadline. For a new SSO sign-in, Excubia requests `max_age=0` and the OIDC package checks the signed `auth_time`. Browser sessions and remember cookies issued before this control require a fresh sign-in on their next use.
+
 ### 6. Alerts, digest and outbound requests
 
 - **Settings** (Settings → Integrations, `can-manage-project-settings`): the webhook signing secret, the Slack incoming-webhook URL and the Telegram bot token are encrypted with `APP_KEY`. The settings page shows an issued signing secret once so the operator can configure the receiver. Later visits show presence flags for these credentials. The activity log records the update without secret values. The alert webhook destination URL and Telegram chat id are shown.
