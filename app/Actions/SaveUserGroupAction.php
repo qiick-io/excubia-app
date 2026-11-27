@@ -8,6 +8,7 @@ use App\Models\ProjectGroup;
 use App\Models\User;
 use App\Models\UserGroup;
 use App\Services\SuperAdminGuardService;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use Qiick\Access\EffectivePermissionResolver;
 use Qiick\Access\ExclusiveSuperAdminException;
@@ -43,6 +44,11 @@ class SaveUserGroupAction
             $actor,
             fn (): array => [...$this->superAdminGuard->lockGroupMemberIds($group), ...$userIds],
             fn (): UserGroup => $this->save($group, $name, $description, $roles, $userIds, $projectGroupIds),
+            match (true) {
+                $actor === null => null,
+                $group->exists => fn () => Gate::forUser($actor)->authorize('update', $group),
+                default => fn () => Gate::forUser($actor)->authorize('create', UserGroup::class),
+            },
         );
     }
 

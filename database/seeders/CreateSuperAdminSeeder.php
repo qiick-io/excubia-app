@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
+use App\Actions\CreateUserAction;
 use App\Enums\RoleEnum;
 use App\Models\User;
 use App\Services\InitialSuperAdminPasswordService;
-use App\Services\SuperAdminGuardService;
 use Illuminate\Database\Seeder;
 
 /**
@@ -25,7 +25,7 @@ class CreateSuperAdminSeeder extends Seeder
     /** The environments where a seeded login is a convenience, not a risk. */
     public const ENVIRONMENTS = ['local', 'testing'];
 
-    public function run(InitialSuperAdminPasswordService $initialSuperAdminPassword, SuperAdminGuardService $superAdminGuard): void
+    public function run(InitialSuperAdminPasswordService $initialSuperAdminPassword, CreateUserAction $createUser): void
     {
         $configuredPassword = config('super_admin.password');
         $password = is_string($configuredPassword) ? $configuredPassword : null;
@@ -38,29 +38,21 @@ class CreateSuperAdminSeeder extends Seeder
             return;
         }
 
-        $user = User::query()->firstOrNew(['email' => config('super_admin.email')]);
-
-        if ($user->exists) {
+        if (User::query()->where('email', config('super_admin.email'))->exists()) {
             return;
         }
 
-        $user->forceFill([
-            'first_name' => config('super_admin.first_name'),
-            'last_name' => config('super_admin.last_name'),
-            'password' => (string) $password,
-            'email_verified_at' => now(),
-            'is_active' => true,
-        ]);
+        $lastName = config('super_admin.last_name');
 
         // A trusted system write (no actor), through the same role-write path as every other.
-        $superAdminGuard->guardRoleWrite(
+        $createUser->execute(
             null,
-            function () use ($user): array {
-                $user->save();
-
-                return [$user->id];
-            },
-            fn (): User => $user->assignRole(RoleEnum::SuperAdmin->value),
+            (string) config('super_admin.first_name'),
+            is_string($lastName) && $lastName !== '' ? $lastName : null,
+            (string) config('super_admin.email'),
+            null,
+            (string) $password,
+            [RoleEnum::SuperAdmin->value],
         );
     }
 }

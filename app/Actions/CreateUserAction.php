@@ -7,6 +7,7 @@ namespace App\Actions;
 use App\Models\User;
 use App\Services\SuperAdminGuardService;
 use Illuminate\Validation\ValidationException;
+use Qiick\Access\ExclusiveSuperAdmin;
 use Qiick\Access\ExclusiveSuperAdminException;
 
 /**
@@ -22,6 +23,7 @@ class CreateUserAction
     public function __construct(
         private SyncUserRolesAction $syncRoles,
         private SuperAdminGuardService $superAdminGuard,
+        private ExclusiveSuperAdmin $exclusiveSuperAdmin,
     ) {}
 
     /**
@@ -33,30 +35,26 @@ class CreateUserAction
      */
     public function execute(?User $actor, string $firstName, ?string $lastName, string $email, ?string $username, string $password, array $roles, bool $isActive = true, string $timezone = 'UTC'): User
     {
-        $user = (new User)->forceFill([
-            'first_name' => $firstName,
-            'last_name' => $lastName,
-            'username' => $username,
-            'email' => $email,
-            'password' => $password,
-            'timezone' => $timezone,
-            'is_active' => $isActive,
-            'email_verified_at' => now(),
-        ]);
+        // The row is inserted only after the guard holds every lock (a retried attempt builds a
+        // fresh model), then the roles go through ExclusiveSuperAdmin::write() over it.
+        return $this->superAdminGuard->guardRoleWrite($actor, fn (): array => [], function () use ($actor, $firstName, $lastName, $email, $username, $password, $roles, $isActive, $timezone): User {
+            $user = (new User)->forceFill([
+                'first_name' => $firstName,
+                'last_name' => $lastName,
+                'username' => $username,
+                'email' => $email,
+                'password' => $password,
+                'timezone' => $timezone,
+                'is_active' => $isActive,
+                'email_verified_at' => now(),
+            ]);
+            $user->save();
 
-        return $this->superAdminGuard->guardRoleWrite(
-            $actor,
-            // The insert is the transaction's first statement, and it locks the new row.
-            function () use ($user): array {
-                $user->save();
-
-                return [$user->id];
-            },
-            function () use ($user, $roles): User {
+            return $this->exclusiveSuperAdmin->write($user, function () use ($user, $roles): User {
                 $this->syncRoles->execute($user, $roles);
 
                 return $user;
-            },
-        );
+            }, $actor);
+        });
     }
 }

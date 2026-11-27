@@ -7,6 +7,7 @@ namespace App\Actions;
 use App\Models\User;
 use App\Models\UserGroup;
 use App\Services\SuperAdminGuardService;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use Qiick\Access\ExclusiveSuperAdminException;
 
@@ -31,6 +32,7 @@ class DeleteUserGroupAction
             $actor,
             fn (): array => $this->superAdminGuard->lockGroupMemberIds($group),
             fn () => $group->delete(),
+            $actor === null ? null : fn () => Gate::forUser($actor)->authorize('delete', $group),
             'group',
         );
     }
