@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 use App\Console\Commands\UpgradeCommand;
 use App\Enums\PermissionEnum;
+use App\Enums\RoleEnum;
 use App\Models\Project;
+use App\Models\User;
+use Database\Seeders\PermissionSeeder;
 use Illuminate\Contracts\Process\ProcessResult;
 use Illuminate\Process\PendingProcess;
 use Illuminate\Support\Facades\Artisan;
@@ -47,6 +50,22 @@ it('syncs the permissions and the system project, and restarts the workers', fun
     expect(Permission::query()->count())->toBe(count(PermissionEnum::cases()))
         ->and(Project::query()->where('is_system', true)->count())->toBe(1)
         ->and(Cache::get('illuminate:queue:restart'))->not->toBeNull();
+});
+
+it('runs the qiick package checks after the migrations', function () {
+    $this->artisan(UpgradeCommand::class, ['--force' => true, '--no-migrate' => true, '--no-permissions' => true])
+        ->expectsOutputToContain('Running access:check')
+        ->assertSuccessful();
+});
+
+it('stops when a qiick package check fails', function () {
+    // A mixed super-admin is one of the states access:check refuses.
+    $this->seed(PermissionSeeder::class);
+    User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value, RoleEnum::Reader->value);
+
+    $this->artisan(UpgradeCommand::class, ['--force' => true, '--no-migrate' => true, '--no-permissions' => true])
+        ->doesntExpectOutputToContain('Automated subset done')
+        ->assertFailed();
 });
 
 it('refuses --dry-run without --sync-upstream', function () {

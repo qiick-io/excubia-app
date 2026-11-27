@@ -89,7 +89,7 @@ it('deactivates the principal as offboarded with the user and brings it back on 
     User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value);
     $plainKey = accessKeyFor($owner);
     $update = fn (bool $isActive) => app(UpdateUserAction::class)->execute(
-        $owner, $owner->first_name, $owner->last_name, $owner->email, $owner->username, null, [RoleEnum::Admin->value], $isActive,
+        null, $owner, $owner->first_name, $owner->last_name, $owner->email, $owner->username, null, [RoleEnum::Admin->value], $isActive,
     );
 
     $update(false);

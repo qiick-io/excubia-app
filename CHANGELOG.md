@@ -11,6 +11,8 @@ upgrade from the version before (see [docs/self-hosting.md](docs/self-hosting.md
 
 ### Changed
 
+- **qiick/laravel-access `v0.1.0-beta.3`** from its tag instead of a `develop` commit: every role and group write (user create and update, group save and delete) runs through the package's `ExclusiveSuperAdmin::write()`, so super-admin stands alone even in a race past the form checks and only a super-admin makes someone one; a refused write is a form error on the roles. User deletion marks the principal erased through the package (`markErased()`). `excubia:upgrade` and the Docker start run `php artisan access:check` after the migrations (no schema change).
+
 - **Registry pinned to app-ui 7bd30c4**: the drawer focus return and the grouped tab count are now the registry's own (app-ui#279), so their overrides are gone; the theme gains the chart colour tokens.
 
 ### Fixed

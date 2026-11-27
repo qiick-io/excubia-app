@@ -9,7 +9,6 @@ use App\Models\User;
 use App\Services\SuperAdminGuardService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use Qiick\Access\Principals\DeactivationReason;
 use Qiick\Access\Principals\PrincipalDirectory;
 use Qiick\ApiKeys\RevocationReason;
 use Qiick\Oidc\Erasure\OidcEraser;
@@ -45,16 +44,14 @@ class DeleteUserAction
                 'previous_key_valid_until' => null,
             ]);
             $user->apiKeys()->update(['name' => 'Deleted key '.$publicId]);
-            // The principal becomes an erased tombstone, unlinked and anonymised as the package's
-            // own eraseUser() leaves it (that one needs a hard delete; Excubia soft-deletes).
+            // The principal becomes an erased tombstone: markErased() is the package's soft-delete
+            // path (it overrides an earlier reason and keeps the original deactivation time).
+            // Excubia also unlinks and anonymises it, as the hard-delete erasure would leave it.
             $principal = $this->principals->forMember($user, null);
-            $this->principals->deactivate($principal, DeactivationReason::Erased);
-            // Erased wins over an earlier reason: the package keeps the first reason of a principal
-            // already deactivated (an admin's, say), but the person is now gone.
+            $this->principals->markErased($principal);
             Principal::query()->whereKey($principal->id)->update([
                 'name' => 'Deleted principal '.$publicId,
                 'user_id' => null,
-                'deactivation_reason' => DeactivationReason::Erased->value,
             ]);
 
             // Login links are credentials, not audit: leaving an identity behind points SSO at a

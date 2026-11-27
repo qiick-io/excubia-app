@@ -10,25 +10,59 @@ use App\Models\UserGroup;
 use App\Services\SuperAdminGuardService;
 use Illuminate\Validation\ValidationException;
 use Qiick\Access\EffectivePermissionResolver;
+use Qiick\Access\ExclusiveSuperAdmin;
+use Qiick\Access\ExclusiveSuperAdminException;
 use Spatie\Permission\Models\Role;
 
 /**
  * Creates or updates a group and replaces its roles, members and project scope (#253). The group
  * change is logged by the model; roles, members and scope as `roles_synced`, `members_synced`
  * and `project_groups_synced` activities.
+ *
+ * The save runs inside qiick/laravel-access ExclusiveSuperAdmin::write() over every member before
+ * and after the change, so no member ends up with super-admin next to another role and only an
+ * actor who may manage super-admins makes someone one.
  */
 class SaveUserGroupAction
 {
-    public function __construct(private SuperAdminGuardService $superAdminGuard) {}
+    public function __construct(
+        private SuperAdminGuardService $superAdminGuard,
+        private ExclusiveSuperAdmin $exclusiveSuperAdmin,
+    ) {}
 
     /**
+     * @param  ?User  $actor  the acting user; null only for trusted system writes
      * @param  list<string>  $roles  role names
      * @param  list<int>  $userIds
      * @param  list<int>  $projectGroupIds
      *
      * @throws ValidationException when the change would leave no active super-admin
+     * @throws ExclusiveSuperAdminException after rolling back a mixed or unauthorised super-admin
      */
-    public function execute(UserGroup $group, string $name, ?string $description, array $roles, array $userIds, array $projectGroupIds = []): UserGroup
+    public function execute(?User $actor, UserGroup $group, string $name, ?string $description, array $roles, array $userIds, array $projectGroupIds = []): UserGroup
+    {
+        $affectedUsers = array_values(User::query()
+            ->whereKey([...$userIds, ...($group->exists ? $group->users()->pluck('users.id')->all() : [])])
+            ->get()
+            ->all());
+
+        if ($affectedUsers === []) {
+            return $this->save($group, $name, $description, $roles, $userIds, $projectGroupIds);
+        }
+
+        return $this->exclusiveSuperAdmin->write(
+            $affectedUsers,
+            fn (): UserGroup => $this->save($group, $name, $description, $roles, $userIds, $projectGroupIds),
+            $actor,
+        );
+    }
+
+    /**
+     * @param  list<string>  $roles
+     * @param  list<int>  $userIds
+     * @param  list<int>  $projectGroupIds
+     */
+    private function save(UserGroup $group, string $name, ?string $description, array $roles, array $userIds, array $projectGroupIds): UserGroup
     {
         return $this->superAdminGuard->preventLosingLastSuperAdmin(function () use ($group, $name, $description, $roles, $userIds, $projectGroupIds): UserGroup {
             $group->fill(['name' => $name, 'description' => $description])->save();

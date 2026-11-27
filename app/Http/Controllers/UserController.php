@@ -106,6 +106,7 @@ class UserController extends Controller
     public function store(StoreUserRequest $request, CreateUserAction $createUser): RedirectResponse
     {
         $createUser->execute(
+            $request->user(),
             $request->string('first_name')->toString(),
             $request->filled('last_name') ? $request->string('last_name')->toString() : null,
             $request->string('email')->toString(),
@@ -124,6 +125,7 @@ class UserController extends Controller
     public function update(UpdateUserRequest $request, User $user, UpdateUserAction $updateUser): RedirectResponse
     {
         $updateUser->execute(
+            $request->user(),
             $user,
             $request->string('first_name')->toString(),
             $request->filled('last_name') ? $request->string('last_name')->toString() : null,

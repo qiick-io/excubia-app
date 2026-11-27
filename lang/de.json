@@ -65,5 +65,6 @@
     "This member would hold the super-admin role together with other roles.": "Dieses Mitglied hätte die Super-Admin-Rolle zusammen mit anderen Rollen.",
     "Together with the roles of this user's groups, super-admin would be combined with other roles.": "Zusammen mit den Rollen der Gruppen dieses Benutzers würde Super-Admin mit anderen Rollen kombiniert.",
     "If an account exists for this address, we have emailed a password reset link.": "Wenn ein Konto mit dieser Adresse existiert, haben wir Ihnen einen Link zum Zurücksetzen des Passworts gesendet.",
-    "Too many attempts. Please wait a minute and try again.": "Zu viele Versuche. Bitte warten Sie eine Minute und versuchen Sie es erneut."
+    "Too many attempts. Please wait a minute and try again.": "Zu viele Versuche. Bitte warten Sie eine Minute und versuchen Sie es erneut.",
+    "This role change is refused: super-admin stands alone, and only a super-admin may make someone one.": "Diese Rollenänderung wird abgelehnt: Super-Admin steht allein, und nur ein Super-Admin darf jemanden dazu machen."
 }

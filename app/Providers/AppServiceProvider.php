@@ -25,6 +25,7 @@ use App\Services\OidcSettingsRepositoryService;
 use App\Services\OidcUserProvisioningService;
 use App\Services\SelfMonitoringService;
 use App\Services\SettingsRepositoryService;
+use App\Services\SuperAdminGuardService;
 use App\Services\SystemHealthService;
 use App\Services\TwoFactorRequirementService;
 use Carbon\CarbonImmutable;
@@ -48,6 +49,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use Qiick\Access\Contracts\ActiveUsers;
 use Qiick\Access\Contracts\AuthorizationResponder;
 use Qiick\Access\Contracts\RoleCatalog;
 use Qiick\Access\Contracts\TwoFactorPolicy;
@@ -106,6 +108,7 @@ class AppServiceProvider extends ServiceProvider
     protected function registerAccessBindings(): void
     {
         $this->app->bind(RoleCatalog::class, AccessResponderService::class);
+        $this->app->bind(ActiveUsers::class, SuperAdminGuardService::class);
         $this->app->bind(AuthorizationResponder::class, AccessResponderService::class);
         $this->app->bind(TwoFactorPolicy::class, TwoFactorRequirementService::class);
         $this->app->bind(TwoFactorResponder::class, TwoFactorRequirementService::class);

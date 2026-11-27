@@ -704,7 +704,7 @@ return [
         User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value);
         $member = User::factory()->create();
         $group = UserGroup::query()->create(['name' => 'conformance-activity']);
-        app(SaveUserGroupAction::class)->execute($group, 'conformance-activity', null, [RoleEnum::Reader->value], [$member->id]);
+        app(SaveUserGroupAction::class)->execute(null, $group, 'conformance-activity', null, [RoleEnum::Reader->value], [$member->id]);
         app(SyncUserRolesAction::class)->execute($member, [RoleEnum::Reader->value]);
 
         $properties = Activity::query()
