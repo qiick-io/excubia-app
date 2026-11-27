@@ -30,6 +30,7 @@ import type {
     BreadcrumbItem,
     Paginated,
 } from '@/types';
+import { useDateFormat } from '@/lib/date-format';
 
 type Filters = {
     search?: string;
@@ -73,6 +74,7 @@ export default function AdminActivityLogsIndex({
     filters?: Filters;
 }) {
     const { t } = useTranslation();
+    const dates = useDateFormat();
     const activityLogs = normalizePaginated(activityLogsProp);
     const users = useMemo(() => usersProp ?? [], [usersProp]);
     const [search, setSearch] = useState(filters.search ?? '');
@@ -150,8 +152,7 @@ export default function AdminActivityLogsIndex({
 
     useDebouncedServerSearch(search, filters.search ?? '', onDebouncedSearch);
 
-    const formatDate = (value: string): string =>
-        new Date(value).toLocaleString();
+    const formatDate = (value: string): string => dates.dateTime(value);
 
     const eventLabel = (eventName: string | null | undefined): string => {
         if (!eventName) {

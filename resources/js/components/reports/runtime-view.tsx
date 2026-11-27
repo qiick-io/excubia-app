@@ -49,6 +49,7 @@ import type {
     RuntimeServer,
     RuntimeSummary,
 } from '@/types';
+import { useDateFormat } from '@/lib/date-format';
 
 export const RUNTIME_GUIDE_URL =
     'https://github.com/qiick-io/excubia-core/blob/main/docs/guides/runtime-monitoring.md';
@@ -1431,6 +1432,7 @@ function ServersCard({
     format: Formatters;
 }) {
     const { t } = useTranslation();
+    const dates = useDateFormat();
     const used = (
         value: number | null,
         total: number | null,
@@ -1548,9 +1550,7 @@ function ServersCard({
                                                 )}
                                             </TableCell>
                                             <TableCell className="text-right text-xs text-muted-foreground">
-                                                {new Date(
-                                                    server.lastAt,
-                                                ).toLocaleString()}
+                                                {dates.dateTime(server.lastAt)}
                                             </TableCell>
                                         </TableRow>
                                     );

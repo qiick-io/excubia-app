@@ -10,6 +10,7 @@ import { CardAction } from '@/components/ui/card';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import projectsRoutes from '@/routes/projects';
 import type { RuntimeDeploy, TimeRange, TimeRangeWindow } from '@/types';
+import { useDateFormat } from '@/lib/date-format';
 
 type PresetRange = Exclude<TimeRange, 'custom'>;
 
@@ -218,19 +219,20 @@ export function ChartRowsLink({
 function bucketFormatter(
     bucketSeconds: number,
     spanSeconds: number,
+    format: (at: string, options: Intl.DateTimeFormatOptions) => string,
 ): (at: string) => string {
     return (at) => {
-        const date = new Date(at);
-
+        // Daily buckets start at UTC midnight: label them in UTC so no zone shows the day before.
         if (bucketSeconds >= DAY_SECONDS) {
-            return date.toLocaleDateString(undefined, {
+            return format(at, {
                 day: '2-digit',
                 month: 'short',
+                timeZone: 'UTC',
             });
         }
 
         if (spanSeconds > DAY_SECONDS) {
-            return date.toLocaleString(undefined, {
+            return format(at, {
                 day: '2-digit',
                 month: 'short',
                 hour: '2-digit',
@@ -238,10 +240,7 @@ function bucketFormatter(
             });
         }
 
-        return date.toLocaleTimeString(undefined, {
-            hour: '2-digit',
-            minute: '2-digit',
-        });
+        return format(at, { hour: '2-digit', minute: '2-digit' });
     };
 }
 
@@ -258,12 +257,17 @@ export function useRangeTexts(range: TimeRange): {
     bucketText: (at: string) => string;
 } {
     const { t } = useTranslation();
+    const dates = useDateFormat();
     const { rangeWindow } = usePage<{ rangeWindow: TimeRangeWindow }>().props;
     const spanSeconds =
         (new Date(rangeWindow.to).getTime() -
             new Date(rangeWindow.from).getTime()) /
         1000;
-    const bucketText = bucketFormatter(rangeWindow.bucketSeconds, spanSeconds);
+    const bucketText = bucketFormatter(
+        rangeWindow.bucketSeconds,
+        spanSeconds,
+        dates.format,
+    );
 
     if (range !== 'custom') {
         return {
@@ -274,13 +278,15 @@ export function useRangeTexts(range: TimeRange): {
         };
     }
 
-    const format = new Intl.DateTimeFormat(undefined, {
+    // In the browser's zone, like the picker that edits these bounds (`toLocalWire`).
+    const spanFormat: Intl.DateTimeFormatOptions = {
         day: '2-digit',
         month: 'short',
         hour: '2-digit',
         minute: '2-digit',
-    });
-    const span = `${format.format(new Date(rangeWindow.from))} – ${format.format(new Date(rangeWindow.to))}`;
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    };
+    const span = `${dates.format(rangeWindow.from, spanFormat)} – ${dates.format(rangeWindow.to, spanFormat)}`;
 
     return {
         headline: span,

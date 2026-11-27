@@ -159,6 +159,8 @@ upgrade from the version before (see [docs/self-hosting.md](docs/self-hosting.md
 
 ### Fixed
 
+- **One date format, in the app's language and the user's timezone** (#428): tables, details, notifications and chart axes no longer follow the browser's locale and zone, and no longer mix formats. Native date inputs stay until the registry has a date picker (qiick-io/app-ui#278).
+- **A maintenance window that already ended is refused** (#437): a one-off window's end, read in its own timezone, must be in the future, in the UI and the `mute-alert` AI tool.
 - **Readable labels instead of raw keys** (#430): the activity log translates every action (`status_changed` → "Status changed") and shows model events ("created") by their label; alert history and mutes show the alert's name with its key as secondary text; built-in roles show their translated name in the users, groups and roles lists and the role picker.
 - **Silencing alerts is audited** (#431): muting and unmuting an alert, adding and removing a maintenance window, and dismissing and restoring a finding write an activity log entry with the acting user, from the UI and the AI tools; the new actions are filterable.
 - **UI details from the stress test** (#426, #427, #429, #432, #433): the Issues tab shows the count of the open view (Findings or Exceptions), not their sum; the project's "Needs attention" says it lists failing infrastructure first, then by severity; the settings header fits every section; a deleted project leaves the sidebar at once; Compact tables and Single-key shortcuts moved from the user menu to Settings → Profile → Preferences, each with a description.
