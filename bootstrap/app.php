@@ -1,8 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Http\Middleware\EnsureUserIsActiveMiddleware;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\PreventSensitiveResponseCachingMiddleware;
 use App\Http\Middleware\RecordIngestRejectionMiddleware;
 use App\Http\Middleware\SecurityHeadersMiddleware;
 use App\Http\Middleware\SetLocaleMiddleware;
@@ -30,6 +33,9 @@ return Application::configure(basePath: dirname(__DIR__))
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Apply the cache policy even to errors rendered outside the web group.
+        $middleware->prepend(PreventSensitiveResponseCachingMiddleware::class);
+
         // Pushed reports are stored as sent, so their strings are neither trimmed nor nulled.
         $middleware->trimStrings(except: [fn (Request $request) => $request->is('api/*')]);
         $middleware->convertEmptyStringsToNull(except: [fn (Request $request) => $request->is('api/*')]);
