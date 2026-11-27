@@ -30,6 +30,8 @@ final class SidebarProjectsService
 
     private const int CACHE_SECONDS = 30;
 
+    private const string GENERATION_KEY = 'sidebar-projects:generation';
+
     /** Findings of these severities make a project critical; any other open one a warning. */
     private const array CRITICAL_SEVERITIES = [SeverityEnum::Critical, SeverityEnum::High];
 
@@ -51,9 +53,23 @@ final class SidebarProjectsService
         Cache::forget(self::cacheKey($user));
     }
 
+    /**
+     * Called after a project is deleted or changed (#432), so no user's sidebar keeps its old
+     * name, link or visibility: every cached entry is keyed by a generation this bumps.
+     */
+    public static function forgetAll(): void
+    {
+        Cache::forever(self::GENERATION_KEY, self::generation() + 1);
+    }
+
     private static function cacheKey(User $user): string
     {
-        return "sidebar-projects:{$user->id}";
+        return 'sidebar-projects:'.self::generation().":{$user->id}";
+    }
+
+    private static function generation(): int
+    {
+        return (int) Cache::get(self::GENERATION_KEY, 0);
     }
 
     /**

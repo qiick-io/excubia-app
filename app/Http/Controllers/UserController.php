@@ -86,7 +86,7 @@ class UserController extends Controller
         $search = mb_strtolower(trim($request->string('search')->toString()));
         $roles = array_values(array_filter(
             StoreUserRequest::assignableRoleOptionsFor($actor instanceof User ? $actor : null),
-            fn (array $role): bool => $search === '' || str_contains(mb_strtolower($role['name']), $search),
+            fn (array $role): bool => $search === '' || str_contains(mb_strtolower($role['name'].' '.$role['label']), $search),
         ));
 
         $paginator = new LengthAwarePaginator($roles, count($roles), max(count($roles), 1), 1, [

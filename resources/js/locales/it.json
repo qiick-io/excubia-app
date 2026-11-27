@@ -91,7 +91,8 @@
         "groups": "Gruppi",
         "settings": "Impostazioni",
         "repository": "Repository",
-        "documentation": "Documentazione"
+        "documentation": "Documentazione",
+        "buildCommit": "Build {{id}}: apri il commit"
     },
     "userMenu": {
         "settings": "Impostazioni",
@@ -102,9 +103,7 @@
         "accessibilityOnCount": "{{count}} attive",
         "highContrast": "Alto contrasto",
         "reduceMotion": "Riduci movimento",
-        "logOut": "Esci",
-        "compactTables": "Tabelle compatte",
-        "singleKeyShortcuts": "Scorciatoie a un tasto"
+        "logOut": "Esci"
     },
     "a11y": {
         "skipToContent": "Vai al contenuto",
@@ -125,7 +124,8 @@
         "notifications": "Notifiche",
         "notificationsUnread": "Notifiche, {{count}} non lette",
         "unreadCount": "{{count}} non lette",
-        "scrollableTable": "Tabella scorrevole"
+        "scrollableTable": "Tabella scorrevole",
+        "openTableRow": "Premi Invio o Spazio per aprire questa riga."
     },
     "auth": {
         "login": {
@@ -222,7 +222,7 @@
     "settings": {
         "layout": {
             "title": "Impostazioni",
-            "description": "Gestisci il profilo e le impostazioni dell'account",
+            "description": "Gestisci il tuo account e il funzionamento di questo Excubia",
             "navAria": "Impostazioni",
             "sectionAccount": "Account",
             "sectionProject": "Progetto",
@@ -669,6 +669,14 @@
                     "description": "Lettura: progetti, report, problemi, eccezioni, runtime e schedule. Scrittura include Lettura e permette di modificare lo stato delle eccezioni, le assegnazioni, i finding ignorati, gli avvisi silenziati e le finestre di manutenzione."
                 }
             }
+        },
+        "preferences": {
+            "title": "Preferenze",
+            "description": "Come appaiono e rispondono gli elenchi per te, in questo browser.",
+            "compactTables": "Tabelle compatte",
+            "compactTablesDescription": "Righe delle tabelle più fitte, per vederne di più sullo schermo.",
+            "singleKeyShortcuts": "Scorciatoie a tasto singolo",
+            "singleKeyShortcutsDescription": "Scorciatoie da tastiera senza tasti modificatori, come j / k negli elenchi. Disattivale se interferiscono con l’input vocale o altre tecnologie assistive."
         }
     },
     "activityLog": {
@@ -722,7 +730,19 @@
             "revoked": "Chiave API revocata",
             "api_key_first_used": "Chiave API usata la prima volta",
             "collection_permissions_synced": "Permessi collection sincronizzati",
-            "file_permissions_synced": "Permessi file sincronizzati"
+            "file_permissions_synced": "Permessi file sincronizzati",
+            "status_changed": "Stato cambiato",
+            "assigned": "Assegnato",
+            "unassigned": "Assegnazione rimossa",
+            "projects_synced": "Progetti sincronizzati",
+            "ai_tool_approval": "Approvazione strumento AI",
+            "alert_muted": "Avviso silenziato",
+            "alert_unmuted": "Avviso riattivato",
+            "maintenance_window_created": "Finestra di manutenzione aggiunta",
+            "maintenance_window_deleted": "Finestra di manutenzione rimossa",
+            "finding_dismissed": "Problema ignorato",
+            "finding_restored": "Problema ripristinato",
+            "project_groups_synced": "Gruppi di progetti sincronizzati"
         },
         "logs": {
             "default": "Applicazione",
@@ -1122,7 +1142,7 @@
             "systemProjectHint": "Excubia che controlla se stessa. Invia un report ogni giorno da sola e non si può eliminare.",
             "attention": {
                 "title": "Da sistemare",
-                "description": "{{shown}} di {{total}} problemi aperti, i più gravi prima.",
+                "description": "{{shown}} di {{total}} problemi aperti: prima i problemi di infrastruttura che fallisce, poi per gravità; poi le eccezioni aperte.",
                 "allFindings": "Tutti i problemi",
                 "exception": "Eccezione",
                 "emptyTitle": "Niente da sistemare"
@@ -1737,6 +1757,67 @@
             "5": "Ven",
             "6": "Sab",
             "7": "Dom"
+        },
+        "eventLabels": {
+            "finding": {
+                "new": "Nuovo problema",
+                "resolved": "Problema risolto"
+            },
+            "infrastructure": {
+                "failed": "Infrastruttura in errore"
+            },
+            "health": {
+                "failed": "Controllo di salute fallito",
+                "recovered": "Controllo di salute ripristinato",
+                "stale": "Campioni del server mancanti"
+            },
+            "project": {
+                "worsened": "Progetto peggiorato",
+                "recovered": "Progetto migliorato",
+                "stale": "Progetto muto",
+                "reporting_again": "Il progetto invia di nuovo report",
+                "token_changed": "Token di invio cambiato",
+                "created": "Progetto creato",
+                "deleted": "Progetto eliminato",
+                "disabled": "Progetto disattivato"
+            },
+            "report": {
+                "checks_skipped": "Controlli saltati"
+            },
+            "push": {
+                "rejected": "Invio rifiutato"
+            },
+            "schedule": {
+                "missed": "Attività pianificata saltata",
+                "failed": "Attività pianificata fallita",
+                "scheduler_down": "Scheduler fermo"
+            },
+            "runtime": {
+                "cache_hit_ratio_low": "Hit ratio della cache basso",
+                "delivery_failed": "Consegna fallita",
+                "log_spike": "Picco di log"
+            },
+            "ai": {
+                "budget_warning": "Avviso budget AI",
+                "budget_exceeded": "Budget AI superato",
+                "spend_spike": "Picco di spesa AI",
+                "error_rate": "Tasso di errori AI"
+            },
+            "billing": {
+                "webhook_failures": "Webhook di fatturazione falliti",
+                "payment_failed": "Pagamento fallito"
+            },
+            "auth": {
+                "failed_login_spike": "Picco di accessi falliti"
+            },
+            "scout": {
+                "index_failures": "Errori dell’indice di ricerca"
+            },
+            "eol": {
+                "approaching": "Fine supporto vicina",
+                "reached": "Fine supporto raggiunta"
+            },
+            "ping": "Avviso di prova"
         }
     },
     "timeRange": {

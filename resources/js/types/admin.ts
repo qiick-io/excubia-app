@@ -19,6 +19,8 @@ export type PermissionGroup = {
 export type AdminRoleRef = {
     id: number;
     name: string;
+    /** The translated name of a built-in role, from the server (#430). */
+    label?: string;
 };
 
 type AdminGroupRef = {
