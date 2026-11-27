@@ -108,7 +108,7 @@ it('changes the inbox status on the server and opens a linked group outside it',
         ->assertNoJavaScriptErrors();
 })->with(['light', 'dark']);
 
-it('opens an exception from the keyboard: Tab reaches the row and Enter opens it', function (string $scheme) {
+it('opens the exception drawer from the keyboard and closes on the first Escape', function (string $scheme) {
     $this->actingAs(User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value));
     $project = seededA11yProject();
     $group = ExceptionGroup::query()->where('project_id', $project->id)->firstOrFail();
@@ -124,6 +124,10 @@ it('opens an exception from the keyboard: Tab reaches the row and Enter opens it
     $page->keys('tbody tr:first-child', 'Enter')
         ->assertVisible('[role="dialog"]')
         ->assertSeeIn('[role="dialog"]', $group->class)
+        ->assertScript("() => document.activeElement?.matches('[role=dialog] [data-slot=drawer-title]')", true)
+        ->keys(':focus', 'Escape')
+        ->assertNotPresent('[role="dialog"]')
+        ->assertScript("() => document.activeElement?.matches('tbody tr:first-child')", true)
         ->assertNoJavaScriptErrors();
 })->with(['light', 'dark']);
 

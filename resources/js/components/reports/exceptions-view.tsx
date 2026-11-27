@@ -547,6 +547,7 @@ export function ExceptionsView({
     return (
         <Drawer
             direction="right"
+            autoFocus
             open={selected !== null}
             onOpenChange={(open) => {
                 if (!open) {
@@ -731,6 +732,16 @@ function ExceptionDrawer({
     const rangeTexts = useRangeTexts(range);
     const phrases = { bucket: rangeTexts.bucket, during: rangeTexts.during };
     const copyWithToast = useCopyWithToast();
+    const titleRef = useRef<HTMLHeadingElement>(null);
+
+    const focusOnOpen = (event: Event): void => {
+        // The title is present regardless of the user's permissions or viewport.
+        titleRef.current?.focus({ preventScroll: true });
+
+        if (document.activeElement === titleRef.current) {
+            event.preventDefault();
+        }
+    };
 
     const setStatus = (status: ExceptionGroupRow['status']): void => {
         router.patch(
@@ -744,9 +755,16 @@ function ExceptionDrawer({
     };
 
     return (
-        <DrawerContent className="data-[vaul-drawer-direction=right]:max-w-2xl">
+        <DrawerContent
+            className="data-[vaul-drawer-direction=right]:max-w-2xl"
+            onOpenAutoFocus={focusOnOpen}
+        >
             <DrawerHeader className="pr-14">
-                <DrawerTitle className="font-mono text-sm break-all">
+                <DrawerTitle
+                    ref={titleRef}
+                    tabIndex={-1}
+                    className="font-mono text-sm break-all"
+                >
                     {group.class}
                 </DrawerTitle>
                 <DrawerDescription>
