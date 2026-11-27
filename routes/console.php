@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Actions\ReconcileAlertWebhookHistoryAction;
 use App\Jobs\RecordQueueHeartbeatJob;
 use App\Services\SettingsRepositoryService;
@@ -19,11 +21,11 @@ Schedule::call(fn () => Artisan::call('activitylog:clean', [
 ]))->name('activitylog:clean')->daily();
 
 // Keeps the newest reports of each project (setting "Reports kept per project").
-Schedule::command('excubia:prune-reports')->daily();
+Schedule::command('excubia:prune-reports')->daily()->withoutOverlapping()->onOneServer();
 
 // Runtime aggregates and exception groups past their retention (#48, #49), and in-app
 // notifications older than 30 days (#296).
-Schedule::command('excubia:prune-telemetry')->daily();
+Schedule::command('excubia:prune-telemetry')->daily()->withoutOverlapping()->onOneServer();
 
 // Runtime minutes past the per-minute window folded into hourly rows (#212).
 Schedule::command('excubia:downsample-runtime')->hourly()->withoutOverlapping();
