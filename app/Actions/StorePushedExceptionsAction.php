@@ -97,7 +97,7 @@ class StorePushedExceptionsAction
             && $release !== $existing->last_release;
 
         $existing->forceFill([
-            'count' => $existing->count + (int) $group['count'],
+            'count' => ExceptionGroup::saturatedCount($existing->count, (int) $group['count']),
             'first_seen_at' => $firstSeen->lt($existing->first_seen_at) ? $firstSeen : $existing->first_seen_at,
             'last_seen_at' => $isNewer ? $lastSeen : $existing->last_seen_at,
             'context_kind' => $isNewer ? $kind : $existing->context_kind,
@@ -133,6 +133,6 @@ class StorePushedExceptionsAction
             return;
         }
 
-        $occurrence->forceFill(['count' => $occurrence->count + $count])->save();
+        $occurrence->forceFill(['count' => ExceptionGroup::saturatedCount($occurrence->count, $count)])->save();
     }
 }
