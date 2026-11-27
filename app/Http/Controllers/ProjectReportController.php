@@ -11,9 +11,9 @@ use App\Data\TimeRangeData;
 use App\Enums\ExceptionStatusEnum;
 use App\Enums\PermissionEnum;
 use App\Enums\TimeRangeEnum;
+use App\Http\Requests\ListQueryRequest;
 use App\Http\Requests\UpdateExceptionStatusRequest;
 use App\Http\Requests\UpdateFindingDismissalRequest;
-use App\Http\Resources\HealthReportResource;
 use App\Http\Resources\ProjectResource;
 use App\Jobs\RunSystemReportJob;
 use App\Models\ExceptionGroup;
@@ -28,6 +28,7 @@ use App\Services\FixSuggestionService;
 use App\Services\HealthStatusService;
 use App\Services\ProjectAlertsService;
 use App\Services\ProjectAssigneeService;
+use App\Services\ProjectReportHistoryService;
 use App\Services\ProjectRuntimeService;
 use App\Services\ProjectTelemetryService;
 use App\Services\ProjectViewCountsService;
@@ -63,7 +64,7 @@ class ProjectReportController extends Controller
     /** The tabs with a time range picker (#113). */
     public const RANGE_VIEWS = ['runtime', 'ai', 'exceptions', 'schedule'];
 
-    public function show(Request $request, Project $project, ReportFindingsService $findings, FixSuggestionService $fixes, ProjectRuntimeService $runtime, ProjectTelemetryService $telemetry, TimeSeriesService $timeSeries, ReportHealthService $health, ?string $view = null): Response|RedirectResponse
+    public function show(Request $request, Project $project, ReportFindingsService $findings, FixSuggestionService $fixes, ProjectRuntimeService $runtime, ProjectTelemetryService $telemetry, TimeSeriesService $timeSeries, ReportHealthService $health, ProjectReportHistoryService $history, ?string $view = null): Response|RedirectResponse
     {
         Gate::authorize('view', $project);
 
@@ -71,6 +72,8 @@ class ProjectReportController extends Controller
         if ($view === null && in_array($request->query('view'), self::VIEWS, true)) {
             return to_route('projects.view', ['project' => $project->slug, 'view' => $request->query('view')]);
         }
+
+        $historyPerPage = $view === 'history' ? app(ListQueryRequest::class)->perPage() : ListQueryRequest::DEFAULT_PER_PAGE;
 
         // Loaded by the first prop that needs it, so the poll does not read the report.
         $report = fn (): ?HealthReport => $project->loadMissing('latestReport')->latestReport;
@@ -167,9 +170,13 @@ class ProjectReportController extends Controller
             'canManageExceptions' => fn (): bool => (bool) $request->user()?->can(PermissionEnum::CanManageExceptions->value),
             // Who an exception group or a finding may be assigned to (#254), on those two tabs.
             'assignees' => fn (): array => in_array($view, ['exceptions', 'findings'], true) ? app(ProjectAssigneeService::class)->optionsFor($project) : [],
-            'reports' => fn (): array => HealthReportResource::collection(
-                $project->healthReports()->orderByDesc('received_at')->orderByDesc('id')->get(),
-            )->resolve(),
+            ...($view === 'history' ? [
+                'reports' => fn (): array => $history->paginate($project, $historyPerPage),
+                'historyChart' => fn (): array => $history->chart($project),
+            ] : []),
+            ...($view === null ? [
+                'overviewDeploys' => fn (): array => $history->deploySummary($project),
+            ] : []),
         ]);
     }
 

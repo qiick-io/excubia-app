@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Enums\RoleEnum;
 use App\Enums\SeverityEnum;
+use App\Http\Controllers\ProjectReportController;
 use App\Models\HealthReport;
 use App\Models\Project;
 use App\Models\User;
@@ -85,9 +86,9 @@ it('shows the dashboard without projects to users without can-show-projects', fu
             ->has('projects', 0));
 });
 
-it('shows the latest report, its upgrade plan and the previous reports on the project page', function () {
+it('shows the latest report and its upgrade plan on the overview', function () {
     $project = Project::factory()->create(['name' => 'Shop', 'slug' => 'shop']);
-    $older = pushedReport($project, '2026-11-04 08:00:00', SeverityEnum::Low, ['low_count' => 1]);
+    pushedReport($project, '2026-11-04 08:00:00', SeverityEnum::Low, ['low_count' => 1]);
     $latest = pushedReport($project, '2026-11-05 08:00:00', SeverityEnum::High, ['high_count' => 1]);
 
     $this->actingAs(reportReader())->get(route('projects.show', 'shop'))
@@ -100,10 +101,50 @@ it('shows the latest report, its upgrade plan and the previous reports on the pr
             ->where('report.checks.0.findings.0.fixHint', 'composer update guzzlehttp/guzzle')
             ->where('report.checks.0.findings.0.evidenceUrl', 'https://example.test/a')
             ->where('report.upgradePlan.0.message', 'composer update guzzlehttp/guzzle')
-            ->has('reports', 2)
-            ->where('reports.0.id', $latest->id)
-            ->where('reports.1.id', $older->id)
-            ->where('reports.1.worst_severity', 'low'));
+            ->missing('reports')
+            ->missing('historyChart'));
+});
+
+it('paginates history with a stable order and a chart independent of the table page', function () {
+    $project = Project::factory()->create();
+    $deploy = pushedReport($project, '2026-11-03 08:00:00');
+    $deploy->update(['release' => 'v1.0.0', 'deployed_at' => '2026-11-03 08:00:00']);
+    $reports = collect(range(1, 110))->map(
+        fn (int $count): HealthReport => pushedReport($project, '2026-11-05 08:00:00', SeverityEnum::Low, ['low_count' => $count]),
+    );
+    $this->actingAs(reportReader());
+
+    $this->get(route('projects.view', [$project->slug, 'history', 'page' => 2, 'per_page' => 50]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('reports.current_page', 2)
+            ->where('reports.total', 111)
+            ->has('reports.data', 50)
+            ->where('reports.data.0.id', $reports[59]->id)
+            ->missing('reports.data.0.top_finding')
+            ->has('historyChart', 100)
+            ->where('historyChart.0.counts.low', 110)
+            ->where('historyChart.99.counts.low', 11)
+            ->missing('overviewDeploys'));
+
+    $this->get(route('projects.view', [$project->slug, 'history', 'per_page' => 200]))
+        ->assertInertia(fn (Assert $page) => $page->has('reports.data', 20));
+
+    $this->get(route('projects.view', [$project->slug, 'ai', 'page' => 'unused', 'direction' => 'unused']))
+        ->assertOk();
+
+    foreach (ProjectReportController::VIEWS as $view) {
+        if ($view === 'history') {
+            continue;
+        }
+
+        $this->get(route('projects.view', [$project->slug, $view]))
+            ->assertInertia(fn (Assert $page) => $page->missing('reports')->missing('historyChart')->missing('overviewDeploys'));
+    }
+
+    $this->get(route('projects.show', $project->slug))
+        ->assertInertia(fn (Assert $page) => $page->where('overviewDeploys.count', 1)->where('overviewDeploys.latest.release', 'v1.0.0'))
+        ->assertInertia(fn (Assert $page) => $page->reloadOnly('liveHealth', fn (Assert $reload) => $reload
+            ->has('liveHealth')->missing('overviewDeploys')->missing('reports')->missing('historyChart')));
 });
 
 it('shows an empty project page before the first report', function () {
@@ -113,7 +154,10 @@ it('shows an empty project page before the first report', function () {
         ->assertInertia(fn (Assert $page) => $page
             ->where('report', null)
             ->where('project.latest_report', null)
-            ->has('reports', 0));
+            ->missing('reports'));
+
+    $this->get(route('projects.view', ['new', 'history']))
+        ->assertInertia(fn (Assert $page) => $page->where('reports.total', 0)->has('historyChart', 0));
 });
 
 it('keeps the project page behind can-show-projects', function () {

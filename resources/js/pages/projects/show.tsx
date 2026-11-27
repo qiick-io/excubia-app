@@ -27,7 +27,6 @@ import type {
     ExceptionGroupRow,
     ExceptionsOverview,
     HealthReportBody,
-    HealthReportSummary,
     IssueRow,
     LifecycleRow,
     LiveHealthCheck,
@@ -48,9 +47,15 @@ import { ProjectTabs } from '@/components/projects/project-tabs';
 import { SystemProjectBadge } from '@/components/projects/system-project-badge';
 import type { DashboardHistory } from '@/types/dashboard';
 import { OverviewView } from '@/components/projects/overview/overview-view';
+import type { OverviewDeploys } from '@/components/projects/overview/overview-view';
 import { FindingsView } from '@/components/projects/findings-view';
 import { PlanView } from '@/components/projects/plan-view';
 import { HistoryView } from '@/components/projects/history-view';
+import type {
+    HistoryChartPoint,
+    HistoryReport,
+} from '@/components/projects/history-view';
+import type { Paginated } from '@/types/admin';
 
 /**
  * Project page: an overview of the latest report (runtimes and their support, findings per
@@ -63,6 +68,8 @@ export default function ProjectShow({
     view,
     report,
     reports,
+    historyChart = [],
+    overviewDeploys = { count: 0, latest: null },
     findingFixes = {},
     issues = [],
     findings = [],
@@ -128,7 +135,9 @@ export default function ProjectShow({
     /** The tab, from the URL (`/projects/{slug}` or `/projects/{slug}/{view}`). */
     view: ProjectView;
     report: HealthReportBody | null;
-    reports: HealthReportSummary[];
+    reports?: Paginated<HistoryReport>;
+    historyChart?: HistoryChartPoint[];
+    overviewDeploys?: OverviewDeploys;
 }) {
     const { t } = useTranslation();
 
@@ -230,7 +239,12 @@ export default function ProjectShow({
                     }
                 >
                     {view === 'history' ? (
-                        <HistoryView reports={reports} />
+                        reports && (
+                            <HistoryView
+                                reports={reports}
+                                chart={historyChart}
+                            />
+                        )
                     ) : view === 'runtime' ? (
                         <RuntimeView
                             runtime={runtime}
@@ -268,9 +282,7 @@ export default function ProjectShow({
                             project={project}
                             latest={latest}
                             kpiHistory={kpiHistory}
-                            deploys={reports.filter(
-                                (summary) => summary.deployed_at !== null,
-                            )}
+                            deploys={overviewDeploys}
                             issues={issues}
                             health={health}
                             liveHealth={liveHealth}
