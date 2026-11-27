@@ -57,10 +57,6 @@ export default function ProjectLocalizationSettingsPage({
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={t('settings.project.localization.head')} />
 
-            <h1 className="sr-only">
-                {t('settings.project.localization.head')}
-            </h1>
-
             <SettingsLayout>
                 <Form
                     {...ProjectLocalizationSettingsController.update.form()}

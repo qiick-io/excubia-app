@@ -109,6 +109,40 @@ it('has no critical or serious axe issues on the dashboard in high contrast', fu
     assertAxeCheckedColorContrast($page)->assertNoJavaScriptErrors();
 });
 
+it('exposes a primary heading and unique dashboard landmarks in every theme', function (string $mode) {
+    $this->actingAs(User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value));
+    $project = seededA11yProject();
+    $paths = [route('dashboard', absolute: false), route('projects.show', $project, false), route('profile.edit', absolute: false)];
+
+    foreach ($paths as $path) {
+        $page = visitA11y($path, $mode)->assertPresent('#main-content h1')->assertNoAccessibilityIssues(1);
+        expect($page->script("() => document.querySelectorAll('#main-content h1').length"))->toBe(1);
+
+        if ($path === route('dashboard', absolute: false)) {
+            $regions = $page->script(<<<'JS'
+                async () => {
+                    const tables = Array.from(document.querySelectorAll('[data-slot="card-table-scroll"]'));
+                    for (const table of tables) {
+                        table.style.maxHeight = '30px';
+                    }
+                    await new Promise(requestAnimationFrame);
+                    await new Promise(requestAnimationFrame);
+                    return Array.from(document.querySelectorAll('[data-slot="card-table-scroll"][role="region"]'))
+                        .map((table) => table.getAttribute('aria-label'));
+                }
+                JS);
+            expect(count($regions))->toBeGreaterThanOrEqual(2)
+                ->and(array_unique($regions))->toBe($regions);
+        }
+
+        $issues = $page->script(<<<'JS'
+            async () => (await window.axe.run({ runOnly: ['page-has-heading-one', 'landmark-unique'] }))
+                .violations.map((result) => result.id)
+            JS);
+        expect($issues)->toBe([]);
+    }
+})->with(['light', 'dark', 'high-contrast']);
+
 it('has no critical or serious axe issues on the error pages in light and dark', function () {
     foreach (['light', 'dark'] as $mode) {
         // Guest on an unknown URL: the auth layout (#423).

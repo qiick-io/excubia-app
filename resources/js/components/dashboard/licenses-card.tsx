@@ -49,7 +49,10 @@ export function LicensesCard({ rows }: { rows: LicenseRow[] }) {
                         className="border-0"
                     />
                 ) : (
-                    <CardTableScroll className="max-h-80">
+                    <CardTableScroll
+                        label={t('dashboard.licenses.title')}
+                        className="max-h-80"
+                    >
                         <Table>
                             <TableHeader>
                                 <TableRow>

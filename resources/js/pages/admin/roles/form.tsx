@@ -104,7 +104,7 @@ export default function AdminRoleForm({
     };
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <AppLayout breadcrumbs={breadcrumbs} hasPageHeading>
             <Head
                 title={
                     isEdit

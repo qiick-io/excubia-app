@@ -158,10 +158,6 @@ export default function ProjectSecuritySettingsPage({
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={t('settings.project.securityNav.head')} />
 
-            <h1 className="sr-only">
-                {t('settings.project.securityNav.head')}
-            </h1>
-
             <SettingsLayout>
                 <Form
                     {...ProjectSecuritySettingsController.update.form()}

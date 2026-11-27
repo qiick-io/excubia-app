@@ -25,9 +25,11 @@ export default function AppSidebarLayout({
     children,
     breadcrumbs = [],
     headerActions,
+    hasPageHeading = false,
 }: AppLayoutProps) {
     const [isPaletteOpen, setIsPaletteOpen] = useState(false);
     const { singleKeyShortcutsDisabled } = useAccessibilityPreferences();
+    const pageTitle = breadcrumbs.at(-1)?.title;
 
     return (
         <ShortcutsProvider
@@ -52,6 +54,9 @@ export default function AppSidebarLayout({
                         actions={headerActions}
                     />
                     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                        {!hasPageHeading && pageTitle ? (
+                            <h1 className="sr-only">{pageTitle}</h1>
+                        ) : null}
                         {children}
                     </div>
                 </AppContent>

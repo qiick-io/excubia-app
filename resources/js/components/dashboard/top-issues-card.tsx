@@ -81,7 +81,10 @@ export function TopIssuesCard({
                         className="border-0"
                     />
                 ) : (
-                    <CardTableScroll className="max-h-96">
+                    <CardTableScroll
+                        label={t('dashboard.topIssues.title')}
+                        className="max-h-96"
+                    >
                         <Table>
                             <TableHeader>
                                 <TableRow>

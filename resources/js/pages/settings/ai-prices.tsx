@@ -131,7 +131,6 @@ export default function AiPricesSettings({
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={t('settings.aiPrices.head')} />
-            <h1 className="sr-only">{t('settings.aiPrices.head')}</h1>
 
             <SettingsLayout wide>
                 <form

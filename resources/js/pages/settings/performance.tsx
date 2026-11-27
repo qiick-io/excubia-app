@@ -88,8 +88,6 @@ export default function PerformanceSettingsPage({
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={t('settings.performance.head')} />
 
-            <h1 className="sr-only">{t('settings.performance.head')}</h1>
-
             <SettingsLayout>
                 <div className="space-y-12">
                     <div className="space-y-6">

@@ -124,8 +124,6 @@ export default function Appearance({
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={t('settings.appearance.head')} />
 
-            <h1 className="sr-only">{t('settings.appearance.head')}</h1>
-
             <SettingsLayout>
                 <Form
                     {...AppearanceSettingsController.update.form()}

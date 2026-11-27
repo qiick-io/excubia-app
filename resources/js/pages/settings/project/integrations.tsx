@@ -161,7 +161,6 @@ export default function ProjectIntegrationsSettings({
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={t('settings.integrations.head')} />
-            <h1 className="sr-only">{t('settings.integrations.head')}</h1>
 
             <SettingsLayout>
                 <Form
