@@ -40,6 +40,13 @@ it('sends HSTS only on https requests and only when configured', function () {
     $this->get('https://localhost/login')->assertOk()->assertHeader('Strict-Transport-Security', 'max-age=31536000');
 });
 
+it('sends HSTS behind a TLS proxy it does not trust when APP_URL is https', function () {
+    // #478: Laravel Cloud and similar proxies reach the app over http without TRUSTED_PROXIES.
+    config(['excubia.hsts_max_age' => 31536000, 'app.url' => 'https://excubia.example']);
+
+    $this->get('http://localhost/login')->assertOk()->assertHeader('Strict-Transport-Security', 'max-age=31536000');
+});
+
 it('leaves the API and the health check as they were', function () {
     $this->get('/up')->assertOk();
     $this->postJson('/api/reports')->assertUnauthorized()->assertHeaderMissing('X-Frame-Options');
