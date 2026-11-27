@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 return [
 
     /*
@@ -121,6 +123,9 @@ return [
     'not_in' => 'The selected :attribute is invalid.',
     'not_regex' => 'The :attribute field format is invalid.',
     'numeric' => 'The :attribute field must be a number.',
+    'upload_malware_detected' => 'This file was blocked by the malware scanner.',
+    'upload_scan_unavailable' => 'This file could not be scanned. Try again later.',
+
     'password' => [
         'context_specific' => 'Choose a password that is harder to guess than an Excubia name or role.',
         'letters' => 'The :attribute field must contain at least one letter.',

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 return [
     'accepted' => ':Attribute muss akzeptiert werden.',
     'accepted_if' => ':Attribute muss akzeptiert werden, wenn :other :value ist.',
@@ -109,6 +111,9 @@ return [
     'not_in' => 'Der gewählte Wert für :attribute ist ungültig.',
     'not_regex' => ':Attribute hat ein ungültiges Format.',
     'numeric' => ':Attribute muss eine Zahl sein.',
+    'upload_malware_detected' => 'Der Virenscanner hat diese Datei blockiert.',
+    'upload_scan_unavailable' => 'Diese Datei konnte nicht geprüft werden. Versuche es später erneut.',
+
     'password' => [
         'context_specific' => 'Wählen Sie ein Passwort, das schwerer zu erraten ist als ein Name oder eine Rolle in Excubia.',
         'letters' => ':Attribute muss mindestens einen Buchstaben beinhalten.',

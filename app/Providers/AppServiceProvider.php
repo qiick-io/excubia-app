@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Actions\RecordAlertDeliveryAction;
+use App\Contracts\FileScannerContract;
 use App\Jobs\DeliverAlertJob;
 use App\Models\Activity as ActivityModel;
 use App\Models\ApiKey;
@@ -20,6 +21,7 @@ use App\Services\ActiveUsersService;
 use App\Services\ApiKeyAuthorizerService;
 use App\Services\ApiKeyExpiryRecipientService;
 use App\Services\ApiKeyRepositoryService;
+use App\Services\ClamAvFileScannerService;
 use App\Services\EnvironmentMaintenanceModeService;
 use App\Services\JobMonitorQueryService;
 use App\Services\LocalePreferencesService;
@@ -111,6 +113,30 @@ class AppServiceProvider extends ServiceProvider
         $this->registerApiKeyBindings();
         $this->registerAccessBindings();
         $this->registerHttpBasicsBindings();
+        $this->registerFileScannerBinding();
+    }
+
+    /** Keeps the scanner unbound until an operator explicitly enables it. */
+    private function registerFileScannerBinding(): void
+    {
+        // An older release's configuration cache must still boot so upgrade can refresh it.
+        $driver = config()->string('excubia.upload_scanner', 'off');
+
+        if ($driver === 'off') {
+            return;
+        }
+
+        if ($driver !== 'clamav') {
+            throw new RuntimeException('excubia.upload_scanner must be off or clamav.');
+        }
+
+        $endpoint = config()->string('excubia.clamav_endpoint');
+
+        if (! str_starts_with($endpoint, 'unix:///') && ! str_starts_with($endpoint, 'tcp://')) {
+            throw new RuntimeException('excubia.clamav_endpoint must be a Unix or TCP socket URL.');
+        }
+
+        $this->app->singleton(FileScannerContract::class, fn (): FileScannerContract => new ClamAvFileScannerService($endpoint));
     }
 
     /**
