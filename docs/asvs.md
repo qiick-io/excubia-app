@@ -6,7 +6,7 @@ The scope covers the browser UI, push API, personal keys, MCP, optional OIDC and
 
 | Met | Partial | Not applicable | Gap |
 | --- | ------- | -------------- | --- |
-| 48  | 137     | 49             | 19  |
+| 49  | 137     | 49             | 18  |
 
 **Met** has evidence for the complete requirement. **Partial** identifies an implemented control and the remaining scope. **Not applicable** records why the feature or architecture is outside scope. Each **Gap** links to a remediation issue. Report sensitive security findings through [the security policy](../SECURITY.md).
 
@@ -303,7 +303,7 @@ For inherited evidence, the owner column names the Composer package and the evid
 
 | Requirement   | Status  | Evidence                                                                                                                                                                                                | Owner package            |
 | ------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
-| v5.0.0-15.1.1 | Gap     | `SECURITY.md` defines report handling. Document risk-based dependency update and remediation deadlines. [#534](https://github.com/qiick-io/excubia-app/issues/534)                                      |                          |
+| v5.0.0-15.1.1 | Met     | [SECURITY.md](../SECURITY.md#dependency-remediation) defines severity-based deadlines, a routine update cadence, and the audit and advisory checks for release verification.                            |                          |
 | v5.0.0-15.1.2 | Partial | `composer.lock`, `package-lock.json` and `.github/workflows/security-release.yml` define dependency inventory and SBOM generation. A released inventory from the reference workflow was not inspected.  |                          |
 | v5.0.0-15.1.3 | Partial | `docs/self-hosting.md` covers sizing, scheduler and queue. Complete the inventory of expensive features and their resource limits.                                                                      |                          |
 | v5.0.0-15.2.1 | Partial | `.github/workflows/security.yml` runs dependency audits. Compare remediation dates with a documented policy.                                                                                            |                          |
