@@ -137,6 +137,18 @@ Configure each other TLS client at its connection boundary. For PostgreSQL, set 
 
 In a dedicated staging stack, request `GET /health/live` over the trusted public edge and expect `200` from the private origin. Switch the proxy's upstream trust bundle to an unrelated staging CA and repeat, then restore the bundle and test an incorrect expected name. Both negative cases must fail (`502` at the edge and certificate verification details in the proxy log). Restore the proper CA and name and check for `200` again. Repeat the valid, wrong-authority and wrong-name checks through the actual client of each enabled internal TLS service before production deployment. Record only certificate metadata and outcomes as evidence.
 
+#### Disable HTTP TRACE
+
+`docker/Caddyfile.edge` denies HTTPS `TRACE` with `403` before proxying. The cleartext edge policy rejects `TRACE` with `400`. Apply equivalent method denial on any other public proxy and keep the private origin accessible only from approved clients.
+
+In a staging deployment, set `excubia_host` to the edge hostname and verify that `TRACE` receives an empty `403` response over both HTTP versions. A regular health request still reaches the origin and returns `200` when healthy.
+
+```sh
+curl --http1.1 -sS -i -X TRACE -H 'X-Trace-Check: excubia-edge-test' "https://$excubia_host/login"
+curl --http2 -sS -i -X TRACE -H 'X-Trace-Check: excubia-edge-test' "https://$excubia_host/login"
+curl -sS -i "https://$excubia_host/health/live"
+```
+
 ### Image without compose
 
 ```bash

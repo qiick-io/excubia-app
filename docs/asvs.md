@@ -6,7 +6,7 @@ The scope covers the browser UI, push API, personal keys, MCP, optional OIDC and
 
 | Met | Partial | Not applicable | Gap |
 | --- | ------- | -------------- | --- |
-| 58  | 137     | 49             | 9   |
+| 59  | 137     | 49             | 8   |
 
 **Met** has evidence for the complete requirement. **Partial** identifies an implemented control and the remaining scope. **Not applicable** records why the feature or architecture is outside scope. Each **Gap** links to a remediation issue. Report sensitive security findings through [the security policy](../SECURITY.md).
 
@@ -282,7 +282,7 @@ For inherited evidence, the owner column names the Composer package and the evid
 | v5.0.0-13.4.1 | Partial | `Dockerfile` defines the runtime image and web root. Verify VCS metadata exclusion and accessibility on both image and manual deployments.                                                               |                          |
 | v5.0.0-13.4.2 | Met     | `Dockerfile` defaults debug off in the runtime image, `docs/SECURITY-MODEL.md` documents the policy, and `tests/Feature/Api/ErrorContractBasicsTest.php` exercises production-safe errors.               |                          |
 | v5.0.0-13.4.3 | Partial | `Dockerfile` specifies the application public root. Verify directory listing behaviour in the image and supported reverse proxies.                                                                       |                          |
-| v5.0.0-13.4.4 | Gap     | `Dockerfile` identifies the application HTTP server. Verify the reference stack's TRACE handling and record the setting. [#532](https://github.com/qiick-io/excubia-app/issues/532)                      |                          |
+| v5.0.0-13.4.4 | Met     | `docker/Caddyfile.edge` denies TRACE before proxying. [Deployment probes](self-hosting.md#disable-http-trace) verify empty denial responses over HTTP/1.1 and HTTP/2.                                    |                          |
 | v5.0.0-13.4.5 | Partial | `tests/Feature/HealthEndpointsTest.php` covers intentional health endpoints. Inventory framework and operator-provided diagnostics before attesting coverage.                                            |                          |
 
 ## V14 Data Protection
