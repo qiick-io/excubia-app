@@ -213,8 +213,8 @@ class Project extends Model
     }
 
     /**
-     * The URL of the uploaded logo (#287), relative to the app; null without one. The stored
-     * file name is random per upload, so it versions the URL and the browser may cache it.
+     * The relative URL of the uploaded logo (#287), or null when the project has no logo.
+     * The URL changes with each upload so the browser requests the replacement image.
      */
     public function logoUrl(): ?string
     {
