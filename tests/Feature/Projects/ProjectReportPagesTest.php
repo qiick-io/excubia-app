@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Services\SettingsRepositoryService;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Support\Facades\Date;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -256,6 +257,35 @@ it('starts the dashboard trend at the first report inside the period', function 
             ->where('trend.1.high', 2)
             ->where('trend.2.date', '2026-11-05')
             ->where('trend.2.critical', 1));
+});
+
+it('keeps dashboard queries flat for 200 visible projects', function () {
+    $project = Project::factory()->create();
+    // The newest row wins when multiple reports have the cutoff timestamp.
+    pushedReport($project, '2026-10-22 12:00:00', SeverityEnum::High, ['high_count' => 9]);
+    pushedReport($project, '2026-10-22 12:00:00', SeverityEnum::Low, ['low_count' => 3]);
+    pushedReport($project, '2026-10-22 12:00:01', SeverityEnum::Critical, ['critical_count' => 1]);
+    $this->actingAs(reportReader());
+
+    $queriesForDashboard = function (): int {
+        DB::enableQueryLog();
+        DB::flushQueryLog();
+
+        try {
+            $this->get(route('dashboard'))->assertInertia(fn (Assert $page) => $page
+                ->where('overview.kpis.findings.previous', 3)
+                ->where('overview.kpis.atRisk.previous', 0));
+
+            return count(DB::getQueryLog());
+        } finally {
+            DB::disableQueryLog();
+        }
+    };
+
+    $singleProjectQueries = $queriesForDashboard();
+    Project::factory()->count(199)->create();
+
+    expect($queriesForDashboard())->toBeLessThanOrEqual($singleProjectQueries + 2);
 });
 
 it('builds the issue-first overview for all projects or one, with the previous period', function () {

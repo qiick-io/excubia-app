@@ -138,13 +138,20 @@ class DashboardOverviewService
      */
     private function latestReportsAt(Collection $projects, CarbonImmutable $at): Collection
     {
-        return $projects
-            ->map(fn (Project $project): ?HealthReport => $project->healthReports()
-                ->where('received_at', '<=', $at)
-                ->orderByDesc('received_at')
-                ->first())
-            ->filter()
-            ->values();
+        // The correlated lookup can use the project/received_at index for each project
+        // while the application fetches the baseline in one round trip.
+        $latestReportId = HealthReport::query()
+            ->whereColumn('project_id', 'projects.id')
+            ->where('received_at', '<=', $at)
+            ->orderByDesc('received_at')
+            ->orderByDesc('id')
+            ->limit(1)
+            ->select('id');
+        $baselineIds = Project::query()
+            ->whereIntegerInRaw('projects.id', $projects->pluck('id')->all())
+            ->selectSub($latestReportId, 'id');
+
+        return HealthReport::query()->whereIn('id', $baselineIds)->get();
     }
 
     /**
