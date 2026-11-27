@@ -11,7 +11,7 @@ Excubia App targets [WCAG 2.2 AA](https://www.w3.org/TR/WCAG22/). The first revi
 | 3.3.7 Redundant Entry | `Wcag22BrowserTest.php` verifies that the password-reset form reuses the email in the reset link. Review other multi-step flows when their inputs change. |
 | 3.2.6 Consistent Help | `Wcag22BrowserTest.php` opens keyboard help with the same command on the dashboard and profile settings. Review other repeated help mechanisms in their layout context. |
 
-Run the existing smoke with the shared target-size script and the product flow tests from an app checkout with its test dependencies installed and assets built:
+Run the existing smoke with the shared target-size script and the product flow tests from an app checkout with its test dependencies installed and assets built.
 
 ```sh
 QIICK_WCAG22_AXE_SCRIPT="$APP_UI_WORKTREE/scripts/wcag22-axe.js" \
