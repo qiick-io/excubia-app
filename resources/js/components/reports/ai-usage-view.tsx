@@ -1,3 +1,4 @@
+import { useNumberFormat } from '@/hooks/use-number-format';
 import { Link, useForm } from '@inertiajs/react';
 import { ShieldCheck, Sparkles } from 'lucide-react';
 import type { ReactNode } from 'react';
@@ -77,6 +78,7 @@ export function AiUsageView({
     canManage: boolean;
 }) {
     const { t } = useTranslation();
+    const formatNumber = useNumberFormat();
 
     const rangeTexts = useRangeTexts(ai?.range ?? DEFAULT_TIME_RANGE);
     const zoom = useZoomToRange(slug, 'ai', MODELS_ID);
@@ -97,8 +99,7 @@ export function AiUsageView({
     }
 
     const approx = ai.isSampled ? '~' : '';
-    const count = (value: number): string =>
-        `${approx}${value.toLocaleString()}`;
+    const count = (value: number): string => `${approx}${formatNumber(value)}`;
     const money = (value: number | null): string =>
         value === null
             ? '—'
@@ -108,7 +109,7 @@ export function AiUsageView({
                   maximumFractionDigits: value !== 0 && value < 1 ? 4 : 2,
               });
     const ms = (value: number | null): string =>
-        value === null ? '—' : `${Math.round(value).toLocaleString()} ms`;
+        value === null ? '—' : `${formatNumber(Math.round(value))} ms`;
     const { totals } = ai;
     const { bucketText } = rangeTexts;
     const range = { bucket: rangeTexts.bucket, during: rangeTexts.during };

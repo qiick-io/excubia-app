@@ -1,3 +1,4 @@
+import { useNumberFormat } from '@/hooks/use-number-format';
 import { Link } from '@inertiajs/react';
 import { useTranslation } from 'react-i18next';
 import { CardTableScroll } from '@/components/layout/card-table-scroll';
@@ -69,6 +70,7 @@ export function TelemetryRow({
     periodDays: number;
 }) {
     const { t } = useTranslation();
+    const formatNumber = useNumberFormat();
 
     return (
         <section className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -134,7 +136,7 @@ export function TelemetryRow({
                                                 </div>
                                             </TableCell>
                                             <TableCell className="text-right tabular-nums">
-                                                {group.count.toLocaleString()}
+                                                {formatNumber(group.count)}
                                             </TableCell>
                                         </TableRow>
                                     ))}

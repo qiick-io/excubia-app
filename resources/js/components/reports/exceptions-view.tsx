@@ -1,3 +1,4 @@
+import { useNumberFormat } from '@/hooks/use-number-format';
 import type { ColumnDef } from '@tanstack/react-table';
 import { router } from '@inertiajs/react';
 import {
@@ -128,6 +129,7 @@ export function ExceptionsView({
     assignees?: AssigneeOption[];
 }) {
     const { t } = useTranslation();
+    const formatNumber = useNumberFormat();
     const dates = useDateFormat();
     const rangeTexts = useRangeTexts(range);
     const zoom = useZoomToRange(slug, 'exceptions');
@@ -453,7 +455,7 @@ export function ExceptionsView({
             cell: ({ row }) => {
                 const group = row.original;
 
-                return <>{(group.range_count ?? 0).toLocaleString()}</>;
+                return <>{formatNumber(group.range_count ?? 0)}</>;
             },
         },
         {
@@ -466,7 +468,7 @@ export function ExceptionsView({
             cell: ({ row }) => {
                 const group = row.original;
 
-                return <>{group.count.toLocaleString()}</>;
+                return <>{formatNumber(group.count)}</>;
             },
         },
         assigneeColumn<ExceptionGroupRow>(

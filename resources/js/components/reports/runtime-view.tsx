@@ -1,3 +1,4 @@
+import { useNumberFormat } from '@/hooks/use-number-format';
 import { Gauge, Info } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -95,6 +96,7 @@ export function RuntimeView({
     kpiHistory: DashboardHistory;
 }) {
     const { t } = useTranslation();
+    const formatNumber = useNumberFormat();
 
     const rangeTexts = useRangeTexts(runtime?.range ?? DEFAULT_TIME_RANGE);
     const zoom = useZoomToRange(slug, 'runtime', ROUTES_ID);
@@ -114,9 +116,9 @@ export function RuntimeView({
 
     const approx = runtime.isSampled ? '~' : '';
     const format: Formatters = {
-        count: (value) => `${approx}${value.toLocaleString()}`,
+        count: (value) => `${approx}${formatNumber(value)}`,
         ms: (value) =>
-            value === null ? '—' : `${Math.round(value).toLocaleString()} ms`,
+            value === null ? '—' : `${formatNumber(Math.round(value))} ms`,
         number: (value, digits = 1) =>
             value === null
                 ? '—'

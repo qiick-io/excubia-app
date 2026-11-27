@@ -1,3 +1,4 @@
+import { useNumberFormat } from '@/hooks/use-number-format';
 import { Bar, BarChart, LabelList, XAxis } from 'recharts';
 import {
     AnnouncedTooltip,
@@ -27,7 +28,7 @@ export function EntityBarChart({
     valueLabel,
     entityColumnHeader,
     entities,
-    formatValue = (value) => value.toLocaleString(),
+    formatValue: formatValueOverride,
     className,
 }: {
     /** The comparison, read as the table caption ("Open findings by project"). */
@@ -41,6 +42,9 @@ export function EntityBarChart({
     formatValue?: (value: number) => string;
     className?: string;
 }) {
+    const formatNumber = useNumberFormat();
+    const formatValue = formatValueOverride ?? formatNumber;
+
     // About 36 characters of axis fit a 320px-wide plot; each bar gets its share.
     const maximumLabelLength = Math.max(
         4,
