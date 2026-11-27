@@ -42,7 +42,8 @@ function visitA11y(string $path, string $mode): mixed
  * a colour with a `none` channel, such as Tailwind v4's `neutral-*` palette, and then moves the
  * whole rule to `incomplete` with an error. `assertNoAccessibilityIssues()` reads only
  * `violations`, so without this check a contrast failure passes silently. Call it after
- * `assertNoAccessibilityIssues()`, which loads axe on the page.
+ * `assertNoAccessibilityIssues()`, which loads axe on the page. The shared WCAG 2.2
+ * job also supplies a target-size check over the same route and theme states.
  */
 function assertAxeCheckedColorContrast(mixed $page): mixed
 {
@@ -51,6 +52,13 @@ function assertAxeCheckedColorContrast(mixed $page): mixed
             .incomplete.filter((result) => result.error)
             .map((result) => result.error.message ?? String(result.error))
         JS))->toBe([]);
+
+    $wcag22AxeScript = getenv('QIICK_WCAG22_AXE_SCRIPT');
+
+    if ($wcag22AxeScript !== false) {
+        expect(is_file($wcag22AxeScript))->toBeTrue();
+        expect($page->script((string) file_get_contents($wcag22AxeScript)))->toBe([]);
+    }
 
     return $page;
 }
