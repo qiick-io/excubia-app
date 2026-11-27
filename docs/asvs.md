@@ -6,7 +6,7 @@ The scope covers the browser UI, push API, personal keys, MCP, optional OIDC and
 
 | Met | Partial | Not applicable | Gap |
 | --- | ------- | -------------- | --- |
-| 49  | 137     | 49             | 18  |
+| 50  | 137     | 49             | 17  |
 
 **Met** has evidence for the complete requirement. **Partial** identifies an implemented control and the remaining scope. **Not applicable** records why the feature or architecture is outside scope. Each **Gap** links to a remediation issue. Report sensitive security findings through [the security policy](../SECURITY.md).
 
@@ -158,7 +158,7 @@ For inherited evidence, the owner column names the Composer package and the evid
 | Requirement  | Status  | Evidence                                                                                                                                                                                                                 | Owner package        |
 | ------------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------- |
 | v5.0.0-7.1.1 | Partial | `config/session.php` configures inactivity. Document the absolute maximum and the reauthentication rationale.                                                                                                            |                      |
-| v5.0.0-7.1.2 | Gap     | `config/session.php` declares the session store. Document and verify the intended policy for concurrent sessions. [#522](https://github.com/qiick-io/excubia-app/issues/522)                                             |                      |
+| v5.0.0-7.1.2 | Met     | [The session policy](SECURITY-MODEL.md#concurrent-browser-sessions) sets no per-account cap. `tests/Browser/ConcurrentSessionsBrowserTest.php` verifies independent sign-in and sign-out.                                |                      |
 | v5.0.0-7.1.3 | Partial | `docs/SECURITY-MODEL.md` describes local and federated sign-in. Consistent session lifetime and termination documentation remains open.                                                                                  |                      |
 | v5.0.0-7.2.1 | Met     | `config/session.php` and `bootstrap/app.php` show the server-side Laravel session middleware and store. Routes require the authenticated actor.                                                                          |                      |
 | v5.0.0-7.2.2 | Met     | `config/session.php` selects dynamic Laravel sessions. Personal keys and ingest tokens have separate middleware in `bootstrap/app.php`.                                                                                  |                      |
