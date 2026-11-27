@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { useClipboard } from '@/hooks/use-clipboard';
 import type { PushTokenFlash } from '@/types';
+import { useReturnFocus } from '@/hooks/use-return-focus';
 
 /**
  * Shows a push token flashed by the server once, with the setup the project needs to push
@@ -20,6 +21,7 @@ import type { PushTokenFlash } from '@/types';
  */
 export function PushTokenDialog() {
     const { t } = useTranslation();
+    const returnFocus = useReturnFocus();
     const { flash } = usePage();
     const [pushToken, setPushToken] = useState<PushTokenFlash | null>(null);
     const [copiedText, copy] = useClipboard();
@@ -43,7 +45,11 @@ export function PushTokenDialog() {
                 }
             }}
         >
-            <DialogContent className="sm:max-w-xl">
+            <DialogContent
+                onOpenAutoFocus={returnFocus.onOpenAutoFocus}
+                onCloseAutoFocus={returnFocus.onCloseAutoFocus}
+                className="sm:max-w-xl"
+            >
                 <DialogHeader>
                     <DialogTitle>
                         {t('projects.token.title', {
