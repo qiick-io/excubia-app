@@ -28,13 +28,12 @@ class BulkUpdateExceptionStatusAction
             $changed = 0;
 
             foreach ($groups as $group) {
-                if ($group->status !== $status) {
-                    $this->updateStatus->execute($group, $status, $actor);
+                if ($this->updateStatus->execute($group, $status, $actor)->wasChanged('status')) {
                     $changed++;
                 }
             }
 
             return $changed;
-        });
+        }, attempts: 3);
     }
 }

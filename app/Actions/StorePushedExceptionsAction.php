@@ -10,6 +10,7 @@ use App\Models\ExceptionOccurrence;
 use App\Models\Project;
 use App\Traits\StoresPushedBatchOnceTrait;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\Date;
 
 /**
  * Stores an exceptions batch pushed by a project (#49), grouped by fingerprint and environment
@@ -83,6 +84,7 @@ class StorePushedExceptionsAction
                 'last_release' => $release,
                 'status' => ExceptionStatusEnum::Open,
             ]);
+            $created->openChanges()->create(['project_id' => $project->id, 'occurred_at' => Date::now(), 'delta' => 1]);
             $this->addOccurrences($created, $lastSeen, (int) $group['count']);
 
             return;
@@ -108,6 +110,11 @@ class StorePushedExceptionsAction
                 'regressed_release' => $isRegression ? $release : null,
             ] : []),
         ])->save();
+
+        if ($existing->wasChanged('status')) {
+            $existing->openChanges()->create(['project_id' => $project->id, 'occurred_at' => Date::now(), 'delta' => 1]);
+        }
+
         $this->addOccurrences($existing, $lastSeen, (int) $group['count']);
     }
 
