@@ -159,6 +159,7 @@ upgrade from the version before (see [docs/self-hosting.md](docs/self-hosting.md
 
 ### Fixed
 
+- **Date fields use the registry date picker** (#428): the dismissal "until", maintenance window start and end (in the window's timezone), AI price dates and the activity log's from / to are typed and picked in the app's language, with a four-digit year, instead of the browser's native inputs. The API key expiry follows when the registry's `api-key-form` adopts the picker.
 - **One date format, in the app's language and the user's timezone** (#428): tables, details, notifications and chart axes no longer follow the browser's locale and zone, and no longer mix formats. Native date inputs stay until the registry has a date picker (qiick-io/app-ui#278).
 - **A maintenance window that already ended is refused** (#437): a one-off window's end, read in its own timezone, must be in the future, in the UI and the `mute-alert` AI tool.
 - **Readable labels instead of raw keys** (#430): the activity log translates every action (`status_changed` → "Status changed") and shows model events ("created") by their label; alert history and mutes show the alert's name with its key as secondary text; built-in roles show their translated name in the users, groups and roles lists and the role picker.

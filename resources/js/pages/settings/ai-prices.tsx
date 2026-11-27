@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Head, useForm } from '@inertiajs/react';
 import { CalendarPlus, Info, Plus, RotateCcw, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -21,6 +22,8 @@ import aiPricesRoutes from '@/routes/ai-prices';
 import aiSettings from '@/routes/ai-settings';
 import type { BreadcrumbItem } from '@/types';
 import { edit as editProfile } from '@/routes/profile';
+import { DatePicker } from '@/components/admin/date-picker';
+import { hasInvalidDateDraft } from '@/lib/date-format';
 
 /** The price fields of a row, as AiPriceService::PRICE_FIELDS. */
 const PRICE_FIELDS = [
@@ -86,6 +89,7 @@ export default function AiPricesSettings({
     defaultsSources: Record<string, string>;
 }) {
     const { t } = useTranslation();
+    const [restoreCount, setRestoreCount] = useState(0);
     const form = useForm<{ prices: FormRow[] }>({
         prices: prices.map(toFormRow),
     });
@@ -135,6 +139,12 @@ export default function AiPricesSettings({
                     noValidate
                     onSubmit={(event) => {
                         event.preventDefault();
+
+                        // An invalid typed date stays in the picker with its error.
+                        if (hasInvalidDateDraft(event.currentTarget)) {
+                            return;
+                        }
+
                         form.put(aiPricesRoutes.update.url(), {
                             preserveScroll: true,
                         });
@@ -203,9 +213,11 @@ export default function AiPricesSettings({
                         <Button
                             type="button"
                             variant="outline"
-                            onClick={() =>
-                                form.setData('prices', defaults.map(toFormRow))
-                            }
+                            onClick={() => {
+                                form.setData('prices', defaults.map(toFormRow));
+                                // Remount the date pickers so no invalid draft survives the reset.
+                                setRestoreCount((count) => count + 1);
+                            }}
                         >
                             <RotateCcw />
                             {t('settings.aiPrices.restore')}
@@ -295,17 +307,9 @@ export default function AiPricesSettings({
                                                 </TableCell>
                                             ))}
                                             <TableCell className="min-w-36 align-top">
-                                                <Input
-                                                    type="date"
-                                                    value={row.effective_from}
-                                                    onChange={(event) =>
-                                                        setCell(
-                                                            index,
-                                                            'effective_from',
-                                                            event.target.value,
-                                                        )
-                                                    }
-                                                    aria-label={t(
+                                                <DatePicker
+                                                    key={`${index}-${restoreCount}`}
+                                                    label={t(
                                                         'settings.aiPrices.effectiveFromOf',
                                                         {
                                                             model:
@@ -313,12 +317,22 @@ export default function AiPricesSettings({
                                                                 index + 1,
                                                         },
                                                     )}
-                                                    aria-invalid={
+                                                    isLabelHidden
+                                                    value={
+                                                        row.effective_from ||
+                                                        null
+                                                    }
+                                                    onChange={(value) =>
+                                                        setCell(
+                                                            index,
+                                                            'effective_from',
+                                                            value ?? '',
+                                                        )
+                                                    }
+                                                    error={
                                                         errors[
                                                             `prices.${index}.effective_from`
                                                         ]
-                                                            ? true
-                                                            : undefined
                                                     }
                                                 />
                                             </TableCell>

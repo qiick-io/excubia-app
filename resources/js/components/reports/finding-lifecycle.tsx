@@ -16,19 +16,17 @@ import {
     FieldGroup,
     FieldLabel,
 } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { DatePicker } from '@/components/admin/date-picker';
+import { hasInvalidDateDraft } from '@/lib/date-format';
 import { useClipboard } from '@/hooks/use-clipboard';
 import projectsRoutes from '@/routes/projects';
 import type { FindingLifecycle, IssueRow } from '@/types';
 import { useDateFormat } from '@/lib/date-format';
 
-/** Today as `YYYY-MM-DD` in the browser's timezone, the earliest last day of a dismissal. */
+/** Today as `YYYY-MM-DD` in UTC, the earliest last day the server accepts for a dismissal. */
 function today(): string {
-    const now = new Date();
-    const pad = (value: number): string => String(value).padStart(2, '0');
-
-    return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+    return new Date().toISOString().slice(0, 10);
 }
 
 /**
@@ -194,6 +192,12 @@ export function FindingLifecycleSection({
                         noValidate
                         onSubmit={(event) => {
                             event.preventDefault();
+
+                            // An invalid typed date stays in the picker with its error (app-ui date-picker).
+                            if (hasInvalidDateDraft(event.currentTarget)) {
+                                return;
+                            }
+
                             form.patch(url, {
                                 preserveScroll: true,
                                 preserveState: true,
@@ -236,35 +240,20 @@ export function FindingLifecycleSection({
                                 />
                                 <FieldError>{form.errors.reason}</FieldError>
                             </Field>
-                            <Field
-                                data-invalid={
-                                    form.errors.until ? true : undefined
-                                }
-                            >
-                                <FieldLabel htmlFor="finding_dismiss_until">
-                                    {t('findings.until')}
-                                </FieldLabel>
-                                <Input
-                                    id="finding_dismiss_until"
-                                    type="date"
+                            <div className="grid gap-2">
+                                <DatePicker
+                                    label={t('findings.until')}
+                                    value={form.data.until || null}
+                                    onChange={(value) =>
+                                        form.setData('until', value ?? '')
+                                    }
                                     min={today()}
-                                    value={form.data.until}
-                                    onChange={(event) =>
-                                        form.setData(
-                                            'until',
-                                            event.target.value,
-                                        )
-                                    }
-                                    aria-invalid={
-                                        form.errors.until ? true : undefined
-                                    }
-                                    aria-describedby="finding_dismiss_until_hint"
+                                    error={form.errors.until}
                                 />
-                                <FieldDescription id="finding_dismiss_until_hint">
+                                <FieldDescription>
                                     {t('findings.untilHint')}
                                 </FieldDescription>
-                                <FieldError>{form.errors.until}</FieldError>
-                            </Field>
+                            </div>
                         </FieldGroup>
                         <div className="flex flex-wrap justify-end gap-2">
                             <Button

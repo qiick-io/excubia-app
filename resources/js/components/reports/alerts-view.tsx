@@ -64,6 +64,8 @@ import type {
     ProjectAlerts,
 } from '@/types';
 import { useDateFormat } from '@/lib/date-format';
+import { DatePicker } from '@/components/admin/date-picker';
+import { hasInvalidDateDraft } from '@/lib/date-format';
 
 const DURATIONS = ['1h', '24h', '7d', 'forever'] as const;
 
@@ -529,7 +531,11 @@ function MaintenanceWindowDrawer({
                 noValidate
                 onSubmit={(event) => {
                     event.preventDefault();
-                    submit();
+
+                    // An invalid typed date-time stays in the picker with its error.
+                    if (!hasInvalidDateDraft(event.currentTarget)) {
+                        submit();
+                    }
                 }}
             >
                 <DrawerBody>
@@ -590,24 +596,24 @@ function MaintenanceWindowDrawer({
 
                         {form.data.recurrence === 'once' ? (
                             <>
-                                <DateTimeField
-                                    id="window_starts_at"
+                                <DatePicker
                                     label={t('alerts.startsAt')}
-                                    type="datetime-local"
-                                    value={form.data.starts_at}
+                                    hasTime
+                                    timeZone={form.data.timezone}
+                                    value={form.data.starts_at || null}
                                     error={form.errors.starts_at}
                                     onChange={(value) =>
-                                        form.setData('starts_at', value)
+                                        form.setData('starts_at', value ?? '')
                                     }
                                 />
-                                <DateTimeField
-                                    id="window_ends_at"
+                                <DatePicker
                                     label={t('alerts.endsAt')}
-                                    type="datetime-local"
-                                    value={form.data.ends_at}
+                                    hasTime
+                                    timeZone={form.data.timezone}
+                                    value={form.data.ends_at || null}
                                     error={form.errors.ends_at}
                                     onChange={(value) =>
-                                        form.setData('ends_at', value)
+                                        form.setData('ends_at', value ?? '')
                                     }
                                 />
                             </>
@@ -745,7 +751,7 @@ function DateTimeField({
 }: {
     id: string;
     label: string;
-    type: 'datetime-local' | 'time' | 'number';
+    type: 'time' | 'number';
     value: string;
     error?: string;
     onChange: (value: string) => void;
