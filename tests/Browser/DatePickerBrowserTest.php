@@ -23,6 +23,7 @@ it('adds a one-off maintenance window typed in the date picker', function () {
 
     visit(route('projects.view', [$project->slug, 'alerts'], false))
         ->withLocale('it-IT')
+        ->withTimezone('Europe/Rome')
         ->click('Add window')
         ->fill('#window_name', 'Upgrade')
         ->fill('Starts at', '12/31/2099 02:00')
@@ -32,6 +33,22 @@ it('adds a one-off maintenance window typed in the date picker', function () {
         ->assertNoJavaScriptErrors();
 
     $window = MaintenanceWindow::query()->where('name', 'Upgrade')->sole();
-    expect($window->recurrence)->toBe('once')
-        ->and($window->starts_at?->year)->toBe(2099);
+    // Wall times in the window's zone (the browser's, Europe/Rome, by default), stored in UTC.
+    expect($window->timezone)->toBe('Europe/Rome')
+        ->and($window->starts_at?->toIso8601ZuluString())->toBe('2099-12-31T01:00:00Z')
+        ->and($window->ends_at?->toIso8601ZuluString())->toBe('2099-12-31T02:00:00Z');
+});
+
+it('filters the activity log by date and clears the filter again', function () {
+    $this->actingAs(User::factory()->create(['locale' => 'en'])->assignRole(RoleEnum::SuperAdmin->value));
+
+    $page = visit(route('activity-logs.index', absolute: false))
+        ->fill('From date', '01/02/2026')
+        ->wait(1)
+        ->assertQueryStringHas('date_from', '2026-01-02');
+
+    // #428 review: clearing the picker drops the bound from the URL instead of keeping it.
+    $page->fill('From date', '')->click('Read-only audit trail of model changes and authentication events.')->wait(1)
+        ->assertQueryStringMissing('date_from')
+        ->assertNoJavaScriptErrors();
 });

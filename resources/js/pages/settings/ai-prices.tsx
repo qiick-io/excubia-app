@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Head, useForm } from '@inertiajs/react';
 import { CalendarPlus, Info, Plus, RotateCcw, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -22,6 +23,7 @@ import aiSettings from '@/routes/ai-settings';
 import type { BreadcrumbItem } from '@/types';
 import { edit as editProfile } from '@/routes/profile';
 import { DatePicker } from '@/components/admin/date-picker';
+import { hasInvalidDateDraft } from '@/lib/date-format';
 
 /** The price fields of a row, as AiPriceService::PRICE_FIELDS. */
 const PRICE_FIELDS = [
@@ -87,6 +89,7 @@ export default function AiPricesSettings({
     defaultsSources: Record<string, string>;
 }) {
     const { t } = useTranslation();
+    const [restoreCount, setRestoreCount] = useState(0);
     const form = useForm<{ prices: FormRow[] }>({
         prices: prices.map(toFormRow),
     });
@@ -137,8 +140,8 @@ export default function AiPricesSettings({
                     onSubmit={(event) => {
                         event.preventDefault();
 
-                        // The date pickers report an invalid typed date here.
-                        if (!event.currentTarget.checkValidity()) {
+                        // An invalid typed date stays in the picker with its error.
+                        if (hasInvalidDateDraft(event.currentTarget)) {
                             return;
                         }
 
@@ -210,9 +213,11 @@ export default function AiPricesSettings({
                         <Button
                             type="button"
                             variant="outline"
-                            onClick={() =>
-                                form.setData('prices', defaults.map(toFormRow))
-                            }
+                            onClick={() => {
+                                form.setData('prices', defaults.map(toFormRow));
+                                // Remount the date pickers so no invalid draft survives the reset.
+                                setRestoreCount((count) => count + 1);
+                            }}
                         >
                             <RotateCcw />
                             {t('settings.aiPrices.restore')}
@@ -303,6 +308,7 @@ export default function AiPricesSettings({
                                             ))}
                                             <TableCell className="min-w-36 align-top">
                                                 <DatePicker
+                                                    key={`${index}-${restoreCount}`}
                                                     label={t(
                                                         'settings.aiPrices.effectiveFromOf',
                                                         {

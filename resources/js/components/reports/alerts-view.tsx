@@ -65,6 +65,7 @@ import type {
 } from '@/types';
 import { useDateFormat } from '@/lib/date-format';
 import { DatePicker } from '@/components/admin/date-picker';
+import { hasInvalidDateDraft } from '@/lib/date-format';
 
 const DURATIONS = ['1h', '24h', '7d', 'forever'] as const;
 
@@ -531,8 +532,8 @@ function MaintenanceWindowDrawer({
                 onSubmit={(event) => {
                     event.preventDefault();
 
-                    // The date pickers report an invalid typed date-time here.
-                    if (event.currentTarget.checkValidity()) {
+                    // An invalid typed date-time stays in the picker with its error.
+                    if (!hasInvalidDateDraft(event.currentTarget)) {
                         submit();
                     }
                 }}

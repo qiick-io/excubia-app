@@ -64,6 +64,20 @@ function knownTimeZone(timeZone: string | undefined): string | undefined {
 }
 
 /**
+ * After `form.checkValidity()` (which shows the date pickers' inline errors), whether a date
+ * picker holds an invalid draft (#428). Only the pickers' custom validity counts, so required
+ * or number fields still go to the server, which answers with its own localized errors.
+ */
+export function hasInvalidDateDraft(form: HTMLFormElement): boolean {
+    form.checkValidity();
+
+    return [...form.elements].some(
+        (element) =>
+            element instanceof HTMLInputElement && element.validity.customError,
+    );
+}
+
+/**
  * The app's date formatters, bound to the current language and the signed-in user's timezone
  * (Settings → Profile; the browser's when unknown or not supported by this browser).
  */

@@ -18,17 +18,15 @@ import {
 } from '@/components/ui/field';
 import { Textarea } from '@/components/ui/textarea';
 import { DatePicker } from '@/components/admin/date-picker';
+import { hasInvalidDateDraft } from '@/lib/date-format';
 import { useClipboard } from '@/hooks/use-clipboard';
 import projectsRoutes from '@/routes/projects';
 import type { FindingLifecycle, IssueRow } from '@/types';
 import { useDateFormat } from '@/lib/date-format';
 
-/** Today as `YYYY-MM-DD` in the browser's timezone, the earliest last day of a dismissal. */
+/** Today as `YYYY-MM-DD` in UTC, the earliest last day the server accepts for a dismissal. */
 function today(): string {
-    const now = new Date();
-    const pad = (value: number): string => String(value).padStart(2, '0');
-
-    return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+    return new Date().toISOString().slice(0, 10);
 }
 
 /**
@@ -195,8 +193,8 @@ export function FindingLifecycleSection({
                         onSubmit={(event) => {
                             event.preventDefault();
 
-                            // The date picker reports an invalid typed date here (app-ui date-picker).
-                            if (!event.currentTarget.checkValidity()) {
+                            // An invalid typed date stays in the picker with its error (app-ui date-picker).
+                            if (hasInvalidDateDraft(event.currentTarget)) {
                                 return;
                             }
 

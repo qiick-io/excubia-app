@@ -346,7 +346,7 @@ export default function AdminActivityLogsIndex({
                             max={dateTo || undefined}
                             onChange={(value) => {
                                 setDateFrom(value ?? '');
-                                visit({ date_from: value ?? undefined });
+                                visit({ date_from: value ?? '' });
                             }}
                         />
                         <DatePicker
@@ -356,7 +356,7 @@ export default function AdminActivityLogsIndex({
                             min={dateFrom || undefined}
                             onChange={(value) => {
                                 setDateTo(value ?? '');
-                                visit({ date_to: value ?? undefined });
+                                visit({ date_to: value ?? '' });
                             }}
                         />
                     </>
