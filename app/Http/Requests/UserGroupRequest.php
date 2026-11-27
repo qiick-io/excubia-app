@@ -117,7 +117,10 @@ class UserGroupRequest extends FormRequest
     public static function groupRoleNamesOf(User $user, ?UserGroup $except = null): array
     {
         return array_values(UserGroup::query()
-            ->whereHas('users', fn ($users) => $users->whereKey($user->getKey()))
+            // Expired memberships grant nothing, as in EffectivePermissionResolverService.
+            ->whereHas('users', fn ($users) => $users->whereKey($user->getKey())->where(
+                fn ($membership) => $membership->whereNull('user_group_user.expires_at')->orWhere('user_group_user.expires_at', '>', now()),
+            ))
             ->when($except !== null, fn ($groups) => $groups->whereKeyNot($except?->getKey()))
             ->with('roles')
             ->get()
