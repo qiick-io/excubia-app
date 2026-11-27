@@ -467,10 +467,13 @@ function ReadinessView({ readiness }: { readiness: Readiness }) {
     const blockedCount = readiness.projects.filter(
         (row) => row.status === 'blocked',
     ).length;
-    // How many projects each blocking package holds back, so the tile names the worst one.
+    // How many blocked projects each package holds back, so the tile names the worst one. Only
+    // blocked rows count: a row the check skipped may still carry an older blocker.
     const projectsPerBlocker = new Map<string, number>();
 
-    for (const row of readiness.projects) {
+    for (const row of readiness.projects.filter(
+        (project) => project.status === 'blocked',
+    )) {
         for (const blocker of row.blockers) {
             projectsPerBlocker.set(
                 blocker.package,

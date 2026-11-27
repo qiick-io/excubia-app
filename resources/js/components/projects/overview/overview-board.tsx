@@ -75,7 +75,8 @@ export function OverviewBoard({
             <section
                 aria-label={t('charts.keyMetrics')}
                 className={cn(
-                    'grid grid-cols-1 gap-4 sm:grid-cols-2',
+                    // An odd last tile spans the two-column row (app-ui docs/charts.md).
+                    'grid grid-cols-1 gap-4 sm:grid-cols-2 sm:*:last:odd:col-span-2 xl:*:last:odd:col-span-1',
                     hasExceptions && runtime !== null
                         ? 'xl:grid-cols-5'
                         : hasExceptions || runtime !== null

@@ -289,7 +289,8 @@ export default function Dashboard({
                 <div className="flex flex-col gap-4">
                     <section
                         className={cn(
-                            'grid grid-cols-1 gap-4 sm:grid-cols-2',
+                            // An odd last tile spans the two-column row (app-ui docs/charts.md).
+                            'grid grid-cols-1 gap-4 sm:grid-cols-2 sm:*:last:odd:col-span-2 xl:*:last:odd:col-span-1',
                             keyRowRequests
                                 ? 'xl:grid-cols-5'
                                 : 'xl:grid-cols-4',

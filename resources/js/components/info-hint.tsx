@@ -33,7 +33,10 @@ export function InfoHint({
                     <Info />
                 </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-72 text-sm text-muted-foreground">
+            <PopoverContent
+                aria-label={label}
+                className="w-72 text-sm text-muted-foreground"
+            >
                 {children}
             </PopoverContent>
         </Popover>
