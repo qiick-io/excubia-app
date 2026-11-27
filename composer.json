@@ -24,7 +24,7 @@
         "qiick/excubia-core": "^1.0@beta",
         "qiick/laravel-access": "^0.1.0-beta.3",
         "qiick/laravel-api-keys": "^0.3.0-beta.4",
-        "qiick/laravel-audit": "dev-develop#ff18c94 as 0.1.0-beta.2",
+        "qiick/laravel-audit": "dev-chore/release-v0.1.0-beta.2#c5b0d087826b08febc55328e909b8641ed0a40a1 as 0.1.0-beta.2",
         "qiick/laravel-http-basics": "^1.0.0-beta.1",
         "qiick/laravel-oidc": "^1.0@beta",
         "qiick/laravel-outbound": "^0.2.0-beta.4",

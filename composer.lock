@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "0f09edfe9a570d0e0901bd41b7019ccd",
+    "content-hash": "81dfd2f7c0fef29ff27b07bed6cd11db",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -4666,16 +4666,16 @@
         },
         {
             "name": "qiick/laravel-audit",
-            "version": "dev-develop",
+            "version": "dev-chore/release-v0.1.0-beta.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/qiick-io/laravel-audit.git",
-                "reference": "ff18c94"
+                "reference": "c5b0d087826b08febc55328e909b8641ed0a40a1"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/qiick-io/laravel-audit/zipball/ff18c94",
-                "reference": "ff18c94",
+                "url": "https://api.github.com/repos/qiick-io/laravel-audit/zipball/c5b0d087826b08febc55328e909b8641ed0a40a1",
+                "reference": "c5b0d087826b08febc55328e909b8641ed0a40a1",
                 "shasum": ""
             },
             "require": {
@@ -4699,7 +4699,6 @@
             "suggest": {
                 "qiick/laravel-access": "Fills actor_kind from its ActorContext (design §4)."
             },
-            "default-branch": true,
             "type": "library",
             "extra": {
                 "laravel": {
@@ -4737,8 +4736,8 @@
                 "issues": "https://github.com/qiick-io/laravel-audit/issues",
                 "source": "https://github.com/qiick-io/laravel-audit"
             },
-            "time": "2026-11-27T19:16:30+00:00",
-            "published-time": "2026-11-27T19:16:35+00:00"
+            "time": "2026-11-27T19:35:27+00:00",
+            "published-time": "2026-11-27T19:35:33+00:00"
         },
         {
             "name": "qiick/laravel-http-basics",
@@ -14410,7 +14409,7 @@
     "aliases": [
         {
             "package": "qiick/laravel-audit",
-            "version": "dev-develop",
+            "version": "dev-chore/release-v0.1.0-beta.2",
             "alias": "0.1.0-beta.2",
             "alias_normalized": "0.1.0.0-beta2"
         }

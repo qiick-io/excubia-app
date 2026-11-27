@@ -41,6 +41,7 @@ if [ "${EXCUBIA_RUN_MIGRATIONS:-true}" != "false" ]; then
     php artisan api-keys:check --no-interaction
     php artisan outbound:check --no-interaction
     php artisan http-basics:check --no-interaction
+    php artisan audit:check --no-interaction
 fi
 
 exec "$@"

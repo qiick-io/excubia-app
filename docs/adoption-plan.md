@@ -33,15 +33,15 @@ Sources, read on 2026-11-25: each package's `README.md`, `UPGRADING.md`, `CHANGE
 
 ## Package status (2026-11-25)
 
-| Package               | Latest tag                          | In Excubia today          | Ready to adopt     |
-| --------------------- | ----------------------------------- | ------------------------- | ------------------ |
-| `laravel-api-keys`    | `v0.2.0` (0.3 changes on `develop`) | no (own code)             | at `v0.3.0-beta.1` |
-| `laravel-access`      | none (0.1.0 described, not tagged)  | no (own code)             | at its first tag   |
-| `laravel-http-basics` | none (pre-0.1.0)                    | no (own code)             | at its first tag   |
-| `laravel-outbound`    | `v0.1.1` (0.2 changes on `develop`) | `v0.1.1` (#399)           | at the 0.2 tag     |
-| `laravel-oidc`        | `v1.0.0-beta.6`                     | `v1.0.0-beta.6` (#401)    | next beta (beta.7) |
-| `laravel-audit`       | none (pre-0.1.0)                    | no (own table, Spatie v5) | at its first tag   |
-| `laravel-settings`    | none (design only, no code)         | no (own code)             | when it exists     |
+| Package               | Latest tag                          | In Excubia today                                                     | Ready to adopt     |
+| --------------------- | ----------------------------------- | -------------------------------------------------------------------- | ------------------ |
+| `laravel-api-keys`    | `v0.2.0` (0.3 changes on `develop`) | no (own code)                                                        | at `v0.3.0-beta.1` |
+| `laravel-access`      | none (0.1.0 described, not tagged)  | no (own code)                                                        | at its first tag   |
+| `laravel-http-basics` | none (pre-0.1.0)                    | no (own code)                                                        | at its first tag   |
+| `laravel-outbound`    | `v0.1.1` (0.2 changes on `develop`) | `v0.1.1` (#399)                                                      | at the 0.2 tag     |
+| `laravel-oidc`        | `v1.0.0-beta.6`                     | `v1.0.0-beta.6` (#401)                                               | next beta (beta.7) |
+| `laravel-audit`       | `v0.1.0-beta.1` (beta.2 prepared)   | beta.2 release branch (#418 successor), locks the tag once published | at `v0.1.0-beta.2` |
+| `laravel-settings`    | none (design only, no code)         | no (own code)                                                        | when it exists     |
 
 ---
 

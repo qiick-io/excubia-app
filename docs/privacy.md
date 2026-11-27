@@ -55,15 +55,20 @@ qiick fleet erasure standard (`.qiick/standards/erasure.md`, `ErasureOrchestrato
 3. Webhook deliveries (`OutboundEraser`, `delete`): pending ones about the person are cancelled,
    payloads dropped.
 4. Idempotency records (`HttpBasicsEraser`, `delete`; none while they live in the cache store).
-5. Excubia's own data: assistant chats, passkeys, their reset token and notifications deleted;
-   `[erased]` replaces their values in the activity log (their own model events, the request IP
-   and user agent of the rows they caused, failed logins under their email or username), in the
+5. Activity log (`AuditEraser`, `anonymise`, qiick/laravel-audit): every row the person, their
+   principal or their keys caused or are about is kept as evidence; personal keys, the request
+   IP and user agent, their identifiers, email addresses and phone numbers become the constant
+   tombstone `erased`. In a row they only caused about another subject (a project they renamed)
+   the subject's attributes stay, except where they hold the person's identifiers.
+6. Excubia's own data: assistant chats, passkeys, their reset token and notifications deleted;
+   `[erased]` replaces what only Excubia knows in the activity log (old values of their own model
+   events, `last_login_ip` included, and failed logins under their email or username), and the
    alerts that name them, found by their public id (history, other users' notifications; a
    queued message redacts the name when it runs, on any queue; failed alert jobs are deleted).
-6. Access: the user row becomes an anonymised, soft-deleted tombstone (`deleted+<public id>@…`,
+7. Access: the user row becomes an anonymised, soft-deleted tombstone (`deleted+<public id>@…`,
    `deleted_<public id>`, every personal column cleared, locale and timezone reset); the principal stays erased with an
    anonymised name.
-7. Close: one `erasure_completed` audit entry (case id and counts, no personal data), then the
+8. Close: one `erasure_completed` audit entry (case id and counts, no personal data), then the
    case is `completed` and its snapshot and user link are dropped.
 
 Only one executor advances a case: a claim with a 15-minute lease, and every step runs in the

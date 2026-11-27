@@ -29,7 +29,7 @@ class UpgradeCommand extends Command
      * validates its config and schema and exits non-zero on a broken deploy. The Docker
      * entrypoint runs the same list.
      */
-    public const PACKAGE_CHECKS = ['access:check', 'api-keys:check', 'outbound:check', 'http-basics:check'];
+    public const PACKAGE_CHECKS = ['access:check', 'api-keys:check', 'outbound:check', 'http-basics:check', 'audit:check'];
 
     protected $signature = 'excubia:upgrade
         {--force : Allow production APP_ENV and/or a dirty git working tree}

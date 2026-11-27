@@ -82,6 +82,21 @@ it('erases a user in every step and closes the case without the person', functio
         ->and(json_encode($audit->properties))->not->toContain('erase-me');
 });
 
+it('runs the qiick/laravel-audit eraser as its own step', function () {
+    $user = erasableUser();
+    $this->actingAs($user);
+    $project = Project::factory()->create(['name' => 'Shop']);
+    $causedIds = Activity::query()->where('causer_type', $user->getMorphClass())->where('causer_id', $user->id)->pluck('id');
+
+    app(DeleteUserAction::class)->execute($user);
+
+    expect(array_keys(ErasureRequest::query()->sole()->steps))->toContain('audit')
+        ->and(ErasureRequest::query()->sole()->steps['audit']['status'])->toBe('done')
+        ->and($causedIds)->not->toBeEmpty()
+        ->and(Activity::query()->whereKey($causedIds)->whereNull('anonymised_at')->count())->toBe(0)
+        ->and(json_encode(Activity::query()->where('subject_id', $project->id)->where('subject_type', $project->getMorphClass())->value('attribute_changes')))->toContain('Shop');
+});
+
 it('leaves a failed step for excubia:resume-erasures, which finishes the case', function () {
     $user = erasableUser();
     // The OIDC eraser's table refuses every statement: its step fails; the next run succeeds.
