@@ -12,10 +12,8 @@ use App\Models\Finding;
 use App\Models\HealthReport;
 use App\Models\Project;
 use App\Models\RuntimeAggregate;
-use App\Models\RuntimeHourlyRollup;
 use App\Models\User;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Date;
 
@@ -43,6 +41,7 @@ class DashboardOverviewService
         private ProjectStalenessService $staleness,
         private FixSuggestionService $fixes,
         private ReportHealthService $health,
+        private DashboardHistoryService $history,
     ) {}
 
     /**
@@ -422,42 +421,26 @@ class DashboardOverviewService
      * the open groups seen most recently. Null blocks when no project pushes that data.
      *
      * @param  Collection<int, Project>  $projects
-     * @return array{runtime: array{requests: int, errors: int, previousRequests: int}|null, exceptions: array{open: int, new: int, top: list<array<string, mixed>>}|null}
+     * @return array{runtime: array{requests: int, errors: int, previousRequests: int|null}|null, exceptions: array{open: int, new: int, top: list<array<string, mixed>>}|null}
      */
     private function telemetry(Collection $projects, CarbonImmutable $today, int $periodDays): array
     {
         $ids = $projects->pluck('id');
         $from = $today->subDays($periodDays);
-        // The whole hours of a period from the hourly rollups (#137), the minutes of its partial
-        // first and last hour from the aggregates, so the totals stay exact to the minute.
-        $requests = function (CarbonImmutable $start, CarbonImmutable $end) use ($ids): array {
-            $firstHour = $start->ceilHour();
-            $lastHour = $end->startOfHour();
-
-            if ($firstHour >= $lastHour) {
-                return $this->requestSums(RuntimeAggregate::query()->toBase(), $ids, $start, $end);
-            }
-
-            $hours = $this->requestSums(RuntimeHourlyRollup::query()->toBase(), $ids, $firstHour, $lastHour);
-            $head = $this->requestSums(RuntimeAggregate::query()->toBase(), $ids, $start, $firstHour);
-            $tail = $this->requestSums(RuntimeAggregate::query()->toBase(), $ids, $lastHour, $end);
-
-            return [$hours[0] + $head[0] + $tail[0], $hours[1] + $head[1] + $tail[1]];
-        };
-
         $hasRuntime = RuntimeAggregate::query()->whereIn('project_id', $ids)->exists();
         $hasExceptions = ExceptionGroup::query()->whereIn('project_id', $ids)->exists();
-        [$count, $errors] = $requests($from, $today->addMinute());
-        [$previousCount] = $requests($from->subDays($periodDays), $from);
+        $projectIds = array_values($ids->all());
+        $requests = $hasRuntime ? $this->history->requestWindow($projectIds, $from, $today->addMinute()) : null;
+        $previous = $hasRuntime ? $this->history->previousRequestWindow($projectIds, $from->subDays($periodDays), $from, $today) : null;
         $open = ExceptionGroup::query()->whereIn('project_id', $ids)->where('status', ExceptionStatusEnum::Open->value);
         $names = $projects->pluck('name', 'id');
         $slugs = $projects->pluck('slug', 'id');
 
         return [
             'runtime' => $hasRuntime ? [
-                'requests' => (int) round($count),
-                'errors' => (int) round($errors),
-                'previousRequests' => (int) round($previousCount),
+                'requests' => $requests['requests'] ?? 0,
+                'errors' => $requests['errors'] ?? 0,
+                'previousRequests' => $requests === null ? null : ($previous['requests'] ?? null),
             ] : null,
             'exceptions' => $hasExceptions ? [
                 'open' => (clone $open)->count(),
@@ -474,25 +457,5 @@ class DashboardOverviewService
                     ])->all()),
             ] : null,
         ];
-    }
-
-    /**
-     * Estimated requests and errors of the projects between two instants, summed in SQL from the
-     * minute aggregates or the hourly rollups (both have the same columns).
-     *
-     * @param  Collection<int, mixed>  $ids
-     * @return array{0: float, 1: float}
-     */
-    private function requestSums(Builder $query, Collection $ids, CarbonImmutable $from, CarbonImmutable $to): array
-    {
-        $sum = $query
-            ->whereIn('project_id', $ids)
-            ->where('type', 'request')
-            ->where('bucket', '>=', $from)
-            ->where('bucket', '<', $to)
-            ->selectRaw('sum(1.0 * count / sample_rate) as requests, sum(1.0 * error_count / sample_rate) as errors')
-            ->first();
-
-        return [(float) ($sum->requests ?? 0), (float) ($sum->errors ?? 0)];
     }
 }

@@ -1,4 +1,11 @@
-import type { ReportFinding } from '@/types';
+import type { ReportFinding, Severity } from '@/types';
+
+/** Totals the severity counts in a report or a daily fleet snapshot. */
+export function findingsCount(counts: Record<Severity, number>): number {
+    return (
+        counts.critical + counts.high + counts.medium + counts.low + counts.info
+    );
+}
 
 /**
  * "5 minutes ago" in the user's language, from an ISO date.

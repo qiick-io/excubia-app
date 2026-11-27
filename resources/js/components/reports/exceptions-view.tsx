@@ -20,6 +20,8 @@ import { DataTableToolbar } from '@/components/admin/data-table-toolbar';
 import { PageEmptyState } from '@/components/admin/page-empty-state';
 import { EmptyStatus } from '@/components/empty-status';
 import { InboxSavedViews } from '@/components/inbox-list';
+import { OpenExceptionsKpi } from '@/components/dashboard/kpi-history';
+import type { DashboardHistory } from '@/types/dashboard';
 import type { InboxSavedView } from '@/components/inbox-list';
 import { PageLayout } from '@/components/layout/page-layout';
 import { useDrawerDeepLink } from '@/hooks/use-drawer-deep-link';
@@ -114,6 +116,7 @@ export function ExceptionsView({
     slug,
     groups,
     hasExceptions,
+    kpiHistory,
     range,
     deploys,
     canManage,
@@ -124,6 +127,7 @@ export function ExceptionsView({
     groups: ExceptionGroupRow[];
     /** Whether the project has groups at all, also outside the range. */
     hasExceptions: boolean;
+    kpiHistory?: DashboardHistory['exceptions'];
     range: TimeRange;
     deploys: RuntimeDeploy[];
     canManage: boolean;
@@ -606,6 +610,15 @@ export function ExceptionsView({
                     </div>
                 }
             >
+                {kpiHistory && (
+                    <OpenExceptionsKpi
+                        history={kpiHistory}
+                        className="mb-4 max-w-sm"
+                        secondary={t(
+                            'dashboard.telemetry.openExceptionsContext',
+                        )}
+                    />
+                )}
                 {filtered.length === 0 ? (
                     <PageEmptyState
                         icon={SearchX}
