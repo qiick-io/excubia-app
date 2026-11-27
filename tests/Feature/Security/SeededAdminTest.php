@@ -78,6 +78,17 @@ it('skips the seeded super admin in production when the password is weak', funct
     expect(User::query()->exists())->toBeFalse();
 });
 
+it('skips the seeded super admin in production when the password is based on an Excubia identifier', function () {
+    configureInitialSuperAdminServer();
+    config(['super_admin.password' => 'ExCuBiA-System2026']);
+
+    $this->artisan('db:seed', ['--class' => CreateSuperAdminSeeder::class, '--force' => true])
+        ->expectsOutputToContain(__('validation.password.context_specific'))
+        ->assertSuccessful();
+
+    expect(User::query()->exists())->toBeFalse();
+});
+
 it('skips the seeded super admin in production when the password is empty', function (?string $password) {
     configureInitialSuperAdminServer();
     config(['super_admin.password' => $password]);
