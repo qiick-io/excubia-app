@@ -1082,7 +1082,6 @@
         "noIssuesDescription": "L'ultimo report non ha problemi che avvisano o falliscono.",
         "installed": "Installata",
         "fixedIn": "Corretto in",
-        "planDescription": "L'ordine consigliato degli aggiornamenti, dal più urgente.",
         "plan": {
             "packageCount_one": "{{count}} pacchetto",
             "packageCount_other": "{{count}} pacchetti",
@@ -1100,7 +1099,9 @@
                 "npm-patch": "Aggiorna i pacchetti npm all'ultima patch",
                 "license-review": "Rivedi le licenze delle dipendenze",
                 "unknown": "Passo di aggiornamento"
-            }
+            },
+            "copyPrompt": "Copia prompt per l'AI",
+            "mcpHint": "I client AI ricevono lo stesso piano via MCP con lo strumento <code>get-upgrade-plan</code> (<docs>guida MCP</docs>)."
         },
         "trend": {
             "title": "Problemi nel tempo",

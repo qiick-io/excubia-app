@@ -1,4 +1,6 @@
-import { useTranslation } from 'react-i18next';
+import { Sparkles } from 'lucide-react';
+import { Trans, useTranslation } from 'react-i18next';
+import { useCopyWithToast } from '@/components/reports/fix-actions';
 import { Timeline } from '@/components/timeline';
 import type {
     TimelineChip,
@@ -6,16 +8,25 @@ import type {
     TimelineStep,
     TimelineStepStatus,
 } from '@/components/timeline';
+import { Button } from '@/components/ui/button';
 import {
     Card,
     CardContent,
-    CardDescription,
+    CardFooter,
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
-import { buildUpgradePlanView } from '@/lib/upgrade-plan';
+import { buildUpgradePlanView, upgradePlanPrompt } from '@/lib/upgrade-plan';
 import type { UpgradePlanTimelineStep } from '@/lib/upgrade-plan';
-import type { HealthReportBody, UpgradePlanStep } from '@/types';
+import type {
+    HealthReportBody,
+    HealthReportSummary,
+    UpgradePlanStep,
+} from '@/types';
+
+/** The MCP guide's tool list, where `get-upgrade-plan` is described. */
+const MCP_TOOLS_DOCS_URL =
+    'https://github.com/qiick-io/excubia-app/blob/develop/docs/mcp.md#tools';
 
 /** Compact density: the plan sits inside a card on the project page. */
 const PLAN_TIMELINE_DENSITY: TimelineDensity = 'compact';
@@ -25,18 +36,54 @@ const PLAN_TIMELINE_DENSITY: TimelineDensity = 'compact';
  *
  * Structured steps (excubia-core 1.0.0-rc.2+) render as the optional
  * `timeline` pattern, labelled by kind with package chips. Older reports
- * without `kind` keep the plain numbered list (#333).
+ * without `kind` keep the plain numbered list (#333). The plan copies as a prompt for the
+ * user's own coding assistant, and, when MCP serves it, the footer points AI clients at the
+ * tool `get-upgrade-plan`, which returns the same steps.
  */
-export function PlanView({ report }: { report: HealthReportBody }) {
+export function PlanView({
+    projectName,
+    latest,
+    report,
+    isMcpToolAvailable,
+}: {
+    projectName: string;
+    latest: HealthReportSummary;
+    report: HealthReportBody;
+    /** MCP is on and Settings → AI → Tools keeps `get-upgrade-plan`. */
+    isMcpToolAvailable: boolean;
+}) {
     const { t } = useTranslation();
+    const copyWithToast = useCopyWithToast();
     const upgradePlan: UpgradePlanStep[] = report.upgradePlan;
     const planView = buildUpgradePlanView(upgradePlan);
 
     return (
         <Card>
-            <CardHeader className="pb-3">
+            {/* A wrapping row, not CardAction's fixed columns: the button drops under the
+                title on a narrow phone instead of overflowing it. */}
+            <CardHeader className="flex flex-wrap items-center justify-between gap-2 pb-3">
                 <CardTitle>{t('report.upgradePlan')}</CardTitle>
-                <CardDescription>{t('report.planDescription')}</CardDescription>
+                {upgradePlan.length > 0 ? (
+                    <div>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            className="text-ai-text"
+                            onClick={() =>
+                                void copyWithToast(
+                                    upgradePlanPrompt({
+                                        projectName,
+                                        runtimes: latest.runtime,
+                                        steps: upgradePlan,
+                                    }),
+                                )
+                            }
+                        >
+                            <Sparkles />
+                            {t('report.plan.copyPrompt')}
+                        </Button>
+                    </div>
+                ) : null}
             </CardHeader>
             <CardContent>
                 {upgradePlan.length === 0 ? (
@@ -59,6 +106,26 @@ export function PlanView({ report }: { report: HealthReportBody }) {
                     />
                 )}
             </CardContent>
+            {upgradePlan.length > 0 && isMcpToolAvailable ? (
+                <CardFooter className="text-sm text-muted-foreground">
+                    <p>
+                        <Trans
+                            i18nKey="report.plan.mcpHint"
+                            components={{
+                                code: <code className="font-mono text-xs" />,
+                                docs: (
+                                    <a
+                                        href={MCP_TOOLS_DOCS_URL}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="text-primary underline underline-offset-4"
+                                    />
+                                ),
+                            }}
+                        />
+                    </p>
+                </CardFooter>
+            ) : null}
         </Card>
     );
 }

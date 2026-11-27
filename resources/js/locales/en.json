@@ -1082,7 +1082,6 @@
         "noIssuesDescription": "The latest report has no finding that warns or fails.",
         "installed": "Installed",
         "fixedIn": "Fixed in",
-        "planDescription": "The suggested order of the upgrades, most urgent first.",
         "plan": {
             "packageCount_one": "{{count}} package",
             "packageCount_other": "{{count}} packages",
@@ -1100,7 +1099,9 @@
                 "npm-patch": "Update npm packages to the latest patch",
                 "license-review": "Review dependency licenses",
                 "unknown": "Upgrade step"
-            }
+            },
+            "copyPrompt": "Copy prompt for AI",
+            "mcpHint": "AI clients get the same plan over MCP with the <code>get-upgrade-plan</code> tool (<docs>MCP guide</docs>)."
         },
         "trend": {
             "title": "Findings over time",
