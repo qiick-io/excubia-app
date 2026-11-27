@@ -10,7 +10,7 @@ import {
     UserCheck,
 } from 'lucide-react';
 import type { RowSelectionState } from '@tanstack/react-table';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
     DataTable,
@@ -154,9 +154,15 @@ export function ExceptionsView({
         onEdit: (id) => setSelectedId(Number(id)),
     });
 
+    const pendingFilterVisit = useRef<URL | null>(null);
     const visitFilters = useCallback(
         (overrides: Record<string, string | null>) => {
-            const url = new URL(locationPageUrl(), window.location.origin);
+            // The address changes after Inertia responds. Carry in-flight filters into the
+            // next visit so the search debounce cannot bring cleared filters back.
+            const url = new URL(
+                pendingFilterVisit.current?.href ?? locationPageUrl(),
+                window.location.origin,
+            );
             url.searchParams.delete('page');
 
             for (const [key, value] of Object.entries(overrides)) {
@@ -167,6 +173,11 @@ export function ExceptionsView({
                 }
             }
 
+            if (url.href === pendingFilterVisit.current?.href) {
+                return;
+            }
+
+            pendingFilterVisit.current = url;
             router.get(
                 url.pathname + url.search,
                 {},
@@ -176,6 +187,11 @@ export function ExceptionsView({
                     preserveState: true,
                     replace: true,
                     onSuccess: () => setRowSelection({}),
+                    onFinish: () => {
+                        if (pendingFilterVisit.current === url) {
+                            pendingFilterVisit.current = null;
+                        }
+                    },
                 },
             );
         },

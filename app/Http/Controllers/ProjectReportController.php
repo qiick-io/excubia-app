@@ -75,6 +75,8 @@ class ProjectReportController extends Controller
         }
 
         $historyPerPage = $view === 'history' ? app(ListQueryRequest::class)->perPage() : ListQueryRequest::DEFAULT_PER_PAGE;
+        $exceptionUserId = (int) $request->user()?->getAuthIdentifier();
+        $exceptionFilters = $view === 'exceptions' ? app(ExceptionInboxQueryRequest::class)->filtersFor($exceptionUserId) : null;
 
         // Loaded by the first prop that needs it, so the poll does not read the report.
         $report = fn (): ?HealthReport => $project->loadMissing('latestReport')->latestReport;
@@ -156,13 +158,8 @@ class ProjectReportController extends Controller
             // AI usage and estimated cost (#129), only on its tab.
             'ai' => fn (): ?array => $view === 'ai' ? app(AiUsageService::class)->summary($project, $range) : null,
             'exceptions' => fn (): array => $view === null ? $telemetry->exceptions($project) : [],
-            ...($view === 'exceptions' ? [
-                'exceptionInbox' => function () use ($request, $project, $telemetry, $range, $now): array {
-                    $userId = (int) $request->user()?->getAuthIdentifier();
-                    $filters = app(ExceptionInboxQueryRequest::class)->filtersFor($userId);
-
-                    return $telemetry->exceptionInbox($project, $range, $filters, $userId, $now);
-                },
+            ...($exceptionFilters !== null ? [
+                'exceptionInbox' => fn (): array => $telemetry->exceptionInbox($project, $range, $exceptionFilters, $exceptionUserId, $now),
                 'linkedException' => fn (): ?array => $telemetry->linkedException($project, $range, $request->integer('exception')),
             ] : []),
             // Exceptions of the overview's Application section (#250).

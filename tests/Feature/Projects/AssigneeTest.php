@@ -80,6 +80,32 @@ it('assigns and unassigns an exception group, logs it and shows it on the Except
         ->and(Activity::query()->where('event', 'unassigned')->where('subject_id', $group->id)->exists())->toBeTrue();
 });
 
+it('sorts exception groups by assignee and includes unassigned groups in a combined facet', function () {
+    $admin = assigneeUser(RoleEnum::Admin, 'Ada');
+    $reader = assigneeUser(RoleEnum::Reader, 'Grace');
+    $project = Project::factory()->create();
+    $graceGroup = assigneeException($project, 'a');
+    $graceGroup->forceFill(['assigned_user_id' => $reader->id])->save();
+    $unassignedGroup = assigneeException($project, 'b');
+    $adaGroup = assigneeException($project, 'c');
+    $adaGroup->forceFill(['assigned_user_id' => $admin->id])->save();
+
+    $query = ['project' => $project, 'view' => 'exceptions', 'sort' => 'assignee'];
+
+    $this->actingAs($admin)->get(route('projects.view', $query))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('exceptionInbox.groups.data', 3)
+            ->where('exceptionInbox.groups.data.0.id', $adaGroup->id)
+            ->where('exceptionInbox.groups.data.1.id', $graceGroup->id)
+            ->where('exceptionInbox.groups.data.2.id', $unassignedGroup->id));
+
+    $this->get(route('projects.view', [...$query, 'direction' => 'desc', 'assignee' => $reader->id.',none']))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('exceptionInbox.groups.data', 2)
+            ->where('exceptionInbox.groups.data.0.id', $unassignedGroup->id)
+            ->where('exceptionInbox.groups.data.1.id', $graceGroup->id));
+});
+
 it('assigns a finding and records who assigned it to whom in its history', function () {
     $admin = assigneeUser(RoleEnum::Admin, 'Ada');
     $reader = assigneeUser(RoleEnum::Reader, 'Grace');
