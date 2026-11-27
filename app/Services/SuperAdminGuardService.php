@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Models\User;
 use App\Models\UserGroup;
 use Closure;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use LogicException;
@@ -78,45 +79,73 @@ class SuperAdminGuardService
         return $results[0];
     }
 
+    /** Attempts of a guarded transaction: a deadlock between two writes is retried, not shown. */
+    public const TRANSACTION_ATTEMPTS = 3;
+
     /**
-     * Runs a role or group write for every user it affects. `$lockAffectedUsers` runs first in the
-     * transaction: it locks what the write hangs on (the group or role row) and returns the ids of
-     * the users the write touches, read with locking reads only, so a concurrent write cannot add
-     * a user after the list was taken and no plain read fixes an InnoDB snapshot before the users
-     * are locked. The last-super-admin guard then locks every active user, and
-     * ExclusiveSuperAdmin::write() runs inside it over the affected users.
+     * Runs a role or group write for every user it affects, all locks first, in one canonical
+     * order, then the checks against the locked state, then the write:
+     *
+     * 1. `$lockAnchors` locks what the write hangs on (the group or role row) and returns the ids
+     *    of the users it touches, read with locking reads only;
+     * 2. lockUsers() locks every active user and those users in one id-ordered query, the same
+     *    order every guarded write and the package guard use;
+     * 3. `$authorize` re-checks the actor's policy on the target as it now stands, so a target
+     *    that became a protected super-admin after the request's check is refused;
+     * 4. the last-super-admin guard and ExclusiveSuperAdmin::write() run over the locked users.
+     *
+     * No plain read comes before the locks, so InnoDB's snapshot is taken after them. The whole
+     * transaction is retried on a deadlock; the closures must not keep state across attempts.
      *
      * @template TResult
      *
      * @param  ?User  $actor  the acting user; null only for trusted system writes (CLI, OIDC JIT, seeders)
-     * @param  Closure(): list<int>  $lockAffectedUsers
+     * @param  Closure(): list<int>  $lockAnchors
      * @param  Closure(): TResult  $write
+     * @param  (Closure(): mixed)|null  $authorize  throws to refuse; its return value is ignored
      * @return TResult
      *
      * @throws ValidationException when the change would leave no active super-admin
      * @throws ExclusiveSuperAdminException after rolling back a mixed or unauthorised super-admin
+     * @throws AuthorizationException when `$authorize` refuses the locked state
      */
-    public function guardRoleWrite(?User $actor, Closure $lockAffectedUsers, Closure $write, string $errorKey = 'roles'): mixed
+    public function guardRoleWrite(?User $actor, Closure $lockAnchors, Closure $write, ?Closure $authorize = null, string $errorKey = 'roles'): mixed
     {
-        return DB::transaction(function () use ($actor, $lockAffectedUsers, $write, $errorKey): mixed {
-            $affectedUsers = array_values(User::query()
-                ->whereKey($lockAffectedUsers())
-                ->orderBy('id')
-                ->lockForUpdate()
-                ->get()
-                ->all());
+        return DB::transaction(function () use ($actor, $lockAnchors, $write, $authorize, $errorKey): mixed {
+            $affectedUsers = $this->lockUsers($lockAnchors());
+
+            if ($authorize !== null) {
+                $authorize();
+            }
 
             if ($affectedUsers === []) {
                 return $this->preventLosingLastSuperAdmin($write, $errorKey);
             }
 
-            // The guard outside write(): its first statement locks every active user, so the
-            // first plain read (and InnoDB's snapshot) comes after every lock.
             return $this->preventLosingLastSuperAdmin(
                 fn (): mixed => $this->exclusiveSuperAdmin->write($affectedUsers, $write, $actor),
                 $errorKey,
             );
-        });
+        }, self::TRANSACTION_ATTEMPTS);
+    }
+
+    /**
+     * Locks every active user and the given users in one id-ordered query (the canonical order),
+     * then drops the resolver's verdicts read before the locks. Call it first in a transaction.
+     *
+     * @param  list<int>  $userIds
+     * @return list<User> the given users that exist, in id order
+     */
+    public function lockUsers(array $userIds): array
+    {
+        $lockedUsers = User::query()
+            ->where(fn ($users) => $users->where('is_active', true)->orWhereKey($userIds))
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get();
+        $this->resolver->flush();
+
+        return array_values($lockedUsers->whereIn('id', $userIds)->all());
     }
 
     /**

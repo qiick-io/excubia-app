@@ -6,6 +6,8 @@ namespace App\Actions;
 
 use App\Models\User;
 use App\Services\SuperAdminGuardService;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use Qiick\Access\ExclusiveSuperAdminException;
 use Qiick\Access\Principals\DeactivationReason;
@@ -27,16 +29,20 @@ class UpdateUserAction
 
     /**
      * The whole update runs through SuperAdminGuardService::guardRoleWrite(): the user is locked,
-     * the instance keeps an active super-admin, and super-admin stands alone.
+     * the actor's `update` policy is checked again on the locked state, the instance keeps an
+     * active super-admin, and super-admin stands alone.
      *
      * @param  ?User  $actor  the acting user; null only for trusted system writes
      * @param  list<string>  $roles
      *
      * @throws ValidationException when the change would leave no active super-admin
      * @throws ExclusiveSuperAdminException after rolling back a mixed or unauthorised super-admin
+     * @throws AuthorizationException when the actor may no longer update the locked user
      */
     public function execute(?User $actor, User $user, string $firstName, ?string $lastName, string $email, ?string $username, ?string $password, array $roles, bool $isActive, string $timezone = 'UTC'): User
     {
+        $authorize = $actor === null ? null : fn () => Gate::forUser($actor)->authorize('update', $user);
+
         return $this->superAdminGuard->guardRoleWrite($actor, fn (): array => [$user->id], function () use ($user, $firstName, $lastName, $email, $username, $password, $roles, $isActive, $timezone): User {
             $user->forceFill([
                 'first_name' => $firstName,
@@ -62,6 +68,6 @@ class UpdateUserAction
             }
 
             return $user;
-        });
+        }, $authorize);
     }
 }

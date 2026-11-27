@@ -7,8 +7,11 @@ namespace App\Actions;
 use App\Models\Principal;
 use App\Models\User;
 use App\Services\SuperAdminGuardService;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Qiick\Access\Principals\PrincipalDirectory;
 use Qiick\ApiKeys\RevocationReason;
 use Qiick\Oidc\Erasure\OidcEraser;
@@ -30,7 +33,31 @@ class DeleteUserAction
         private OidcEraser $oidcEraser,
     ) {}
 
-    public function execute(User $user): void
+    /**
+     * Every lock first (SuperAdminGuardService::lockUsers()), then the actor's `delete` policy on
+     * the locked state, then the last-super-admin guard: a target that became a protected
+     * super-admin after the request's check is refused. Not a role write, so a mixed holder can
+     * still be deleted.
+     *
+     * @param  ?User  $actor  the admin deleting the account; null when people delete their own
+     *
+     * @throws ValidationException when the user is the last active super-admin
+     * @throws AuthorizationException when the actor may no longer delete the locked user
+     */
+    public function execute(User $user, ?User $actor = null): void
+    {
+        DB::transaction(function () use ($user, $actor): void {
+            $this->superAdminGuard->lockUsers([$user->id]);
+
+            if ($actor !== null) {
+                Gate::forUser($actor)->authorize('delete', $user);
+            }
+
+            $this->erase($user);
+        }, SuperAdminGuardService::TRANSACTION_ATTEMPTS);
+    }
+
+    private function erase(User $user): void
     {
         $this->superAdminGuard->preventLosingLastSuperAdmin(function () use ($user): void {
             $publicId = $user->public_id;

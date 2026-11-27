@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Actions\CreateUserAction;
 use App\Actions\DeleteRoleAction;
+use App\Actions\DeleteUserAction;
 use App\Actions\DeleteUserGroupAction;
 use App\Actions\SaveUserGroupAction;
 use App\Actions\UpdateUserAction;
@@ -14,6 +15,7 @@ use App\Models\UserGroup;
 use App\Services\EffectivePermissionResolverService;
 use App\Services\OidcBreakGlassPolicyService;
 use Database\Seeders\PermissionSeeder;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Validation\ValidationException;
 use Qiick\Access\ExclusiveSuperAdminException;
 use Spatie\Permission\Models\Role;
@@ -143,4 +145,20 @@ it('withholds the super-admin ceiling and break-glass from a mixed holder with a
     expect($permissions->isWithinOwnerCeiling($superAdmin, PermissionEnum::CanDeleteUsers->value))->toBeTrue()
         ->and($permissions->isWithinOwnerCeiling($mixedHolder, PermissionEnum::CanDeleteUsers->value))->toBeFalse()
         ->and(app(OidcBreakGlassPolicyService::class)->isBreakGlassAccount($mixedHolder))->toBeFalse();
+});
+
+it('checks the actor\'s policy again on the locked target, not only in the request', function () {
+    $admin = User::factory()->create()->assignRole(RoleEnum::Admin->value);
+    // The request saw a reader; by the time the action holds the lock the target is a super-admin.
+    $target = User::factory()->create(['first_name' => 'Before'])->assignRole(RoleEnum::SuperAdmin->value);
+
+    expect(fn () => app(UpdateUserAction::class)->execute($admin, $target, 'After', $target->last_name, $target->email, $target->username, null, [RoleEnum::Reader->value], true))
+        ->toThrow(AuthorizationException::class)
+        ->and(fn () => app(DeleteUserAction::class)->execute($target, $admin))
+        ->toThrow(AuthorizationException::class);
+
+    $target->refresh();
+    expect($target->first_name)->toBe('Before')
+        ->and($target->trashed())->toBeFalse()
+        ->and($target->hasRole(RoleEnum::SuperAdmin->value))->toBeTrue();
 });

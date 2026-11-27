@@ -6,6 +6,7 @@ namespace App\Actions;
 
 use App\Models\User;
 use App\Services\SuperAdminGuardService;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use Qiick\Access\ExclusiveSuperAdminException;
 use Spatie\Permission\Models\Role;
@@ -31,6 +32,7 @@ class DeleteRoleAction
             $actor,
             fn (): array => $this->superAdminGuard->lockRoleHolderIds($role),
             fn () => $role->delete(),
+            $actor === null ? null : fn () => Gate::forUser($actor)->authorize('delete', $role),
         );
     }
 }
