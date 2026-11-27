@@ -1,6 +1,7 @@
 import { Link } from '@inertiajs/react';
 import { CircleCheck, UserRound } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { CardTableScroll } from '@/components/layout/card-table-scroll';
 import { PageEmptyState } from '@/components/admin/page-empty-state';
 import { AssignedToMeToggle } from '@/components/reports/assignee-select';
 import { checkLabel } from '@/components/reports/check-details';
@@ -80,7 +81,7 @@ export function TopIssuesCard({
                         className="border-0"
                     />
                 ) : (
-                    <div className="max-h-96 overflow-auto">
+                    <CardTableScroll className="max-h-96">
                         <Table>
                             <TableHeader>
                                 <TableRow>
@@ -218,7 +219,7 @@ export function TopIssuesCard({
                                 ))}
                             </TableBody>
                         </Table>
-                    </div>
+                    </CardTableScroll>
                 )}
             </CardContent>
         </Card>

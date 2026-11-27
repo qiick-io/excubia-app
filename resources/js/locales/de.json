@@ -32,7 +32,8 @@
         "close": "Schließen",
         "confirm": "Bestätigen",
         "generateSecurePassword": "Sicheres Passwort erzeugen",
-        "passwordStrength": "Passwortstärke"
+        "passwordStrength": "Passwortstärke",
+        "aboutTopic": "Über {{topic}}"
     },
     "emptyState": {
         "users": {
@@ -681,7 +682,6 @@
     },
     "activityLog": {
         "title": "Aktivitätsprotokoll",
-        "description": "Schreibgeschützter Audit-Trail für Modelländerungen und Authentifizierungsereignisse.",
         "searchPlaceholder": "Beschreibung oder Subjekt suchen…",
         "allUsers": "Alle Benutzer",
         "allActions": "Alle Aktionen",
@@ -961,7 +961,7 @@
             "emptyMineTitle": "Dir ist nichts zugewiesen",
             "emptyMineDescription": "Kein Befund der neuesten Berichte ist dir zugewiesen.",
             "title": "Wichtigste Befunde",
-            "description": "{{shown}} von {{total}} Befunden, projektübergreifend gruppiert, die schwersten zuerst.",
+            "description": "{{shown}} von {{total}} Befunden",
             "issue": "Befund",
             "projects": "Projekte",
             "emptyTitle": "Keine offenen Befunde",
@@ -969,7 +969,7 @@
         },
         "endOfSupport": {
             "title": "Supportende",
-            "description": "PHP, Laravel und Node beendet oder endend innerhalb eines Jahres.",
+            "description": "Beendet oder endend innerhalb eines Jahres",
             "emptyTitle": "Nichts endet bald",
             "emptyDescription": "Keine Laufzeit erreicht das Ende des Sicherheitssupports innerhalb eines Jahres."
         },
@@ -980,9 +980,7 @@
             "emptyDescription": "Keine Konfigurationsprüfung warnt oder schlägt fehl, oder die Projekte nutzen einen Core vor 1.0."
         },
         "projects": {
-            "byFindings": "Projekte mit den meisten offenen Befunden zuerst.",
-            "title": "Projekte",
-            "description": "Die schwersten zuerst."
+            "title": "Projekte"
         },
         "telemetry": {
             "requests": "Anfragen",
@@ -995,7 +993,6 @@
         },
         "assigned": {
             "title": "Dir zugewiesen",
-            "description": "Offene Ausnahmegruppen und Befunde, um die du dich kümmerst.",
             "exceptions_one": "{{count}} Ausnahme",
             "exceptions_other": "{{count}} Ausnahmen",
             "findings_one": "{{count}} Befund",
@@ -1061,7 +1058,6 @@
         },
         "runtime": {
             "title": "Laufzeiten",
-            "description": "Versionen und Sicherheitssupport aus dem letzten Bericht.",
             "unavailable": "Dieser Bericht enthält keine Laufzeitdetails. Aktualisiere qiick/excubia-core im Projekt auf 1.0.",
             "name": "Laufzeit",
             "version": "Version",
@@ -1077,7 +1073,6 @@
         "generatedAt": "Erstellt am {{date}}",
         "coreVersion": "Erstellt mit excubia-core {{version}}",
         "coreVersionShort": "Core",
-        "checksDescription": "Alle Prüfungen des letzten Berichts und ihr Status.",
         "check": "Prüfung",
         "searchFindings": "Befunde suchen…",
         "allSeverities": "Alle Schweregrade",
@@ -1110,7 +1105,6 @@
         },
         "trend": {
             "title": "Befunde im Zeitverlauf",
-            "description": "Befunde mit Warnung oder Fehler je Bericht, nach Schweregrad.",
             "label": "Gestapeltes Balkendiagramm der Befunde nach Schweregrad über {{count}} Berichte; der letzte hat {{total}} Befunde."
         },
         "overview": {
@@ -1142,7 +1136,7 @@
             "systemProjectHint": "Excubia überwacht sich selbst. Es berichtet täglich von allein und kann nicht gelöscht werden.",
             "attention": {
                 "title": "Handlungsbedarf",
-                "description": "{{shown}} von {{total}} offenen Problemen: zuerst Befunde mit fehlschlagender Infrastruktur, dann nach Schweregrad; danach offene Ausnahmen.",
+                "description": "{{shown}} von {{total}} offenen Problemen",
                 "allFindings": "Alle Befunde",
                 "exception": "Exception",
                 "emptyTitle": "Kein Handlungsbedarf"
@@ -1159,7 +1153,6 @@
             },
             "allChecks": "Alle Prüfungen",
             "checksFailingOnly": "Nur nicht bestandene",
-            "checksFailingDescription": "Die Prüfungen des letzten Berichts mit Warnung oder Fehler.",
             "allChecksPassCount_one": "Die {{count}} Prüfung ist bestanden.",
             "allChecksPassCount_other": "Alle {{count}} Prüfungen sind bestanden."
         },
@@ -1167,7 +1160,7 @@
         "deploy": "Deploy",
         "liveHealth": {
             "title": "Live-Zustand",
-            "description": "Die minütlichen Zustandsproben der letzten Stunde, je Prüfung und Server. Aktualisiert sich jede Minute.",
+            "description": "Letzte Stunde, jede Minute aktualisiert",
             "servers": "Server",
             "lastSample": "Letzte Probe",
             "serverStatus": "{{server}}: {{status}}",
@@ -1236,7 +1229,6 @@
         }
     },
     "permissions": {
-        "description": "Berechtigungen sind in PermissionEnum definiert und werden mit der Datenbank synchronisiert. Weise sie auf der Bearbeitungsseite einer Rolle zu.",
         "sync": "Aus Enum synchronisieren",
         "empty": "Keine Berechtigungen in der Datenbank. Synchronisierung ausführen.",
         "columns": {
@@ -1265,7 +1257,6 @@
         }
     },
     "system": {
-        "description": "Zustand dieser Excubia-Installation. Jeder Punkt verlinkt auf seinen Lösungshinweis.",
         "fixHint": "So beheben: {{item}}",
         "never": "Nie",
         "status": {
@@ -1427,7 +1418,6 @@
         "deprecations": "Deprecations",
         "deprecationsDescription": "PHP-Deprecations pro Quelle und PHP-Version, zur Planung von Upgrades.",
         "servers": "Server",
-        "serversDescription": "Letzte Messung jedes Servers, auf dem der Scheduler läuft.",
         "server": "Server",
         "load": "Last 1 / 5 / 15",
         "memory": "Speicher",
@@ -1566,7 +1556,6 @@
         "selectRow": "{{name}} auswählen"
     },
     "schedule": {
-        "description": "Die geplanten Aufgaben des letzten Berichts, jeweils mit letztem Lauf, nächster Fälligkeit und Status. Jede Minute mit den Läufen aus dem Runtime-Monitoring abgeglichen.",
         "emptyTitle": "Keine geplanten Aufgaben",
         "emptyDescription": "Sende mit php artisan excubia:push den Zeitplan und aktiviere das Runtime-Monitoring, um jede Aufgabe mit ihren Läufen abzugleichen.",
         "guide": "Anleitung zu geplanten Aufgaben",
@@ -1677,7 +1666,6 @@
         "offline": "Realtime offline"
     },
     "alerts": {
-        "description": "Die Alarme dieses Projekts: was gesendet wurde, was fehlschlug und was unterdrückt wurde. Regel oder Problem stummschalten oder Wartungsfenster planen.",
         "maintenanceModeTitle": "Alarme pausiert",
         "maintenanceModeDescription": "Laut dem letzten Bericht ist die Anwendung im Wartungsmodus. Alarme laufen mit dem nächsten Bericht nach php artisan up weiter.",
         "windowsTitle": "Wartungsfenster",
@@ -1688,7 +1676,6 @@
         "windowActive": "Aktiv",
         "windowFormDescription": "Ein einmaliger Zeitraum oder einer, der sich jede Woche wiederholt. Zeiten gelten in der Zeitzone.",
         "mutesTitle": "Stummgeschaltet",
-        "mutesDescription": "Regeln und Probleme, die im Verlauf unten stummgeschaltet wurden.",
         "noMutes": "Nichts ist stummgeschaltet.",
         "wholeRule": "Ganze Regel",
         "forever": "dauerhaft",
@@ -2113,7 +2100,6 @@
         "withinLimits": "Im Rahmen",
         "infrastructure": {
             "title": "Infrastruktur",
-            "description": "Dienste, die die App braucht, aus dem letzten Bericht.",
             "disk": "Festplatte",
             "databaseSize": "Datenbankgröße",
             "connections": "Datenbankverbindungen",
@@ -2139,7 +2125,6 @@
         },
         "dependencies": {
             "title": "Abhängigkeiten",
-            "description": "Veraltete direkte Abhängigkeiten und das Lizenzinventar.",
             "allLicenses": "Alle Lizenzen",
             "outdated": "Veraltet",
             "patch": "Patch",
@@ -2174,7 +2159,6 @@
         "total": "Gesamt",
         "none": "Keine angegeben",
         "flaggedTitle": "Zu prüfende Pakete",
-        "flaggedDescription": "Zuerst verbotene Lizenzen, dann starkes Copyleft, dann fehlende oder unbekannte.",
         "noneFlagged": "Kein Paket nutzt eine verbotene, stark Copyleft- oder unbekannte Lizenz.",
         "noneFlaggedTitle": "Lizenzen in Ordnung",
         "inventoryTitle": "Inventar",
@@ -2197,9 +2181,6 @@
         },
         "readiness": {
             "description": "Aus den offenen Blockern der nächsten Major-Version jedes Projekts: Ein Projekt kann wechseln, wenn keine direkte Abhängigkeit die nächste Laravel-Major-Version blockiert. Ein ausgeblendeter Blocker blockiert nicht.",
-            "target": "Laravel {{major}}",
-            "canMove": "{{ready}} von {{total}} Projekten können heute auf Laravel {{major}} wechseln",
-            "unknownDescription": "Kein Bericht, Laravel nicht gesperrt oder die Blocker-Prüfung lief nicht.",
             "blockers": "Blockierende Pakete",
             "preReleaseOnly": "Nur Vorabversion",
             "uncheckedPackages_one": "{{count}} privates Paket nicht geprüft",
@@ -2220,10 +2201,21 @@
             "dismissedBlockers_other": "{{count}} ausgeblendet",
             "dismissedBlockersTitle": "Ausgeblendete Blocker",
             "showDismissedBlockers_one": "Ausgeblendeten Blocker anzeigen",
-            "showDismissedBlockers_other": "{{count}} ausgeblendete Blocker anzeigen"
+            "showDismissedBlockers_other": "{{count}} ausgeblendete Blocker anzeigen",
+            "kpi": {
+                "ready": "Bereit für das nächste Major",
+                "target": "Laravel {{major}}: {{ready}} von {{total}}",
+                "unknown_one": "{{count}} unbekannt",
+                "unknown_other": "{{count}} unbekannt",
+                "blocked": "Blockiert",
+                "worstBlocker_one": "{{package}} blockiert {{count}} Projekt",
+                "worstBlocker_other": "{{package}} blockiert {{count}} Projekte",
+                "plans": "Mit Upgrade-Plan",
+                "steps_one": "{{count}} Schritt insgesamt",
+                "steps_other": "{{count}} Schritte insgesamt"
+            }
         },
         "advisories": {
-            "description": "Pakete mit bekannten Advisories, aufgegebene oder veraltete Pakete und die Projekte, die sie sperren, aus den offenen Befunden jedes Projekts. Ausgeblendete Befunde stehen separat.",
             "search": "Paket oder Advisory-ID",
             "kindLabel": "Nach Art filtern",
             "allKinds": "Alle Arten",
@@ -2244,11 +2236,9 @@
             "emptyDescription": "Kein neuester Bericht enthält ein bekanntes Advisory, ein aufgegebenes oder veraltetes Paket.",
             "noMatchTitle": "Keine passenden Pakete",
             "noMatchDescription": "Versuche einen anderen Paketnamen oder eine andere Advisory-ID.",
-            "dismissedTitle": "Ausgeblendete Befunde",
-            "dismissedDescription": "Offene Befunde, die ein Benutzer ausgeblendet hat, mit Grund und letztem gültigen Tag."
+            "dismissedTitle": "Ausgeblendete Befunde"
         },
         "eol": {
-            "description": "Supportzeiträume von PHP, Laravel und Node aller Projekte, das nächste Ende zuerst.",
             "active": "Aktiver Support",
             "security": "Sicherheitssupport",
             "today": "Heute",

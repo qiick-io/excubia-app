@@ -267,7 +267,6 @@ export default function AdminActivityLogsIndex({
             <Head title={t('activityLog.title')} />
 
             <PageLayout
-                description={t('activityLog.description')}
                 filters={
                     <>
                         <FilterSearch

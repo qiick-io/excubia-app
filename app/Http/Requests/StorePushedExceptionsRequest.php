@@ -48,7 +48,7 @@ class StorePushedExceptionsRequest extends FormRequest
             'exceptions.groups.*.message' => ['present', 'string', 'max:1000'],
             'exceptions.groups.*.frames' => ['present', 'list', 'max:50'],
             'exceptions.groups.*.frames.*.file' => ['present', 'nullable', 'string', 'max:500'],
-            'exceptions.groups.*.frames.*.line' => ['present', 'nullable', 'integer', 'min:0'],
+            'exceptions.groups.*.frames.*.line' => ['present', 'nullable', 'integer', 'min:0', 'max:'.StorePushedRuntimeRequest::MAX_COUNTER],
             'exceptions.groups.*.frames.*.function' => ['present', 'nullable', 'string', 'max:500'],
             'exceptions.groups.*.frames.*.inApp' => ['required', 'boolean'],
             'exceptions.groups.*.previous' => ['present', 'list', 'max:5'],
@@ -58,7 +58,7 @@ class StorePushedExceptionsRequest extends FormRequest
             'exceptions.groups.*.context.kind' => ['required', 'string', 'max:64'],
             'exceptions.groups.*.context.name' => ['present', 'string', 'max:255'],
             'exceptions.groups.*.environment' => ['required', 'string', 'max:64'],
-            'exceptions.groups.*.count' => ['required', 'integer', 'min:1'],
+            'exceptions.groups.*.count' => ['required', 'integer', 'min:1', 'max:'.StorePushedRuntimeRequest::MAX_COUNTER],
             'exceptions.groups.*.firstSeen' => ['required', 'string', self::TIMESTAMP],
             'exceptions.groups.*.lastSeen' => ['required', 'string', self::TIMESTAMP],
         ]);

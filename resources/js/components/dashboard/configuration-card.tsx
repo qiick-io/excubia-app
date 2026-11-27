@@ -1,16 +1,12 @@
 import { Link } from '@inertiajs/react';
 import { ShieldCheck } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { CardTableScroll } from '@/components/layout/card-table-scroll';
+import { InfoHint } from '@/components/info-hint';
 import { PageEmptyState } from '@/components/admin/page-empty-state';
 import { FixActions } from '@/components/reports/fix-actions';
 import { SeverityBadge } from '@/components/reports/severity-badge';
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 import projectsRoutes from '@/routes/projects';
@@ -32,10 +28,16 @@ export function ConfigurationCard({
     return (
         <Card className={cn('xl:col-span-5', className)}>
             <CardHeader className="pb-3">
-                <CardTitle>{t('dashboard.configuration.title')}</CardTitle>
-                <CardDescription>
-                    {t('dashboard.configuration.description')}
-                </CardDescription>
+                <CardTitle className="flex items-center gap-1">
+                    {t('dashboard.configuration.title')}
+                    <InfoHint
+                        label={t('common.aboutTopic', {
+                            topic: t('dashboard.configuration.title'),
+                        })}
+                    >
+                        {t('dashboard.configuration.description')}
+                    </InfoHint>
+                </CardTitle>
             </CardHeader>
             <CardContent>
                 {rows.length === 0 ? (
@@ -49,7 +51,7 @@ export function ConfigurationCard({
                         className="border-0"
                     />
                 ) : (
-                    <div className="max-h-80 overflow-auto">
+                    <CardTableScroll className="max-h-80">
                         <Table>
                             <TableBody>
                                 {rows.map((row, index) => (
@@ -85,7 +87,7 @@ export function ConfigurationCard({
                                 ))}
                             </TableBody>
                         </Table>
-                    </div>
+                    </CardTableScroll>
                 )}
             </CardContent>
         </Card>

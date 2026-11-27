@@ -2,6 +2,8 @@ import { Link, useForm } from '@inertiajs/react';
 import { ShieldCheck, Sparkles } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
+import { CardTableScroll } from '@/components/layout/card-table-scroll';
+import { InfoHint } from '@/components/info-hint';
 import { PageEmptyState } from '@/components/admin/page-empty-state';
 import { StackedBarChart } from '@/components/reports/severity-chart';
 import {
@@ -256,10 +258,16 @@ export function AiUsageView({
             <section className="grid grid-cols-1 gap-4 xl:grid-cols-12">
                 <Card className="xl:col-span-4">
                     <CardHeader className="pb-3">
-                        <CardTitle>{t('ai.tokens')}</CardTitle>
-                        <CardDescription>
-                            {t('ai.tokensDescription')}
-                        </CardDescription>
+                        <CardTitle className="flex items-center gap-1">
+                            {t('ai.tokens')}
+                            <InfoHint
+                                label={t('common.aboutTopic', {
+                                    topic: t('ai.tokens'),
+                                })}
+                            >
+                                {t('ai.tokensDescription')}
+                            </InfoHint>
+                        </CardTitle>
                     </CardHeader>
                     <CardContent>
                         <Table>
@@ -406,8 +414,14 @@ function BudgetCard({
     return (
         <Card className={className}>
             <CardHeader className="pb-3">
-                <CardTitle>{t('ai.month')}</CardTitle>
-                <CardDescription>{t('ai.monthDescription')}</CardDescription>
+                <CardTitle className="flex items-center gap-1">
+                    {t('ai.month')}
+                    <InfoHint
+                        label={t('common.aboutTopic', { topic: t('ai.month') })}
+                    >
+                        {t('ai.monthDescription')}
+                    </InfoHint>
+                </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
                 <div className="flex items-baseline justify-between gap-2">
@@ -546,7 +560,7 @@ function BreakdownCard<Row>({
                         {t('runtime.noData')}
                     </p>
                 ) : (
-                    <div className="max-h-80 overflow-auto">
+                    <CardTableScroll className="max-h-80">
                         <Table>
                             <TableHeader>
                                 <TableRow>
@@ -583,7 +597,7 @@ function BreakdownCard<Row>({
                                 ))}
                             </TableBody>
                         </Table>
-                    </div>
+                    </CardTableScroll>
                 )}
                 {footer}
             </CardContent>

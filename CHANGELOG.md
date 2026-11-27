@@ -9,6 +9,11 @@ upgrade from the version before (see [docs/self-hosting.md](docs/self-hosting.md
 
 ## [Unreleased]
 
+### Security
+
+- **Bounded ingest counters** (#473): every integer a project pushes (exception counts and lines, runtime counters, durations) has an upper bound, and stored exception counts saturate instead of overflowing, which made the next push and the project page answer 500.
+- **HSTS by default** (#478): in production with an `https://` `APP_URL`, responses carry `Strict-Transport-Security: max-age=31536000`, also behind a TLS proxy the app does not trust; `EXCUBIA_HSTS_MAX_AGE=0` turns it off.
+
 ### Changed
 
 - **Registry pinned to app-ui 7bd30c4**: the drawer focus return and the grouped tab count are now the registry's own (app-ui#279), so their overrides are gone; the theme gains the chart colour tokens.

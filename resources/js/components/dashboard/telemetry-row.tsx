@@ -1,5 +1,6 @@
 import { Link } from '@inertiajs/react';
 import { useTranslation } from 'react-i18next';
+import { CardTableScroll } from '@/components/layout/card-table-scroll';
 import { KpiTile, kpiDeltaOf } from '@/components/charts/kpi-tile';
 import {
     historySparkline,
@@ -52,7 +53,7 @@ export function RequestsKpi({
 /**
  * Runtime and exceptions across the scoped projects (#24, #26): requests and 5xx for the
  * period, open exception groups, and the open groups seen most recently. Rendered only when
- * there are exceptions; without requests the exception cards widen to fill the row (#328).
+ * there are exceptions; without requests the exceptions tile takes the whole row (#328).
  */
 export function TelemetryRow({
     runtime,
@@ -70,20 +71,17 @@ export function TelemetryRow({
     const { t } = useTranslation();
 
     return (
-        <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-12">
+        <section className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {runtime ? (
                 <RequestsKpi
                     runtime={runtime}
                     history={history.requests}
                     periodLabel={periodLabel}
-                    className="xl:col-span-3"
                 />
             ) : null}
             <OpenExceptionsKpi
                 comparisonDays={periodDays}
-                className={
-                    runtime ? 'xl:col-span-3' : 'sm:col-span-2 xl:col-span-3'
-                }
+                className={runtime ? undefined : 'sm:col-span-2'}
                 history={
                     history.exceptions ?? {
                         current: exceptions.open,
@@ -94,13 +92,9 @@ export function TelemetryRow({
                     count: exceptions.new,
                 })}
             />
-            <Card
-                className={
-                    runtime
-                        ? 'sm:col-span-2 xl:col-span-6'
-                        : 'sm:col-span-2 xl:col-span-9'
-                }
-            >
+            {/* Under the tiles, not beside them: a list beside two tiles stretched them with
+                empty space (app-ui docs/dashboard.md, "Card grids"). */}
+            <Card className="sm:col-span-2">
                 <CardHeader className="pb-3">
                     <CardTitle>
                         {t('dashboard.telemetry.topExceptions')}
@@ -112,7 +106,7 @@ export function TelemetryRow({
                             {t('dashboard.telemetry.noOpenExceptions')}
                         </p>
                     ) : (
-                        <div className="max-h-48 overflow-auto">
+                        <CardTableScroll className="max-h-48">
                             <Table>
                                 <TableBody>
                                     {exceptions.top.map((group) => (
@@ -143,7 +137,7 @@ export function TelemetryRow({
                                     ))}
                                 </TableBody>
                             </Table>
-                        </div>
+                        </CardTableScroll>
                     )}
                 </CardContent>
             </Card>
