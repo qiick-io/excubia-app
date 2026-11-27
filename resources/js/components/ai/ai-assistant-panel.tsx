@@ -169,33 +169,35 @@ export function AiAssistantPanel() {
                             {t('assistant.panelDescription')}
                         </DrawerDescription>
                     </div>
-                    <HeaderIconButton
-                        type="button"
-                        variant="ghost"
-                        label={t('assistant.openFullPage')}
-                        onClick={() => {
-                            setOpen(false);
-                            router.visit(
-                                http.data.conversation_id
-                                    ? aiRoutes.show.url(
-                                          http.data.conversation_id,
-                                      )
-                                    : aiRoutes.index.url(),
-                            );
-                        }}
-                    >
-                        <Maximize2 className="size-4" />
-                    </HeaderIconButton>
-                    {/* Full width on a phone: no backdrop to tap (#456). */}
-                    <DrawerClose asChild>
+                    <div className="flex shrink-0 items-center gap-1">
                         <HeaderIconButton
                             type="button"
                             variant="ghost"
-                            label={t('a11y.close')}
+                            label={t('assistant.openFullPage')}
+                            onClick={() => {
+                                setOpen(false);
+                                router.visit(
+                                    http.data.conversation_id
+                                        ? aiRoutes.show.url(
+                                              http.data.conversation_id,
+                                          )
+                                        : aiRoutes.index.url(),
+                                );
+                            }}
                         >
-                            <X className="size-4" />
+                            <Maximize2 className="size-4" />
                         </HeaderIconButton>
-                    </DrawerClose>
+                        {/* Full width on a phone: no backdrop to tap (#456). */}
+                        <DrawerClose asChild>
+                            <HeaderIconButton
+                                type="button"
+                                variant="ghost"
+                                label={t('a11y.close')}
+                            >
+                                <X className="size-4" />
+                            </HeaderIconButton>
+                        </DrawerClose>
+                    </div>
                 </DrawerHeader>
 
                 <DrawerBody className="gap-4" aria-live="polite">

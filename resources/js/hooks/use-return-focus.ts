@@ -23,17 +23,21 @@ export function useReturnFocus(fallbackSelector = '#main-content') {
         rememberOpener,
         onOpenAutoFocus: rememberOpener,
         onCloseAutoFocus: (event: Event): void => {
-            const target = openerRef.current?.isConnected
-                ? openerRef.current
-                : document.querySelector<HTMLElement>(fallbackSelector);
+            const opener = openerRef.current;
             openerRef.current = null;
+            event.preventDefault();
 
-            if (target === null) {
-                return;
+            if (opener?.isConnected) {
+                opener.focus({ preventScroll: true });
             }
 
-            event.preventDefault();
-            target.focus({ preventScroll: true });
+            // The opener may still be in the page but hidden (a collapsed sidebar): then it
+            // could not take focus, and the main content does.
+            if (document.activeElement !== opener || opener === null) {
+                document
+                    .querySelector<HTMLElement>(fallbackSelector)
+                    ?.focus({ preventScroll: true });
+            }
         },
     };
 }
