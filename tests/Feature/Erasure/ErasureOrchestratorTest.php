@@ -37,6 +37,19 @@ beforeEach(function () {
     User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value);
 });
 
+/**
+ * Makes every statement on `user_identities` fail while the flag is set, on any engine (no DDL,
+ * which would end the test's transaction on MySQL).
+ */
+function failUserIdentitiesWhile(ArrayObject $flag): void
+{
+    DB::connection()->beforeExecuting(function (string $query) use ($flag): void {
+        if ($flag['down'] && str_contains($query, 'user_identities')) {
+            throw new RuntimeException('user_identities unavailable');
+        }
+    });
+}
+
 function erasableUser(): User
 {
     $user = User::factory()->create(['email' => 'erase-me@example.test', 'username' => 'erase-me', 'first_name' => 'Erasmus', 'last_name' => 'Gone']);
@@ -71,8 +84,9 @@ it('erases a user in every step and closes the case without the person', functio
 
 it('leaves a failed step for excubia:resume-erasures, which finishes the case', function () {
     $user = erasableUser();
-    // The OIDC eraser's table is away: its step fails, the next run finds it back.
-    DB::statement('ALTER TABLE user_identities RENAME TO user_identities_away');
+    // The OIDC eraser's table refuses every statement: its step fails; the next run succeeds.
+    $isOidcStoreDown = new ArrayObject(['down' => true]);
+    failUserIdentitiesWhile($isOidcStoreDown);
 
     app(DeleteUserAction::class)->execute($user);
     $erasureRequest = ErasureRequest::query()->sole();
@@ -84,7 +98,7 @@ it('leaves a failed step for excubia:resume-erasures, which finishes the case', 
         ->and($user->fresh()->is_active)->toBeFalse()
         ->and($user->fresh()->email)->toBe('erase-me@example.test');
 
-    DB::statement('ALTER TABLE user_identities_away RENAME TO user_identities');
+    $isOidcStoreDown['down'] = false;
 
     $this->artisan('excubia:resume-erasures', ['--dry-run' => true])->expectsOutputToContain('Would resume 1 erasures')->assertSuccessful();
     expect($erasureRequest->fresh()->status)->toBe(ErasureRequest::STATUS_FAILED);
@@ -97,9 +111,10 @@ it('leaves a failed step for excubia:resume-erasures, which finishes the case', 
 
 it('marks a snapshot that no longer decrypts and never retries it', function () {
     $user = erasableUser();
-    DB::statement('ALTER TABLE user_identities RENAME TO user_identities_away');
+    $isOidcStoreDown = new ArrayObject(['down' => true]);
+    failUserIdentitiesWhile($isOidcStoreDown);
     app(DeleteUserAction::class)->execute($user);
-    DB::statement('ALTER TABLE user_identities_away RENAME TO user_identities');
+    $isOidcStoreDown['down'] = false;
     $erasureRequest = ErasureRequest::query()->sole();
     DB::table('erasure_requests')->where('id', $erasureRequest->id)->update(['subject' => 'not-encrypted']);
 
