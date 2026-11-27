@@ -252,7 +252,11 @@ export default function ProjectShow({
                             }
                         />
                     ) : view === 'plan' ? (
-                        <PlanView report={report} />
+                        <PlanView
+                            projectName={project.name}
+                            latest={latest}
+                            report={report}
+                        />
                     ) : view === 'licenses' ? (
                         <LicensesView licenses={health?.licenses ?? null} />
                     ) : (

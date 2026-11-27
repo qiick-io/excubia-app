@@ -1087,7 +1087,6 @@
         "noIssuesDescription": "Der letzte Bericht hat keine Befunde mit Warnung oder Fehler.",
         "installed": "Installiert",
         "fixedIn": "Behoben in",
-        "planDescription": "Die empfohlene Reihenfolge der Upgrades, das Dringendste zuerst.",
         "plan": {
             "packageCount_one": "{{count}} Paket",
             "packageCount_other": "{{count}} Pakete",
@@ -1105,7 +1104,9 @@
                 "npm-patch": "npm-Pakete auf den neuesten Patch aktualisieren",
                 "license-review": "Abhängigkeitslizenzen prüfen",
                 "unknown": "Upgrade-Schritt"
-            }
+            },
+            "copyPrompt": "Prompt für KI kopieren",
+            "mcpHint": "KI-Clients erhalten denselben Plan über MCP mit dem Tool <code>get-upgrade-plan</code> (<docs>MCP-Anleitung</docs>)."
         },
         "trend": {
             "title": "Befunde im Zeitverlauf",
