@@ -325,10 +325,11 @@ it('answers every API-key refusal with the fleet RFC 6750 shape', function () {
     ApiKey::query()->where('key_prefix', apiKeyPrefixOf($ipKey))->sole()
         ->forceFill(['ip_allowlist' => ['203.0.113.10']])->save();
 
+    // No credentials: RFC 6750 §3.1 challenge without an error code (laravel-api-keys #90).
     callWithApiKey(null)
         ->assertUnauthorized()
         ->assertJsonPath('error', 'invalid_token')
-        ->assertHeader('WWW-Authenticate', 'Bearer error="invalid_token"');
+        ->assertHeader('WWW-Authenticate', 'Bearer realm="api-keys"');
     callWithApiKey($expiredKey)
         ->assertUnauthorized()
         ->assertJsonPath('error', 'invalid_token')
