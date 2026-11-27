@@ -138,6 +138,24 @@ it('creates a verified user with roles', function () {
         ->and($user->is_active)->toBeTrue();
 });
 
+it('keeps super-admin exclusive and lets other roles combine', function () {
+    $superAdmin = managedUser(RoleEnum::SuperAdmin);
+
+    $this->actingAs($superAdmin)
+        ->post(route('users.store'), userPayload(['roles' => [RoleEnum::SuperAdmin->value, RoleEnum::Admin->value]]))
+        ->assertSessionHasErrors('roles');
+
+    expect(User::query()->where('email', 'grace@example.com')->exists())->toBeFalse();
+
+    $this->actingAs($superAdmin)
+        ->post(route('users.store'), userPayload(['roles' => [RoleEnum::Admin->value, RoleEnum::Reader->value]]))
+        ->assertSessionHasNoErrors();
+
+    $this->actingAs($superAdmin)
+        ->put(route('users.update', $superAdmin), userPayload(['email' => $superAdmin->email, 'roles' => [RoleEnum::SuperAdmin->value, RoleEnum::Reader->value]]))
+        ->assertSessionHasErrors('roles');
+});
+
 it('validates new users', function () {
     $admin = managedUser(RoleEnum::Admin);
 

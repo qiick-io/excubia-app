@@ -64,17 +64,18 @@ class EffectivePermissionResolverService
     public function hasPermission(User $user, string $permission): bool
     {
         return $this->isApiActor()
-            ? $this->hasAssignedPermission($user, $permission)
+            ? $this->isWithinOwnerCeiling($user, $permission)
             : $this->resolver->hasPermission($user, $permission);
     }
 
     /**
-     * The owner ceiling behind an API key: assigned permissions only, never the super-admin
-     * grant, read fresh on every request (qiick/laravel-access design §6).
+     * The owner ceiling behind an API key, read fresh on every request: assigned permissions,
+     * or every PermissionEnum case for a super-admin, never the super-admin Gate pass
+     * (qiick/laravel-access decision 2026-11-26).
      */
-    public function hasAssignedPermission(User $user, string $permission): bool
+    public function isWithinOwnerCeiling(User $user, string $permission): bool
     {
-        return $this->resolver->hasAssignedPermission($user, $permission, fresh: true);
+        return $this->resolver->isWithinOwnerCeiling($user, $permission, fresh: true);
     }
 
     private function isApiActor(): bool

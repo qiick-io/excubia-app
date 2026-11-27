@@ -658,7 +658,7 @@
             "create": "API-Schlüssel erstellen",
             "createTitle": "API-Schlüssel erstellen",
             "createDescription": "Benennen Sie den Schlüssel nach dem Client, der ihn nutzt, wählen Sie, was er darf, und optional, wann er abläuft.",
-            "noGrantableScopes": "Für einen MCP-Schlüssel braucht Ihr Konto eine Rolle mit der Berechtigung zur KI-Nutzung, zum Beispiel Admin. Ein Super Admin kann die Rolle unter Benutzer zuweisen, auch dem eigenen Konto.",
+            "noGrantableScopes": "Für einen MCP-Schlüssel braucht Ihr Konto die Berechtigung zur KI-Nutzung, zum Beispiel über die Rolle Admin oder Super Admin.",
             "empty": {
                 "title": "Noch keine API-Schlüssel",
                 "description": "Erstellen Sie einen Schlüssel, um einen KI-Client mit Excubia zu verbinden."
@@ -794,8 +794,6 @@
             "username": "Benutzername",
             "newPasswordOptional": "Neues Passwort (optional)",
             "passwordRequired": "Passwort *",
-            "rolesRequired": "Rollen *",
-            "rolesPlaceholder": "Mindestens eine Rolle auswählen",
             "rolesLocked": "Sie können Ihre eigenen Rollen nicht ändern.",
             "timezone": "Zeitzone"
         }
@@ -2560,5 +2558,10 @@
         "backToDashboard": "Zurück zum Dashboard",
         "signIn": "Anmelden",
         "tryAgain": "Erneut versuchen"
+    },
+    "rolePicker": {
+        "legend": "Rollen",
+        "description": "Die Berechtigungen aller ausgewählten Rollen gelten gemeinsam.",
+        "superAdminHint": "Alle Berechtigungen. Kann nicht mit anderen Rollen kombiniert werden."
     }
 }

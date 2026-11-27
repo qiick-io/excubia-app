@@ -120,13 +120,14 @@ export function useApiKeyColumns<Row extends ApiKeyListRow>({
 
     return useMemo(() => {
         const judgedAt = now ?? new Date();
-        const dateFormat = new Intl.DateTimeFormat(i18n.language, {
+        const dateTimeFormat = new Intl.DateTimeFormat(i18n.language, {
             dateStyle: 'medium',
+            timeStyle: 'short',
         });
-        const formatDate = (isoDate: string | null, emptyLabel: string) =>
+        const formatTimestamp = (isoDate: string | null, emptyLabel: string) =>
             isoDate === null
                 ? emptyLabel
-                : dateFormat.format(new Date(isoDate));
+                : dateTimeFormat.format(new Date(isoDate));
 
         return [
             {
@@ -174,7 +175,7 @@ export function useApiKeyColumns<Row extends ApiKeyListRow>({
                 header: t('apiKeys.list.lastUsed'),
                 meta: { cellClassName: 'text-muted-foreground' },
                 cell: ({ row }) =>
-                    formatDate(
+                    formatTimestamp(
                         row.original.last_used_at,
                         t('apiKeys.list.neverUsed'),
                     ),
@@ -184,7 +185,7 @@ export function useApiKeyColumns<Row extends ApiKeyListRow>({
                 header: t('apiKeys.list.expires'),
                 meta: { cellClassName: 'text-muted-foreground' },
                 cell: ({ row }) =>
-                    formatDate(
+                    formatTimestamp(
                         row.original.expires_at,
                         t('apiKeys.list.never'),
                     ),

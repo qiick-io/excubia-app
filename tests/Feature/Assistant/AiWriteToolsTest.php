@@ -31,7 +31,6 @@ use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Ai\Models\Conversation;
 use Laravel\Ai\Responses\Data\ToolCall;
 use Laravel\Ai\Tools\Request;
-use Spatie\Permission\Models\Role;
 
 /**
  * The write tools of the Assistant and the MCP server (#320): each one through the Assistant and
@@ -456,14 +455,14 @@ it('keeps the write tools on after an upgrade that kept an older tool list, and 
             ->where('tools.9.kind', 'write'));
 });
 
-it('never lets a key use its owner\'s super-admin grant in the MCP tools, only assigned permissions', function () {
+it('lets a super-admin\'s key use every permission in the MCP tools, never the super-admin pass', function () {
     config(['excubia.mcp_enabled' => true]);
     $shop = Project::factory()->create(['slug' => 'shop']);
     Project::factory()->create(['slug' => 'vault', 'visibility' => ProjectVisibilityEnum::Admins]);
     $group = writerException($shop, 'a');
-    // can-use-ai assigned (the key works); everything else only through the super-admin grant.
-    $aiOnly = Role::findOrCreate('ai-only', 'web')->givePermissionTo(PermissionEnum::CanUseAi->value, PermissionEnum::CanShowProjects->value);
-    $owner = User::factory()->create()->assignRole([RoleEnum::SuperAdmin->value, $aiOnly->name]);
+    // Decision 2026-11-26: the owner's ceiling is every PermissionEnum case, but the
+    // super-admin pass (here: admins-only projects) never reaches the key.
+    $owner = User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value);
     $plainKey = writerKey($owner);
 
     $projects = json_decode((string) writerMcp($plainKey, 'tools/call', ['name' => 'list-projects', 'arguments' => []], 'list-projects')
@@ -473,17 +472,23 @@ it('never lets a key use its owner\'s super-admin grant in the MCP tools, only a
 
     writerMcp($plainKey, 'tools/call', ['name' => 'update-exception-status', 'arguments' => ['project' => 'shop', 'ids' => [$group->id], 'status' => 'ignored']], 'update-exception-status')
         ->assertOk()
-        ->assertJsonPath('result.isError', true);
+        ->assertJsonPath('result.isError', false);
 
-    expect($group->fresh()->status)->toBe(ExceptionStatusEnum::Open);
+    expect($group->fresh()->status)->toBe(ExceptionStatusEnum::Ignored);
 });
 
-it('offers a super-admin only the scopes their assigned permissions cover, so every key they create works', function () {
+it('offers a super-admin alone every scope, so they can create a key without another role', function () {
     $superAdmin = User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value);
 
-    expect(ApiKeyScopeEnum::scopesCreatorMayGrant($superAdmin))->toBe([]);
+    expect(ApiKeyScopeEnum::scopesCreatorMayGrant($superAdmin))->toBe(ApiKeyScopeEnum::cases());
 
     $this->actingAs($superAdmin)
         ->post(route('api-keys.store'), ['name' => 'Agent', 'scopes' => ['mcp:read']])
-        ->assertSessionHasErrors('scopes.0');
+        ->assertSessionHasNoErrors();
+});
+
+it('offers no scope to a user without can-use-ai', function () {
+    $reader = User::factory()->create()->assignRole(RoleEnum::Reader->value);
+
+    expect(ApiKeyScopeEnum::scopesCreatorMayGrant($reader))->toBe([]);
 });

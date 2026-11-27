@@ -1,10 +1,8 @@
 import { useForm } from '@inertiajs/react';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-    RoleMultiSelect,
-    withSelectedRoles,
-} from '@/components/admin/role-multi-select';
+import { withSelectedRoles } from '@/components/admin/role-multi-select';
+import { RolePicker } from '@/components/admin/role-picker';
 import PasswordInput from '@/components/password-input';
 import { Button } from '@/components/ui/button';
 import {
@@ -392,34 +390,25 @@ export function UserFormDrawer({
                             </FieldError>
                         </Field>
 
-                        <Field
-                            data-invalid={
-                                form.errors.roles || form.errors['roles.0']
-                                    ? true
-                                    : undefined
-                            }
-                        >
-                            <FieldLabel>
-                                {t('users.form.rolesRequired')}
-                            </FieldLabel>
-                            <RoleMultiSelect
+                        <div className="flex flex-col gap-2">
+                            <RolePicker
                                 value={form.data.roles}
                                 onChange={(selectedRoles) =>
                                     form.setData('roles', selectedRoles)
                                 }
                                 roles={roleOptions}
-                                disabled={readOnly || isRolesLocked}
-                                placeholder={t('users.form.rolesPlaceholder')}
+                                isDisabled={readOnly || isRolesLocked}
+                                isRequired
+                                error={
+                                    form.errors.roles ?? form.errors['roles.0']
+                                }
                             />
                             {isRolesLocked && !readOnly && (
                                 <FieldDescription id="user-roles-locked-hint">
                                     {t('users.form.rolesLocked')}
                                 </FieldDescription>
                             )}
-                            <FieldError id="user-roles-error">
-                                {form.errors.roles ?? form.errors['roles.0']}
-                            </FieldError>
-                        </Field>
+                        </div>
                     </FieldGroup>
                 </DrawerBody>
 

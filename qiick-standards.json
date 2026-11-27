@@ -88,13 +88,13 @@
         "direct_checks": [
             {
                 "site": "App\\Services\\EffectivePermissionResolverService::hasPermission",
-                "reason": "The product's one resolver entry point the policies call: it forwards to the package resolver, with the assigned-only ceiling under an API actor.",
+                "reason": "The product's one resolver entry point the policies call: it forwards to the package resolver, with the owner ceiling under an API actor.",
                 "decision": "docs/adoption-plan.md",
                 "review_by": "2027-03-01"
             },
             {
-                "site": "App\\Services\\EffectivePermissionResolverService::hasAssignedPermission",
-                "reason": "The API-key owner ceiling (design §6): assigned permissions only, read fresh.",
+                "site": "App\\Services\\EffectivePermissionResolverService::isWithinOwnerCeiling",
+                "reason": "The API-key owner ceiling (design §6, decision 2026-11-26): assigned permissions, or the PermissionEnum cases for a super-admin, read fresh.",
                 "decision": "docs/adoption-plan.md",
                 "review_by": "2027-03-01"
             },

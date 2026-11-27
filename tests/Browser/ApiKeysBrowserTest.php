@@ -45,7 +45,8 @@ function historyStateHidesSecret(string $plainSecret): string
 }
 
 it('creates a key, shows it once, rotates and revokes it', function (string $scheme) {
-    $user = User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value, RoleEnum::Admin->value);
+    // A super-admin alone can create keys (decision 2026-11-26).
+    $user = User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value);
     $this->actingAs($user);
 
     $page = visitA11y(route('api-keys.index', absolute: false), $scheme)
@@ -111,13 +112,13 @@ it('creates a key, shows it once, rotates and revokes it', function (string $sch
         ->assertNoJavaScriptErrors();
 })->with(['light', 'dark']);
 
-it('explains why a super-admin without assigned MCP permissions cannot create a key', function (string $scheme) {
-    $user = User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value);
+it('explains why an account without can-use-ai cannot create a key', function (string $scheme) {
+    $user = User::factory()->create()->assignRole(RoleEnum::Reader->value);
     $this->actingAs($user);
 
     visitA11y(route('api-keys.index', absolute: false), $scheme)
         ->click('[data-test="api-key-create-open"]')
-        ->assertSee('your account needs a role with Can use AI, such as Admin')
+        ->assertSee('your account needs the Can use AI permission')
         ->assertValue(MCP_PERMISSION_SELECT, 'none')
         ->assertDisabled(MCP_PERMISSION_SELECT)
         ->assertDisabled('[data-test="api-key-create-submit"]')
