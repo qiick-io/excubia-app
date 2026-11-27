@@ -168,8 +168,13 @@ export function useListShortcuts<TRow>({
                 'data-list-row-id': id,
                 // Tab onto a row makes it the active one, so `x` and the actions follow focus.
                 // Only the row itself: focus moving to a control inside it changes nothing.
+                // Keyboard focus only: a re-render on a mouse press would replace the pressed
+                // cell before the click, so the row would never open.
                 onFocus: (event: FocusEvent<HTMLElement>) => {
-                    if (event.target === event.currentTarget) {
+                    if (
+                        event.target === event.currentTarget &&
+                        event.currentTarget.matches(':focus-visible')
+                    ) {
                         setActiveId(id);
                     }
                 },

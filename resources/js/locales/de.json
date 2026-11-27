@@ -980,6 +980,7 @@
             "emptyDescription": "Keine Konfigurationsprüfung warnt oder schlägt fehl, oder die Projekte nutzen einen Core vor 1.0."
         },
         "projects": {
+            "byFindings": "Projekte mit den meisten offenen Befunden zuerst.",
             "title": "Projekte",
             "description": "Die schwersten zuerst."
         },
@@ -1152,8 +1153,8 @@
             "deployCount_other": "{{count}} Deploys im Verlauf",
             "stale": {
                 "title": "Dieser Bericht ist veraltet",
-                "description": "Der letzte Bericht kam {{time}}: Alle Zahlen auf dieser Seite stammen von damals.",
-                "descriptionPush": "Der letzte Bericht kam {{time}}: Alle Zahlen auf dieser Seite stammen von damals. Prüfe, ob der Scheduler des Projekts excubia:push ausführt."
+                "description": "Der letzte Bericht kam {{time}}. Befunde, Prüfergebnisse und Laufzeitversionen stammen aus diesem Bericht.",
+                "descriptionPush": "Der letzte Bericht kam {{time}}. Befunde, Prüfergebnisse und Laufzeitversionen stammen aus diesem Bericht. Prüfe, ob der Scheduler des Projekts excubia:push ausführt."
             },
             "allChecks": "Alle Prüfungen",
             "checksFailingOnly": "Nur nicht bestandene",
@@ -2322,6 +2323,16 @@
         "apply": "Anwenden"
     },
     "charts": {
+        "findingsHistoryEmpty": "Der Verlauf benötigt mindestens drei Tage Berichtshistorie.",
+        "keyMetrics": "Kennzahlen, Verlauf über 30 Tage",
+        "findingsBySeverity": "Offene Befunde nach Schweregrad",
+        "checkOutcomes": "Prüfergebnisse",
+        "previousSnapshot_one": "gegenüber vor {{count}} Tag",
+        "previousSnapshot_other": "gegenüber vor {{count}} Tagen",
+        "previousRange": "gegenüber dem vorherigen Zeitraum",
+        "findingsByProject": "Offene Befunde nach Projekt",
+        "metric": "Kennzahl",
+        "date": "Datum",
         "view": "Ansehen",
         "viewRoutes": "Routen ansehen",
         "viewModels": "Modelle ansehen",

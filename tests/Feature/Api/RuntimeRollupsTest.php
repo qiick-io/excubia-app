@@ -6,6 +6,7 @@ use App\Actions\RotateProjectTokenAction;
 use App\Models\Project;
 use App\Models\RuntimeHourlyRollup;
 use App\Services\DashboardOverviewService;
+use App\Services\SettingsRepositoryService;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
@@ -113,6 +114,7 @@ it('prunes the rollups with the runtime retention', function () {
 });
 
 it('totals the dashboard requests exactly at the partial first and last hours', function () {
+    app(SettingsRepositoryService::class)->setMany(['runtime_retention_days' => 30]);
     $project = Project::factory()->create();
     $other = Project::factory()->create();
     pushRollupBatch($project, [
@@ -132,4 +134,10 @@ it('totals the dashboard requests exactly at the partial first and last hours', 
     $runtime = app(DashboardOverviewService::class)->overview(Project::query()->whereKey($project->id)->with('latestReport')->get(), 14)['runtime'];
 
     expect($runtime)->toBe(['requests' => 14, 'errors' => 5, 'previousRequests' => 1030]);
+
+    app(SettingsRepositoryService::class)->setMany(['runtime_retention_days' => 14]);
+
+    $partiallyRetained = app(DashboardOverviewService::class)->overview(Project::query()->whereKey($project->id)->with('latestReport')->get(), 14)['runtime'];
+
+    expect($partiallyRetained)->toBe(['requests' => 14, 'errors' => 5, 'previousRequests' => null]);
 });

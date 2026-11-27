@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Actions\RevokeProjectTokenAction;
 use App\Actions\RotateProjectTokenAction;
+use App\Actions\UpdateExceptionStatusAction;
 use App\Enums\ExceptionStatusEnum;
 use App\Enums\RuntimeTypeEnum;
 use App\Models\ExceptionGroup;
@@ -159,7 +160,8 @@ it('stores exception groups by fingerprint and environment, additive across batc
         ->and($production->context_kind)->toBe('job')
         ->and($production->message)->toBe('SQLSTATE[23505]: duplicate key value for [email]')
         ->and($production->frames[0]['file'])->toBe('app/Actions/CreateUserAction.php')
-        ->and($production->status)->toBe(ExceptionStatusEnum::Open);
+        ->and($production->status)->toBe(ExceptionStatusEnum::Open)
+        ->and($production->openChanges()->pluck('delta')->all())->toBe([1]);
 });
 
 it('reopens a resolved exception group and keeps an ignored one ignored', function () {
@@ -167,15 +169,21 @@ it('reopens a resolved exception group and keeps an ignored one ignored', functi
     $headers = ['Authorization' => "Bearer {$token}"];
     $this->postJson(route('api.exceptions.store'), exceptionsEnvelope([exceptionGroupPayload(), exceptionGroupPayload(['fingerprint' => str_repeat('b', 64)])]), $headers)->assertCreated();
 
-    ExceptionGroup::query()->where('fingerprint', str_repeat('a', 64))->update(['status' => 'resolved', 'resolved_at' => Date::now()]);
-    ExceptionGroup::query()->where('fingerprint', str_repeat('b', 64))->update(['status' => 'ignored']);
+    $updateStatus = app(UpdateExceptionStatusAction::class);
+    $updateStatus->execute($project->exceptionGroups()->where('fingerprint', str_repeat('a', 64))->sole(), ExceptionStatusEnum::Resolved);
+    $updateStatus->execute($project->exceptionGroups()->where('fingerprint', str_repeat('b', 64))->sole(), ExceptionStatusEnum::Ignored);
 
     $this->postJson(route('api.exceptions.store'), exceptionsEnvelope([exceptionGroupPayload(), exceptionGroupPayload(['fingerprint' => str_repeat('b', 64)])]), $headers)->assertCreated();
 
-    expect(ExceptionGroup::query()->where('fingerprint', str_repeat('a', 64))->sole())
+    $reopened = $project->exceptionGroups()->where('fingerprint', str_repeat('a', 64))->sole();
+    $ignored = $project->exceptionGroups()->where('fingerprint', str_repeat('b', 64))->sole();
+
+    expect($reopened)
         ->status->toBe(ExceptionStatusEnum::Open)
         ->resolved_at->toBeNull()
-        ->and(ExceptionGroup::query()->where('fingerprint', str_repeat('b', 64))->sole()->status)->toBe(ExceptionStatusEnum::Ignored);
+        ->and($reopened->openChanges()->orderBy('id')->pluck('delta')->all())->toBe([1, -1, 1])
+        ->and($ignored->status)->toBe(ExceptionStatusEnum::Ignored)
+        ->and($ignored->openChanges()->orderBy('id')->pluck('delta')->all())->toBe([1, -1]);
 });
 
 it('rejects invalid or oversized exception pushes', function () {

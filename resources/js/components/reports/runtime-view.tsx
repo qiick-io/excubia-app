@@ -17,7 +17,8 @@ import {
     ChartRowsLink,
     deployMarkers,
 } from '@/components/reports/time-range-picker';
-import { StatCard } from '@/components/stat-card';
+import { RuntimeKpis } from '@/components/reports/runtime-kpis';
+import type { DashboardHistory } from '@/types/dashboard';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -86,9 +87,11 @@ type Formatters = {
 export function RuntimeView({
     runtime,
     slug,
+    kpiHistory,
 }: {
     runtime: RuntimeSummary | null;
     slug: string;
+    kpiHistory: DashboardHistory;
 }) {
     const { t } = useTranslation();
 
@@ -121,8 +124,6 @@ export function RuntimeView({
                   }),
     };
     const { requests } = runtime;
-    const errorRate =
-        requests.count > 0 ? (requests.errors / requests.count) * 100 : 0;
     const { bucketText } = rangeTexts;
     const range = { bucket: rangeTexts.bucket, during: rangeTexts.during };
     const statusTotals = requests.timeline.reduce(
@@ -152,45 +153,13 @@ export function RuntimeView({
                 </Alert>
             ) : null}
 
-            <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-12">
-                <StatCard
-                    className="xl:col-span-3"
-                    label={t('runtime.requests')}
-                    value={format.count(requests.count)}
-                    headline={rangeTexts.headline}
-                    context={[
-                        `${t('runtime.statusOk')} ${format.count(statusTotals.ok)} · ${t('runtime.statusClientErrors')} ${format.count(statusTotals.clientErrors)} · ${t('runtime.statusServerErrors')} ${format.count(statusTotals.serverErrors)}`,
-                        runtime.isSampled ? t('runtime.sampled') : null,
-                    ]
-                        .filter(Boolean)
-                        .join(' · ')}
-                />
-                <StatCard
-                    className="xl:col-span-3"
-                    label={t('runtime.errors')}
-                    value={format.count(requests.errors)}
-                    headline={t('runtime.errorRate', {
-                        rate: errorRate.toFixed(errorRate < 1 ? 2 : 1),
-                    })}
-                />
-                <StatCard
-                    className="xl:col-span-3"
-                    label={t('runtime.averageResponse')}
-                    value={format.ms(requests.averageMs)}
-                    headline={t('runtime.allRoutes')}
-                    context={
-                        requests.p50 === null
-                            ? undefined
-                            : `p50 ${format.ms(requests.p50)} · p95 ${format.ms(requests.p95)} · p99 ${format.ms(requests.p99)}`
-                    }
-                />
-                <StatCard
-                    className="xl:col-span-3"
-                    label={t('runtime.slowestResponse')}
-                    value={format.ms(requests.maxMs)}
-                    headline={t('runtime.allRoutes')}
-                />
-            </section>
+            <RuntimeKpis
+                runtime={runtime}
+                history={kpiHistory}
+                rangeLabel={rangeTexts.headline}
+                formatCount={format.count}
+                formatMs={format.ms}
+            />
 
             <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
                 <Card>
