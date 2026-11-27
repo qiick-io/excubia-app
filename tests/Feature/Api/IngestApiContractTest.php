@@ -124,6 +124,29 @@ it('answers every documented case of the endpoint as frozen in the snapshot', fu
     expect(ingestContractAnswers($endpoint))->toBe(ingestContractSnapshot()['endpoints'][$endpoint]);
 })->with(['reports', 'runtime', 'exceptions']);
 
+it('requires the ingest batch id in the JSON body', function (string $endpoint) {
+    $token = app(RotateProjectTokenAction::class)->execute(Project::factory()->create());
+    $envelope = ingestContractEnvelope($endpoint);
+    $query = http_build_query(['batchId' => $envelope['batchId']]);
+    unset($envelope['batchId']);
+
+    ingestContractPost($endpoint.'?'.$query, $token, json_encode($envelope, JSON_THROW_ON_ERROR))
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('batchId');
+})->with(['reports', 'runtime', 'exceptions']);
+
+it('uses the same decoded JSON member for validation and batch idempotency', function (string $endpoint) {
+    $token = app(RotateProjectTokenAction::class)->execute(Project::factory()->create());
+    $earlierBatchId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+    $envelope = json_encode(ingestContractEnvelope($endpoint), JSON_THROW_ON_ERROR);
+    $repeatedMemberBody = '{"batchId":"'.$earlierBatchId.'",'.substr($envelope, 1);
+
+    ingestContractPost($endpoint, $token, $repeatedMemberBody)->assertCreated();
+    ingestContractPost($endpoint, $token, $envelope)->assertOk()->assertJsonPath('status', 'duplicate');
+    ingestContractPost($endpoint, $token, json_encode(ingestContractEnvelope($endpoint, $earlierBatchId), JSON_THROW_ON_ERROR))
+        ->assertCreated();
+})->with(['reports', 'runtime', 'exceptions']);
+
 it('freezes exactly the routes of routes/api.php, each documented in docs/API.md', function () {
     $routes = collect(Route::getRoutes()->getRoutes())
         ->filter(fn ($route): bool => str_starts_with($route->uri(), 'api/'))

@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
-use App\Models\Project;
 use App\Traits\BuildsPerIndexRulesTrait;
 use Illuminate\Contracts\Validation\ValidationRule;
-use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 /**
@@ -16,16 +14,11 @@ use Illuminate\Validation\Rule;
  * core masks every group before it leaves the project; the app stores it as received. The
  * token was checked by AuthenticateProjectTokenMiddleware.
  */
-class StorePushedExceptionsRequest extends FormRequest
+class StorePushedExceptionsRequest extends IngestRequest
 {
     use BuildsPerIndexRulesTrait;
 
     private const TIMESTAMP = 'regex:/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/';
-
-    public function authorize(): bool
-    {
-        return $this->project() instanceof Project;
-    }
 
     /**
      * The group rules are built per index of the pushed groups (BuildsPerIndexRulesTrait, #238).
@@ -72,12 +65,5 @@ class StorePushedExceptionsRequest extends FormRequest
         return [
             'protocolVersion.in' => 'Unsupported protocolVersion. This Excubia app accepts: '.implode(', ', StorePushedReportRequest::PROTOCOL_VERSIONS).'. Update qiick/excubia-core or the app.',
         ];
-    }
-
-    public function project(): ?Project
-    {
-        $project = $this->attributes->get('project');
-
-        return $project instanceof Project ? $project : null;
     }
 }

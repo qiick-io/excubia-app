@@ -15,6 +15,7 @@ The envelope of all three is [`push-schema.json`](https://github.com/qiick-io/ex
 ### Transport and authentication
 
 - `POST`, JSON body (`Content-Type: application/json`), answers are always JSON. Send `Accept: application/json`.
+- The JSON body is the sole source of envelope and payload fields. Send unique object member names. If a name is repeated, PHP retains the last value and that value reaches both validation and storage.
 - HTTPS. excubia-core refuses plain HTTP except to `localhost` and does not follow redirects, so a redirect is a failed push.
 - `Authorization: Bearer <project token>`. The token is created per project in the app (shown once) and stored only as a SHA-256 hash. It never goes in the URL or the body. A user session does not authenticate a push.
 

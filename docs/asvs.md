@@ -6,7 +6,7 @@ The scope covers the browser UI, push API, personal keys, MCP, optional OIDC and
 
 | Met | Partial | Not applicable | Gap |
 | --- | ------- | -------------- | --- |
-| 60  | 137     | 49             | 7   |
+| 61  | 137     | 49             | 6   |
 
 **Met** has evidence for the complete requirement. **Partial** identifies an implemented control and the remaining scope. **Not applicable** records why the feature or architecture is outside scope. Each **Gap** links to a remediation issue. Report sensitive security findings through [the security policy](../SECURITY.md).
 
@@ -315,7 +315,7 @@ For inherited evidence, the owner column names the Composer package and the evid
 | v5.0.0-15.3.4 | Partial | `bootstrap/app.php` and `docs/SECURITY-MODEL.md` describe trusted proxy setup. Verify the deployed middleware and access-log chain.                                                                     |                          |
 | v5.0.0-15.3.5 | Partial | `app/Http/Requests/` and `tests/Feature/Api/IngestApiContractTest.php` show strict input shapes on key boundaries. Review all weakly typed comparisons.                                                 |                          |
 | v5.0.0-15.3.6 | Partial | `resources/js/pages/settings/appearance/sidebar.tsx` uses a Map for keyed state. Inventory dynamic object writes and merges across the frontend.                                                        |                          |
-| v5.0.0-15.3.7 | Gap     | `tests/Feature/Api/IngestApiContractTest.php` covers the normal request body. Add verification of parameter source and duplicate handling. [#535](https://github.com/qiick-io/excubia-app/issues/535)   |                          |
+| v5.0.0-15.3.7 | Met     | `app/Http/Requests/IngestRequest.php` selects only the JSON body. `tests/Feature/Api/IngestApiContractTest.php` verifies source isolation and consistent repeated-member handling on all ingest routes. |                          |
 
 ## V16 Security Logging and Error Handling
 
