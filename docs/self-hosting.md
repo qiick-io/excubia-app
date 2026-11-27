@@ -60,6 +60,19 @@ Any other setting of `.env.example` (another database, `EXCUBIA_AI_ENABLED`, ret
 
 **Uploaded files.** Project logos and the branding files (Settings → Appearance: logo, dark logo, favicon) are stored on `storage/app/public/project-logos/` and `storage/app/private/branding/` by default. Where the filesystem is rebuilt on every deploy (Laravel Cloud, some container platforms), set `EXCUBIA_FILES_DISK` to a bucket disk, for example `s3` with the `AWS_*` keys (`AWS_ENDPOINT` for R2 or MinIO), and install its driver: `composer require league/flysystem-aws-s3-v3`. Both kinds of files then go to that disk under the same relative paths (`project-logos/…`, `branding/…`). The app streams them through its own routes, so the bucket can stay private. To move an existing install, copy those two directories to the bucket before you set the variable.
 
+### Upload malware scanning
+
+`EXCUBIA_UPLOAD_SCANNER` defaults to `off`. Image uploads still use MIME and size validation, and project logo SVGs are sanitized. Enable the ASVS malware-scanning control for your installation by running `clamd` with current signatures and setting the following before you redeploy or rebuild the configuration cache.
+
+```dotenv
+EXCUBIA_UPLOAD_SCANNER=clamav
+EXCUBIA_CLAMAV_ENDPOINT=unix:///run/clamav/clamd.ctl
+```
+
+Give the PHP process access to the Unix socket. For a daemon on the same trusted private network, set `EXCUBIA_CLAMAV_ENDPOINT=tcp://clamav:3310` instead. Restrict TCP access to the app. ClamAV's TCP protocol has no authentication or encryption. Configure `StreamMaxLength`, `MaxFileSize` and `MaxScanSize` to support uploads up to 1 MiB and keep the daemon's signatures current. [ClamAV daemon documentation](https://docs.clamav.net/manual/Usage/Scanning.html#clamd).
+
+The app sends image bytes to `clamd` after MIME and size validation. Uploads require a clean reply before any project or branding changes are saved. A detection blocks the upload. A timeout, connection failure or invalid reply also blocks it, and logs `Upload malware scanner unavailable.` without the file name or content. Verify the deployment with a clean image upload, then make the scanner unavailable in staging and check that the upload fails and the warning appears. Restart the scanner to restore uploads.
+
 ### HTTPS
 
 See [HTTP framing at the proxy boundary](http-framing.md) for verification of each protocol hop when choosing or upgrading the edge proxy.

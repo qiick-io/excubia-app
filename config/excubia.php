@@ -26,6 +26,11 @@ return [
     // Comma-separated identifiers already known to users, such as the organisation and public project slugs.
     'password_denylist' => (string) env('EXCUBIA_PASSWORD_DENYLIST', ''),
 
+    // Optional upload scanning. With clamd enabled, uploads require a clean verdict.
+    'upload_scanner' => env('EXCUBIA_UPLOAD_SCANNER', 'off'),
+
+    'clamav_endpoint' => env('EXCUBIA_CLAMAV_ENDPOINT', 'unix:///run/clamav/clamd.ctl'),
+
     /*
     |--------------------------------------------------------------------------
     | Report history and stale projects

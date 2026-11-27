@@ -2,11 +2,14 @@
 
 declare(strict_types=1);
 
+use App\Contracts\FileScannerContract;
+use App\Enums\FileScanResultEnum;
 use App\Enums\RoleEnum;
 use App\Models\User;
 use App\Services\SettingsRepositoryService;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -95,6 +98,8 @@ it('keeps the saved files when the form is saved without uploads', function () {
 });
 
 it('accepts only small images', function () {
+    $this->mock(FileScannerContract::class)->shouldNotReceive('scan');
+
     $this->actingAs(brandingManager())
         ->put(route('appearance.update'), brandingPayload([
             'project_logo' => UploadedFile::fake()->create('logo.pdf', 10, 'application/pdf'),
@@ -103,3 +108,40 @@ it('accepts only small images', function () {
         ]))
         ->assertSessionHasErrors(['project_logo', 'public_favicon', 'remove_files.0']);
 });
+
+it('checks all branding uploads before saving any of them', function (FileScanResultEnum $verdict, ?string $error) {
+    Log::spy();
+    $scanner = $this->mock(FileScannerContract::class);
+    $logo = UploadedFile::fake()->image('logo.png');
+    $darkLogo = UploadedFile::fake()->image('dark.png');
+    $favicon = UploadedFile::fake()->image('favicon.png');
+    $scanner->shouldReceive('scan')->once()->with($logo)->andReturn(FileScanResultEnum::Clean);
+    $scanner->shouldReceive('scan')->once()->with($darkLogo)->andReturn(FileScanResultEnum::Clean);
+    $scanner->shouldReceive('scan')->once()->with($favicon)->andReturn($verdict);
+
+    $response = $this->actingAs(brandingManager())
+        ->put(route('appearance.update'), brandingPayload([
+            'project_logo' => $logo,
+            'project_logo_dark' => $darkLogo,
+            'public_favicon' => $favicon,
+        ]))
+        ->assertRedirect();
+
+    if ($error === null) {
+        $response->assertSessionHasNoErrors();
+        expect(Storage::disk('local')->allFiles('branding'))->toHaveCount(3);
+
+        return;
+    }
+
+    $response->assertSessionHasErrors(['public_favicon' => __($error)]);
+    expect(Storage::disk('local')->allFiles('branding'))->toBeEmpty();
+
+    if ($verdict === FileScanResultEnum::Unavailable) {
+        Log::shouldHaveReceived('warning')->once()->with('Upload malware scanner unavailable.');
+    }
+})->with([
+    'clean' => [FileScanResultEnum::Clean, null],
+    'infected' => [FileScanResultEnum::Infected, 'validation.upload_malware_detected'],
+    'unavailable' => [FileScanResultEnum::Unavailable, 'validation.upload_scan_unavailable'],
+]);
