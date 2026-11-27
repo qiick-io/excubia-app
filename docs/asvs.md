@@ -6,7 +6,7 @@ The scope covers the browser UI, push API, personal keys, MCP, optional OIDC and
 
 | Met | Partial | Not applicable | Gap |
 | --- | ------- | -------------- | --- |
-| 43  | 138     | 49             | 23  |
+| 45  | 138     | 49             | 21  |
 
 **Met** has evidence for the complete requirement. **Partial** identifies an implemented control and the remaining scope. **Not applicable** records why the feature or architecture is outside scope. Each **Gap** links to a remediation issue. Report sensitive security findings through [the security policy](../SECURITY.md).
 
@@ -118,7 +118,7 @@ For inherited evidence, the owner column names the Composer package and the evid
 | Requirement   | Status         | Evidence                                                                                                                                                                                                                                         | Owner package        |
 | ------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------- |
 | v5.0.0-6.1.1  | Partial        | `docs/SECURITY-MODEL.md` documents login and second-factor throttling. Review how thresholds, recovery and denial-of-service tradeoffs are explained to operators.                                                                               |                      |
-| v5.0.0-6.1.2  | Gap            | `app/Services/SettingsRepositoryService.php` defines the password rules. Document a product vocabulary for password screening. [#519](https://github.com/qiick-io/excubia-app/issues/519)                                                        |                      |
+| v5.0.0-6.1.2  | Met            | The [context-specific password denylist](SECURITY-MODEL.md#context-specific-password-denylist) lists product, project and role terms and identifies the release verification sources.                                                            |                      |
 | v5.0.0-6.1.3  | Partial        | `docs/SECURITY-MODEL.md` describes password, passkey and OIDC sign-in. An explicit cross-path assurance matrix remains open.                                                                                                                     |                      |
 | v5.0.0-6.2.1  | Partial        | `app/Services/SettingsRepositoryService.php` shows several configurable minimums. Verify every supported policy meets the baseline.                                                                                                              |                      |
 | v5.0.0-6.2.2  | Met            | `tests/Feature/Settings/SecurityTest.php` proves an authenticated user can change their password.                                                                                                                                                |                      |
@@ -296,7 +296,7 @@ For inherited evidence, the owner column names the Composer package and the evid
 | v5.0.0-14.2.3 | Partial | `tests/Feature/Assistant/AssistantToolsTest.php` verifies a tool-output allowlist. Review operator-configured external processors and runtime exposure across channels.                                |               |
 | v5.0.0-14.2.4 | Partial | `tests/Feature/Settings/DataRetentionTest.php` and `tests/Feature/Mcp/McpServerTest.php` prove selected retention and access controls. Verify all controls against the protection policy once defined. |               |
 | v5.0.0-14.3.1 | Partial | `tests/Feature/Auth/AuthenticationTest.php` proves server logout, and the browser receives new navigation state. Verify records remaining in DOM, client caches and page history.                      |               |
-| v5.0.0-14.3.2 | Gap     | `app/Http/Middleware/SecurityHeadersMiddleware.php` defines web response headers. Define and verify cache handling for sensitive responses. [#533](https://github.com/qiick-io/excubia-app/issues/533) |               |
+| v5.0.0-14.3.2 | Met     | `app/Http/Middleware/PreventSensitiveResponseCachingMiddleware.php` sets `Cache-Control: no-store, private`. `SecurityHeadersTest` and `FilesDiskTest` verify responses and asset caching.             |               |
 | v5.0.0-14.3.3 | Partial | `app/Http/Middleware/HandleAppearance.php` and `docs/SECURITY-MODEL.md` describe session and display preferences. A full browser-storage inventory remains open.                                       |               |
 
 ## V15 Secure Coding and Architecture

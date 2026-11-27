@@ -74,7 +74,7 @@ it('uploads, serves, replaces and removes a project logo on the configured disk'
     $this->actingAs($admin)->get((string) $project->logoUrl())
         ->assertOk()
         ->assertHeader('Content-Type', 'image/png')
-        ->assertHeader('Cache-Control', 'immutable, max-age=31536000, private');
+        ->assertHeader('Cache-Control', 'no-store, private');
 
     saveProjectLogoThroughForm($admin, $project, ['logo' => UploadedFile::fake()->image('second.png', 64, 64)])->assertRedirect();
     $secondPath = (string) $project->refresh()->logo_path;
@@ -127,7 +127,7 @@ it('uploads, serves, replaces and removes the branding files on the configured d
     Storage::disk('s3')->assertMissing($secondLogoPath);
     expect(app(SettingsRepositoryService::class)->brandingUrls()['logoUrl'])->toBeNull()
         ->and(filesOnDefaultDisks())->toBe([]);
-    $this->get(route('branding.show', 'logo'))->assertNotFound();
+    $this->get(route('branding.show', 'logo'))->assertNotFound()->assertHeaderContains('Cache-Control', 'no-store');
 });
 
 it('keeps logos on the public disk and branding on the local disk when no files disk is set', function (?string $unsetValue) {

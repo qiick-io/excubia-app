@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Enums\RoleEnum;
 use App\Models\User;
 use Database\Seeders\PermissionSeeder;
+use Inertia\Inertia;
 
 /**
  * Baseline security headers on web responses (#153).
@@ -31,6 +32,28 @@ it('sends the headers on redirects too', function () {
     $this->get(route('dashboard'))->assertRedirect()->assertHeader('X-Frame-Options', 'DENY');
 });
 
+it('prevents browser caching of session pages, Inertia payloads and error responses', function () {
+    $this->get(route('login'))->assertOk()->assertHeaderContains('Cache-Control', 'no-store');
+
+    $user = User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value);
+    $this->actingAs($user);
+
+    $this->get(route('dashboard'))->assertOk()->assertHeaderContains('Cache-Control', 'no-store');
+    $this->get(route('dashboard'), ['X-Inertia' => 'true', 'X-Inertia-Version' => (string) Inertia::getVersion()])
+        ->assertOk()
+        ->assertHeader('X-Inertia', 'true')
+        ->assertHeaderContains('Cache-Control', 'no-store');
+    $this->get('/missing-page')->assertNotFound()->assertHeaderContains('Cache-Control', 'no-store');
+});
+
+it('prevents browser caching of authenticated JSON', function () {
+    $user = User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value);
+
+    $this->actingAs($user)->getJson(route('notifications.index'))
+        ->assertOk()
+        ->assertHeaderContains('Cache-Control', 'no-store');
+});
+
 it('sends HSTS only on https requests and only when configured', function () {
     $this->get('https://localhost/login')->assertOk()->assertHeaderMissing('Strict-Transport-Security');
 
@@ -47,7 +70,9 @@ it('sends HSTS behind a TLS proxy it does not trust when APP_URL is https', func
     $this->get('http://localhost/login')->assertOk()->assertHeader('Strict-Transport-Security', 'max-age=31536000');
 });
 
-it('leaves the API and the health check as they were', function () {
-    $this->get('/up')->assertOk();
-    $this->postJson('/api/reports')->assertUnauthorized()->assertHeaderMissing('X-Frame-Options');
+it('keeps browser-only headers off the API and the health check', function () {
+    $this->get('/up')->assertOk()->assertHeaderMissing('X-Frame-Options');
+    $this->postJson('/api/reports')->assertUnauthorized()
+        ->assertHeaderMissing('X-Frame-Options')
+        ->assertHeaderContains('Cache-Control', 'no-store');
 });
