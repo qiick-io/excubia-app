@@ -658,7 +658,7 @@
             "create": "Crea chiave API",
             "createTitle": "Crea chiave API",
             "createDescription": "Dai alla chiave il nome del client che la usa, scegli cosa può fare e, se vuoi, quando scade.",
-            "noGrantableScopes": "Per creare una chiave MCP, al tuo account serve un ruolo con il permesso di usare l’IA, come Admin. Un Super Admin può assegnare il ruolo in Utenti, anche al proprio account.",
+            "noGrantableScopes": "Per creare una chiave MCP, al tuo account serve il permesso di usare l’IA, per esempio tramite il ruolo Admin o Super Admin.",
             "empty": {
                 "title": "Nessuna chiave API",
                 "description": "Crea una chiave per collegare un client AI a Excubia."
@@ -794,8 +794,6 @@
             "username": "Nome utente",
             "newPasswordOptional": "Nuova password (facoltativa)",
             "passwordRequired": "Password *",
-            "rolesRequired": "Ruoli *",
-            "rolesPlaceholder": "Seleziona almeno un ruolo",
             "rolesLocked": "Non puoi cambiare i tuoi ruoli.",
             "timezone": "Fuso orario"
         }
@@ -2579,5 +2577,10 @@
         "timeZoneError": "Il fuso orario non è valido.",
         "today": "Oggi, {{date}}",
         "zonedFormat": "Formato: {{example}} ({{timeZone}})."
+    },
+    "rolePicker": {
+        "legend": "Ruoli",
+        "description": "I permessi di tutti i ruoli selezionati si sommano.",
+        "superAdminHint": "Tutti i permessi. Non si può combinare con altri ruoli."
     }
 }
