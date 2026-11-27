@@ -424,7 +424,8 @@ it('shows the live health of each project in the dashboard list and polls it alo
         ->where('liveHealth', ['shop' => ['status' => 'fail', 'checks' => 2, 'failingChecks' => 1, 'hasStaleServers' => true]])
         ->reloadOnly('liveHealth', fn (Assert $reload) => $reload->missing('overview')->missing('projects')));
 
-    expect(array_filter($queries, fn (string $sql): bool => str_contains($sql, 'health_reports')))->toBe([]);
+    expect(array_filter($queries, fn (string $sql): bool => str_contains($sql, 'health_reports')))->toBe([])
+        ->and(array_filter($queries, fn (string $sql): bool => str_contains($sql, 'runtime_aggregates')))->toHaveCount(1);
 });
 
 it('computes only the live health when the overview polls it', function () {

@@ -10,6 +10,7 @@ use App\Enums\SeverityEnum;
 use App\Models\Project;
 use App\Models\RuntimeAggregate;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
 
 /**
  * The live health of a project (#115), from the minute-level `health` samples of the last
@@ -44,13 +45,28 @@ class HealthStatusService
     public function checks(Project $project, ?CarbonImmutable $now = null): array
     {
         $now ??= CarbonImmutable::now();
-        $samples = RuntimeAggregate::query()
+        $samples = $this->samples($now)
             ->where('project_id', $project->id)
-            ->where('type', RuntimeTypeEnum::Health->value)
-            ->where('bucket', '>=', $now->subMinutes(self::WINDOW_MINUTES))
-            ->orderByDesc('bucket')
             ->get(['dimensions', 'bucket', 'metrics']);
 
+        return $this->checksFromSamples($samples, $now);
+    }
+
+    /** @return Builder<RuntimeAggregate> */
+    private function samples(CarbonImmutable $now): Builder
+    {
+        return RuntimeAggregate::query()
+            ->where('type', RuntimeTypeEnum::Health->value)
+            ->where('bucket', '>=', $now->subMinutes(self::WINDOW_MINUTES))
+            ->orderByDesc('bucket');
+    }
+
+    /**
+     * @param  iterable<RuntimeAggregate>  $samples  A single project's readings, newest first.
+     * @return list<HealthCheck>
+     */
+    private function checksFromSamples(iterable $samples, CarbonImmutable $now): array
+    {
         /** @var array<string, array<string, array<string, array<string, mixed>>>> $minutes check id → server → bucket → merged metrics */
         $minutes = [];
 
@@ -113,25 +129,33 @@ class HealthStatusService
      * projects with samples in the window: the worst check status, the number of checks and of
      * failing checks, and whether a server is stale.
      *
-     * ponytail: one checks() query per project; one grouped query over every project's latest
-     * samples is the upgrade path when a fleet makes the dashboard slow.
      *
      * @param  iterable<Project>  $projects
      * @return array<string, array{status: string, checks: int, failingChecks: int, hasStaleServers: bool}>
      */
     public function summaries(iterable $projects, ?CarbonImmutable $now = null): array
     {
-        $summaries = [];
+        $now ??= CarbonImmutable::now();
+        $slugsByProjectId = [];
 
         foreach ($projects as $project) {
-            $checks = $this->checks($project, $now);
+            $slugsByProjectId[$project->id] = $project->slug;
+        }
 
-            if ($checks === []) {
-                continue;
-            }
+        if ($slugsByProjectId === []) {
+            return [];
+        }
 
-            $summaries[$project->slug] = [
-                // checks() puts the worst status first.
+        $samplesByProjectId = $this->samples($now)
+            ->whereIntegerInRaw('project_id', array_keys($slugsByProjectId))
+            ->get(['project_id', 'dimensions', 'bucket', 'metrics'])
+            ->groupBy('project_id');
+        $summaries = [];
+
+        foreach ($samplesByProjectId as $projectId => $samples) {
+            $checks = $this->checksFromSamples($samples, $now);
+            $summaries[$slugsByProjectId[$projectId]] = [
+                // The checks are sorted with the worst status first.
                 'status' => $checks[0]['status'],
                 'checks' => count($checks),
                 'failingChecks' => count(array_filter($checks, fn (array $check): bool => $check['status'] === 'fail')),
