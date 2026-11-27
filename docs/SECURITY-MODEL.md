@@ -80,6 +80,20 @@ Deleting a project deletes its reports, findings, telemetry, tasks, alerts, mute
 - **First run (`/setup`)**: the admin step exists only while the `users` table is empty. Creation runs under a cache lock and re-checks the table inside it, so two concurrent submissions create one super-admin; the request is throttled (6 per minute). Until that step is done, anyone who can reach the app can claim it: keep a fresh install off the public network (or behind the proxy's access control) until `/setup` is finished. The project step needs a signed-in user with `can-create-projects` and only works while no project exists.
 - **OIDC** (`qiick/laravel-oidc`, #356): the authorization code flow with PKCE (`S256`), `state` and `nonce`; the `id_token` is validated (signature from the JWKS, `iss`, `aud`, `exp`, `nonce`) and userinfo claims never override its `amr`, `acr` or `sid`. The provider is read from Settings → Application only, never from `OIDC_*` env vars; `auth/oidc/redirect`, `callback` and `backchannel-logout` answer 404 while SSO is off or incomplete. Redirect and callback are throttled (10 per minute per IP). Discovery, token, userinfo and JWKS URLs must not resolve to private or metadata addresses (unless `OIDC_ALLOW_PRIVATE_HOSTS`). A user is found by the identity (issuer + `sub`) in `user_identities`, never by email; an existing account is linked by verified email only with **auto-link** on, an unknown email gets a `reader` only with **JIT** on, inactive users are refused. An SSO login runs Excubia's TOTP challenge when 2FA is required or the user turned TOTP on, unless the signed `id_token` proves MFA (`amr: mfa`). A back-channel logout from the IdP ends the matching Excubia sessions on their next request. **SSO-only mode** hides the password form; only active super-admins with TOTP or a passkey still sign in locally (`/login?local=1`), and the mode is inert while SSO is off, so an unreachable IdP never locks the owner out. The client secret is encrypted with `APP_KEY`.
 
+#### Context-specific password denylist
+
+These terms come from identifiers visible to an Excubia user or operator and are easy to guess as local account passwords.
+
+| Source                               | Denylist terms                                       |
+| ------------------------------------ | ---------------------------------------------------- |
+| Product and organisation names       | `excubia`, `excubia app`, `excubia core`, `qiick`    |
+| Built-in self-monitoring project     | `excubia`, `excubia system`                          |
+| Built-in roles and translated labels | `super admin`, `admin`, `reader`, `lettore`, `leser` |
+
+Case, space, hyphen and underscore variants represent the same term. For example, `Excubia-App` and `excubia_app` both match `excubia app`. Enforcement is tracked in [#521](https://github.com/qiick-io/excubia-app/issues/521).
+
+For release verification, compare the list with `composer.json`, `database/seeders/SystemProjectSeeder.php`, `app/Enums/RoleEnum.php` and the labels in `lang/` and `resources/js/locales/`. Update the list when the public identifiers or built-in role labels change.
+
 ### 6. Alerts, digest and outbound requests
 
 - **Settings** (Settings → Integrations, `can-manage-project-settings`): the webhook signing secret, the Slack incoming-webhook URL and the Telegram bot token are encrypted with `APP_KEY`, never sent to the browser (`has_*` flags only) and logged only as "a secret was updated". The webhook URL and the Telegram chat id are not secrets and are shown.

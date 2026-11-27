@@ -6,7 +6,7 @@ The scope covers the browser UI, push API, personal keys, MCP, optional OIDC and
 
 | Met | Partial | Not applicable | Gap |
 | --- | ------- | -------------- | --- |
-| 44  | 138     | 49             | 22  |
+| 45  | 138     | 49             | 21  |
 
 **Met** has evidence for the complete requirement. **Partial** identifies an implemented control and the remaining scope. **Not applicable** records why the feature or architecture is outside scope. Each **Gap** links to a remediation issue. Report sensitive security findings through [the security policy](../SECURITY.md).
 
@@ -118,7 +118,7 @@ For inherited evidence, the owner column names the Composer package and the evid
 | Requirement   | Status         | Evidence                                                                                                                                                                                                                                         | Owner package        |
 | ------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------- |
 | v5.0.0-6.1.1  | Partial        | `docs/SECURITY-MODEL.md` documents login and second-factor throttling. Review how thresholds, recovery and denial-of-service tradeoffs are explained to operators.                                                                               |                      |
-| v5.0.0-6.1.2  | Gap            | `app/Services/SettingsRepositoryService.php` defines the password rules. Document a product vocabulary for password screening. [#519](https://github.com/qiick-io/excubia-app/issues/519)                                                        |                      |
+| v5.0.0-6.1.2  | Met            | The [context-specific password denylist](SECURITY-MODEL.md#context-specific-password-denylist) lists product, project and role terms and identifies the release verification sources.                                                            |                      |
 | v5.0.0-6.1.3  | Partial        | `docs/SECURITY-MODEL.md` describes password, passkey and OIDC sign-in. An explicit cross-path assurance matrix remains open.                                                                                                                     |                      |
 | v5.0.0-6.2.1  | Partial        | `app/Services/SettingsRepositoryService.php` shows several configurable minimums. Verify every supported policy meets the baseline.                                                                                                              |                      |
 | v5.0.0-6.2.2  | Met            | `tests/Feature/Settings/SecurityTest.php` proves an authenticated user can change their password.                                                                                                                                                |                      |
