@@ -48,6 +48,7 @@ import { toast } from '@/lib/toast';
 import { cn } from '@/lib/utils';
 import projectsRoutes from '@/routes/projects';
 import type { BreadcrumbItem, Paginated, ProjectRow } from '@/types';
+import { useDateFormat } from '@/lib/date-format';
 
 /** Server sort fields of `ProjectListService::SORTABLE_COLUMNS` shown as column headers. */
 const PROJECT_SORT_FIELDS = [
@@ -93,6 +94,7 @@ export default function ProjectsIndex({
 }) {
     const projects = normalizePaginated(projectsProp);
     const { t, i18n } = useTranslation();
+    const dates = useDateFormat();
     const { can } = useCan();
     const canCreate = can(PermissionEnum.CanCreateProjects);
     const canEdit = can(PermissionEnum.CanEditProjects);
@@ -346,9 +348,7 @@ export default function ProjectsIndex({
                                     </time>
                                 </TooltipTrigger>
                                 <TooltipContent>
-                                    {new Date(
-                                        project.last_report_at,
-                                    ).toLocaleString(i18n.language)}
+                                    {dates.dateTime(project.last_report_at)}
                                 </TooltipContent>
                             </Tooltip>
                         ) : (

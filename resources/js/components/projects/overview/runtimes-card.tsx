@@ -19,6 +19,7 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import type { HealthReportSummary } from '@/types';
+import { useDateFormat } from '@/lib/date-format';
 
 /** Each runtime of the latest report, its version and its security support. */
 export function RuntimesCard({
@@ -29,6 +30,7 @@ export function RuntimesCard({
     className?: string;
 }) {
     const { t } = useTranslation();
+    const dates = useDateFormat();
 
     return (
         <Card className={className}>
@@ -79,8 +81,11 @@ export function RuntimesCard({
                                             ) : null}
                                         </TableCell>
                                         <TableCell className="text-right tabular-nums">
-                                            {runtime?.security_support_ends_on ??
-                                                '—'}
+                                            {runtime?.security_support_ends_on
+                                                ? dates.day(
+                                                      runtime.security_support_ends_on,
+                                                  )
+                                                : '—'}
                                         </TableCell>
                                         <TableCell className="text-right">
                                             {runtime === null ? (

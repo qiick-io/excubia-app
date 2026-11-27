@@ -63,6 +63,7 @@ import type {
     MaintenanceWindowRow,
     ProjectAlerts,
 } from '@/types';
+import { useDateFormat } from '@/lib/date-format';
 
 const DURATIONS = ['1h', '24h', '7d', 'forever'] as const;
 
@@ -78,10 +79,6 @@ const STATUS_VARIANTS: Record<
     suppressed: 'warning',
     skipped: 'muted',
 };
-
-function formatTime(value: string): string {
-    return new Date(value).toLocaleString();
-}
 
 /** The browser's timezone, the default of a new window. */
 function browserTimezone(): string {
@@ -104,6 +101,7 @@ export function AlertsView({
     canManage: boolean;
 }) {
     const { t } = useTranslation();
+    const dates = useDateFormat();
     const [isAddingWindow, setIsAddingWindow] = useState(false);
 
     const remove = (url: string): void =>
@@ -236,8 +234,17 @@ export function AlertsView({
                                                 className="flex items-center gap-3 py-2"
                                             >
                                                 <div className="min-w-0 flex-1">
-                                                    <div className="truncate font-mono text-sm">
-                                                        {mute.event}
+                                                    <div className="truncate text-sm">
+                                                        {t(
+                                                            `alerts.eventLabels.${mute.event}`,
+                                                            {
+                                                                defaultValue:
+                                                                    mute.event,
+                                                            },
+                                                        )}{' '}
+                                                        <span className="font-mono text-xs text-muted-foreground">
+                                                            {mute.event}
+                                                        </span>
                                                     </div>
                                                     <div className="truncate text-xs text-muted-foreground">
                                                         {mute.is_issue
@@ -253,7 +260,7 @@ export function AlertsView({
                                                             : t(
                                                                   'alerts.until',
                                                                   {
-                                                                      time: formatTime(
+                                                                      time: dates.dateTime(
                                                                           mute.until,
                                                                       ),
                                                                   },
@@ -360,6 +367,7 @@ function HistoryRow({
     canManage: boolean;
 }) {
     const { t } = useTranslation();
+    const dates = useDateFormat();
     const channels = Object.entries(alert.deliveries);
 
     const mute = (scope: 'rule' | 'issue', duration: string): void =>
@@ -372,12 +380,19 @@ function HistoryRow({
     return (
         <TableRow>
             <TableCell className="text-xs whitespace-nowrap tabular-nums">
-                {formatTime(alert.created_at)}
+                {dates.dateTime(alert.created_at)}
             </TableCell>
             <TableCell className="max-w-[36rem]">
                 <div className="flex items-center gap-2">
                     <SeverityBadge severity={alert.severity} />
-                    <span className="font-mono text-xs">{alert.event}</span>
+                    <span className="text-sm font-medium">
+                        {t(`alerts.eventLabels.${alert.event}`, {
+                            defaultValue: alert.event,
+                        })}
+                    </span>
+                    <span className="font-mono text-xs text-muted-foreground">
+                        {alert.event}
+                    </span>
                 </div>
                 <div className="truncate text-sm">{alert.summary}</div>
             </TableCell>
@@ -444,12 +459,13 @@ function HistoryRow({
 /** When a window applies, in words: its dates, or its weekdays, start and length. */
 function WindowSchedule({ window }: { window: MaintenanceWindowRow }) {
     const { t } = useTranslation();
+    const dates = useDateFormat();
 
     if (window.recurrence === 'once') {
         return (
             <>
-                {formatTime(window.starts_at ?? '')} –{' '}
-                {formatTime(window.ends_at ?? '')}
+                {dates.dateTime(window.starts_at ?? '')} –{' '}
+                {dates.dateTime(window.ends_at ?? '')}
             </>
         );
     }

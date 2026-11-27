@@ -31,6 +31,21 @@ it('sorts the users list from the column header', function () {
         ->assertNoJavaScriptErrors();
 });
 
+it('keeps super-admin exclusive in the user form role picker', function (string $scheme) {
+    $this->actingAs(User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value));
+
+    visitA11y(route('users.index', absolute: false), $scheme)
+        ->click('New user')
+        ->assertSee('Permissions from every selected role add up.')
+        ->click('[id$="-role-admin"]')
+        ->assertAttribute('[id$="-role-admin"]', 'aria-checked', 'true')
+        ->click('[id$="-role-super-admin"]')
+        ->assertAttribute('[id$="-role-admin"]', 'aria-checked', 'false')
+        ->assertDisabled('[id$="-role-admin"]')
+        ->assertDisabled('[id$="-role-reader"]')
+        ->assertNoJavaScriptErrors();
+})->with(['light', 'dark']);
+
 it('expands an activity log row with its details', function () {
     $admin = User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value);
     activity()->causedBy($admin)->log('Browser check');
@@ -92,4 +107,21 @@ it('returns focus to the button that opened a drawer when it closes', function (
     $page->keys('[role="dialog"]', 'Escape')->wait(1);
 
     expect($page->script('() => document.activeElement?.textContent?.trim()'))->toBe('New project');
+});
+
+it('opens a user from the keyboard: the row takes focus and Enter opens it', function () {
+    $this->actingAs(User::factory()->create(['first_name' => 'Zed', 'last_name' => 'Admin'])->assignRole(RoleEnum::SuperAdmin->value));
+    User::factory()->create(['first_name' => 'Ada', 'last_name' => 'Lovelace']);
+
+    // #424: rows opened only with a mouse click; the registry DataTable (app-ui #268) makes them focusable.
+    $page = visit(route('users.index', ['sort' => 'name', 'direction' => 'asc'], false));
+    $page->script("() => [...document.querySelectorAll('thead button, thead [role=\"checkbox\"]')].at(-1).focus()");
+    $page->keys('thead :focus', 'Tab');
+
+    expect($page->script("() => document.activeElement?.innerText.includes('Ada Lovelace') ?? false"))->toBeTrue();
+
+    $page->keys('tbody tr:focus', 'Enter')
+        ->assertVisible('[role="dialog"]')
+        ->assertValue('#user_first_name', 'Ada')
+        ->assertNoJavaScriptErrors();
 });

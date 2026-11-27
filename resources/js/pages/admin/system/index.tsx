@@ -13,6 +13,7 @@ import { edit as editProfile } from '@/routes/profile';
 import projectsRoutes from '@/routes/projects';
 import systemRoutes from '@/routes/system';
 import type { BreadcrumbItem } from '@/types';
+import { useDateFormat } from '@/lib/date-format';
 
 type HealthStatus = 'ok' | 'warning' | 'error' | 'unknown';
 
@@ -84,10 +85,6 @@ const STATUS_VARIANTS = {
     unknown: 'muted',
 } as const;
 
-function formatTime(value: string | null, never: string): string {
-    return value === null ? never : new Date(value).toLocaleString();
-}
-
 /**
  * One health item: title, status badge and the link to its fix hint in `docs/self-hosting.md`.
  */
@@ -151,6 +148,9 @@ export default function SystemIndex(props: SystemHealthProps) {
         version,
     } = props;
     const { t } = useTranslation();
+    const dates = useDateFormat();
+    const formatTime = (value: string | null, never: string): string =>
+        value === null ? never : dates.dateTime(value);
     const never = t('system.never');
 
     const breadcrumbs: BreadcrumbItem[] = useMemo(

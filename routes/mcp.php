@@ -17,8 +17,12 @@ use App\Http\Middleware\AuthenticateApiKeyMiddleware;
 use App\Http\Middleware\EnsureMcpEnabledMiddleware;
 use App\Mcp\Servers\ExcubiaServer;
 use Laravel\Mcp\Facades\Mcp;
+use Laravel\Mcp\Server\Middleware\AddWwwAuthenticateHeader;
 
 Mcp::web('/mcp', ExcubiaServer::class)
+    // qiick/laravel-api-keys answers 401s with the RFC 6750 challenge (no error code when no
+    // credentials were sent); Laravel MCP's own header would overwrite it with invalid_token.
+    ->withoutMiddleware(AddWwwAuthenticateHeader::class)
     ->middleware([
         EnsureMcpEnabledMiddleware::class,
         AuthenticateApiKeyMiddleware::class.':'.ApiKeyScopeEnum::McpRead->value,

@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 use App\Enums\PermissionEnum;
 use Qiick\Access\Testing\DirectPermissionCheckScanner;
+use Tests\TestCase;
+
+// The scanner reads the super-admin role name from the app's RoleCatalog binding.
+pest()->extend(TestCase::class);
 
 /**
  * qiick/laravel-access AC9: permissions are checked in Policies (and the Inertia share); every

@@ -22,6 +22,19 @@ enum RoleEnum: string
     }
 
     /**
+     * The role's name for people, in the current locale (#430); custom roles show their own name.
+     */
+    public static function labelFor(string $roleName): string
+    {
+        return match (self::tryFrom($roleName)) {
+            self::SuperAdmin => __('Super Admin'),
+            self::Admin => __('Admin'),
+            self::Reader => __('Reader'),
+            null => $roleName,
+        };
+    }
+
+    /**
      * Default permissions of the role. Super-admin also passes every check through `Gate::before`.
      * Admin gets everything except the system-level ones (roles, permissions, queue jobs, system health, settings).
      *

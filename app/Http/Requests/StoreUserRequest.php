@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
+use App\Enums\RoleEnum;
 use App\Http\Requests\Concerns\ValidatesUsernameTrait;
 use App\Models\User;
 use App\Services\RoleGrantService;
@@ -11,6 +12,7 @@ use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
+use Qiick\Access\Rules\ExclusiveSuperAdminRoleRule;
 use Spatie\Permission\Models\Role;
 
 /**
@@ -56,7 +58,7 @@ class StoreUserRequest extends FormRequest
     /**
      * The assignable roles with their ids, for the role pickers of the user and group drawers.
      *
-     * @return list<array{id: int, name: string}>
+     * @return list<array{id: int, name: string, label: string}>
      */
     public static function assignableRoleOptionsFor(?User $actor): array
     {
@@ -64,7 +66,7 @@ class StoreUserRequest extends FormRequest
             ->whereIn('name', self::assignableRolesFor($actor))
             ->orderBy('name')
             ->get(['id', 'name'])
-            ->map(fn (Role $role): array => ['id' => (int) $role->id, 'name' => $role->name])
+            ->map(fn (Role $role): array => ['id' => (int) $role->id, 'name' => $role->name, 'label' => RoleEnum::labelFor($role->name)])
             ->all());
     }
 
@@ -84,7 +86,8 @@ class StoreUserRequest extends FormRequest
     protected function roleRules(): array
     {
         return [
-            'roles' => ['required', 'array', 'min:1'],
+            // Super-admin stands alone; other roles combine (decision 2026-11-26).
+            'roles' => ['required', 'array', 'min:1', new ExclusiveSuperAdminRoleRule],
             'roles.*' => ['string', 'distinct', Rule::in(self::assignableRolesFor($this->user()))],
         ];
     }

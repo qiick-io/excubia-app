@@ -103,9 +103,7 @@
         "accessibilityOnCount": "{{count}} on",
         "highContrast": "High contrast",
         "reduceMotion": "Reduce motion",
-        "logOut": "Log out",
-        "compactTables": "Compact tables",
-        "singleKeyShortcuts": "Single-key shortcuts"
+        "logOut": "Log out"
     },
     "a11y": {
         "skipToContent": "Skip to content",
@@ -126,7 +124,8 @@
         "notifications": "Notifications",
         "notificationsUnread": "Notifications, {{count}} unread",
         "unreadCount": "{{count}} unread",
-        "scrollableTable": "Scrollable table"
+        "scrollableTable": "Scrollable table",
+        "openTableRow": "Press Enter or Space to open this row."
     },
     "auth": {
         "login": {
@@ -223,7 +222,7 @@
     "settings": {
         "layout": {
             "title": "Settings",
-            "description": "Manage your profile and account settings",
+            "description": "Manage your account and how this Excubia works",
             "navAria": "Settings",
             "sectionAccount": "Account",
             "sectionProject": "Project",
@@ -659,7 +658,7 @@
             "create": "Create API key",
             "createTitle": "Create API key",
             "createDescription": "Name the key after the client that uses it, pick what it may do and, optionally, when it expires.",
-            "noGrantableScopes": "To create an MCP key, your account needs a role with Can use AI, such as Admin. A Super Admin can assign the role in Users, including to their own account.",
+            "noGrantableScopes": "To create an MCP key, your account needs the Can use AI permission, for example through the Admin or Super Admin role.",
             "empty": {
                 "title": "No API keys yet",
                 "description": "Create a key to connect an AI client to Excubia."
@@ -670,6 +669,14 @@
                     "description": "Read: projects, reports, findings, exceptions, runtime and schedules. Write includes Read and can change exception status, assignments, finding dismissals, alert mutes and maintenance windows."
                 }
             }
+        },
+        "preferences": {
+            "title": "Preferences",
+            "description": "How lists look and respond for you, in this browser.",
+            "compactTables": "Compact tables",
+            "compactTablesDescription": "Denser table rows, so more fit on the screen.",
+            "singleKeyShortcuts": "Single-key shortcuts",
+            "singleKeyShortcutsDescription": "Keyboard shortcuts without modifier keys, such as j / k in lists. Turn them off if they get in the way of speech input or other assistive technology."
         }
     },
     "activityLog": {
@@ -723,7 +730,19 @@
             "revoked": "API key revoked",
             "api_key_first_used": "API key first used",
             "collection_permissions_synced": "Collection permissions synced",
-            "file_permissions_synced": "File permissions synced"
+            "file_permissions_synced": "File permissions synced",
+            "status_changed": "Status changed",
+            "assigned": "Assigned",
+            "unassigned": "Unassigned",
+            "projects_synced": "Projects synced",
+            "ai_tool_approval": "AI tool approval",
+            "alert_muted": "Alert muted",
+            "alert_unmuted": "Alert unmuted",
+            "maintenance_window_created": "Maintenance window added",
+            "maintenance_window_deleted": "Maintenance window removed",
+            "finding_dismissed": "Finding dismissed",
+            "finding_restored": "Finding restored",
+            "project_groups_synced": "Project groups synced"
         },
         "logs": {
             "default": "Application",
@@ -775,8 +794,6 @@
             "username": "Username",
             "newPasswordOptional": "New password (optional)",
             "passwordRequired": "Password *",
-            "rolesRequired": "Roles *",
-            "rolesPlaceholder": "Select at least one role",
             "rolesLocked": "You cannot change your own roles.",
             "timezone": "Timezone"
         }
@@ -1123,7 +1140,7 @@
             "systemProjectHint": "Excubia monitoring itself. It reports every day on its own, and it cannot be deleted.",
             "attention": {
                 "title": "Needs attention",
-                "description": "{{shown}} of {{total}} open problems, worst first.",
+                "description": "{{shown}} of {{total}} open problems: findings with failing infrastructure first, then by severity; then open exceptions.",
                 "allFindings": "All findings",
                 "exception": "Exception",
                 "emptyTitle": "Nothing needs attention"
@@ -1738,6 +1755,67 @@
             "5": "Fri",
             "6": "Sat",
             "7": "Sun"
+        },
+        "eventLabels": {
+            "finding": {
+                "new": "New finding",
+                "resolved": "Finding resolved"
+            },
+            "infrastructure": {
+                "failed": "Infrastructure failing"
+            },
+            "health": {
+                "failed": "Health check failing",
+                "recovered": "Health check recovered",
+                "stale": "Server samples missing"
+            },
+            "project": {
+                "worsened": "Project worsened",
+                "recovered": "Project recovered",
+                "stale": "Project silent",
+                "reporting_again": "Project reporting again",
+                "token_changed": "Push token changed",
+                "created": "Project created",
+                "deleted": "Project deleted",
+                "disabled": "Project disabled"
+            },
+            "report": {
+                "checks_skipped": "Checks skipped"
+            },
+            "push": {
+                "rejected": "Push rejected"
+            },
+            "schedule": {
+                "missed": "Scheduled task missed",
+                "failed": "Scheduled task failed",
+                "scheduler_down": "Scheduler down"
+            },
+            "runtime": {
+                "cache_hit_ratio_low": "Low cache hit ratio",
+                "delivery_failed": "Delivery failed",
+                "log_spike": "Log spike"
+            },
+            "ai": {
+                "budget_warning": "AI budget warning",
+                "budget_exceeded": "AI budget exceeded",
+                "spend_spike": "AI spend spike",
+                "error_rate": "AI error rate"
+            },
+            "billing": {
+                "webhook_failures": "Billing webhook failures",
+                "payment_failed": "Payment failed"
+            },
+            "auth": {
+                "failed_login_spike": "Failed login spike"
+            },
+            "scout": {
+                "index_failures": "Search index failures"
+            },
+            "eol": {
+                "approaching": "End of support approaching",
+                "reached": "End of support reached"
+            },
+            "ping": "Test alert"
         }
     },
     "timeRange": {
@@ -2480,5 +2558,10 @@
         "backToDashboard": "Back to dashboard",
         "signIn": "Sign in",
         "tryAgain": "Try again"
+    },
+    "rolePicker": {
+        "legend": "Roles",
+        "description": "Permissions from every selected role add up.",
+        "superAdminHint": "Every permission. Cannot be combined with other roles."
     }
 }

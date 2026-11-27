@@ -35,16 +35,20 @@ it('triages the exceptions list with the keyboard', function (string $scheme) {
     expect($group->fresh()->status->value)->toBe('resolved');
 })->with(['light', 'dark']);
 
-it('turns single-key shortcuts off and tables compact from the user menu', function () {
+it('turns single-key shortcuts off and tables compact in the profile settings', function () {
     $this->actingAs(User::factory()->create(['first_name' => 'Ada', 'last_name' => 'Admin'])->assignRole(RoleEnum::SuperAdmin->value));
     $project = seededA11yProject();
 
-    $page = visit(route('projects.view', [$project->slug, 'exceptions'], false))
+    // #433: the preferences moved from the user menu to Settings, with a description each.
+    $page = visit(route('profile.edit', absolute: false))
+        ->assertSee('Denser table rows')
         ->assertScript('() => document.documentElement.dataset.density', 'comfortable')
-        ->click('Ada Admin')
         ->click('[data-test="preference-compact-tables"]')
         ->click('[data-test="preference-single-key-shortcuts"]')
-        ->keys('[role="menu"]', 'Escape')
+        ->assertScript('() => document.documentElement.dataset.density', 'compact')
+        ->assertNoJavaScriptErrors();
+
+    $page->navigate(route('projects.view', [$project->slug, 'exceptions'], false))
         ->assertScript('() => document.documentElement.dataset.density', 'compact')
         ->keys('#main-content', 'j')
         ->assertNotPresent('tbody tr[data-active="true"]')

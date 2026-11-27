@@ -21,21 +21,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useClipboard } from '@/hooks/use-clipboard';
 import projectsRoutes from '@/routes/projects';
 import type { FindingLifecycle, IssueRow } from '@/types';
-
-/** A date and time in the user's language, from an ISO string. */
-export function formatDateTime(iso: string, locale: string): string {
-    return new Date(iso).toLocaleString(locale, {
-        dateStyle: 'medium',
-        timeStyle: 'short',
-    });
-}
-
-/** A `YYYY-MM-DD` day in the user's language. */
-function formatDay(day: string, locale: string): string {
-    return new Date(`${day}T00:00:00`).toLocaleDateString(locale, {
-        dateStyle: 'medium',
-    });
-}
+import { useDateFormat } from '@/lib/date-format';
 
 /** Today as `YYYY-MM-DD` in the browser's timezone, the earliest last day of a dismissal. */
 function today(): string {
@@ -90,8 +76,8 @@ export function FindingLifecycleSection({
     /** Who the finding may be assigned to (#254). */
     assignees?: AssigneeOption[];
 }) {
-    const { t, i18n } = useTranslation();
-    const locale = i18n.language;
+    const { t } = useTranslation();
+    const dates = useDateFormat();
     const [isDismissing, setIsDismissing] = useState(false);
     const [copiedText, copy] = useClipboard();
     const form = useForm({ is_dismissed: true, reason: '', until: '' });
@@ -137,20 +123,17 @@ export function FindingLifecycleSection({
                     <dt className="text-muted-foreground">
                         {t('findings.firstSeen')}
                     </dt>
-                    <dd>{formatDateTime(lifecycle.firstSeenAt, locale)}</dd>
+                    <dd>{dates.dateTime(lifecycle.firstSeenAt)}</dd>
                     <dt className="text-muted-foreground">
                         {t('findings.lastSeen')}
                     </dt>
-                    <dd>{formatDateTime(lifecycle.lastSeenAt, locale)}</dd>
+                    <dd>{dates.dateTime(lifecycle.lastSeenAt)}</dd>
                 </dl>
                 <div className="flex flex-wrap items-center gap-1.5">
                     {lifecycle.resolvedAt !== null ? (
                         <Badge variant="success">
                             {t('findings.fixedOn', {
-                                date: formatDateTime(
-                                    lifecycle.resolvedAt,
-                                    locale,
-                                ),
+                                date: dates.dateTime(lifecycle.resolvedAt),
                             })}
                         </Badge>
                     ) : null}
@@ -161,7 +144,7 @@ export function FindingLifecycleSection({
                         <span className="text-muted-foreground">
                             {dismissal.until !== null
                                 ? t('findings.dismissedUntil', {
-                                      date: formatDay(dismissal.until, locale),
+                                      date: dates.day(dismissal.until),
                                   })
                                 : t('findings.dismissedForGood')}
                             {dismissal.by !== null
@@ -331,7 +314,7 @@ export function FindingLifecycleSection({
                                     dateTime={event.occurredAt}
                                     className="text-xs text-muted-foreground"
                                 >
-                                    {formatDateTime(event.occurredAt, locale)}
+                                    {dates.dateTime(event.occurredAt)}
                                 </time>
                             </div>
                             {event.release !== null ||
@@ -358,10 +341,7 @@ export function FindingLifecycleSection({
                                             : null,
                                         event.until !== null
                                             ? t('findings.untilDate', {
-                                                  date: formatDay(
-                                                      event.until,
-                                                      locale,
-                                                  ),
+                                                  date: dates.day(event.until),
                                               })
                                             : null,
                                         event.reason,

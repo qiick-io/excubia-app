@@ -19,6 +19,7 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import type { HealthReportSummary } from '@/types';
+import { useDateFormat } from '@/lib/date-format';
 
 /**
  * History tab of the project page: the findings per severity of every stored report as a
@@ -26,6 +27,7 @@ import type { HealthReportSummary } from '@/types';
  */
 export function HistoryView({ reports }: { reports: HealthReportSummary[] }) {
     const { t } = useTranslation();
+    const dates = useDateFormat();
 
     if (reports.length === 0) {
         return (
@@ -39,7 +41,7 @@ export function HistoryView({ reports }: { reports: HealthReportSummary[] }) {
 
     // Oldest first, so the chart reads left to right in time.
     const chartData = [...reports].reverse().map((summary) => ({
-        label: new Date(summary.received_at).toLocaleString(undefined, {
+        label: dates.format(summary.received_at, {
             day: 'numeric',
             month: 'short',
             hour: '2-digit',
@@ -60,7 +62,7 @@ export function HistoryView({ reports }: { reports: HealthReportSummary[] }) {
             cell: ({ row }) => {
                 const summary = row.original;
 
-                return <>{new Date(summary.received_at).toLocaleString()}</>;
+                return <>{dates.dateTime(summary.received_at)}</>;
             },
         },
         {
