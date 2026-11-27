@@ -198,7 +198,7 @@ export function FindingDrawer({
     return (
         <DrawerContent className="data-[vaul-drawer-direction=right]:max-w-2xl">
             <DrawerHeader className="pr-14">
-                <DrawerTitle>
+                <DrawerTitle className="wrap-anywhere">
                     {checkLabel(t, finding.checkId, finding.checkName)}
                 </DrawerTitle>
                 <DrawerDescription className="font-mono text-xs break-all">
