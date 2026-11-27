@@ -14,8 +14,7 @@ import {
 import { findingsCount, relativeTime } from '@/lib/report-format';
 import { cn } from '@/lib/utils';
 import type { HealthReportSummary } from '@/types';
-import type { RuntimeOverview } from '@/types/dashboard';
-import type { DashboardHistory } from '@/types/dashboard';
+import type { DashboardHistory, RuntimeOverview } from '@/types/dashboard';
 
 /** The project Board, with its current readings above their two compositions. */
 export function OverviewBoard({
