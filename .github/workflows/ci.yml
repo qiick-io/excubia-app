@@ -571,7 +571,7 @@ jobs:
   # PHPStan at level 8 (the level never drops, the baseline only shrinks) and Pest with
   # line coverage that never falls below `coverage-floor.txt` (app-ui v0.6.0, #259).
   php-quality:
-    uses: qiick-io/app-ui/.github/workflows/php-quality.yml@e08e28b1f61250335337bf706a676bd7c4ab844a # F31-F33 standards (app-ui #291)
+    uses: qiick-io/app-ui/.github/workflows/php-quality.yml@88c526a407710ae5cc1acd5c7848432b21c42f9e # app-ui develop after #291
     with:
       phpstan-max-advisory: true
 
