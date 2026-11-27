@@ -289,7 +289,8 @@ export default function Dashboard({
                 <div className="flex flex-col gap-4">
                     <section
                         className={cn(
-                            'grid grid-cols-1 gap-4 sm:grid-cols-2',
+                            // An odd last tile spans the two-column row (app-ui docs/charts.md).
+                            'grid grid-cols-1 gap-4 sm:grid-cols-2 sm:*:last:odd:col-span-2 xl:*:last:odd:col-span-1',
                             keyRowRequests
                                 ? 'xl:grid-cols-5'
                                 : 'xl:grid-cols-4',
@@ -405,8 +406,11 @@ export default function Dashboard({
                         )}
                     </section>
 
-                    <EndOfSupportCard rows={overview.endOfSupport} />
-                    <LicensesCard rows={overview.licenses} />
+                    {/* Two short cards share a row instead of each taking a whole one. */}
+                    <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+                        <EndOfSupportCard rows={overview.endOfSupport} />
+                        <LicensesCard rows={overview.licenses} />
+                    </section>
                 </div>
             </PageLayout>
         </>

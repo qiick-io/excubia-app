@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
+use App\Enums\RoleEnum;
 use App\Models\User;
 use App\Services\EffectivePermissionResolverService;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\Validator;
+use Qiick\Access\Rules\ExclusiveSuperAdminRoleRule;
 
 /**
  * Validates changes to a dashboard user. Users cannot deactivate themselves, and only a
@@ -37,6 +39,10 @@ class UpdateUserRequest extends StoreUserRequest
             'password' => ['nullable', 'string', Password::default()],
             'is_active' => ['boolean'],
             ...$this->roleRules(),
+            // A super-admin through a group holds no direct role, and needs none to be saved (#474).
+            ...(in_array(RoleEnum::SuperAdmin->value, UserGroupRequest::groupRoleNamesOf($this->target()), true)
+                ? ['roles' => ['present', 'array', new ExclusiveSuperAdminRoleRule]]
+                : []),
         ];
     }
 
@@ -48,6 +54,11 @@ class UpdateUserRequest extends StoreUserRequest
         return [function (Validator $validator): void {
             $actor = $this->user();
             $target = $this->target();
+
+            // Direct roles plus the roles of the user's groups: super-admin stands alone (#474).
+            if (UserGroupRequest::breaksExclusiveSuperAdmin([...$this->roles(), ...UserGroupRequest::groupRoleNamesOf($target)])) {
+                $validator->errors()->add('roles', __('Together with the roles of this user\'s groups, super-admin would be combined with other roles.'));
+            }
 
             if (! $target->is($actor)) {
                 return;

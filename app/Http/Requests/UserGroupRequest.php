@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
+use App\Enums\RoleEnum;
 use App\Models\ProjectGroup;
 use App\Models\User;
 use App\Models\UserGroup;
@@ -12,6 +13,7 @@ use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
+use Qiick\Access\Rules\ExclusiveSuperAdminRoleRule;
 
 /**
  * Validates a group with its roles, members and project scope, for both create and update (route
@@ -44,7 +46,8 @@ class UserGroupRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:100', Rule::unique(UserGroup::class)->ignore($group instanceof UserGroup ? $group->id : null)],
             'description' => ['nullable', 'string', 'max:1000'],
-            'roles' => ['array'],
+            // Super-admin stands alone here too (#474, decision 2026-11-26).
+            'roles' => ['array', new ExclusiveSuperAdminRoleRule],
             'roles.*' => ['string', 'distinct', Rule::in(StoreUserRequest::assignableRolesFor($actor instanceof User ? $actor : null))],
             'users' => ['array'],
             'users.*' => ['integer', 'distinct', Rule::exists(User::class, 'id')],
@@ -74,6 +77,16 @@ class UserGroupRequest extends FormRequest
                 $validator->errors()->add('project_groups', __('Only admins change which projects a group sees.'));
             }
 
+            // Through any mix of direct and group roles, a member who ends up with super-admin
+            // holds nothing else (#474).
+            foreach ($this->userIds() as $index => $userId) {
+                $member = User::query()->find($userId);
+
+                if ($member instanceof User && self::breaksExclusiveSuperAdmin([...$member->getRoleNames()->all(), ...self::groupRoleNamesOf($member, $group instanceof UserGroup ? $group : null), ...$this->roles()])) {
+                    $validator->errors()->add("users.{$index}", __('This member would hold the super-admin role together with other roles.'));
+                }
+            }
+
             if ($permissions->isSuperAdmin($actor)) {
                 return;
             }
@@ -93,6 +106,39 @@ class UserGroupRequest extends FormRequest
                 $validator->errors()->add('roles', __('You cannot change the roles of a group you belong to.'));
             }
         }];
+    }
+
+    /**
+     * The role names a user holds through their live groups, except `$except` (the group being
+     * saved, whose requested roles replace its stored ones).
+     *
+     * @return list<string>
+     */
+    public static function groupRoleNamesOf(User $user, ?UserGroup $except = null): array
+    {
+        return array_values(UserGroup::query()
+            // Expired memberships grant nothing, as in EffectivePermissionResolverService.
+            ->whereHas('users', fn ($users) => $users->whereKey($user->getKey())->where(
+                fn ($membership) => $membership->whereNull('user_group_user.expires_at')->orWhere('user_group_user.expires_at', '>', now()),
+            ))
+            ->when($except !== null, fn ($groups) => $groups->whereKeyNot($except?->getKey()))
+            ->with('roles')
+            ->get()
+            ->flatMap(fn (UserGroup $group) => $group->roles->pluck('name'))
+            ->map(strval(...))
+            ->all());
+    }
+
+    /**
+     * Whether a set of role names (with repeats) holds super-admin next to any other role.
+     *
+     * @param  array<mixed>  $roleNames
+     */
+    public static function breaksExclusiveSuperAdmin(array $roleNames): bool
+    {
+        $distinct = array_values(array_unique(array_map(strval(...), $roleNames)));
+
+        return in_array(RoleEnum::SuperAdmin->value, $distinct, true) && count($distinct) > 1;
     }
 
     /**

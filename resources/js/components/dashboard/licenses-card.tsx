@@ -1,16 +1,12 @@
 import { Link } from '@inertiajs/react';
 import { Scale } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { CardTableScroll } from '@/components/layout/card-table-scroll';
+import { InfoHint } from '@/components/info-hint';
 import { PageEmptyState } from '@/components/admin/page-empty-state';
 import { LICENSE_KIND_VARIANTS } from '@/components/reports/licenses-view';
 import { Badge } from '@/components/ui/badge';
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
     Table,
     TableBody,
@@ -32,10 +28,16 @@ export function LicensesCard({ rows }: { rows: LicenseRow[] }) {
     return (
         <Card>
             <CardHeader className="pb-3">
-                <CardTitle>{t('licenses.fleetTitle')}</CardTitle>
-                <CardDescription>
-                    {t('licenses.fleetDescription')}
-                </CardDescription>
+                <CardTitle className="flex items-center gap-1">
+                    {t('licenses.fleetTitle')}
+                    <InfoHint
+                        label={t('common.aboutTopic', {
+                            topic: t('licenses.fleetTitle'),
+                        })}
+                    >
+                        {t('licenses.fleetDescription')}
+                    </InfoHint>
+                </CardTitle>
             </CardHeader>
             <CardContent>
                 {rows.length === 0 ? (
@@ -47,7 +49,7 @@ export function LicensesCard({ rows }: { rows: LicenseRow[] }) {
                         className="border-0"
                     />
                 ) : (
-                    <div className="max-h-80 overflow-auto">
+                    <CardTableScroll className="max-h-80">
                         <Table>
                             <TableHeader>
                                 <TableRow>
@@ -110,7 +112,7 @@ export function LicensesCard({ rows }: { rows: LicenseRow[] }) {
                                 ))}
                             </TableBody>
                         </Table>
-                    </div>
+                    </CardTableScroll>
                 )}
             </CardContent>
         </Card>

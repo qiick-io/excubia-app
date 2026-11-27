@@ -170,3 +170,50 @@ it('counts only usable group super-admins when guarding the last one', function 
 
     expect($owner->fresh()->hasRole(RoleEnum::SuperAdmin->value))->toBeTrue();
 });
+
+it('keeps super-admin alone through group roles too', function () {
+    // #474: the exclusive super-admin rule applied only to a user's direct roles.
+    $superAdmin = groupMember(RoleEnum::SuperAdmin);
+    $reader = groupMember(RoleEnum::Reader);
+
+    $this->actingAs($superAdmin)->post(route('groups.store'), [
+        'name' => 'mixed', 'roles' => [RoleEnum::SuperAdmin->value, RoleEnum::Reader->value], 'users' => [],
+    ])->assertSessionHasErrors('roles');
+
+    // A member with direct roles cannot join a group that carries super-admin.
+    $this->actingAs($superAdmin)->post(route('groups.store'), [
+        'name' => 'admins', 'roles' => [RoleEnum::SuperAdmin->value], 'users' => [$reader->id],
+    ])->assertSessionHasErrors('users.0');
+
+    // A super-admin group's member cannot get other direct roles.
+    $member = groupMember(RoleEnum::SuperAdmin);
+    $this->actingAs($superAdmin)->post(route('groups.store'), [
+        'name' => 'admins', 'roles' => [RoleEnum::SuperAdmin->value], 'users' => [$member->id],
+    ])->assertSessionHasNoErrors();
+    $this->actingAs($superAdmin)->put(route('users.update', $member), [
+        'first_name' => $member->first_name, 'last_name' => $member->last_name, 'email' => $member->email,
+        'roles' => [RoleEnum::Reader->value], 'is_active' => true,
+    ])->assertSessionHasErrors('roles');
+});
+
+it('lets a super-admin through a group be saved without direct roles and ignores expired memberships', function () {
+    $superAdmin = groupMember(RoleEnum::SuperAdmin);
+    $member = groupMember();
+    $admins = groupWithRoles('admins', [RoleEnum::SuperAdmin->value], [$member]);
+
+    $this->actingAs($superAdmin)->put(route('users.update', $member), [
+        'first_name' => $member->first_name, 'last_name' => $member->last_name, 'email' => $member->email,
+        'timezone' => 'UTC', 'roles' => [], 'is_active' => true,
+    ])->assertSessionHasNoErrors();
+
+    // Two groups together: super-admin from one, reader from another is refused.
+    $this->actingAs($superAdmin)->post(route('groups.store'), [
+        'name' => 'readers', 'roles' => [RoleEnum::Reader->value], 'users' => [$member->id],
+    ])->assertSessionHasErrors('users.0');
+
+    // An expired membership grants nothing, so it does not conflict.
+    $admins->users()->updateExistingPivot($member->id, ['expires_at' => now()->subDay()]);
+    $this->actingAs($superAdmin)->post(route('groups.store'), [
+        'name' => 'readers', 'roles' => [RoleEnum::Reader->value], 'users' => [$member->id],
+    ])->assertSessionHasNoErrors();
+});

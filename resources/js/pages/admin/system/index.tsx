@@ -308,7 +308,7 @@ export default function SystemIndex(props: SystemHealthProps) {
             <Head title={t('settings.layout.system')} />
             <h1 className="sr-only">{t('settings.layout.system')}</h1>
             <SettingsLayout wide>
-                <PageLayout description={t('system.description')}>
+                <PageLayout>
                     <div className="space-y-10">
                         <HealthSection
                             id="system-scheduler"

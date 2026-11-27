@@ -29,11 +29,11 @@ class FixSuggestionService
 
         [$command, $task] = match ($checkId) {
             'composer-advisories' => [
-                $this->shellSafe($package) ? "composer update {$package} --with-dependencies" : null,
+                $this->isComposerPackage($package) ? "composer update {$package} --with-dependencies" : null,
                 "Update the Composer package `{$package}`".($locked ? " (installed {$locked})" : '').' to a version that fixes the advisory'.($advisoryId ? " {$advisoryId}" : '').($fixed !== '' ? " (fixed in {$fixed})" : '').'. Widen its constraint in composer.json only if the fixed version needs it, and read the changelog for breaking changes before updating.',
             ],
             'npm-advisories' => [
-                $this->shellSafe($package) ? ($fixed !== '' && $this->shellSafe($this->firstOf($details['fixedVersions'] ?? null)) ? "npm install {$package}@{$this->firstOf($details['fixedVersions'] ?? null)}" : "npm update {$package}") : null,
+                $this->isNpmPackage($package) ? ($fixed !== '' && $this->isExactVersion($this->firstOf($details['fixedVersions'] ?? null)) ? "npm install {$package}@{$this->firstOf($details['fixedVersions'] ?? null)}" : "npm update {$package}") : null,
                 "Update the npm package `{$package}`".($locked ? " (installed {$locked})" : '').' to a version that fixes the advisory'.($advisoryId ? " {$advisoryId}" : '').($fixed !== '' ? " (fixed in {$fixed})" : '').'. If it is a transitive dependency, update the direct dependency that pulls it in, or add an override.',
             ],
             'composer-abandoned' => [
@@ -215,10 +215,21 @@ class FixSuggestionService
     }
 
     /**
-     * A package name or version safe to put in a copyable command: no shell metacharacters.
+     * The copyable commands take only a plain registry name or an exact version (#475): a pushed
+     * value starting with `-` would become an option, and an npm spec could point at Git or a path.
      */
-    private function shellSafe(string $value): bool
+    private function isComposerPackage(string $value): bool
     {
-        return $value !== '' && preg_match('/^[A-Za-z0-9@\/._\-]+$/', $value) === 1 && ! str_contains($value, '..');
+        return preg_match('~^[a-z0-9][a-z0-9_.-]*/[a-z0-9][a-z0-9_.-]*$~i', $value) === 1 && ! str_contains($value, '..');
+    }
+
+    private function isNpmPackage(string $value): bool
+    {
+        return preg_match('~^(@[a-z0-9][a-z0-9._-]*/)?[a-z0-9][a-z0-9._-]*$~i', $value) === 1 && ! str_contains($value, '..');
+    }
+
+    private function isExactVersion(string $value): bool
+    {
+        return preg_match('/^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/', $value) === 1;
     }
 }

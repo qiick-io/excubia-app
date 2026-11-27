@@ -3,13 +3,7 @@ import {
     RUNTIMES,
     RuntimeSupportBadge,
 } from '@/components/reports/runtime-support';
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
     Table,
     TableBody,
@@ -36,9 +30,6 @@ export function RuntimesCard({
         <Card className={className}>
             <CardHeader className="pb-3">
                 <CardTitle>{t('report.runtime.title')}</CardTitle>
-                <CardDescription>
-                    {t('report.runtime.description')}
-                </CardDescription>
             </CardHeader>
             <CardContent>
                 {latest.runtime === null ? (

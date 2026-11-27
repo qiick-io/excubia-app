@@ -40,6 +40,18 @@ use Illuminate\Support\Carbon;
 #[Fillable(['project_id', 'fingerprint', 'environment', 'class', 'message', 'frames', 'previous', 'context_kind', 'context_name', 'count', 'first_seen_at', 'last_seen_at', 'first_release', 'last_release', 'regressed_release', 'status', 'resolved_at'])]
 class ExceptionGroup extends Model
 {
+    /**
+     * The largest stored occurrence count (#473). Counts add up on every push; past this they stay
+     * put instead of overflowing a 64-bit integer, which broke the push and the project page.
+     */
+    public const int MAX_COUNT = 1_000_000_000_000_000;
+
+    /** `$stored + $added`, never above MAX_COUNT. */
+    public static function saturatedCount(int|float $stored, int $added): int
+    {
+        return (int) min($stored + $added, self::MAX_COUNT);
+    }
+
     /** Context kinds of excubia-core (`docs/exception-schema.json`); any other is stored as `unknown` (#169). */
     public const CONTEXT_KINDS = ['request', 'job', 'command', 'unknown'];
 

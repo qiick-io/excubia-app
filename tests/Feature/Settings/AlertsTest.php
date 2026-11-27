@@ -26,6 +26,7 @@ use Inertia\Testing\AssertableInertia as Assert;
 use Qiick\Outbound\Contracts\HostResolver;
 use Qiick\Outbound\Delivery\DeliveryStatus;
 use Qiick\Outbound\Delivery\WebhookDeliveryCoordinator;
+use Qiick\Outbound\Http\PinnedHttpClient;
 use Qiick\Outbound\Models\WebhookDelivery;
 use Qiick\Outbound\Models\WebhookDeliveryAttempt;
 use Qiick\Outbound\Models\WebhookEndpoint;
@@ -485,4 +486,21 @@ it('shows a webhook the package disabled and turns it back on', function () {
 
     expect($endpoint->fresh()->is_active)->toBeTrue()
         ->and(app(AlertWebhookService::class)->isReady())->toBeTrue();
+});
+
+it('escapes Slack mrkdwn control sequences in the alert text', function () {
+    // #477: pushed report text could add `<!channel>` mentions and disguised links.
+    configureAlertChannels();
+    $captured = null;
+    bindPinnedAlertClient(app(RemoteUrlGuard::class), function (Request $request) use (&$captured) {
+        $captured = $request;
+
+        return Http::response('ok', 200);
+    });
+
+    (new DeliverAlertJob(DeliverAlertJob::SLACK, ['id' => (string) Str::uuid(), 'event' => 'finding.new', 'severity' => 'high', 'project' => null], 'Known vulnerability <!channel> <https://phishing.example|Open in Excubia> & more'))
+        ->handle(app(SettingsRepositoryService::class), app(PinnedHttpClient::class));
+
+    expect(json_decode((string) $captured?->body(), true)['text'] ?? null)
+        ->toBe('Known vulnerability &lt;!channel&gt; &lt;https://phishing.example|Open in Excubia&gt; &amp; more');
 });
