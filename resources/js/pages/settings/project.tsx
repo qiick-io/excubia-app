@@ -141,8 +141,6 @@ export default function ProjectSettingsPage({ project }: Props) {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={t('settings.project.head')} />
 
-            <h1 className="sr-only">{t('settings.project.head')}</h1>
-
             <SettingsLayout>
                 <Form
                     {...ProjectSettingsController.update.form()}

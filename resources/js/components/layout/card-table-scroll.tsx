@@ -15,14 +15,17 @@ import { cn } from '@/lib/utils';
  */
 export function CardTableScroll({
     className,
+    label,
     children,
 }: {
     className?: string;
+    /** The enclosing card's heading distinguishes this region from adjacent tables. */
+    label?: string;
     children: ReactNode;
 }) {
     const { t } = useTranslation();
     const scrollRegionRef = useScrollRegion<HTMLDivElement>(
-        t('a11y.scrollableTable'),
+        label ?? t('a11y.scrollableTable'),
     );
 
     return (

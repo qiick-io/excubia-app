@@ -65,7 +65,10 @@ export function ProjectsCard({
                 <CardTitle>{t('dashboard.projects.title')}</CardTitle>
             </CardHeader>
             <CardContent>
-                <CardTableScroll className="max-h-80">
+                <CardTableScroll
+                    label={t('dashboard.projects.title')}
+                    className="max-h-80"
+                >
                     <Table>
                         <TableHeader>
                             <TableRow>

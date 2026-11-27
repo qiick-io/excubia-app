@@ -106,7 +106,10 @@ export function TelemetryRow({
                             {t('dashboard.telemetry.noOpenExceptions')}
                         </p>
                     ) : (
-                        <CardTableScroll className="max-h-48">
+                        <CardTableScroll
+                            label={t('dashboard.telemetry.topExceptions')}
+                            className="max-h-48"
+                        >
                             <Table>
                                 <TableBody>
                                     {exceptions.top.map((group) => (

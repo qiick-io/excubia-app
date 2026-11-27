@@ -51,7 +51,10 @@ export function ConfigurationCard({
                         className="border-0"
                     />
                 ) : (
-                    <CardTableScroll className="max-h-80">
+                    <CardTableScroll
+                        label={t('dashboard.configuration.title')}
+                        className="max-h-80"
+                    >
                         <Table>
                             <TableBody>
                                 {rows.map((row, index) => (

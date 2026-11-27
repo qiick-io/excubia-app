@@ -199,8 +199,6 @@ export default function AppearanceSidebarSettingsPage({ project }: Props) {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={t('settings.appearance.sidebar.head')} />
 
-            <h1 className="sr-only">{t('settings.appearance.sidebar.head')}</h1>
-
             <SettingsLayout>
                 <Form
                     {...AppearanceSidebarSettingsController.update.form()}

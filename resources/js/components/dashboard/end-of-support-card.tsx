@@ -44,7 +44,10 @@ export function EndOfSupportCard({ rows }: { rows: EndOfSupportRow[] }) {
                         className="border-0"
                     />
                 ) : (
-                    <CardTableScroll className="max-h-64">
+                    <CardTableScroll
+                        label={t('dashboard.endOfSupport.title')}
+                        className="max-h-64"
+                    >
                         <Table>
                             <TableBody>
                                 {rows.map((row) => (

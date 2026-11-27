@@ -306,7 +306,6 @@ export default function SystemIndex(props: SystemHealthProps) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={t('settings.layout.system')} />
-            <h1 className="sr-only">{t('settings.layout.system')}</h1>
             <SettingsLayout wide>
                 <PageLayout>
                     <div className="space-y-10">

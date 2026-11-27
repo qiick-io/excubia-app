@@ -76,8 +76,6 @@ export default function Profile({
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={t('settings.profile.head')} />
 
-            <h1 className="sr-only">{t('settings.profile.head')}</h1>
-
             <SettingsLayout>
                 <div className="space-y-12">
                     <div className="space-y-6">

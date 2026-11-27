@@ -64,7 +64,7 @@ export default function ErrorPage({ status }: { status: ErrorStatus }) {
     }
 
     return (
-        <AppLayout breadcrumbs={[{ title, href: dashboard() }]}>
+        <AppLayout breadcrumbs={[{ title, href: dashboard() }]} hasPageHeading>
             <Head title={title} />
             <PageLayout>
                 <Empty data-test="error-page">

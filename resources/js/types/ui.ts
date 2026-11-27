@@ -6,6 +6,8 @@ export type AppLayoutProps = {
     children: ReactNode;
     breadcrumbs?: BreadcrumbItem[];
     headerActions?: ReactNode;
+    /** The page already renders a visible primary heading. */
+    hasPageHeading?: boolean;
 };
 
 /** Toast flashed by the server with `Inertia::flash('toast', ...)`. */
