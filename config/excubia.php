@@ -96,16 +96,10 @@ return [
     'self_monitoring_types' => env('EXCUBIA_SELF_MONITORING_TYPES'),
 
     // Reverse proxies whose X-Forwarded-* headers are trusted (#116), comma-separated IPs or
-    // CIDR ranges, or `*` for any. Empty trusts none. Set it when a TLS proxy sits in front of
-    // the app (Docker), so URLs and push snippets use https and the client IP is the real one.
+    // CIDR ranges, or `*` for any. Empty trusts none, except on Laravel Cloud, where the framework
+    // trusts the load balancer itself. Set it when a TLS proxy sits in front of the app (Docker),
+    // so URLs, push snippets and HSTS see https and the client IP is the real one.
     'trusted_proxies' => env('TRUSTED_PROXIES'),
-
-    // Strict-Transport-Security max-age in seconds (#153, #478). By default one year in production
-    // when APP_URL is https, else 0 (none); a proxy may send its own. 0 turns it off.
-    'hsts_max_age' => (int) env(
-        'EXCUBIA_HSTS_MAX_AGE',
-        env('APP_ENV', 'production') === 'production' && str_starts_with((string) env('APP_URL'), 'https://') ? 31536000 : 0,
-    ),
 
     /*
     |--------------------------------------------------------------------------

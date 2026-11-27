@@ -39,7 +39,7 @@ On start, the `app` container:
 
 1. creates the SQLite database in the volume if it is missing;
 2. generates an `APP_KEY` into `storage/app.key` when you did not set one (back it up with the database: it encrypts the OIDC client secret and the two-factor secrets);
-3. runs `migrate --force`, then the idempotent `PermissionSeeder` and `SystemProjectSeeder`, then the qiick packages' deploy checks (`access:check`, `api-keys:check`, `outbound:check`), which stop the container on a broken config or schema;
+3. runs `migrate --force`, then the idempotent `PermissionSeeder` and `SystemProjectSeeder`, then the qiick packages' deploy checks (`access:check`, `api-keys:check`, `outbound:check`, `http-basics:check`), which stop the container on a broken config or schema;
 4. caches config, routes, views and events (`php artisan optimize`).
 
 Only the `app` container migrates (`EXCUBIA_RUN_MIGRATIONS=false` on the others), so migrations never run twice at once.
@@ -62,7 +62,7 @@ Any other setting of `.env.example` (another database, `EXCUBIA_AI_ENABLED`, ret
 
 ### HTTPS
 
-Put a TLS reverse proxy (Caddy, Traefik, nginx) in front of port 8080, set `APP_URL` to the public `https://` URL and `TRUSTED_PROXIES` to the address of the proxy (`*` when only the proxy can reach the container). Without `TRUSTED_PROXIES`, the app ignores the forwarded headers: it would build `http://` links and see the proxy's IP for every visitor, which also breaks the login rate limit. The app sends `X-Frame-Options`, `nosniff`, `Referrer-Policy` and `Permissions-Policy` itself; in production with an `https://` `APP_URL` the app also sends `Strict-Transport-Security` (one year) by default; set `EXCUBIA_HSTS_MAX_AGE=0` if your proxy sends its own, or another number of seconds.
+Put a TLS reverse proxy (Caddy, Traefik, nginx) in front of port 8080, set `APP_URL` to the public `https://` URL and `TRUSTED_PROXIES` to the address of the proxy (`*` when only the proxy can reach the container). Without `TRUSTED_PROXIES`, the app ignores the forwarded headers: it would build `http://` links and see the proxy's IP for every visitor, which also breaks the login rate limit. The app sends `X-Frame-Options`, `nosniff`, `Referrer-Policy` and `Permissions-Policy` itself; in production with an `https://` `APP_URL` the app also sends `Strict-Transport-Security` (one year) by default on requests it sees as https, which behind a proxy needs `TRUSTED_PROXIES` (Laravel Cloud's load balancer is trusted automatically); set `HTTP_BASICS_HSTS_MAX_AGE=0` if your proxy sends its own, or another number of seconds (it was `EXCUBIA_HSTS_MAX_AGE` before 1.0). `excubia:upgrade` warns when `APP_URL` is https and no proxy is trusted.
 
 ### Image without compose
 
@@ -385,7 +385,7 @@ From **`1.0.0`** on, migrations are **forward-only**: a released migration is ne
 
 1. **Back up first** ([Backups](#backups)): the database and the `APP_KEY`. A migration cannot be rolled back on a production database without that backup.
 2. Run the migrations: `php artisan excubia:upgrade --force` runs `php artisan migrate --force` for you (`--force` because `APP_ENV` is `production`). Docker runs them when the `app` container starts. Never `migrate:fresh` or `migrate:refresh` on an install you keep: they drop every table.
-3. Check that nothing is left: `php artisan migrate:status` lists no `Pending` migration. `excubia:upgrade` then runs the qiick packages' deploy checks (`access:check`, `api-keys:check`, `outbound:check`) and stops with a non-zero exit when one fails; a deploy pipeline that does not call `excubia:upgrade` runs them itself after `migrate`.
+3. Check that nothing is left: `php artisan migrate:status` lists no `Pending` migration. `excubia:upgrade` then runs the qiick packages' deploy checks (`access:check`, `api-keys:check`, `outbound:check`, `http-basics:check`) and stops with a non-zero exit when one fails; a deploy pipeline that does not call `excubia:upgrade` runs them itself after `migrate`.
 
 Upgrading one release at a time, in order, is the safest path. CI fails a pull request that changes a released migration (the `migrations-frozen` check), and the `Install and upgrade` job upgrades the previous release's database to the new code.
 

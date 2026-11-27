@@ -29,7 +29,7 @@ class UpgradeCommand extends Command
      * validates its config and schema and exits non-zero on a broken deploy. The Docker
      * entrypoint runs the same list.
      */
-    public const PACKAGE_CHECKS = ['access:check', 'api-keys:check', 'outbound:check'];
+    public const PACKAGE_CHECKS = ['access:check', 'api-keys:check', 'outbound:check', 'http-basics:check'];
 
     protected $signature = 'excubia:upgrade
         {--force : Allow production APP_ENV and/or a dirty git working tree}
@@ -113,6 +113,8 @@ class UpgradeCommand extends Command
             }
         }
 
+        $this->warnAboutUntrustedHttpsProxy();
+
         $this->info('Clearing caches…');
         $this->call('optimize:clear');
         // Workers keep the old code in memory until they restart.
@@ -123,6 +125,22 @@ class UpgradeCommand extends Command
         $this->line('Full checklist: docs/self-hosting.md#upgrades');
 
         return self::SUCCESS;
+    }
+
+    /**
+     * qiick/laravel-http-basics sends HSTS only on requests the app sees as https. Behind a TLS
+     * proxy that is only true when the proxy is trusted, so an https APP_URL without
+     * TRUSTED_PROXIES (outside Laravel Cloud, whose load balancer the framework trusts) would
+     * silently drop the header. A warning, not a failure: a proxy may send HSTS itself.
+     */
+    private function warnAboutUntrustedHttpsProxy(): void
+    {
+        $isHttpsSite = str_starts_with((string) config('app.url'), 'https://');
+        $hasTrustedProxy = trim((string) config('excubia.trusted_proxies')) !== '' || laravel_cloud();
+
+        if ($isHttpsSite && ! $hasTrustedProxy && (int) config('http-basics.security.hsts.max_age') > 0) {
+            $this->warn('APP_URL is https but TRUSTED_PROXIES is empty: behind a TLS proxy requests look like http, so no Strict-Transport-Security is sent. Set TRUSTED_PROXIES to the proxy.');
+        }
     }
 
     /**

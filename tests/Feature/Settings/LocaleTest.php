@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Models\User;
+use App\Services\SettingsRepositoryService;
 use Database\Seeders\PermissionSeeder;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -55,4 +56,23 @@ it('shares the role names and the super-admin flag', function () {
         ->assertInertia(fn (Assert $page) => $page
             ->where('auth.roleNames', ['super-admin'])
             ->where('auth.isSuperAdmin', true));
+});
+
+it('names the page language, and never reads Accept-Language on web pages', function () {
+    $this->actingAs(User::factory()->create(['locale' => 'it']))
+        ->get(route('dashboard'), ['Accept-Language' => 'de'])
+        ->assertHeader('Content-Language', 'it')
+        ->assertInertia(fn (Assert $page) => $page->where('locale', 'it'));
+});
+
+it('answers the API in the Accept-Language of the caller', function () {
+    $this->postJson('/api/reports', [], ['Accept-Language' => 'de'])
+        ->assertUnauthorized()
+        ->assertHeader('Content-Language', 'de');
+});
+
+it('falls back to the default language of the settings', function () {
+    app(SettingsRepositoryService::class)->save(['default_language' => 'de']);
+
+    $this->get(route('login'))->assertHeader('Content-Language', 'de');
 });
