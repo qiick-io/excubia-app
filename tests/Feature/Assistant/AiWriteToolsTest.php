@@ -309,6 +309,23 @@ it('serves the write tools over MCP only to an mcp:write key while EXCUBIA_MCP_W
     expect(writerMcpToolNames($writeKey))->toBe(ExcubiaAssistantAgent::toolNames(AiToolKindEnum::Read));
 });
 
+it('returns a target validation error for non-string mute targets over MCP', function (array|object $target) {
+    config(['excubia.mcp_enabled' => true]);
+    Project::factory()->create(['slug' => 'shop']);
+    $writeKey = writerKey(writerUser());
+
+    $response = writerMcp($writeKey, 'tools/call', [
+        'name' => 'mute-alert',
+        'arguments' => ['project' => 'shop', 'target' => $target],
+    ], 'mute-alert')->assertOk()->assertJsonPath('result.isError', true);
+
+    $messages = json_decode($response->json('result.content.0.text'), true);
+    expect($messages['error'])->toContain('target');
+})->with([
+    'object' => fn (): object => (object) ['name' => 'rule'],
+    'array' => [['rule']],
+]);
+
 it('runs every write tool over MCP with an mcp:write key', function (string $name, array $arguments) {
     config(['excubia.mcp_enabled' => true]);
     $shop = Project::factory()->create(['slug' => 'shop']);

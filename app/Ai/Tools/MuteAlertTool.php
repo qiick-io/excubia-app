@@ -57,15 +57,18 @@ class MuteAlertTool extends AssistantWriteTool
 
     protected function rules(Request $request): array
     {
-        $rules = ['target' => ['required', Rule::in(['rule', 'maintenance_window'])]];
+        $rules = ['target' => ['bail', 'required', 'string', Rule::in(['rule', 'maintenance_window'])]];
 
-        return $request->string('target')->toString() === 'maintenance_window'
-            ? [...$rules, ...StoreMaintenanceWindowRequest::windowRules()]
-            : [
+        // Only a validated discriminator should select the target-specific rules.
+        return match ($request['target'] ?? null) {
+            'maintenance_window' => [...$rules, ...StoreMaintenanceWindowRequest::windowRules()],
+            'rule' => [
                 ...$rules,
                 'event' => ['required', Rule::in(AlertEventEnum::selectableValues())],
                 'duration' => ['required', Rule::in(array_keys(MuteAlertAction::DURATIONS))],
-            ];
+            ],
+            default => $rules,
+        };
     }
 
     protected function write(Project $project, Request $request): array
