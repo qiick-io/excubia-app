@@ -14,6 +14,7 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Qiick\Access\Principals\PrincipalDirectory;
 use Qiick\ApiKeys\RevocationReason;
+use Qiick\HttpBasics\Erasure\HttpBasicsEraser;
 use Qiick\Oidc\Erasure\OidcEraser;
 
 /**
@@ -31,6 +32,7 @@ class DeleteUserAction
         private SuperAdminGuardService $superAdminGuard,
         private PrincipalDirectory $principals,
         private OidcEraser $oidcEraser,
+        private HttpBasicsEraser $httpBasicsEraser,
     ) {}
 
     /**
@@ -84,6 +86,9 @@ class DeleteUserAction
             // qiick/laravel-oidc's eraser removes the identities and the logout state tied to them.
             $this->oidcEraser->erase((string) $user->getKey(), $publicId, OidcEraser::DELETE);
             $user->passkeys()->delete();
+            // qiick/laravel-http-basics: idempotency records of the person (none while Excubia keeps
+            // them in the cache store, where they expire with their TTL).
+            $this->httpBasicsEraser->erase((string) $user->getKey(), $publicId, HttpBasicsEraser::DELETE, [$principal->id]);
 
             $conversationIds = DB::table('agent_conversations')
                 ->where('participant_type', $user->getMorphClass())
