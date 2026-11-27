@@ -79,7 +79,7 @@ class CreateUserCommand extends Command
 
         $validated = $validator->validated();
 
-        $user = $createUser->execute($validated['first_name'], ($validated['last_name'] ?? '') !== '' ? $validated['last_name'] : null, $validated['email'], null, $validated['password'], [$validated['role']]);
+        $user = $createUser->execute(null, $validated['first_name'], ($validated['last_name'] ?? '') !== '' ? $validated['last_name'] : null, $validated['email'], null, $validated['password'], [$validated['role']]);
 
         $this->info("Created user {$user->email} with role {$validated['role']}.");
 

@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Enums\RoleEnum;
 use App\Models\User;
 use Illuminate\Support\Str;
+use Qiick\Access\ExclusiveSuperAdmin;
 use Qiick\Oidc\Contracts\UserProvisioningContract;
 use Qiick\Oidc\Data\AuthenticatedIdentityData;
 
@@ -20,6 +21,11 @@ use Qiick\Oidc\Data\AuthenticatedIdentityData;
  */
 class OidcUserProvisioningService implements UserProvisioningContract
 {
+    public function __construct(
+        private SuperAdminGuardService $superAdminGuard,
+        private ExclusiveSuperAdmin $exclusiveSuperAdmin,
+    ) {}
+
     /**
      * @param  string  $email  verified and lower-cased by the package
      */
@@ -27,17 +33,20 @@ class OidcUserProvisioningService implements UserProvisioningContract
     {
         $personName = $identity->personName();
 
-        $user = (new User)->forceFill([
-            'first_name' => $personName?->givenName ?: Str::before($email, '@'),
-            'last_name' => $personName?->familyName ?: null,
-            'email' => $email,
-            'password' => null,
-            'is_active' => true,
-            'email_verified_at' => now(),
-        ]);
-        $user->save();
-        $user->assignRole(RoleEnum::Reader->value);
+        // A trusted system write (no actor), through the same role-write path as every other: the
+        // row is inserted once the guard holds its locks, then gets its role.
+        return $this->superAdminGuard->guardRoleWrite(null, fn (): array => [], function () use ($personName, $email): User {
+            $user = (new User)->forceFill([
+                'first_name' => $personName?->givenName ?: Str::before($email, '@'),
+                'last_name' => $personName?->familyName ?: null,
+                'email' => $email,
+                'password' => null,
+                'is_active' => true,
+                'email_verified_at' => now(),
+            ]);
+            $user->save();
 
-        return $user;
+            return $this->exclusiveSuperAdmin->write($user, fn (): User => $user->assignRole(RoleEnum::Reader->value));
+        });
     }
 }

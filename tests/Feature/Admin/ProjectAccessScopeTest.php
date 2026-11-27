@@ -191,7 +191,7 @@ it('drops the access when the user group is deleted or the membership has expire
     ['reader' => $reader, 'scoped' => $scoped, 'userGroup' => $userGroup] = scopedAccessFixture();
 
     // Deleting a group soft-deletes it and keeps its pivots: they grant nothing any more.
-    app(DeleteUserGroupAction::class)->execute($userGroup);
+    app(DeleteUserGroupAction::class)->execute(null, $userGroup);
 
     expect(Project::query()->visibleTo($reader)->pluck('name')->all())->toBe(['Shared'])
         ->and($reader->can('view', $scoped))->toBeFalse();

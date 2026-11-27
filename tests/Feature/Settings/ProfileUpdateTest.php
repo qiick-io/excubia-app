@@ -148,7 +148,7 @@ class ProfileUpdateTest extends TestCase
             ->and($erased->last_name)->toBeNull()
             ->and($erased->email)->not->toBe($email)
             ->and($apiKey->fresh()->isRevoked())->toBeTrue()
-            ->and($principal->fresh()->user_id)->toBeNull()
+            ->and($principal->fresh()->user_id)->toBe($user->id)
             ->and($principal->fresh()->deactivated_at)->not->toBeNull();
     }
 

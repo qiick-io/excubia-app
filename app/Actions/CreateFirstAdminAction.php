@@ -37,7 +37,7 @@ class CreateFirstAdminAction
             }
 
             $this->syncPermissions->execute();
-            $user = $this->createUser->execute($firstName, $lastName, $email, null, $password, [RoleEnum::SuperAdmin->value]);
+            $user = $this->createUser->execute(null, $firstName, $lastName, $email, null, $password, [RoleEnum::SuperAdmin->value]);
             // The setup link works once.
             $this->setupTokens->consume();
 

@@ -76,7 +76,7 @@ test('deleting a user revokes its api keys and deactivates its principal without
         ->and($principal->fresh())->not->toBeNull()
         ->and($principal->fresh()->deactivated_at)->not->toBeNull()
         ->and($principal->fresh()->deactivation_reason)->toBe(DeactivationReason::Erased)
-        ->and($principal->fresh()->user_id)->toBeNull();
+        ->and($principal->fresh()->user_id)->toBe($owner->id);
 });
 
 test('deactivating a user stamps the principal deactivated_at', function (): void {
@@ -125,5 +125,5 @@ test('deleting a user whose principal was already deactivated leaves an erased t
     app(DeleteUserAction::class)->execute($owner);
 
     expect($principal->fresh()->deactivation_reason)->toBe(DeactivationReason::Erased)
-        ->and($principal->fresh()->user_id)->toBeNull();
+        ->and($principal->fresh()->user_id)->toBe($owner->id);
 });

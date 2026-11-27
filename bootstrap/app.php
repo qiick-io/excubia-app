@@ -16,6 +16,8 @@ use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Middleware\ThrottleRequests;
+use Illuminate\Validation\ValidationException;
+use Qiick\Access\ExclusiveSuperAdminException;
 use Qiick\Access\Http\EnsureTwoFactorIsEnabled;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -65,6 +67,11 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->is('mcp') || $request->expectsJson(),
         );
+        // Role writes route through ExclusiveSuperAdmin::write(); a refusal (a race past the form
+        // checks, or a promotion by an actor who may not manage super-admins) is a form error.
+        $exceptions->map(ExclusiveSuperAdminException::class, fn (): ValidationException => ValidationException::withMessages([
+            'roles' => __('This role change is refused: super-admin stands alone, and only a super-admin may make someone one.'),
+        ]));
         // The qiick 403 / 404 / 500 / 503 pages for browser requests (#423).
         $exceptions->respond(fn (Response $response, Throwable $exception, Request $request): Response => ErrorPageResponse::from($response, $request));
     })->create();

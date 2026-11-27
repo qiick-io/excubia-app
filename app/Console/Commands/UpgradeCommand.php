@@ -12,7 +12,7 @@ use Symfony\Component\Console\Attribute\AsCommand;
 
 /**
  * Safe automated subset of an Excubia upgrade (migrate, permission and system project sync,
- * cache clear, queue restart), as externa-core's `externa:upgrade`.
+ * the qiick packages' checks, cache clear, queue restart), as externa-core's `externa:upgrade`.
  *
  * Optionally opt-in to git sync from the official upstream remote before those steps.
  * Does not run composer/npm — operators still install deps after code lands. See /docs/upgrade.
@@ -23,6 +23,13 @@ class UpgradeCommand extends Command
     public const UPSTREAM_REMOTE = 'upstream';
 
     public const UPSTREAM_URL = 'https://github.com/qiick-io/excubia-app.git';
+
+    /**
+     * The qiick packages' deploy checks (fleet convention F2), run after the migrations: each
+     * validates its config and schema and exits non-zero on a broken deploy. The Docker
+     * entrypoint runs the same list.
+     */
+    public const PACKAGE_CHECKS = ['access:check'];
 
     protected $signature = 'excubia:upgrade
         {--force : Allow production APP_ENV and/or a dirty git working tree}
@@ -95,6 +102,14 @@ class UpgradeCommand extends Command
                 if ($code !== self::SUCCESS) {
                     return $code;
                 }
+            }
+        }
+
+        foreach (self::PACKAGE_CHECKS as $packageCheck) {
+            $this->info("Running {$packageCheck}…");
+            $code = $this->call($packageCheck);
+            if ($code !== self::SUCCESS) {
+                return $code;
             }
         }
 
