@@ -11,6 +11,7 @@ upgrade from the version before (see [docs/self-hosting.md](docs/self-hosting.md
 
 ### Changed
 
+- **qiick/laravel-api-keys `v0.3.0-beta.4`** from its tag instead of a `develop` commit. An HTTP 429 from an API key now carries `error: too_many_requests` (the fleet code; it was `rate_limit_exceeded`). A revoked key is never claimed for an expiry notice. `excubia:upgrade` and the Docker start also run `php artisan api-keys:check`. The schema changes the package asks for (binary collation of prefix and hash on MySQL, non-null timestamps) come in a separate pull request that needs a database reset.
 - **qiick/laravel-access `v0.1.0-beta.3`** from its tag instead of a `develop` commit: every role and group write (user create and update, group save and delete) runs through the package's `ExclusiveSuperAdmin::write()`, so super-admin stands alone even in a race past the form checks and only a super-admin makes someone one; a refused write is a form error on the roles. User deletion marks the principal erased through the package (`markErased()`). `excubia:upgrade` and the Docker start run `php artisan access:check` after the migrations (no schema change).
 
 - **Registry pinned to app-ui 7bd30c4**: the drawer focus return and the grouped tab count are now the registry's own (app-ui#279), so their overrides are gone; the theme gains the chart colour tokens.
