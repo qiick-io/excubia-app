@@ -15,6 +15,8 @@ use Illuminate\Support\Str;
  */
 beforeEach(function (): void {
     $this->seed(PermissionSeeder::class);
+    // The MCP line shows only while MCP serves the tool.
+    config(['excubia.mcp_enabled' => true]);
     $this->actingAs(User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value));
 
     $project = Project::factory()->create(['name' => 'Shop', 'slug' => 'shop']);

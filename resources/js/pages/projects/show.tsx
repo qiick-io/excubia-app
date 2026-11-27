@@ -84,6 +84,7 @@ export default function ProjectShow({
     canManageExceptions = false,
     assignees = [],
     canRefreshReport = false,
+    isUpgradePlanMcpToolAvailable = false,
     viewCounts,
 }: {
     /** Open items behind the Exceptions and Findings tabs (#275), for the tab markers. */
@@ -109,6 +110,8 @@ export default function ProjectShow({
     deploys?: RuntimeDeploy[];
     canManageExceptions?: boolean;
     canRefreshReport?: boolean;
+    /** MCP serves `get-upgrade-plan` (#469), on the Plan tab only. */
+    isUpgradePlanMcpToolAvailable?: boolean;
     /** Ready command and prompt per finding, keyed by `checkId|subject|advisoryId` (#78). */
     findingFixes?: Record<string, FindingFix>;
     /** The findings that warn or fail, problems first, with their check group (#109). */
@@ -256,6 +259,7 @@ export default function ProjectShow({
                             projectName={project.name}
                             latest={latest}
                             report={report}
+                            isMcpToolAvailable={isUpgradePlanMcpToolAvailable}
                         />
                     ) : view === 'licenses' ? (
                         <LicensesView licenses={health?.licenses ?? null} />

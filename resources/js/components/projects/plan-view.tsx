@@ -11,7 +11,6 @@ import type {
 import { Button } from '@/components/ui/button';
 import {
     Card,
-    CardAction,
     CardContent,
     CardFooter,
     CardHeader,
@@ -38,17 +37,20 @@ const PLAN_TIMELINE_DENSITY: TimelineDensity = 'compact';
  * Structured steps (excubia-core 1.0.0-rc.2+) render as the optional
  * `timeline` pattern, labelled by kind with package chips. Older reports
  * without `kind` keep the plain numbered list (#333). The plan copies as a prompt for the
- * user's own coding assistant, and the footer points AI clients at the MCP tool
- * `get-upgrade-plan`, which returns the same steps.
+ * user's own coding assistant, and, when MCP serves it, the footer points AI clients at the
+ * tool `get-upgrade-plan`, which returns the same steps.
  */
 export function PlanView({
     projectName,
     latest,
     report,
+    isMcpToolAvailable,
 }: {
     projectName: string;
     latest: HealthReportSummary;
     report: HealthReportBody;
+    /** MCP is on and Settings → AI → Tools keeps `get-upgrade-plan`. */
+    isMcpToolAvailable: boolean;
 }) {
     const { t } = useTranslation();
     const copyWithToast = useCopyWithToast();
@@ -57,10 +59,12 @@ export function PlanView({
 
     return (
         <Card>
-            <CardHeader className="pb-3">
+            {/* A wrapping row, not CardAction's fixed columns: the button drops under the
+                title on a narrow phone instead of overflowing it. */}
+            <CardHeader className="flex flex-wrap items-center justify-between gap-2 pb-3">
                 <CardTitle>{t('report.upgradePlan')}</CardTitle>
                 {upgradePlan.length > 0 ? (
-                    <CardAction>
+                    <div>
                         <Button
                             type="button"
                             variant="outline"
@@ -78,7 +82,7 @@ export function PlanView({
                             <Sparkles />
                             {t('report.plan.copyPrompt')}
                         </Button>
-                    </CardAction>
+                    </div>
                 ) : null}
             </CardHeader>
             <CardContent>
@@ -102,7 +106,7 @@ export function PlanView({
                     />
                 )}
             </CardContent>
-            {upgradePlan.length > 0 ? (
+            {upgradePlan.length > 0 && isMcpToolAvailable ? (
                 <CardFooter className="text-sm text-muted-foreground">
                     <p>
                         <Trans
