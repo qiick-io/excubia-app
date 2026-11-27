@@ -6,7 +6,7 @@ The scope covers the browser UI, push API, personal keys, MCP, optional OIDC and
 
 | Met | Partial | Not applicable | Gap |
 | --- | ------- | -------------- | --- |
-| 52  | 137     | 49             | 15  |
+| 53  | 137     | 49             | 14  |
 
 **Met** has evidence for the complete requirement. **Partial** identifies an implemented control and the remaining scope. **Not applicable** records why the feature or architecture is outside scope. Each **Gap** links to a remediation issue. Report sensitive security findings through [the security policy](../SECURITY.md).
 
@@ -165,7 +165,7 @@ For inherited evidence, the owner column names the Composer package and the evid
 | v5.0.0-7.2.3 | Met     | The Laravel session store selected by `config/session.php` generates 40-character session IDs with `Str::random` (`Illuminate/Session/Store.php` in the locked Laravel dependency).                                      |                      |
 | v5.0.0-7.2.4 | Partial | `tests/Feature/Auth/AuthenticationTest.php` and `tests/Feature/Auth/OidcAuthenticationTest.php` cover sign-in. Add session replacement checks across mechanisms and on reauthentication.                                 |                      |
 | v5.0.0-7.3.1 | Partial | `config/session.php` sets a configurable lifetime. Document the risk decision and test deployed idle expiry.                                                                                                             |                      |
-| v5.0.0-7.3.2 | Gap     | `config/session.php` covers inactivity. Define and verify an absolute duration policy. [#523](https://github.com/qiick-io/excubia-app/issues/523)                                                                        |                      |
+| v5.0.0-7.3.2 | Met     | [Session policy](SECURITY-MODEL.md#absolute-browser-session-lifetime), `tests/Feature/Auth/AbsoluteSessionLifetimeTest.php` and `tests/Feature/Auth/OidcAuthenticationTest.php` cover the cap and SSO freshness.         |                      |
 | v5.0.0-7.4.1 | Partial | `tests/Feature/Auth/AuthenticationTest.php` covers logout. Verify prior session identifiers are unusable after logout and idle expiry.                                                                                   |                      |
 | v5.0.0-7.4.2 | Partial | `app/Http/Middleware/EnsureUserIsActiveMiddleware.php` invalidates an inactive actor's session on use. Verify invalidation across all active sessions.                                                                   |                      |
 | v5.0.0-7.4.3 | Gap     | `tests/Feature/Settings/SecurityTest.php` covers factor and password changes. Define and verify the user's option to retire other sessions. [#524](https://github.com/qiick-io/excubia-app/issues/524)                   |                      |
