@@ -53,7 +53,7 @@ upgrade from the version before (see [docs/self-hosting.md](docs/self-hosting.md
 - **Keyboard triage and list preferences** (#277, app-ui optional patterns `keyboard-shortcuts` and `table-density`).
     - On the Exceptions and Findings tabs, `j` / `k` move a highlighted row and Enter opens it. `x` selects it. `e` resolves an exception group, and `a` assigns the row to you, with the same rights as the buttons.
     - `?` lists the keys of the page. The keys stay quiet while a drawer is open or while you type.
-    - The user menu gains **Compact tables**, which cuts 8px off every table row, and **Single-key shortcuts**, on by default; turning it off keeps ⌘ / Ctrl shortcuts working (WCAG 2.1.4). Both are personal and kept in the browser like high contrast. Compact tables also uses a `table_density_compact` cookie, so the page renders compact before paint.
+    - The user menu gains **Compact tables**, which cuts 8px off every table row, and **Single-key shortcuts**, on by default; turning it off keeps ⌘ / Ctrl shortcuts working (WCAG 2.2 SC 2.1.4). Both are personal and kept in the browser like high contrast. Compact tables also uses a `table_density_compact` cookie, so the page renders compact before paint.
 
 - **Findings as an inbox** (#276). The Findings tab gains the same saved views with counts: **Open**, **Assigned to me** and **New in 24h**. Its status, "Assigned to me" and "New in 24h" filters live in the URL, next to the existing `?finding=` link. With `can-dismiss-findings`, the selected rows can be assigned to yourself in one go (`PUT /projects/{project}/findings/bulk/assignee`): each finding is authorized, logged and gets its history event on its own. Dismissing stays per finding, as it needs a reason.
 

@@ -42,7 +42,8 @@ function visitA11y(string $path, string $mode): mixed
  * a colour with a `none` channel, such as Tailwind v4's `neutral-*` palette, and then moves the
  * whole rule to `incomplete` with an error. `assertNoAccessibilityIssues()` reads only
  * `violations`, so without this check a contrast failure passes silently. Call it after
- * `assertNoAccessibilityIssues()`, which loads axe on the page.
+ * `assertNoAccessibilityIssues()`, which loads axe on the page. The shared WCAG 2.2
+ * job also supplies a target-size check over the same route and theme states.
  */
 function assertAxeCheckedColorContrast(mixed $page): mixed
 {
@@ -52,7 +53,34 @@ function assertAxeCheckedColorContrast(mixed $page): mixed
             .map((result) => result.error.message ?? String(result.error))
         JS))->toBe([]);
 
+    $wcag22AxeScript = getenv('QIICK_WCAG22_AXE_SCRIPT');
+
+    if ($wcag22AxeScript !== false) {
+        expect(is_file($wcag22AxeScript))->toBeTrue();
+        assertSharedWcag22Result(
+            $page->script((string) file_get_contents($wcag22AxeScript)),
+            $page->script('() => location.pathname'),
+        );
+    }
+
     return $page;
+}
+
+/**
+ * Records machine findings before asserting so CI can surface manual review even if a check fails.
+ *
+ * @param  array{rule: string, violations: array, needsReview: array}  $result
+ */
+function assertSharedWcag22Result(array $result, string $pageLabel): void
+{
+    $reportPath = getenv('QIICK_WCAG22_REPORT');
+
+    if ($reportPath !== false) {
+        $line = json_encode([...$result, 'page' => $pageLabel], JSON_THROW_ON_ERROR).PHP_EOL;
+        expect(file_put_contents($reportPath, $line, FILE_APPEND | LOCK_EX))->not->toBeFalse();
+    }
+
+    expect($result['violations'])->toBe([]);
 }
 
 /**
