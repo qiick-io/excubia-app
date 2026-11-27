@@ -48,17 +48,21 @@ class PruneTelemetryAction
     /** Days of exception occurrences kept by default: the longest time range (14 d, #214). */
     public const OCCURRENCE_DAYS = 14;
 
+    public function __construct(private readonly PruneRowsAction $pruneRows) {}
+
     /**
      * @return array{runtime: int, exceptions: int}
      */
     public function execute(int $runtimeDays, int $exceptionDays, int $occurrenceDays = self::OCCURRENCE_DAYS): array
     {
-        $runtime = RuntimeAggregate::query()->where('bucket', '<', Date::now()->subDays($runtimeDays))->delete();
-        RuntimeHourlyRollup::query()->where('bucket', '<', Date::now()->subDays($runtimeDays))->delete();
-        ScheduledTaskRun::query()->where('bucket', '<', Date::now()->subDays($runtimeDays))->delete();
-        ExceptionOccurrence::query()->where('bucket', '<', Date::now()->subDays(min($occurrenceDays, $exceptionDays)))->delete();
-        $exceptions = ExceptionGroup::query()->where('last_seen_at', '<', Date::now()->subDays($exceptionDays))->delete();
-        PushedBatch::query()->where('received_at', '<', Date::now()->subDays(self::BATCH_ID_DAYS))->delete();
+        $now = Date::now()->toImmutable();
+        $runtimeCutoff = $now->subDays($runtimeDays);
+        $runtime = $this->pruneRows->execute(RuntimeAggregate::query()->where('bucket', '<', $runtimeCutoff)->toBase());
+        $this->pruneRows->execute(RuntimeHourlyRollup::query()->where('bucket', '<', $runtimeCutoff)->toBase());
+        $this->pruneRows->execute(ScheduledTaskRun::query()->where('bucket', '<', $runtimeCutoff)->toBase());
+        $this->pruneRows->execute(ExceptionOccurrence::query()->where('bucket', '<', $now->subDays(min($occurrenceDays, $exceptionDays)))->toBase());
+        $exceptions = $this->pruneRows->execute(ExceptionGroup::query()->where('last_seen_at', '<', $now->subDays($exceptionDays))->toBase());
+        $this->pruneRows->execute(PushedBatch::query()->where('received_at', '<', $now->subDays(self::BATCH_ID_DAYS))->toBase());
         AlertLog::query()->where('created_at', '<', Date::now()->subDays(max($runtimeDays, $exceptionDays)))->delete();
         AlertMute::query()->where('until', '<=', Date::now())->delete();
         AiUsageDay::query()->where('day', '<', Date::now()->subDays(max($runtimeDays, self::AI_USAGE_DAYS))->toDateString())->delete();
