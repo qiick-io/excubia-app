@@ -58,5 +58,8 @@
     "The signing secret could not be generated now: too many previous secrets are still in their grace period. Try again later.": "Das Signaturgeheimnis kann gerade nicht erzeugt werden: Zu viele frühere Geheimnisse sind noch in ihrer Übergangsfrist. Versuche es später erneut.",
     "Reader": "Leser",
     "Your session expired. Please try again.": "Ihre Sitzung ist abgelaufen. Bitte versuchen Sie es noch einmal.",
-    "Something went wrong. Please try again.": "Etwas ist schiefgelaufen. Bitte versuchen Sie es noch einmal."
+    "Something went wrong. Please try again.": "Etwas ist schiefgelaufen. Bitte versuchen Sie es noch einmal.",
+    "The end must be in the future: this window would silence nothing.": "Das Ende muss in der Zukunft liegen: Dieses Fenster würde nichts stummschalten.",
+    "This time does not exist in the chosen timezone (the clocks skip it).": "Diese Uhrzeit gibt es in der gewählten Zeitzone nicht (die Uhr überspringt sie).",
+    "The end must be after the start.": "Das Ende muss nach dem Beginn liegen."
 }
