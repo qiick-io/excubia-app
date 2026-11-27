@@ -10,8 +10,10 @@ use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Http;
+use Qiick\Outbound\Contracts\HostResolver;
 use Qiick\Outbound\Delivery\WebhookDeliveryCoordinator;
 use Qiick\Outbound\Http\OutboundHttpLimits;
+use Qiick\Outbound\Http\OutboundHttpStackData;
 use Qiick\Outbound\Http\PinnedHttpClient;
 use Qiick\Outbound\Models\WebhookDelivery;
 use Qiick\Outbound\Ssrf\RemoteUrlGuard;
@@ -122,22 +124,27 @@ function alertWebhookEvents(): array
 }
 
 /**
- * Bind a {@see PinnedHttpClient} over a faked private factory so
- * {@see Http::fake()} on the shared facade cannot bypass the pin.
+ * Bind a guard and a {@see PinnedHttpClient} over a faked private factory, built with the
+ * package's public {@see OutboundHttpStackData::make()} on the configured policy, so
+ * {@see Http::fake()} on the shared facade cannot bypass the pin. Returns the bound guard.
  *
  * @param  (callable(Request, array): PromiseInterface)|null  $callback
  */
-function bindPinnedAlertClient(RemoteUrlGuard $guard, ?callable $callback = null): void
+function bindPinnedAlertClient(HostResolver $hostResolver, ?callable $callback = null): RemoteUrlGuard
 {
-    $factory = FakeOutboundHttpFactory::fake($callback);
-    app()->instance(RemoteUrlGuard::class, $guard);
-    app()->instance(PinnedHttpClient::class, new PinnedHttpClient(
-        $factory,
-        $guard,
-        app(OutboundHttpLimits::class),
-    ));
+    $stack = OutboundHttpStackData::make(
+        $hostResolver,
+        allowPrivateHosts: config('outbound.ssrf.allow_private_hosts') === true,
+        httpsOnly: config('outbound.ssrf.https_only') === true,
+        limits: app(OutboundHttpLimits::class),
+        httpFactory: FakeOutboundHttpFactory::fake($callback),
+    );
+    app()->instance(RemoteUrlGuard::class, $stack->guard);
+    app()->instance(PinnedHttpClient::class, $stack->client);
     // The webhook coordinator keeps the client it was built with: rebuild it over the fake one.
     app()->forgetInstance(WebhookDeliveryCoordinator::class);
+
+    return $stack->guard;
 }
 
 /**

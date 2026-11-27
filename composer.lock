@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "4e2a3bb591695fb702e3d12a99927700",
+    "content-hash": "704d97901a174e0d14236ac8b70f22d0",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -4741,23 +4741,23 @@
         },
         {
             "name": "qiick/laravel-outbound",
-            "version": "v0.2.0-beta.3",
+            "version": "v0.2.0-beta.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/qiick-io/laravel-outbound.git",
-                "reference": "71a6be04b1dd2091d592483b9f737910aa052c55"
+                "reference": "be74e41c45cfca087e43e647b865be34e0e102c3"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/qiick-io/laravel-outbound/zipball/71a6be04b1dd2091d592483b9f737910aa052c55",
-                "reference": "71a6be04b1dd2091d592483b9f737910aa052c55",
+                "url": "https://api.github.com/repos/qiick-io/laravel-outbound/zipball/be74e41c45cfca087e43e647b865be34e0e102c3",
+                "reference": "be74e41c45cfca087e43e647b865be34e0e102c3",
                 "shasum": ""
             },
             "require": {
                 "ext-curl": "*",
                 "ext-intl": "*",
                 "ext-mbstring": "*",
-                "guzzlehttp/guzzle": "^7.12 || ^8.0",
+                "guzzlehttp/guzzle": "^7.15.2 || ^8.0.1",
                 "illuminate/contracts": "^12.0 || ^13.0",
                 "illuminate/database": "^12.0 || ^13.0",
                 "illuminate/http": "^12.0 || ^13.0",
@@ -4811,8 +4811,8 @@
                 "issues": "https://github.com/qiick-io/laravel-outbound/issues",
                 "source": "https://github.com/qiick-io/laravel-outbound"
             },
-            "time": "2026-11-26T14:35:05+00:00",
-            "published-time": "2026-11-26T14:35:47+00:00"
+            "time": "2026-11-27T15:02:05+00:00",
+            "published-time": "2026-11-27T15:04:47+00:00"
         },
         {
             "name": "ramsey/collection",

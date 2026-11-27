@@ -57,8 +57,10 @@ class AlertDispatcherService
      * @param  string  $summary  one line for Slack / Telegram, e.g. "laravel/framework: CVE-…"
      * @param  string|null  $subject  the issue the alert is about (finding identity, task id…), for mutes
      * @param  list<string>  $fingerprints  the core finding fingerprints the alert is about
+     * @param  string|null  $subjectPublicId  the public id of the person the alert names, if any:
+     *                                        its webhook delivery is erased with them
      */
-    public function dispatch(AlertEventEnum $event, Project $project, string $summary, array $data = [], ?SeverityEnum $severity = null, ?string $subject = null, array $fingerprints = []): void
+    public function dispatch(AlertEventEnum $event, Project $project, string $summary, array $data = [], ?SeverityEnum $severity = null, ?string $subject = null, array $fingerprints = [], ?string $subjectPublicId = null): void
     {
         $severity ??= $this->settings->alertEventSeverity($event);
         // Stored cut to the column, so the mute, duplicate and throttle lookups compare the stored value.
@@ -81,7 +83,7 @@ class AlertDispatcherService
 
         // One transaction, also for a caller without its own (the scheduled stale and EOL
         // checks): the history row commits only with the webhook delivery stored for it.
-        DB::transaction(function () use ($payload, $project, $event, $severity, $subject, $summary, $reason, $channels, $fingerprints): void {
+        DB::transaction(function () use ($payload, $project, $event, $severity, $subject, $summary, $reason, $channels, $fingerprints, $subjectPublicId): void {
             AlertLog::query()->create([
                 'uuid' => $payload['id'],
                 'project_id' => $project->id,
@@ -106,7 +108,7 @@ class AlertDispatcherService
                     continue;
                 }
 
-                $this->queue($channel, [['payload' => $payload, 'summary' => $summary]]);
+                $this->queue($channel, [['payload' => $payload, 'summary' => $summary]], $subjectPublicId);
             }
         });
     }
@@ -160,15 +162,16 @@ class AlertDispatcherService
      * every alert's history row.
      *
      * @param  non-empty-list<array{payload: array<string, mixed>, summary: string}>  $alerts
+     * @param  string|null  $subjectPublicId  the person a single webhook alert names
      */
-    private function queue(string $channel, array $alerts): void
+    private function queue(string $channel, array $alerts, ?string $subjectPublicId = null): void
     {
         // The per-user channels (mail, in-app) render the alerts themselves from the summaries.
         $isPerUser = DeliverAlertJob::emailUserId($channel) !== null || DeliverAlertJob::appUserId($channel) !== null;
 
         if ($channel === DeliverAlertJob::WEBHOOK) {
             // Never grouped: one signed delivery per alert, the alert id as `webhook-id`.
-            $this->webhooks->send($alerts[0]['payload']);
+            $this->webhooks->send($alerts[0]['payload'], $subjectPublicId);
 
             return;
         }

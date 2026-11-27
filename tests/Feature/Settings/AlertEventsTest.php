@@ -28,8 +28,8 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
+use Qiick\Outbound\Contracts\HostResolver;
 use Qiick\Outbound\Models\WebhookDelivery;
-use Qiick\Outbound\Ssrf\RemoteUrlGuard;
 
 /**
  * Alerts (#22), third part: every event of the Reports, Reporting and Administration groups on
@@ -220,7 +220,7 @@ it('delivers every event to the signed webhook and by email, one webhook request
     $sentBodies = [];
     $webhookIds = [];
     $webhookSignatures = [];
-    bindPinnedAlertClient(app(RemoteUrlGuard::class), function (Request $request) use (&$sentBodies, &$webhookIds, &$webhookSignatures) {
+    bindPinnedAlertClient(app(HostResolver::class), function (Request $request) use (&$sentBodies, &$webhookIds, &$webhookSignatures) {
         $sentBodies[] = json_decode($request->body(), true, 512, JSON_THROW_ON_ERROR);
         $webhookIds[] = $request->header('Webhook-Id')[0] ?? null;
         $webhookSignatures[] = $request->header('Webhook-Signature')[0] ?? '';

@@ -15,6 +15,7 @@ use Illuminate\Validation\ValidationException;
 use Qiick\Access\Principals\PrincipalDirectory;
 use Qiick\ApiKeys\RevocationReason;
 use Qiick\Oidc\Erasure\OidcEraser;
+use Qiick\Outbound\Erasure\OutboundEraser;
 
 /**
  * Soft-deletes a dashboard user and releases their unique identifiers.
@@ -31,6 +32,7 @@ class DeleteUserAction
         private SuperAdminGuardService $superAdminGuard,
         private PrincipalDirectory $principals,
         private OidcEraser $oidcEraser,
+        private OutboundEraser $outboundEraser,
     ) {}
 
     /**
@@ -84,6 +86,10 @@ class DeleteUserAction
             // qiick/laravel-oidc's eraser removes the identities and the logout state tied to them.
             $this->oidcEraser->erase((string) $user->getKey(), $publicId, OidcEraser::DELETE);
             $user->passkeys()->delete();
+            // qiick/laravel-outbound: a pending alert webhook that names the person (an assigned
+            // finding) is cancelled and every delivery about them loses its body; the person is
+            // unlinked from the endpoints and redeliveries they triggered.
+            $this->outboundEraser->erase((string) $user->getKey(), $publicId, OutboundEraser::DELETE, [$principal->id]);
 
             $conversationIds = DB::table('agent_conversations')
                 ->where('participant_type', $user->getMorphClass())

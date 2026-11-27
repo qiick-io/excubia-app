@@ -63,11 +63,14 @@ class AlertWebhookService
      * surrounding transaction commits.
      *
      * @param  array<string, mixed>  $payload  see AlertDispatcherService
+     * @param  string|null  $subjectPublicId  the public id of the person the alert names (an
+     *                                        assignee): OutboundEraser cancels the delivery and
+     *                                        drops its body when that person is erased
      *
      * @side-effect Writes webhook_deliveries rows (or marks the alert's webhook failed without an
      * endpoint); queues SendAlertWebhooksJob after the commit.
      */
-    public function send(array $payload): void
+    public function send(array $payload, ?string $subjectPublicId = null): void
     {
         $data = $payload;
         unset($data['id'], $data['event']);
@@ -81,7 +84,7 @@ class AlertWebhookService
 
         // Stored with the alert, in the caller's transaction: a rollback drops both, and once the
         // alert is committed its delivery is too, for the schedule to send if the job never runs.
-        if ($this->coordinator->dispatch($message)->isEmpty()) {
+        if ($this->coordinator->dispatch($message, subjectPublicId: $subjectPublicId)->isEmpty()) {
             // The endpoint was cleared or disabled since the alert chose its channels: nothing
             // will send it, so the history says so instead of waiting forever.
             $this->recordDelivery->execute($message->id, DeliverAlertJob::WEBHOOK, false);

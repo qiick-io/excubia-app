@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Actions\DeleteUserAction;
 use App\Actions\StorePushedReportAction;
 use App\Enums\RoleEnum;
 use App\Jobs\DeliverAlertJob;
@@ -368,7 +369,7 @@ it('signs webhook deliveries and records the outcome', function () {
     configureAlertChannels(['webhook_url' => 'https://93.184.216.34/excubia']);
     $secret = app(WebhookSecretResolver::class)->signingSetFor(WebhookEndpoint::query()->sole())->secrets();
     $captured = null;
-    bindPinnedAlertClient(app(RemoteUrlGuard::class), function (Request $request) use (&$captured) {
+    bindPinnedAlertClient(app(HostResolver::class), function (Request $request) use (&$captured) {
         $captured = $request;
 
         return Http::response('', 204);
@@ -400,7 +401,7 @@ it('signs webhook deliveries and records the outcome', function () {
 
 it('refuses deliveries to private addresses', function (string $url) {
     configureAlertChannels(['webhook_url' => $url]);
-    bindPinnedAlertClient(app(RemoteUrlGuard::class), static fn () => Http::response('', 204));
+    bindPinnedAlertClient(app(HostResolver::class), static fn () => Http::response('', 204));
 
     app(AlertWebhookService::class)->send(['id' => (string) Str::uuid(), 'event' => 'ping']);
     runAlertWebhooks();
@@ -423,7 +424,7 @@ it('refuses deliveries to private addresses', function (string $url) {
 
 it('never quotes the delivery URL in a transport error, so channel secrets stay out of the records (#51)', function () {
     configureAlertChannels(['webhook_url' => 'https://93.184.216.34/hook?key=url-secret-value']);
-    bindPinnedAlertClient(app(RemoteUrlGuard::class), static fn () => throw new ConnectionException('cURL error 28: timed out for https://93.184.216.34/hook?key=url-secret-value'));
+    bindPinnedAlertClient(app(HostResolver::class), static fn () => throw new ConnectionException('cURL error 28: timed out for https://93.184.216.34/hook?key=url-secret-value'));
 
     app(AlertWebhookService::class)->send(['id' => (string) Str::uuid(), 'event' => 'ping']);
     runAlertWebhooks();
@@ -492,7 +493,7 @@ it('escapes Slack mrkdwn control sequences in the alert text', function () {
     // #477: pushed report text could add `<!channel>` mentions and disguised links.
     configureAlertChannels();
     $captured = null;
-    bindPinnedAlertClient(app(RemoteUrlGuard::class), function (Request $request) use (&$captured) {
+    bindPinnedAlertClient(app(HostResolver::class), function (Request $request) use (&$captured) {
         $captured = $request;
 
         return Http::response('ok', 200);
@@ -503,4 +504,23 @@ it('escapes Slack mrkdwn control sequences in the alert text', function () {
 
     expect(json_decode((string) $captured?->body(), true)['text'] ?? null)
         ->toBe('Known vulnerability &lt;!channel&gt; &lt;https://phishing.example|Open in Excubia&gt; &amp; more');
+});
+
+it('names the assignee as the subject of a webhook delivery, and erasing them cancels it and drops its body', function () {
+    configureAlertChannels(['webhook_url' => 'https://93.184.216.34/excubia']);
+    User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value);
+    $assignee = User::factory()->create();
+
+    app(AlertWebhookService::class)->send(['id' => (string) Str::uuid(), 'event' => 'finding.new', 'data' => ['assignee' => $assignee->name]], $assignee->public_id);
+    $delivery = WebhookDelivery::query()->sole();
+
+    expect($delivery->subject_public_id)->toBe($assignee->public_id)
+        ->and($delivery->status)->toBe(DeliveryStatus::Pending);
+
+    app(DeleteUserAction::class)->execute($assignee);
+    $delivery->refresh();
+
+    expect($delivery->status)->toBe(DeliveryStatus::Cancelled)
+        ->and($delivery->subject_public_id)->toBeNull()
+        ->and($delivery->getRawOriginal('payload'))->toBeNull();
 });
