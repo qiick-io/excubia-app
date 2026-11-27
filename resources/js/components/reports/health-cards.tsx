@@ -12,7 +12,6 @@ import {
     Card,
     CardAction,
     CardContent,
-    CardDescription,
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
@@ -256,9 +255,6 @@ export function InfrastructureCard({
         <Card className={className}>
             <CardHeader className="pb-3">
                 <CardTitle>{t('health.infrastructure.title')}</CardTitle>
-                <CardDescription>
-                    {t('health.infrastructure.description')}
-                </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
                 {ranMetrics.length > 0 ? (
@@ -348,9 +344,6 @@ export function DependenciesCard({
         <Card className={className}>
             <CardHeader className="pb-3">
                 <CardTitle>{t('health.dependencies.title')}</CardTitle>
-                <CardDescription>
-                    {t('health.dependencies.description')}
-                </CardDescription>
                 {licenses ? (
                     <CardAction>
                         <Button variant="outline" size="sm" asChild>

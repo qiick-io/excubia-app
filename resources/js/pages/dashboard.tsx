@@ -405,8 +405,11 @@ export default function Dashboard({
                         )}
                     </section>
 
-                    <EndOfSupportCard rows={overview.endOfSupport} />
-                    <LicensesCard rows={overview.licenses} />
+                    {/* Two short cards share a row instead of each taking a whole one. */}
+                    <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+                        <EndOfSupportCard rows={overview.endOfSupport} />
+                        <LicensesCard rows={overview.licenses} />
+                    </section>
                 </div>
             </PageLayout>
         </>

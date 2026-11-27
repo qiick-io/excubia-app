@@ -20,7 +20,9 @@ import {
     supportStatus,
 } from '@/components/reports/runtime-support';
 import { SeverityBadge } from '@/components/reports/severity-badge';
-import { StatCard } from '@/components/stat-card';
+import { KpiTile } from '@/components/charts/kpi-tile';
+import { KpiRatio } from '@/components/dashboard/kpi-history';
+import { InfoHint } from '@/components/info-hint';
 import { TableCellDetails } from '@/components/table-cell-details';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -180,14 +182,7 @@ export default function FleetIndex({
                     initialSearch={search}
                 />
             ) : (
-                <PageLayout
-                    scrollContent
-                    description={
-                        view === 'readiness' && readiness !== null
-                            ? t('fleet.readiness.description')
-                            : undefined
-                    }
-                >
+                <PageLayout scrollContent>
                     {view === 'readiness' && readiness !== null ? (
                         <ReadinessView readiness={readiness} />
                     ) : view === 'eol' && calendar !== null ? (
@@ -294,7 +289,7 @@ function ProjectLink({ project }: { project: ProjectRef }) {
  * project with the packages that block it and a link to its upgrade plan.
  */
 function ReadinessView({ readiness }: { readiness: Readiness }) {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const dates = useDateFormat();
 
     if (readiness.projects.length === 0) {
@@ -460,44 +455,126 @@ function ReadinessView({ readiness }: { readiness: Readiness }) {
         },
     ];
 
-    const statCardSpan = readinessStatSpan(
-        readiness.targets.length + (readiness.unknown > 0 ? 1 : 0),
+    const locale = i18n.language;
+    const readyCount = readiness.targets.reduce(
+        (sum, target) => sum + target.ready,
+        0,
+    );
+    const targetTotal = readiness.targets.reduce(
+        (sum, target) => sum + target.total,
+        0,
+    );
+    const blockedCount = readiness.projects.filter(
+        (row) => row.status === 'blocked',
+    ).length;
+    // How many projects each blocking package holds back, so the tile names the worst one.
+    const projectsPerBlocker = new Map<string, number>();
+
+    for (const row of readiness.projects) {
+        for (const blocker of row.blockers) {
+            projectsPerBlocker.set(
+                blocker.package,
+                (projectsPerBlocker.get(blocker.package) ?? 0) + 1,
+            );
+        }
+    }
+
+    const worstBlocker = [...projectsPerBlocker].sort(
+        (first, second) => second[1] - first[1],
+    )[0];
+    const projectsWithPlan = readiness.projects.filter(
+        (row) => row.hasReport && row.planSteps > 0,
+    );
+    const planStepTotal = projectsWithPlan.reduce(
+        (sum, row) => sum + row.planSteps,
+        0,
     );
 
     return (
         <div className="flex flex-col gap-4">
-            {/* Key numbers as on the dashboard: a row of equal stat cards, four per row (#330),
-                fewer, wider ones filling the row when there are only two or three (#335). */}
-            {readiness.targets.length > 0 || readiness.unknown > 0 ? (
-                <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-12">
-                    {readiness.targets.map((target) => (
-                        <StatCard
-                            key={target.targetMajor}
-                            className={statCardSpan}
-                            label={t('fleet.readiness.target', {
+            {/* The key numbers row of app-ui docs/charts.md: always four tiles, so no holes. */}
+            <section
+                aria-label={t('charts.keyMetrics')}
+                className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4"
+            >
+                <KpiTile
+                    label={t('fleet.readiness.kpi.ready')}
+                    value={
+                        <KpiRatio
+                            value={readyCount}
+                            total={targetTotal}
+                            locale={locale}
+                        />
+                    }
+                    secondary={[
+                        ...readiness.targets.map((target) =>
+                            t('fleet.readiness.kpi.target', {
                                 major: target.targetMajor,
-                            })}
-                            value={`${target.ready} / ${target.total}`}
-                            headline={t('fleet.readiness.canMove', {
                                 ready: target.ready,
                                 total: target.total,
-                                major: target.targetMajor,
-                            })}
+                            }),
+                        ),
+                        readiness.unknown > 0
+                            ? t('fleet.readiness.kpi.unknown', {
+                                  count: readiness.unknown,
+                              })
+                            : null,
+                    ]
+                        .filter(Boolean)
+                        .join(' · ')}
+                />
+                <KpiTile
+                    label={t('fleet.readiness.kpi.blocked')}
+                    value={
+                        <KpiRatio
+                            value={blockedCount}
+                            total={readiness.projects.length}
+                            locale={locale}
                         />
-                    ))}
-                    {readiness.unknown > 0 ? (
-                        <StatCard
-                            className={statCardSpan}
-                            label={t('fleet.readiness.status.unknown')}
-                            value={readiness.unknown.toLocaleString()}
-                            context={t('fleet.readiness.unknownDescription')}
+                    }
+                />
+                <KpiTile
+                    label={t('fleet.readiness.blockers')}
+                    value={projectsPerBlocker.size.toLocaleString(locale)}
+                    secondary={
+                        worstBlocker
+                            ? t('fleet.readiness.kpi.worstBlocker', {
+                                  package: worstBlocker[0],
+                                  count: worstBlocker[1],
+                              })
+                            : undefined
+                    }
+                />
+                <KpiTile
+                    label={t('fleet.readiness.kpi.plans')}
+                    value={
+                        <KpiRatio
+                            value={projectsWithPlan.length}
+                            total={readiness.projects.length}
+                            locale={locale}
                         />
-                    ) : null}
-                </section>
-            ) : null}
+                    }
+                    secondary={
+                        planStepTotal > 0
+                            ? t('fleet.readiness.kpi.steps', {
+                                  count: planStepTotal,
+                              })
+                            : undefined
+                    }
+                />
+            </section>
             <Card>
                 <CardHeader className="pb-3">
-                    <CardTitle>{t('fleet.readiness.projectsTitle')}</CardTitle>
+                    <CardTitle className="flex items-center gap-1">
+                        {t('fleet.readiness.projectsTitle')}
+                        <InfoHint
+                            label={t('common.aboutTopic', {
+                                topic: t('fleet.readiness.projectsTitle'),
+                            })}
+                        >
+                            {t('fleet.readiness.description')}
+                        </InfoHint>
+                    </CardTitle>
                 </CardHeader>
                 <CardContent>
                     {/* The sticky header takes the card surface, not the page one. */}
@@ -511,19 +588,6 @@ function ReadinessView({ readiness }: { readiness: Readiness }) {
             </Card>
         </div>
     );
-}
-
-/**
- * The wide-screen span of each readiness stat card: four to a row, or the row shared out when
- * there are fewer, so two cards do not leave half the row empty (#335). Static classes, so
- * Tailwind sees them.
- */
-function readinessStatSpan(cardCount: number): string {
-    if (cardCount <= 2) {
-        return 'xl:col-span-6';
-    }
-
-    return cardCount === 3 ? 'xl:col-span-4' : 'xl:col-span-3';
 }
 
 /**
@@ -777,7 +841,6 @@ function AdvisoriesView({
 
     return (
         <PageLayout
-            description={t('fleet.advisories.description')}
             // Two tables: the page scrolls instead of the first table.
             scrollContent={dismissed.length > 0}
             filters={
@@ -823,9 +886,6 @@ function AdvisoriesView({
                         >
                             {t('fleet.advisories.dismissedTitle')}
                         </h2>
-                        <p className="text-sm text-muted-foreground">
-                            {t('fleet.advisories.dismissedDescription')}
-                        </p>
                         <DataTable
                             columns={dismissedColumns}
                             data={dismissed}
@@ -906,7 +966,6 @@ function CalendarView({ rows }: { rows: CalendarRow[] }) {
     return (
         <div className="flex flex-col gap-4">
             <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                <p className="max-w-2xl">{t('fleet.eol.description')}</p>
                 <span className="inline-flex items-center gap-1.5">
                     <span
                         className="h-2.5 w-4 rounded-sm bg-primary"

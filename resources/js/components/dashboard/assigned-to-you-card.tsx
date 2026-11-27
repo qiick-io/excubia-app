@@ -1,12 +1,6 @@
 import { Link } from '@inertiajs/react';
 import { useTranslation } from 'react-i18next';
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import projectsRoutes from '@/routes/projects';
 import type { AssignedRow } from '@/types/dashboard';
 
@@ -23,9 +17,6 @@ export function AssignedToYouCard({ rows }: { rows: AssignedRow[] }) {
         <Card>
             <CardHeader className="pb-3">
                 <CardTitle>{t('dashboard.assigned.title')}</CardTitle>
-                <CardDescription>
-                    {t('dashboard.assigned.description')}
-                </CardDescription>
             </CardHeader>
             <CardContent>
                 <ul className="flex flex-col divide-y divide-border text-sm">
