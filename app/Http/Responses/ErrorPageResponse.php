@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Responses;
 
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\SetLocaleMiddleware;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -66,14 +67,20 @@ final class ErrorPageResponse
 
     private static function errorPage(Response $response, Request $request, int $status): Response
     {
+        $props = ['status' => $status];
         // Route model binding fails before HandleInertiaRequests runs, so share its props here: the
         // app shell needs `auth`. A 5xx may come from the database those props read, so it renders
         // the guest layout, as does a request without a session (maintenance mode, an unmatched URL).
         if ($status < 500 && $request->hasSession()) {
             Inertia::share(app(HandleInertiaRequests::class)->share($request));
+        } elseif (! $request->hasSession()) {
+            // An unmatched URL bypasses web middleware. The locale cookie needs no session or database.
+            $locale = SetLocaleMiddleware::cookieLocale($request) ?? app()->getLocale();
+            app()->setLocale($locale);
+            $props['locale'] = $locale;
         }
 
-        $page = Inertia::render('errors/error-page', ['status' => $status])
+        $page = Inertia::render('errors/error-page', $props)
             ->toResponse($request)
             ->setStatusCode($status);
         $page->headers->set('Vary', 'X-Inertia');
