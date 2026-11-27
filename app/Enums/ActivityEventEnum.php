@@ -26,6 +26,8 @@ enum ActivityEventEnum: string
     case ApiKeyRotated = 'rotated';
     case ApiKeyRevoked = 'revoked';
     case ApiKeyFirstUsed = 'api_key_first_used';
+    // One entry per completed user erasure (#381): the case id and the counts, no personal data.
+    case ErasureCompleted = 'erasure_completed';
     case WebhookSecretCreated = 'webhook_secret_created';
     case WebhookSecretRotated = 'webhook_secret_rotated';
     // Writes that silence alerts (#431), filterable in the activity log.

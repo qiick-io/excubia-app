@@ -16,6 +16,7 @@ use App\Policies\SystemHealthPolicy;
 use App\Services\AccessResponderService;
 use App\Services\ActiveUsersService;
 use App\Services\ApiKeyAuthorizerService;
+use App\Services\ApiKeyErasureRepositoryService;
 use App\Services\ApiKeyExpiryRecipientService;
 use App\Services\ApiKeyRepositoryService;
 use App\Services\EnvironmentMaintenanceModeService;
@@ -56,6 +57,7 @@ use Qiick\Access\Contracts\RoleCatalog;
 use Qiick\Access\Contracts\TwoFactorPolicy;
 use Qiick\Access\Contracts\TwoFactorResponder;
 use Qiick\ApiKeys\ApiKeyAuthenticator;
+use Qiick\ApiKeys\Contracts\ApiKeyErasureRepositoryContract;
 use Qiick\ApiKeys\Contracts\ApiKeyRepository;
 use Qiick\ApiKeys\Contracts\AttemptLimiter;
 use Qiick\ApiKeys\Contracts\Clock;
@@ -139,6 +141,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(KeyAuthorizer::class, ApiKeyAuthorizerService::class);
         $this->app->bind(ScopeVocabulary::class, ApiKeyAuthorizerService::class);
         $this->app->bind(ExpiryRecipientResolver::class, ApiKeyExpiryRecipientService::class);
+        // Used only by the user erasure (ErasureOrchestratorService), never by authentication.
+        $this->app->bind(ApiKeyErasureRepositoryContract::class, ApiKeyErasureRepositoryService::class);
 
         $this->app->bind(ApiKeyAuthenticator::class, fn (Application $app): ApiKeyAuthenticator => new ApiKeyAuthenticator(
             codec: $app->make(TokenCodec::class),

@@ -729,6 +729,7 @@
             "rotated": "API-Schlüssel rotiert",
             "revoked": "API-Schlüssel widerrufen",
             "api_key_first_used": "API-Schlüssel erstmals verwendet",
+            "erasure_completed": "Benutzer gelöscht",
             "collection_permissions_synced": "Collection-Berechtigungen synchronisiert",
             "file_permissions_synced": "Datei-Berechtigungen synchronisiert",
             "status_changed": "Status geändert",

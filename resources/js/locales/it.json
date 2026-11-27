@@ -729,6 +729,7 @@
             "rotated": "Chiave API ruotata",
             "revoked": "Chiave API revocata",
             "api_key_first_used": "Chiave API usata la prima volta",
+            "erasure_completed": "Utente cancellato",
             "collection_permissions_synced": "Permessi collection sincronizzati",
             "file_permissions_synced": "Permessi file sincronizzati",
             "status_changed": "Stato cambiato",
