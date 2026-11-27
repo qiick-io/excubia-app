@@ -57,6 +57,8 @@ Open <http://localhost:8080/setup>: create the admin, the first project, and cop
 
 Laravel Forge, Ploi or a plain server, HTTPS, backups and upgrades: **[docs/self-hosting.md](./docs/self-hosting.md)**. Which excubia-core version each feature needs: **[docs/compatibility.md](./docs/compatibility.md)**.
 
+See the [ASVS 5.0 Level 2 security assessment](docs/asvs.md) and [WCAG 2.2 AA verification](docs/accessibility.md).
+
 ## Add a project
 
 1. In the app, open **Projects → New project** (or the last step of `/setup`) and give it a name. The app shows the push token **once**: copy it.
