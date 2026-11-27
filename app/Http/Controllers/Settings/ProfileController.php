@@ -87,6 +87,9 @@ class ProfileController extends Controller
         // The guard may refuse the deletion: keep the session until it has succeeded.
         $deleteUser->execute($user);
 
+        // The erasure cleared the token in the database; logout() would write a new one onto the
+        // tombstone from this request's copy.
+        $user->setRememberToken(null);
         Auth::logout();
 
         $request->session()->invalidate();

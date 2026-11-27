@@ -66,10 +66,12 @@ class ApiKeyRepositoryService implements ApiKeyRepository
         ];
 
         DB::transaction(function () use ($record, $stamp): void {
-            $isFirstUse = ApiKey::query()->whereKey($record->id())->whereNull('last_used_at')->toBase()->update($stamp) === 1;
+            // Never on a revoked key: a request authorised before an erasure revoked (and
+            // anonymised) the key must not write its IP and user agent back.
+            $isFirstUse = ApiKey::query()->whereKey($record->id())->whereNull('revoked_at')->whereNull('last_used_at')->toBase()->update($stamp) === 1;
 
             if (! $isFirstUse) {
-                ApiKey::query()->whereKey($record->id())->toBase()->update($stamp);
+                ApiKey::query()->whereKey($record->id())->whereNull('revoked_at')->toBase()->update($stamp);
 
                 return;
             }

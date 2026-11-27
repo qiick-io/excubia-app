@@ -8,12 +8,15 @@ use App\Data\ApiKeyData;
 use App\Enums\ActivityEventEnum;
 use App\Enums\ApiKeyScopeEnum;
 use App\Enums\RoleEnum;
+use App\Jobs\DeliverAlertJob;
 use App\Models\AlertLog;
 use App\Models\ApiKey;
 use App\Models\ErasureRequest;
 use App\Models\Project;
 use App\Models\User;
+use App\Notifications\AlertNotification;
 use App\Services\ApiKeyErasureRepositoryService;
+use App\Services\ApiKeyRepositoryService;
 use App\Services\ErasureOrchestratorService;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -159,8 +162,15 @@ it('scrubs failed logins, the request data of the rows they caused and the alert
     $causedRow = Activity::query()->where('event', 'assigned')->sole();
     $alertLog = AlertLog::query()->create([
         'uuid' => (string) Str::uuid(), 'project_id' => $project->id, 'event' => 'finding.new', 'severity' => 'high',
-        'summary' => 'vendor/package: CVE (assigned to '.$user->name.')', 'status' => AlertLog::QUEUED, 'deliveries' => [],
+        'summary' => 'vendor/package: CVE (assigned to Erasmus Old)', 'subject_public_id' => $user->public_id, 'status' => AlertLog::QUEUED, 'deliveries' => [],
     ]);
+    // Someone else's alert whose text happens to hold the same words: never touched.
+    $otherAlertLog = AlertLog::query()->create([
+        'uuid' => (string) Str::uuid(), 'project_id' => $project->id, 'event' => 'finding.new', 'severity' => 'high',
+        'summary' => 'Erasmus Old% (assigned to Someone)', 'status' => AlertLog::QUEUED, 'deliveries' => [],
+    ]);
+    $reader = User::factory()->create();
+    $reader->notifyNow(new AlertNotification(['id' => $alertLog->uuid, 'event' => 'finding.new', 'severity' => 'high', 'data' => ['assignee' => 'Erasmus Old']], 'vendor/package (assigned to Erasmus Old)'));
 
     app(DeleteUserAction::class)->execute($user);
 
@@ -168,6 +178,9 @@ it('scrubs failed logins, the request data of the rows they caused and the alert
         ->and($causedRow->fresh()->properties->get('ip'))->toBe('[erased]')
         ->and($causedRow->fresh()->properties->get('user_agent'))->toBe('[erased]')
         ->and($alertLog->fresh()->summary)->toBe('vendor/package: CVE (assigned to [erased])')
+        ->and($alertLog->fresh()->subject_public_id)->toBeNull()
+        ->and($otherAlertLog->fresh()->summary)->toBe('Erasmus Old% (assigned to Someone)')
+        ->and(json_encode($reader->notifications()->sole()->data))->not->toContain('Erasmus Old')
         ->and(User::withTrashed()->findOrFail($user->id)->locale)->toBe('en');
 });
 
@@ -250,4 +263,43 @@ it('writes the completion entry without a causer or request data, and no logout 
     expect($audit->causer_id)->toBeNull()
         ->and($audit->properties->has('ip'))->toBeFalse()
         ->and(Activity::query()->where('event', 'logout')->where('causer_id', $user->id)->exists())->toBeFalse();
+});
+
+it('redacts a person erased while their alert waited in the queue', function () {
+    $user = erasableUser();
+    $reader = User::factory()->create();
+    $job = new DeliverAlertJob('app:'.$reader->id, ['id' => (string) Str::uuid(), 'event' => 'finding.new', 'severity' => 'high', 'data' => (object) ['assignee' => $user->name]], 'pkg (assigned to '.$user->name.')', [], [$user->public_id => $user->name]);
+    $name = $user->name;
+
+    app(DeleteUserAction::class)->execute($user);
+    app()->call([$job, 'handle']);
+
+    expect(json_encode($reader->notifications()->sole()->data))->not->toContain($name)->toContain('[erased]');
+});
+
+it('lets an executor that lost the case neither run a step nor write', function () {
+    $user = erasableUser();
+    DB::table('user_identities')->insert(['public_id' => (string) Str::uuid(), 'user_id' => $user->id, 'issuer' => 'https://idp.example.test', 'subject' => 'sub-1', 'created_at' => now(), 'updated_at' => now()]);
+    $erasureRequest = DB::transaction(fn () => app(ErasureOrchestratorService::class)->begin($user));
+    // The lease of "suspended" ran out and "successor" took the case over.
+    $erasureRequest->forceFill(['status' => ErasureRequest::STATUS_RUNNING, 'claim_token' => 'successor', 'claimed_until' => now()->addMinutes(10)])->save();
+    $runFencedStep = new ReflectionMethod(ErasureOrchestratorService::class, 'runFencedStep');
+
+    $isHeld = $runFencedStep->invoke(app(ErasureOrchestratorService::class), $erasureRequest, 'oidc', $erasureRequest->readSubject(), 'suspended');
+
+    expect($isHeld)->toBeFalse()
+        ->and(DB::table('user_identities')->where('user_id', $user->id)->exists())->toBeTrue()
+        ->and($erasureRequest->fresh()->steps['oidc']['status'])->toBe('pending');
+});
+
+it('never writes the usage of a revoked key back', function () {
+    $user = erasableUser();
+    $apiKey = ApiKey::query()->sole();
+    app(DeleteUserAction::class)->execute($user);
+    $apiKey->refresh();
+
+    app(ApiKeyRepositoryService::class)->recordUsage($apiKey, '198.51.100.9', 'late-client', new DateTimeImmutable);
+
+    expect($apiKey->fresh()->last_used_ip)->toBeNull()
+        ->and($apiKey->fresh()->last_used_user_agent)->toBeNull();
 });

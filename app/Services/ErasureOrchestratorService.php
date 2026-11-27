@@ -192,7 +192,7 @@ class ErasureOrchestratorService
             }
 
             try {
-                $changed = $this->runStep($step, $subject);
+                $isHeld = $this->runFencedStep($erasureRequest, $step, $subject, $claimToken);
             } catch (Throwable $exception) {
                 // No message and no exception: a query's bindings would carry the person's data.
                 Log::warning('A user erasure step failed.', ['erasure_request_id' => $erasureRequest->id, 'step' => $step, 'exception' => $exception::class]);
@@ -201,7 +201,7 @@ class ErasureOrchestratorService
                 return false;
             }
 
-            if (! $this->checkpoint($erasureRequest, $claimToken, ['steps' => [...$erasureRequest->steps, $step => ['status' => 'done', 'changed' => $changed]]])) {
+            if (! $isHeld) {
                 return true;
             }
         }
@@ -209,6 +209,35 @@ class ErasureOrchestratorService
         $this->close($erasureRequest, $claimToken);
 
         return true;
+    }
+
+    /**
+     * Runs one step inside the transaction that locks the case and checks the claim token, and
+     * marks it done in the same transaction: an executor that lost the case (its lease ran out
+     * while it was suspended) neither runs a step nor writes anything, and a step's effects and
+     * its checkpoint commit together. The package erasers join this transaction as a savepoint.
+     *
+     * @param  array{userId: string, userPublicId: string, publicIds: list<string>, identifiers: list<string>, apiKeyIdsByPublicId: array<string, int>, email?: string}  $subject
+     * @return bool false when another executor holds the case
+     */
+    private function runFencedStep(ErasureRequest $erasureRequest, string $step, array $subject, string $claimToken): bool
+    {
+        return DB::transaction(function () use ($erasureRequest, $step, $subject, $claimToken): bool {
+            $stored = ErasureRequest::query()->whereKey($erasureRequest->id)->lockForUpdate()->first();
+
+            if (! $stored instanceof ErasureRequest || $stored->claim_token !== $claimToken || $stored->status !== ErasureRequest::STATUS_RUNNING) {
+                return false;
+            }
+
+            $changed = $this->runStep($step, $subject);
+            $stored->forceFill([
+                'steps' => [...$stored->steps, $step => ['status' => 'done', 'changed' => $changed]],
+                'claimed_until' => now()->addMinutes(self::LEASE_MINUTES),
+            ])->save();
+            $erasureRequest->setRawAttributes($stored->getAttributes(), true);
+
+            return true;
+        });
     }
 
     /**
@@ -272,7 +301,7 @@ class ErasureOrchestratorService
             'oidc' => $this->oidcEraser->erase($userId, $userPublicId, OidcEraser::DELETE, $publicIds, $identifiers)->changed(),
             'outbound' => $this->outboundEraser->erase($userId, $userPublicId, OutboundEraser::DELETE, $publicIds)->changed(),
             'http-basics' => $this->httpBasicsEraser->erase($userId, $userPublicId, HttpBasicsEraser::DELETE, $publicIds)->changed(),
-            'product' => DB::transaction(fn (): int => $this->eraseProductData($userId, $subject['email'] ?? null, $identifiers)),
+            'product' => DB::transaction(fn (): int => $this->eraseProductData($userId, $userPublicId, $subject['email'] ?? null, $identifiers)),
             'access' => DB::transaction(fn (): int => $this->tombstoneUser($userId, $userPublicId)),
             default => throw new LogicException("Unknown erasure step [{$step}]."),
         };
@@ -282,12 +311,11 @@ class ErasureOrchestratorService
      * Assistant chats, passkeys, reset tokens and notifications go; activity rows stay, with the
      * person's values replaced in their payloads: their own model events and the rows they caused
      * (with the request IP and user agent), failed logins under their email or username, and the
-     * alert history and other users' notifications that name them. Queued alert messages that
-     * name them are dropped (database queue; a Redis queue is the operator's, docs/privacy.md).
+     * alerts that name them (scrubAlertTraces()).
      *
      * @param  list<string>  $identifiers
      */
-    private function eraseProductData(string $userId, ?string $email, array $identifiers): int
+    private function eraseProductData(string $userId, string $userPublicId, ?string $email, array $identifiers): int
     {
         $morphClass = (new User)->getMorphClass();
         $conversationIds = DB::table('agent_conversations')
@@ -340,45 +368,50 @@ class ErasureOrchestratorService
             }
         }
 
-        return $changed + $this->scrubFreeText($identifiers);
+        return $changed + $this->scrubAlertTraces($userPublicId);
     }
 
     /**
-     * Replaces the identifiers in the alert history and in every notification, and drops queued
-     * alert messages that carry them.
-     *
-     * @param  list<string>  $identifiers
+     * The alerts that name the person, found by their public id only (never by text, which could
+     * match someone else): the name in the alert history and in the in-app notifications of
+     * those alerts becomes `[erased]`, and failed alert jobs that name them are deleted. Messages
+     * still queued redact the name when they run (DeliverAlertJob).
      */
-    private function scrubFreeText(array $identifiers): int
+    private function scrubAlertTraces(string $userPublicId): int
     {
         $changed = 0;
+        $namesByAlertUuid = [];
 
-        foreach ($identifiers as $identifier) {
-            // Unescaped: `_` and `%` in an identifier only widen the candidates; the replacement
-            // below is exact and writes only rows it changes.
-            $pattern = '%'.$identifier.'%';
+        foreach (DB::table('alert_logs')->where('subject_public_id', $userPublicId)->get(['id', 'uuid', 'summary']) as $alertLog) {
+            $summary = (string) $alertLog->summary;
 
-            foreach (DB::table('alert_logs')->where('summary', 'like', $pattern)->get(['id', 'summary']) as $alertLog) {
-                $summary = str_ireplace($identifier, self::ERASED_TEXT, (string) $alertLog->summary);
-
-                if ($summary !== $alertLog->summary) {
-                    $changed += DB::table('alert_logs')->where('id', $alertLog->id)->update(['summary' => $summary]);
-                }
+            // ReportAlertsService writes the name as the summary's last "(assigned to …)".
+            if (preg_match('/ \(assigned to (.+)\)$/u', $summary, $matches) === 1) {
+                $namesByAlertUuid[(string) $alertLog->uuid] = $matches[1];
+                $summary = mb_substr($summary, 0, -mb_strlen($matches[0])).' (assigned to '.self::ERASED_TEXT.')';
             }
 
-            foreach (DB::table('notifications')->where('data', 'like', $pattern)->get(['id', 'data']) as $notification) {
+            $changed += DB::table('alert_logs')->where('id', $alertLog->id)->update(['summary' => $summary, 'subject_public_id' => null]);
+        }
+
+        foreach ($namesByAlertUuid as $alertUuid => $name) {
+            // A UUID has no LIKE wildcard: this matches exactly the notifications of this alert.
+            foreach (DB::table('notifications')->where('data', 'like', '%'.$alertUuid.'%')->get(['id', 'data']) as $notification) {
                 $data = json_decode((string) $notification->data, true);
-                $scrubbedData = is_array($data) ? $this->scrub($data, [$identifier], false, false) : $data;
+
+                if (! is_array($data)) {
+                    continue;
+                }
+
+                $scrubbedData = $this->scrub($data, [$name], false, false);
 
                 if ($scrubbedData !== $data) {
                     $changed += DB::table('notifications')->where('id', $notification->id)->update(['data' => json_encode($scrubbedData, JSON_THROW_ON_ERROR)]);
                 }
             }
-
-            $changed += DB::table('jobs')->where('payload', 'like', $pattern)->where('payload', 'like', '%DeliverAlertJob%')->delete();
         }
 
-        return $changed;
+        return $changed + DB::table('failed_jobs')->where('payload', 'like', '%'.$userPublicId.'%')->where('payload', 'like', '%DeliverAlertJob%')->delete();
     }
 
     /**

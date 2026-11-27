@@ -60,6 +60,8 @@ return new class extends Migration
             $table->string('severity', 16);
             $table->string('subject')->nullable();
             $table->string('summary', 500);
+            // The person the alert names (an assignee), so their erasure finds it by id (#381).
+            $table->uuid('subject_public_id')->nullable()->index();
             $table->string('status', 16);
             $table->string('reason', 32)->nullable();
             // The core finding fingerprints of a finding or health alert, for the duplicate check (#143).
