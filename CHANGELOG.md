@@ -18,6 +18,7 @@ upgrade from the version before (see [docs/self-hosting.md](docs/self-hosting.md
 
 ### Fixed
 
+- **`excubia:upgrade` on a cached configuration**: a configuration cached by this release's build step (Laravel Cloud, Docker) is kept, and one cached by the previous release, recognised by a fingerprint of the configuration files and `composer.lock`, is cleared and the upgrade runs again in a fresh process; the configuration, routes, events and views are cached again at the end. The upgrade no longer stops on a cached configuration.
 - **Overlays without a trigger** (#456): the assistant panel has a visible close button on a phone; the assistant panel, the two-factor setup dialog and the push token dialog return focus to what opened them, or to the page, when they close.
 
 ### Security
