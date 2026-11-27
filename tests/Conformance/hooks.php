@@ -113,6 +113,7 @@ return [
 
     'assertInitialAdminSeeder' => static function () use ($seedPermissions): void {
         $seedPermissions();
+        Http::fake(['https://api.pwnedpasswords.com/range/*' => Http::response('')]);
 
         $originalEnvironment = app()['env'];
         $settings = app(SettingsRepositoryService::class);
@@ -132,16 +133,17 @@ return [
             Artisan::call('db:seed', ['--class' => CreateSuperAdminSeeder::class, '--force' => true]);
             expect(User::query()->exists())->toBeFalse();
 
-            // Another weak password is refused by the policy itself, not by a string comparison.
-            config(['super_admin.password' => 'abc12']);
+            // The Weak policy refuses a password just below its eight-character minimum.
+            config(['super_admin.password' => 's3cret7']);
             Artisan::call('db:seed', ['--class' => CreateSuperAdminSeeder::class, '--force' => true]);
             expect(User::query()->exists())->toBeFalse();
 
-            // A six-character password does satisfy the weak policy, so the seeder creates it.
-            config(['super_admin.password' => 's3cret']);
+            // An eight-character password that differs from the known default is accepted.
+            $weakPassword = 's3cret42';
+            config(['super_admin.password' => $weakPassword]);
             Artisan::call('db:seed', ['--class' => CreateSuperAdminSeeder::class, '--force' => true]);
             $weakAdmin = User::query()->where('email', config('super_admin.email'))->sole();
-            expect(Hash::check('s3cret', $weakAdmin->password))->toBeTrue();
+            expect(Hash::check($weakPassword, $weakAdmin->password))->toBeTrue();
             // A user with a principal is hard-deleted only through the access erasure.
             app(PrincipalDirectory::class)->eraseUser($weakAdmin, fn (User $user) => $user->forceDelete());
 
