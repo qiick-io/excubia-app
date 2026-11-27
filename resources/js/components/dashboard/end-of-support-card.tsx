@@ -1,6 +1,7 @@
 import { Link } from '@inertiajs/react';
 import { CalendarClock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { CardTableScroll } from '@/components/layout/card-table-scroll';
 import { PageEmptyState } from '@/components/admin/page-empty-state';
 import { RuntimeSupportBadge } from '@/components/reports/runtime-support';
 import {
@@ -24,7 +25,7 @@ export function EndOfSupportCard({ rows }: { rows: EndOfSupportRow[] }) {
     const dates = useDateFormat();
 
     return (
-        <Card className="xl:col-span-4">
+        <Card>
             <CardHeader className="pb-3">
                 <CardTitle>{t('dashboard.endOfSupport.title')}</CardTitle>
                 <CardDescription>
@@ -43,7 +44,7 @@ export function EndOfSupportCard({ rows }: { rows: EndOfSupportRow[] }) {
                         className="border-0"
                     />
                 ) : (
-                    <div className="max-h-64 overflow-auto">
+                    <CardTableScroll className="max-h-64">
                         <Table>
                             <TableBody>
                                 {rows.map((row) => (
@@ -89,7 +90,7 @@ export function EndOfSupportCard({ rows }: { rows: EndOfSupportRow[] }) {
                                 ))}
                             </TableBody>
                         </Table>
-                    </div>
+                    </CardTableScroll>
                 )}
             </CardContent>
         </Card>

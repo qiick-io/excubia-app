@@ -1,5 +1,6 @@
 import { Link, usePoll } from '@inertiajs/react';
 import { useTranslation } from 'react-i18next';
+import { CardTableScroll } from '@/components/layout/card-table-scroll';
 import { MAX_PROJECTS_IN_CHART } from '@/components/dashboard/fleet-findings';
 import { CHECK_STATUS_VARIANTS } from '@/components/reports/check-details';
 import { supportStatus } from '@/components/reports/runtime-support';
@@ -9,13 +10,7 @@ import {
     SeverityCounts,
 } from '@/components/reports/severity-badge';
 import { Badge } from '@/components/ui/badge';
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
     Table,
     TableBody,
@@ -68,16 +63,9 @@ export function ProjectsCard({
         <Card className="xl:col-span-7">
             <CardHeader className="pb-3">
                 <CardTitle>{t('dashboard.projects.title')}</CardTitle>
-                <CardDescription>
-                    {t(
-                        isLargeFleet
-                            ? 'dashboard.projects.byFindings'
-                            : 'dashboard.projects.description',
-                    )}
-                </CardDescription>
             </CardHeader>
             <CardContent>
-                <div className="max-h-80 overflow-auto">
+                <CardTableScroll className="max-h-80">
                     <Table>
                         <TableHeader>
                             <TableRow>
@@ -245,7 +233,7 @@ export function ProjectsCard({
                             })}
                         </TableBody>
                     </Table>
-                </div>
+                </CardTableScroll>
             </CardContent>
         </Card>
     );

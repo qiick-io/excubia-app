@@ -54,9 +54,6 @@ export function LicensesView({
             <Card>
                 <CardHeader className="pb-3">
                     <CardTitle>{t('licenses.flaggedTitle')}</CardTitle>
-                    <CardDescription>
-                        {t('licenses.flaggedDescription')}
-                    </CardDescription>
                 </CardHeader>
                 <CardContent>
                     {licenses.flagged.length === 0 ? (

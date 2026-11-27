@@ -195,18 +195,23 @@ export function OverviewView({
             />
 
             {/*
-             * The short cards stack in one column next to the checks (#329). Both columns are as
-             * tall as their content, with no inner scroll and no stretched card (#335). Without a
-             * report's health data there are no checks, and the runtimes card takes the whole row.
+             * The short cards stack in one column next to the checks (#329). The stack sets the
+             * row height; the checks card fills it and scrolls its table inside, so neither
+             * column leaves a hole (app-ui docs/dashboard.md, "Card grids"). Without a report's
+             * health data there are no checks, and the runtimes card takes the whole row.
              */}
             {health !== null ? (
-                <section className="grid grid-cols-1 items-start gap-4 xl:grid-cols-12">
+                <section className="grid grid-cols-1 gap-4 xl:grid-cols-12">
                     <div className="flex flex-col gap-4 xl:col-span-5">
                         <InfrastructureCard health={health} />
                         <DependenciesCard slug={project.slug} health={health} />
                         <RuntimesCard latest={latest} />
                     </div>
-                    <ChecksCard health={health} className="xl:col-span-7" />
+                    <ChecksCard
+                        health={health}
+                        // h-0 + min-h-full: the card takes the row height without adding to it.
+                        className="xl:col-span-7 xl:h-0 xl:min-h-full"
+                    />
                 </section>
             ) : (
                 <RuntimesCard latest={latest} />

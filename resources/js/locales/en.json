@@ -32,7 +32,8 @@
         "close": "Close",
         "confirm": "Confirm",
         "generateSecurePassword": "Generate secure password",
-        "passwordStrength": "Password strength"
+        "passwordStrength": "Password strength",
+        "aboutTopic": "About {{topic}}"
     },
     "emptyState": {
         "users": {
@@ -681,7 +682,6 @@
     },
     "activityLog": {
         "title": "Activity Log",
-        "description": "Read-only audit trail of model changes and authentication events.",
         "searchPlaceholder": "Search description or subject…",
         "allUsers": "All users",
         "allActions": "All actions",
@@ -961,7 +961,7 @@
             "emptyMineTitle": "Nothing assigned to you",
             "emptyMineDescription": "No issue in the latest reports has a finding assigned to you.",
             "title": "Top issues",
-            "description": "{{shown}} of {{total}} issues, grouped across projects, worst first.",
+            "description": "{{shown}} of {{total}} issues",
             "issue": "Issue",
             "projects": "Projects",
             "emptyTitle": "No open issues",
@@ -969,7 +969,7 @@
         },
         "endOfSupport": {
             "title": "End of support",
-            "description": "PHP, Laravel and Node ended or ending within a year.",
+            "description": "Ended or ending within a year",
             "emptyTitle": "Nothing ending soon",
             "emptyDescription": "No runtime reaches the end of security support within a year."
         },
@@ -980,9 +980,7 @@
             "emptyDescription": "No configuration check warns or fails, or the projects run a core before 1.0."
         },
         "projects": {
-            "byFindings": "Projects with the most open findings first.",
-            "title": "Projects",
-            "description": "Worst first."
+            "title": "Projects"
         },
         "telemetry": {
             "requests": "Requests",
@@ -995,7 +993,6 @@
         },
         "assigned": {
             "title": "Assigned to you",
-            "description": "Open exception groups and findings you are on.",
             "exceptions_one": "{{count}} exception",
             "exceptions_other": "{{count}} exceptions",
             "findings_one": "{{count}} finding",
@@ -1061,7 +1058,6 @@
         },
         "runtime": {
             "title": "Runtimes",
-            "description": "Versions and security support from the latest report.",
             "unavailable": "This report has no runtime details. Update qiick/excubia-core to 1.0 in the project.",
             "name": "Runtime",
             "version": "Version",
@@ -1077,7 +1073,6 @@
         "generatedAt": "Generated {{date}}",
         "coreVersion": "Built by excubia-core {{version}}",
         "coreVersionShort": "Core",
-        "checksDescription": "Every check of the latest report and its status.",
         "check": "Check",
         "searchFindings": "Search findings…",
         "allSeverities": "All severities",
@@ -1109,7 +1104,6 @@
         },
         "trend": {
             "title": "Findings over time",
-            "description": "Findings that warn or fail in each report, per severity.",
             "label": "Stacked bar chart of findings per severity across {{count}} reports; the latest has {{total}} findings."
         },
         "overview": {
@@ -1141,7 +1135,7 @@
             "systemProjectHint": "Excubia monitoring itself. It reports every day on its own, and it cannot be deleted.",
             "attention": {
                 "title": "Needs attention",
-                "description": "{{shown}} of {{total}} open problems: findings with failing infrastructure first, then by severity; then open exceptions.",
+                "description": "{{shown}} of {{total}} open problems",
                 "allFindings": "All findings",
                 "exception": "Exception",
                 "emptyTitle": "Nothing needs attention"
@@ -1158,7 +1152,6 @@
             },
             "allChecks": "All checks",
             "checksFailingOnly": "Failing only",
-            "checksFailingDescription": "The checks of the latest report that warn or fail.",
             "allChecksPassCount_one": "The {{count}} check passes.",
             "allChecksPassCount_other": "All {{count}} checks pass."
         },
@@ -1166,7 +1159,7 @@
         "deploy": "Deploy",
         "liveHealth": {
             "title": "Live health",
-            "description": "The minute-level health samples of the last hour, per check and server. Updates every minute.",
+            "description": "Last hour, updated every minute",
             "servers": "Servers",
             "lastSample": "Last sample",
             "serverStatus": "{{server}}: {{status}}",
@@ -1235,7 +1228,6 @@
         }
     },
     "permissions": {
-        "description": "Permissions are defined in PermissionEnum and synced to the database. Assign them to roles on the role edit page.",
         "sync": "Sync from enum",
         "empty": "No permissions in database. Run sync.",
         "columns": {
@@ -1264,7 +1256,6 @@
         }
     },
     "system": {
-        "description": "Health of this Excubia install. Each item links to its fix hint.",
         "fixHint": "How to fix: {{item}}",
         "never": "Never",
         "status": {
@@ -1426,7 +1417,6 @@
         "deprecations": "Deprecations",
         "deprecationsDescription": "PHP deprecations per source and PHP version, to plan upgrades.",
         "servers": "Servers",
-        "serversDescription": "Latest sample of each server that runs the scheduler.",
         "server": "Server",
         "load": "Load 1 / 5 / 15",
         "memory": "Memory",
@@ -1565,7 +1555,6 @@
         "selectRow": "Select {{name}}"
     },
     "schedule": {
-        "description": "The scheduled tasks of the latest report, each with its last run, next due time and status. Checked every minute against the runs pushed with runtime monitoring.",
         "emptyTitle": "No scheduled tasks",
         "emptyDescription": "Push with php artisan excubia:push to send the schedule, and turn on runtime monitoring to match each task with its runs.",
         "guide": "Scheduled tasks guide",
@@ -1676,7 +1665,6 @@
         "offline": "Realtime offline"
     },
     "alerts": {
-        "description": "The alerts of this project: what was sent, what failed and what was suppressed. Mute a rule or an issue, or plan maintenance windows.",
         "maintenanceModeTitle": "Alerts are paused",
         "maintenanceModeDescription": "The latest report says the application is in maintenance mode. Alerts resume with the next report after php artisan up.",
         "windowsTitle": "Maintenance windows",
@@ -1687,7 +1675,6 @@
         "windowActive": "In force",
         "windowFormDescription": "A one-off period, or one that repeats every week. Times are local to the timezone.",
         "mutesTitle": "Muted",
-        "mutesDescription": "Rules and issues muted from the history below.",
         "noMutes": "Nothing is muted.",
         "wholeRule": "Whole rule",
         "forever": "forever",
@@ -2112,7 +2099,6 @@
         "withinLimits": "Within limits",
         "infrastructure": {
             "title": "Infrastructure",
-            "description": "Services the app needs, from the latest report.",
             "disk": "Disk",
             "databaseSize": "Database size",
             "connections": "Database connections",
@@ -2138,7 +2124,6 @@
         },
         "dependencies": {
             "title": "Dependencies",
-            "description": "Outdated direct dependencies and the license inventory.",
             "allLicenses": "All licenses",
             "outdated": "Outdated",
             "patch": "Patch",
@@ -2173,7 +2158,6 @@
         "total": "Total",
         "none": "None declared",
         "flaggedTitle": "Packages to review",
-        "flaggedDescription": "Denied licenses first, then strong copyleft, then missing or unknown ones.",
         "noneFlagged": "No package uses a denied, strong copyleft or unknown license.",
         "noneFlaggedTitle": "Licenses look fine",
         "inventoryTitle": "Inventory",
@@ -2196,9 +2180,6 @@
         },
         "readiness": {
             "description": "From the open next-major blockers of each project: a project can move when none of its direct dependencies blocks the next Laravel major. A dismissed blocker does not block.",
-            "target": "Laravel {{major}}",
-            "canMove": "{{ready}} of {{total}} projects can move to Laravel {{major}} today",
-            "unknownDescription": "No report, Laravel not locked or the blocker check did not run.",
             "blockers": "Blocking packages",
             "preReleaseOnly": "Pre-release only",
             "uncheckedPackages_one": "{{count}} private package not checked",
@@ -2219,10 +2200,21 @@
             "dismissedBlockers_other": "{{count}} dismissed",
             "dismissedBlockersTitle": "Dismissed blockers",
             "showDismissedBlockers_one": "Show the dismissed blocker",
-            "showDismissedBlockers_other": "Show {{count}} dismissed blockers"
+            "showDismissedBlockers_other": "Show {{count}} dismissed blockers",
+            "kpi": {
+                "ready": "Ready for the next major",
+                "target": "Laravel {{major}}: {{ready}} of {{total}}",
+                "unknown_one": "{{count}} unknown",
+                "unknown_other": "{{count}} unknown",
+                "blocked": "Blocked",
+                "worstBlocker_one": "{{package}} blocks {{count}} project",
+                "worstBlocker_other": "{{package}} blocks {{count}} projects",
+                "plans": "With an upgrade plan",
+                "steps_one": "{{count}} step in total",
+                "steps_other": "{{count}} steps in total"
+            }
         },
         "advisories": {
-            "description": "Packages with known advisories, abandoned or stale, and the projects that lock them, from the open findings of each project. Dismissed findings are listed apart.",
             "search": "Package or advisory id",
             "kindLabel": "Filter by kind",
             "allKinds": "All kinds",
@@ -2243,11 +2235,9 @@
             "emptyDescription": "No latest report has a known advisory, an abandoned or a stale package.",
             "noMatchTitle": "No matching packages",
             "noMatchDescription": "Try another package name or advisory id.",
-            "dismissedTitle": "Dismissed findings",
-            "dismissedDescription": "Open findings a user dismissed, with the reason and the last day the dismissal holds."
+            "dismissedTitle": "Dismissed findings"
         },
         "eol": {
-            "description": "PHP, Laravel and Node support windows of every project, soonest end first.",
             "active": "Active support",
             "security": "Security support",
             "today": "Today",

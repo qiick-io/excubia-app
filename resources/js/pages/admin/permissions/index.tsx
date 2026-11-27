@@ -99,10 +99,7 @@ export default function AdminPermissionsIndex({
             <Head title={t('settings.layout.permissions')} />
 
             <SettingsLayout wide>
-                <PageLayout
-                    className="p-0"
-                    description={t('permissions.description')}
-                >
+                <PageLayout className="p-0">
                     <DataTable
                         columns={columns}
                         data={permissions.data ?? []}
