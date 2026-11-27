@@ -8,6 +8,7 @@ use App\Models\ExceptionGroup;
 use App\Models\Project;
 use App\Models\RuntimeAggregate;
 use App\Models\User;
+use App\Services\SettingsRepositoryService;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Str;
@@ -134,6 +135,7 @@ it('lets only exceptions.manage resolve, ignore or reopen a group of a visible p
 });
 
 it('adds runtime and open exceptions to the dashboard for the scoped projects', function () {
+    app(SettingsRepositoryService::class)->setMany(['runtime_retention_days' => 30]);
     $shop = Project::factory()->create(['name' => 'Shop', 'slug' => 'shop']);
     $blog = Project::factory()->create(['name' => 'Blog', 'slug' => 'blog']);
     runtimeRow($shop, 'request', ['route' => 'home', 'method' => 'GET', 'statusClass' => '2xx'], ['count' => 90]);
@@ -149,6 +151,9 @@ it('adds runtime and open exceptions to the dashboard for the scoped projects', 
             ->where('overview.runtime', ['requests' => 100, 'errors' => 10, 'previousRequests' => 40])
             ->where('overview.exceptions.open', 1)
             ->where('overview.exceptions.new', 1)
+            ->has('kpiHistory.requests.values', 30)
+            ->where('kpiHistory.exceptions.current', 1)
+            ->where('kpiHistory.exceptions.previous', null)
             ->where('overview.exceptions.top.0.project.slug', 'shop'));
 
     $this->actingAs(telemetryViewer())->get(route('dashboard', ['project' => 'blog']))

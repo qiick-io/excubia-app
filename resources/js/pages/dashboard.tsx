@@ -4,23 +4,11 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PageEmptyState } from '@/components/admin/page-empty-state';
 import { PageLayout } from '@/components/layout/page-layout';
-import { StatCard, trendOf } from '@/components/stat-card';
-import {
-    SeverityBadge,
-    SeverityCounts,
-    severitySummary,
-} from '@/components/reports/severity-badge';
-import type { SeverityChartPoint } from '@/components/reports/severity-chart';
-import { SeverityStackedBarChart } from '@/components/reports/severity-chart';
+import { KpiTile, kpiDeltaOf } from '@/components/charts/kpi-tile';
+import { historySparkline, KpiRatio } from '@/components/dashboard/kpi-history';
+import { FleetFindings } from '@/components/dashboard/fleet-findings';
+import { ReportCompositions } from '@/components/dashboard/report-compositions';
 import { Button } from '@/components/ui/button';
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardFooter,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card';
 import {
     Select,
     SelectContent,
@@ -35,9 +23,14 @@ import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes';
 import projectsRoutes from '@/routes/projects';
 import type { LiveHealthSummary, ProjectRow } from '@/types';
-import type { TrendPoint, Overview, AssignedRow } from '@/types/dashboard';
+import type {
+    TrendPoint,
+    Overview,
+    AssignedRow,
+    DashboardHistory,
+} from '@/types/dashboard';
 import {
-    RequestsStatCard,
+    RequestsKpi,
     TelemetryRow,
 } from '@/components/dashboard/telemetry-row';
 import { AssignedToYouCard } from '@/components/dashboard/assigned-to-you-card';
@@ -46,7 +39,7 @@ import { EndOfSupportCard } from '@/components/dashboard/end-of-support-card';
 import { ConfigurationCard } from '@/components/dashboard/configuration-card';
 import { LicensesCard } from '@/components/dashboard/licenses-card';
 import { ProjectsCard } from '@/components/dashboard/projects-card';
-import { formatInstant, useDateFormat } from '@/lib/date-format';
+import { cn } from '@/lib/utils';
 
 const PERIODS = [7, 14, 30, 90] as const;
 const DEFAULT_PERIOD = 14;
@@ -66,6 +59,7 @@ export default function Dashboard({
     scope,
     overview,
     trend,
+    kpiHistory = {},
     liveHealth,
     assignedToMe = [],
 }: {
@@ -84,11 +78,12 @@ export default function Dashboard({
     };
     overview: Overview | null;
     trend: TrendPoint[];
+    kpiHistory?: DashboardHistory;
     /** Project slug → live health, for the projects that send health samples (#143). */
     liveHealth: Record<string, LiveHealthSummary>;
 }) {
-    const { t } = useTranslation();
-    const dates = useDateFormat();
+    const { t, i18n } = useTranslation();
+    const locale = i18n.language;
     const { can } = useCan();
     const selected = projects.find((project) => project.slug === scope.project);
 
@@ -157,28 +152,21 @@ export default function Dashboard({
     }
 
     const { kpis } = overview;
-    // Without exceptions, Requests would sit alone on the telemetry row: it joins the key
-    // numbers instead, one column per card on wide screens (#328).
     const keyRowRequests = overview.exceptions ? null : overview.runtime;
-    // Four key numbers sit four to a row (app-ui dashboard pattern). Five in one row are too
-    // narrow at 1440 px and wrap their headlines (#335): three then two, so no row is half empty.
-    const keySpan = keyRowRequests ? 'xl:col-span-4' : 'xl:col-span-3';
-    const keyWideSpan = keyRowRequests ? 'xl:col-span-6' : 'xl:col-span-3';
-    const periodLabel = t('dashboard.period.previous', {
-        count: scope.period,
-    });
-    const chartData: SeverityChartPoint[] = trend.map((point) => ({
-        ...point,
-        // A calendar day: formatted in UTC so no timezone moves it.
-        label: formatInstant(`${point.date}T00:00:00Z`, dates.locale, 'UTC', {
-            day: 'numeric',
-            month: 'short',
+    const periodLabel = t('dashboard.period.previous', { count: scope.period });
+    const scopedProjects = selected ? [selected] : projects;
+    const reports = scopedProjects.flatMap(
+        (project) => project.latest_report ?? [],
+    );
+    const checks = reports.reduce(
+        (totals, report) => ({
+            fail: totals.fail + report.checks.fail,
+            warn: totals.warn + report.checks.warn,
+            pass: totals.pass + report.checks.pass,
+            skipped: totals.skipped + report.checks.skipped,
         }),
-    }));
-    // The server starts the trend at the first report inside the period (#295): a shorter trend
-    // means the history is younger than the period, and one day or less is not a chart yet.
-    const hasTrendChart = trend.length >= 2;
-    const isTrendShorterThanPeriod = trend.length < scope.period;
+        { fail: 0, warn: 0, pass: 0, skipped: 0 },
+    );
 
     return (
         <>
@@ -299,71 +287,85 @@ export default function Dashboard({
                 }
             >
                 <div className="flex flex-col gap-4">
-                    <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-12">
-                        <StatCard
-                            className={keySpan}
+                    <section
+                        className={cn(
+                            'grid grid-cols-1 gap-4 sm:grid-cols-2',
+                            keyRowRequests
+                                ? 'xl:grid-cols-5'
+                                : 'xl:grid-cols-4',
+                        )}
+                    >
+                        <KpiTile
                             label={t('dashboard.kpi.findings')}
-                            value={kpis.findings.total.toLocaleString()}
-                            trend={trendOf(
+                            value={kpis.findings.total.toLocaleString(locale)}
+                            delta={kpiDeltaOf(
                                 kpis.findings.total,
                                 kpis.findings.previous,
+                                false,
                             )}
-                            headline={severitySummary(kpis.findings.counts, t)}
-                            context={
+                            secondary={
                                 kpis.findings.previous === null
                                     ? t('dashboard.kpi.findingsContext')
                                     : periodLabel
                             }
+                            chart={historySparkline(kpiHistory.findings)}
                         />
-                        <StatCard
-                            className={keySpan}
+                        <KpiTile
                             label={t('dashboard.kpi.atRisk')}
-                            value={kpis.atRisk.value.toLocaleString()}
-                            trend={trendOf(
+                            value={kpis.atRisk.value.toLocaleString(locale)}
+                            delta={kpiDeltaOf(
                                 kpis.atRisk.value,
                                 kpis.atRisk.previous,
+                                false,
                             )}
-                            headline={t('dashboard.kpi.atRiskDescription')}
-                            context={
+                            secondary={
                                 kpis.atRisk.previous === null
-                                    ? undefined
+                                    ? t('dashboard.kpi.atRiskDescription')
                                     : periodLabel
                             }
                         />
-                        <StatCard
-                            className={keySpan}
+                        <KpiTile
                             label={t('dashboard.kpi.endOfSupport')}
-                            value={kpis.endOfSupport.value.toLocaleString()}
-                            trend={trendOf(
+                            value={kpis.endOfSupport.value.toLocaleString(
+                                locale,
+                            )}
+                            delta={kpiDeltaOf(
                                 kpis.endOfSupport.value,
                                 kpis.endOfSupport.previous,
+                                false,
                             )}
-                            headline={t(
-                                'dashboard.kpi.endOfSupportDescription',
-                            )}
-                            context={
+                            secondary={
                                 kpis.endOfSupport.previous === null
-                                    ? undefined
+                                    ? t('dashboard.kpi.endOfSupportDescription')
                                     : periodLabel
                             }
                         />
-                        <StatCard
-                            className={keyWideSpan}
+                        <KpiTile
                             label={t('dashboard.kpi.stale')}
-                            value={kpis.stale.value.toLocaleString()}
-                            headline={t('dashboard.kpi.staleHeadline', {
-                                total: kpis.stale.total,
-                            })}
-                            context={t('dashboard.kpi.staleContext')}
+                            value={
+                                <KpiRatio
+                                    value={kpis.stale.value}
+                                    total={kpis.stale.total}
+                                    locale={locale}
+                                />
+                            }
+                            secondary={t('dashboard.kpi.staleContext')}
                         />
                         {keyRowRequests ? (
-                            <RequestsStatCard
+                            <RequestsKpi
                                 runtime={keyRowRequests}
+                                history={kpiHistory.requests}
                                 periodLabel={periodLabel}
-                                className="sm:col-span-2 xl:col-span-6"
                             />
                         ) : null}
                     </section>
+
+                    {reports.length > 0 && (
+                        <ReportCompositions
+                            findings={kpis.findings.counts}
+                            checks={checks}
+                        />
+                    )}
 
                     {assignedToMe.length > 0 ? (
                         <AssignedToYouCard rows={assignedToMe} />
@@ -371,61 +373,15 @@ export default function Dashboard({
 
                     {overview.exceptions ? (
                         <TelemetryRow
+                            periodDays={scope.period}
                             runtime={overview.runtime}
                             exceptions={overview.exceptions}
+                            history={kpiHistory}
                             periodLabel={periodLabel}
                         />
                     ) : null}
 
-                    <section className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-                        <Card className="xl:col-span-8">
-                            <CardHeader className="pb-3">
-                                <CardTitle>
-                                    {t('dashboard.trend.title')}
-                                </CardTitle>
-                                <CardDescription>
-                                    {t('dashboard.trend.description', {
-                                        count: scope.period,
-                                    })}
-                                </CardDescription>
-                            </CardHeader>
-                            {hasTrendChart ? (
-                                <CardContent className="h-64">
-                                    <SeverityStackedBarChart
-                                        data={chartData}
-                                        label={t('dashboard.trend.label', {
-                                            count: trend.length,
-                                            total: kpis.findings.total,
-                                        })}
-                                    />
-                                </CardContent>
-                            ) : (
-                                <CardContent>
-                                    {kpis.findings.total > 0 ? (
-                                        <SeverityCounts
-                                            counts={kpis.findings.counts}
-                                        />
-                                    ) : (
-                                        <SeverityBadge severity={null} />
-                                    )}
-                                </CardContent>
-                            )}
-                            {hasTrendChart &&
-                            !isTrendShorterThanPeriod ? null : (
-                                <CardFooter className="text-sm text-muted-foreground">
-                                    {hasTrendChart
-                                        ? t(
-                                              'dashboard.trend.sinceFirstReport',
-                                              {
-                                                  count: trend.length - 1,
-                                              },
-                                          )
-                                        : t('dashboard.trend.historyBuilding')}
-                                </CardFooter>
-                            )}
-                        </Card>
-                        <EndOfSupportCard rows={overview.endOfSupport} />
-                    </section>
+                    <FleetFindings projects={scopedProjects} trend={trend} />
 
                     <TopIssuesCard
                         issues={overview.topIssues}
@@ -449,6 +405,7 @@ export default function Dashboard({
                         )}
                     </section>
 
+                    <EndOfSupportCard rows={overview.endOfSupport} />
                     <LicensesCard rows={overview.licenses} />
                 </div>
             </PageLayout>

@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Actions\UpdateExceptionStatusAction;
+use App\Enums\ExceptionStatusEnum;
 use App\Enums\ProjectVisibilityEnum;
 use App\Enums\RoleEnum;
 use App\Models\Activity;
@@ -44,8 +46,31 @@ it('resolves the selected groups and logs one entry per changed group', function
 
     expect($first->fresh()->status->value)->toBe('resolved')
         ->and($second->fresh()->resolved_at)->not->toBeNull()
+        ->and($first->openChanges()->pluck('delta')->all())->toBe([-1])
+        ->and($second->openChanges()->pluck('delta')->all())->toBe([-1])
+        ->and($alreadyResolved->openChanges()->exists())->toBeFalse()
         ->and(Activity::query()->where('event', 'status_changed')->pluck('subject_id')->sort()->values()->all())->toBe([(string) $first->id, (string) $second->id]);
 });
+
+it('records only transitions across the open-inbox boundary', function (string $before, string $after, array $changes): void {
+    $project = Project::factory()->create();
+    $group = bulkException($project, 'a', $before);
+    $action = app(UpdateExceptionStatusAction::class);
+    $status = ExceptionStatusEnum::from($after);
+
+    $action->execute($group, $status);
+    $action->execute($group, $status);
+
+    expect($group->fresh()->status)->toBe($status)
+        ->and($group->openChanges()->orderBy('id')->pluck('delta')->all())->toBe($changes);
+})->with([
+    'resolve' => ['open', 'resolved', [-1]],
+    'ignore' => ['open', 'ignored', [-1]],
+    'reopen resolved' => ['resolved', 'open', [1]],
+    'reopen ignored' => ['ignored', 'open', [1]],
+    'resolve ignored' => ['ignored', 'resolved', []],
+    'ignore resolved' => ['resolved', 'ignored', []],
+]);
 
 it('assigns the selected groups to a user who can see the project', function () {
     $admin = User::factory()->create()->assignRole(RoleEnum::Admin->value);

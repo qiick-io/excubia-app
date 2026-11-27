@@ -1,5 +1,6 @@
 import { Link, usePoll } from '@inertiajs/react';
 import { useTranslation } from 'react-i18next';
+import { MAX_PROJECTS_IN_CHART } from '@/components/dashboard/fleet-findings';
 import { CHECK_STATUS_VARIANTS } from '@/components/reports/check-details';
 import { supportStatus } from '@/components/reports/runtime-support';
 import {
@@ -24,6 +25,7 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
+import { findingsCount } from '@/lib/report-format';
 import projectsRoutes from '@/routes/projects';
 import type { LiveHealthSummary, ProjectRow } from '@/types';
 import { useDateFormat } from '@/lib/date-format';
@@ -40,21 +42,38 @@ export function ProjectsCard({
     projects: ProjectRow[];
     liveHealth: Record<string, LiveHealthSummary>;
 }) {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const dates = useDateFormat();
 
     usePoll(LIVE_HEALTH_POLL_MS, { only: ['liveHealth'] });
 
-    const rows = [...projects].sort(
-        (first, second) => severityRank(first) - severityRank(second),
-    );
+    const isLargeFleet =
+        projects.filter((project) => project.latest_report).length >
+        MAX_PROJECTS_IN_CHART;
+    const rows = [...projects].sort((first, second) => {
+        if (isLargeFleet && first.latest_report && second.latest_report) {
+            const byCount =
+                findingsCount(second.latest_report.counts) -
+                findingsCount(first.latest_report.counts);
+
+            if (byCount !== 0) {
+                return byCount;
+            }
+        }
+
+        return severityRank(first) - severityRank(second);
+    });
 
     return (
         <Card className="xl:col-span-7">
             <CardHeader className="pb-3">
                 <CardTitle>{t('dashboard.projects.title')}</CardTitle>
                 <CardDescription>
-                    {t('dashboard.projects.description')}
+                    {t(
+                        isLargeFleet
+                            ? 'dashboard.projects.byFindings'
+                            : 'dashboard.projects.description',
+                    )}
                 </CardDescription>
             </CardHeader>
             <CardContent>
@@ -112,9 +131,20 @@ export function ProjectsCard({
                                         </TableCell>
                                         <TableCell>
                                             {report ? (
-                                                <SeverityCounts
-                                                    counts={report.counts}
-                                                />
+                                                <div className="flex flex-wrap items-center gap-2">
+                                                    {isLargeFleet && (
+                                                        <span className="tabular-nums">
+                                                            {findingsCount(
+                                                                report.counts,
+                                                            ).toLocaleString(
+                                                                i18n.language,
+                                                            )}
+                                                        </span>
+                                                    )}
+                                                    <SeverityCounts
+                                                        counts={report.counts}
+                                                    />
+                                                </div>
                                             ) : (
                                                 <span className="text-sm text-muted-foreground">
                                                     {t('dashboard.noReports')}
