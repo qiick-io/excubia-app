@@ -71,7 +71,7 @@ EXCUBIA_CLAMAV_ENDPOINT=unix:///run/clamav/clamd.ctl
 
 Give the PHP process access to the Unix socket. For a daemon on the same trusted private network, set `EXCUBIA_CLAMAV_ENDPOINT=tcp://clamav:3310` instead. Restrict TCP access to the app. ClamAV's TCP protocol has no authentication or encryption. Configure `StreamMaxLength`, `MaxFileSize` and `MaxScanSize` to support uploads up to 1 MiB and keep the daemon's signatures current. [ClamAV daemon documentation](https://docs.clamav.net/manual/Usage/Scanning.html#clamd).
 
-The app sends image bytes to `clamd` after MIME and size validation. Uploads require a clean reply before any project or branding changes are saved. A detection blocks the upload. A timeout, connection failure or invalid reply also blocks it, and logs `Upload malware scanner unavailable.` without the file name or content. Verify the deployment with a clean image upload, then make the scanner unavailable in staging and check that the upload fails and the warning appears. Restart the scanner to restore uploads.
+The app sends image bytes to `clamd` after MIME and size validation. Uploads require a clean reply before any project or branding changes are saved. A detection blocks the upload and logs `upload.malware_detected`. A timeout, connection failure or invalid reply also blocks the upload and logs `Upload malware scanner unavailable.` A `StreamMaxLength` below 1 MiB can produce the same unavailable error for otherwise valid uploads. Both warnings omit file names and contents. Verify the deployment with a clean image upload, then make the scanner unavailable in staging and check that the upload fails and the warning appears. Restart the scanner to restore uploads.
 
 ### HTTPS
 

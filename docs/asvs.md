@@ -111,7 +111,7 @@ For inherited evidence, the owner column names the Composer package and the evid
 | v5.0.0-5.3.2 | Met            | `tests/Feature/FilesDiskTest.php` and `tests/Feature/Projects/ProjectLogoTest.php` cover application-managed storage for logos. Uploads do not select server filenames.                            |               |
 | v5.0.0-5.4.1 | Partial        | `tests/Feature/Settings/BrandingTest.php` covers inline branding delivery from application-managed paths. Verify response filenames across image surfaces.                                         |               |
 | v5.0.0-5.4.2 | Partial        | `tests/Feature/Projects/ProjectLogoTest.php` covers logo responses using generated storage paths. Verify encoding on any response that includes a filename.                                        |               |
-| v5.0.0-5.4.3 | Met            | `EXCUBIA_UPLOAD_SCANNER=clamav` ([setup][upload-scanning]). `tests/Feature/Projects/ProjectLogoTest.php` and `tests/Feature/Settings/BrandingTest.php` prove rejection on detection and on outage. |               |
+| v5.0.0-5.4.3 | Met            | `EXCUBIA_UPLOAD_SCANNER=clamav` ([setup][upload-scanning]). [Socket protocol][clamav-io-test], [project logo][project-logo-test] and [branding][branding-test] tests verify detection and outages. |               |
 
 ## V6 Authentication
 
@@ -369,3 +369,6 @@ For inherited evidence, the owner column names the Composer package and the evid
 [outbound-remoteurlguardpintest]: https://github.com/qiick-io/laravel-outbound/blob/71a6be04b1dd2091d592483b9f737910aa052c55/tests/Unit/Ssrf/RemoteUrlGuardPinTest.php
 [outbound-standardwebhooksignertest]: https://github.com/qiick-io/laravel-outbound/blob/71a6be04b1dd2091d592483b9f737910aa052c55/tests/Unit/Webhooks/StandardWebhookSignerTest.php
 [upload-scanning]: self-hosting.md#upload-malware-scanning
+[clamav-io-test]: ../tests/Unit/ClamAvFileScannerTest.php
+[project-logo-test]: ../tests/Feature/Projects/ProjectLogoTest.php
+[branding-test]: ../tests/Feature/Settings/BrandingTest.php

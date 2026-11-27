@@ -140,6 +140,10 @@ it('checks all branding uploads before saving any of them', function (FileScanRe
     if ($verdict === FileScanResultEnum::Unavailable) {
         Log::shouldHaveReceived('warning')->once()->with('Upload malware scanner unavailable.');
     }
+
+    if ($verdict === FileScanResultEnum::Infected) {
+        Log::shouldHaveReceived('warning')->once()->with('Upload blocked by malware scanner.', ['event' => 'upload.malware_detected']);
+    }
 })->with([
     'clean' => [FileScanResultEnum::Clean, null],
     'infected' => [FileScanResultEnum::Infected, 'validation.upload_malware_detected'],

@@ -12,4 +12,4 @@ The lookup is transient. If the provider is unavailable, the application log rec
 
 ## Uploaded images
 
-If the operator [enables upload scanning](self-hosting.md#upload-malware-scanning), Excubia streams the bytes of new project logos and branding images to the configured ClamAV daemon before saving them. It sends only the image bytes and the scanner protocol framing, and logs a generic warning if scanning is unavailable. The operator controls the daemon and its network access.
+If the operator [enables upload scanning](self-hosting.md#upload-malware-scanning), Excubia streams the bytes of new project logos and branding images to the configured ClamAV daemon before saving them. It sends only the image bytes and the scanner protocol framing. It logs generic warnings for detections and unavailable scans. The operator controls the daemon and its network access.

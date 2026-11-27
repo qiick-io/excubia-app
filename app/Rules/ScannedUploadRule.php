@@ -25,6 +25,7 @@ final class ScannedUploadRule implements ValidationRule
         $verdict = app(FileScannerContract::class)->scan($value);
 
         if ($verdict === FileScanResultEnum::Infected) {
+            Log::warning('Upload blocked by malware scanner.', ['event' => 'upload.malware_detected']);
             $fail('validation.upload_malware_detected')->translate();
         }
 
