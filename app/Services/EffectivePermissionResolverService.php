@@ -54,6 +54,16 @@ class EffectivePermissionResolverService
     }
 
     /**
+     * Super-admin authority of the acting user (qiick/laravel-access isActorSuperAdmin()): never
+     * under an API actor, and only for the user the request is bound to. Use it for what the
+     * actor may do; isSuperAdmin() for what a subject is.
+     */
+    public function isActorSuperAdmin(User $actor): bool
+    {
+        return $this->resolver->isActorSuperAdmin($actor);
+    }
+
+    /**
      * @return list<string>
      */
     public function permissionsFor(User $user): array

@@ -20,6 +20,8 @@ use Qiick\Oidc\Data\AuthenticatedIdentityData;
  */
 class OidcUserProvisioningService implements UserProvisioningContract
 {
+    public function __construct(private SuperAdminGuardService $superAdminGuard) {}
+
     /**
      * @param  string  $email  verified and lower-cased by the package
      */
@@ -35,9 +37,16 @@ class OidcUserProvisioningService implements UserProvisioningContract
             'is_active' => true,
             'email_verified_at' => now(),
         ]);
-        $user->save();
-        $user->assignRole(RoleEnum::Reader->value);
 
-        return $user;
+        // A trusted system write (no actor), through the same role-write path as every other.
+        return $this->superAdminGuard->guardRoleWrite(
+            null,
+            function () use ($user): array {
+                $user->save();
+
+                return [$user->id];
+            },
+            fn (): User => $user->assignRole(RoleEnum::Reader->value),
+        );
     }
 }

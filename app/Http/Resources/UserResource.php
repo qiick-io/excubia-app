@@ -53,7 +53,7 @@ class UserResource extends JsonResource
             'can_update' => $canUpdate,
             // Only a super-admin changes their own roles (#151).
             'can_change_roles' => $canUpdate && $actor instanceof User
-                && (! $user->is($actor) || app(EffectivePermissionResolverService::class)->isSuperAdmin($actor)),
+                && (! $user->is($actor) || app(EffectivePermissionResolverService::class)->isActorSuperAdmin($actor)),
             'can_delete' => Gate::allows('delete', $user),
         ];
     }

@@ -87,7 +87,7 @@ class UserGroupRequest extends FormRequest
                 }
             }
 
-            if ($permissions->isSuperAdmin($actor)) {
+            if ($permissions->isActorSuperAdmin($actor)) {
                 return;
             }
 

@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Actions\DeleteRoleAction;
 use App\Actions\SaveRoleAction;
 use App\Http\Requests\ListQueryRequest;
 use App\Http\Requests\RoleRequest;
 use App\Http\Resources\RoleResource;
 use App\Models\Role;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -52,11 +54,11 @@ class RoleController extends Controller
         return to_route('roles.index');
     }
 
-    public function destroy(Role $role): RedirectResponse
+    public function destroy(Request $request, Role $role, DeleteRoleAction $deleteRole): RedirectResponse
     {
         Gate::authorize('delete', $role);
 
-        $role->delete();
+        $deleteRole->execute($request->user(), $role);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Role deleted.')]);
 

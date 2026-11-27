@@ -14,6 +14,7 @@ use App\Policies\PermissionPolicy;
 use App\Policies\RolePolicy;
 use App\Policies\SystemHealthPolicy;
 use App\Services\AccessResponderService;
+use App\Services\ActiveUsersService;
 use App\Services\ApiKeyAuthorizerService;
 use App\Services\ApiKeyExpiryRecipientService;
 use App\Services\ApiKeyRepositoryService;
@@ -25,7 +26,6 @@ use App\Services\OidcSettingsRepositoryService;
 use App\Services\OidcUserProvisioningService;
 use App\Services\SelfMonitoringService;
 use App\Services\SettingsRepositoryService;
-use App\Services\SuperAdminGuardService;
 use App\Services\SystemHealthService;
 use App\Services\TwoFactorRequirementService;
 use Carbon\CarbonImmutable;
@@ -108,7 +108,7 @@ class AppServiceProvider extends ServiceProvider
     protected function registerAccessBindings(): void
     {
         $this->app->bind(RoleCatalog::class, AccessResponderService::class);
-        $this->app->bind(ActiveUsers::class, SuperAdminGuardService::class);
+        $this->app->bind(ActiveUsers::class, ActiveUsersService::class);
         $this->app->bind(AuthorizationResponder::class, AccessResponderService::class);
         $this->app->bind(TwoFactorPolicy::class, TwoFactorRequirementService::class);
         $this->app->bind(TwoFactorResponder::class, TwoFactorRequirementService::class);

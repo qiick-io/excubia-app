@@ -7,6 +7,7 @@ namespace Database\Seeders;
 use App\Enums\RoleEnum;
 use App\Models\User;
 use App\Services\InitialSuperAdminPasswordService;
+use App\Services\SuperAdminGuardService;
 use Illuminate\Database\Seeder;
 
 /**
@@ -24,7 +25,7 @@ class CreateSuperAdminSeeder extends Seeder
     /** The environments where a seeded login is a convenience, not a risk. */
     public const ENVIRONMENTS = ['local', 'testing'];
 
-    public function run(InitialSuperAdminPasswordService $initialSuperAdminPassword): void
+    public function run(InitialSuperAdminPasswordService $initialSuperAdminPassword, SuperAdminGuardService $superAdminGuard): void
     {
         $configuredPassword = config('super_admin.password');
         $password = is_string($configuredPassword) ? $configuredPassword : null;
@@ -49,7 +50,17 @@ class CreateSuperAdminSeeder extends Seeder
             'password' => (string) $password,
             'email_verified_at' => now(),
             'is_active' => true,
-        ])->save();
-        $user->assignRole(RoleEnum::SuperAdmin->value);
+        ]);
+
+        // A trusted system write (no actor), through the same role-write path as every other.
+        $superAdminGuard->guardRoleWrite(
+            null,
+            function () use ($user): array {
+                $user->save();
+
+                return [$user->id];
+            },
+            fn (): User => $user->assignRole(RoleEnum::SuperAdmin->value),
+        );
     }
 }
