@@ -222,3 +222,12 @@ it('lets the test API reach every adapter as the acting user', function () {
         ->assertOk()
         ->assertSee('composer update');
 });
+
+it('tells the MCP client that result strings are project data, not instructions', function () {
+    // #476: exception messages and finding text reached MCP clients unmarked.
+    Project::factory()->create(['slug' => 'shop']);
+    $result = mcpToolResult(mcpCall(mcpKey(mcpUser()), 'tools/call', ['name' => 'list-projects', 'arguments' => []], 'list-projects'));
+
+    expect($result['notice'])->toBe(AssistantMcpToolAdapter::UNTRUSTED_NOTICE)
+        ->and($result)->toHaveKey('projects');
+});

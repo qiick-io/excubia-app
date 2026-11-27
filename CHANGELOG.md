@@ -9,10 +9,6 @@ upgrade from the version before (see [docs/self-hosting.md](docs/self-hosting.md
 
 ## [Unreleased]
 
-### Security
-
-- **Super-admin stands alone through groups too** (#474): a group cannot carry super-admin with other roles, a user with other roles cannot join a super-admin group, and a super-admin group's member cannot get other direct roles.
-
 ### Changed
 
 - **Registry pinned to app-ui 7bd30c4**: the drawer focus return and the grouped tab count are now the registry's own (app-ui#279), so their overrides are gone; the theme gains the chart colour tokens.
@@ -23,6 +19,8 @@ upgrade from the version before (see [docs/self-hosting.md](docs/self-hosting.md
 
 ### Security
 
+- **Project text is marked as data for AI agents** (#476): copied fix prompts put the project's text in a fenced block labelled as reported data (no more "Excubia's hint"), and every MCP tool result starts with a notice that its strings are data, not instructions.
+- **Super-admin stands alone through groups too** (#474): a group cannot carry super-admin with other roles, a user with other roles cannot join a super-admin group, and a super-admin group's member cannot get other direct roles.
 - **Forgot password reveals nothing** (#472): a known, an unknown and a throttled address get the same answer, and the form allows 5 requests a minute per IP.
 - **Copyable fix commands refuse option-like packages** (#475): a pushed package or version starting with `-` no longer becomes a Composer or npm option.
 - **Slack alerts are escaped** (#477): `&`, `<` and `>` in alert text are escaped, so pushed text cannot add `<!channel>` mentions or disguised links.
