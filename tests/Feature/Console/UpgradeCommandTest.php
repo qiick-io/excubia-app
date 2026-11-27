@@ -74,6 +74,15 @@ it('warns when an https site trusts no proxy, so HSTS would never be sent', func
         ->assertSuccessful();
 });
 
+it('refuses to run the package checks on a configuration cached by the previous release', function () {
+    // As when the process booted from bootstrap/cache/config.php.
+    app()->instance('config_loaded_from_cache', true);
+
+    $this->artisan(UpgradeCommand::class, ['--force' => true, '--no-migrate' => true, '--no-permissions' => true])
+        ->expectsOutputToContain('The configuration is cached')
+        ->assertFailed();
+});
+
 it('stops when a qiick package check fails', function () {
     // A mixed super-admin is one of the states access:check refuses.
     $this->seed(PermissionSeeder::class);

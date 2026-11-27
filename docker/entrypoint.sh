@@ -30,13 +30,16 @@ if [ "${EXCUBIA_RUN_MIGRATIONS:-true}" != "false" ]; then
     php artisan migrate --force --no-interaction
     php artisan db:seed --class='Database\Seeders\PermissionSeeder' --force --no-interaction
     php artisan db:seed --class='Database\Seeders\SystemProjectSeeder' --force --no-interaction
-    # The qiick packages' deploy checks (UpgradeCommand::PACKAGE_CHECKS): a broken config or
-    # schema stops the container before it serves.
+fi
+
+php artisan optimize --no-interaction > /dev/null
+
+if [ "${EXCUBIA_RUN_MIGRATIONS:-true}" != "false" ]; then
+    # The qiick packages' deploy checks (UpgradeCommand::PACKAGE_CHECKS), against the config just
+    # cached and the migrated schema: a broken config or schema stops the container before it serves.
     php artisan access:check --no-interaction
     php artisan api-keys:check --no-interaction
     php artisan http-basics:check --no-interaction
 fi
-
-php artisan optimize --no-interaction > /dev/null
 
 exec "$@"
