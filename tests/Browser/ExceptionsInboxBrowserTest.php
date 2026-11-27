@@ -68,3 +68,26 @@ it('moves focus with j and k, so Enter opens the row they point at', function ()
 
     expect($page->script("() => document.activeElement?.matches('tbody tr[data-active=\"true\"]')"))->toBeTrue();
 });
+
+it('closes the exception and finding drawers with a visible button on a phone', function () {
+    $this->actingAs(User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value));
+    $project = seededA11yProject();
+    $group = ExceptionGroup::query()->where('project_id', $project->id)->firstOrFail();
+
+    // #454: full-screen drawers on a phone had no close control.
+    visit(route('projects.view', [$project->slug, 'exceptions', 'exception' => $group->id], false))
+        ->resize(390, 844)
+        ->assertVisible('[role="dialog"] [data-test="drawer-close"]')
+        ->click('[role="dialog"] [data-test="drawer-close"]')
+        ->wait(1)
+        ->assertNotPresent('[role="dialog"]')
+        ->assertNoJavaScriptErrors();
+
+    $page = visit(route('projects.view', [$project->slug, 'findings'], false))->resize(390, 844);
+    $page->click('tbody tr:first-child td:nth-child(3) button')
+        ->assertVisible('[role="dialog"] [data-test="drawer-close"]')
+        ->click('[role="dialog"] [data-test="drawer-close"]')
+        ->wait(1)
+        ->assertNotPresent('[role="dialog"]')
+        ->assertNoJavaScriptErrors();
+});

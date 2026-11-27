@@ -1,6 +1,7 @@
 import { Head, router, useForm, usePage } from '@inertiajs/react';
 import { KeyRound } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import type { MouseEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DataTable } from '@/components/admin/data-table';
 import { PageEmptyState } from '@/components/admin/page-empty-state';
@@ -166,7 +167,15 @@ export default function ApiKeysSettingsPage({
         [t],
     );
 
-    const openCreate = (): void => {
+    // The dialog opens from a plain button, so Radix has no trigger to refocus on close (#422).
+    // The opener is the clicked button itself (Safari does not focus buttons on click); after a
+    // key is created, focus goes back there only when its one-time secret dialog closes.
+    const returnFocusRef = useRef<HTMLElement | null>(null);
+    const secretReturnFocusRef = useRef<HTMLElement | null>(null);
+    const headerCreateRef = useRef<HTMLButtonElement>(null);
+
+    const openCreate = (event: MouseEvent<HTMLButtonElement>): void => {
+        returnFocusRef.current = event.currentTarget;
         form.setData({
             ...EMPTY_FORM,
             scopes: scopes.includes(DEFAULT_SCOPE) ? [DEFAULT_SCOPE] : [],
@@ -184,6 +193,8 @@ export default function ApiKeysSettingsPage({
         form.post(apiKeysRoutes.store.url(), {
             preserveScroll: true,
             onSuccess: () => {
+                secretReturnFocusRef.current = returnFocusRef.current;
+                returnFocusRef.current = null;
                 setCreateOpen(false);
             },
         });
@@ -232,6 +243,7 @@ export default function ApiKeysSettingsPage({
             breadcrumbs={breadcrumbs}
             headerActions={
                 <Button
+                    ref={headerCreateRef}
                     type="button"
                     data-test="api-key-create-open"
                     onClick={openCreate}
@@ -290,6 +302,22 @@ export default function ApiKeysSettingsPage({
                 <DialogContent
                     className="sm:max-w-2xl"
                     data-test="api-key-create-dialog"
+                    onCloseAutoFocus={(event) => {
+                        const opener = returnFocusRef.current;
+                        returnFocusRef.current = null;
+
+                        // After a create the secret dialog takes focus; it returns it on close.
+                        if (secretReturnFocusRef.current !== null) {
+                            event.preventDefault();
+
+                            return;
+                        }
+
+                        if (opener?.isConnected) {
+                            event.preventDefault();
+                            opener.focus();
+                        }
+                    }}
                 >
                     <DialogHeader>
                         <DialogTitle>
@@ -353,6 +381,16 @@ export default function ApiKeysSettingsPage({
                 onAcknowledge={() => {
                     setIssuedApiKey(null);
                     router.reload({ only: ['apiKeys'] });
+
+                    // The empty state's button is gone once a key exists: fall back to the header's.
+                    const opener = secretReturnFocusRef.current;
+                    secretReturnFocusRef.current = null;
+                    window.setTimeout(() =>
+                        (opener?.isConnected
+                            ? opener
+                            : headerCreateRef.current
+                        )?.focus(),
+                    );
                 }}
             />
 

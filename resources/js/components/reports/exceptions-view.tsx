@@ -71,6 +71,7 @@ import { cn } from '@/lib/utils';
 import projectsRoutes from '@/routes/projects';
 import type { ExceptionGroupRow, RuntimeDeploy, TimeRange } from '@/types';
 import { useDateFormat } from '@/lib/date-format';
+import { DrawerCloseButton } from '@/components/drawer-close-button';
 
 const EXCEPTIONS_GUIDE_URL =
     'https://github.com/qiick-io/excubia-core/blob/main/docs/guides/exception-capture.md';
@@ -715,7 +716,7 @@ function ExceptionDrawer({
 
     return (
         <DrawerContent className="data-[vaul-drawer-direction=right]:max-w-2xl">
-            <DrawerHeader>
+            <DrawerHeader className="pr-14">
                 <DrawerTitle className="font-mono text-sm break-all">
                     {group.class}
                 </DrawerTitle>
@@ -892,6 +893,8 @@ function ExceptionDrawer({
                     </Button>
                 ) : null}
             </DrawerFooter>
+            {/* Last in the DOM so a key press that opened the drawer cannot land on it. */}
+            <DrawerCloseButton />
         </DrawerContent>
     );
 }
