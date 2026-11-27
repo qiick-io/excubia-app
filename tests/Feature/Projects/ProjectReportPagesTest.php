@@ -7,6 +7,7 @@ use App\Enums\SeverityEnum;
 use App\Models\HealthReport;
 use App\Models\Project;
 use App\Models\User;
+use App\Services\SettingsRepositoryService;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Str;
@@ -355,4 +356,20 @@ it('gives every project tab its own URL and redirects the old ?view= links', fun
 
     $this->actingAs($reader)->get('/projects/shop/nope')->assertNotFound();
     $this->actingAs($reader)->get('/projects/shop?view=findings')->assertRedirect(route('projects.view', ['project' => 'shop', 'view' => 'findings']));
+});
+
+it('names the MCP upgrade plan tool on the plan tab only while an AI client can call it', function () {
+    $project = Project::factory()->create(['slug' => 'shop']);
+    pushedReport($project, '2026-11-05 08:00:00');
+    $this->actingAs(reportReader());
+    $isAvailable = fn (): bool => $this->get(route('projects.view', ['shop', 'plan']))->inertiaProps('isUpgradePlanMcpToolAvailable');
+
+    // MCP is off by default (#469 review: the hint promised a tool that answered 404).
+    expect($isAvailable())->toBeFalse();
+
+    config(['excubia.mcp_enabled' => true]);
+    expect($isAvailable())->toBeTrue();
+
+    app(SettingsRepositoryService::class)->save(['ai_disabled_tools' => ['get-upgrade-plan']]);
+    expect($isAvailable())->toBeFalse();
 });

@@ -23,6 +23,7 @@ import { useAppearance } from '@/hooks/use-appearance';
 import { useClipboard } from '@/hooks/use-clipboard';
 import { OTP_MAX_LENGTH } from '@/hooks/use-two-factor-auth';
 import { confirm } from '@/routes/two-factor';
+import { useReturnFocus } from '@/hooks/use-return-focus';
 
 function GridScanIcon() {
     return (
@@ -256,6 +257,7 @@ export default function TwoFactorSetupModal({
     errors,
 }: Props) {
     const { t } = useTranslation();
+    const returnFocus = useReturnFocus();
     const [showVerificationStep, setShowVerificationStep] =
         useState<boolean>(false);
 
@@ -325,7 +327,11 @@ export default function TwoFactorSetupModal({
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent
+                onOpenAutoFocus={returnFocus.onOpenAutoFocus}
+                onCloseAutoFocus={returnFocus.onCloseAutoFocus}
+                className="sm:max-w-md"
+            >
                 <DialogHeader className="flex items-center justify-center">
                     <GridScanIcon />
                     <DialogTitle>{modalConfig.title}</DialogTitle>

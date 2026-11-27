@@ -1,6 +1,7 @@
 import { Gauge, Info } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
+import { CardTableScroll } from '@/components/layout/card-table-scroll';
 import { PageEmptyState } from '@/components/admin/page-empty-state';
 import {
     StackedBarChart,
@@ -1221,7 +1222,7 @@ function RuntimeCard<Row extends Record<string, unknown>>({
                 ) : (
                     <>
                         {summary}
-                        <div className="max-h-80 overflow-auto">
+                        <CardTableScroll className="max-h-80">
                             <Table>
                                 <TableHeader>
                                     <TableRow>
@@ -1261,7 +1262,7 @@ function RuntimeCard<Row extends Record<string, unknown>>({
                                     ))}
                                 </TableBody>
                             </Table>
-                        </div>
+                        </CardTableScroll>
                     </>
                 )}
             </CardContent>
@@ -1346,7 +1347,7 @@ function LogLevelsCard({
                                 })}
                             />
                         </div>
-                        <div className="max-h-80 overflow-auto">
+                        <CardTableScroll className="max-h-80">
                             <Table>
                                 <TableHeader>
                                     <TableRow>
@@ -1381,7 +1382,7 @@ function LogLevelsCard({
                                     ))}
                                 </TableBody>
                             </Table>
-                        </div>
+                        </CardTableScroll>
                     </>
                 )}
             </CardContent>
@@ -1417,9 +1418,6 @@ function ServersCard({
         <Card>
             <CardHeader className="pb-3">
                 <CardTitle>{t('runtime.servers')}</CardTitle>
-                <CardDescription>
-                    {t('runtime.serversDescription')}
-                </CardDescription>
             </CardHeader>
             <CardContent>
                 {servers.length === 0 ? (

@@ -32,7 +32,8 @@
         "close": "Chiudi",
         "confirm": "Conferma",
         "generateSecurePassword": "Genera password sicura",
-        "passwordStrength": "Robustezza della password"
+        "passwordStrength": "Robustezza della password",
+        "aboutTopic": "Informazioni su {{topic}}"
     },
     "emptyState": {
         "users": {
@@ -681,7 +682,6 @@
     },
     "activityLog": {
         "title": "Activity Log",
-        "description": "Audit trail in sola lettura di modifiche e eventi di autenticazione.",
         "searchPlaceholder": "Cerca descrizione o soggetto…",
         "allUsers": "Tutti gli utenti",
         "allActions": "Tutte le azioni",
@@ -961,7 +961,7 @@
             "emptyMineTitle": "Niente assegnato a te",
             "emptyMineDescription": "Nessun problema degli ultimi report è assegnato a te.",
             "title": "Problemi principali",
-            "description": "{{shown}} di {{total}} problemi, raggruppati fra i progetti, dal più grave.",
+            "description": "{{shown}} di {{total}} problemi",
             "issue": "Problema",
             "projects": "Progetti",
             "emptyTitle": "Nessun problema aperto",
@@ -969,7 +969,7 @@
         },
         "endOfSupport": {
             "title": "Fine supporto",
-            "description": "PHP, Laravel e Node scaduti o in scadenza entro un anno.",
+            "description": "Scaduti o in scadenza entro un anno",
             "emptyTitle": "Niente in scadenza",
             "emptyDescription": "Nessuna runtime termina il supporto di sicurezza entro un anno."
         },
@@ -980,9 +980,7 @@
             "emptyDescription": "Nessun controllo di configurazione avvisa o fallisce, oppure i progetti usano un core precedente alla 1.0."
         },
         "projects": {
-            "byFindings": "Prima i progetti con più rilievi aperti.",
-            "title": "Progetti",
-            "description": "Dal più grave."
+            "title": "Progetti"
         },
         "telemetry": {
             "requests": "Richieste",
@@ -995,7 +993,6 @@
         },
         "assigned": {
             "title": "Assegnati a te",
-            "description": "Gruppi di eccezioni e problemi aperti di cui ti occupi.",
             "exceptions_one": "{{count}} eccezione",
             "exceptions_other": "{{count}} eccezioni",
             "findings_one": "{{count}} problema",
@@ -1061,7 +1058,6 @@
         },
         "runtime": {
             "title": "Runtime",
-            "description": "Versioni e supporto di sicurezza dall'ultimo report.",
             "unavailable": "Questo report non ha i dettagli delle runtime. Aggiorna qiick/excubia-core alla 1.0 nel progetto.",
             "name": "Runtime",
             "version": "Versione",
@@ -1077,7 +1073,6 @@
         "generatedAt": "Generato il {{date}}",
         "coreVersion": "Generato da excubia-core {{version}}",
         "coreVersionShort": "Core",
-        "checksDescription": "Tutti i controlli dell'ultimo report e il loro stato.",
         "check": "Controllo",
         "searchFindings": "Cerca problemi…",
         "allSeverities": "Tutte le severità",
@@ -1087,7 +1082,6 @@
         "noIssuesDescription": "L'ultimo report non ha problemi che avvisano o falliscono.",
         "installed": "Installata",
         "fixedIn": "Corretto in",
-        "planDescription": "L'ordine consigliato degli aggiornamenti, dal più urgente.",
         "plan": {
             "packageCount_one": "{{count}} pacchetto",
             "packageCount_other": "{{count}} pacchetti",
@@ -1105,11 +1099,12 @@
                 "npm-patch": "Aggiorna i pacchetti npm all'ultima patch",
                 "license-review": "Rivedi le licenze delle dipendenze",
                 "unknown": "Passo di aggiornamento"
-            }
+            },
+            "copyPrompt": "Copia prompt per l'AI",
+            "mcpHint": "I client AI ricevono lo stesso piano via MCP con lo strumento <code>get-upgrade-plan</code> (<docs>guida MCP</docs>)."
         },
         "trend": {
             "title": "Problemi nel tempo",
-            "description": "Problemi che avvisano o falliscono in ogni report, per severità.",
             "label": "Grafico a barre impilate dei problemi per severità su {{count}} report; l'ultimo ha {{total}} problemi."
         },
         "overview": {
@@ -1141,7 +1136,7 @@
             "systemProjectHint": "Excubia che controlla se stessa. Invia un report ogni giorno da sola e non si può eliminare.",
             "attention": {
                 "title": "Da sistemare",
-                "description": "{{shown}} di {{total}} problemi aperti: prima i problemi di infrastruttura che fallisce, poi per gravità; poi le eccezioni aperte.",
+                "description": "{{shown}} di {{total}} problemi aperti",
                 "allFindings": "Tutti i problemi",
                 "exception": "Eccezione",
                 "emptyTitle": "Niente da sistemare"
@@ -1158,7 +1153,6 @@
             },
             "allChecks": "Tutti i controlli",
             "checksFailingOnly": "Solo non superati",
-            "checksFailingDescription": "I controlli dell’ultimo report con avvisi o falliti.",
             "allChecksPassCount_one": "L’unico controllo è superato.",
             "allChecksPassCount_other": "Tutti i {{count}} controlli sono superati."
         },
@@ -1166,7 +1160,7 @@
         "deploy": "Deploy",
         "liveHealth": {
             "title": "Salute in tempo reale",
-            "description": "I campioni di salute al minuto dell'ultima ora, per controllo e server. Si aggiorna ogni minuto.",
+            "description": "Ultima ora, aggiornata ogni minuto",
             "servers": "Server",
             "lastSample": "Ultimo campione",
             "serverStatus": "{{server}}: {{status}}",
@@ -1235,7 +1229,6 @@
         }
     },
     "permissions": {
-        "description": "I permessi sono definiti in PermissionEnum e sincronizzati nel database. Assegnali ai ruoli dalla pagina di modifica del ruolo.",
         "sync": "Sincronizza dall’enum",
         "empty": "Nessun permesso nel database. Esegui la sincronizzazione.",
         "columns": {
@@ -1264,7 +1257,6 @@
         }
     },
     "system": {
-        "description": "Stato di salute di questa installazione di Excubia. Ogni voce rimanda al suo suggerimento di correzione.",
         "fixHint": "Come risolvere: {{item}}",
         "never": "Mai",
         "status": {
@@ -1426,7 +1418,6 @@
         "deprecations": "Deprecazioni",
         "deprecationsDescription": "Deprecazioni PHP per origine e versione di PHP, per pianificare gli aggiornamenti.",
         "servers": "Server",
-        "serversDescription": "Ultimo campione di ogni server che esegue lo scheduler.",
         "server": "Server",
         "load": "Carico 1 / 5 / 15",
         "memory": "Memoria",
@@ -1565,7 +1556,6 @@
         "selectRow": "Seleziona {{name}}"
     },
     "schedule": {
-        "description": "I task pianificati dell'ultimo report, ognuno con l'ultima esecuzione, la prossima scadenza e lo stato. Controllati ogni minuto con le esecuzioni inviate dal monitoraggio runtime.",
         "emptyTitle": "Nessun task pianificato",
         "emptyDescription": "Esegui php artisan excubia:push per inviare la pianificazione e attiva il monitoraggio runtime per collegare ogni task alle sue esecuzioni.",
         "guide": "Guida ai task pianificati",
@@ -1676,7 +1666,6 @@
         "offline": "Realtime offline"
     },
     "alerts": {
-        "description": "Gli avvisi di questo progetto: cosa è stato inviato, cosa è fallito e cosa è stato soppresso. Silenzia una regola o un problema, o pianifica finestre di manutenzione.",
         "maintenanceModeTitle": "Avvisi in pausa",
         "maintenanceModeDescription": "L'ultimo report dice che l'applicazione è in modalità manutenzione. Gli avvisi riprendono con il report successivo a php artisan up.",
         "windowsTitle": "Finestre di manutenzione",
@@ -1687,7 +1676,6 @@
         "windowActive": "Attiva",
         "windowFormDescription": "Un periodo singolo o uno che si ripete ogni settimana. Gli orari sono locali al fuso orario.",
         "mutesTitle": "Silenziati",
-        "mutesDescription": "Regole e problemi silenziati dalla cronologia qui sotto.",
         "noMutes": "Niente è silenziato.",
         "wholeRule": "Intera regola",
         "forever": "per sempre",
@@ -2112,7 +2100,6 @@
         "withinLimits": "Nei limiti",
         "infrastructure": {
             "title": "Infrastruttura",
-            "description": "I servizi di cui l’app ha bisogno, dall’ultimo report.",
             "disk": "Disco",
             "databaseSize": "Dimensione del database",
             "connections": "Connessioni al database",
@@ -2138,7 +2125,6 @@
         },
         "dependencies": {
             "title": "Dipendenze",
-            "description": "Dipendenze dirette non aggiornate e inventario delle licenze.",
             "allLicenses": "Tutte le licenze",
             "outdated": "Non aggiornate",
             "patch": "Patch",
@@ -2173,7 +2159,6 @@
         "total": "Totale",
         "none": "Nessuna dichiarata",
         "flaggedTitle": "Pacchetti da rivedere",
-        "flaggedDescription": "Prima le licenze vietate, poi il copyleft forte, poi quelle mancanti o sconosciute.",
         "noneFlagged": "Nessun pacchetto usa una licenza vietata, copyleft forte o sconosciuta.",
         "noneFlaggedTitle": "Licenze a posto",
         "inventoryTitle": "Inventario",
@@ -2196,9 +2181,6 @@
         },
         "readiness": {
             "description": "Dai blocchi aperti alla prossima major di ogni progetto: un progetto può passare quando nessuna dipendenza diretta blocca la prossima major di Laravel. Un blocco ignorato non blocca.",
-            "target": "Laravel {{major}}",
-            "canMove": "{{ready}} progetti su {{total}} possono passare a Laravel {{major}} oggi",
-            "unknownDescription": "Nessun report, Laravel non bloccato nel lock o controllo dei blocchi non eseguito.",
             "blockers": "Pacchetti bloccanti",
             "preReleaseOnly": "Solo pre-release",
             "uncheckedPackages_one": "{{count}} pacchetto privato non controllato",
@@ -2219,10 +2201,21 @@
             "dismissedBlockers_other": "{{count}} ignorati",
             "dismissedBlockersTitle": "Blocchi ignorati",
             "showDismissedBlockers_one": "Mostra il blocco ignorato",
-            "showDismissedBlockers_other": "Mostra i {{count}} blocchi ignorati"
+            "showDismissedBlockers_other": "Mostra i {{count}} blocchi ignorati",
+            "kpi": {
+                "ready": "Pronti per la prossima major",
+                "target": "Laravel {{major}}: {{ready}} su {{total}}",
+                "unknown_one": "{{count}} sconosciuto",
+                "unknown_other": "{{count}} sconosciuti",
+                "blocked": "Bloccati",
+                "worstBlocker_one": "{{package}} blocca {{count}} progetto",
+                "worstBlocker_other": "{{package}} blocca {{count}} progetti",
+                "plans": "Con un piano di upgrade",
+                "steps_one": "{{count}} passo in totale",
+                "steps_other": "{{count}} passi in totale"
+            }
         },
         "advisories": {
-            "description": "Pacchetti con advisory note, abbandonati o non aggiornati, e i progetti che li usano, dai problemi aperti di ogni progetto. I problemi ignorati sono elencati a parte.",
             "search": "Pacchetto o id advisory",
             "kindLabel": "Filtra per tipo",
             "allKinds": "Tutti i tipi",
@@ -2243,11 +2236,9 @@
             "emptyDescription": "Nessun ultimo report ha advisory note, pacchetti abbandonati o non aggiornati.",
             "noMatchTitle": "Nessun pacchetto corrispondente",
             "noMatchDescription": "Prova un altro nome di pacchetto o id advisory.",
-            "dismissedTitle": "Problemi ignorati",
-            "dismissedDescription": "Problemi aperti che un utente ha ignorato, con il motivo e l'ultimo giorno in cui vale."
+            "dismissedTitle": "Problemi ignorati"
         },
         "eol": {
-            "description": "Finestre di supporto di PHP, Laravel e Node di ogni progetto, dalla scadenza più vicina.",
             "active": "Supporto attivo",
             "security": "Supporto di sicurezza",
             "today": "Oggi",

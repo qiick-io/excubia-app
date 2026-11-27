@@ -58,6 +58,10 @@ it('shows the blocking packages as a count and opens the list from the keyboard'
     $trigger = 'button[aria-label="Show 3 packages blocking the upgrade"]';
 
     $page = ($scheme === 'dark' ? visit($path)->inDarkMode() : visit($path)->inLightMode())
+        // The key numbers row (#468): four tiles from the readiness rows.
+        ->assertSee('Ready for the next major')
+        ->assertSee('Laravel 14: 0 of 1')
+        ->assertSee('larastan/larastan blocks 1 project')
         ->assertSee('3 packages · larastan/larastan +2')
         ->assertDontSee('spatie/laravel-ray')
         ->assertNoJavaScriptErrors();

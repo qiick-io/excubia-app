@@ -5,8 +5,8 @@ declare(strict_types=1);
 use App\Enums\PermissionEnum;
 use App\Enums\RoleEnum;
 use App\Models\User;
+use App\Notifications\ResetPasswordNotification;
 use Database\Seeders\PermissionSeeder;
-use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Support\Facades\Notification;
 use Inertia\Testing\AssertableInertia as Assert;
 use Spatie\Permission\Models\Role;
@@ -296,7 +296,7 @@ it('sends a password-reset email through Fortify', function () {
         ->post(route('users.password-reset', $user))
         ->assertRedirect();
 
-    Notification::assertSentTo($user, ResetPassword::class);
+    Notification::assertSentTo($user, ResetPasswordNotification::class);
 });
 
 it('splits user permissions per operation, as in externa-core', function () {

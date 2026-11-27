@@ -49,7 +49,7 @@ class StorePushedReportRequest extends FormRequest
             'report.deployedAt' => ['sometimes', 'nullable', 'date'],
             'report.checks' => ['present', 'list'],
             'report.upgradePlan' => ['present', 'list'],
-            'report.upgradePlan.*.stepNumber' => ['required', 'integer', 'min:1'],
+            'report.upgradePlan.*.stepNumber' => ['required', 'integer', 'min:1', 'max:1000'],
             'report.upgradePlan.*.message' => ['required', 'string'],
             // Schedule inventory (#110), optional: older cores and the standalone CLI omit it.
             'report.schedule' => ['sometimes', 'list', 'max:500'],
@@ -63,7 +63,7 @@ class StorePushedReportRequest extends FormRequest
             'report.schedule.*.runsInMaintenanceMode' => ['required', 'boolean'],
             'report.schedule.*.environments' => ['present', 'list'],
             'report.schedule.*.environments.*' => ['string', 'max:64'],
-            'report.schedule.*.lateAfterMinutes' => ['sometimes', 'integer', 'min:1'],
+            'report.schedule.*.lateAfterMinutes' => ['sometimes', 'integer', 'min:1', 'max:525600'],
             // Last, where the validator appends the keys of a wildcard, so errors keep their order.
             ...$this->perIndexRules([
                 'report.checks.*' => ['array'],

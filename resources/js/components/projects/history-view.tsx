@@ -11,13 +11,7 @@ import {
 } from '@/components/reports/severity-badge';
 import { SeverityStackedBarChart } from '@/components/reports/severity-chart';
 import { Badge } from '@/components/ui/badge';
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { HealthReportSummary } from '@/types';
 import { useDateFormat } from '@/lib/date-format';
 
@@ -137,9 +131,6 @@ export function HistoryView({ reports }: { reports: HealthReportSummary[] }) {
             <Card>
                 <CardHeader className="pb-3">
                     <CardTitle>{t('report.trend.title')}</CardTitle>
-                    <CardDescription>
-                        {t('report.trend.description')}
-                    </CardDescription>
                 </CardHeader>
                 <CardContent className="h-64">
                     <SeverityStackedBarChart
