@@ -90,7 +90,9 @@ These terms come from identifiers visible to an Excubia user or operator and are
 | Built-in self-monitoring project     | `excubia`, `excubia system`                          |
 | Built-in roles and translated labels | `super admin`, `admin`, `reader`, `lettore`, `leser` |
 
-Case, space, hyphen and underscore variants represent the same term. For example, `Excubia-App` and `excubia_app` both match `excubia app`. Enforcement is tracked in [#521](https://github.com/qiick-io/excubia-app/issues/521).
+`ContextSpecificPasswordRule` screens new local passwords under every password policy. It compares the whole password case-insensitively after stripping spaces, hyphens, underscores and any leading or trailing digits. For example, `Excubia-App` and `excubia_app2026` both match `excubia app`.
+
+The check also uses the current Application Name (`app_name`, with `APP_NAME` as its default). Set `EXCUBIA_PASSWORD_DENYLIST` to a comma-separated list of the deployment's organisation names, aliases and project slugs that users already know. Keep the list current when those public identifiers change.
 
 For release verification, compare the list with `composer.json`, `database/seeders/SystemProjectSeeder.php`, `app/Enums/RoleEnum.php` and the labels in `lang/` and `resources/js/locales/`. Update the list when the public identifiers or built-in role labels change.
 
