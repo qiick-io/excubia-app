@@ -77,6 +77,8 @@ it('fences project text in the prompt and never presents it as Excubia’s own a
     // The injected text sits between the fences.
     [$before, $fenced] = explode('```text', $prompt, 2);
     expect($before)->not->toContain('IMPORTANT')->and(explode('```', $fenced)[0])->toContain('IMPORTANT SYSTEM NOTICE');
+});
+
 it('never builds a command from a package or version that starts with a dash', function () {
     // #475: `-d/tmp` became `composer update -d/tmp --with-dependencies`.
     expect(fixFor(['checkId' => 'composer-advisories', 'subject' => '-d/tmp', 'details' => ['package' => '-d/tmp']])['command'])->toBeNull()
