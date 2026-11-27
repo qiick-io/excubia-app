@@ -39,6 +39,7 @@ use App\Services\TimeSeriesService;
 use Carbon\CarbonImmutable;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -63,7 +64,7 @@ class ProjectReportController extends Controller
     /** The tabs with a time range picker (#113). */
     public const RANGE_VIEWS = ['runtime', 'ai', 'exceptions', 'schedule'];
 
-    public function show(ListQueryRequest $request, Project $project, ReportFindingsService $findings, FixSuggestionService $fixes, ProjectRuntimeService $runtime, ProjectTelemetryService $telemetry, TimeSeriesService $timeSeries, ReportHealthService $health, ProjectReportHistoryService $history, ?string $view = null): Response|RedirectResponse
+    public function show(Request $request, Project $project, ReportFindingsService $findings, FixSuggestionService $fixes, ProjectRuntimeService $runtime, ProjectTelemetryService $telemetry, TimeSeriesService $timeSeries, ReportHealthService $health, ProjectReportHistoryService $history, ?string $view = null): Response|RedirectResponse
     {
         Gate::authorize('view', $project);
 
@@ -71,6 +72,8 @@ class ProjectReportController extends Controller
         if ($view === null && in_array($request->query('view'), self::VIEWS, true)) {
             return to_route('projects.view', ['project' => $project->slug, 'view' => $request->query('view')]);
         }
+
+        $historyPerPage = $view === 'history' ? app(ListQueryRequest::class)->perPage() : ListQueryRequest::DEFAULT_PER_PAGE;
 
         // Loaded by the first prop that needs it, so the poll does not read the report.
         $report = fn (): ?HealthReport => $project->loadMissing('latestReport')->latestReport;
@@ -168,7 +171,7 @@ class ProjectReportController extends Controller
             // Who an exception group or a finding may be assigned to (#254), on those two tabs.
             'assignees' => fn (): array => in_array($view, ['exceptions', 'findings'], true) ? app(ProjectAssigneeService::class)->optionsFor($project) : [],
             ...($view === 'history' ? [
-                'reports' => fn (): array => $history->paginate($project, $request->perPage()),
+                'reports' => fn (): array => $history->paginate($project, $historyPerPage),
                 'historyChart' => fn (): array => $history->chart($project),
             ] : []),
             ...($view === null ? [

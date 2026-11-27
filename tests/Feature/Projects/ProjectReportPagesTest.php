@@ -129,6 +129,9 @@ it('paginates history with a stable order and a chart independent of the table p
     $this->get(route('projects.view', [$project->slug, 'history', 'per_page' => 200]))
         ->assertInertia(fn (Assert $page) => $page->has('reports.data', 20));
 
+    $this->get(route('projects.view', [$project->slug, 'ai', 'page' => 'unused', 'direction' => 'unused']))
+        ->assertOk();
+
     foreach (ProjectReportController::VIEWS as $view) {
         if ($view === 'history') {
             continue;
