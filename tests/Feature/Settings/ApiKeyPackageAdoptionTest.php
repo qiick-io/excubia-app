@@ -126,7 +126,7 @@ it('enforces the per-key day quota', function () {
     callAdoptedKey($plainKey)->assertOk();
     callAdoptedKey($plainKey)
         ->assertTooManyRequests()
-        ->assertJsonPath('error', 'rate_limit_exceeded')
+        ->assertJsonPath('error', 'too_many_requests')
         ->assertHeader('X-RateLimit-Limit', '2');
 });
 

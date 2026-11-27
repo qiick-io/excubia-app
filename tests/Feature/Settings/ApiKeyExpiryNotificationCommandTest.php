@@ -99,6 +99,13 @@ it('lets only one of two overlapping runs claim a notice until its lease lapses'
         ->and($repository->claimExpiryNotice($apiKey, $now->modify('+1 day'), 900, 'fourth'))->toBeFalse();
 });
 
+it('never claims the notice of a revoked key', function () {
+    Date::setTestNow('2026-11-17 10:00:00');
+    $apiKey = ApiKey::factory()->create(['expires_at' => now()->addDays(6), 'revoked_at' => now()]);
+
+    expect(app(ApiKeyRepository::class)->claimExpiryNotice($apiKey, now()->toDateTimeImmutable(), 900, 'token'))->toBeFalse();
+});
+
 it('drops a claim when the key changed expiry in between, as after a rotation', function () {
     Date::setTestNow('2026-11-17 10:00:00');
     $apiKey = ApiKey::factory()->create(['expires_at' => now()->addDays(6)]);
