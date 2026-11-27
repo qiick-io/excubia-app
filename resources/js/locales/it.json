@@ -288,6 +288,8 @@
             "defaultLanguage": "Lingua predefinita",
             "sidebarTitle": "Moduli sidebar",
             "sidebarDescription": "Riordina i moduli e scegli quali mostrare. Gli elementi bloccati restano sempre attivi.",
+            "moveModuleUp": "Sposta {{module}} in alto",
+            "moveModuleDown": "Sposta {{module}} in basso",
             "securityTitle": "Sicurezza",
             "securityDescription": "Sicurezza password, limite tentativi di login e policy 2FA",
             "passwordPolicy": "Sicurezza password",
