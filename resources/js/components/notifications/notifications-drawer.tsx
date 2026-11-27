@@ -187,7 +187,7 @@ export function NotificationsDrawer({
                 </div>
 
                 <ScrollArea className="min-h-0 flex-1">
-                    <ItemGroup className="gap-2 px-4 pb-4">
+                    <div className="flex flex-col gap-2 px-4 pb-4">
                         {isLoading ? (
                             <div className="flex flex-col items-center gap-2 py-6 text-sm text-muted-foreground">
                                 <Spinner className="size-5" />
@@ -209,121 +209,136 @@ export function NotificationsDrawer({
                             </p>
                         ) : null}
 
-                        {notifications.map((notification) => {
-                            const Icon = notification.icon;
-                            const title =
-                                notification.title ||
-                                t('notifications.untitled');
-                            const isUnread = !notification.isRead;
+                        {notifications.length > 0 ? (
+                            <ItemGroup className="gap-2">
+                                {notifications.map((notification) => {
+                                    const Icon = notification.icon;
+                                    const title =
+                                        notification.title ||
+                                        t('notifications.untitled');
+                                    const isUnread = !notification.isRead;
 
-                            return (
-                                <Item
-                                    key={notification.id}
-                                    role="listitem"
-                                    variant="outline"
-                                    size="sm"
-                                    className={cn(
-                                        'relative gap-x-3 gap-y-1 p-3 has-[a:focus-visible]:border-ring has-[a:focus-visible]:ring-[3px] has-[a:focus-visible]:ring-ring/50',
-                                        notification.link &&
-                                            'hover:bg-accent/50',
-                                        isUnread && 'bg-muted/40',
-                                    )}
-                                    data-unread={isUnread || undefined}
-                                    data-test="notifications-item"
-                                >
-                                    {Icon ? (
-                                        <ItemMedia variant="icon">
-                                            <Icon aria-hidden="true" />
-                                        </ItemMedia>
-                                    ) : null}
-                                    <ItemContent>
-                                        <ItemTitle>
-                                            {notification.link ? (
-                                                notification.isDocumentLink ? (
-                                                    <a
-                                                        href={notification.link}
-                                                        className={
-                                                            STRETCHED_LINK_CLASS
-                                                        }
-                                                        onClick={() =>
-                                                            handleOpen(
-                                                                notification,
-                                                            )
-                                                        }
-                                                    >
-                                                        {title}
-                                                    </a>
-                                                ) : (
-                                                    <Link
-                                                        href={notification.link}
-                                                        className={
-                                                            STRETCHED_LINK_CLASS
-                                                        }
-                                                        onClick={() =>
-                                                            handleOpen(
-                                                                notification,
-                                                            )
-                                                        }
-                                                    >
-                                                        {title}
-                                                    </Link>
-                                                )
-                                            ) : (
-                                                title
+                                    return (
+                                        <Item
+                                            key={notification.id}
+                                            role="listitem"
+                                            variant="outline"
+                                            size="sm"
+                                            className={cn(
+                                                'relative gap-x-3 gap-y-1 p-3 has-[a:focus-visible]:border-ring has-[a:focus-visible]:ring-[3px] has-[a:focus-visible]:ring-ring/50',
+                                                notification.link &&
+                                                    'hover:bg-accent/50',
+                                                isUnread && 'bg-muted/40',
                                             )}
-                                        </ItemTitle>
-                                        {notification.body ? (
-                                            <ItemDescription className="line-clamp-none">
-                                                {notification.body}
-                                            </ItemDescription>
-                                        ) : null}
-                                        <time
-                                            dateTime={notification.time}
-                                            className="mt-1 text-xs text-muted-foreground"
+                                            data-unread={isUnread || undefined}
+                                            data-test="notifications-item"
                                         >
-                                            {new Date(
-                                                notification.time,
-                                            ).toLocaleString(i18n.language)}
-                                        </time>
-                                    </ItemContent>
-                                    <ItemFooter className="relative z-10 flex-wrap justify-start gap-x-3 gap-y-1">
-                                        {isUnread ? (
-                                            <Button
-                                                type="button"
-                                                variant="link"
-                                                className="h-auto px-0 text-muted-foreground hover:text-foreground"
-                                                disabled={isMutating}
-                                                onClick={() =>
-                                                    handleMarkRead(
-                                                        notification.id,
-                                                    )
-                                                }
-                                                data-test="notifications-mark-read"
-                                            >
-                                                {t('notifications.markRead')}
-                                            </Button>
-                                        ) : null}
-                                        {!isUnread && source.markUnread ? (
-                                            <Button
-                                                type="button"
-                                                variant="link"
-                                                className="h-auto px-0 text-muted-foreground hover:text-foreground"
-                                                disabled={isMutating}
-                                                onClick={() =>
-                                                    handleMarkUnread(
-                                                        notification.id,
-                                                    )
-                                                }
-                                                data-test="notifications-mark-unread"
-                                            >
-                                                {t('notifications.markUnread')}
-                                            </Button>
-                                        ) : null}
-                                    </ItemFooter>
-                                </Item>
-                            );
-                        })}
-                    </ItemGroup>
+                                            {Icon ? (
+                                                <ItemMedia variant="icon">
+                                                    <Icon aria-hidden="true" />
+                                                </ItemMedia>
+                                            ) : null}
+                                            <ItemContent>
+                                                <ItemTitle>
+                                                    {notification.link ? (
+                                                        notification.isDocumentLink ? (
+                                                            <a
+                                                                href={
+                                                                    notification.link
+                                                                }
+                                                                className={
+                                                                    STRETCHED_LINK_CLASS
+                                                                }
+                                                                onClick={() =>
+                                                                    handleOpen(
+                                                                        notification,
+                                                                    )
+                                                                }
+                                                            >
+                                                                {title}
+                                                            </a>
+                                                        ) : (
+                                                            <Link
+                                                                href={
+                                                                    notification.link
+                                                                }
+                                                                className={
+                                                                    STRETCHED_LINK_CLASS
+                                                                }
+                                                                onClick={() =>
+                                                                    handleOpen(
+                                                                        notification,
+                                                                    )
+                                                                }
+                                                            >
+                                                                {title}
+                                                            </Link>
+                                                        )
+                                                    ) : (
+                                                        title
+                                                    )}
+                                                </ItemTitle>
+                                                {notification.body ? (
+                                                    <ItemDescription className="line-clamp-none">
+                                                        {notification.body}
+                                                    </ItemDescription>
+                                                ) : null}
+                                                <time
+                                                    dateTime={notification.time}
+                                                    className="mt-1 text-xs text-muted-foreground"
+                                                >
+                                                    {new Date(
+                                                        notification.time,
+                                                    ).toLocaleString(
+                                                        i18n.language,
+                                                    )}
+                                                </time>
+                                            </ItemContent>
+                                            <ItemFooter className="relative z-10 flex-wrap justify-start gap-x-3 gap-y-1">
+                                                {isUnread ? (
+                                                    <Button
+                                                        type="button"
+                                                        variant="link"
+                                                        className="h-auto px-0 text-muted-foreground hover:text-foreground"
+                                                        disabled={isMutating}
+                                                        onClick={() =>
+                                                            handleMarkRead(
+                                                                notification.id,
+                                                            )
+                                                        }
+                                                        data-test="notifications-mark-read"
+                                                    >
+                                                        {t(
+                                                            'notifications.markRead',
+                                                        )}
+                                                    </Button>
+                                                ) : null}
+                                                {!isUnread &&
+                                                source.markUnread ? (
+                                                    <Button
+                                                        type="button"
+                                                        variant="link"
+                                                        className="h-auto px-0 text-muted-foreground hover:text-foreground"
+                                                        disabled={isMutating}
+                                                        onClick={() =>
+                                                            handleMarkUnread(
+                                                                notification.id,
+                                                            )
+                                                        }
+                                                        data-test="notifications-mark-unread"
+                                                    >
+                                                        {t(
+                                                            'notifications.markUnread',
+                                                        )}
+                                                    </Button>
+                                                ) : null}
+                                            </ItemFooter>
+                                        </Item>
+                                    );
+                                })}
+                            </ItemGroup>
+                        ) : null}
+                    </div>
                 </ScrollArea>
             </SheetContent>
         </Sheet>
