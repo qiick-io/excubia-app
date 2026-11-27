@@ -11,8 +11,9 @@ use Symfony\Component\HttpFoundation\Response;
 /**
  * Baseline security headers on every web response (#153): no framing (clickjacking on actions
  * such as rotating a push token), no MIME sniffing, no full URLs in the Referer to other
- * origins, and no camera, microphone, geolocation or payment APIs. HSTS is sent only on https
- * requests and only when `excubia.hsts_max_age` is above 0, since it is usually the TLS proxy's job.
+ * origins, and no camera, microphone, geolocation or payment APIs. HSTS is sent when `excubia.hsts_max_age`
+ * is above 0 (by default one year in production with an https APP_URL, #478) and the request or
+ * APP_URL is https.
  *
  * Headers a response already sets (the branding route's own CSP and `nosniff`) are kept.
  *
@@ -44,7 +45,11 @@ class SecurityHeadersMiddleware
 
         $hstsMaxAge = (int) config('excubia.hsts_max_age');
 
-        if ($hstsMaxAge > 0 && $request->isSecure()) {
+        // Behind a TLS proxy without TRUSTED_PROXIES the request looks like http; an https APP_URL
+        // still says the site is https-only (#478). Browsers ignore the header over plain http.
+        $isHttpsSite = $request->isSecure() || str_starts_with((string) config('app.url'), 'https://');
+
+        if ($hstsMaxAge > 0 && $isHttpsSite) {
             $response->headers->set('Strict-Transport-Security', 'max-age='.$hstsMaxAge);
         }
 

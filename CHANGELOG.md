@@ -9,15 +9,21 @@ upgrade from the version before (see [docs/self-hosting.md](docs/self-hosting.md
 
 ## [Unreleased]
 
+### Changed
+
+- **Registry pinned to app-ui 7bd30c4**: the drawer focus return and the grouped tab count are now the registry's own (app-ui#279), so their overrides are gone; the theme gains the chart colour tokens.
+
+### Fixed
+
+- **Overlays without a trigger** (#456): the assistant panel has a visible close button on a phone; the assistant panel, the two-factor setup dialog and the push token dialog return focus to what opened them, or to the page, when they close.
+
 ### Security
 
 - **Forgot password reveals nothing** (#472): a known, an unknown and a throttled address get the same answer, and the form allows 5 requests a minute per IP.
 - **Copyable fix commands refuse option-like packages** (#475): a pushed package or version starting with `-` no longer becomes a Composer or npm option.
 - **Slack alerts are escaped** (#477): `&`, `<` and `>` in alert text are escaped, so pushed text cannot add `<!channel>` mentions or disguised links.
-
-### Changed
-
-- **Registry pinned to app-ui 7bd30c4**: the drawer focus return and the grouped tab count are now the registry's own (app-ui#279), so their overrides are gone; the theme gains the chart colour tokens.
+- **Bounded ingest counters** (#473): every integer a project pushes (exception counts and lines, runtime counters, durations) has an upper bound, and stored exception counts saturate instead of overflowing, which made the next push and the project page answer 500.
+- **HSTS by default** (#478): in production with an `https://` `APP_URL`, responses carry `Strict-Transport-Security: max-age=31536000`, also behind a TLS proxy the app does not trust; `EXCUBIA_HSTS_MAX_AGE=0` turns it off.
 
 ## [0.1.0-beta.1] - 2026-11-27
 

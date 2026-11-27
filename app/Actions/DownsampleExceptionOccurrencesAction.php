@@ -98,7 +98,7 @@ class DownsampleExceptionOccurrencesAction
 
             /** @var ExceptionOccurrence $latest */
             $latest = $minutes->pop();
-            $latest->forceFill(['count' => $latest->count + $minutes->sum('count')])->save();
+            $latest->forceFill(['count' => ExceptionGroup::saturatedCount($latest->count, (int) min($minutes->sum('count'), ExceptionGroup::MAX_COUNT))])->save();
             ExceptionOccurrence::query()->whereKey($minutes->modelKeys())->delete();
 
             return $minutes->count();

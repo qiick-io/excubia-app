@@ -42,6 +42,7 @@ jobs:
     timeout-minutes: 5
     outputs:
       mode: ${{ steps.mode.outputs.mode }}
+      browser: ${{ steps.mode.outputs.browser }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -56,7 +57,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          FILES=$(git diff --name-only "$BASE_SHA...$HEAD_SHA")
+          FILES=$(git diff --name-only --no-renames "$BASE_SHA...$HEAD_SHA")
 
           # docs = top-level *.md, docs/, the .github templates and the readme assets.
           # A nested *.md (resources/.../SKILL.md) is code.
@@ -88,8 +89,22 @@ jobs:
             esac
           done <<< "$FILES"
 
+          # The whole browser suite, not only the axe smoke, when the UI or its tests change:
+          # a regression in a list or drawer otherwise surfaces only on the release PR.
+          BROWSER=false
+          while IFS= read -r f; do
+            case "$f" in
+              resources/js/*|resources/css/*|resources/views/*|tests/Browser/*|tests/Pest.php|components.json|app-ui.overrides.json|package.json|package-lock.json|vite.config.ts)
+                BROWSER=true
+                echo "Full browser suite trigger ($f)."
+                break
+                ;;
+            esac
+          done <<< "$FILES"
+
           echo "mode=$MODE" >> "$GITHUB_OUTPUT"
-          echo "CI mode=$MODE"
+          echo "browser=$BROWSER" >> "$GITHUB_OUTPUT"
+          echo "CI mode=$MODE browser=$BROWSER"
 
   tests:
     name: PHP ${{ matrix.php }}
@@ -428,8 +443,9 @@ jobs:
       - name: Install and upgrade smoke test
         run: scripts/e2e/install-upgrade.sh
 
-  # Axe smoke (#112), as in externa-core: pull requests to `develop` run only the smoke test ("lite");
-  # pushes and pull requests to `main` run every browser test. Not part of `php artisan test`.
+  # Axe smoke (#112), as in externa-core: pull requests to `develop` that change the UI (the
+  # `browser` output of `changes`), pushes and pull requests to `main` run every browser test;
+  # other pull requests to `develop` run only the smoke test. Not part of `php artisan test`.
   accessibility:
     name: Accessibility
     needs: changes
@@ -533,12 +549,12 @@ jobs:
         if: steps.gate.outputs.run == 'true'
         run: npm run build
 
-      - name: Axe smoke and API keys (PR → develop)
-        if: steps.gate.outputs.run == 'true' && github.event_name == 'pull_request' && github.base_ref == 'develop'
+      - name: Axe smoke and API keys (PR → develop, no UI change)
+        if: steps.gate.outputs.run == 'true' && github.event_name == 'pull_request' && github.base_ref == 'develop' && needs.changes.outputs.browser != 'true'
         run: vendor/bin/pest tests/Browser/A11ySmokeBrowserTest.php tests/Browser/ApiKeysBrowserTest.php
 
       - name: Browser tests
-        if: steps.gate.outputs.run == 'true' && (github.event_name != 'pull_request' || github.base_ref != 'develop')
+        if: steps.gate.outputs.run == 'true' && (github.event_name != 'pull_request' || github.base_ref != 'develop' || needs.changes.outputs.browser == 'true')
         run: vendor/bin/pest tests/Browser
 
   # Theme tokens and the WCAG 2.2 AA contrast of the installed theme, from app-ui at the pinned

@@ -6,11 +6,16 @@ use App\Actions\RevokeProjectTokenAction;
 use App\Actions\RotateProjectTokenAction;
 use App\Actions\UpdateExceptionStatusAction;
 use App\Enums\ExceptionStatusEnum;
+use App\Enums\RoleEnum;
 use App\Enums\RuntimeTypeEnum;
+use App\Http\Requests\StorePushedRuntimeRequest;
 use App\Models\ExceptionGroup;
+use App\Models\ExceptionOccurrence;
 use App\Models\Project;
 use App\Models\RuntimeAggregate;
+use App\Models\User;
 use App\Services\SettingsRepositoryService;
+use Database\Seeders\PermissionSeeder;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
@@ -316,4 +321,32 @@ it('keeps the environment of a runtime batch on the project (core #203) and drop
 
     $push('staging')->assertCreated();
     expect($project->fresh()?->environment)->toBe('staging');
+});
+
+it('refuses unbounded counters and never overflows a stored count', function () {
+    [$project, $token] = telemetryProject();
+    $headers = ['Authorization' => "Bearer {$token}"];
+
+    // #473: a count near PHP_INT_MAX was accepted once and the next push overflowed (500).
+    $this->postJson(route('api.exceptions.store'), exceptionsEnvelope([exceptionGroupPayload(['count' => PHP_INT_MAX])]), $headers)
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['exceptions.groups.0.count']);
+    $this->postJson(route('api.runtime.store'), runtimeEnvelope([
+        ['type' => 'request', 'bucket' => '2026-11-05T11:58:00Z', 'sampleRate' => 1, 'route' => 'projects.show', 'method' => 'GET', 'statusClass' => '2xx', 'count' => PHP_INT_MAX, 'errorCount' => 0, 'totalMs' => 1, 'maxMs' => 1],
+    ]), $headers)->assertUnprocessable();
+
+    // Saturated rows (several minutes at the cap) still render the project's pages.
+    $this->postJson(route('api.exceptions.store'), exceptionsEnvelope([exceptionGroupPayload()]), $headers)->assertCreated();
+    $project->exceptionGroups()->update(['count' => PHP_INT_MAX - 5]);
+    ExceptionOccurrence::query()->update(['count' => ExceptionGroup::MAX_COUNT]);
+    ExceptionOccurrence::query()->first()?->replicate()->fill(['bucket' => '2026-11-05T11:00:00Z'])->save();
+    $this->seed(PermissionSeeder::class);
+    $viewer = User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value);
+    $this->actingAs($viewer)->get(route('projects.show', $project->slug))->assertOk();
+    $this->actingAs($viewer)->get(route('projects.view', [$project->slug, 'exceptions']))->assertOk();
+
+    // A count stored before the bound saturates on the next push instead of overflowing.
+    $this->postJson(route('api.exceptions.store'), exceptionsEnvelope([exceptionGroupPayload(['count' => StorePushedRuntimeRequest::MAX_COUNTER])]), $headers)->assertCreated();
+
+    expect($project->exceptionGroups()->sole()->count)->toBe(ExceptionGroup::MAX_COUNT);
 });

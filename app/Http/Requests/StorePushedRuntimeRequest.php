@@ -23,6 +23,15 @@ use Illuminate\Validation\Rule;
  */
 class StorePushedRuntimeRequest extends FormRequest
 {
+    /** The largest counter one aggregate may report (#473): a billion per minute and type. */
+    public const int MAX_COUNTER = 1_000_000_000;
+
+    /**
+     * The largest duration one aggregate may report: a summed `totalMs` of a busy minute (a long
+     * queue backlog) can pass a billion milliseconds, so this is a thousand times that.
+     */
+    private const int MAX_MILLISECONDS = 1_000_000_000_000;
+
     /** Dimensions with a pattern (`docs/runtime-schema.json`); unknown check ids are accepted. */
     private const DIMENSION_PATTERNS = [
         'health' => ['checkId' => '/^[a-z0-9-]{1,64}$/'],
@@ -200,11 +209,11 @@ class StorePushedRuntimeRequest extends FormRequest
         if ($type->isTimed()) {
             // A Scout search has no duration (#184); unknown operations must not reject the batch.
             $presence = $type->hasOptionalTiming() ? 'sometimes' : 'required';
-            $rules['totalMs'] = [$presence, 'numeric', 'min:0'];
-            $rules['maxMs'] = [$presence, 'numeric', 'min:0'];
+            $rules['totalMs'] = [$presence, 'numeric', 'min:0', 'max:'.self::MAX_MILLISECONDS];
+            $rules['maxMs'] = [$presence, 'numeric', 'min:0', 'max:'.self::MAX_MILLISECONDS];
             $rules['histogram'] = ['sometimes', 'list', 'size:'.RuntimeTypeEnum::HISTOGRAM_LENGTH];
 
-            if (! self::isListOf($aggregate['histogram'] ?? [], fn (mixed $value): bool => is_int($value) && $value >= 0)) {
+            if (! self::isListOf($aggregate['histogram'] ?? [], fn (mixed $value): bool => is_int($value) && $value >= 0 && $value <= self::MAX_COUNTER)) {
                 $rules['histogram.*'] = ['integer', 'min:0'];
             }
         }
@@ -217,7 +226,28 @@ class StorePushedRuntimeRequest extends FormRequest
             }
         }
 
-        return $rules;
+        // Every counter is bounded (#473): an unbounded integer is accepted once and overflows the
+        // stored sums on the next push.
+        return array_map(
+            fn (array $fieldRules): array => in_array('integer', $fieldRules, true) && ! self::hasMax($fieldRules)
+                ? [...$fieldRules, 'max:'.self::MAX_COUNTER]
+                : $fieldRules,
+            $rules,
+        );
+    }
+
+    /**
+     * @param  list<mixed>  $fieldRules
+     */
+    private static function hasMax(array $fieldRules): bool
+    {
+        foreach ($fieldRules as $rule) {
+            if (is_string($rule) && str_starts_with($rule, 'max:')) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
