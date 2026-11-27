@@ -2,6 +2,8 @@
 
 This document describes what Excubia App receives, where it stores it, how long it keeps it, and who can see it. It is the threat model of the security review (#51) and is kept up to date with every change to a data flow. The checks engine, the collectors and their scrubbing live in `qiick/excubia-core`; see its own `docs/SECURITY-MODEL.md`.
 
+The [OWASP ASVS 5.0 Level 2 assessment](asvs.md) is the product security checklist. It links each requirement to evidence and open gaps.
+
 ## Trust boundaries
 
 | Actor                                      | Trusted for                                                        | Not trusted for                                                                                |
