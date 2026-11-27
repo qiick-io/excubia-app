@@ -557,11 +557,15 @@ jobs:
         if: steps.gate.outputs.run == 'true' && (github.event_name != 'pull_request' || github.base_ref != 'develop' || needs.changes.outputs.browser == 'true')
         run: vendor/bin/pest tests/Browser
 
-  # Theme tokens and the WCAG 2.2 AA contrast of the installed theme, from app-ui at the pinned
-  # ref (#258). The browser tests stay in the Accessibility job above (full suite on main).
-  # Pinned to the app-ui v0.14.0 commit (8385724), not the moving tag tip.
+  # Keep the full browser suite in Accessibility and run these WCAG checks through app-ui.
   ui-quality:
-    uses: qiick-io/app-ui/.github/workflows/ui-quality.yml@8385724ee3d747f2e7aa985b1355b7e6aa48231b
+    uses: qiick-io/app-ui/.github/workflows/ui-quality.yml@94753d4fb73913f6b5a3a5d0a685357b70829391 # app-ui develop after #295
+    with:
+      standards-ref: 94753d4fb73913f6b5a3a5d0a685357b70829391 # app-ui develop after #295
+      wcag22-test: |
+        tests/Browser/A11ySmokeBrowserTest.php
+        tests/Browser/Wcag22BrowserTest.php
+        tests/Browser/TimeRangeBrowserTest.php
 
   # Forward-only migrations (#193): a migration on `main`, on the latest `v*` tag or in the
   # freeze baseline `database/migrations/.frozen` is never modified, renamed or deleted.
