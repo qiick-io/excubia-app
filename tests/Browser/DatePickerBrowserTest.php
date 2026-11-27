@@ -48,7 +48,7 @@ it('filters the activity log by date and clears the filter again', function () {
         ->assertQueryStringHas('date_from', '2026-01-02');
 
     // #428 review: clearing the picker drops the bound from the URL instead of keeping it.
-    $page->fill('From date', '')->click('Read-only audit trail of model changes and authentication events.')->wait(1)
+    $page->fill('From date', '')->click('Subject')->wait(1)
         ->assertQueryStringMissing('date_from')
         ->assertNoJavaScriptErrors();
 });

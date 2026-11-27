@@ -122,6 +122,10 @@ class ProjectReportController extends Controller
             'viewCounts' => fn (): array => app(ProjectViewCountsService::class)->forProject($project),
             'canRefreshReport' => fn (): bool => (bool) $request->user()?->can('refreshReport', $project),
             'report' => fn (): ?array => $report()?->report,
+            // The plan tab names the MCP tool only when an AI client can call it (#469).
+            'isUpgradePlanMcpToolAvailable' => fn (): bool => $view === 'plan'
+                && (bool) config('excubia.mcp_enabled')
+                && in_array('get-upgrade-plan', app(SettingsRepositoryService::class)->aiEnabledTools(), true),
             'findingFixes' => $findingFixes,
             // The issues in page order with their check group, and the health summary (#108, #109).
             'issues' => fn (): array => ($latest = $report()) === null ? [] : $findings->prioritized($latest),

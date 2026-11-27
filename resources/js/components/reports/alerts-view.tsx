@@ -2,6 +2,7 @@ import { router, useForm } from '@inertiajs/react';
 import { BellOff, MoreHorizontal, Plus, Trash2, Wrench } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { InfoHint } from '@/components/info-hint';
 import { EmptyStatus } from '@/components/empty-status';
 import { PageLayout, TablePanel } from '@/components/layout/page-layout';
 import { SeverityBadge } from '@/components/reports/severity-badge';
@@ -115,7 +116,7 @@ export function AlertsView({
             open={isAddingWindow}
             onOpenChange={setIsAddingWindow}
         >
-            <PageLayout scrollContent description={t('alerts.description')}>
+            <PageLayout scrollContent>
                 <div className="flex flex-col gap-4">
                     {alerts.isInMaintenanceMode ? (
                         <Alert variant="warning">
@@ -132,12 +133,16 @@ export function AlertsView({
                     <div className="grid gap-4 lg:grid-cols-2">
                         <Card>
                             <CardHeader>
-                                <CardTitle>
+                                <CardTitle className="flex items-center gap-1">
                                     {t('alerts.windowsTitle')}
+                                    <InfoHint
+                                        label={t('common.aboutTopic', {
+                                            topic: t('alerts.windowsTitle'),
+                                        })}
+                                    >
+                                        {t('alerts.windowsDescription')}
+                                    </InfoHint>
                                 </CardTitle>
-                                <CardDescription>
-                                    {t('alerts.windowsDescription')}
-                                </CardDescription>
                                 {canManage ? (
                                     <CardAction>
                                         <Button
@@ -219,9 +224,6 @@ export function AlertsView({
                         <Card>
                             <CardHeader>
                                 <CardTitle>{t('alerts.mutesTitle')}</CardTitle>
-                                <CardDescription>
-                                    {t('alerts.mutesDescription')}
-                                </CardDescription>
                             </CardHeader>
                             <CardContent>
                                 {alerts.mutes.length === 0 ? (

@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { cn } from '@/lib/utils';
+import { CardTableScroll } from '@/components/layout/card-table-scroll';
 import {
     CHECK_STATUS_VARIANTS,
     checkLabel,
@@ -10,7 +12,6 @@ import {
     Card,
     CardAction,
     CardContent,
-    CardDescription,
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
@@ -60,14 +61,9 @@ export function ChecksCard({
     const groups = isShowingAll ? health.groups : failingGroups;
 
     return (
-        <Card className={className}>
+        <Card className={cn('flex flex-col', className)}>
             <CardHeader className="pb-3">
                 <CardTitle>{t('report.checks')}</CardTitle>
-                <CardDescription>
-                    {isShowingAll
-                        ? t('report.checksDescription')
-                        : t('report.overview.checksFailingDescription')}
-                </CardDescription>
                 <CardAction>
                     <Button
                         type="button"
@@ -82,7 +78,7 @@ export function ChecksCard({
                     </Button>
                 </CardAction>
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex min-h-0 flex-1 flex-col">
                 {groups.length === 0 ? (
                     <p className="text-sm text-muted-foreground">
                         {t('report.overview.allChecksPassCount', {
@@ -90,75 +86,81 @@ export function ChecksCard({
                         })}
                     </p>
                 ) : (
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>{t('report.check')}</TableHead>
-                                <TableHead>
-                                    {t('report.runtime.status')}
-                                </TableHead>
-                                <TableHead className="text-right">
-                                    {t('report.findings')}
-                                </TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        {groups.map((group) => (
-                            <TableBody key={group.category}>
-                                <TableRow className="bg-muted/50 hover:bg-muted/50">
-                                    <TableHead
-                                        scope="colgroup"
-                                        colSpan={2}
-                                        className="font-medium text-foreground"
-                                    >
-                                        {t(`checks.category.${group.category}`)}
+                    <CardTableScroll className="max-h-96 xl:max-h-none xl:flex-1">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>{t('report.check')}</TableHead>
+                                    <TableHead>
+                                        {t('report.runtime.status')}
                                     </TableHead>
-                                    <TableCell className="text-right">
-                                        <Badge
-                                            variant={
-                                                CHECK_STATUS_VARIANTS[
-                                                    group.status
-                                                ]
-                                            }
-                                        >
-                                            {t(`report.status.${group.status}`)}
-                                        </Badge>
-                                    </TableCell>
+                                    <TableHead className="text-right">
+                                        {t('report.findings')}
+                                    </TableHead>
                                 </TableRow>
-                                {group.checks.map((check) => (
-                                    <TableRow key={check.checkId}>
-                                        <TableCell>
-                                            <div className="font-medium">
-                                                {checkLabel(
-                                                    t,
-                                                    check.checkId,
-                                                    check.name,
-                                                )}
-                                            </div>
-                                            <div className="font-mono text-xs text-muted-foreground">
-                                                {check.checkId}
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
+                            </TableHeader>
+                            {groups.map((group) => (
+                                <TableBody key={group.category}>
+                                    <TableRow className="bg-muted/50 hover:bg-muted/50">
+                                        <TableHead
+                                            scope="colgroup"
+                                            colSpan={2}
+                                            className="font-medium text-foreground"
+                                        >
+                                            {t(
+                                                `checks.category.${group.category}`,
+                                            )}
+                                        </TableHead>
+                                        <TableCell className="text-right">
                                             <Badge
                                                 variant={
                                                     CHECK_STATUS_VARIANTS[
-                                                        check.status
+                                                        group.status
                                                     ]
                                                 }
                                             >
                                                 {t(
-                                                    `report.status.${check.status}`,
+                                                    `report.status.${group.status}`,
                                                 )}
                                             </Badge>
                                         </TableCell>
-                                        <TableCell className="text-right tabular-nums">
-                                            {check.issues}
-                                        </TableCell>
                                     </TableRow>
-                                ))}
-                            </TableBody>
-                        ))}
-                    </Table>
+                                    {group.checks.map((check) => (
+                                        <TableRow key={check.checkId}>
+                                            <TableCell>
+                                                <div className="font-medium">
+                                                    {checkLabel(
+                                                        t,
+                                                        check.checkId,
+                                                        check.name,
+                                                    )}
+                                                </div>
+                                                <div className="font-mono text-xs text-muted-foreground">
+                                                    {check.checkId}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge
+                                                    variant={
+                                                        CHECK_STATUS_VARIANTS[
+                                                            check.status
+                                                        ]
+                                                    }
+                                                >
+                                                    {t(
+                                                        `report.status.${check.status}`,
+                                                    )}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell className="text-right tabular-nums">
+                                                {check.issues}
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            ))}
+                        </Table>
+                    </CardTableScroll>
                 )}
             </CardContent>
         </Card>
