@@ -7,7 +7,6 @@ namespace App\Actions;
 use App\Models\User;
 use App\Services\SuperAdminGuardService;
 use Illuminate\Validation\ValidationException;
-use Qiick\Access\ExclusiveSuperAdmin;
 use Qiick\Access\ExclusiveSuperAdminException;
 use Qiick\Access\Principals\DeactivationReason;
 use Qiick\Access\Principals\PrincipalDirectory;
@@ -24,12 +23,11 @@ class UpdateUserAction
         private SuperAdminGuardService $superAdminGuard,
         private SyncUserRolesAction $syncRoles,
         private PrincipalDirectory $principals,
-        private ExclusiveSuperAdmin $exclusiveSuperAdmin,
     ) {}
 
     /**
-     * The whole update runs inside ExclusiveSuperAdmin::write(), whose first statement locks the
-     * user, so the last-super-admin guard's own transaction reads after the lock.
+     * The whole update runs through SuperAdminGuardService::guardRoleWrite(): the user is locked,
+     * the instance keeps an active super-admin, and super-admin stands alone.
      *
      * @param  ?User  $actor  the acting user; null only for trusted system writes
      * @param  list<string>  $roles
@@ -39,7 +37,7 @@ class UpdateUserAction
      */
     public function execute(?User $actor, User $user, string $firstName, ?string $lastName, string $email, ?string $username, ?string $password, array $roles, bool $isActive, string $timezone = 'UTC'): User
     {
-        return $this->exclusiveSuperAdmin->write($user, fn (): User => $this->superAdminGuard->preventLosingLastSuperAdmin(function () use ($user, $firstName, $lastName, $email, $username, $password, $roles, $isActive, $timezone): User {
+        return $this->superAdminGuard->guardRoleWrite($actor, fn (): array => [$user->id], function () use ($user, $firstName, $lastName, $email, $username, $password, $roles, $isActive, $timezone): User {
             $user->forceFill([
                 'first_name' => $firstName,
                 'last_name' => $lastName,
@@ -64,6 +62,6 @@ class UpdateUserAction
             }
 
             return $user;
-        }), $actor);
+        });
     }
 }

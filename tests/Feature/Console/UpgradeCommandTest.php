@@ -52,7 +52,7 @@ it('syncs the permissions and the system project, and restarts the workers', fun
         ->and(Cache::get('illuminate:queue:restart'))->not->toBeNull();
 });
 
-it('runs the qiick package checks after the migrations', function () {
+it('runs the qiick package checks', function () {
     $this->artisan(UpgradeCommand::class, ['--force' => true, '--no-migrate' => true, '--no-permissions' => true])
         ->expectsOutputToContain('Running access:check')
         ->expectsOutputToContain('Running api-keys:check')

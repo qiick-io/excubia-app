@@ -42,7 +42,7 @@ class RoleGrantService
     {
         $roles = $this->roleCatalogue();
 
-        if ($this->permissionResolver->isSuperAdmin($actor)) {
+        if ($this->permissionResolver->isActorSuperAdmin($actor)) {
             return array_values($roles->pluck('name')->all());
         }
 
@@ -84,7 +84,7 @@ class RoleGrantService
      */
     public function isAtOrBelow(User $actor, User $target): bool
     {
-        return $this->permissionResolver->isSuperAdmin($actor)
+        return $this->permissionResolver->isActorSuperAdmin($actor)
             || $this->canGrantRoles($actor, $this->permissionResolver->roleNamesFor($target));
     }
 

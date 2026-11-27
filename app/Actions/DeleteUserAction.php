@@ -45,14 +45,12 @@ class DeleteUserAction
             ]);
             $user->apiKeys()->update(['name' => 'Deleted key '.$publicId]);
             // The principal becomes an erased tombstone: markErased() is the package's soft-delete
-            // path (it overrides an earlier reason and keeps the original deactivation time).
-            // Excubia also unlinks and anonymises it, as the hard-delete erasure would leave it.
+            // path (it overrides an earlier reason and keeps the original deactivation time). The
+            // tombstone keeps its user link, so a restored row can never mint a second principal
+            // for the same user; only its name, which holds personal data, is anonymised.
             $principal = $this->principals->forMember($user, null);
             $this->principals->markErased($principal);
-            Principal::query()->whereKey($principal->id)->update([
-                'name' => 'Deleted principal '.$publicId,
-                'user_id' => null,
-            ]);
+            Principal::query()->whereKey($principal->id)->update(['name' => 'Deleted principal '.$publicId]);
 
             // Login links are credentials, not audit: leaving an identity behind points SSO at a
             // soft-deleted user forever, and a passkey keeps its PII-bearing name and breaks auth.
