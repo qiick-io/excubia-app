@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Providers;
 
 use App\Actions\RecordAlertDeliveryAction;
@@ -25,6 +27,7 @@ use App\Services\OidcBreakGlassPolicyService;
 use App\Services\OidcSecondFactorChallengeService;
 use App\Services\OidcSettingsRepositoryService;
 use App\Services\OidcUserProvisioningService;
+use App\Services\PwnedPasswordVerifierService;
 use App\Services\SelfMonitoringService;
 use App\Services\SettingsRepositoryService;
 use App\Services\SystemHealthService;
@@ -36,6 +39,7 @@ use Illuminate\Auth\Events\Logout;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Contracts\Validation\UncompromisedVerifier;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\FileBasedMaintenanceMode;
 use Illuminate\Foundation\MaintenanceModeManager;
@@ -92,6 +96,10 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(SettingsRepositoryService::class);
+        $this->app->extend(
+            UncompromisedVerifier::class,
+            fn (): PwnedPasswordVerifierService => $this->app->make(PwnedPasswordVerifierService::class),
+        );
         // The `excubia` maintenance driver (config/app.php): the file one, plus EXCUBIA_MAINTENANCE_SECRET.
         $this->app->afterResolving(MaintenanceModeManager::class, fn (MaintenanceModeManager $manager) => $manager->extend(
             'excubia',

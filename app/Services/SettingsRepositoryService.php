@@ -45,6 +45,8 @@ class SettingsRepositoryService
 
     public const PASSWORD_POLICIES = ['weak', 'medium', 'strong'];
 
+    public const int MINIMUM_PASSWORD_LENGTH = 8;
+
     public const APPEARANCES = ['system', 'light', 'dark'];
 
     public const SECRET_KEYS = ['oidc_client_secret', 'notifier_slack_webhook_url', 'notifier_telegram_bot_token'];
@@ -399,9 +401,9 @@ class SettingsRepositoryService
     public function passwordRule(): Password
     {
         $passwordRule = match ($this->passwordPolicy()) {
-            'weak' => Password::min(6),
-            'medium' => Password::min(8)->mixedCase()->numbers(),
-            default => Password::min(12)->mixedCase()->letters()->numbers()->symbols()->uncompromised(),
+            'weak' => Password::min(self::MINIMUM_PASSWORD_LENGTH),
+            'medium' => Password::min(12),
+            default => Password::min(15)->uncompromised(),
         };
 
         $deploymentTerms = [$this->appName(), ...explode(',', (string) config('excubia.password_denylist'))];

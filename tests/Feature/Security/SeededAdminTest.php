@@ -153,6 +153,14 @@ it('creates the seeded super admin locally with the example password', function 
         ->and($user->hasRole(RoleEnum::SuperAdmin->value))->toBeTrue();
 });
 
+it('enforces the minimum length even for the local seeded admin', function () {
+    config(['super_admin.password' => 'juniper']);
+
+    $this->seed(CreateSuperAdminSeeder::class);
+
+    expect(User::query()->exists())->toBeFalse();
+});
+
 it('leaves an existing user untouched when re-seeding locally', function () {
     $existing = User::factory()->create([
         'email' => 'superadmin@example.com',

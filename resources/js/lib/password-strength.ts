@@ -1,15 +1,10 @@
-export type PasswordPolicy = 'weak' | 'medium' | 'strong';
-
-export type PasswordStrength = {
+type PasswordStrength = {
     progress: number;
-    level: PasswordPolicy;
-    meetsPolicy: boolean;
+    level: 'weak' | 'medium' | 'strong';
 };
 
-export function evaluatePasswordStrength(
-    value: string,
-    policy: PasswordPolicy,
-): PasswordStrength {
+/** Estimates strength for the advisory meter shown while creating an account. */
+export function evaluatePasswordStrength(value: string): PasswordStrength {
     const hasLower = /[a-z]/.test(value);
     const hasUpper = /[A-Z]/.test(value);
     const hasLetter = /[A-Za-z]/.test(value);
@@ -17,22 +12,7 @@ export function evaluatePasswordStrength(
     const hasSymbol = /[^A-Za-z0-9]/.test(value);
     const hasMixedCase = hasLower && hasUpper;
 
-    const checksByPolicy = {
-        weak: [value.length >= 6],
-        medium: [value.length >= 8, hasMixedCase, hasNumber],
-        strong: [
-            value.length >= 12,
-            hasLetter,
-            hasMixedCase,
-            hasNumber,
-            hasSymbol,
-        ],
-    } satisfies Record<PasswordPolicy, boolean[]>;
-
-    const policyChecks = checksByPolicy[policy];
-    const meetsPolicy = policyChecks.every(Boolean);
-
-    const level: PasswordPolicy =
+    const level =
         value.length >= 12 &&
         hasLetter &&
         hasMixedCase &&
@@ -57,5 +37,5 @@ export function evaluatePasswordStrength(
             ? 0
             : Math.round((metEntropy / entropyChecks.length) * 100);
 
-    return { progress, level, meetsPolicy };
+    return { progress, level };
 }

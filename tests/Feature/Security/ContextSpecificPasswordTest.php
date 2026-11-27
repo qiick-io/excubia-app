@@ -25,15 +25,15 @@ it('rejects Excubia terms when changing a local password under every policy', fu
 
     expect(Hash::check('password', $user->refresh()->password))->toBeTrue();
 })->with([
-    'weak and a role name' => ['weak', 'rEaDeR'],
-    'medium and a translated role name' => ['medium', 'LeTtore2026'],
+    'weak and a role name' => ['weak', 'rEaDeR23'],
+    'medium and a translated role name' => ['medium', 'LeTtore202600'],
     'strong and a product name variant' => ['strong', 'ExcuBia_APP2026'],
-    'strong with a symbol and year' => ['strong', 'Excubia2026!'],
-    'medium with a symbol before the year' => ['medium', 'Admin@2026'],
-    'medium with a leading symbol' => ['medium', '!Admin123'],
-    'medium with an inserted digit' => ['medium', 'Exc3ubia'],
-    'strong with letter substitutions' => ['strong', '3XcuB14!2026'],
-    'strong with mixed leetspeak' => ['strong', '5Uper@dm1n42!'],
+    'weak with a symbol and year' => ['weak', 'Excubia2026!'],
+    'weak with a symbol before the year' => ['weak', 'Admin@2026'],
+    'weak with a leading symbol' => ['weak', '!Admin123'],
+    'weak with an inserted digit' => ['weak', 'Exc3ubia'],
+    'strong with letter substitutions' => ['strong', '3XcuB14!2026moon'],
+    'strong with mixed leetspeak' => ['strong', '5Uper@dm1n42!sun'],
 ]);
 
 it('uses the current app name and operator-configured deployment terms', function () {
