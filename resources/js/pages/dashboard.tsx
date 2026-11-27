@@ -46,6 +46,7 @@ import { EndOfSupportCard } from '@/components/dashboard/end-of-support-card';
 import { ConfigurationCard } from '@/components/dashboard/configuration-card';
 import { LicensesCard } from '@/components/dashboard/licenses-card';
 import { ProjectsCard } from '@/components/dashboard/projects-card';
+import { formatInstant, useDateFormat } from '@/lib/date-format';
 
 const PERIODS = [7, 14, 30, 90] as const;
 const DEFAULT_PERIOD = 14;
@@ -87,6 +88,7 @@ export default function Dashboard({
     liveHealth: Record<string, LiveHealthSummary>;
 }) {
     const { t } = useTranslation();
+    const dates = useDateFormat();
     const { can } = useCan();
     const selected = projects.find((project) => project.slug === scope.project);
 
@@ -167,10 +169,11 @@ export default function Dashboard({
     });
     const chartData: SeverityChartPoint[] = trend.map((point) => ({
         ...point,
-        label: new Date(`${point.date}T00:00:00`).toLocaleDateString(
-            undefined,
-            { day: 'numeric', month: 'short' },
-        ),
+        // A calendar day: formatted in UTC so no timezone moves it.
+        label: formatInstant(`${point.date}T00:00:00Z`, dates.locale, 'UTC', {
+            day: 'numeric',
+            month: 'short',
+        }),
     }));
     // The server starts the trend at the first report inside the period (#295): a shorter trend
     // means the history is younger than the period, and one day or less is not a chart yet.

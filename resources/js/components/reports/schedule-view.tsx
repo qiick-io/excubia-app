@@ -28,6 +28,7 @@ import type {
     ScheduleTimelinePoint,
     TimeRange,
 } from '@/types';
+import { useDateFormat } from '@/lib/date-format';
 
 const SCHEDULE_GUIDE_URL =
     'https://github.com/qiick-io/excubia-core/blob/main/docs/guides/excubia-app.md#scheduled-tasks';
@@ -47,10 +48,6 @@ const STATUS_VARIANTS: Record<
     pending: 'muted',
     unknown: 'muted',
 };
-
-function formatTime(value: string | null): string {
-    return value === null ? '—' : new Date(value).toLocaleString();
-}
 
 /** Anchor of the tasks table, the rows behind the runs chart (#249). */
 const TASKS_ID = 'schedule-tasks';
@@ -75,6 +72,9 @@ export function ScheduleView({
     deploys: RuntimeDeploy[];
 }) {
     const { t } = useTranslation();
+    const dates = useDateFormat();
+    const formatTime = (value: string | null): string =>
+        value === null ? '—' : dates.dateTime(value);
 
     const rangeTexts = useRangeTexts(range);
     const zoom = useZoomToRange(slug, 'schedule', TASKS_ID);
