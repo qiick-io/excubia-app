@@ -7,6 +7,7 @@ use App\Enums\RoleEnum;
 use App\Models\User;
 use App\Notifications\ResetPasswordNotification;
 use Database\Seeders\PermissionSeeder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Inertia\Testing\AssertableInertia as Assert;
 use Spatie\Permission\Models\Role;
@@ -59,6 +60,23 @@ it('lists users for an admin', function () {
             ->has('timezones')
             ->where('timezones', timezone_identifiers_list())
             ->where('roles', fn ($roles) => collect($roles)->pluck('name')->all() === [RoleEnum::Admin->value, RoleEnum::Reader->value]));
+});
+
+it('reads the role catalogue once while rendering the user row policies', function () {
+    $admin = managedUser(RoleEnum::Admin);
+    User::factory()->count(12)->create()->each(fn (User $user) => $user->assignRole(RoleEnum::Reader->value));
+
+    $catalogueReads = 0;
+    DB::listen(function ($query) use (&$catalogueReads): void {
+        if (preg_match('/^select \* from ["`]roles["`] order by /i', $query->sql) === 1) {
+            $catalogueReads++;
+        }
+    });
+
+    $this->actingAs($admin)->get(route('users.index'))
+        ->assertInertia(fn (Assert $page) => $page->has('users.data', 13)->where('users.data.0.can_update', true));
+
+    expect($catalogueReads)->toBe(1);
 });
 
 it('persists and rejects timezone on the admin user form', function () {

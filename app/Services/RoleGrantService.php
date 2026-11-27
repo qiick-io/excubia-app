@@ -6,6 +6,9 @@ namespace App\Services;
 
 use App\Enums\RoleEnum;
 use App\Models\User;
+use Illuminate\Container\Attributes\Scoped;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Http\Request;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
@@ -19,11 +22,15 @@ use Spatie\Permission\Models\Role;
  * The same rule decides who may manage whom: users and groups whose roles the actor could not
  * grant are "above" the actor and cannot be edited or deleted by them, so nobody strips or
  * takes over a more powerful account.
- *
- * ponytail: no cache, a few small queries per check (see EffectivePermissionResolverService).
  */
+#[Scoped]
 class RoleGrantService
 {
+    private ?Request $catalogueRequest = null;
+
+    /** @var Collection<int, Role>|null */
+    private ?Collection $catalogue = null;
+
     public function __construct(private EffectivePermissionResolverService $permissionResolver) {}
 
     /**
@@ -33,7 +40,7 @@ class RoleGrantService
      */
     public function grantableRoleNames(User $actor): array
     {
-        $roles = Role::query()->with('permissions:id,name')->orderBy('name')->get();
+        $roles = $this->roleCatalogue();
 
         if ($this->permissionResolver->isSuperAdmin($actor)) {
             return array_values($roles->pluck('name')->all());
@@ -77,6 +84,31 @@ class RoleGrantService
      */
     public function isAtOrBelow(User $actor, User $target): bool
     {
-        return $this->canGrantRoles($actor, $this->permissionResolver->roleNamesFor($target));
+        return $this->permissionResolver->isSuperAdmin($actor)
+            || $this->canGrantRoles($actor, $this->permissionResolver->roleNamesFor($target));
+    }
+
+    /**
+     * A read-only response evaluates the same catalogue for every row policy. Writes and
+     * console callers always read the current catalogue so role edits can take effect in-place.
+     *
+     * @return Collection<int, Role>
+     */
+    private function roleCatalogue(): Collection
+    {
+        $request = request();
+        $query = Role::query()->with('permissions:id,name')->orderBy('name');
+
+        if (! $request->isMethodSafe() || $request->route() === null) {
+            return $query->get();
+        }
+
+        // The same container can handle multiple HTTP requests in tests and long-lived processes.
+        if ($request !== $this->catalogueRequest) {
+            $this->catalogueRequest = $request;
+            $this->catalogue = null;
+        }
+
+        return $this->catalogue ??= $query->get();
     }
 }
