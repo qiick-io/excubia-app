@@ -146,6 +146,7 @@ upgrade from the version before (see [docs/self-hosting.md](docs/self-hosting.md
 
 ### Fixed
 
+- **Drawers and dialogs** (#422, #454): closing the API key create dialog returns focus to its button, also after its one-time secret dialog; the finding and exception detail drawers have a visible close button, so they can be closed on a phone.
 - **Date fields use the registry date picker** (#428): the dismissal "until", maintenance window start and end (in the window's timezone), AI price dates and the activity log's from / to are typed and picked in the app's language, with a four-digit year, instead of the browser's native inputs. The API key expiry follows when the registry's `api-key-form` adopts the picker.
 - **One date format, in the app's language and the user's timezone** (#428): tables, details, notifications and chart axes no longer follow the browser's locale and zone, and no longer mix formats. Native date inputs stay until the registry has a date picker (qiick-io/app-ui#278).
 - **A maintenance window that already ended is refused** (#437): a one-off window's end, read in its own timezone, must be in the future, in the UI and the `mute-alert` AI tool.
@@ -159,6 +160,8 @@ upgrade from the version before (see [docs/self-hosting.md](docs/self-hosting.md
 - A fresh install's system report no longer has 39 `env-example-sync` findings about Excubia's own code (#222): `.env.example` now lists, commented out with their defaults, every key `config/*.php` reads (SQLite tuning, passkeys, activity log, the AI cloud providers, push limits and the Checks defaults), and `EnvExampleSyncTest` runs the core check on the app so it stays clean.
 
 ### Security
+
+- **`symfony/http-client` 8.1.12** (#453): fixes CVE-2026-133750 (PKSA-mb68-27bd-wyzv) in a transitive dependency.
 
 - **Alibaba and Oracle cloud metadata addresses are blocked in alert webhooks.** `100.100.100.200` and `192.0.0.192` join the metadata hosts in the SSRF guard (now `qiick/laravel-outbound` `RemoteUrlGuard`), so a webhook is refused as metadata in every spelling the guard reads (decimal, octal, hexadecimal, trailing dot and IPv4-mapped IPv6), including when a hostname resolves to one of them. The separate OIDC SSRF guard in `qiick/laravel-oidc` is updated to 1.0.0-beta.6, which keeps these two addresses blocked even when `OIDC_ALLOW_PRIVATE_HOSTS=true` (from beta.4). No migration for this SSRF change itself; see the upgrade notes for the package schema.
 

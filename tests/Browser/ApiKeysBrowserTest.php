@@ -82,6 +82,8 @@ it('creates a key, shows it once, rotates and revokes it', function (string $sch
         ->assertSeeIn('tbody tr:first-child', 'Claude Code')
         ->assertSeeIn('tbody tr:first-child', 'mcp:write')
         ->assertSeeIn('tbody tr:first-child', 'Active')
+        // #422: after the one-time secret dialog, focus goes back to a Create button.
+        ->assertScript("() => document.activeElement?.textContent?.includes('Create API key')", true)
         ->assertScript(historyStateHidesSecret($secret), true);
 
     $page->click('[data-test="api-key-rotate"]')
@@ -156,4 +158,27 @@ it('does not reopen the secret dialog when navigating Back after acknowledge', f
         ->assertMissing('[data-test="api-key-secret-dialog"]')
         ->assertScript(historyStateHidesSecret($secret), true)
         ->assertNoJavaScriptErrors();
+});
+
+it('returns focus to the create button when the create dialog closes', function () {
+    $this->actingAs(User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value));
+
+    $page = visit(route('api-keys.index', absolute: false));
+    $page->script("() => document.querySelector('[data-test=\"api-key-create-open\"]').focus()");
+    $page->keys('[data-test="api-key-create-open"]', 'Enter')
+        ->assertVisible('[data-test="api-key-create-dialog"]')
+        ->keys('[data-test="api-key-create-dialog"]', 'Escape')
+        ->wait(1);
+
+    // #422 (reopened): the dialog opens from a plain button and used to leave focus on <body>.
+    expect($page->script("() => document.activeElement?.getAttribute('data-test')"))->toBe('api-key-create-open');
+
+    // A pointer open (Safari does not focus clicked buttons) and Cancel return focus too.
+    $page->script('() => document.activeElement?.blur()');
+    $page->click('[data-test="api-key-create-open"]')
+        ->assertVisible('[data-test="api-key-create-dialog"]');
+    $page->script('() => document.activeElement?.blur()');
+    $page->click('[data-test="api-key-create-dialog"] button:has-text("Cancel")')->wait(1);
+
+    expect($page->script("() => document.activeElement?.getAttribute('data-test')"))->toBe('api-key-create-open');
 });
