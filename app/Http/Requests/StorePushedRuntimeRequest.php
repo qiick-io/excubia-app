@@ -26,8 +26,11 @@ class StorePushedRuntimeRequest extends FormRequest
     /** The largest counter one aggregate may report (#473): a billion per minute and type. */
     public const int MAX_COUNTER = 1_000_000_000;
 
-    /** The largest duration one aggregate may report, about 11.5 days in milliseconds. */
-    private const int MAX_MILLISECONDS = 1_000_000_000;
+    /**
+     * The largest duration one aggregate may report: a summed `totalMs` of a busy minute (a long
+     * queue backlog) can pass a billion milliseconds, so this is a thousand times that.
+     */
+    private const int MAX_MILLISECONDS = 1_000_000_000_000;
 
     /** Dimensions with a pattern (`docs/runtime-schema.json`); unknown check ids are accepted. */
     private const DIMENSION_PATTERNS = [

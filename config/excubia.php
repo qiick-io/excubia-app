@@ -104,7 +104,7 @@ return [
     // when APP_URL is https, else 0 (none); a proxy may send its own. 0 turns it off.
     'hsts_max_age' => (int) env(
         'EXCUBIA_HSTS_MAX_AGE',
-        env('APP_ENV') === 'production' && str_starts_with((string) env('APP_URL'), 'https://') ? 31536000 : 0,
+        env('APP_ENV', 'production') === 'production' && str_starts_with((string) env('APP_URL'), 'https://') ? 31536000 : 0,
     ),
 
     /*
