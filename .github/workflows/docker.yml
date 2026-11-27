@@ -128,6 +128,11 @@ jobs:
         with:
           ref: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref }}
 
+      # The commit actually checked out (a manual rebuild of an older tag is not github.sha).
+      - name: Built commit
+        id: commit
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
       # arm64 is built under emulation.
       - name: Set up QEMU
         uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
@@ -164,4 +169,8 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          # The build ID under the version in the sidebar (#425): the image has no .git. Tags
+          # whose Dockerfile has no `ARG APP_BUILD` ignore it.
+          build-args: |
+            APP_BUILD=${{ steps.commit.outputs.sha }}
           cache-from: type=gha

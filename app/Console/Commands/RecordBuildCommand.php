@@ -25,10 +25,20 @@ class RecordBuildCommand extends Command
     public function handle(): int
     {
         try {
-            $commit = $this->checkoutCommit();
+            $probe = Process::path(base_path())->timeout(10)->run('git rev-parse --show-toplevel HEAD');
+
+            // Not a checkout at all: a stamp from an earlier build would describe other code.
+            if (! $probe->successful() && str_contains($probe->errorOutput(), 'not a git repository')) {
+                $this->dropStaleStamp();
+
+                return self::SUCCESS;
+            }
+
+            $commit = $this->commitOf($probe->successful() ? $probe->output() : '');
 
             if ($commit === null) {
-                $this->components->info('No git checkout of this app here: no build ID recorded.');
+                // A probe error, or a checkout of another repository: keep whatever is there.
+                $this->components->warn('No build ID recorded: git did not report this app\'s commit.');
 
                 return self::SUCCESS;
             }
@@ -47,16 +57,28 @@ class RecordBuildCommand extends Command
         return self::SUCCESS;
     }
 
-    /**
-     * HEAD of the git checkout whose root is this app, or null: not a checkout, or this app sits
-     * inside another repository (an unpacked archive in someone's project), whose commit is not ours.
-     */
-    private function checkoutCommit(): ?string
+    private function dropStaleStamp(): void
     {
-        $result = Process::path(base_path())->timeout(10)->run('git rev-parse --show-toplevel HEAD');
-        $lines = explode("\n", trim($result->output()));
+        File::delete(SystemHealthService::buildFile());
 
-        if (! $result->successful() || count($lines) !== 2 || realpath(trim($lines[0])) !== realpath(base_path())) {
+        if (File::exists(SystemHealthService::buildFile())) {
+            $this->components->warn('An earlier build ID could not be removed: '.SystemHealthService::buildFile());
+
+            return;
+        }
+
+        $this->components->info('No git checkout of this app here: no build ID recorded.');
+    }
+
+    /**
+     * HEAD from `git rev-parse --show-toplevel HEAD` when the checkout's root is this app; null for
+     * another repository around it (an unpacked archive in someone's project).
+     */
+    private function commitOf(string $output): ?string
+    {
+        $lines = explode("\n", trim($output));
+
+        if (count($lines) !== 2 || realpath(trim($lines[0])) !== realpath(base_path())) {
             return null;
         }
 

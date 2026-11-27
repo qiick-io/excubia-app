@@ -41,8 +41,9 @@ it('records the commit at build time and shows it, unless APP_BUILD says otherwi
     expect(SystemHealthService::appBuild()['id'] ?? null)->toBe('abcdef1');
 });
 
-it('records nothing and still succeeds without a git checkout', function () {
-    Process::fake(['git rev-parse --show-toplevel HEAD' => Process::result('', 'fatal: not a git repository', 128)]);
+it('records nothing, drops a stale stamp and still succeeds without a git checkout', function () {
+    File::put(SystemHealthService::buildFile(), (string) json_encode(['commit' => str_repeat('a', 40)]));
+    Process::fake(['git rev-parse --show-toplevel HEAD' => Process::result('', 'fatal: not a git repository (or any of the parent directories): .git', 128)]);
 
     $this->artisan('excubia:record-build')->assertSuccessful();
 
@@ -62,4 +63,13 @@ it('still succeeds when git cannot run at all', function () {
     Process::fake(fn () => throw new RuntimeException('proc_open failed'));
 
     $this->artisan('excubia:record-build')->assertSuccessful();
+});
+
+it('keeps the stamp when git fails for another reason', function () {
+    File::put(SystemHealthService::buildFile(), (string) json_encode(['commit' => str_repeat('b', 40)]));
+    Process::fake(['git rev-parse --show-toplevel HEAD' => Process::result('', 'fatal: unable to read', 128)]);
+
+    $this->artisan('excubia:record-build')->assertSuccessful();
+
+    expect(SystemHealthService::appBuild()['id'] ?? null)->toBe('bbbbbbb');
 });
