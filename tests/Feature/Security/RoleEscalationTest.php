@@ -207,11 +207,17 @@ it('lets a group member who is super-admin change their own group', function () 
     $team = UserGroup::query()->create(['name' => 'team']);
     $team->users()->sync([$superAdmin->id]);
 
+    // Super-admin stands alone across direct and group roles (#474), so the change that stays
+    // allowed for a super-admin member is one that keeps it alone.
     $this->actingAs($superAdmin)
-        ->put(route('groups.update', $team), ['name' => 'team', 'roles' => [RoleEnum::Admin->value], 'users' => [$superAdmin->id]])
+        ->put(route('groups.update', $team), ['name' => 'team', 'roles' => [RoleEnum::SuperAdmin->value], 'users' => [$superAdmin->id]])
         ->assertSessionHasNoErrors();
 
-    expect($team->roles()->pluck('name')->all())->toBe([RoleEnum::Admin->value]);
+    expect($team->roles()->pluck('name')->all())->toBe([RoleEnum::SuperAdmin->value]);
+
+    $this->actingAs($superAdmin)
+        ->put(route('groups.update', $team), ['name' => 'team', 'roles' => [RoleEnum::Admin->value], 'users' => [$superAdmin->id]])
+        ->assertSessionHasErrors('users.0');
 });
 
 it('stops a can-edit-roles holder from putting permissions they lack into a role', function () {
