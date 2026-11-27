@@ -28,3 +28,20 @@ The optional AI assistant is off by default (`EXCUBIA_AI_ENABLED=false`). When y
 - the questions users type.
 
 Push tokens, user data and file paths are never sent. A cloud provider is an explicit choice of the operator.
+
+## Dependency remediation
+
+The maintainer triages advisories from Dependabot, dependency audits and upstream notices within two business days. Remediation targets start when an advisory is found to affect a supported version. Start with the upstream severity and raise the priority when the affected code is reachable in a supported deployment, exposes sensitive data or is being exploited.
+
+| Risk                           | Remediation target                                             |
+| ------------------------------ | -------------------------------------------------------------- |
+| Critical or actively exploited | Mitigate within 24 hours and remediate within 7 calendar days. |
+| High                           | Remediate within 14 calendar days.                             |
+| Moderate                       | Remediate within 30 calendar days.                             |
+| Low                            | Remediate within 90 calendar days.                             |
+
+Remediate by upgrading, replacing or removing the affected component. If a fix cannot ship within the target, record the mitigation, owner, reason and next review date in the advisory or its tracking issue.
+
+Review the weekly Dependabot updates for Composer, npm, Docker and GitHub Actions. Apply compatible patch and minor updates within 90 calendar days and review available major upgrades and upstream support deadlines at least quarterly.
+
+At release verification, run `composer audit --locked` and `npm audit --omit=dev` against the release candidate and review the open Dependabot alerts. Confirm that each applicable advisory has a fix or a tracked mitigation with an owner and review date.
