@@ -294,15 +294,15 @@
             "passwordPolicies": {
                 "weak": {
                     "label": "Weak",
-                    "description": "Minimum 6 characters. No mixed case, numbers, or symbols required."
+                    "description": "Minimum 8 characters."
                 },
                 "medium": {
                     "label": "Medium",
-                    "description": "Minimum 8 characters, with mixed case letters and at least one number."
+                    "description": "Minimum 12 characters."
                 },
                 "strong": {
                     "label": "Strong",
-                    "description": "Minimum 12 characters, mixed case, letters, numbers, symbols, and not found in known data breaches."
+                    "description": "Minimum 15 characters. Passwords are screened against known data breaches."
                 }
             },
             "loginMaxAttempts": "Max login attempts per minute",

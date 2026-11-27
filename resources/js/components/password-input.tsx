@@ -5,7 +5,6 @@ import { useTranslation } from 'react-i18next';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { evaluatePasswordStrength } from '@/lib/password-strength';
-import type { PasswordPolicy } from '@/lib/password-strength';
 import { cn } from '@/lib/utils';
 
 type PasswordInputProps = Omit<ComponentProps<'input'>, 'type'> & {
@@ -14,7 +13,6 @@ type PasswordInputProps = Omit<ComponentProps<'input'>, 'type'> & {
     generateLabel?: string;
     onGenerated?: (password: string) => void;
     showStrength?: boolean;
-    strengthPolicy?: PasswordPolicy;
     strengthId?: string;
 };
 
@@ -70,7 +68,6 @@ export default function PasswordInput({
     generateLabel,
     onGenerated,
     showStrength = false,
-    strengthPolicy = 'medium',
     strengthId,
     ...props
 }: PasswordInputProps) {
@@ -84,9 +81,7 @@ export default function PasswordInput({
             : typeof props.defaultValue === 'string'
               ? props.defaultValue
               : '';
-    const strength = showStrength
-        ? evaluatePasswordStrength(value, strengthPolicy)
-        : null;
+    const strength = showStrength ? evaluatePasswordStrength(value) : null;
     const meterColor =
         strength?.level === 'strong'
             ? '[&_[data-slot=progress-indicator]]:bg-success'
@@ -155,25 +150,6 @@ export default function PasswordInput({
                         aria-hidden="true"
                         className={cn('h-1.5 bg-muted', meterColor)}
                     />
-                    <p className="text-xs text-muted-foreground">
-                        {t(
-                            `settings.project.passwordPolicies.${strengthPolicy}.description`,
-                        )}
-                    </p>
-                    {value !== '' && (
-                        <p
-                            className={cn(
-                                'text-xs',
-                                strength.meetsPolicy
-                                    ? 'text-success'
-                                    : 'text-muted-foreground',
-                            )}
-                        >
-                            {strength.meetsPolicy
-                                ? 'Meets project password policy.'
-                                : 'Keep going to meet project password policy.'}
-                        </p>
-                    )}
                 </div>
             )}
         </div>
