@@ -10,9 +10,8 @@ use Illuminate\Support\Facades\Gate;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
- * Serves a project's uploaded logo (#287) to the people who may see the project. The URL
- * carries a version (Project::logoUrl()), so browsers keep it for a long time. The type follows
- * the stored extension, never a guess, and the CSP sandbox means an SVG opened on its own runs
+ * Serves a project's uploaded logo (#287) to the people who may see the project. The type follows
+ * the stored extension, and the CSP sandbox means an SVG opened on its own runs
  * no script even if the sanitiser missed something. The file is streamed from the files disk
  * (#312), so a private bucket works: no bucket URL ever reaches the browser.
  */
@@ -38,7 +37,6 @@ class ProjectLogoController extends Controller
 
         return $disk->response($path, null, [
             'Content-Type' => $contentType,
-            'Cache-Control' => 'private, max-age=31536000, immutable',
             'X-Content-Type-Options' => 'nosniff',
             'Content-Security-Policy' => "default-src 'none'; style-src 'unsafe-inline'; sandbox",
         ]);
