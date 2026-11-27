@@ -76,9 +76,11 @@ it('stops anyone but a super-admin from changing their own roles, even to a role
         ->assertSessionHasNoErrors();
 
     $superAdmin = User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value);
+    // Another super-admin remains, so this one may step down.
+    User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value);
 
     $this->actingAs($superAdmin)
-        ->put(route('users.update', $superAdmin), escalationUserPayload($superAdmin, [RoleEnum::SuperAdmin->value, RoleEnum::Reader->value]))
+        ->put(route('users.update', $superAdmin), escalationUserPayload($superAdmin, [RoleEnum::Admin->value, RoleEnum::Reader->value]))
         ->assertSessionHasNoErrors();
 
     expect($admin->fresh()->getRoleNames()->all())->toBe([RoleEnum::Admin->value])
