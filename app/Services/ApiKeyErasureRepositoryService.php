@@ -83,7 +83,25 @@ class ApiKeyErasureRepositoryService implements ApiKeyErasureRepositoryContract
         /** @var array<string, int|string> $keyIdsByPublicId */
         $keyIdsByPublicId = $ownedKeys()->pluck('id', 'uuid')->all();
         $ownedIds = array_values($keyIdsByPublicId);
-        $ownedToChange = $mode === ApiKeysEraser::DELETE ? count($ownedIds) : $ownedKeys()->where('name', '!=', self::ERASED_TEXT)->count();
+        // Not yet a tombstone: the persisted state decides, never the name alone (an owner may
+        // have named a key `[erased]`). A rotated UUID is part of it, so a key still carrying a
+        // snapshot UUID is anonymised whatever else it looks like.
+        $notYetErased = fn (): Builder => $ownedKeys()->where(fn (Builder $keys) => $keys
+            ->whereIn('uuid', $publicIds)
+            ->orWhere('name', '!=', self::ERASED_TEXT)
+            ->orWhereNull('revoked_at')
+            ->orWhereNotNull('description')
+            ->orWhereNotNull('previous_key_hash')
+            ->orWhereNotNull('created_by')
+            ->orWhereNotNull('revoked_by')
+            ->orWhereNotNull('ip_allowlist')
+            ->orWhereNotNull('restrictions')
+            ->orWhereNotNull('metadata')
+            ->orWhereNotNull('last_used_ip')
+            ->orWhereNotNull('last_used_user_agent')
+            ->orWhereNotNull('revocation_note')
+            ->orWhereNotNull('expiry_notice_claim_token'));
+        $ownedToChange = $mode === ApiKeysEraser::DELETE ? count($ownedIds) : $notYetErased()->count();
         $attributed = $connection->table('api_keys')->whereNotIn('id', $ownedIds)
             ->where(fn (Builder $keys) => $keys->where('created_by', $userId)->orWhere('revoked_by', $userId))
             ->pluck('id')
@@ -113,7 +131,7 @@ class ApiKeyErasureRepositoryService implements ApiKeyErasureRepositoryContract
         }
 
         // Row by row: each key gets its own new UUID and unusable hash (both are unique).
-        foreach ($ownedKeys()->where('name', '!=', self::ERASED_TEXT)->pluck('id') as $ownedId) {
+        foreach ($notYetErased()->pluck('id') as $ownedId) {
             $connection->table('api_keys')->where('id', $ownedId)->update([
                 'uuid' => (string) Str::uuid7(),
                 'name' => self::ERASED_TEXT,

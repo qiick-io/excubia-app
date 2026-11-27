@@ -14,6 +14,7 @@ use App\Http\Requests\Settings\ProfileUpdateRequest;
 use App\Models\Project;
 use App\Models\ProjectGroup;
 use App\Models\User;
+use App\Services\ErasureOrchestratorService;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -50,7 +51,7 @@ class ProfileController extends Controller
     /**
      * Update the user's profile information.
      */
-    public function update(ProfileUpdateRequest $request, #[CurrentUser] User $user): RedirectResponse
+    public function update(ProfileUpdateRequest $request, #[CurrentUser] User $user, ErasureOrchestratorService $erasure): RedirectResponse
     {
         $user->fill($request->validated());
 
@@ -61,7 +62,11 @@ class ProfileController extends Controller
         $localeChanged = $user->isDirty('locale');
         $locale = $user->locale;
 
-        $user->save();
+        // Never after the account's erasure began (a request authorised just before it).
+        $user->getConnection()->transaction(function () use ($user, $erasure): void {
+            $erasure->lockLiveUser($user);
+            $user->save();
+        });
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Profile updated.')]);
 

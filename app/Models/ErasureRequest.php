@@ -17,8 +17,10 @@ use Illuminate\Support\Carbon;
  * @property string|null $organisation_id
  * @property string $status
  * @property array<string, array{status: string, changed?: int}> $steps
- * @property array{userId: string, userPublicId: string, publicIds: list<string>, identifiers: list<string>, apiKeyIdsByPublicId: array<string, int>}|null $subject
+ * @property array{userId: string, userPublicId: string, publicIds: list<string>, identifiers: list<string>, apiKeyIdsByPublicId: array<string, int>, email?: string}|null $subject
  * @property int|null $user_id
+ * @property string|null $claim_token
+ * @property Carbon|null $claimed_until
  * @property int $attempts
  * @property string|null $last_error_code
  * @property Carbon $requested_at
@@ -46,6 +48,8 @@ class ErasureRequest extends Model
         'steps',
         'subject',
         'user_id',
+        'claim_token',
+        'claimed_until',
         'attempts',
         'last_error_code',
         'requested_at',
@@ -55,7 +59,7 @@ class ErasureRequest extends Model
     /**
      * The decrypted snapshot; null once the case is closed.
      *
-     * @return array{userId: string, userPublicId: string, publicIds: list<string>, identifiers: list<string>, apiKeyIdsByPublicId: array<string, int>}|null
+     * @return array{userId: string, userPublicId: string, publicIds: list<string>, identifiers: list<string>, apiKeyIdsByPublicId: array<string, int>, email?: string}|null
      *
      * @throws DecryptException when the snapshot no longer decrypts (a rotated APP_KEY)
      */
@@ -73,6 +77,7 @@ class ErasureRequest extends Model
             'steps' => 'array',
             'subject' => 'encrypted:array',
             'attempts' => 'integer',
+            'claimed_until' => 'datetime',
             'requested_at' => 'datetime',
             'completed_at' => 'datetime',
         ];

@@ -20,6 +20,7 @@ use App\Services\ApiKeyErasureRepositoryService;
 use App\Services\ApiKeyExpiryRecipientService;
 use App\Services\ApiKeyRepositoryService;
 use App\Services\EnvironmentMaintenanceModeService;
+use App\Services\ErasureOrchestratorService;
 use App\Services\JobMonitorQueryService;
 use App\Services\LocalePreferencesService;
 use App\Services\OidcBreakGlassPolicyService;
@@ -323,7 +324,8 @@ class AppServiceProvider extends ServiceProvider
         });
 
         Event::listen(Logout::class, function (Logout $event): void {
-            if (! $event->user instanceof User) {
+            // A self-deleted account logs out after its erasure: no new row with its IP.
+            if (! $event->user instanceof User || app(ErasureOrchestratorService::class)->isBeingErased($event->user)) {
                 return;
             }
 

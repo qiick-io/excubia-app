@@ -96,7 +96,11 @@ it('marks a snapshot that no longer decrypts and never retries it', function () 
     $this->artisan('excubia:resume-erasures')->assertFailed();
     expect($erasureRequest->fresh()->last_error_code)->toBe(ErasureRequest::ERROR_SNAPSHOT_UNREADABLE);
 
-    $this->artisan('excubia:resume-erasures')->expectsOutputToContain('Resumed 0 erasures')->assertSuccessful();
+    // Not retried, but listed for an admin on every run.
+    $this->artisan('excubia:resume-erasures')
+        ->expectsOutputToContain('Resumed 0 erasures')
+        ->expectsOutputToContain('needs an admin')
+        ->assertFailed();
 });
 
 it('keeps one open case per user', function () {

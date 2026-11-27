@@ -8,8 +8,10 @@ use App\Enums\ActivityEventEnum;
 use App\Models\ErasureRequest;
 use App\Models\Principal;
 use App\Models\User;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use LogicException;
 use Qiick\Access\Principals\PrincipalDirectory;
@@ -56,6 +58,9 @@ class ErasureOrchestratorService
     /** Attribute names whose values are personal wherever an activity payload holds them, old values included. */
     private const PERSONAL_ATTRIBUTES = ['first_name', 'last_name', 'name', 'email', 'username', 'last_login_ip'];
 
+    /** The request data every activity records (AppServiceProvider): the person's own when they caused it. */
+    private const REQUEST_ATTRIBUTES = ['ip', 'user_agent', 'identifier'];
+
     public function __construct(
         private PrincipalDirectory $principals,
         private ApiKeysEraser $apiKeysEraser,
@@ -95,10 +100,14 @@ class ErasureOrchestratorService
                 'userId' => (string) $user->getKey(),
                 'userPublicId' => $user->public_id,
                 'publicIds' => [$principal->id, ...array_keys($apiKeyIdsByPublicId)],
+                // Only values specific enough to search free text everywhere: a lone first name
+                // would match other people's text ("Ann" in "Annual"). The user's own activity
+                // rows lose their name columns by key (PERSONAL_ATTRIBUTES) instead.
                 'identifiers' => array_values(array_unique(array_filter(
-                    [$user->email, $user->username, $user->name, $user->first_name, $user->last_name, $user->last_login_ip],
+                    [$user->email, $user->username, $user->name, $user->last_login_ip],
                     fn (mixed $identifier): bool => is_string($identifier) && mb_strlen(trim($identifier)) >= 3,
                 ))),
+                'email' => $user->email,
                 'apiKeyIdsByPublicId' => $apiKeyIdsByPublicId,
             ],
             'user_id' => $user->id,
@@ -114,28 +123,68 @@ class ErasureOrchestratorService
     }
 
     /**
-     * Runs every step that is not done, then closes the case. Never throws for a failed step:
-     * the case is left `failed` with a code for `excubia:resume-erasures`.
+     * Whether the user's erasure began: an open case, or the tombstone it left.
+     */
+    public function isBeingErased(User $user): bool
+    {
+        return User::withTrashed()->whereKey($user->getKey())->whereNotNull('deleted_at')->exists()
+            || ErasureRequest::query()->where('user_id', $user->getKey())->where('status', '!=', ErasureRequest::STATUS_COMPLETED)->exists();
+    }
+
+    /**
+     * Locks the user's row and refuses the write once their erasure began. Call it first in the
+     * transaction of any write to the user's own data that a request authorised earlier (profile,
+     * API keys, an admin's update): step 0 holds the same lock, so the write either commits
+     * before the erasure starts, and the erasers then take it, or it is refused.
+     *
+     * @throws AuthorizationException when the user is being erased
+     */
+    public function lockLiveUser(User $user): void
+    {
+        User::withTrashed()->whereKey($user->getKey())->lockForUpdate()->first();
+
+        if ($this->isBeingErased($user)) {
+            throw new AuthorizationException;
+        }
+    }
+
+    /** How long one executor holds a case; a crashed executor's case is taken over after it. */
+    public const LEASE_MINUTES = 15;
+
+    /**
+     * Claims the case and runs every step that is not done, then closes it. Never throws for a
+     * failed step: the case is left `failed` with a code for `excubia:resume-erasures`.
+     *
+     * Only one executor advances a case: the claim is a compare-and-set on the status and the
+     * lease, and every checkpoint and the close check the claim token under a row lock, so a
+     * deletion and the resume command (or two of either) never overwrite each other.
+     *
+     * @return bool false when a step failed or the snapshot is unreadable; true when the case is
+     *              closed, was already closed, or another executor holds it
      */
     public function run(ErasureRequest $erasureRequest, bool $isDryRun = false): bool
     {
         try {
             $subject = $erasureRequest->readSubject();
         } catch (DecryptException) {
-            $erasureRequest->forceFill(['status' => ErasureRequest::STATUS_FAILED, 'last_error_code' => ErasureRequest::ERROR_SNAPSHOT_UNREADABLE])->save();
+            if (! $isDryRun) {
+                $erasureRequest->forceFill(['status' => ErasureRequest::STATUS_FAILED, 'last_error_code' => ErasureRequest::ERROR_SNAPSHOT_UNREADABLE])->save();
+                // The admin channel: the log names the case, never the person.
+                Log::error('A user erasure cannot read its snapshot and needs an admin.', ['erasure_request_id' => $erasureRequest->id]);
+            }
 
             return false;
         }
 
-        if ($subject === null || $erasureRequest->status === ErasureRequest::STATUS_COMPLETED) {
+        if ($subject === null || $erasureRequest->status === ErasureRequest::STATUS_COMPLETED || $isDryRun) {
             return true;
         }
 
-        if ($isDryRun) {
+        $claimToken = Str::random(40);
+
+        if (! $this->claim($erasureRequest, $claimToken)) {
             return true;
         }
-
-        $erasureRequest->forceFill(['status' => ErasureRequest::STATUS_RUNNING, 'attempts' => $erasureRequest->attempts + 1])->save();
 
         foreach (self::STEPS as $step) {
             if (($erasureRequest->steps[$step]['status'] ?? null) === 'done') {
@@ -145,22 +194,73 @@ class ErasureOrchestratorService
             try {
                 $changed = $this->runStep($step, $subject);
             } catch (Throwable $exception) {
-                report($exception);
-                $erasureRequest->forceFill(['status' => ErasureRequest::STATUS_FAILED, 'last_error_code' => 'step_failed:'.$step])->save();
+                // No message and no exception: a query's bindings would carry the person's data.
+                Log::warning('A user erasure step failed.', ['erasure_request_id' => $erasureRequest->id, 'step' => $step, 'exception' => $exception::class]);
+                $this->checkpoint($erasureRequest, $claimToken, ['status' => ErasureRequest::STATUS_FAILED, 'last_error_code' => 'step_failed:'.$step, 'claim_token' => null, 'claimed_until' => null]);
 
                 return false;
             }
 
-            $erasureRequest->forceFill(['steps' => [...$erasureRequest->steps, $step => ['status' => 'done', 'changed' => $changed]]])->save();
+            if (! $this->checkpoint($erasureRequest, $claimToken, ['steps' => [...$erasureRequest->steps, $step => ['status' => 'done', 'changed' => $changed]]])) {
+                return true;
+            }
         }
 
-        $this->close($erasureRequest);
+        $this->close($erasureRequest, $claimToken);
 
         return true;
     }
 
     /**
-     * @param  array{userId: string, userPublicId: string, publicIds: list<string>, identifiers: list<string>, apiKeyIdsByPublicId: array<string, int>}  $subject
+     * Takes the case when it is pending, failed, or running under a lease that ran out.
+     */
+    private function claim(ErasureRequest $erasureRequest, string $claimToken): bool
+    {
+        $isClaimed = ErasureRequest::query()
+            ->whereKey($erasureRequest->id)
+            ->where(fn ($query) => $query
+                ->whereIn('status', [ErasureRequest::STATUS_PENDING, ErasureRequest::STATUS_FAILED])
+                ->orWhere(fn ($runningQuery) => $runningQuery->where('status', ErasureRequest::STATUS_RUNNING)->where('claimed_until', '<', now())))
+            ->where(fn ($query) => $query->whereNull('last_error_code')->orWhere('last_error_code', '!=', ErasureRequest::ERROR_SNAPSHOT_UNREADABLE))
+            ->update([
+                'status' => ErasureRequest::STATUS_RUNNING,
+                'claim_token' => $claimToken,
+                'claimed_until' => now()->addMinutes(self::LEASE_MINUTES),
+                'attempts' => DB::raw('attempts + 1'),
+                'updated_at' => now(),
+            ]) === 1;
+
+        if ($isClaimed) {
+            // The steps as stored now, not as this executor first read them.
+            $erasureRequest->refresh();
+        }
+
+        return $isClaimed;
+    }
+
+    /**
+     * Writes `$changes` only while this executor still holds the case, and renews its lease.
+     *
+     * @param  array<string, mixed>  $changes
+     */
+    private function checkpoint(ErasureRequest $erasureRequest, string $claimToken, array $changes): bool
+    {
+        return DB::transaction(function () use ($erasureRequest, $claimToken, $changes): bool {
+            $stored = ErasureRequest::query()->whereKey($erasureRequest->id)->lockForUpdate()->first();
+
+            if (! $stored instanceof ErasureRequest || $stored->claim_token !== $claimToken || $stored->status !== ErasureRequest::STATUS_RUNNING) {
+                return false;
+            }
+
+            $stored->forceFill([...['claimed_until' => now()->addMinutes(self::LEASE_MINUTES)], ...$changes])->save();
+            $erasureRequest->setRawAttributes($stored->getAttributes(), true);
+
+            return true;
+        });
+    }
+
+    /**
+     * @param  array{userId: string, userPublicId: string, publicIds: list<string>, identifiers: list<string>, apiKeyIdsByPublicId: array<string, int>, email?: string}  $subject
      * @return int rows changed
      */
     private function runStep(string $step, array $subject): int
@@ -172,7 +272,7 @@ class ErasureOrchestratorService
             'oidc' => $this->oidcEraser->erase($userId, $userPublicId, OidcEraser::DELETE, $publicIds, $identifiers)->changed(),
             'outbound' => $this->outboundEraser->erase($userId, $userPublicId, OutboundEraser::DELETE, $publicIds)->changed(),
             'http-basics' => $this->httpBasicsEraser->erase($userId, $userPublicId, HttpBasicsEraser::DELETE, $publicIds)->changed(),
-            'product' => DB::transaction(fn (): int => $this->eraseProductData($userId, $identifiers)),
+            'product' => DB::transaction(fn (): int => $this->eraseProductData($userId, $subject['email'] ?? null, $identifiers)),
             'access' => DB::transaction(fn (): int => $this->tombstoneUser($userId, $userPublicId)),
             default => throw new LogicException("Unknown erasure step [{$step}]."),
         };
@@ -180,11 +280,14 @@ class ErasureOrchestratorService
 
     /**
      * Assistant chats, passkeys, reset tokens and notifications go; activity rows stay, with the
-     * person's values replaced in their payloads.
+     * person's values replaced in their payloads: their own model events and the rows they caused
+     * (with the request IP and user agent), failed logins under their email or username, and the
+     * alert history and other users' notifications that name them. Queued alert messages that
+     * name them are dropped (database queue; a Redis queue is the operator's, docs/privacy.md).
      *
      * @param  list<string>  $identifiers
      */
-    private function eraseProductData(string $userId, array $identifiers): int
+    private function eraseProductData(string $userId, ?string $email, array $identifiers): int
     {
         $morphClass = (new User)->getMorphClass();
         $conversationIds = DB::table('agent_conversations')
@@ -195,7 +298,9 @@ class ErasureOrchestratorService
         $changed = DB::table('agent_conversation_messages')->whereIn('conversation_id', $conversationIds)->delete()
             + DB::table('agent_conversations')->whereIn('id', $conversationIds)->delete()
             + DB::table('passkeys')->where('user_id', $userId)->delete()
-            + DB::table('password_reset_tokens')->whereIn('email', $identifiers)->delete()
+            // The subject's own email field, never the free-text identifiers: a name may equal
+            // another account's email.
+            + ($email === null ? 0 : DB::table('password_reset_tokens')->where('email', $email)->delete())
             + DB::table('notifications')->where('notifiable_type', $morphClass)->where('notifiable_id', $userId)->delete();
 
         $activities = Activity::query()->where(fn ($query) => $query
@@ -206,8 +311,9 @@ class ErasureOrchestratorService
             // Only the user's own model events hold their attributes; a row they caused about a
             // project keeps the project's `name`.
             $isAboutUser = $activity->subject_type === $morphClass && (string) $activity->subject_id === $userId;
-            $properties = $this->scrub($activity->properties?->toArray() ?? [], $identifiers, $isAboutUser);
-            $attributeChanges = $this->scrub($activity->attribute_changes?->toArray() ?? [], $identifiers, $isAboutUser);
+            $isCausedByUser = $activity->causer_type === $morphClass && (string) $activity->causer_id === $userId;
+            $properties = $this->scrub($activity->properties?->toArray() ?? [], $identifiers, $isAboutUser, $isCausedByUser);
+            $attributeChanges = $this->scrub($activity->attribute_changes?->toArray() ?? [], $identifiers, $isAboutUser, false);
 
             if ($properties !== ($activity->properties?->toArray() ?? []) || $attributeChanges !== ($activity->attribute_changes?->toArray() ?? [])) {
                 // Query builder: saving the activity model would log nothing, but stays explicit.
@@ -219,11 +325,64 @@ class ErasureOrchestratorService
             }
         }
 
+        // Failed logins are anonymous rows: the typed email or username is their only link.
+        $loginIdentifiers = array_values(array_filter([$email, ...$identifiers], is_string(...)));
+        $failedLogins = Activity::query()->where('event', 'failed')->whereNull('causer_id');
+
+        foreach ($failedLogins->cursor() as $failedLogin) {
+            $typedIdentifier = $failedLogin->properties?->get('identifier');
+
+            if (is_string($typedIdentifier) && in_array(mb_strtolower($typedIdentifier), array_map(mb_strtolower(...), $loginIdentifiers), true)) {
+                DB::table($failedLogin->getTable())->where('id', $failedLogin->id)->update([
+                    'properties' => json_encode($this->scrub($failedLogin->properties->toArray(), $loginIdentifiers, false, true), JSON_THROW_ON_ERROR),
+                ]);
+                $changed++;
+            }
+        }
+
+        return $changed + $this->scrubFreeText($identifiers);
+    }
+
+    /**
+     * Replaces the identifiers in the alert history and in every notification, and drops queued
+     * alert messages that carry them.
+     *
+     * @param  list<string>  $identifiers
+     */
+    private function scrubFreeText(array $identifiers): int
+    {
+        $changed = 0;
+
+        foreach ($identifiers as $identifier) {
+            // Unescaped: `_` and `%` in an identifier only widen the candidates; the replacement
+            // below is exact and writes only rows it changes.
+            $pattern = '%'.$identifier.'%';
+
+            foreach (DB::table('alert_logs')->where('summary', 'like', $pattern)->get(['id', 'summary']) as $alertLog) {
+                $summary = str_ireplace($identifier, self::ERASED_TEXT, (string) $alertLog->summary);
+
+                if ($summary !== $alertLog->summary) {
+                    $changed += DB::table('alert_logs')->where('id', $alertLog->id)->update(['summary' => $summary]);
+                }
+            }
+
+            foreach (DB::table('notifications')->where('data', 'like', $pattern)->get(['id', 'data']) as $notification) {
+                $data = json_decode((string) $notification->data, true);
+                $scrubbedData = is_array($data) ? $this->scrub($data, [$identifier], false, false) : $data;
+
+                if ($scrubbedData !== $data) {
+                    $changed += DB::table('notifications')->where('id', $notification->id)->update(['data' => json_encode($scrubbedData, JSON_THROW_ON_ERROR)]);
+                }
+            }
+
+            $changed += DB::table('jobs')->where('payload', 'like', $pattern)->where('payload', 'like', '%DeliverAlertJob%')->delete();
+        }
+
         return $changed;
     }
 
     /**
-     * Every string that holds an identifier becomes `[erased]`, at any depth, and so does every
+     * Every identifier in a string becomes `[erased]`, at any depth, and so does every
      * value of a personal attribute of the user's own model events (an old name the snapshot no
      * longer knows).
      *
@@ -231,15 +390,17 @@ class ErasureOrchestratorService
      * @param  list<string>  $identifiers
      * @return array<array-key, mixed>
      */
-    private function scrub(array $payload, array $identifiers, bool $isAboutUser): array
+    private function scrub(array $payload, array $identifiers, bool $isAboutUser, bool $isCausedByUser): array
     {
         foreach ($payload as $key => $value) {
             if (is_array($value)) {
-                $payload[$key] = $this->scrub($value, $identifiers, $isAboutUser);
+                $payload[$key] = $this->scrub($value, $identifiers, $isAboutUser, false);
+            } elseif ($isCausedByUser && in_array($key, self::REQUEST_ATTRIBUTES, true) && $value !== null && $value !== self::ERASED_TEXT) {
+                $payload[$key] = self::ERASED_TEXT;
             } elseif ($isAboutUser && in_array($key, self::PERSONAL_ATTRIBUTES, true) && $value !== null && $value !== self::ERASED_TEXT) {
                 $payload[$key] = self::ERASED_TEXT;
             } elseif (is_string($value) && $identifiers !== [] && Str::contains($value, $identifiers, ignoreCase: true)) {
-                $payload[$key] = self::ERASED_TEXT;
+                $payload[$key] = str_ireplace($identifiers, self::ERASED_TEXT, $value);
             }
         }
 
@@ -275,6 +436,8 @@ class ErasureOrchestratorService
             'two_factor_secret' => null,
             'two_factor_recovery_codes' => null,
             'two_factor_confirmed_at' => null,
+            'locale' => config('app.locale', 'en'),
+            'timezone' => 'UTC',
             'password' => Str::random(64),
             'alert_email_filters' => null,
             'has_alert_emails' => false,
@@ -287,24 +450,35 @@ class ErasureOrchestratorService
 
     /**
      * One audit entry with the case id and the counts, then the case closes and forgets the
-     * person, in one transaction.
+     * person, in one transaction, and only by the executor that holds it. The entry is written as
+     * a plain row: no causer, no request IP or user agent, no activity-log buffer.
      */
-    private function close(ErasureRequest $erasureRequest): void
+    private function close(ErasureRequest $erasureRequest, string $claimToken): void
     {
-        DB::transaction(function () use ($erasureRequest): void {
-            activity()
-                ->event(ActivityEventEnum::ErasureCompleted->value)
-                ->withProperties([
-                    'erasure_request_id' => $erasureRequest->id,
-                    'changed' => array_map(fn (array $step): int => $step['changed'] ?? 0, $erasureRequest->steps),
-                ])
-                ->log('User erased');
+        DB::transaction(function () use ($erasureRequest, $claimToken): void {
+            $stored = ErasureRequest::query()->whereKey($erasureRequest->id)->lockForUpdate()->first();
 
-            $erasureRequest->forceFill([
+            if (! $stored instanceof ErasureRequest || $stored->claim_token !== $claimToken || $stored->status !== ErasureRequest::STATUS_RUNNING) {
+                return;
+            }
+
+            Activity::query()->create([
+                'log_name' => config('activitylog.default_log_name', 'default'),
+                'event' => ActivityEventEnum::ErasureCompleted->value,
+                'description' => 'User erased',
+                'properties' => [
+                    'erasure_request_id' => $stored->id,
+                    'changed' => array_map(fn (array $step): int => $step['changed'] ?? 0, $stored->steps),
+                ],
+            ]);
+
+            $stored->forceFill([
                 'status' => ErasureRequest::STATUS_COMPLETED,
                 'completed_at' => now(),
                 'subject' => null,
                 'user_id' => null,
+                'claim_token' => null,
+                'claimed_until' => null,
                 'last_error_code' => null,
             ])->save();
         });
