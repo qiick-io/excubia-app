@@ -70,7 +70,7 @@ it('assigns and unassigns an exception group, logs it and shows it on the Except
 
     $this->actingAs($admin)->get(route('projects.view', ['project' => 'shop', 'view' => 'exceptions']))
         ->assertInertia(fn (Assert $page) => $page
-            ->where('exceptions.0.assignee', ['id' => $reader->id, 'name' => 'Grace Tester'])
+            ->where('exceptionInbox.groups.data.0.assignee', ['id' => $reader->id, 'name' => 'Grace Tester'])
             ->where('assignees', fn ($assignees) => collect($assignees)->pluck('name')->sort()->values()->all() === ['Ada Tester', 'Grace Tester']));
 
     $this->actingAs($admin)->put(route('projects.exceptions.assignee', [$project, $group]), ['assigned_user_id' => null])

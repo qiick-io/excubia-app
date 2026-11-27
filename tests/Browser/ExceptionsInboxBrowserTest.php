@@ -40,6 +40,26 @@ it('opens a group from its link and resolves the selection in bulk', function (s
     expect($group->fresh()->status->value)->toBe('resolved');
 })->with(['light', 'dark']);
 
+it('changes the inbox status on the server and opens a linked group outside it', function (string $scheme) {
+    $this->actingAs(User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value));
+    $project = seededA11yProject();
+    $linkedGroup = $project->exceptionGroups()->firstOrFail();
+    $resolved = $linkedGroup->replicate();
+    $resolved->forceFill(['fingerprint' => hash('sha256', 'resolved-fixture'), 'status' => 'resolved', 'class' => 'SettledOrder'])->save();
+
+    $path = route('projects.view', [$project->slug, 'exceptions'], false);
+    ($scheme === 'dark' ? visit($path)->inDarkMode() : visit($path)->inLightMode())
+        ->assertDontSee('SettledOrder')
+        ->click('button:has-text("Resolved")')
+        ->assertSee('SettledOrder')
+        ->assertNoJavaScriptErrors();
+
+    $linkedPath = route('projects.view', [$project->slug, 'exceptions', 'status' => 'resolved', 'exception' => $linkedGroup->id], false);
+    ($scheme === 'dark' ? visit($linkedPath)->inDarkMode() : visit($linkedPath)->inLightMode())
+        ->assertSee('Stack')
+        ->assertNoJavaScriptErrors();
+})->with(['light', 'dark']);
+
 it('opens an exception from the keyboard: Tab reaches the row and Enter opens it', function (string $scheme) {
     $this->actingAs(User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value));
     $project = seededA11yProject();

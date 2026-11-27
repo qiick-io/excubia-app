@@ -10,11 +10,12 @@ import {
     UserCheck,
 } from 'lucide-react';
 import type { RowSelectionState } from '@tanstack/react-table';
-import { useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
     DataTable,
     dataTableSelectColumn,
+    type DataTableSort,
 } from '@/components/admin/data-table';
 import { DataTableToolbar } from '@/components/admin/data-table-toolbar';
 import { PageEmptyState } from '@/components/admin/page-empty-state';
@@ -25,25 +26,17 @@ import type { DashboardHistory } from '@/types/dashboard';
 import type { InboxSavedView } from '@/components/inbox-list';
 import { PageLayout } from '@/components/layout/page-layout';
 import { useDrawerDeepLink } from '@/hooks/use-drawer-deep-link';
+import { useDebouncedServerSearch } from '@/hooks/use-debounced-server-search';
 import { useListShortcuts } from '@/hooks/use-list-shortcuts';
-import {
-    getQueryParam,
-    locationPageUrl,
-    patchLocationQuery,
-} from '@/lib/admin-query-params';
-import { isFirstSeenWithinLastDay, savedViewHref } from '@/lib/inbox-views';
+import { locationPageUrl } from '@/lib/admin-query-params';
+import { savedViewHref } from '@/lib/inbox-views';
 import {
     AssignedToMeToggle,
     AssigneeFacetFilter,
     AssigneeRowActions,
     AssigneeSelect,
     assigneeColumn,
-    isAssignedToMeLinked,
-    matchesAssigneeFilter,
     saveAssignee,
-    sortByAssignee,
-    useAssigneeFilter,
-    useAssigneeSort,
     useCurrentUserId,
     type AssigneeOption,
 } from '@/components/reports/assignee-select';
@@ -72,6 +65,7 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { cn } from '@/lib/utils';
 import projectsRoutes from '@/routes/projects';
 import type { ExceptionGroupRow, RuntimeDeploy, TimeRange } from '@/types';
+import type { Paginated } from '@/types/admin';
 import { useDateFormat } from '@/lib/date-format';
 import { DrawerCloseButton } from '@/components/drawer-close-button';
 
@@ -80,21 +74,18 @@ const EXCEPTIONS_GUIDE_URL =
 
 type StatusFilter = ExceptionGroupRow['status'] | 'all';
 
-const STATUS_FILTERS: readonly StatusFilter[] = [
-    'open',
-    'resolved',
-    'ignored',
-    'all',
-];
-
-/** The status filter from `?status=`, open by default. */
-function statusFromUrl(): StatusFilter {
-    const value = getQueryParam(locationPageUrl(), 'status');
-
-    return STATUS_FILTERS.includes(value as StatusFilter)
-        ? (value as StatusFilter)
-        : 'open';
-}
+export type ExceptionInbox = {
+    groups: Paginated<ExceptionGroupRow>;
+    filters: {
+        status: StatusFilter;
+        search: string;
+        isMine: boolean;
+        assignees: string[];
+        isNewOnly: boolean;
+        direction: DataTableSort['direction'] | null;
+    };
+    counts: { all: number; open: number; mine: number; new: number };
+};
 
 const STATUS_VARIANTS = {
     open: 'destructive',
@@ -114,7 +105,8 @@ const STATUS_VARIANTS = {
 export function ExceptionsView({
     projectId,
     slug,
-    groups,
+    inbox,
+    linkedException,
     hasExceptions,
     kpiHistory,
     range,
@@ -124,7 +116,8 @@ export function ExceptionsView({
 }: {
     projectId: number;
     slug: string;
-    groups: ExceptionGroupRow[];
+    inbox: ExceptionInbox;
+    linkedException: ExceptionGroupRow | null;
     /** Whether the project has groups at all, also outside the range. */
     hasExceptions: boolean;
     kpiHistory?: DashboardHistory['exceptions'];
@@ -138,17 +131,19 @@ export function ExceptionsView({
     const dates = useDateFormat();
     const rangeTexts = useRangeTexts(range);
     const zoom = useZoomToRange(slug, 'exceptions');
-    const [search, setSearch] = useState('');
-    const [status, setStatusFilter] = useState<StatusFilter>(statusFromUrl);
+    const { filters, counts } = inbox;
+    const groups = inbox.groups.data;
+    const { status, isMine, isNewOnly, assignees: assigneeFilter } = filters;
+    const [search, setSearch] = useState(filters.search);
     const currentUserId = useCurrentUserId();
-    const [isMine, setIsMineFilter] = useState(isAssignedToMeLinked);
-    const [assigneeFilter, setAssigneeFilter] = useAssigneeFilter();
-    const [sort, setSort] = useAssigneeSort();
-    const [isNewOnly, setIsNewOnly] = useState(
-        () => getQueryParam(locationPageUrl(), 'new') === '24h',
-    );
+    const sort: DataTableSort | undefined =
+        filters.direction === null
+            ? undefined
+            : { id: 'assignee', direction: filters.direction };
     const [selectedId, setSelectedId] = useState<number | null>(null);
-    const selected = groups.find((group) => group.id === selectedId) ?? null;
+    const selected =
+        groups.find((group) => group.id === selectedId) ??
+        (linkedException?.id === selectedId ? linkedException : null);
     const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
     const selectedIds = Object.keys(rowSelection)
         .filter((id) => rowSelection[id])
@@ -159,49 +154,42 @@ export function ExceptionsView({
         onEdit: (id) => setSelectedId(Number(id)),
     });
 
-    // The filters live in the URL, so a saved view is a link and a view can be shared.
-    const setStatus = (value: StatusFilter): void => {
-        setStatusFilter(value);
-        patchLocationQuery({ status: value === 'open' ? null : value });
-    };
-    const setIsMine = (value: boolean): void => {
-        setIsMineFilter(value);
-        patchLocationQuery({ assigned: value ? 'me' : null });
-    };
-    const clearNewOnly = (): void => {
-        setIsNewOnly(false);
-        patchLocationQuery({ new: null });
-    };
+    const visitFilters = useCallback(
+        (overrides: Record<string, string | null>) => {
+            const url = new URL(locationPageUrl(), window.location.origin);
+            url.searchParams.delete('page');
 
-    const filtered = useMemo(() => {
-        const needle = search.trim().toLowerCase();
-        const matching = groups.filter(
-            (group) =>
-                (status === 'all' || group.status === status) &&
-                (!isMine || group.assignee?.id === currentUserId) &&
-                matchesAssigneeFilter(group.assignee, assigneeFilter) &&
-                (!isNewOnly || isFirstSeenWithinLastDay(group.first_seen_at)) &&
-                (needle === '' ||
-                    `${group.class} ${group.message} ${group.context.name}`
-                        .toLowerCase()
-                        .includes(needle)),
-        );
+            for (const [key, value] of Object.entries(overrides)) {
+                if (value === null || value === '') {
+                    url.searchParams.delete(key);
+                } else {
+                    url.searchParams.set(key, value);
+                }
+            }
 
-        return sortByAssignee(matching, sort, (group) => group.assignee);
-    }, [
-        groups,
-        search,
-        status,
-        isMine,
-        assigneeFilter,
-        isNewOnly,
-        currentUserId,
-        sort,
-    ]);
+            router.get(
+                url.pathname + url.search,
+                {},
+                {
+                    only: ['exceptionInbox', 'linkedException'],
+                    preserveScroll: true,
+                    preserveState: true,
+                    replace: true,
+                    onSuccess: () => setRowSelection({}),
+                },
+            );
+        },
+        [],
+    );
+    const visitSearch = useCallback(
+        (value: string) => visitFilters({ search: value }),
+        [visitFilters],
+    );
+    useDebouncedServerSearch(search.trim(), filters.search, visitSearch);
 
     // Keyboard triage (#277): j / k, Enter, x, e resolve, a assign to me.
     const listShortcuts = useListShortcuts({
-        rows: filtered,
+        rows: groups,
         getRowId: (group) => String(group.id),
         isEnabled: selected === null,
         onOpen: (group) => {
@@ -251,7 +239,7 @@ export function ExceptionsView({
         <TimeRangePicker slug={slug} view="exceptions" range={range} />
     );
 
-    if (groups.length === 0) {
+    if (counts.all === 0 && selected === null) {
         return (
             <PageLayout filtersRight={hasExceptions ? picker : undefined}>
                 {hasExceptions ? (
@@ -282,29 +270,24 @@ export function ExceptionsView({
         isNewOnly ||
         assigneeFilter.length > 0;
 
-    const openGroups = groups.filter((group) => group.status === 'open');
     const savedViews: InboxSavedView[] = [
         {
             id: 'unresolved',
             label: t('exceptions.views.unresolved'),
             href: savedViewHref({}),
-            count: openGroups.length,
+            count: counts.open,
         },
         {
             id: 'mine',
             label: t('exceptions.views.mine'),
             href: savedViewHref({ assigned: 'me' }),
-            count: openGroups.filter(
-                (group) => group.assignee?.id === currentUserId,
-            ).length,
+            count: counts.mine,
         },
         {
             id: 'new',
             label: t('exceptions.views.new'),
             href: savedViewHref({ new: '24h' }),
-            count: openGroups.filter((group) =>
-                isFirstSeenWithinLastDay(group.first_seen_at),
-            ).length,
+            count: counts.new,
         },
     ];
     const activeSavedViewId =
@@ -579,7 +562,9 @@ export function ExceptionsView({
                             value={status}
                             onValueChange={(value) => {
                                 if (value) {
-                                    setStatus(value as StatusFilter);
+                                    visitFilters({
+                                        status: value === 'open' ? null : value,
+                                    });
                                 }
                             }}
                             aria-label={t('exceptions.statusFilter')}
@@ -598,13 +583,17 @@ export function ExceptionsView({
                         </ToggleGroup>
                         <AssignedToMeToggle
                             isPressed={isMine}
-                            onPressedChange={setIsMine}
+                            onPressedChange={(value) =>
+                                visitFilters({ assigned: value ? 'me' : null })
+                            }
                         />
                         <AssigneeFacetFilter
                             options={assignees}
                             rowAssignees={groups.map((group) => group.assignee)}
                             selectedValues={assigneeFilter}
-                            onSelectedValuesChange={setAssigneeFilter}
+                            onSelectedValuesChange={(values) =>
+                                visitFilters({ assignee: values.join(',') })
+                            }
                         />
                         {picker}
                     </div>
@@ -619,7 +608,7 @@ export function ExceptionsView({
                         )}
                     />
                 )}
-                {filtered.length === 0 ? (
+                {inbox.groups.total === 0 ? (
                     <PageEmptyState
                         icon={SearchX}
                         title={
@@ -634,10 +623,13 @@ export function ExceptionsView({
                                     type="button"
                                     onClick={() => {
                                         setSearch('');
-                                        setIsMine(false);
-                                        setAssigneeFilter([]);
-                                        clearNewOnly();
-                                        setStatus('all');
+                                        visitFilters({
+                                            search: null,
+                                            assigned: null,
+                                            assignee: null,
+                                            new: null,
+                                            status: 'all',
+                                        });
                                     }}
                                 >
                                     {t('common.clearFilters')}
@@ -648,10 +640,16 @@ export function ExceptionsView({
                 ) : (
                     <DataTable
                         columns={exceptionColumns}
-                        data={filtered}
+                        data={groups}
+                        pagination={inbox.groups}
                         getRowId={(group) => String(group.id)}
                         sort={sort}
-                        onSortChange={setSort}
+                        onSortChange={(nextSort) =>
+                            visitFilters({
+                                sort: nextSort.id,
+                                direction: nextSort.direction,
+                            })
+                        }
                         rowSelection={canManage ? rowSelection : undefined}
                         onRowSelectionChange={setRowSelection}
                         onRowClick={(group) => {
