@@ -60,7 +60,11 @@ qiick fleet erasure standard (`.qiick/standards/erasure.md`, `ErasureOrchestrato
 
 Only one executor advances a case: a claim with a 15-minute lease, and every step runs in the
 transaction that locks the case and checks the claim, together with its checkpoint, so an
-executor that lost the case neither runs a step nor writes. Once step 0 commits, a write that a request authorised earlier (profile, a new API key, an admin's update, the usage
+executor that lost the case neither runs a step nor writes. A step is `done` only after its
+commit and its after-commit work (cache entries forgotten); a step left `committed` by a crash
+runs again. Alert texts cut the summary, never the assignee's name, and an alert, a queued
+message or a webhook naming a person reads their row under a shared lock first, so the erasure
+either waits for it or it sees the person erased. Once step 0 commits, a write that a request authorised earlier (profile, a new API key, an admin's update, the usage
 stamp of a key) is refused or skipped. A step that fails leaves the case `failed` with a
 code and logs only the case id, the step and the exception class; `excubia:resume-erasures` (hourly, also
 `--dry-run`) replays the steps not done, from the snapshot. A snapshot that no longer decrypts (a

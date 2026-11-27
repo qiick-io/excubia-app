@@ -6,6 +6,7 @@ use App\Actions\CreateApiKeyAction;
 use App\Actions\DeleteUserAction;
 use App\Data\ApiKeyData;
 use App\Enums\ActivityEventEnum;
+use App\Enums\AlertEventEnum;
 use App\Enums\ApiKeyScopeEnum;
 use App\Enums\RoleEnum;
 use App\Jobs\DeliverAlertJob;
@@ -15,9 +16,11 @@ use App\Models\ErasureRequest;
 use App\Models\Project;
 use App\Models\User;
 use App\Notifications\AlertNotification;
+use App\Services\AlertDispatcherService;
 use App\Services\ApiKeyErasureRepositoryService;
 use App\Services\ApiKeyRepositoryService;
 use App\Services\ErasureOrchestratorService;
+use App\Services\ReportAlertsService;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
@@ -302,4 +305,41 @@ it('never writes the usage of a revoked key back', function () {
 
     expect($apiKey->fresh()->last_used_ip)->toBeNull()
         ->and($apiKey->fresh()->last_used_user_agent)->toBeNull();
+});
+
+it('cuts an alert summary, never the assignee name, in the history and the notification', function () {
+    $name = 'Erasmus Gone';
+    $summary = ReportAlertsService::withAssignee(str_repeat('x', 700), $name, ReportAlertsService::SUMMARY_LENGTH);
+    $notification = (new AlertNotification(['id' => (string) Str::uuid(), 'event' => 'finding.new', 'severity' => 'high', 'data' => (object) ['assignee' => $name]], $summary))->toArray(new stdClass);
+
+    expect(mb_strlen($summary))->toBeLessThanOrEqual(ReportAlertsService::SUMMARY_LENGTH)
+        ->and($summary)->toEndWith(' (assigned to '.$name.')')
+        ->and($notification['body'])->toEndWith(' (assigned to '.$name.')')
+        ->and(mb_strlen($notification['body']))->toBeLessThanOrEqual(300);
+});
+
+it('stores no name for an alert whose assignee was erased before it was dispatched', function () {
+    $user = erasableUser();
+    $project = Project::factory()->create();
+    $name = $user->name;
+    app(DeleteUserAction::class)->execute($user);
+
+    app(AlertDispatcherService::class)->dispatch(AlertEventEnum::FindingNew, $project, 'pkg (assigned to '.$name.')', ['assignee' => $name], subject: 'pkg', subjectPublicId: $user->public_id);
+    $alertLog = AlertLog::query()->latest('id')->firstOrFail();
+
+    expect($alertLog->summary)->toBe('pkg (assigned to [erased])')
+        ->and($alertLog->subject_public_id)->toBeNull();
+});
+
+it('repeats a step whose commit was recorded but not its after-commit work', function () {
+    $user = erasableUser();
+    $erasureRequest = DB::transaction(fn () => app(ErasureOrchestratorService::class)->begin($user));
+    // As after a crash between the step's commit and its cache cleanup.
+    $erasureRequest->forceFill(['steps' => [...$erasureRequest->steps, 'api-keys' => ['status' => 'committed', 'changed' => 1]]])->save();
+
+    app(ErasureOrchestratorService::class)->run($erasureRequest->fresh());
+
+    $stored = $erasureRequest->fresh();
+    expect($stored->status)->toBe(ErasureRequest::STATUS_COMPLETED)
+        ->and(ApiKey::query()->sole()->isRevoked())->toBeTrue();
 });

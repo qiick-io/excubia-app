@@ -89,6 +89,16 @@ class AlertDispatcherService
         $subjects = $subjectPublicId !== null && is_string($assigneeName) ? [$subjectPublicId => $assigneeName] : [];
 
         DB::transaction(function () use ($payload, $project, $event, $severity, $subject, $summary, $reason, $channels, $fingerprints, $subjectPublicId, $subjects): void {
+            // The named person under a shared lock, before anything is stored: an erasure locks
+            // the row for update first, so either it waits for this alert to commit (and then
+            // finds it by subject id), or this sees the person erased and stores no name.
+            if ($subjectPublicId !== null && ! User::query()->where('public_id', $subjectPublicId)->where('is_active', true)->sharedLock()->exists()) {
+                $summary = str_replace(array_values($subjects), '[erased]', $summary);
+                $payload['data'] = (object) array_diff_key((array) $payload['data'], ['assignee' => true]);
+                $subjectPublicId = null;
+                $subjects = [];
+            }
+
             AlertLog::query()->create([
                 'uuid' => $payload['id'],
                 'project_id' => $project->id,

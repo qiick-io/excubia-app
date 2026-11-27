@@ -12,6 +12,7 @@ use App\Services\AlertWebhookService;
 use App\Services\SettingsRepositoryService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Qiick\Outbound\Http\HttpRequestOptions;
 use Qiick\Outbound\Http\OutboundHttpException;
@@ -85,8 +86,25 @@ class DeliverAlertJob implements ShouldQueue
         SettingsRepositoryService $settings,
         PinnedHttpClient $http,
     ): void {
-        $this->redactErasedSubjects();
+        if ($this->subjects === []) {
+            $this->deliver($settings, $http);
 
+            return;
+        }
+
+        // The named people stay share-locked until the message is sent or stored: an erasure
+        // locks their row for update first, so it waits for this send, or this sees them erased.
+        DB::transaction(function () use ($settings, $http): void {
+            $this->redactErasedSubjects();
+            $this->deliver($settings, $http);
+        });
+    }
+
+    /**
+     * @throws RuntimeException when the endpoint does not answer 2xx (the job is retried)
+     */
+    private function deliver(SettingsRepositoryService $settings, PinnedHttpClient $http): void
+    {
         $userId = self::emailUserId($this->channel);
 
         if ($userId !== null) {
@@ -140,7 +158,7 @@ class DeliverAlertJob implements ShouldQueue
             return;
         }
 
-        $liveSubjectIds = User::query()->whereIn('public_id', array_keys($this->subjects))->where('is_active', true)->pluck('public_id')->all();
+        $liveSubjectIds = User::query()->whereIn('public_id', array_keys($this->subjects))->where('is_active', true)->sharedLock()->pluck('public_id')->all();
         $erasedNames = array_values(array_diff_key($this->subjects, array_flip($liveSubjectIds)));
 
         if ($erasedNames === []) {

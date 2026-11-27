@@ -513,6 +513,11 @@ checklist above, in this order, with no step skipped:
    `php artisan outbound:check`, and a test event delivered with `php artisan outbound:work-deliveries`.
 5. Reopen as in step 9 above.
 
+The same reset covers #551 (resumable erasure): its only schema change is the new
+`erasure_requests` table, which `migrate` adds in place; `alert_logs.subject_public_id` comes with
+#547. Deploy #551 after #547 on the reset database, then check `php artisan db:table
+erasure_requests`.
+
 There is no claim cutover: Excubia verifies no inbound webhooks, so it has no webhook-id claims,
 and the new database starts with no beta delivery rows or cache records.
 

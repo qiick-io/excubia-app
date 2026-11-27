@@ -213,16 +213,17 @@ class ErasureOrchestratorService
 
     /**
      * Runs one step inside the transaction that locks the case and checks the claim token, and
-     * marks it done in the same transaction: an executor that lost the case (its lease ran out
-     * while it was suspended) neither runs a step nor writes anything, and a step's effects and
-     * its checkpoint commit together. The package erasers join this transaction as a savepoint.
+     * marks it `committed` in the same transaction, then `done` once the commit and the erasers'
+     * after-commit work returned: an executor that lost the case (its lease ran out while it was
+     * suspended) neither runs a step nor writes anything, and a step's effects and its checkpoint
+     * commit together. The package erasers join this transaction as a savepoint.
      *
      * @param  array{userId: string, userPublicId: string, publicIds: list<string>, identifiers: list<string>, apiKeyIdsByPublicId: array<string, int>, email?: string}  $subject
      * @return bool false when another executor holds the case
      */
     private function runFencedStep(ErasureRequest $erasureRequest, string $step, array $subject, string $claimToken): bool
     {
-        return DB::transaction(function () use ($erasureRequest, $step, $subject, $claimToken): bool {
+        $isHeld = DB::transaction(function () use ($erasureRequest, $step, $subject, $claimToken): bool {
             $stored = ErasureRequest::query()->whereKey($erasureRequest->id)->lockForUpdate()->first();
 
             if (! $stored instanceof ErasureRequest || $stored->claim_token !== $claimToken || $stored->status !== ErasureRequest::STATUS_RUNNING) {
@@ -231,13 +232,20 @@ class ErasureOrchestratorService
 
             $changed = $this->runStep($step, $subject);
             $stored->forceFill([
-                'steps' => [...$stored->steps, $step => ['status' => 'done', 'changed' => $changed]],
+                'steps' => [...$stored->steps, $step => ['status' => 'committed', 'changed' => $changed]],
                 'claimed_until' => now()->addMinutes(self::LEASE_MINUTES),
             ])->save();
             $erasureRequest->setRawAttributes($stored->getAttributes(), true);
 
             return true;
         });
+
+        // Only now, after the commit and the erasers' after-commit work (cache entries forgotten,
+        // their event dispatched), is the step done. A crash or a failed cleanup in between
+        // leaves it `committed`, and the next run repeats the whole step, which is idempotent.
+        return $isHeld && $this->checkpoint($erasureRequest, $claimToken, [
+            'steps' => [...$erasureRequest->steps, $step => ['status' => 'done', 'changed' => $erasureRequest->steps[$step]['changed'] ?? 0]],
+        ]);
     }
 
     /**
@@ -385,10 +393,15 @@ class ErasureOrchestratorService
         foreach (DB::table('alert_logs')->where('subject_public_id', $userPublicId)->get(['id', 'uuid', 'summary']) as $alertLog) {
             $summary = (string) $alertLog->summary;
 
-            // ReportAlertsService writes the name as the summary's last "(assigned to …)".
+            // ReportAlertsService writes the whole name as the summary's last "(assigned to …)",
+            // cutting the summary, never the name. A text that does not end so is not trusted to
+            // be clean: it is replaced whole, and so are its notifications' bodies.
             if (preg_match('/ \(assigned to (.+)\)$/u', $summary, $matches) === 1) {
                 $namesByAlertUuid[(string) $alertLog->uuid] = $matches[1];
                 $summary = mb_substr($summary, 0, -mb_strlen($matches[0])).' (assigned to '.self::ERASED_TEXT.')';
+            } else {
+                $namesByAlertUuid[(string) $alertLog->uuid] = null;
+                $summary = self::ERASED_TEXT;
             }
 
             $changed += DB::table('alert_logs')->where('id', $alertLog->id)->update(['summary' => $summary, 'subject_public_id' => null]);
@@ -403,7 +416,9 @@ class ErasureOrchestratorService
                     continue;
                 }
 
-                $scrubbedData = $this->scrub($data, [$name], false, false);
+                $scrubbedData = $name === null
+                    ? [...$data, 'body' => self::ERASED_TEXT]
+                    : $this->scrub($data, [$name], false, false);
 
                 if ($scrubbedData !== $data) {
                     $changed += DB::table('notifications')->where('id', $notification->id)->update(['data' => json_encode($scrubbedData, JSON_THROW_ON_ERROR)]);
