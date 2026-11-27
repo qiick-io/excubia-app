@@ -38,11 +38,20 @@ final class ErrorPageResponse
             return $response;
         }
 
-        if (! in_array($status, [419, ...self::STATUSES], true) || ($status === 500 && app()->hasDebugModeEnabled())) {
+        if (! in_array($status, [419, 429, ...self::STATUSES], true) || ($status === 500 && app()->hasDebugModeEnabled())) {
             return $response;
         }
 
         try {
+            if ($status === 429 && $request->routeIs('password.email') && $request->hasSession()) {
+                // A throttled form (forgot password, #472) stays on its page with a toast.
+                return self::backWithToast($request, __('Too many attempts. Please wait a minute and try again.'));
+            }
+
+            if ($status === 429) {
+                return $response;
+            }
+
             if ($status === 419 || ($status >= 500 && ! $request->isMethod('GET') && $request->hasSession())) {
                 return self::backWithToast($request, $status === 419
                     ? __('Your session expired. Please try again.')

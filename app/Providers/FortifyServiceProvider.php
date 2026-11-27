@@ -3,17 +3,23 @@
 namespace App\Providers;
 
 use App\Actions\Fortify\ResetUserPassword;
+use App\Http\Responses\PasswordResetFailedResponse;
+use App\Http\Responses\PasswordResetLinkResponse;
 use App\Models\User;
 use App\Services\SettingsRepositoryService;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
+use Laravel\Fortify\Contracts\FailedPasswordResetLinkRequestResponse;
+use Laravel\Fortify\Contracts\FailedPasswordResetResponse;
+use Laravel\Fortify\Contracts\SuccessfulPasswordResetLinkRequestResponse;
 use Laravel\Fortify\Features;
 use Laravel\Fortify\Fortify;
 use Laravel\Passkeys\Contracts\PasskeyUser;
@@ -27,7 +33,10 @@ class FortifyServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // The same answer for every address (#472); Fortify passes a `status` we ignore.
+        $this->app->bind(FailedPasswordResetLinkRequestResponse::class, fn (): PasswordResetLinkResponse => new PasswordResetLinkResponse);
+        $this->app->bind(SuccessfulPasswordResetLinkRequestResponse::class, fn (): PasswordResetLinkResponse => new PasswordResetLinkResponse);
+        $this->app->bind(FailedPasswordResetResponse::class, fn (): PasswordResetFailedResponse => new PasswordResetFailedResponse);
     }
 
     /**
@@ -151,6 +160,13 @@ class FortifyServiceProvider extends ServiceProvider
             $throttleKey = Str::transliterate(Str::lower($request->input(Fortify::username())).'|'.$request->ip());
 
             return Limit::perMinute(app(SettingsRepositoryService::class)->loginMaxAttempts())->by($throttleKey);
+        });
+
+        // Fortify registers `password.email` without a limiter: 5 requests a minute per IP (#472).
+        RateLimiter::for('password-reset', fn (Request $request): Limit => Limit::perMinute(5)->by((string) $request->ip()));
+        $this->app->booted(function (): void {
+            Route::getRoutes()->refreshNameLookups();
+            Route::getRoutes()->getByName('password.email')?->middleware('throttle:password-reset');
         });
 
         RateLimiter::for('passkeys', function (Request $request) {
