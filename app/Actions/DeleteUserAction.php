@@ -7,9 +7,11 @@ namespace App\Actions;
 use App\Models\Principal;
 use App\Models\User;
 use App\Services\SuperAdminGuardService;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
-use Qiick\Access\Principals\DeactivationReason;
+use Illuminate\Validation\ValidationException;
 use Qiick\Access\Principals\PrincipalDirectory;
 use Qiick\ApiKeys\RevocationReason;
 use Qiick\Oidc\Erasure\OidcEraser;
@@ -31,7 +33,31 @@ class DeleteUserAction
         private OidcEraser $oidcEraser,
     ) {}
 
-    public function execute(User $user): void
+    /**
+     * Every lock first (SuperAdminGuardService::lockUsers()), then the actor's `delete` policy on
+     * the locked state, then the last-super-admin guard: a target that became a protected
+     * super-admin after the request's check is refused. Not a role write, so a mixed holder can
+     * still be deleted.
+     *
+     * @param  ?User  $actor  the admin deleting the account; null when people delete their own
+     *
+     * @throws ValidationException when the user is the last active super-admin
+     * @throws AuthorizationException when the actor may no longer delete the locked user
+     */
+    public function execute(User $user, ?User $actor = null): void
+    {
+        DB::transaction(function () use ($user, $actor): void {
+            $this->superAdminGuard->lockUsers([$user->id]);
+
+            if ($actor !== null) {
+                Gate::forUser($actor)->authorize('delete', $user);
+            }
+
+            $this->erase($user);
+        }, SuperAdminGuardService::TRANSACTION_ATTEMPTS);
+    }
+
+    private function erase(User $user): void
     {
         $this->superAdminGuard->preventLosingLastSuperAdmin(function () use ($user): void {
             $publicId = $user->public_id;
@@ -45,17 +71,13 @@ class DeleteUserAction
                 'previous_key_valid_until' => null,
             ]);
             $user->apiKeys()->update(['name' => 'Deleted key '.$publicId]);
-            // The principal becomes an erased tombstone, unlinked and anonymised as the package's
-            // own eraseUser() leaves it (that one needs a hard delete; Excubia soft-deletes).
+            // The principal becomes an erased tombstone: markErased() is the package's soft-delete
+            // path (it overrides an earlier reason and keeps the original deactivation time). The
+            // tombstone keeps its user link, so a restored row can never mint a second principal
+            // for the same user; only its name, which holds personal data, is anonymised.
             $principal = $this->principals->forMember($user, null);
-            $this->principals->deactivate($principal, DeactivationReason::Erased);
-            // Erased wins over an earlier reason: the package keeps the first reason of a principal
-            // already deactivated (an admin's, say), but the person is now gone.
-            Principal::query()->whereKey($principal->id)->update([
-                'name' => 'Deleted principal '.$publicId,
-                'user_id' => null,
-                'deactivation_reason' => DeactivationReason::Erased->value,
-            ]);
+            $this->principals->markErased($principal);
+            Principal::query()->whereKey($principal->id)->update(['name' => 'Deleted principal '.$publicId]);
 
             // Login links are credentials, not audit: leaving an identity behind points SSO at a
             // soft-deleted user forever, and a passkey keeps its PII-bearing name and breaks auth.

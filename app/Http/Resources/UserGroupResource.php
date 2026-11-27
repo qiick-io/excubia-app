@@ -53,7 +53,7 @@ class UserGroupResource extends JsonResource
             'can_update' => $canUpdate,
             // Members cannot change the roles of their own group, unless super-admin (#151).
             'can_change_roles' => $canUpdate && $actor instanceof User
-                && (! $group->users()->whereKey($actor->getKey())->exists() || app(EffectivePermissionResolverService::class)->isSuperAdmin($actor)),
+                && (! $group->users()->whereKey($actor->getKey())->exists() || app(EffectivePermissionResolverService::class)->isActorSuperAdmin($actor)),
             'created_at' => $group->created_at?->toIso8601String(),
             'updated_at' => $group->updated_at?->toIso8601String(),
         ];

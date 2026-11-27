@@ -57,6 +57,7 @@ use Qiick\Access\Contracts\ActorContext;
 use Qiick\Access\Contracts\ActorKind;
 use Qiick\Access\EffectivePermissionResolver;
 use Qiick\Access\Laravel\AccessContext;
+use Qiick\Access\Principals\DeactivationReason;
 use Qiick\Access\Principals\PrincipalDirectory;
 use Qiick\Outbound\Contracts\HostResolver;
 use Qiick\Outbound\Models\WebhookDeliveryAttempt;
@@ -217,7 +218,9 @@ return [
             ->and($erased->is_active)->toBeFalse()
             ->and($apiKey->fresh())->not->toBeNull()
             ->and($apiKey->fresh()->isRevoked())->toBeTrue()
-            ->and($principal->fresh()->user_id)->toBeNull()
+            // The erased tombstone keeps its user link (qiick/laravel-access markErased()).
+            ->and($principal->fresh()->user_id)->toBe($owner->id)
+            ->and($principal->fresh()->deactivation_reason)->toBe(DeactivationReason::Erased)
             ->and($principal->fresh()->deactivated_at)->not->toBeNull();
 
         $needles = [$email, $username, $firstName, $lastName, $ip];
@@ -704,7 +707,7 @@ return [
         User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value);
         $member = User::factory()->create();
         $group = UserGroup::query()->create(['name' => 'conformance-activity']);
-        app(SaveUserGroupAction::class)->execute($group, 'conformance-activity', null, [RoleEnum::Reader->value], [$member->id]);
+        app(SaveUserGroupAction::class)->execute(null, $group, 'conformance-activity', null, [RoleEnum::Reader->value], [$member->id]);
         app(SyncUserRolesAction::class)->execute($member, [RoleEnum::Reader->value]);
 
         $properties = Activity::query()

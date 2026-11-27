@@ -14,6 +14,7 @@ use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -106,6 +107,7 @@ class UserController extends Controller
     public function store(StoreUserRequest $request, CreateUserAction $createUser): RedirectResponse
     {
         $createUser->execute(
+            $request->user(),
             $request->string('first_name')->toString(),
             $request->filled('last_name') ? $request->string('last_name')->toString() : null,
             $request->string('email')->toString(),
@@ -124,6 +126,7 @@ class UserController extends Controller
     public function update(UpdateUserRequest $request, User $user, UpdateUserAction $updateUser): RedirectResponse
     {
         $updateUser->execute(
+            $request->user(),
             $user,
             $request->string('first_name')->toString(),
             $request->filled('last_name') ? $request->string('last_name')->toString() : null,
@@ -140,11 +143,11 @@ class UserController extends Controller
         return to_route('users.index');
     }
 
-    public function destroy(User $user, DeleteUserAction $deleteUser): RedirectResponse
+    public function destroy(Request $request, User $user, DeleteUserAction $deleteUser): RedirectResponse
     {
         Gate::authorize('delete', $user);
 
-        $deleteUser->execute($user);
+        $deleteUser->execute($user, $request->user());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('User deleted.')]);
 
