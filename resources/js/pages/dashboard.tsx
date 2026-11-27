@@ -2,6 +2,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import { ArrowUpRight, FolderKanban, Plus } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNumberFormat } from '@/hooks/use-number-format';
 import { PageEmptyState } from '@/components/admin/page-empty-state';
 import { PageLayout } from '@/components/layout/page-layout';
 import { KpiTile, kpiDeltaOf } from '@/components/charts/kpi-tile';
@@ -82,8 +83,8 @@ export default function Dashboard({
     /** Project slug → live health, for the projects that send health samples (#143). */
     liveHealth: Record<string, LiveHealthSummary>;
 }) {
-    const { t, i18n } = useTranslation();
-    const locale = i18n.language;
+    const { t } = useTranslation();
+    const formatNumber = useNumberFormat();
     const { can } = useCan();
     const selected = projects.find((project) => project.slug === scope.project);
 
@@ -298,11 +299,12 @@ export default function Dashboard({
                     >
                         <KpiTile
                             label={t('dashboard.kpi.findings')}
-                            value={kpis.findings.total.toLocaleString(locale)}
+                            value={formatNumber(kpis.findings.total)}
                             delta={kpiDeltaOf(
                                 kpis.findings.total,
                                 kpis.findings.previous,
                                 false,
+                                formatNumber,
                             )}
                             secondary={
                                 kpis.findings.previous === null
@@ -313,11 +315,12 @@ export default function Dashboard({
                         />
                         <KpiTile
                             label={t('dashboard.kpi.atRisk')}
-                            value={kpis.atRisk.value.toLocaleString(locale)}
+                            value={formatNumber(kpis.atRisk.value)}
                             delta={kpiDeltaOf(
                                 kpis.atRisk.value,
                                 kpis.atRisk.previous,
                                 false,
+                                formatNumber,
                             )}
                             secondary={
                                 kpis.atRisk.previous === null
@@ -327,13 +330,12 @@ export default function Dashboard({
                         />
                         <KpiTile
                             label={t('dashboard.kpi.endOfSupport')}
-                            value={kpis.endOfSupport.value.toLocaleString(
-                                locale,
-                            )}
+                            value={formatNumber(kpis.endOfSupport.value)}
                             delta={kpiDeltaOf(
                                 kpis.endOfSupport.value,
                                 kpis.endOfSupport.previous,
                                 false,
+                                formatNumber,
                             )}
                             secondary={
                                 kpis.endOfSupport.previous === null
@@ -347,7 +349,6 @@ export default function Dashboard({
                                 <KpiRatio
                                     value={kpis.stale.value}
                                     total={kpis.stale.total}
-                                    locale={locale}
                                 />
                             }
                             secondary={t('dashboard.kpi.staleContext')}

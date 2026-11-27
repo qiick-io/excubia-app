@@ -502,13 +502,7 @@ function ReadinessView({ readiness }: { readiness: Readiness }) {
             >
                 <KpiTile
                     label={t('fleet.readiness.kpi.ready')}
-                    value={
-                        <KpiRatio
-                            value={readyCount}
-                            total={targetTotal}
-                            locale={locale}
-                        />
-                    }
+                    value={<KpiRatio value={readyCount} total={targetTotal} />}
                     secondary={[
                         ...readiness.targets.map((target) =>
                             t('fleet.readiness.kpi.target', {
@@ -532,7 +526,6 @@ function ReadinessView({ readiness }: { readiness: Readiness }) {
                         <KpiRatio
                             value={blockedCount}
                             total={readiness.projects.length}
-                            locale={locale}
                         />
                     }
                 />
@@ -554,7 +547,6 @@ function ReadinessView({ readiness }: { readiness: Readiness }) {
                         <KpiRatio
                             value={projectsWithPlan.length}
                             total={readiness.projects.length}
-                            locale={locale}
                         />
                     }
                     secondary={

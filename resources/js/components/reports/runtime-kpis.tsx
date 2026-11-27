@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { KpiTile, kpiDeltaOf } from '@/components/charts/kpi-tile';
 import { historySparkline } from '@/components/dashboard/kpi-history';
+import type { FormatNumber } from '@/hooks/use-number-format';
 import type { RuntimeSummary } from '@/types';
 import type { DashboardHistory } from '@/types/dashboard';
 
@@ -10,15 +11,17 @@ export function RuntimeKpis({
     history,
     rangeLabel,
     formatCount,
+    formatNumber,
     formatMs,
 }: {
     runtime: RuntimeSummary;
     history: DashboardHistory;
     rangeLabel: string;
     formatCount: (value: number) => string;
+    formatNumber: FormatNumber;
     formatMs: (value: number | null) => string;
 }) {
-    const { t, i18n } = useTranslation();
+    const { t } = useTranslation();
     const requests = runtime.requests;
     const errorRate =
         requests.count > 0 ? (requests.errors / requests.count) * 100 : 0;
@@ -28,6 +31,7 @@ export function RuntimeKpis({
                   requests.count,
                   history.requests?.previous ?? null,
                   null,
+                  formatNumber,
               )
             : null;
     const latencyDelta =
@@ -37,6 +41,7 @@ export function RuntimeKpis({
                   requests.averageMs,
                   history.latency?.previous ?? null,
                   false,
+                  formatNumber,
               );
 
     return (
@@ -60,7 +65,7 @@ export function RuntimeKpis({
                 label={t('runtime.errors')}
                 value={formatCount(requests.errors)}
                 secondary={t('runtime.errorRate', {
-                    rate: errorRate.toLocaleString(i18n.language, {
+                    rate: formatNumber(errorRate, {
                         maximumFractionDigits: errorRate < 1 ? 2 : 1,
                     }),
                 })}
@@ -70,7 +75,7 @@ export function RuntimeKpis({
                 value={
                     requests.averageMs === null
                         ? formatMs(null)
-                        : `${requests.averageMs.toLocaleString(i18n.language)} ms`
+                        : `${formatNumber(requests.averageMs)} ms`
                 }
                 delta={latencyDelta}
                 secondary={[

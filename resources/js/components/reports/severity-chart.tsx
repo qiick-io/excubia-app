@@ -18,6 +18,7 @@ import {
     SEVERITIES,
     SEVERITY_SCALE,
 } from '@/components/reports/severity-badge';
+import { useNumberFormat } from '@/hooks/use-number-format';
 import { cn } from '@/lib/utils';
 import type { Severity } from '@/types';
 
@@ -31,16 +32,17 @@ export type ChartMarker = {
     name: string;
 };
 
-/** The tooltip title of a bucket: its label through `formatLabel`, a number as is. */
+/** Tooltip title for a time label or a localized numeric bucket. */
 function bucketText(
     value: unknown,
+    formatNumber: (value: number) => string,
     formatLabel?: (label: string) => string,
 ): string {
     if (typeof value === 'string') {
         return formatLabel ? formatLabel(value) : value;
     }
 
-    return typeof value === 'number' ? value.toLocaleString() : '';
+    return typeof value === 'number' ? formatNumber(value) : '';
 }
 
 /** Called with the labels of the first and last bucket of a span dragged across a chart. */
@@ -163,6 +165,8 @@ export function StackedBarChart({
     /** Drag across buckets to zoom the page into them (#248); the labels must be bucket times. */
     onZoom?: ChartZoomHandler;
 }) {
+    const formatNumber = useNumberFormat();
+    const displayValue = formatValue ?? formatNumber;
     const order = series.map((item) => item.key);
     const last = order[order.length - 1];
     const zoom = useDragZoom(onZoom);
@@ -193,10 +197,7 @@ export function StackedBarChart({
                     <YAxis
                         allowDecimals={formatValue !== undefined}
                         // Grouped digits by default: a bare 60000 reads as 6000 at a glance (#194).
-                        tickFormatter={
-                            formatValue ??
-                            ((value: number) => value.toLocaleString())
-                        }
+                        tickFormatter={(value) => displayValue(value)}
                         tick={{
                             fontSize: 11,
                             fill: 'var(--color-muted-foreground)',
@@ -217,7 +218,11 @@ export function StackedBarChart({
                             color: 'var(--color-popover-foreground)',
                         }}
                         labelFormatter={(value, payload) => {
-                            const text = bucketText(value, formatLabel);
+                            const text = bucketText(
+                                value,
+                                formatNumber,
+                                formatLabel,
+                            );
 
                             if (totalLabel === undefined) {
                                 return text;
@@ -228,7 +233,7 @@ export function StackedBarChart({
                                 0,
                             );
 
-                            return `${text} · ${totalLabel} ${formatValue ? formatValue(total) : total.toLocaleString()}`;
+                            return `${text} · ${totalLabel} ${displayValue(total)}`;
                         }}
                         // Same order as the legend; text in a text token, not the series colour.
                         itemSorter={(item) =>
@@ -237,13 +242,10 @@ export function StackedBarChart({
                         itemStyle={{
                             color: 'var(--color-popover-foreground)',
                         }}
-                        formatter={
-                            formatValue
-                                ? (value) =>
-                                      typeof value === 'number'
-                                          ? formatValue(value)
-                                          : value
-                                : undefined
+                        formatter={(value) =>
+                            typeof value === 'number'
+                                ? displayValue(value)
+                                : value
                         }
                     />
                     <Legend
@@ -317,6 +319,7 @@ export function TimeLineChart({
     /** Drag across buckets to zoom the page into them (#248). */
     onZoom?: ChartZoomHandler;
 }) {
+    const formatNumber = useNumberFormat();
     const order = series.map((item) => item.key);
     const zoom = useDragZoom(onZoom);
 
@@ -365,7 +368,7 @@ export function TimeLineChart({
                             color: 'var(--color-popover-foreground)',
                         }}
                         labelFormatter={(value) =>
-                            bucketText(value, formatLabel)
+                            bucketText(value, formatNumber, formatLabel)
                         }
                         itemSorter={(item) =>
                             order.indexOf(String(item.dataKey))

@@ -1,6 +1,7 @@
 import { Sparkline } from '@/components/charts/sparkline';
 import { KpiTile, kpiDeltaOf } from '@/components/charts/kpi-tile';
 import { useTranslation } from 'react-i18next';
+import { useNumberFormat } from '@/hooks/use-number-format';
 import type { KpiHistory } from '@/types/dashboard';
 
 /** Renders the latest continuous trend. Missing days stay unknown, including missing latency. */
@@ -16,20 +17,14 @@ export function historySparkline(history: KpiHistory | undefined) {
 }
 
 /** Keeps the denominator available when the eye is scanning for the main count. */
-export function KpiRatio({
-    value,
-    total,
-    locale,
-}: {
-    value: number;
-    total: number;
-    locale: string;
-}) {
+export function KpiRatio({ value, total }: { value: number; total: number }) {
+    const formatNumber = useNumberFormat();
+
     return (
         <>
-            {value.toLocaleString(locale)}
+            {formatNumber(value)}
             <span className="text-lg text-muted-foreground">
-                /{total.toLocaleString(locale)}
+                /{formatNumber(total)}
             </span>
         </>
     );
@@ -47,14 +42,20 @@ export function OpenExceptionsKpi({
     secondary?: string;
     comparisonDays?: number;
 }) {
-    const { t, i18n } = useTranslation();
-    const delta = kpiDeltaOf(history.current, history.previous ?? null, false);
+    const { t } = useTranslation();
+    const formatNumber = useNumberFormat();
+    const delta = kpiDeltaOf(
+        history.current,
+        history.previous ?? null,
+        false,
+        formatNumber,
+    );
 
     return (
         <KpiTile
             className={className}
             label={t('dashboard.telemetry.openExceptions')}
-            value={history.current.toLocaleString(i18n.language)}
+            value={formatNumber(history.current)}
             delta={delta}
             secondary={[
                 secondary,

@@ -1,3 +1,4 @@
+import { useNumberFormat } from '@/hooks/use-number-format';
 import { Link } from '@inertiajs/react';
 import { useTranslation } from 'react-i18next';
 import { CardTableScroll } from '@/components/layout/card-table-scroll';
@@ -26,14 +27,20 @@ export function RequestsKpi({
     periodLabel: string;
     className?: string;
 }) {
-    const { t, i18n } = useTranslation();
+    const { t } = useTranslation();
+    const formatNumber = useNumberFormat();
     const errorRate =
         runtime.requests > 0 ? (runtime.errors / runtime.requests) * 100 : 0;
 
-    const delta = kpiDeltaOf(runtime.requests, runtime.previousRequests, null);
+    const delta = kpiDeltaOf(
+        runtime.requests,
+        runtime.previousRequests,
+        null,
+        formatNumber,
+    );
     const summary = t('dashboard.telemetry.errors', {
         count: runtime.errors,
-        rate: errorRate.toLocaleString(i18n.language, {
+        rate: formatNumber(errorRate, {
             maximumFractionDigits: errorRate < 1 ? 2 : 1,
         }),
     });
@@ -42,7 +49,7 @@ export function RequestsKpi({
         <KpiTile
             className={className}
             label={t('dashboard.telemetry.requests')}
-            value={runtime.requests.toLocaleString(i18n.language)}
+            value={formatNumber(runtime.requests)}
             delta={delta}
             secondary={delta ? `${summary} · ${periodLabel}` : summary}
             chart={historySparkline(history)}
@@ -69,6 +76,7 @@ export function TelemetryRow({
     periodDays: number;
 }) {
     const { t } = useTranslation();
+    const formatNumber = useNumberFormat();
 
     return (
         <section className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -134,7 +142,7 @@ export function TelemetryRow({
                                                 </div>
                                             </TableCell>
                                             <TableCell className="text-right tabular-nums">
-                                                {group.count.toLocaleString()}
+                                                {formatNumber(group.count)}
                                             </TableCell>
                                         </TableRow>
                                     ))}

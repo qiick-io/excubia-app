@@ -1,3 +1,4 @@
+import { useNumberFormat } from '@/hooks/use-number-format';
 import { Link } from '@inertiajs/react';
 import { ArrowUpRight, Gauge } from 'lucide-react';
 import type { ReactNode } from 'react';
@@ -141,6 +142,7 @@ export function ApplicationSection({
     exceptions: ExceptionsOverview | null;
 }) {
     const { t, i18n } = useTranslation();
+    const formatNumber = useNumberFormat();
     const range: TimeRange = runtime?.range ?? DEFAULT_TIME_RANGE;
     const rangeTexts = useRangeTexts(range);
     const tabUrl = useRangeTabUrl();
@@ -166,7 +168,7 @@ export function ApplicationSection({
         { processed: 0, failed: 0 },
     );
     const ms = (value: number | null): string =>
-        value === null ? '—' : `${Math.round(value).toLocaleString()} ms`;
+        value === null ? '—' : `${formatNumber(Math.round(value))} ms`;
     const [copiedText, copy] = useClipboard();
 
     const hasExceptions = exceptions !== null && occurrences > 0;
@@ -228,8 +230,7 @@ export function ApplicationSection({
                                 'application.exceptionsDescription',
                                 {
                                     count: occurrences,
-                                    formattedCount:
-                                        occurrences.toLocaleString(),
+                                    formattedCount: formatNumber(occurrences),
                                     ...phrases,
                                 },
                             )}
@@ -277,9 +278,9 @@ export function ApplicationSection({
                                                 </span>
                                             </>
                                         ),
-                                        value: (
-                                            group.range_count ?? 0
-                                        ).toLocaleString(),
+                                        value: formatNumber(
+                                            group.range_count ?? 0,
+                                        ),
                                     }))}
                                 />
                             </>
@@ -312,7 +313,7 @@ export function ApplicationSection({
                                         rows={failing.map((row) => ({
                                             key: `${String(row.method)} ${String(row.route)}`,
                                             name: routeName(row),
-                                            value: `5xx ${row.errors.toLocaleString()}`,
+                                            value: `5xx ${formatNumber(row.errors)}`,
                                         }))}
                                     />
                                 ) : (
@@ -329,8 +330,8 @@ export function ApplicationSection({
                             className={cardSpan}
                             title={t('application.jobs')}
                             description={t('application.jobsDescription', {
-                                processed: jobTotals.processed.toLocaleString(),
-                                failed: jobTotals.failed.toLocaleString(),
+                                processed: formatNumber(jobTotals.processed),
+                                failed: formatNumber(jobTotals.failed),
                                 ...phrases,
                             })}
                             href={tabUrl(slug, 'runtime', 'runtime-jobs')}
