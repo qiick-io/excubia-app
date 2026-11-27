@@ -110,6 +110,7 @@ return [
     'not_regex' => 'Il formato di :attribute non è valido.',
     'numeric' => ':Attribute deve essere un numero.',
     'password' => [
+        'context_specific' => 'Scegli una password più difficile da indovinare di un nome o ruolo di Excubia.',
         'letters' => ':Attribute deve contenere almeno un carattere.',
         'mixed' => ':Attribute deve contenere almeno un carattere maiuscolo ed un carattere minuscolo.',
         'numbers' => ':Attribute deve contenere almeno un numero.',
