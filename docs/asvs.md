@@ -6,7 +6,7 @@ The scope covers the browser UI, push API, personal keys, MCP, optional OIDC and
 
 | Met | Partial | Not applicable | Gap |
 | --- | ------- | -------------- | --- |
-| 51  | 137     | 49             | 16  |
+| 52  | 137     | 49             | 15  |
 
 **Met** has evidence for the complete requirement. **Partial** identifies an implemented control and the remaining scope. **Not applicable** records why the feature or architecture is outside scope. Each **Gap** links to a remediation issue. Report sensitive security findings through [the security policy](../SECURITY.md).
 
@@ -239,7 +239,7 @@ For inherited evidence, the owner column names the Composer package and the evid
 | Requirement   | Status         | Evidence                                                                                                                                                                                                                                                    | Owner package            |
 | ------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
 | v5.0.0-11.1.1 | Met            | [The secrets runbook](runbooks/secrets.md) defines key generation, access, rotation and retirement, with an isolated restore check. `tests/Unit/Console/InstallCommandTest.php` verifies app-key generation and preservation.                               |                          |
-| v5.0.0-11.1.2 | Gap            | `docs/SECURITY-MODEL.md` identifies several keys. Maintain a complete cryptographic inventory, including allowed uses and deployment certificates. [#528](https://github.com/qiick-io/excubia-app/issues/528)                                               |                          |
+| v5.0.0-11.1.2 | Met            | [Cryptographic inventory](cryptographic-inventory.md) records keys, algorithms, use boundaries and deployment certificates, with quarterly review and a deployment verification procedure.                                                                  |                          |
 | v5.0.0-11.2.1 | Partial        | `composer.lock` records Laravel, WebAuthn and OIDC dependencies. Review the underlying primitives and runtime implementations across the reference stack.                                                                                                   |                          |
 | v5.0.0-11.2.2 | Partial        | `config/app.php` supports previous encryption keys. Re-encryption and algorithm migration across every cryptographic consumer remain to verify.                                                                                                             |                          |
 | v5.0.0-11.2.3 | Partial        | `config/app.php` configures AES-256-CBC. Verify effective key sizes and security levels for all primitives and the IdP.                                                                                                                                     |                          |
