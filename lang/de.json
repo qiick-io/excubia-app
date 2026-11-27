@@ -56,6 +56,7 @@
     "Write :entry as its IPv4 form: IPv4-mapped IPv6 entries are matched as IPv4.": "Schreibe :entry in der IPv4-Form: IPv4-gemappte IPv6-Einträge werden als IPv4 verglichen.",
     "Leave the allowlist empty to allow every address; :entry means no restriction.": "Lassen Sie die Allowlist leer, um jede Adresse zuzulassen; :entry bedeutet keine Einschränkung.",
     "The signing secret could not be generated now: too many previous secrets are still in their grace period. Try again later.": "Das Signaturgeheimnis kann gerade nicht erzeugt werden: Zu viele frühere Geheimnisse sind noch in ihrer Übergangsfrist. Versuche es später erneut.",
+    "Reader": "Leser",
     "Your session expired. Please try again.": "Ihre Sitzung ist abgelaufen. Bitte versuchen Sie es noch einmal.",
     "Something went wrong. Please try again.": "Etwas ist schiefgelaufen. Bitte versuchen Sie es noch einmal."
 }

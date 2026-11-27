@@ -730,7 +730,19 @@
             "revoked": "API-Schlüssel widerrufen",
             "api_key_first_used": "API-Schlüssel erstmals verwendet",
             "collection_permissions_synced": "Collection-Berechtigungen synchronisiert",
-            "file_permissions_synced": "Datei-Berechtigungen synchronisiert"
+            "file_permissions_synced": "Datei-Berechtigungen synchronisiert",
+            "status_changed": "Status geändert",
+            "assigned": "Zugewiesen",
+            "unassigned": "Zuweisung entfernt",
+            "projects_synced": "Projekte synchronisiert",
+            "ai_tool_approval": "KI-Tool-Freigabe",
+            "alert_muted": "Alarm stummgeschaltet",
+            "alert_unmuted": "Alarm wieder aktiv",
+            "maintenance_window_created": "Wartungsfenster hinzugefügt",
+            "maintenance_window_deleted": "Wartungsfenster entfernt",
+            "finding_dismissed": "Befund ausgeblendet",
+            "finding_restored": "Befund wiederhergestellt",
+            "project_groups_synced": "Projektgruppen synchronisiert"
         },
         "logs": {
             "default": "Anwendung",
@@ -1743,6 +1755,67 @@
             "5": "Fr",
             "6": "Sa",
             "7": "So"
+        },
+        "eventLabels": {
+            "finding": {
+                "new": "Neuer Befund",
+                "resolved": "Befund behoben"
+            },
+            "infrastructure": {
+                "failed": "Infrastruktur fehlerhaft"
+            },
+            "health": {
+                "failed": "Health-Check fehlgeschlagen",
+                "recovered": "Health-Check wiederhergestellt",
+                "stale": "Server-Messwerte fehlen"
+            },
+            "project": {
+                "worsened": "Projekt verschlechtert",
+                "recovered": "Projekt verbessert",
+                "stale": "Projekt ohne Bericht",
+                "reporting_again": "Projekt berichtet wieder",
+                "token_changed": "Push-Token geändert",
+                "created": "Projekt erstellt",
+                "deleted": "Projekt gelöscht",
+                "disabled": "Projekt deaktiviert"
+            },
+            "report": {
+                "checks_skipped": "Prüfungen übersprungen"
+            },
+            "push": {
+                "rejected": "Push abgelehnt"
+            },
+            "schedule": {
+                "missed": "Geplante Aufgabe verpasst",
+                "failed": "Geplante Aufgabe fehlgeschlagen",
+                "scheduler_down": "Scheduler ausgefallen"
+            },
+            "runtime": {
+                "cache_hit_ratio_low": "Niedrige Cache-Trefferquote",
+                "delivery_failed": "Zustellung fehlgeschlagen",
+                "log_spike": "Log-Spitze"
+            },
+            "ai": {
+                "budget_warning": "KI-Budget-Warnung",
+                "budget_exceeded": "KI-Budget überschritten",
+                "spend_spike": "KI-Ausgabenspitze",
+                "error_rate": "KI-Fehlerrate"
+            },
+            "billing": {
+                "webhook_failures": "Fehlerhafte Abrechnungs-Webhooks",
+                "payment_failed": "Zahlung fehlgeschlagen"
+            },
+            "auth": {
+                "failed_login_spike": "Spitze fehlgeschlagener Anmeldungen"
+            },
+            "scout": {
+                "index_failures": "Suchindex-Fehler"
+            },
+            "eol": {
+                "approaching": "Supportende naht",
+                "reached": "Supportende erreicht"
+            },
+            "ping": "Testalarm"
         }
     },
     "timeRange": {

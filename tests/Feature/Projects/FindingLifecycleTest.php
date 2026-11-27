@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Actions\RotateProjectTokenAction;
 use App\Enums\RoleEnum;
+use App\Models\Activity;
 use App\Models\AlertLog;
 use App\Models\Finding;
 use App\Models\Project;
@@ -192,4 +193,18 @@ it('needs can-dismiss-findings, a reason, a last day from today on and a finding
         ->assertSessionHasErrors(['reason', 'until']);
 
     expect($finding->fresh()->dismissed_at)->toBeNull();
+});
+
+it('writes dismissing and restoring a finding to the activity log', function () {
+    [$project, $token] = lifecycleProject();
+    pushLifecycleReport($token, ['composer-audit' => [['a/a', 'critical']]]);
+    $finding = Finding::query()->sole();
+    $admin = lifecycleUser();
+
+    $this->actingAs($admin)->patch(route('projects.findings.update', [$project, $finding]), ['is_dismissed' => true, 'reason' => 'Not reachable from user input', 'until' => '2026-12-31']);
+    $this->actingAs($admin)->patch(route('projects.findings.update', [$project, $finding]), ['is_dismissed' => false]);
+
+    // #431: dismissals were only in the finding's own history.
+    expect(Activity::query()->whereIn('event', ['finding_dismissed', 'finding_restored'])->orderBy('id')->pluck('event')->all())
+        ->toBe(['finding_dismissed', 'finding_restored']);
 });
