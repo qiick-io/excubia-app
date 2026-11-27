@@ -72,6 +72,16 @@ class ExceptionGroup extends Model
     }
 
     /**
+     * Changes to the group's contribution to the open inbox.
+     *
+     * @return HasMany<ExceptionOpenChange, $this>
+     */
+    public function openChanges(): HasMany
+    {
+        return $this->hasMany(ExceptionOpenChange::class);
+    }
+
+    /**
      * @return array<string, string>
      */
     protected function casts(): array

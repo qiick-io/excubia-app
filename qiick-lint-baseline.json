@@ -17,7 +17,6 @@
     "eslint/max-lines-per-function": {
         "resources/js/components/admin/user-form-drawer.tsx": 1,
         "resources/js/components/projects/findings-view.tsx": 1,
-        "resources/js/components/projects/overview/overview-view.tsx": 1,
         "resources/js/components/reports/exceptions-view.tsx": 1,
         "resources/js/components/reports/runtime-view.tsx": 1,
         "resources/js/pages/admin/activity-logs/index.tsx": 1,

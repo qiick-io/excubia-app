@@ -980,6 +980,7 @@
             "emptyDescription": "No configuration check warns or fails, or the projects run a core before 1.0."
         },
         "projects": {
+            "byFindings": "Projects with the most open findings first.",
             "title": "Projects",
             "description": "Worst first."
         },
@@ -1152,8 +1153,8 @@
             "deployCount_other": "{{count}} deploys in the history",
             "stale": {
                 "title": "This report is stale",
-                "description": "The last report arrived {{time}}: every number on this page is from then.",
-                "descriptionPush": "The last report arrived {{time}}: every number on this page is from then. Check that the project's scheduler runs excubia:push."
+                "description": "The last report arrived {{time}}. Findings, check outcomes and runtime versions reflect that report.",
+                "descriptionPush": "The last report arrived {{time}}. Findings, check outcomes and runtime versions reflect that report. Check that the project's scheduler runs excubia:push."
             },
             "allChecks": "All checks",
             "checksFailingOnly": "Failing only",
@@ -2322,6 +2323,16 @@
         "apply": "Apply"
     },
     "charts": {
+        "findingsHistoryEmpty": "The trend needs at least three days of report history.",
+        "keyMetrics": "Key metrics, 30-day trends",
+        "findingsBySeverity": "Open findings by severity",
+        "checkOutcomes": "Check outcomes",
+        "previousSnapshot_one": "vs {{count}} day ago",
+        "previousSnapshot_other": "vs {{count}} days ago",
+        "previousRange": "vs previous period",
+        "findingsByProject": "Open findings by project",
+        "metric": "Metric",
+        "date": "Date",
         "view": "View",
         "viewRoutes": "View routes",
         "viewModels": "View models",

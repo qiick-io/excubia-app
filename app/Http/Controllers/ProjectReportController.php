@@ -22,6 +22,7 @@ use App\Models\HealthReport;
 use App\Models\Project;
 use App\Models\User;
 use App\Services\AiUsageService;
+use App\Services\DashboardHistoryService;
 use App\Services\FindingLifecycleService;
 use App\Services\FixSuggestionService;
 use App\Services\HealthStatusService;
@@ -131,6 +132,16 @@ class ProjectReportController extends Controller
             // Minute-level status per check and server (#115), on the overview, which polls it.
             'liveHealth' => fn (): array => $view === null ? app(HealthStatusService::class)->forPage($project, $now) : [],
             'range' => $range->value(),
+            'kpiHistory' => fn (): array => match ($view) {
+                null => [
+                    ...app(DashboardHistoryService::class)->reports($project, $now),
+                    ...app(DashboardHistoryService::class)->requests([$project->id], $now, $range),
+                    'exceptions' => app(DashboardHistoryService::class)->exceptions([$project->id], $now),
+                ],
+                'runtime' => app(DashboardHistoryService::class)->requests([$project->id], $now, $range),
+                'exceptions' => ['exceptions' => app(DashboardHistoryService::class)->exceptions([$project->id], $now)],
+                default => [],
+            },
             // The window of the range for the picker and the chart texts (#247).
             'rangeWindow' => [...$range->toArray(), 'earliest' => $now->subDays(app(SettingsRepositoryService::class)->runtimeRetentionDays())->toIso8601ZuluString()],
             'runtime' => fn (): ?array => $view === 'ai' ? null : $runtime->summary($project, $range),
