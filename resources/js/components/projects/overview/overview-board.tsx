@@ -13,8 +13,8 @@ import {
 } from '@/components/reports/runtime-support';
 import { findingsCount, relativeTime } from '@/lib/report-format';
 import { cn } from '@/lib/utils';
-import type { HealthReportSummary, RuntimeSummary } from '@/types';
-import type { DashboardHistory } from '@/types/dashboard';
+import type { HealthReportSummary } from '@/types';
+import type { DashboardHistory, RuntimeOverview } from '@/types/dashboard';
 
 /** The project Board, with its current readings above their two compositions. */
 export function OverviewBoard({
@@ -26,7 +26,7 @@ export function OverviewBoard({
     latest: HealthReportSummary;
     history: DashboardHistory;
     hasExceptions: boolean;
-    runtime: RuntimeSummary | null;
+    runtime: RuntimeOverview | null;
 }) {
     const { t, i18n } = useTranslation();
     const locale = i18n.language;

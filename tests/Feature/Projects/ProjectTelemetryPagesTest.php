@@ -76,7 +76,7 @@ it('summarises the last 24 hours of runtime on the project page', function () {
     runtimeRow($project, 'job', ['job' => 'App\\Jobs\\Ship', 'queue' => 'default', 'connection' => 'redis', 'outcome' => 'failed'], ['count' => 2, 'error_count' => 2]);
     runtimeRow($project, 'slowQuery', ['sql' => 'select * from orders where id = ?', 'connection' => 'pgsql'], ['count' => 3]);
 
-    $this->actingAs(telemetryViewer())->get(route('projects.show', 'shop'))
+    $this->actingAs(telemetryViewer())->get(route('projects.view', ['shop', 'runtime']))
         ->assertInertia(fn (Assert $page) => $page
             ->where('runtime.isSampled', true)
             ->where('runtime.requests.count', 100)
@@ -88,13 +88,26 @@ it('summarises the last 24 hours of runtime on the project page', function () {
             ->where('runtime.requests.routes.0.route', 'checkout.store')
             ->where('runtime.jobs.0.outcomes.failed', 2)
             ->where('runtime.slowQueries.0.sql', 'select * from orders where id = ?'));
+
+    $this->get(route('projects.show', 'shop'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('runtime', null)
+            ->where('overviewRuntime.requests.count', 100)
+            ->where('overviewRuntime.isSampled', true)
+            ->has('overviewRuntime.requests.routes', 1)
+            ->has('overviewRuntime.jobTimeline', 25)
+            ->missing('overviewRuntime.requests.timeline')
+            ->missing('overviewRuntime.slowQueries'));
+
+    $this->get(route('projects.view', ['shop', 'findings']))
+        ->assertInertia(fn (Assert $page) => $page->where('runtime', null)->where('overviewRuntime', null));
 });
 
 it('shows no runtime block before the first runtime push', function () {
     Project::factory()->create(['slug' => 'blog']);
 
     $this->actingAs(telemetryViewer())->get(route('projects.show', 'blog'))
-        ->assertInertia(fn (Assert $page) => $page->where('runtime', null)->has('exceptions', 0)->where('canManageExceptions', false));
+        ->assertInertia(fn (Assert $page) => $page->where('overviewRuntime', null)->has('exceptions', 0)->where('canManageExceptions', false));
 });
 
 it('lists exception groups open first with a fix prompt', function () {
@@ -178,12 +191,15 @@ it('marks the deploys of the runtime window and shows releases on reports and ex
 
     $this->actingAs(telemetryViewer())->get(route('projects.show', 'shop'))
         ->assertInertia(fn (Assert $page) => $page
-            ->where('runtime.deploys', [['release' => 'v1.0.0', 'deployedAt' => '2026-11-05T11:20:00Z', 'bucket' => '2026-11-05T11:00:00Z']])
-            ->where('runtime.requests.timeline', fn ($timeline): bool => collect($timeline)->contains('at', '2026-11-05T11:00:00Z'))
             ->where('overviewDeploys.count', 2)
             ->where('overviewDeploys.latest.release', 'v1.0.0')
             ->where('overviewDeploys.latest.deployed_at', '2026-11-05T11:20:00+00:00')
             ->where('exceptions.0.first_release', 'v0.9.0')
             ->where('exceptions.0.last_release', 'v1.0.0')
             ->where('exceptions.0.regressed_release', 'v1.0.0'));
+
+    $this->get(route('projects.view', ['shop', 'runtime']))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('runtime.deploys', [['release' => 'v1.0.0', 'deployedAt' => '2026-11-05T11:20:00Z', 'bucket' => '2026-11-05T11:00:00Z']])
+            ->where('runtime.requests.timeline', fn ($timeline): bool => collect($timeline)->contains('at', '2026-11-05T11:00:00Z')));
 });

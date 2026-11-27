@@ -48,7 +48,7 @@ import type {
 } from '@/components/projects/project-tabs';
 import { ProjectTabs } from '@/components/projects/project-tabs';
 import { SystemProjectBadge } from '@/components/projects/system-project-badge';
-import type { DashboardHistory } from '@/types/dashboard';
+import type { DashboardHistory, RuntimeOverview } from '@/types/dashboard';
 import { OverviewView } from '@/components/projects/overview/overview-view';
 import type { OverviewDeploys } from '@/components/projects/overview/overview-view';
 import { FindingsView } from '@/components/projects/findings-view';
@@ -82,6 +82,7 @@ export default function ProjectShow({
     kpiHistory = {},
     range = DEFAULT_TIME_RANGE,
     runtime = null,
+    overviewRuntime = null,
     ai = null,
     exceptions = [],
     exceptionInbox,
@@ -109,6 +110,7 @@ export default function ProjectShow({
     alerts?: ProjectAlerts | null;
     canManageAlerts?: boolean;
     runtime?: RuntimeSummary | null;
+    overviewRuntime?: RuntimeOverview | null;
     /** AI usage and estimated cost (#129), on the AI tab only. */
     ai?: AiUsageSummary | null;
     exceptions?: ExceptionGroupRow[];
@@ -295,7 +297,7 @@ export default function ProjectShow({
                             health={health}
                             liveHealth={liveHealth}
                             fixes={findingFixes}
-                            runtime={runtime}
+                            runtime={overviewRuntime}
                             exceptions={exceptions}
                             exceptionsOverview={exceptionsOverview}
                             onRefresh={refreshReport}

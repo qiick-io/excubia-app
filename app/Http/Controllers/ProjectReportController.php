@@ -154,7 +154,8 @@ class ProjectReportController extends Controller
             },
             // The window of the range for the picker and the chart texts (#247).
             'rangeWindow' => [...$range->toArray(), 'earliest' => $now->subDays(app(SettingsRepositoryService::class)->runtimeRetentionDays())->toIso8601ZuluString()],
-            'runtime' => fn (): ?array => $view === 'ai' ? null : $runtime->summary($project, $range),
+            'runtime' => fn (): ?array => $view === 'runtime' ? $runtime->summary($project, $range) : null,
+            'overviewRuntime' => fn (): ?array => $view === null ? $runtime->overview($project, $range) : null,
             // AI usage and estimated cost (#129), only on its tab.
             'ai' => fn (): ?array => $view === 'ai' ? app(AiUsageService::class)->summary($project, $range) : null,
             'exceptions' => fn (): array => $view === null ? $telemetry->exceptions($project) : [],

@@ -90,6 +90,13 @@ class ProjectRuntimeService
     /** The types of the Runtime tab; the AI usage types (#129) have their own tab (AiUsageService). */
     private const AI_TYPES = [RuntimeTypeEnum::Ai, RuntimeTypeEnum::AiTool];
 
+    /** Runtime types exposed by the assistant's tables. */
+    private const ASSISTANT_TYPES = [
+        RuntimeTypeEnum::Request, RuntimeTypeEnum::SlowQuery, RuntimeTypeEnum::Job, RuntimeTypeEnum::ScheduledTask,
+        RuntimeTypeEnum::OutgoingHttp, RuntimeTypeEnum::QueueWait, RuntimeTypeEnum::Command, RuntimeTypeEnum::Cache,
+        RuntimeTypeEnum::Mail, RuntimeTypeEnum::Notification,
+    ];
+
     /** The levels the error-log chart counts. */
     private const ERROR_LOG_LEVELS = ['emergency', 'alert', 'critical', 'error'];
 
@@ -106,7 +113,7 @@ class ProjectRuntimeService
      */
     public function summary(Project $project, ?TimeRangeData $range = null): ?array
     {
-        if ($project->skipped_runtime_aggregates === 0 && ! $project->runtimeAggregates()->exists()) {
+        if (! $this->hasRuntime($project)) {
             return null;
         }
 
@@ -116,34 +123,18 @@ class ProjectRuntimeService
         $series = $this->series($project, $from, array_filter(RuntimeTypeEnum::cases(), fn (RuntimeTypeEnum $type): bool => ! in_array($type, self::AI_TYPES, true)), $range->until->addSecond());
         $byType = $series->groupBy('type');
         $of = fn (RuntimeTypeEnum $type): Collection => $byType->get($type->value, collect());
-        $requests = $of(RuntimeTypeEnum::Request);
+        $tables = $this->runtimeTables($byType);
 
         return [
             'range' => $range->value(),
             'hours' => intdiv($range->seconds(), 3600),
             'isSampled' => $series->contains(fn (array $one): bool => $one['sampleRate'] < 1),
             'skippedAggregates' => $project->skipped_runtime_aggregates,
-            'requests' => [
-                ...$this->totals($requests),
-                'timeline' => $this->requestTimeline($project, $range),
-                'routes' => $this->timedTable($requests, ['route', 'method']),
-            ],
-            'slowQueries' => $this->timedTable($of(RuntimeTypeEnum::SlowQuery), ['sql', 'connection']),
-            'jobs' => $this->timedTable($of(RuntimeTypeEnum::Job), ['job', 'queue']),
-            // Processed vs failed per bucket (#250); `released` attempts are not in core's payload.
-            'jobTimeline' => $this->timeSeries->points($this->window($project, RuntimeTypeEnum::Job, $range->from, $range->until), 'bucket', [
-                'processed' => "case when {$this->jsonText($this->driver(), 'dimensions', 'outcome')} = 'failed' then 0 else 1.0 * count / sample_rate end",
-                'failed' => "case when {$this->jsonText($this->driver(), 'dimensions', 'outcome')} = 'failed' then 1.0 * count / sample_rate else 0 end",
-            ], $range),
-            'scheduledTasks' => $this->timedTable($of(RuntimeTypeEnum::ScheduledTask), ['task']),
-            'outgoingHttp' => $this->timedTable($of(RuntimeTypeEnum::OutgoingHttp), ['host']),
-            'queueWait' => $this->timedTable($of(RuntimeTypeEnum::QueueWait), ['job', 'queue']),
-            'commands' => $this->timedTable($of(RuntimeTypeEnum::Command), ['command']),
+            ...$tables,
+            'requests' => [...$tables['requests'], 'timeline' => $this->requestTimeline($project, $range)],
+            'jobTimeline' => $this->jobTimeline($project, $range),
             'requestMemory' => $this->memoryTable($of(RuntimeTypeEnum::RequestMemory), ['route', 'method']),
             'jobMemory' => $this->memoryTable($of(RuntimeTypeEnum::JobMemory), ['job', 'queue']),
-            'cache' => $this->cache($of(RuntimeTypeEnum::Cache)),
-            'mail' => $this->countTable($of(RuntimeTypeEnum::Mail), ['mailable', 'mailer']),
-            'notifications' => $this->countTable($of(RuntimeTypeEnum::Notification), ['notification', 'channel']),
             'logLevels' => $this->logLevels($project, $of(RuntimeTypeEnum::LogLevel), $range),
             'deprecations' => $this->countTable($of(RuntimeTypeEnum::Deprecation), ['source', 'message', 'phpVersion']),
             'duplicateQueries' => $this->duplicateQueries($of(RuntimeTypeEnum::DuplicateQuery)),
@@ -156,6 +147,114 @@ class ProjectRuntimeService
             'pennant' => $this->pennant($project, $of(RuntimeTypeEnum::Pennant), $now),
             'deploys' => $this->timeSeries->deploys($project, $range),
         ];
+    }
+
+    /**
+     * Overview uses request totals, top routes and the job activity chart.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function overview(Project $project, TimeRangeData $range): ?array
+    {
+        if (! $this->hasRuntime($project)) {
+            return null;
+        }
+
+        $requests = $this->series($project, $range->from, [RuntimeTypeEnum::Request], $range->until->addSecond());
+
+        return [
+            'range' => $range->value(),
+            'hours' => intdiv($range->seconds(), 3600),
+            'isSampled' => $this->hasSampledRuntime($project, $range, $requests),
+            'requests' => $this->requestTotals($requests),
+            'jobTimeline' => $this->jobTimeline($project, $range),
+        ];
+    }
+
+    /**
+     * Computes the assistant's runtime tables with only the required SQL metric projections.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function assistantSummary(Project $project, TimeRangeData $range): ?array
+    {
+        if (! $this->hasRuntime($project)) {
+            return null;
+        }
+
+        $series = $this->series($project, $range->from, self::ASSISTANT_TYPES, $range->until->addSecond());
+
+        return [
+            'range' => $range->value(),
+            'isSampled' => $this->hasSampledRuntime($project, $range, $series),
+            ...$this->runtimeTables($series->groupBy('type')),
+        ];
+    }
+
+    private function hasRuntime(Project $project): bool
+    {
+        return $project->skipped_runtime_aggregates !== 0 || $project->runtimeAggregates()->exists();
+    }
+
+    /**
+     * Sampling describes the whole range, including series outside a narrower summary.
+     *
+     * @param  Collection<int, Series>  $series
+     */
+    private function hasSampledRuntime(Project $project, TimeRangeData $range, Collection $series): bool
+    {
+        return $series->contains(fn (array $one): bool => $one['sampleRate'] < 1)
+            || $this->window($project, null, $range->from)
+                ->where('bucket', '<', $range->until->addSecond())
+                ->where('sample_rate', '<', 1)
+                ->whereNotIn('type', array_map(fn (RuntimeTypeEnum $type): string => $type->value, self::AI_TYPES))
+                ->exists();
+    }
+
+    /**
+     * @param  Collection<string, Collection<int, Series>>  $byType
+     * @return array{requests: array<string, mixed>, slowQueries: array<mixed>, jobs: array<mixed>, scheduledTasks: array<mixed>, outgoingHttp: array<mixed>, queueWait: array<mixed>, commands: array<mixed>, cache: array<mixed>, mail: array<mixed>, notifications: array<mixed>}
+     */
+    private function runtimeTables(Collection $byType): array
+    {
+        $of = fn (RuntimeTypeEnum $type): Collection => $byType->get($type->value, collect());
+
+        return [
+            'requests' => $this->requestTotals($of(RuntimeTypeEnum::Request)),
+            'slowQueries' => $this->timedTable($of(RuntimeTypeEnum::SlowQuery), ['sql', 'connection']),
+            'jobs' => $this->timedTable($of(RuntimeTypeEnum::Job), ['job', 'queue']),
+            'scheduledTasks' => $this->timedTable($of(RuntimeTypeEnum::ScheduledTask), ['task']),
+            'outgoingHttp' => $this->timedTable($of(RuntimeTypeEnum::OutgoingHttp), ['host']),
+            'queueWait' => $this->timedTable($of(RuntimeTypeEnum::QueueWait), ['job', 'queue']),
+            'commands' => $this->timedTable($of(RuntimeTypeEnum::Command), ['command']),
+            'cache' => $this->cache($of(RuntimeTypeEnum::Cache)),
+            'mail' => $this->countTable($of(RuntimeTypeEnum::Mail), ['mailable', 'mailer']),
+            'notifications' => $this->countTable($of(RuntimeTypeEnum::Notification), ['notification', 'channel']),
+        ];
+    }
+
+    /**
+     * @param  Collection<int, Series>  $requests
+     * @return array<string, mixed>
+     */
+    private function requestTotals(Collection $requests): array
+    {
+        return [
+            ...$this->totals($requests),
+            'routes' => $this->timedTable($requests, ['route', 'method']),
+        ];
+    }
+
+    /** @return list<array<string, int|string>> */
+    private function jobTimeline(Project $project, TimeRangeData $range): array
+    {
+        // Processed vs failed per bucket (#250). Released attempts are absent from core's payload.
+        $outcome = $this->jsonText($this->driver(), 'dimensions', 'outcome');
+
+        return $this->timeSeries->points($this->window($project, RuntimeTypeEnum::Job, $range->from, $range->until), 'bucket', [
+            'processed' => "case when {$outcome} = 'failed' then 0 else 1.0 * count / sample_rate end",
+            'failed' => "case when {$outcome} = 'failed' then 1.0 * count / sample_rate else 0 end",
+        ], $range);
     }
 
     /**
