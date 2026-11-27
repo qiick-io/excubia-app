@@ -61,5 +61,7 @@
     "Something went wrong. Please try again.": "Qualcosa è andato storto. Riprova.",
     "The end must be in the future: this window would silence nothing.": "La fine deve essere nel futuro: questa finestra non silenzierebbe nulla.",
     "This time does not exist in the chosen timezone (the clocks skip it).": "Questo orario non esiste nel fuso scelto (l’ora viene saltata).",
-    "The end must be after the start.": "La fine deve essere dopo l’inizio."
+    "The end must be after the start.": "La fine deve essere dopo l’inizio.",
+    "This member would hold the super-admin role together with other roles.": "Questo membro avrebbe il ruolo super-admin insieme ad altri ruoli.",
+    "Together with the roles of this user's groups, super-admin would be combined with other roles.": "Con i ruoli dei gruppi di questo utente, super-admin sarebbe combinato con altri ruoli."
 }

@@ -49,6 +49,11 @@ class UpdateUserRequest extends StoreUserRequest
             $actor = $this->user();
             $target = $this->target();
 
+            // Direct roles plus the roles of the user's groups: super-admin stands alone (#474).
+            if (UserGroupRequest::breaksExclusiveSuperAdmin([...$this->roles(), ...UserGroupRequest::groupRoleNamesOf($target)])) {
+                $validator->errors()->add('roles', __('Together with the roles of this user\'s groups, super-admin would be combined with other roles.'));
+            }
+
             if (! $target->is($actor)) {
                 return;
             }

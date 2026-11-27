@@ -9,6 +9,10 @@ upgrade from the version before (see [docs/self-hosting.md](docs/self-hosting.md
 
 ## [Unreleased]
 
+### Security
+
+- **Super-admin stands alone through groups too** (#474): a group cannot carry super-admin with other roles, a user with other roles cannot join a super-admin group, and a super-admin group's member cannot get other direct roles.
+
 ### Changed
 
 - **Registry pinned to app-ui 7bd30c4**: the drawer focus return and the grouped tab count are now the registry's own (app-ui#279), so their overrides are gone; the theme gains the chart colour tokens.
