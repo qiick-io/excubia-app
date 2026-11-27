@@ -103,7 +103,7 @@ export function AiUsageView({
     const money = (value: number | null): string =>
         value === null
             ? '—'
-            : value.toLocaleString(undefined, {
+            : formatNumber(value, {
                   style: 'currency',
                   currency: 'USD',
                   maximumFractionDigits: value !== 0 && value < 1 ? 4 : 2,

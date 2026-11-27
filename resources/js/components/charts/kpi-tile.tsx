@@ -2,6 +2,7 @@ import { ArrowDownRight, ArrowUpRight, Minus } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { trendOf } from '@/components/stat-card';
 import { Card } from '@/components/ui/card';
+import type { FormatNumber } from '@/hooks/use-number-format';
 import { cn } from '@/lib/utils';
 
 /**
@@ -25,8 +26,9 @@ export function kpiDeltaOf(
     value: number,
     previous: number | null,
     isIncreaseGood: boolean | null,
+    formatNumber: FormatNumber,
 ): KpiDelta | null {
-    const trend = trendOf(value, previous);
+    const trend = trendOf(value, previous, formatNumber);
 
     if (trend === null) {
         return null;

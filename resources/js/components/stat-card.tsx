@@ -9,6 +9,7 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import type { FormatNumber } from '@/hooks/use-number-format';
 import { cn } from '@/lib/utils';
 
 export type StatTrend = {
@@ -90,6 +91,7 @@ export function StatCard({
 export function trendOf(
     value: number,
     previous: number | null,
+    formatNumber: FormatNumber,
 ): StatTrend | null {
     if (previous === null) {
         return null;
@@ -100,17 +102,21 @@ export function trendOf(
     if (previous === 0) {
         return {
             delta,
-            label:
-                delta === 0
-                    ? '0'
-                    : `${delta > 0 ? '+' : ''}${delta.toLocaleString()}`,
+            label: formatNumber(delta, { signDisplay: 'exceptZero' }),
         };
     }
 
-    const percent = (delta / previous) * 100;
+    const ratio = delta / previous;
+    const digits = Math.abs(ratio) < 0.1 ? 1 : 0;
 
     return {
         delta,
-        label: `${percent > 0 ? '+' : ''}${percent.toFixed(Math.abs(percent) < 10 ? 1 : 0)}%`,
+        label: formatNumber(ratio, {
+            style: 'percent',
+            signDisplay: ratio > 0 ? 'always' : 'auto',
+            minimumFractionDigits: digits,
+            maximumFractionDigits: digits,
+            useGrouping: false,
+        }),
     };
 }

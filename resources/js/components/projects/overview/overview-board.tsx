@@ -12,6 +12,7 @@ import {
     supportStatus,
 } from '@/components/reports/runtime-support';
 import { findingsCount, relativeTime } from '@/lib/report-format';
+import { useNumberFormat } from '@/hooks/use-number-format';
 import { cn } from '@/lib/utils';
 import type { HealthReportSummary } from '@/types';
 import type { DashboardHistory, RuntimeOverview } from '@/types/dashboard';
@@ -30,6 +31,7 @@ export function OverviewBoard({
 }) {
     const { t, i18n } = useTranslation();
     const locale = i18n.language;
+    const formatNumber = useNumberFormat();
     const counts = latest.counts;
     const findings = findingsCount(counts);
     const checks = latest.checks;
@@ -58,16 +60,23 @@ export function OverviewBoard({
         findings,
         history.findings?.previous ?? null,
         false,
+        formatNumber,
     );
     const checksDelta = kpiDeltaOf(
         checks.pass,
         history.checks?.previous ?? null,
         true,
+        formatNumber,
     );
     const exceptions = history.exceptions;
     const requestDelta =
         requestCount > 0
-            ? kpiDeltaOf(requestCount, history.requests?.previous ?? null, null)
+            ? kpiDeltaOf(
+                  requestCount,
+                  history.requests?.previous ?? null,
+                  null,
+                  formatNumber,
+              )
             : null;
 
     return (
@@ -86,7 +95,7 @@ export function OverviewBoard({
             >
                 <KpiTile
                     label={t('report.overview.findings')}
-                    value={findings.toLocaleString(locale)}
+                    value={formatNumber(findings)}
                     delta={findingsDelta}
                     secondary={
                         findingsDelta
@@ -102,13 +111,7 @@ export function OverviewBoard({
                 />
                 <KpiTile
                     label={t('report.overview.checks')}
-                    value={
-                        <KpiRatio
-                            value={checks.pass}
-                            total={checksTotal}
-                            locale={locale}
-                        />
-                    }
+                    value={<KpiRatio value={checks.pass} total={checksTotal} />}
                     delta={checksDelta}
                     secondary={checksDelta ? compareSnapshot : undefined}
                     chart={historySparkline(history.checks)}
@@ -122,7 +125,6 @@ export function OverviewBoard({
                             <KpiRatio
                                 value={supported}
                                 total={runtimes.length}
-                                locale={locale}
                             />
                         )
                     }
@@ -159,19 +161,19 @@ export function OverviewBoard({
                                       count: runtime.hours,
                                   })
                         }
-                        value={requestCount.toLocaleString(locale)}
+                        value={formatNumber(requestCount)}
                         delta={requestDelta}
                         secondary={[
                             t('dashboard.telemetry.errors', {
                                 count: errors,
-                                rate: errorRate.toLocaleString(locale, {
+                                rate: formatNumber(errorRate, {
                                     maximumFractionDigits:
                                         errorRate < 1 ? 2 : 1,
                                 }),
                             }),
                             averageMs != null
                                 ? t('report.overview.averageMs', {
-                                      ms: averageMs.toLocaleString(locale),
+                                      ms: formatNumber(averageMs),
                                   })
                                 : null,
                             requestDelta ? compareRange : null,

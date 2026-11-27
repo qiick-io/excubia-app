@@ -23,6 +23,7 @@ import type {
     IssueRow,
 } from '@/types';
 import { DrawerCloseButton } from '@/components/drawer-close-button';
+import { useNumberFormat, type FormatNumber } from '@/hooks/use-number-format';
 
 /** The checks table of the excubia-core README: what each check id looks at and when it warns. */
 export const CHECKS_DOCS_URL =
@@ -71,7 +72,12 @@ function humanize(key: string): string {
  * One `details` value, formatted by the key's naming in core's report schema: `*Mb` sizes,
  * `*Percent` and `hitRate` percentages, `*Minutes` / `*Hours` ages, booleans, lists.
  */
-function formatValue(t: TFunction, key: string, value: unknown): string {
+function formatValue(
+    t: TFunction,
+    formatNumber: FormatNumber,
+    key: string,
+    value: unknown,
+): string {
     if (value === null || value === undefined || value === '') {
         return '—';
     }
@@ -82,11 +88,11 @@ function formatValue(t: TFunction, key: string, value: unknown): string {
 
     if (typeof value === 'number') {
         if (key.endsWith('Mb')) {
-            return t('details.megabytes', { value: value.toLocaleString() });
+            return t('details.megabytes', { value: formatNumber(value) });
         }
 
         if (key.endsWith('Percent') || key === 'hitRate') {
-            return t('details.percent', { value: value.toLocaleString() });
+            return t('details.percent', { value: formatNumber(value) });
         }
 
         if (key.endsWith('Minutes') || key.startsWith('minutesSince')) {
@@ -97,7 +103,7 @@ function formatValue(t: TFunction, key: string, value: unknown): string {
             return t('details.hours', { count: value });
         }
 
-        return value.toLocaleString();
+        return formatNumber(value);
     }
 
     if (Array.isArray(value)) {
@@ -120,6 +126,7 @@ function formatValue(t: TFunction, key: string, value: unknown): string {
  */
 function FindingDetails({ details }: { details: Record<string, unknown> }) {
     const { t } = useTranslation();
+    const formatNumber = useNumberFormat();
     const entries = Object.entries(details);
 
     if (entries.length === 0) {
@@ -153,6 +160,7 @@ function FindingDetails({ details }: { details: Record<string, unknown> }) {
                                                 .map(([rowKey, rowValue]) =>
                                                     formatValue(
                                                         t,
+                                                        formatNumber,
                                                         rowKey,
                                                         rowValue,
                                                     ),
@@ -162,7 +170,7 @@ function FindingDetails({ details }: { details: Record<string, unknown> }) {
                                     ))}
                                 </ul>
                             ) : (
-                                formatValue(t, key, value)
+                                formatValue(t, formatNumber, key, value)
                             )}
                         </dd>
                     </Fragment>

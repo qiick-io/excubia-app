@@ -16,6 +16,7 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { useNumberFormat } from '@/hooks/use-number-format';
 import {
     Table,
     TableBody,
@@ -108,6 +109,7 @@ export function InfrastructureCard({
     className?: string;
 }) {
     const { t } = useTranslation();
+    const formatNumber = useNumberFormat();
     const infrastructure = health.infrastructure;
     const database = infrastructure.database;
     const diskStatus = statusOf(health, 'laravel-disk-space');
@@ -115,8 +117,8 @@ export function InfrastructureCard({
     const redisLabels = infrastructure.redis.map((redis) =>
         t('health.infrastructure.redisValue', {
             connection: redis.connection,
-            used: redis.usedMb.toLocaleString(),
-            max: redis.maxMb === null ? '∞' : redis.maxMb.toLocaleString(),
+            used: formatNumber(redis.usedMb),
+            max: redis.maxMb === null ? '∞' : formatNumber(redis.maxMb),
         }),
     );
     const backupLabels = infrastructure.backups.map((backup) =>
@@ -149,7 +151,9 @@ export function InfrastructureCard({
                         />
                         <span className="tabular-nums">
                             {t('details.percent', {
-                                value: infrastructure.diskUsedPercent,
+                                value: formatNumber(
+                                    infrastructure.diskUsedPercent,
+                                ),
                             })}
                         </span>
                     </div>
@@ -166,7 +170,7 @@ export function InfrastructureCard({
                             <span className="tabular-nums">
                                 {t('health.infrastructure.databaseValue', {
                                     size: t('details.megabytes', {
-                                        value: database.sizeMb.toLocaleString(),
+                                        value: formatNumber(database.sizeMb),
                                     }),
                                     connection: database.connection,
                                 })}
@@ -182,7 +186,7 @@ export function InfrastructureCard({
                             label: table.table,
                             value: table.sizeMb,
                             valueLabel: t('details.megabytes', {
-                                value: table.sizeMb.toLocaleString(),
+                                value: formatNumber(table.sizeMb),
                             }),
                         }))}
                     />

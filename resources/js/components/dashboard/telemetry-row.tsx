@@ -27,14 +27,20 @@ export function RequestsKpi({
     periodLabel: string;
     className?: string;
 }) {
-    const { t, i18n } = useTranslation();
+    const { t } = useTranslation();
+    const formatNumber = useNumberFormat();
     const errorRate =
         runtime.requests > 0 ? (runtime.errors / runtime.requests) * 100 : 0;
 
-    const delta = kpiDeltaOf(runtime.requests, runtime.previousRequests, null);
+    const delta = kpiDeltaOf(
+        runtime.requests,
+        runtime.previousRequests,
+        null,
+        formatNumber,
+    );
     const summary = t('dashboard.telemetry.errors', {
         count: runtime.errors,
-        rate: errorRate.toLocaleString(i18n.language, {
+        rate: formatNumber(errorRate, {
             maximumFractionDigits: errorRate < 1 ? 2 : 1,
         }),
     });
@@ -43,7 +49,7 @@ export function RequestsKpi({
         <KpiTile
             className={className}
             label={t('dashboard.telemetry.requests')}
-            value={runtime.requests.toLocaleString(i18n.language)}
+            value={formatNumber(runtime.requests)}
             delta={delta}
             secondary={delta ? `${summary} · ${periodLabel}` : summary}
             chart={historySparkline(history)}

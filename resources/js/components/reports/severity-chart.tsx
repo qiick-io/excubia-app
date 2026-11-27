@@ -197,7 +197,7 @@ export function StackedBarChart({
                     <YAxis
                         allowDecimals={formatValue !== undefined}
                         // Grouped digits by default: a bare 60000 reads as 6000 at a glance (#194).
-                        tickFormatter={displayValue}
+                        tickFormatter={(value) => displayValue(value)}
                         tick={{
                             fontSize: 11,
                             fill: 'var(--color-muted-foreground)',

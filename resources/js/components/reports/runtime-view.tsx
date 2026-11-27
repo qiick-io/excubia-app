@@ -122,7 +122,7 @@ export function RuntimeView({
         number: (value, digits = 1) =>
             value === null
                 ? '—'
-                : value.toLocaleString(undefined, {
+                : formatNumber(value, {
                       maximumFractionDigits: digits,
                   }),
     };
@@ -161,6 +161,7 @@ export function RuntimeView({
                 history={kpiHistory}
                 rangeLabel={rangeTexts.headline}
                 formatCount={format.count}
+                formatNumber={formatNumber}
                 formatMs={format.ms}
             />
 
