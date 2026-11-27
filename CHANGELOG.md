@@ -9,6 +9,10 @@ upgrade from the version before (see [docs/self-hosting.md](docs/self-hosting.md
 
 ## [Unreleased]
 
+### Fixed
+
+- **Overlays without a trigger** (#456): the assistant panel has a visible close button on a phone; the assistant panel, the two-factor setup dialog and the push token dialog return focus to what opened them, or to the page, when they close.
+
 ## [0.1.0-beta.1] - 2026-11-27
 
 ### Added
