@@ -107,8 +107,9 @@ it('gives every response a request id, an error and a machine door too', functio
     $this->postJson('/api/reports')->assertUnauthorized()->assertHeader('X-Request-Id');
 });
 
-it('keeps browser-only headers off the API and the health check', function () {
-    $this->get('/up')->assertOk()->assertHeaderMissing('X-Frame-Options');
+it('keeps browser-only headers off the API, and gives the health check the web set', function () {
+    // /up is an HTML page, not a machine door: since qiick/laravel-http-basics it gets the web set.
+    $this->get('/up')->assertOk()->assertHeader('X-Frame-Options', 'DENY')->assertHeader('X-Content-Type-Options', 'nosniff');
     // The API keeps only the baseline headers: no framing rule for JSON.
     $this->postJson('/api/reports')->assertUnauthorized()
         ->assertHeaderMissing('X-Frame-Options')
