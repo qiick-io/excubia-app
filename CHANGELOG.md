@@ -9,6 +9,10 @@ upgrade from the version before (see [docs/self-hosting.md](docs/self-hosting.md
 
 ## [Unreleased]
 
+### Security
+
+- **Project text is marked as data for AI agents** (#476): copied fix prompts put the project's text in a fenced block labelled as reported data (no more "Excubia's hint"), and every MCP tool result starts with a notice that its strings are data, not instructions.
+
 ### Changed
 
 - **Registry pinned to app-ui 7bd30c4**: the drawer focus return and the grouped tab count are now the registry's own (app-ui#279), so their overrides are gone; the theme gains the chart colour tokens.
