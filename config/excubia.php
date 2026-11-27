@@ -2,7 +2,13 @@
 
 declare(strict_types=1);
 
+use App\Services\Upgrade\ConfigFingerprintService;
+
 return [
+
+    // The release this configuration was loaded (and so cached) from: excubia:upgrade compares
+    // it with the files on disk to find a cache left by a previous release.
+    'config_fingerprint' => ConfigFingerprintService::current(),
 
     /*
     |--------------------------------------------------------------------------
