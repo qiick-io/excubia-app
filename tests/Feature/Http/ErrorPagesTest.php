@@ -45,6 +45,29 @@ it('renders the page without the app shell for guests', function () {
         ->assertInertia(fn (AssertableInertia $page) => $page->component('errors/error-page')->where('auth.user', null));
 });
 
+it('localizes an unmatched URL from the preference cookie in the guest layout', function (string $locale, bool $isSignedIn) {
+    if ($isSignedIn) {
+        $this->actingAs(User::factory()->create(['locale' => $locale]));
+    }
+
+    $this->withUnencryptedCookie('locale', $locale)
+        ->get('/round-three-unmatched')
+        ->assertNotFound()
+        ->assertSee('lang="'.$locale.'"', false)
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('errors/error-page')
+            ->where('locale', $locale)
+            ->missing('auth.user'));
+})->with(['it', 'de'])->with([true, false]);
+
+it('ignores an unsupported preference on an unmatched URL', function () {
+    $this->withUnencryptedCookie('locale', 'unsupported')
+        ->get('/round-three-unmatched')
+        ->assertNotFound()
+        ->assertSee('lang="en"', false)
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('locale', 'en'));
+});
+
 it('sends guests on a signed-in route to the login before any 404', function () {
     $this->get('/projects/does-not-exist')->assertRedirect(route('login'));
 });

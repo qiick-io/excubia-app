@@ -32,21 +32,25 @@ class SetLocaleMiddleware
      */
     private function resolve(Request $request): string
     {
-        $available = array_keys((array) config('i18n.available_locales', ['en' => 'English']));
-
         $userLocale = $request->user()?->locale;
 
-        if (is_string($userLocale) && in_array($userLocale, $available, true)) {
+        if (is_string($userLocale) && self::isSupported($userLocale)) {
             return $userLocale;
         }
 
+        return self::cookieLocale($request) ?? app(SettingsRepositoryService::class)->defaultLanguage();
+    }
+
+    /** The plain preference cookie can also be read outside the routed web middleware. */
+    public static function cookieLocale(Request $request): ?string
+    {
         $cookieLocale = $request->cookie('locale');
 
-        if (is_string($cookieLocale) && in_array($cookieLocale, $available, true)) {
-            return $cookieLocale;
-        }
+        return is_string($cookieLocale) && self::isSupported($cookieLocale) ? $cookieLocale : null;
+    }
 
-        // Always one of the available locales: the saved default, else the config default, else `en`.
-        return app(SettingsRepositoryService::class)->defaultLanguage();
+    private static function isSupported(string $locale): bool
+    {
+        return array_key_exists($locale, (array) config('i18n.available_locales', ['en' => 'English']));
     }
 }
