@@ -105,7 +105,9 @@ class DeliverAlertJob implements ShouldQueue
                     $settings,
                     $http,
                     $settings->slackWebhookUrl(),
-                    (string) json_encode(['text' => $this->text], JSON_THROW_ON_ERROR),
+                    // Slack reads `text` as mrkdwn: escape it so pushed report text cannot add
+                    // `<!channel>` mentions or disguised `<url|label>` links (#477).
+                    (string) json_encode(['text' => strtr($this->text, ['&' => '&amp;', '<' => '&lt;', '>' => '&gt;'])], JSON_THROW_ON_ERROR),
                 ),
                 self::TELEGRAM => $this->deliverRaw(
                     $settings,

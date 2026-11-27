@@ -62,3 +62,10 @@ it('falls back to the core fix hint for unknown checks', function () {
         ->toContain('Do the thing')
         ->and(fixFor(['checkId' => 'future-check'])['command'])->toBeNull();
 });
+
+it('never builds a command from a package or version that starts with a dash', function () {
+    // #475: `-d/tmp` became `composer update -d/tmp --with-dependencies`.
+    expect(fixFor(['checkId' => 'composer-advisories', 'subject' => '-d/tmp', 'details' => ['package' => '-d/tmp']])['command'])->toBeNull()
+        ->and(fixFor(['checkId' => 'npm-advisories', 'details' => ['package' => '-g', 'fixedVersions' => ['1.0.0']]])['command'])->toBeNull()
+        ->and(fixFor(['checkId' => 'npm-advisories', 'details' => ['package' => 'left-pad', 'fixedVersions' => ['--registry=https://evil.example']]])['command'])->toBe('npm update left-pad');
+});

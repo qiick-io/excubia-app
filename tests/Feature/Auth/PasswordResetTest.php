@@ -92,4 +92,24 @@ class PasswordResetTest extends TestCase
 
         $response->assertSessionHasErrors('email');
     }
+
+    public function test_forgot_password_answers_the_same_for_known_and_unknown_addresses_and_is_throttled(): void
+    {
+        // #472: an unknown address got 422 "We can't find a user", a known one 200, unthrottled.
+        Notification::fake();
+        $user = User::factory()->create();
+
+        $known = $this->postJson(route('password.email'), ['email' => $user->email]);
+        $unknown = $this->postJson(route('password.email'), ['email' => 'nobody@example.com']);
+
+        $known->assertOk();
+        $unknown->assertOk();
+        $this->assertSame($known->json(), $unknown->json());
+
+        foreach (range(3, 5) as $attempt) {
+            $this->postJson(route('password.email'), ['email' => "nobody{$attempt}@example.com"])->assertOk();
+        }
+
+        $this->postJson(route('password.email'), ['email' => 'nobody6@example.com'])->assertTooManyRequests();
+    }
 }

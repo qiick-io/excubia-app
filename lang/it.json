@@ -61,5 +61,6 @@
     "Something went wrong. Please try again.": "Qualcosa è andato storto. Riprova.",
     "The end must be in the future: this window would silence nothing.": "La fine deve essere nel futuro: questa finestra non silenzierebbe nulla.",
     "This time does not exist in the chosen timezone (the clocks skip it).": "Questo orario non esiste nel fuso scelto (l’ora viene saltata).",
-    "The end must be after the start.": "La fine deve essere dopo l’inizio."
+    "The end must be after the start.": "La fine deve essere dopo l’inizio.",
+    "If an account exists for this address, we have emailed a password reset link.": "Se esiste un account con questo indirizzo, ti abbiamo inviato un link per reimpostare la password."
 }

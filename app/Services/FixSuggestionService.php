@@ -181,6 +181,8 @@ class FixSuggestionService
      */
     private function shellSafe(string $value): bool
     {
-        return $value !== '' && preg_match('/^[A-Za-z0-9@\/._\-]+$/', $value) === 1 && ! str_contains($value, '..');
+        // The first character is a letter, a digit or `@`: a leading `-` would turn a pushed
+        // package name into a Composer or npm option (`-d/tmp`) in the copyable command (#475).
+        return preg_match('/^[A-Za-z0-9@][A-Za-z0-9@\/._\-]*$/', $value) === 1 && ! str_contains($value, '..');
     }
 }
