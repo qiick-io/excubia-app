@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\Http\Responses;
 
 use App\Http\Middleware\HandleInertiaRequests;
-use App\Http\Middleware\SetLocaleMiddleware;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Qiick\HttpBasics\Contracts\SupportedLocales;
 use Symfony\Component\HttpFoundation\Response;
 use Throwable;
 
@@ -75,7 +75,10 @@ final class ErrorPageResponse
             Inertia::share(app(HandleInertiaRequests::class)->share($request));
         } elseif (! $request->hasSession()) {
             // An unmatched URL bypasses web middleware. The locale cookie needs no session or database.
-            $locale = SetLocaleMiddleware::cookieLocale($request) ?? app()->getLocale();
+            $cookieLocale = $request->cookie('locale');
+            $locale = is_string($cookieLocale) && in_array($cookieLocale, app(SupportedLocales::class)->all(), true)
+                ? $cookieLocale
+                : app()->getLocale();
             app()->setLocale($locale);
             $props['locale'] = $locale;
         }
@@ -84,6 +87,12 @@ final class ErrorPageResponse
             ->toResponse($request)
             ->setStatusCode($status);
         $page->headers->set('Vary', 'X-Inertia');
+
+        // A full page render leaves the type to the server; with `nosniff` on every response
+        // (qiick/laravel-http-basics) a browser would then show the HTML as text.
+        if (! $page->headers->has('Content-Type')) {
+            $page->headers->set('Content-Type', 'text/html; charset=UTF-8');
+        }
 
         // Maintenance mode's Retry-After and Refresh headers keep working.
         foreach (['Retry-After', 'Refresh'] as $header) {
