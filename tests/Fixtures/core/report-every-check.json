@@ -1,0 +1,1158 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-07T08:00:00Z",
+  "excubiaVersion": "1.0.0-beta.3",
+  "release": "v2.4.0",
+  "project": {
+    "php": {
+      "version": "8.4.3",
+      "cycle": "8.4",
+      "securitySupportEndsOn": "2028-12-31",
+      "activeSupportEndsOn": "2026-12-31"
+    },
+    "laravel": {
+      "version": "v13.1.0",
+      "cycle": "13",
+      "securitySupportEndsOn": "2028-03-17",
+      "activeSupportEndsOn": "2027-09-17"
+    },
+    "node": null
+  },
+  "checks": [
+    {
+      "checkId": "php-eol",
+      "name": "PHP end of life",
+      "status": "warn",
+      "findings": [
+        {
+          "checkId": "php-eol",
+          "severity": "medium",
+          "status": "warn",
+          "subject": "php 8.3",
+          "message": "PHP 8.3 security support ends within 180 days.",
+          "fixHint": "Plan the upgrade to PHP 8.4.",
+          "evidenceUrl": null,
+          "fingerprint": "f07fe2100b2f86e46c2e01353bd2d7452aadffe3980b7fd91724ab940b067400",
+          "details": {
+            "cycle": "8.3",
+            "securitySupportEndsOn": "2027-12-31",
+            "activeSupportEndsOn": "2025-12-31"
+          }
+        }
+      ]
+    },
+    {
+      "checkId": "laravel-eol",
+      "name": "Laravel end of life",
+      "status": "pass",
+      "findings": []
+    },
+    {
+      "checkId": "node-eol",
+      "name": "Node end of life",
+      "status": "warn",
+      "findings": [
+        {
+          "checkId": "node-eol",
+          "severity": "low",
+          "status": "warn",
+          "subject": "node 22",
+          "message": "Node 22 maintenance ends within 180 days.",
+          "fixHint": "Plan the upgrade to Node 24.",
+          "evidenceUrl": null,
+          "fingerprint": "8566ee8a348096294c154ad556b4497fad0b1bd7aea9d9ab72d52a25078a5c64",
+          "details": {
+            "cycle": "22",
+            "securitySupportEndsOn": "2027-04-30",
+            "activeSupportEndsOn": null
+          }
+        }
+      ]
+    },
+    {
+      "checkId": "composer-advisories",
+      "name": "Known vulnerabilities (Composer)",
+      "status": "fail",
+      "findings": [
+        {
+          "checkId": "composer-advisories",
+          "severity": "critical",
+          "status": "fail",
+          "subject": "guzzlehttp/guzzle",
+          "message": "Known vulnerability in guzzlehttp/guzzle 7.4.0.",
+          "fixHint": "composer update guzzlehttp/guzzle",
+          "evidenceUrl": "https://packagist.org/security-advisories/PKSA-1234",
+          "advisoryId": "PKSA-1234",
+          "fingerprint": "fddb85c82c7c1cb95dd044d69aedf266f3eb189623ad325abd764390df80a3a9",
+          "details": {
+            "package": "guzzlehttp/guzzle",
+            "lockedVersion": "7.4.0",
+            "affectedVersions": ">=7.0.0,<7.4.5",
+            "fixedVersions": [
+              "7.4.5"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "checkId": "npm-advisories",
+      "name": "Known vulnerabilities (npm)",
+      "status": "warn",
+      "findings": [
+        {
+          "checkId": "npm-advisories",
+          "severity": "medium",
+          "status": "warn",
+          "subject": "axios",
+          "message": "Known vulnerability in axios 1.6.0.",
+          "fixHint": "npm update axios",
+          "evidenceUrl": "https://osv.dev/vulnerability/GHSA-wf5p-g6vw-rhxx",
+          "advisoryId": "GHSA-wf5p-g6vw-rhxx",
+          "fingerprint": "120be11b8d2ea47b096dfb2d598b14b62b3962501501dd4feff0a9638fd6f01e",
+          "details": {
+            "package": "axios",
+            "lockedVersion": "1.6.0",
+            "fixedVersions": [],
+            "lockfile": "package-lock.json"
+          }
+        },
+        {
+          "checkId": "npm-advisories",
+          "severity": "info",
+          "status": "skipped",
+          "subject": "private packages",
+          "message": "2 private packages were not sent to OSV.",
+          "fixHint": "",
+          "evidenceUrl": null,
+          "fingerprint": "91ed3ea314f74b87766bf9d93cda17e9b088b9ef97f85fbbcaefa07d6a86ab02",
+          "details": {
+            "count": 2
+          }
+        }
+      ]
+    },
+    {
+      "checkId": "composer-abandoned",
+      "name": "Abandoned packages",
+      "status": "warn",
+      "findings": [
+        {
+          "checkId": "composer-abandoned",
+          "severity": "high",
+          "status": "warn",
+          "subject": "swiftmailer/swiftmailer",
+          "message": "swiftmailer/swiftmailer is abandoned.",
+          "fixHint": "Replace it with symfony/mailer.",
+          "evidenceUrl": null,
+          "fingerprint": "d44d1e308347cf33878c52963e563e10ef2e0384cbc46bf6905da54da07b1f16",
+          "details": {
+            "package": "swiftmailer/swiftmailer",
+            "lockedVersion": "6.3.0",
+            "replacement": "symfony/mailer"
+          }
+        }
+      ]
+    },
+    {
+      "checkId": "composer-stale",
+      "name": "Stale packages",
+      "status": "warn",
+      "findings": [
+        {
+          "checkId": "composer-stale",
+          "severity": "low",
+          "status": "warn",
+          "subject": "jenssegers/agent",
+          "message": "No release for more than 24 months.",
+          "fixHint": "Look for a maintained alternative.",
+          "evidenceUrl": null,
+          "fingerprint": "e6d148633cba276decff49bb73d1a29c071437d8d3ce9acf68ca60d3dd90e1ba",
+          "details": {
+            "package": "jenssegers/agent",
+            "lockedVersion": "2.6.4"
+          }
+        }
+      ]
+    },
+    {
+      "checkId": "laravel-next-blocker",
+      "name": "Next-major blockers",
+      "status": "warn",
+      "findings": [
+        {
+          "checkId": "laravel-next-blocker",
+          "severity": "medium",
+          "status": "warn",
+          "subject": "spatie/laravel-ray",
+          "message": "The latest release does not allow Laravel 14.",
+          "fixHint": "Wait for a release that allows Laravel 14.",
+          "evidenceUrl": null,
+          "fingerprint": "46a99adc79fda202736d96d6dad55330613d41c62d33a9ff620aeb8f647f7609",
+          "details": {
+            "package": "spatie/laravel-ray",
+            "lockedVersion": "1.40.0",
+            "targetMajor": 14
+          }
+        }
+      ]
+    },
+    {
+      "checkId": "laravel-debug-mode",
+      "name": "Debug mode",
+      "status": "fail",
+      "findings": [
+        {
+          "checkId": "laravel-debug-mode",
+          "severity": "high",
+          "status": "fail",
+          "subject": "app.debug",
+          "message": "Debug mode is on in production.",
+          "fixHint": "Set APP_DEBUG=false.",
+          "evidenceUrl": null,
+          "fingerprint": "eb6ea91d929f28bfc8c891dbea52b32f7a2ef0af045cf82d0b4ba855b29f0e96"
+        }
+      ]
+    },
+    {
+      "checkId": "laravel-production-caches",
+      "name": "Production caches",
+      "status": "warn",
+      "findings": [
+        {
+          "checkId": "laravel-production-caches",
+          "severity": "low",
+          "status": "warn",
+          "subject": "route cache",
+          "message": "The route cache is missing.",
+          "fixHint": "php artisan optimize",
+          "evidenceUrl": null,
+          "fingerprint": "3aced6c945cfe2bb8cab2961d039648f898f7f262b1e3e031c50697e6b852787"
+        }
+      ]
+    },
+    {
+      "checkId": "laravel-pending-migrations",
+      "name": "Pending migrations",
+      "status": "warn",
+      "findings": [
+        {
+          "checkId": "laravel-pending-migrations",
+          "severity": "medium",
+          "status": "warn",
+          "subject": "migrations",
+          "message": "3 migrations have not run.",
+          "fixHint": "php artisan migrate --force",
+          "evidenceUrl": null,
+          "fingerprint": "e51612ef0609dd76576cffcc489afd16d7dc9f85b302101668fa4b9d20eaf701",
+          "details": {
+            "count": 3
+          }
+        }
+      ]
+    },
+    {
+      "checkId": "laravel-failed-jobs",
+      "name": "Failed jobs",
+      "status": "warn",
+      "findings": [
+        {
+          "checkId": "laravel-failed-jobs",
+          "severity": "high",
+          "status": "warn",
+          "subject": "failed jobs",
+          "message": "12 failed jobs, the oldest 30 hours old.",
+          "fixHint": "php artisan queue:retry all",
+          "evidenceUrl": null,
+          "fingerprint": "e9e4ccaaa555f1acc9b9df7715aee0533015caea16ac1e03faa616bab1baa490",
+          "details": {
+            "count": 12,
+            "oldestAgeHours": 30
+          }
+        }
+      ]
+    },
+    {
+      "checkId": "laravel-scheduler-heartbeat",
+      "name": "Scheduler heartbeat",
+      "status": "warn",
+      "findings": [
+        {
+          "checkId": "laravel-scheduler-heartbeat",
+          "severity": "medium",
+          "status": "warn",
+          "subject": "scheduler",
+          "message": "The scheduler has not run for 42 minutes.",
+          "fixHint": "Check the schedule:run cron.",
+          "evidenceUrl": null,
+          "fingerprint": "aa01a31d123c2c6104507ef69a02f149a2d7669a7395a7c95329228eb31b44a6",
+          "details": {
+            "minutesSinceLastRun": 42
+          }
+        }
+      ]
+    },
+    {
+      "checkId": "laravel-maintenance-mode",
+      "name": "Maintenance mode",
+      "status": "pass",
+      "findings": []
+    },
+    {
+      "checkId": "laravel-app-key",
+      "name": "Application key",
+      "status": "pass",
+      "findings": []
+    },
+    {
+      "checkId": "laravel-session-security",
+      "name": "Session cookie security",
+      "status": "warn",
+      "findings": [
+        {
+          "checkId": "laravel-session-security",
+          "severity": "medium",
+          "status": "warn",
+          "subject": "session.secure",
+          "message": "session.secure is false while app.url is https.",
+          "fixHint": "Set SESSION_SECURE_COOKIE=true.",
+          "evidenceUrl": null,
+          "fingerprint": "a47bd2aaf69c4d55f93ee2f0ac15aa6fe3e3ac2c99dc5310bb49de2c4d11f809"
+        }
+      ]
+    },
+    {
+      "checkId": "laravel-cors-wildcard",
+      "name": "CORS wildcard origin",
+      "status": "fail",
+      "findings": [
+        {
+          "checkId": "laravel-cors-wildcard",
+          "severity": "high",
+          "status": "fail",
+          "subject": "cors.allowed_origins",
+          "message": "Wildcard origin with credentials.",
+          "fixHint": "List the allowed origins.",
+          "evidenceUrl": null,
+          "fingerprint": "d3b56b5d0aa84385445ac1430014f0d520391bb9191a527db83b32f546708381",
+          "details": {
+            "hasCredentials": true
+          }
+        }
+      ]
+    },
+    {
+      "checkId": "laravel-production-drivers",
+      "name": "Production drivers",
+      "status": "warn",
+      "findings": [
+        {
+          "checkId": "laravel-production-drivers",
+          "severity": "medium",
+          "status": "warn",
+          "subject": "queue",
+          "message": "The queue driver is sync.",
+          "fixHint": "Use database or redis.",
+          "evidenceUrl": null,
+          "fingerprint": "5951a3ff724eaf32e3fb557253c67885557ab75211efd744bcf673902aeb5395",
+          "details": {
+            "component": "queue",
+            "driver": "sync"
+          }
+        }
+      ]
+    },
+    {
+      "checkId": "laravel-log-level",
+      "name": "Log level",
+      "status": "warn",
+      "findings": [
+        {
+          "checkId": "laravel-log-level",
+          "severity": "low",
+          "status": "warn",
+          "subject": "logging",
+          "message": "The default channel logs at debug.",
+          "fixHint": "Set LOG_LEVEL=warning.",
+          "evidenceUrl": null,
+          "fingerprint": "d0cf3af2240f26b6e98326ad0ac26aa19745b60bdd1d872d577915852ccd1f17"
+        }
+      ]
+    },
+    {
+      "checkId": "laravel-dev-packages",
+      "name": "Development packages",
+      "status": "warn",
+      "findings": [
+        {
+          "checkId": "laravel-dev-packages",
+          "severity": "medium",
+          "status": "warn",
+          "subject": "laravel/telescope",
+          "message": "laravel/telescope is in require and enabled.",
+          "fixHint": "Move it to require-dev.",
+          "evidenceUrl": null,
+          "fingerprint": "954d4eddf18bc2be691e0250d4b009e0aca99f07241f7a23d589adaac8cd97b4",
+          "details": {
+            "package": "laravel/telescope"
+          }
+        }
+      ]
+    },
+    {
+      "checkId": "dependency-licenses",
+      "name": "Dependency licenses",
+      "status": "fail",
+      "findings": [
+        {
+          "checkId": "dependency-licenses",
+          "severity": "high",
+          "status": "fail",
+          "subject": "mongodb/mongodb",
+          "message": "mongodb/mongodb uses the denied license SSPL-1.0.",
+          "fixHint": "Replace the package or allow the license.",
+          "evidenceUrl": null,
+          "fingerprint": "194a24e12dfa0f03bee14d561131a9bc882652a8bcce18b9d29f267f05b2b3a6",
+          "details": {
+            "package": "mongodb/mongodb",
+            "lockedVersion": "1.19.0",
+            "licenses": [
+              "SSPL-1.0"
+            ],
+            "ecosystem": "composer",
+            "kind": "denied"
+          }
+        },
+        {
+          "checkId": "dependency-licenses",
+          "severity": "medium",
+          "status": "warn",
+          "subject": "mpdf/mpdf",
+          "message": "mpdf/mpdf uses a strong copyleft license.",
+          "fixHint": "Review the license.",
+          "evidenceUrl": null,
+          "fingerprint": "8ea84e5056b487701e2a62efdc25373e652c22155f11ad22a708971270ea179b",
+          "details": {
+            "package": "mpdf/mpdf",
+            "lockedVersion": "8.2.4",
+            "licenses": [
+              "GPL-2.0-only"
+            ],
+            "ecosystem": "composer",
+            "kind": "copyleft"
+          }
+        },
+        {
+          "checkId": "dependency-licenses",
+          "severity": "low",
+          "status": "warn",
+          "subject": "left-pad",
+          "message": "left-pad declares no license.",
+          "fixHint": "Ask the maintainer for a license.",
+          "evidenceUrl": null,
+          "fingerprint": "f7ae7043ea74faed438c5bca3e740a680110d24fb31fa88f1c1ba4d27e147d87",
+          "details": {
+            "package": "left-pad",
+            "lockedVersion": "1.3.0",
+            "licenses": [],
+            "ecosystem": "npm",
+            "kind": "unknown"
+          }
+        }
+      ]
+    },
+    {
+      "checkId": "laravel-database",
+      "name": "Database",
+      "status": "fail",
+      "findings": [
+        {
+          "checkId": "laravel-database",
+          "severity": "critical",
+          "status": "fail",
+          "subject": "mysql",
+          "message": "The mysql connection does not answer.",
+          "fixHint": "Check the database server.",
+          "evidenceUrl": null,
+          "fingerprint": "4c9f0f79b9f3717b3a3cd290bcc59a39fc8e81f7d5a66729508cd659d0cefb4f",
+          "details": {
+            "connection": "mysql"
+          }
+        }
+      ]
+    },
+    {
+      "checkId": "laravel-cache",
+      "name": "Cache",
+      "status": "fail",
+      "findings": [
+        {
+          "checkId": "laravel-cache",
+          "severity": "high",
+          "status": "fail",
+          "subject": "redis",
+          "message": "The redis store cannot write a probe key.",
+          "fixHint": "Check the cache server.",
+          "evidenceUrl": null,
+          "fingerprint": "fdfb968861a9ce9ec847281d308d2a1bb9c7febd59d4517f52c1f3602028e4e6",
+          "details": {
+            "store": "redis"
+          }
+        }
+      ]
+    },
+    {
+      "checkId": "laravel-storage",
+      "name": "Writable storage",
+      "status": "fail",
+      "findings": [
+        {
+          "checkId": "laravel-storage",
+          "severity": "high",
+          "status": "fail",
+          "subject": "bootstrap/cache",
+          "message": "bootstrap/cache is not writable.",
+          "fixHint": "Fix the permissions.",
+          "evidenceUrl": null,
+          "fingerprint": "4db408616954d83d9e0fdb22d33cca51e8e03c655d3811728f0dfe558561174d",
+          "details": {
+            "directory": "bootstrap/cache"
+          }
+        }
+      ]
+    },
+    {
+      "checkId": "laravel-disk-space",
+      "name": "Disk space",
+      "status": "fail",
+      "findings": [
+        {
+          "checkId": "laravel-disk-space",
+          "severity": "high",
+          "status": "fail",
+          "subject": "disk",
+          "message": "The disk holding storage/ is 93 % used.",
+          "fixHint": "Free disk space.",
+          "evidenceUrl": null,
+          "fingerprint": "d6746d8d72b04fa5e23c0c602cf6d2efcfd96adb66fed6fe895f7eb7ef6af5af",
+          "details": {
+            "usedPercent": 93
+          }
+        }
+      ]
+    },
+    {
+      "checkId": "laravel-queue-backlog",
+      "name": "Queue backlog",
+      "status": "warn",
+      "findings": [
+        {
+          "checkId": "laravel-queue-backlog",
+          "severity": "medium",
+          "status": "warn",
+          "subject": "default",
+          "message": "1500 jobs pending on default.",
+          "fixHint": "Add workers.",
+          "evidenceUrl": null,
+          "fingerprint": "3877ae8029adceb3bd3c1b18836873ba70d70f138fe19c549170cc11a752d786",
+          "details": {
+            "queue": "default",
+            "pendingCount": 1500,
+            "oldestAgeMinutes": 20
+          }
+        },
+        {
+          "checkId": "laravel-queue-backlog",
+          "severity": "medium",
+          "status": "warn",
+          "subject": "mail",
+          "message": "40 jobs pending on mail, the oldest for 35 minutes.",
+          "fixHint": "Add workers.",
+          "evidenceUrl": null,
+          "fingerprint": "88cd69a5b71a0f8b544513a6f02c462e4dab0323a96f384f00f8d19a74cc6771",
+          "details": {
+            "queue": "mail",
+            "pendingCount": 40,
+            "oldestAgeMinutes": 35
+          }
+        }
+      ]
+    },
+    {
+      "checkId": "php-platform-requirements",
+      "name": "Platform requirements",
+      "status": "fail",
+      "findings": [
+        {
+          "checkId": "php-platform-requirements",
+          "severity": "high",
+          "status": "fail",
+          "subject": "ext-intl",
+          "message": "ext-intl is missing.",
+          "fixHint": "Install the intl extension.",
+          "evidenceUrl": null,
+          "fingerprint": "73be14a1cdbc0c88413a9aae554bdf5c87c5ab8f3ac767c18399b20d850cede2",
+          "details": {
+            "requirement": "ext-intl",
+            "requiredBy": [
+              "laravel/framework"
+            ],
+            "checkedPhpVersion": "8.4.3",
+            "isStandaloneCli": false
+          }
+        }
+      ]
+    },
+    {
+      "checkId": "env-example-sync",
+      "name": ".env.example sync",
+      "status": "warn",
+      "findings": [
+        {
+          "checkId": "env-example-sync",
+          "severity": "low",
+          "status": "warn",
+          "subject": "STRIPE_SECRET",
+          "message": "STRIPE_SECRET is read by config but missing from .env.example.",
+          "fixHint": "Add STRIPE_SECRET= to .env.example.",
+          "evidenceUrl": null,
+          "fingerprint": "3f1256bbacf3fe2cbf3adc807ba251946609a7b0340612fa1f06c119a747976b",
+          "details": {
+            "key": "STRIPE_SECRET",
+            "configFiles": [
+              "config/services.php"
+            ]
+          }
+        },
+        {
+          "checkId": "env-example-sync",
+          "severity": "info",
+          "status": "warn",
+          "subject": "unused keys",
+          "message": "2 keys in .env.example are not read.",
+          "fixHint": "Remove them.",
+          "evidenceUrl": null,
+          "fingerprint": "6c919a9a9ebcc3e9ddf908aac93fc4ab4ab6ea71af14f12134fcd18978a8ba23",
+          "details": {
+            "keys": [
+              "OLD_API_KEY",
+              "UNUSED_FLAG"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "checkId": "composer-outdated",
+      "name": "Outdated packages",
+      "status": "warn",
+      "findings": [
+        {
+          "checkId": "composer-outdated",
+          "severity": "info",
+          "status": "warn",
+          "subject": "laravel/framework",
+          "message": "laravel/framework 13.1.0 → 13.1.4.",
+          "fixHint": "composer update laravel/framework",
+          "evidenceUrl": null,
+          "fingerprint": "e0ba38ea1f873de31efaadb9237e0100e57be7f62cde4f85c87f03f681dc43dd",
+          "details": {
+            "package": "laravel/framework",
+            "lockedVersion": "13.1.0",
+            "latestPatch": "13.1.4",
+            "latestMinor": "13.1.4",
+            "latestMajor": null,
+            "isMajorBehind": false
+          }
+        },
+        {
+          "checkId": "composer-outdated",
+          "severity": "low",
+          "status": "warn",
+          "subject": "spatie/laravel-permission",
+          "message": "spatie/laravel-permission 7.1.0 → 7.2.0.",
+          "fixHint": "composer update spatie/laravel-permission",
+          "evidenceUrl": null,
+          "fingerprint": "896910ce1ea5c7644c3b60596fd8613a0cd252a788d07c765c8faf575d4e4de1",
+          "details": {
+            "package": "spatie/laravel-permission",
+            "lockedVersion": "7.1.0",
+            "latestPatch": null,
+            "latestMinor": "7.2.0",
+            "latestMajor": null,
+            "isMajorBehind": false
+          }
+        },
+        {
+          "checkId": "composer-outdated",
+          "severity": "low",
+          "status": "warn",
+          "subject": "pestphp/pest",
+          "message": "pestphp/pest 4.1.0 → 5.0.0.",
+          "fixHint": "composer require pestphp/pest:^5",
+          "evidenceUrl": null,
+          "fingerprint": "14a6a7719cb84234ac899a557b17291a358a3cd75299057ddf09623d91b317ba",
+          "details": {
+            "package": "pestphp/pest",
+            "lockedVersion": "4.1.0",
+            "latestPatch": "4.1.2",
+            "latestMinor": "4.3.0",
+            "latestMajor": "5.0.0",
+            "isMajorBehind": true
+          }
+        }
+      ]
+    },
+    {
+      "checkId": "laravel-queue-workers",
+      "name": "Queue workers",
+      "status": "fail",
+      "findings": [
+        {
+          "checkId": "laravel-queue-workers",
+          "severity": "medium",
+          "status": "warn",
+          "subject": "redis:default",
+          "message": "No worker has reported on redis:default for 12 minutes.",
+          "fixHint": "Start a queue worker.",
+          "evidenceUrl": null,
+          "fingerprint": "32fed0eec1e9f32a758b5fa59cb15771f441b77a210ebf6a85b3a68e8c16c018",
+          "details": {
+            "connection": "redis",
+            "queue": "default",
+            "minutesSinceLastSeen": 12
+          }
+        },
+        {
+          "checkId": "laravel-queue-workers",
+          "severity": "high",
+          "status": "fail",
+          "subject": "horizon",
+          "message": "Horizon is inactive.",
+          "fixHint": "php artisan horizon",
+          "evidenceUrl": null,
+          "fingerprint": "f95c576ad2e1d7d31f5ca73b483e5b23ddd695b9c30d951075635d0e0e11cf25",
+          "details": {
+            "status": "inactive",
+            "processes": 0,
+            "supervisors": [
+              "supervisor-1"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "checkId": "npm-outdated",
+      "name": "Outdated packages (npm)",
+      "status": "warn",
+      "findings": [
+        {
+          "checkId": "npm-outdated",
+          "severity": "info",
+          "status": "warn",
+          "subject": "vite",
+          "message": "vite 7.0.0 → 7.0.6.",
+          "fixHint": "npm update vite",
+          "evidenceUrl": null,
+          "fingerprint": "6f7b6bfba88fee7e51347a8347ee348d8b4ae2ecda59d49a80d731e99ddd08da",
+          "details": {
+            "package": "vite",
+            "lockedVersion": "7.0.0",
+            "latestPatch": "7.0.6",
+            "latestMinor": "7.0.6",
+            "latestMajor": null,
+            "isMajorBehind": false
+          }
+        },
+        {
+          "checkId": "npm-outdated",
+          "severity": "info",
+          "status": "skipped",
+          "subject": "private packages",
+          "message": "1 private package was not sent to the npm registry.",
+          "fixHint": "",
+          "evidenceUrl": null,
+          "fingerprint": "0315ab8a52ad6f6e5c6b09bd23ea0a776eea11b4700435a33b872942b5cb09be",
+          "details": {
+            "count": 1
+          }
+        }
+      ]
+    },
+    {
+      "checkId": "laravel-backups",
+      "name": "Backups",
+      "status": "fail",
+      "findings": [
+        {
+          "checkId": "laravel-backups",
+          "severity": "high",
+          "status": "fail",
+          "subject": "s3",
+          "message": "The newest backup on s3 is 50 hours old.",
+          "fixHint": "Check the backup schedule.",
+          "evidenceUrl": null,
+          "fingerprint": "aea6b5668b607a228d29c0741a054ec467345fa409f4c1242ad8dc9cdf5709b3",
+          "details": {
+            "disk": "s3",
+            "ageHours": 50,
+            "sizeMb": 812.45,
+            "count": 14
+          }
+        }
+      ]
+    },
+    {
+      "checkId": "laravel-database-connections",
+      "name": "Database connections",
+      "status": "warn",
+      "findings": [
+        {
+          "checkId": "laravel-database-connections",
+          "severity": "medium",
+          "status": "warn",
+          "subject": "mysql",
+          "message": "72 open connections on mysql.",
+          "fixHint": "Check for connection leaks.",
+          "evidenceUrl": null,
+          "fingerprint": "b89f27e5bb76bcd2a8989c9faa9a82c8bf9c8da74dfa35f0ca3e19bd5b8251d5",
+          "details": {
+            "connection": "mysql",
+            "connectionCount": 72
+          }
+        }
+      ]
+    },
+    {
+      "checkId": "laravel-database-size",
+      "name": "Database size",
+      "status": "pass",
+      "findings": [
+        {
+          "checkId": "laravel-database-size",
+          "severity": "info",
+          "status": "pass",
+          "subject": "mysql",
+          "message": "The mysql database uses 2048.5 MB.",
+          "fixHint": "",
+          "evidenceUrl": null,
+          "fingerprint": "dd84f86dffbdd877011c60dce9f286f848502a3ab2362c801ff3e6249e739daa",
+          "details": {
+            "connection": "mysql",
+            "sizeMb": 2048.5,
+            "largestTables": [
+              {
+                "table": "activity_log",
+                "sizeMb": 1024.25
+              },
+              {
+                "table": "jobs",
+                "sizeMb": 300.0
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "checkId": "laravel-redis-memory",
+      "name": "Redis memory",
+      "status": "warn",
+      "findings": [
+        {
+          "checkId": "laravel-redis-memory",
+          "severity": "medium",
+          "status": "warn",
+          "subject": "cache",
+          "message": "Redis cache uses 85 % of maxmemory.",
+          "fixHint": "Raise maxmemory.",
+          "evidenceUrl": null,
+          "fingerprint": "b5bee9abd36f7d8ecf88b97594aa2f2196c5f00796fe7cd8a7abd29e8dd92d69",
+          "details": {
+            "connection": "cache",
+            "usedMb": 870.4,
+            "maxMb": 1024.0,
+            "policy": "allkeys-lru"
+          }
+        }
+      ]
+    },
+    {
+      "checkId": "php-opcache",
+      "name": "OPcache",
+      "status": "warn",
+      "findings": [
+        {
+          "checkId": "php-opcache",
+          "severity": "low",
+          "status": "warn",
+          "subject": "opcache.validate_timestamps",
+          "message": "opcache.validate_timestamps is on in production.",
+          "fixHint": "Set opcache.validate_timestamps=0.",
+          "evidenceUrl": null,
+          "fingerprint": "d329bce057ea52c5c3cf56fd1fc2d698f246b6dffe4817abb3a3d7bcd7bff22c",
+          "details": {
+            "sapi": "web",
+            "ageMinutes": 25,
+            "isOpcacheEnabled": true,
+            "hitRate": 97.5,
+            "memoryUsedPercent": 61.25,
+            "cachedScripts": 4210,
+            "isValidateTimestampsEnabled": true
+          }
+        }
+      ]
+    },
+    {
+      "checkId": "php-production-ini",
+      "name": "Production php.ini",
+      "status": "fail",
+      "findings": [
+        {
+          "checkId": "php-production-ini",
+          "severity": "high",
+          "status": "fail",
+          "subject": "display_errors",
+          "message": "display_errors is on in production.",
+          "fixHint": "Set display_errors=Off.",
+          "evidenceUrl": null,
+          "fingerprint": "811e4293ec4805995de5aab85fbe5c4feb1b445468c90b40eb81fd46820b0947",
+          "details": {
+            "directive": "display_errors",
+            "isEnabled": true,
+            "sapi": "web",
+            "ageMinutes": 25
+          }
+        }
+      ]
+    },
+    {
+      "checkId": "laravel-octane-config",
+      "name": "Octane configuration",
+      "status": "warn",
+      "findings": [
+        {
+          "checkId": "laravel-octane-config",
+          "severity": "info",
+          "status": "pass",
+          "subject": "octane.server",
+          "message": "Octane runs on swoole.",
+          "fixHint": "No action needed.",
+          "evidenceUrl": null,
+          "fingerprint": "15da5983dd56d533ccd0b367a4328220236e117ea210434bf8a669bb01c3ac6c",
+          "details": {
+            "server": "swoole",
+            "maxRequests": null
+          }
+        },
+        {
+          "checkId": "laravel-octane-config",
+          "severity": "low",
+          "status": "warn",
+          "subject": "octane.max_requests",
+          "message": "octane.max_requests is not set in production.",
+          "fixHint": "Set OCTANE_MAX_REQUESTS (for example 500) so workers restart before leaks build up.",
+          "evidenceUrl": null,
+          "fingerprint": "e5813614332aa165d7e07332b315034295d2b89e95e6398aa743fcf545b26052",
+          "details": {
+            "server": "swoole",
+            "maxRequests": null
+          }
+        }
+      ]
+    },
+    {
+      "checkId": "laravel-reverb",
+      "name": "Reverb server",
+      "status": "fail",
+      "findings": [
+        {
+          "checkId": "laravel-reverb",
+          "severity": "info",
+          "status": "pass",
+          "subject": "reverb",
+          "message": "The Reverb server answers (3.2 ms to connect).",
+          "fixHint": "",
+          "evidenceUrl": null,
+          "fingerprint": "8c1f0b3e6a2d4f5b9e7c1a3d5f7b9e1c3a5d7f9b1e3c5a7d9f1b3e5c7a9d1f3b",
+          "details": {
+            "isReachable": true,
+            "latencyMs": 3.2
+          }
+        },
+        {
+          "checkId": "laravel-reverb",
+          "severity": "high",
+          "status": "fail",
+          "subject": "reverb",
+          "message": "The Reverb server does not answer on its configured host and port within 2 s: broadcasts fail.",
+          "fixHint": "Keep php artisan reverb:start running under a process monitor such as Supervisor, and check REVERB_HOST and REVERB_PORT.",
+          "evidenceUrl": "https://laravel.com/docs/reverb#running-server",
+          "fingerprint": "2d4f6b8a0c1e3f5a7b9d1c3e5f7a9b1d3f5c7e9a1b3d5f7e9c1a3b5d7f9e1c3a",
+          "details": {
+            "isReachable": false,
+            "latencyMs": null
+          }
+        }
+      ]
+    },
+    {
+      "checkId": "laravel-cashier",
+      "name": "Laravel Cashier",
+      "status": "warn",
+      "findings": [
+        {
+          "checkId": "laravel-cashier",
+          "severity": "info",
+          "status": "pass",
+          "subject": "stripe",
+          "message": "Cashier (Stripe) verifies webhook signatures and receives webhooks on its route.",
+          "fixHint": "No action needed.",
+          "evidenceUrl": null,
+          "fingerprint": "21ed5b5ebbe1d72d0896c949d3e9e7000fca089286a2d0cbe6ac35301e8e9394",
+          "details": {
+            "provider": "stripe",
+            "isWebhookSecretConfigured": true,
+            "isWebhookRouteRegistered": true,
+            "hasTestKeys": false
+          }
+        },
+        {
+          "checkId": "laravel-cashier",
+          "severity": "medium",
+          "status": "warn",
+          "subject": "paddle.webhook-route",
+          "message": "No route uses Cashier Paddle's webhook controller: Paddle webhooks are not handled.",
+          "fixHint": "Keep the route Cashier registers (cashier.webhook), or point your own route at Cashier's WebhookController or a subclass.",
+          "evidenceUrl": "https://laravel.com/docs/cashier-paddle#handling-paddle-webhooks",
+          "fingerprint": "670cc018a48f5a7ebfa681da57a89577dff9b894fdca2803c192c5946b72f18b",
+          "details": {
+            "provider": "paddle",
+            "isWebhookSecretConfigured": true,
+            "isWebhookRouteRegistered": false,
+            "hasTestKeys": false
+          }
+        }
+      ]
+    },
+    {
+      "checkId": "laravel-api-tokens",
+      "name": "API tokens",
+      "status": "warn",
+      "findings": [
+        {
+          "checkId": "laravel-api-tokens",
+          "severity": "medium",
+          "status": "warn",
+          "subject": "sanctum.expiration",
+          "message": "Sanctum tokens never expire: sanctum.expiration is null and 4 valid tokens have no expires_at.",
+          "fixHint": "Set sanctum.expiration (minutes) or create tokens with an expiration date.",
+          "evidenceUrl": "https://laravel.com/docs/sanctum#token-expiration",
+          "fingerprint": "40dbd57a6e5ecac22e1f6b84c10d22d68282e0f46514417031c1acd5c8e359b7",
+          "details": {
+            "provider": "sanctum",
+            "expirationMinutes": null,
+            "hasStatefulWildcard": false,
+            "isStatefulEmpty": false,
+            "tokenCount": 5,
+            "nonExpiringTokenCount": 4,
+            "staleTokenCount": 2,
+            "neverUsedTokenCount": 3
+          }
+        },
+        {
+          "checkId": "laravel-api-tokens",
+          "severity": "info",
+          "status": "pass",
+          "subject": "passport",
+          "message": "Passport keys are present and token lifetimes are within limits.",
+          "fixHint": "No action needed.",
+          "evidenceUrl": null,
+          "fingerprint": "419184d471e44b70df929e7dc373e3e283b0464a6c050a44792cca8fc926e953",
+          "details": {
+            "provider": "passport",
+            "hasKeys": true,
+            "isPrivateKeyTooOpen": false,
+            "accessTokenLifetimeMinutes": 43200,
+            "refreshTokenLifetimeMinutes": 525600,
+            "personalAccessTokenLifetimeMinutes": 525600,
+            "personalAccessClientCount": 1
+          }
+        }
+      ]
+    }
+  ],
+  "upgradePlan": [
+    {
+      "stepNumber": 1,
+      "message": "composer update guzzlehttp/guzzle"
+    }
+  ],
+  "licenses": {
+    "packageCount": 120,
+    "byLicense": [
+      {
+        "license": "BSD-3-Clause",
+        "packageCount": 10
+      },
+      {
+        "license": "GPL-2.0-only",
+        "packageCount": 1
+      },
+      {
+        "license": "MIT",
+        "packageCount": 107
+      },
+      {
+        "license": "NOASSERTION",
+        "packageCount": 1
+      },
+      {
+        "license": "SSPL-1.0",
+        "packageCount": 1
+      }
+    ],
+    "byEcosystem": {
+      "composer": {
+        "packageCount": 80,
+        "byLicense": [
+          {
+            "license": "BSD-3-Clause",
+            "packageCount": 8
+          },
+          {
+            "license": "GPL-2.0-only",
+            "packageCount": 1
+          },
+          {
+            "license": "MIT",
+            "packageCount": 70
+          },
+          {
+            "license": "SSPL-1.0",
+            "packageCount": 1
+          }
+        ]
+      },
+      "npm": {
+        "packageCount": 40,
+        "byLicense": [
+          {
+            "license": "BSD-3-Clause",
+            "packageCount": 2
+          },
+          {
+            "license": "MIT",
+            "packageCount": 37
+          },
+          {
+            "license": "NOASSERTION",
+            "packageCount": 1
+          }
+        ]
+      }
+    }
+  },
+  "javascriptLockfile": "package-lock.json"
+}

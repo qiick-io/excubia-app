@@ -1,0 +1,176 @@
+name: Docker
+
+# Production image (#116). Pull requests and pushes build the image and smoke-test /health/ready,
+# /health/live, /up and /setup; nothing is pushed. A release tag `vX.Y.Z` (created by the maintainer, see
+# AGENTS.md) also publishes ghcr.io/qiick-io/excubia-app with semver tags, as externa-core; a
+# manual run with `version` re-publishes a tag.
+on:
+  push:
+    branches:
+      - main
+      - develop
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release tag to (re)publish, e.g. v1.0.0-beta.1'
+        required: true
+  pull_request:
+    branches:
+      - main
+      - develop
+
+permissions:
+  contents: read
+
+concurrency:
+  # The event is part of the group: a push run and a pull-request run on the same SHA are
+  # different evidence and must never cancel each other (externa-core#805).
+  group: docker-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  # A `main` or `develop` run is the release evidence: let it finish.
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/develop' }}
+
+jobs:
+  build:
+    name: Docker image
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      # `Docker image` is a required status check, so this job always runs and always reports.
+      # A pull request that only changes Markdown cannot change the image, so it reports
+      # success without building one. The checkout is unconditional because the gate below
+      # diffs the branch; `.git` is in .dockerignore, so the depth never reaches the build
+      # context.
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Resolve whether to build
+        id: gate
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+
+          # Only a pull request to `develop` is ever reduced; a release pull request to `main`,
+          # a push and a tag always build.
+          RUN=true
+          if [ "$EVENT" = 'pull_request' ] && [ "$BASE_REF" = 'develop' ]; then
+            FILES=$(git diff --name-only "$BASE_SHA...$HEAD_SHA")
+            RUN=false
+            while IFS= read -r f; do
+              case "$f" in
+                docs/*|.github/ISSUE_TEMPLATE/*|.github/pull_request_template.md|.github/assets/*) ;;
+                */*) RUN=true; break ;;
+                *.md) ;;
+                *) RUN=true; break ;;
+              esac
+            done <<< "$FILES"
+          fi
+
+          echo "run=$RUN" >> "$GITHUB_OUTPUT"
+          echo "build=$RUN"
+
+      - name: Stub success (docs-only pull request)
+        if: steps.gate.outputs.run != 'true'
+        run: echo "Stub success for the required check Docker image - the diff is docs only."
+
+      - name: Set up Buildx
+        if: steps.gate.outputs.run == 'true'
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Build
+        if: steps.gate.outputs.run == 'true'
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          load: true
+          push: false
+          tags: excubia-app:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # The image migrates a fresh SQLite volume and must answer the probes and /setup.
+      - name: Smoke test
+        if: steps.gate.outputs.run == 'true'
+        run: |
+          docker run -d --name excubia -p 8080:8080 excubia-app:ci
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8080/health/ready > /dev/null; then
+              curl -fsS http://127.0.0.1:8080/health/live > /dev/null
+              curl -fsS -o /dev/null http://127.0.0.1:8080/up
+              curl -fsS -o /dev/null http://127.0.0.1:8080/setup
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs excubia
+          exit 1
+
+  publish:
+    name: Publish image
+    # Release tags only (or a manual run naming one): tags themselves are the maintainer's call.
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref }}
+
+      # The commit actually checked out (a manual rebuild of an older tag is not github.sha).
+      - name: Built commit
+        id: commit
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      # arm64 is built under emulation.
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Log in to GHCR
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Image tags
+        id: meta
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
+        with:
+          images: ghcr.io/qiick-io/excubia-app
+          # `latest` follows the newest stable release only; a pre-release (`-beta.N`) gets its
+          # exact version and nothing else.
+          flavor: |
+            latest=false
+          tags: |
+            type=semver,pattern={{version}},value=${{ github.event_name == 'workflow_dispatch' && inputs.version || '' }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ github.event_name == 'workflow_dispatch' && inputs.version || '' }}
+            type=raw,value=latest,enable=${{ !contains(github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name, '-') }}
+
+      - name: Build and push
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # The build ID under the version in the sidebar (#425): the image has no .git. Tags
+          # whose Dockerfile has no `ARG APP_BUILD` ignore it.
+          build-args: |
+            APP_BUILD=${{ steps.commit.outputs.sha }}
+          cache-from: type=gha

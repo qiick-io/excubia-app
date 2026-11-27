@@ -1,0 +1,92 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Http\Controllers\Settings;
+
+use App\Actions\DeleteUserAction;
+use App\Data\AlertFilterData;
+use App\Enums\AlertEventEnum;
+use App\Enums\SeverityEnum;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Settings\ProfileDeleteRequest;
+use App\Http\Requests\Settings\ProfileUpdateRequest;
+use App\Models\Project;
+use App\Models\ProjectGroup;
+use App\Models\User;
+use Illuminate\Container\Attributes\CurrentUser;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Inertia\Inertia;
+use Inertia\Response;
+
+class ProfileController extends Controller
+{
+    /**
+     * Show the user's profile settings page.
+     */
+    public function edit(Request $request, #[CurrentUser] User $user): Response
+    {
+
+        return Inertia::render('settings/profile', [
+            // User implements MustVerifyEmail: every account confirms its email.
+            'mustVerifyEmail' => true,
+            'status' => $request->session()->get('status'),
+            'timezones' => timezone_identifiers_list(),
+            // Alert emails (#22) and in-app alerts (#296), for users who can see projects.
+            'alertSubscription' => $user->can('viewAny', Project::class) ? [
+                'has_alert_emails' => (bool) $user->has_alert_emails,
+                'has_alert_in_app' => (bool) $user->has_alert_in_app,
+                'filter' => AlertFilterData::fromStored($user->alert_email_filters, SeverityEnum::High)->toArray(),
+                'events' => AlertEventEnum::selectableValues(),
+                'severities' => SeverityEnum::values(),
+                'projects' => Project::query()->visibleTo($user)->orderBy('name')->get(['id', 'name'])->map(fn (Project $project): array => ['id' => $project->id, 'name' => $project->name])->all(),
+                'projectGroups' => ProjectGroup::query()->whereHas('projects', fn ($groupProjects) => $groupProjects->visibleTo($user))->orderBy('name')->get(['id', 'name'])->map(fn (ProjectGroup $projectGroup): array => ['id' => $projectGroup->id, 'name' => $projectGroup->name])->all(),
+            ] : null,
+        ]);
+    }
+
+    /**
+     * Update the user's profile information.
+     */
+    public function update(ProfileUpdateRequest $request, #[CurrentUser] User $user): RedirectResponse
+    {
+        $user->fill($request->validated());
+
+        if ($user->isDirty('email')) {
+            $user->email_verified_at = null;
+        }
+
+        $localeChanged = $user->isDirty('locale');
+        $locale = $user->locale;
+
+        $user->save();
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Profile updated.')]);
+
+        $redirect = to_route('profile.edit');
+
+        if ($localeChanged && $locale !== '') {
+            return $redirect->cookie('locale', $locale, 60 * 24 * 365);
+        }
+
+        return $redirect;
+    }
+
+    /**
+     * Delete the user's profile.
+     */
+    public function destroy(ProfileDeleteRequest $request, #[CurrentUser] User $user, DeleteUserAction $deleteUser): RedirectResponse
+    {
+        // The guard may refuse the deletion: keep the session until it has succeeded.
+        $deleteUser->execute($user);
+
+        Auth::logout();
+
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect('/');
+    }
+}

@@ -1,0 +1,2586 @@
+{
+    "common": {
+        "save": "Speichern",
+        "saved": "Gespeichert",
+        "cancel": "Abbrechen",
+        "continue": "Weiter",
+        "delete": "Löschen",
+        "email": "E-Mail",
+        "emailAddress": "E-Mail-Adresse",
+        "password": "Passwort",
+        "confirmPassword": "Passwort bestätigen",
+        "hide": "Ausblenden",
+        "view": "Anzeigen",
+        "created": "Erstellt",
+        "updated": "Aktualisiert",
+        "sortAscending": "Aufsteigend sortieren",
+        "sortDescending": "Absteigend sortieren",
+        "name": "Name",
+        "firstName": "Vorname",
+        "lastName": "Nachname",
+        "pageOf": "Seite {{page}} von {{total}}",
+        "pageRange": "{{from}}–{{to}} von {{total}}",
+        "perPageOption": "{{count}} / Seite",
+        "rowsPerPage": "Zeilen pro Seite",
+        "selectedCount": "{{count}} ausgewählt",
+        "clearFilters": "Filter zurücksetzen",
+        "back": "Zurück",
+        "offline": "Offline",
+        "online": "Online",
+        "create": "Erstellen",
+        "description": "Beschreibung",
+        "close": "Schließen",
+        "confirm": "Bestätigen",
+        "generateSecurePassword": "Sicheres Passwort erzeugen",
+        "passwordStrength": "Passwortstärke"
+    },
+    "emptyState": {
+        "users": {
+            "title": "Noch keine Benutzer",
+            "description": "Lade Teammitglieder ein, damit sie Inhalte und Einstellungen verwalten können.",
+            "cta": "Ersten Benutzer erstellen",
+            "filteredTitle": "Keine Benutzer gefunden",
+            "filteredDescription": "Andere Suche versuchen oder Filter zurücksetzen, um alle Benutzer zu sehen."
+        },
+        "projects": {
+            "title": "Noch keine Projekte",
+            "description": "Registriere ein Laravel-Projekt, um seine Berichte zu empfangen.",
+            "cta": "Erstes Projekt erstellen",
+            "filteredTitle": "Keine Projekte gefunden",
+            "filteredDescription": "Andere Suche versuchen oder Filter zurücksetzen, um alle Projekte zu sehen."
+        }
+    },
+    "roles": {
+        "names": {
+            "super-admin": "Super Admin",
+            "admin": "Admin",
+            "reader": "Leser",
+            "public": "Öffentlich"
+        },
+        "actions": {
+            "edit": "Bearbeiten",
+            "delete": "Löschen",
+            "newRole": "Neue Rolle"
+        },
+        "columns": {
+            "name": "Name",
+            "permissions": "Berechtigungen",
+            "actions": "Aktionen"
+        },
+        "empty": "Noch keine Rollen.",
+        "systemBadge": "System",
+        "deleteTitle": "Rolle „{{name}}“ löschen?",
+        "deleteDescription": "Das kann nicht rückgängig gemacht werden.",
+        "deleteFallback": "Dies kann nicht rückgängig gemacht werden.",
+        "form": {
+            "editTitle": "Rolle bearbeiten",
+            "editHead": "{{name}} bearbeiten",
+            "readOnlyHint": "Integrierte Rolle, schreibgeschützt: Ihre Berechtigungen kommen mit Excubia.",
+            "adminPermissions": "Admin-Berechtigungen"
+        }
+    },
+    "nav": {
+        "platform": "Plattform",
+        "dashboard": "Dashboard",
+        "projects": "Projekte",
+        "projectGroups": "Projektgruppen",
+        "fleet": "Flotte",
+        "assistant": "Assistent",
+        "activityLog": "Aktivitätsprotokoll",
+        "users": "Benutzer",
+        "groups": "Gruppen",
+        "settings": "Einstellungen",
+        "repository": "Repository",
+        "documentation": "Dokumentation",
+        "buildCommit": "Build {{id}}: Commit öffnen"
+    },
+    "userMenu": {
+        "settings": "Einstellungen",
+        "language": "Sprache",
+        "appearance": "Darstellung",
+        "accessibility": "Barrierefreiheit",
+        "accessibilityOff": "Aus",
+        "accessibilityOnCount": "{{count}} an",
+        "highContrast": "Hoher Kontrast",
+        "reduceMotion": "Bewegung reduzieren",
+        "logOut": "Abmelden"
+    },
+    "a11y": {
+        "skipToContent": "Zum Inhalt springen",
+        "mainNav": "Hauptnavigation",
+        "breadcrumb": "Brotkrümelnavigation",
+        "openMenu": "Menü öffnen",
+        "search": "Suchen",
+        "clearSelection": "Auswahl löschen",
+        "close": "Schließen",
+        "toggleSidebar": "Seitenleiste umschalten",
+        "collapseSidebar": "Seitenleiste einklappen",
+        "expandSidebar": "Seitenleiste ausklappen",
+        "loading": "Wird geladen",
+        "saving": "Wird gespeichert",
+        "reorder": "Neu ordnen",
+        "selectAll": "Alle auswählen",
+        "moreActions": "Weitere Aktionen",
+        "notifications": "Benachrichtigungen",
+        "notificationsUnread": "Benachrichtigungen, {{count}} ungelesen",
+        "unreadCount": "{{count}} ungelesen",
+        "scrollableTable": "Scrollbare Tabelle",
+        "openTableRow": "Drücken Sie die Eingabe- oder Leertaste, um diese Zeile zu öffnen."
+    },
+    "auth": {
+        "login": {
+            "title": "In Ihr Konto einloggen",
+            "description": "Geben Sie unten E-Mail und Passwort ein, um sich anzumelden",
+            "head": "Anmelden",
+            "forgotPassword": "Passwort vergessen?",
+            "rememberMe": "Angemeldet bleiben",
+            "submit": "Anmelden",
+            "passkey": "Mit Passkey anmelden",
+            "passkeyCancelled": "Passkey-Anmeldung wurde abgebrochen.",
+            "passkeysUnsupported": "Passkeys werden in diesem Browser nicht unterstützt.",
+            "passkeysNeedHttps": "Passkeys benötigen HTTPS.",
+            "orContinueWithEmail": "oder mit E-Mail fortfahren",
+            "oidc": "Mit SSO anmelden"
+        },
+        "forgotPassword": {
+            "title": "Passwort vergessen",
+            "description": "Geben Sie Ihre E-Mail ein, um einen Reset-Link zu erhalten",
+            "head": "Passwort vergessen",
+            "submit": "Reset-Link senden",
+            "orReturn": "Oder zurück zur",
+            "logIn": "Anmeldung"
+        },
+        "resetPassword": {
+            "title": "Passwort zurücksetzen",
+            "description": "Bitte geben Sie unten Ihr neues Passwort ein",
+            "head": "Passwort zurücksetzen",
+            "submit": "Passwort zurücksetzen"
+        },
+        "confirmPassword": {
+            "title": "Passwort bestätigen",
+            "description": "Dies ist ein geschützter Bereich. Bitte bestätigen Sie Ihr Passwort, um fortzufahren.",
+            "head": "Passwort bestätigen",
+            "submit": "Passwort bestätigen",
+            "passkey": "Mit Passkey bestätigen",
+            "passkeyCancelled": "Passkey-Bestätigung wurde abgebrochen.",
+            "orConfirmWithPasskey": "oder mit Passkey bestätigen"
+        },
+        "verifyEmail": {
+            "title": "E-Mail bestätigen",
+            "description": "Bitte bestätigen Sie Ihre E-Mail-Adresse über den Link, den wir Ihnen gerade gesendet haben.",
+            "head": "E-Mail-Bestätigung",
+            "linkSent": "Ein neuer Bestätigungslink wurde an die bei der Registrierung angegebene E-Mail-Adresse gesendet.",
+            "resend": "Bestätigungs-E-Mail erneut senden",
+            "logOut": "Abmelden"
+        },
+        "twoFactorChallenge": {
+            "head": "Zwei-Faktor-Authentifizierung",
+            "recoveryTitle": "Wiederherstellungscode",
+            "recoveryDescription": "Bestätigen Sie den Zugriff auf Ihr Konto mit einem Ihrer Notfall-Wiederherstellungscodes.",
+            "recoveryToggle": "mit einem Authentifizierungscode anmelden",
+            "authTitle": "Authentifizierungscode",
+            "authDescription": "Geben Sie den Code aus Ihrer Authenticator-App ein.",
+            "authToggle": "mit einem Wiederherstellungscode anmelden",
+            "recoveryPlaceholder": "Wiederherstellungscode eingeben",
+            "orYouCan": "oder Sie können sich "
+        },
+        "setup": {
+            "head": "Excubia einrichten",
+            "stepOf": "Schritt {{step}} von {{total}}",
+            "notice": {
+                "title": "Excubia ist noch nicht eingerichtet",
+                "description": "Diese Installation hat noch kein Konto. Lege den ersten Admin an, um zu beginnen.",
+                "link": "Excubia einrichten"
+            },
+            "locked": {
+                "title": "Einrichtungslink öffnen",
+                "description": "Diese Installation hat noch kein Konto. Führe auf dem Server php artisan excubia:setup-link aus und öffne den ausgegebenen Link: Er legt den ersten Admin an, funktioniert einmal und läuft nach einer Stunde ab."
+            },
+            "admin": {
+                "title": "Admin-Konto anlegen",
+                "description": "Dieses Konto wird Super-Admin dieser Installation. Es gibt keine öffentliche Registrierung: Weitere Benutzer fügst du später unter Benutzer hinzu.",
+                "submit": "Admin anlegen"
+            },
+            "project": {
+                "title": "Erstes Projekt hinzufügen",
+                "name": "Projektname",
+                "description": "Die zu überwachende Laravel-App, zum Beispiel „Shop“. Weitere Projekte kannst du später hinzufügen.",
+                "submit": "Projekt anlegen",
+                "skip": "Vorerst überspringen"
+            },
+            "done": {
+                "title": "Projekt verbinden",
+                "description": "Führe diese Schritte in „{{name}}“ aus. Kopiere das Token jetzt: Es wird nur einmal angezeigt.",
+                "install": "Core-Paket installieren",
+                "config": "excubia.json (optional: Runtime und Exceptions)",
+                "cron": "Server-Cron (hält den Scheduler am Laufen)",
+                "firstPush": "Führe dann einmal php artisan excubia:push aus, um den ersten Bericht zu senden.",
+                "submit": "Zum Dashboard"
+            }
+        }
+    },
+    "settings": {
+        "layout": {
+            "title": "Einstellungen",
+            "description": "Verwalten Sie Ihr Konto und wie dieses Excubia arbeitet",
+            "navAria": "Einstellungen",
+            "sectionAccount": "Konto",
+            "sectionProject": "Projekt",
+            "sectionAccess": "Zugriff",
+            "profile": "Profil",
+            "security": "Sicherheit",
+            "appearance": "Darstellung",
+            "roles": "Rollen",
+            "permissions": "Berechtigungen",
+            "jobs": "Jobs",
+            "system": "System",
+            "reportBug": "Bug melden",
+            "performance": "Leistung",
+            "general": "Allgemein",
+            "localization": "Lokalisierung",
+            "authSecurity": "Authentifizierung & Sicherheit",
+            "sidebar": "Seitenleiste",
+            "sectionAi": "KI",
+            "integrations": "Integrationen",
+            "apiKeys": "API-Schlüssel"
+        },
+        "profile": {
+            "head": "Profileinstellungen",
+            "title": "Profilinformationen",
+            "description": "Aktualisieren Sie Profildetails, Sprache und Zeitzone",
+            "unverified": "Ihre E-Mail-Adresse ist nicht bestätigt.",
+            "resend": "Hier klicken, um die Bestätigungs-E-Mail erneut zu senden.",
+            "linkSent": "Ein neuer Bestätigungslink wurde an Ihre E-Mail-Adresse gesendet.",
+            "weeklyDigest": "Wöchentliche E-Mail-Zusammenfassung senden (neue Befunde, Regressionen, EOL, häufigste Exceptions, Schedule-Probleme)",
+            "alertsTitle": "Alarme",
+            "alertsDescription": "Erhalte eine E-Mail oder eine Benachrichtigung in der App, wenn ein Alarm auslöst, der dich interessiert, für die Projekte, die du sehen darfst. Beide verwenden die Filter unten.",
+            "alertsEnabled": "Alarm-E-Mails an mich senden",
+            "alertsTest": "Test-E-Mail senden",
+            "alertsTestHint": "Zuerst speichern. Die Mail geht an deine Adresse und benötigt einen Queue-Worker.",
+            "alertsInApp": "Alarme in der App anzeigen (Glocke in der Seitenleiste)",
+            "locale": "Sprache",
+            "timezone": "Zeitzone"
+        },
+        "security": {
+            "head": "Sicherheitseinstellungen",
+            "passwordTitle": "Passwort aktualisieren",
+            "passwordDescription": "Verwenden Sie ein langes, zufälliges Passwort, um Ihr Konto zu schützen",
+            "currentPassword": "Aktuelles Passwort",
+            "newPassword": "Neues Passwort",
+            "savePassword": "Passwort speichern",
+            "passkeysTitle": "Passkeys",
+            "passkeysDescription": "Melden Sie sich ohne Passwort mit einem Geräte-Passkey an. Ein Passkey erfüllt auch die Zwei-Faktor-Anforderung des Projekts.",
+            "passkeysEmpty": "Noch keine Passkeys registriert.",
+            "passkeyName": "Passkey-Name",
+            "passkeyNamePlaceholder": "z. B. MacBook Pro",
+            "passkeyCreated": "Hinzugefügt {{date}}",
+            "addPasskey": "Passkey hinzufügen",
+            "deletePasskey": "Löschen",
+            "passkeysUnsupported": "Passkeys werden in diesem Browser nicht unterstützt.",
+            "passkeysNeedHttps": "Passkeys benötigen HTTPS."
+        },
+        "project": {
+            "head": "Projekteinstellungen",
+            "generalTitle": "Allgemein",
+            "generalDescription": "Projektidentität und Support-Links",
+            "name": "Projektname",
+            "defaultLanguage": "Standardsprache",
+            "sidebarTitle": "Sidebar-Module",
+            "sidebarDescription": "Module neu anordnen und auswählen. Gesperrte Einträge bleiben immer aktiv.",
+            "securityTitle": "Sicherheit",
+            "securityDescription": "Passwortstärke, Login-Limits und Zwei-Faktor-Richtlinie",
+            "passwordPolicy": "Passwortsicherheit",
+            "passwordPolicies": {
+                "weak": {
+                    "label": "Schwach",
+                    "description": "Mindestens 6 Zeichen. Keine Groß-/Kleinschreibung, Zahlen oder Sonderzeichen erforderlich."
+                },
+                "medium": {
+                    "label": "Mittel",
+                    "description": "Mindestens 8 Zeichen, mit Groß- und Kleinbuchstaben sowie mindestens einer Zahl."
+                },
+                "strong": {
+                    "label": "Stark",
+                    "description": "Mindestens 12 Zeichen, Groß-/Kleinbuchstaben, Buchstaben, Zahlen, Sonderzeichen und nicht in bekannten Datenlecks."
+                }
+            },
+            "loginMaxAttempts": "Max. Login-Versuche pro Minute",
+            "twoFactorRequired": "Zwei-Faktor-Authentifizierung für alle Benutzer verlangen",
+            "twoFactorRequiredHint": "Wenn aktiv, müssen Benutzer TOTP-2FA aktivieren oder einen Passkey auf der Sicherheitsseite registrieren, bevor sie die App nutzen.",
+            "oidcTitle": "SSO / OIDC",
+            "oidcDescription": "Optionale Enterprise-Anmeldung über einen OpenID-Connect-konformen Identity Provider",
+            "oidcEnabled": "OIDC-Login aktivieren",
+            "oidcIssuer": "Issuer-URL",
+            "oidcIssuerHint": "Der Issuer genau so, wie der IdP ihn veröffentlicht (das Feld \"issuer\" von /.well-known/openid-configuration, mit oder ohne abschließenden Schrägstrich). Beispiel: https://idp.example.com/realms/excubia",
+            "oidcClientId": "Client-ID",
+            "oidcClientSecret": "Client-Secret",
+            "oidcSecretConfiguredHint": "Ein Client-Secret ist bereits konfiguriert. Leer lassen, um es zu behalten.",
+            "oidcSecretEmptyHint": "Erforderlich, wenn OIDC aktiv ist. Verschlüsselt gespeichert.",
+            "oidcButtonLabel": "Login-Button-Beschriftung",
+            "oidcButtonLabelPlaceholder": "Mit SSO anmelden",
+            "oidcJitProvisioning": "JIT-Benutzerbereitstellung erlauben",
+            "oidcJitProvisioningHint": "Wenn an, erstellt eine verifizierte E-Mail ohne passenden Benutzer beim ersten SSO-Login einen aktiven Reader. Wenn aus (Standard), können sich nur bereits mit SSO verknüpfte Benutzer anmelden.",
+            "oidcRedirectHint": "Diese Redirect-URI beim IdP registrieren: {{url}}",
+            "oidcBackchannelHint": "Diese Back-Channel-Logout-URI beim IdP registrieren, damit ein Logout dort auch die Excubia-Sitzung beendet: {{url}}",
+            "oidcAutoLink": "Vorhandene Benutzer über verifizierte E-Mail verknüpfen",
+            "oidcAutoLinkHint": "Wenn an, verknüpft der erste SSO-Login eines vorhandenen Benutzers mit derselben verifizierten E-Mail das Konto. Nur für einen IdP einschalten, bei dem Benutzer ihre E-Mail-Adresse nicht selbst wählen können, sonst ermöglicht es eine Kontoübernahme.",
+            "oidcOnly": "Nur-SSO-Modus",
+            "oidcOnlyHint": "Blendet das Passwortformular aus. Nur Super-Admins mit Zwei-Faktor-Authentifizierung oder Passkey können sich weiterhin lokal anmelden, unter /login?local=1, damit ein nicht erreichbarer IdP niemanden aussperrt.",
+            "reportingTitle": "Melde-URLs",
+            "reportingDescription": "Optionale Links für Problem-, Bug- und Fehlermeldungen",
+            "reportBugUrl": "URL für Bug melden",
+            "modules": {
+                "dashboard": "Dashboard",
+                "projects": "Projekte",
+                "project-groups": "Projektgruppen",
+                "fleet": "Flotte",
+                "assistant": "Assistent",
+                "files": "Dateien",
+                "collections": "Sammlungen",
+                "chat": "Chat",
+                "activity": "Aktivität",
+                "users": "Benutzer",
+                "groups": "Gruppen",
+                "roles": "Rollen",
+                "apiKeys": "API-Schlüssel",
+                "permissions": "Berechtigungen",
+                "settings": "Einstellungen"
+            },
+            "localization": {
+                "head": "Lokalisierungseinstellungen",
+                "title": "Admin-Sprache",
+                "description": "Standardsprache der Admin-Oberfläche"
+            },
+            "securityNav": {
+                "head": "Authentifizierung & Sicherheit"
+            },
+            "checksTitle": "Prüfungen",
+            "checksDescription": "Veraltete Projekte und Feature-Flags",
+            "reportsKeptPerProject": "Aufbewahrte Berichte pro Projekt",
+            "reportsKeptPerProjectHint": "Wie viele Berichte pro Projekt aufbewahrt werden; ältere werden entfernt.",
+            "pennantStaleAfterDays": "Veraltete Feature-Flags nach (Tagen)",
+            "pennantStaleAfterDaysHint": "Tage, an denen ein Laravel-Pennant-Feature immer mit demselben Wert geprüft werden muss, bevor der Runtime-Tab es als veraltetes Flag listet. Beurteilt über die aufbewahrten Runtime-Daten, wenn diese kürzer sind.",
+            "staleAfterHours": "Veraltet nach (Stunden)",
+            "staleAfterHoursHint": "Stunden ohne Bericht, bevor ein Projekt als veraltet gilt.",
+            "description": "Projektbeschreibung",
+            "url": "Projekt-URL",
+            "reportIssueUrl": "URL für Problem melden",
+            "reportErrorUrl": "URL für Fehler melden",
+            "retentionTitle": "Datenaufbewahrung",
+            "retentionDescription": "Wie lange Excubia Berichte, Telemetrie und das Aktivitätsprotokoll aufbewahrt. Ältere Daten werden täglich gelöscht.",
+            "runtimeRetentionDays": "Laufzeitdaten (Tage)",
+            "runtimeRetentionDaysHint": "Ältere Aggregate von Anfragen, Abfragen, Jobs und HTTP werden gelöscht.",
+            "exceptionsRetentionDays": "Exceptions (Tage)",
+            "exceptionsRetentionDaysHint": "Exception-Gruppen, die so viele Tage nicht gesehen wurden, werden gelöscht.",
+            "activityRetentionDays": "Aktivitätsprotokoll (Tage)",
+            "activityRetentionDaysHint": "Ältere Einträge im Aktivitätsprotokoll werden gelöscht."
+        },
+        "appearance": {
+            "head": "Darstellungseinstellungen",
+            "title": "Darstellungseinstellungen",
+            "description": "Projekt-Branding und Standard-Theme aktualisieren",
+            "brandingTitle": "Branding",
+            "brandingDescription": "Projektfarbe für App-Oberfläche und Login",
+            "projectColor": "Projektfarbe",
+            "projectColorDark": "Projektfarbe (dunkel)",
+            "projectLogo": "Projektlogo",
+            "projectLogoDark": "Projektlogo (dunkel)",
+            "publicFavicon": "Favicon",
+            "chooseFile": "Datei wählen",
+            "changeFile": "Datei ändern",
+            "clearFile": "Entfernen",
+            "noFile": "Keine Datei ausgewählt",
+            "defaultThemeTitle": "Standard-Theme",
+            "defaultThemeDescription": "Wird verwendet, wenn der Benutzer keine persönliche Hell/Dunkel-Einstellung gewählt hat",
+            "defaultAppearance": "Standard-Darstellung",
+            "light": "Hell",
+            "dark": "Dunkel",
+            "system": "System",
+            "sidebar": {
+                "head": "Seitenleisten-Einstellungen"
+            },
+            "themePresetTitle": "Theme-Preset",
+            "themePresetDescription": "Wähle eine integrierte Palette für das Admin. Eine eigene Markenfarbe überschreibt weiterhin Primary.",
+            "themePresetGenziana": "Genziana",
+            "themePresetIndaco": "Indaco",
+            "themePresetAmetista": "Ametista",
+            "themePresetRobbia": "Robbia",
+            "themePresetArdesia": "Ardesia",
+            "customColorTitle": "Eigene Markenfarbe",
+            "customColorDescription": "Optionaler Override für Primary. Leer lassen, um den gewählten Preset zu nutzen.",
+            "clearCustomColor": "Eigene Farbe entfernen",
+            "brandContrastWarning": "Diese Markenfarbe erfüllt nicht den WCAG-AA-Kontrast (4.5:1 Text / 3:1 UI). Bitte eine dunklere oder hellere Nuance wählen.",
+            "presetPreviewLight": "Hell",
+            "presetPreviewDark": "Dunkel"
+        },
+        "performance": {
+            "appDebug": "APP_DEBUG",
+            "appEnv": "APP_ENV",
+            "bootstrapDescription": "Status der Laravel-Bootstrap-Caches (config, routes, events, packages).",
+            "bootstrapTitle": "Bootstrap-Caches",
+            "cacheStore": "Cache-Store",
+            "configCached": "Config gecacht",
+            "eventsCached": "Events gecacht",
+            "flushDescription": "Gezielte Cache-Invalidierung ohne vollständigen config:clear.",
+            "flushSpatiePermissionsButton": "Spatie-Permission-Cache leeren",
+            "flushSpatiePermissionsDescription": "Leert den Spatie laravel-permission Cache.",
+            "flushSpatiePermissionsTitle": "Spatie Permissions",
+            "flushTitle": "Caches leeren",
+            "flushing": "Wird geleert…",
+            "head": "Leistung",
+            "linkJobs": "Jobs öffnen",
+            "no": "Nein",
+            "observabilityDescription": "Links zum Job-Monitoring und zu Dashboards für den Anwendungszustand",
+            "observabilityTitle": "Observability",
+            "packagesCached": "Packages gecacht",
+            "queueConnection": "Queue-Connection",
+            "routesCached": "Routes gecacht",
+            "statusDescription": "Laufzeitumgebung und Cache-Backend.",
+            "statusTitle": "Status",
+            "yes": "Ja"
+        },
+        "ai": {
+            "breadcrumb": "KI-Einstellungen",
+            "head": "KI-Einstellungen",
+            "title": "Werkzeuge des Assistenten",
+            "description": "Die Tools, die der Assistent und der MCP-Server nutzen dürfen. Lese-Tools ändern nichts; Schreib-Tools ändern Daten mit deinen Berechtigungen, im Assistenten nach deiner Freigabe und über MCP nur für API-Schlüssel mit mcp:write.",
+            "statusLabel": "Assistent",
+            "statusOn": "An",
+            "statusOff": "Aus (EXCUBIA_AI_ENABLED=false)",
+            "providerLabel": "Anbieter",
+            "modelLabel": "Modell",
+            "envHint": "Anbieter, Modell und Schlüssel werden in der .env gesetzt (AI_DEFAULT_PROVIDER und die Schlüssel des Anbieters). Daten an einen Cloud-Anbieter verlassen deinen Server.",
+            "pricesTitle": "Preise",
+            "pricesDescription": "Preise pro Anbieter und Modell rechnen die KI-Aufrufe deiner überwachten Projekte in geschätzte Kosten um, im KI-Tab der Projekte und in den KI-Budgetalarmen.",
+            "pricesEdit": "Preise bearbeiten",
+            "pricesDocs": "Mehr zur KI-Nutzung",
+            "pricesEmptyTitle": "Noch keine KI-Nutzung",
+            "pricesEmptyDescription": "Preise werden genutzt, sobald ein Projekt KI-Nutzung sendet.",
+            "pricesOpenAnyway": "Preistabelle öffnen",
+            "kind": {
+                "read": "lesen",
+                "write": "schreiben"
+            },
+            "writesLabel": "Schreib-Tools",
+            "writesOn": "An",
+            "writesOff": "Aus (EXCUBIA_AI_WRITE_ENABLED=false)",
+            "mcpWritesOff": "Über MCP aus (EXCUBIA_MCP_WRITE_ENABLED=false)"
+        },
+        "integrations": {
+            "head": "Integrationen",
+            "webhookTitle": "Ausgehende Webhooks",
+            "webhookDescription": "Signierte Warnungen an deinen Endpunkt senden, wenn sich ein Projekt ändert",
+            "webhookUrl": "Webhook-URL",
+            "webhookUrlHint": "Nur HTTPS. Leer lassen zum Deaktivieren. Benötigt einen Queue-Worker.",
+            "webhookSecret": "Webhook-Geheimnis",
+            "webhookSecretHint": "Excubia erzeugt das Standard-Webhooks-Geheimnis (whsec_…) und zeigt es nur einmal an: Geben Sie es Ihrem Empfänger. Rotieren lässt das bisherige Geheimnis 24 Stunden weiter signieren, damit der Empfänger ohne Unterbrechung wechseln kann.",
+            "generateSecret": "Geheimnis erzeugen",
+            "sendTest": "Testereignis senden",
+            "sendTestHint": "Speichern Sie zuerst die Webhook-URL und erzeugen Sie das Geheimnis, dann stellen Sie einen signierten Ping in die Warteschlange. Erfordert einen Queue-Worker.",
+            "deliveryTitle": "Zustellstatus",
+            "lastSuccess": "Letzte erfolgreiche Zustellung",
+            "lastError": "Letzte fehlgeschlagene Zustellung",
+            "deliveryNone": "Noch keine.",
+            "notifiersTitle": "Ausgehende Benachrichtigungen (Slack & Telegram)",
+            "notifiersDescription": "Optionale lesbare Warnungen. Jeder Kanal hat seinen eigenen Mindestschweregrad, seine Ereignisse und Projekte. Nur ausgehend.",
+            "eventTypes": "Ereignisse",
+            "eventTypesHint": "Nur diese Ereignisse werden hierher gesendet. Der Test funktioniert immer.",
+            "eventsAll": "Alle Ereignisse",
+            "eventsSelected": "Ausgewählte Ereignisse",
+            "eventsCount": "{{selected}} von {{total}} Ereignissen",
+            "eventsNone": "Kein Ereignis ausgewählt: Hierher wird nichts gesendet.",
+            "eventGroups": {
+                "findings": "Befunde und Berichte",
+                "projects": "Projekte und Pushes",
+                "health": "Health und Infrastruktur",
+                "schedule": "Geplante Aufgaben",
+                "runtime": "Runtime",
+                "ai": "KI",
+                "billing": "Abrechnung",
+                "other": "Sonstige"
+            },
+            "minimumSeverity": "Mindestschweregrad",
+            "minimumSeverityHint": "Warnungen unter diesem Schweregrad werden hier nicht gesendet.",
+            "slackUrl": "Slack-Incoming-Webhook-URL",
+            "slackUrlHint": "https://hooks.slack.com/services/… Verschlüsselt gespeichert; leer lassen, um sie zu behalten.",
+            "sendTestSlack": "Slack-Test senden",
+            "sendTestTelegram": "Telegram-Test senden",
+            "sendTestNotifierHint": "Erst speichern. Benötigt einen Queue-Worker.",
+            "telegramToken": "Telegram-Bot-Token",
+            "telegramTokenHint": "Von BotFather, z. B. 123456:ABC… Verschlüsselt gespeichert; leer lassen, um ihn zu behalten.",
+            "telegramChatId": "Telegram-Chat-ID",
+            "telegramChatIdHint": "Eine numerische Chat-ID (Gruppen beginnen mit -100) oder ein @Kanal.",
+            "events": {
+                "finding.new": "Ein Befund, der warnt oder fehlschlägt und im vorherigen Bericht fehlte. Hat den Schweregrad des Befunds.",
+                "finding.resolved": "Ein Befund des vorherigen Berichts ist verschwunden.",
+                "project.worsened": "Der höchste Schweregrad des letzten Berichts ist höher als zuvor.",
+                "project.recovered": "Der höchste Schweregrad des letzten Berichts ist niedriger als zuvor.",
+                "project.stale": "Ein Projekt hat im Veraltungsfenster keinen Bericht gesendet.",
+                "project.reporting_again": "Ein veraltetes Projekt sendet wieder Berichte.",
+                "project.token_changed": "Ein Push-Token wurde erneuert oder widerrufen.",
+                "schedule.missed": "Eine geplante Aufgabe lief bis zum nächsten Fälligkeitszeitpunkt nicht.",
+                "schedule.failed": "Ein Lauf einer geplanten Aufgabe ist fehlgeschlagen.",
+                "schedule.scheduler_down": "Der Scheduler steht: excubia:heartbeat lief nicht.",
+                "runtime.cache_hit_ratio_low": "Ein Cache-Store liegt unter der Trefferquote.",
+                "runtime.delivery_failed": "Ein Mailable oder eine Benachrichtigung ist fehlgeschlagen.",
+                "runtime.log_spike": "Ein Log-Kanal hat mehr Fehlereinträge als den Schwellwert geschrieben.",
+                "eol.approaching": "Der Sicherheitssupport von PHP, Laravel oder Node endet in 90, 30 oder 7 Tagen (EXCUBIA_EOL_ALERT_DAYS). Einmal pro Schwelle; hoch ab 7 Tagen.",
+                "eol.reached": "Ein Projekt nutzt eine PHP-, Laravel- oder Node-Version, deren Sicherheitssupport beendet ist.",
+                "infrastructure.failed": "Eine Datenbank-, Speicher- oder Festplattenprüfung schlägt fehl (neu oder im ersten Bericht). Sofort gesendet, kritisch.",
+                "health.failed": "Eine Prüfung der minütlichen Zustandsproben schlägt auf einem Server zweimal in Folge fehl. Übernimmt den Schweregrad des Befunds; erneut gesendet, wenn sich die fehlschlagenden Befunde ändern.",
+                "health.recovered": "Eine fehlschlagende Prüfung der Zustandsproben schlägt auf keinem Server mehr fehl.",
+                "health.stale": "Ein Server, der Zustandsproben sendete, hat seit fünf Minuten keine gesendet. Die Zustandsalarme ignorieren ihn, bis er wieder sendet.",
+                "report.checks_skipped": "Eine Prüfung wurde übersprungen, weil eine Datenquelle ausfiel: Der Bericht ist unvollständig.",
+                "push.rejected": "Pushes wurden innerhalb einer Stunde wiederholt wegen eines fehlenden, unbekannten, widerrufenen oder deaktivierten Tokens abgelehnt. Ein geleaktes oder vergessenes Token?",
+                "project.created": "Ein Projekt wurde angelegt.",
+                "project.deleted": "Ein Projekt wurde gelöscht.",
+                "project.disabled": "Ein Projekt wurde deaktiviert.",
+                "ai.budget_warning": "Die geschätzten KI-Kosten eines Projekts in diesem Monat haben 80 % seines Budgets erreicht (im KI-Tab festgelegt).",
+                "ai.budget_exceeded": "Die geschätzten KI-Kosten eines Projekts in diesem Monat haben sein Budget erreicht.",
+                "ai.spend_spike": "Die geschätzten KI-Kosten von heute liegen über dem Schwellenwert des 7-Tage-Durchschnitts.",
+                "ai.error_rate": "Der Anteil fehlgeschlagener KI-Aufrufe in der letzten Stunde liegt über dem Schwellenwert.",
+                "billing.webhook_failures": "Billing-Webhooks eines Anbieters sind in der letzten Stunde mindestens so oft wie der Schwellenwert fehlgeschlagen (5xx, vom Anbieter wiederholt).",
+                "billing.payment_failed": "Ein Billing-Anbieter hat in der letzten Stunde fehlgeschlagene Zahlungen gemeldet.",
+                "auth.failed_login_spike": "Ein Auth-Guard hat in der letzten Stunde mindestens so viele fehlgeschlagene Logins wie der Schwellenwert gezählt (Brute Force oder Credential Stuffing).",
+                "scout.index_failures": "Die Laravel-Scout-Indexjobs eines durchsuchbaren Modells sind in der letzten Stunde mindestens so oft wie der Schwellenwert fehlgeschlagen (der Suchindex weicht von der Datenbank ab)."
+            },
+            "runtimeRulesTitle": "Runtime-Alarmregeln",
+            "runtimeRulesDescription": "Optionale Alarme aus den Runtime-Daten der Projekte, alle 15 Minuten über die letzte Stunde geprüft. Leer schaltet eine Regel ab.",
+            "cacheHitRatio": "Cache-Trefferquote unter (%)",
+            "cacheHitRatioHint": "Alarm, wenn ein Cache-Store bei mindestens 100 Zugriffen in der letzten Stunde weniger als diesen Anteil trifft.",
+            "logSpike": "Fehler-Logeinträge pro Kanal und Stunde",
+            "logSpikeHint": "Alarm, wenn ein Log-Kanal in der letzten Stunde mindestens so viele Einträge der Stufen error, critical, alert oder emergency schreibt.",
+            "deliveryFailures": "Alarm bei fehlgeschlagenen Mails oder Benachrichtigungen",
+            "billingWebhookFailures": "Fehlgeschlagene Billing-Webhooks pro Anbieter und Stunde",
+            "billingWebhookFailuresHint": "Alarmieren, wenn die Laravel-Cashier-Webhooks eines Anbieters in der letzten Stunde mindestens so oft fehlschlagen (der Anbieter wiederholt sie).",
+            "billingPaymentFailures": "Alarmieren, wenn ein Billing-Anbieter fehlgeschlagene Zahlungen meldet",
+            "authFailedLogins": "Fehlgeschlagene Logins pro Guard und Stunde",
+            "authFailedLoginsHint": "Alarmieren, wenn ein Auth-Guard in der letzten Stunde mindestens so viele fehlgeschlagene Logins zählt.",
+            "scoutIndexFailures": "Fehlgeschlagene Scout-Indexjobs pro Modell und Stunde",
+            "scoutIndexFailuresHint": "Alarmieren, wenn die Laravel-Scout-Index- oder -Entfernungsjobs in der Queue eines Modells in der letzten Stunde mindestens so oft fehlschlagen.",
+            "projects": "Projekte",
+            "projectsHint": "Alle Kästchen leer lassen, um die Warnungen aller Projekte zu senden.",
+            "projectGroups": "Projektgruppen",
+            "projectGroupsHint": "Ein Projekt einer markierten Gruppe ist enthalten, auch wenn es der Gruppe später beitritt.",
+            "emailTitle": "E-Mail",
+            "emailDescription": "Jede Person, die Projekte sehen darf, schaltet Alarm-E-Mails in ihrem Profil selbst ein, mit eigenem Mindestschweregrad, eigenen Ereignissen und Projekten. Die Mails nutzen die Mail-Einstellungen der App und benötigen einen Queue-Worker.",
+            "emailLink": "Profil öffnen",
+            "severitiesTitle": "Standard-Schweregrade",
+            "severitiesDescription": "Der Schweregrad jedes Ereignisses, das ihn nicht von einem Befund übernimmt. Der Mindestschweregrad jedes Kanals und Abos wird damit verglichen.",
+            "aiRulesTitle": "Alarmregeln für KI-Nutzung",
+            "aiRulesDescription": "Optionale Alarme aus der KI-Nutzung, die die Projekte senden (Laravel AI SDK), mit Kosten geschätzt aus Einstellungen → KI → Preise. Monatsbudgets werden pro Projekt in seinem KI-Tab festgelegt. Leer schaltet eine Regel aus.",
+            "aiSpendSpike": "KI-Kosten heute über (% des 7-Tage-Durchschnitts)",
+            "aiSpendSpikeHint": "Einmal am Tag alarmieren, wenn die geschätzten KI-Kosten eines Projekts heute diesen Anteil seines Durchschnittstags der 7 Tage davor erreichen, ab 1 $. 300 bedeutet das Dreifache.",
+            "aiErrorRate": "KI-Fehlerrate über (%)",
+            "aiErrorRateHint": "Alarmieren, wenn mehr als dieser Anteil der KI-Aufrufe der letzten Stunde fehlschlug, bei mindestens 20 Aufrufen.",
+            "webhookSecretNeedsUrl": "Speichern Sie zuerst die Webhook-URL und erzeugen Sie dann das Signaturgeheimnis.",
+            "rotateSecret": "Geheimnis rotieren",
+            "secretSet": "Geheimnis gesetzt",
+            "secretCreatedTitle": "Signaturgeheimnis des Alert-Webhooks kopieren",
+            "secretRotatedTitle": "Neues Signaturgeheimnis des Alert-Webhooks kopieren",
+            "secretRotatedNote": "Das bisherige Geheimnis signiert 24 Stunden weiter.",
+            "secretAnnouncement": "Signaturgeheimnis des Webhooks erzeugt. Es wird nur einmal angezeigt.",
+            "webhookDisabled": "Excubia sendet nicht mehr an diesen Webhook ({{reason}}). Beheben Sie den Fehler beim Empfänger und schalten Sie ihn dann wieder ein.",
+            "reenableWebhook": "Wieder einschalten",
+            "consecutiveFailures": "Fehler in Folge"
+        },
+        "aiPrices": {
+            "breadcrumb": "Preise",
+            "head": "KI-Preise",
+            "title": "KI-Preise",
+            "description": "Preise pro Anbieter und Modell, die die KI-Aufrufe deiner überwachten Projekte in geschätzte Kosten umrechnen, im KI-Tab der Projekte und in den KI-Budgetalarmen. Der Anbieter ist der Name in der config/ai.php des Projekts. Ein Modellname mit Datum (gpt-4o-2024-08-06) nutzt die Zeile seines Modells (gpt-4o). Modelle ohne Zeile zeigen Tokens ohne Kosten.",
+            "estimates": "Das sind Schätzungen, nicht deine Rechnung: prüfe sie bei deinem Anbieter. Tabelle vom {{date}}; die Standardwerte wurden zuletzt am {{defaultsDate}} geprüft.",
+            "sources": "Standardwerte von den offiziellen Preisseiten, Standard-Tarif, Basispreise gestaffelter Modelle (geprüft am {{date}}):",
+            "add": "Modell hinzufügen",
+            "restore": "Standardwerte wiederherstellen",
+            "provider": "Anbieter",
+            "model": "Modell",
+            "effectiveFrom": "Ab",
+            "effectiveFromOf": "Erster Tag von {{model}}",
+            "providerOf": "Anbieter der Zeile {{row}}",
+            "modelOf": "Modell der Zeile {{row}}",
+            "priceOf": "{{field}} für {{model}}",
+            "remove": "Entfernen",
+            "removeRow": "{{model}} entfernen",
+            "addFrom": "Neuer Preis für {{model}} ab einem Datum",
+            "units": "USD. Tokens pro 1 Mio.; Audio pro Sekunde; Sucheinheiten pro Einheit. Ohne Cache-Preis gilt der Input-Preis; ohne Reasoning-Preis zählt Reasoning zum Output (wie OpenAI und Anthropic es melden).",
+            "history": "Preisverlauf: Eine Zeile bepreist die Tage ab ihrem Datum (UTC) bis zur nächsten Zeile desselben Modells; ein leeres Datum gilt seit jeher. Um einen Preis ab einem Tag zu ändern, füge eine Zeile des Modells mit diesem Datum hinzu („Neuer Preis ab einem Datum“): frühere Tage behalten ihren Preis. Gemini 3.8 Flash verdoppelt sich ab 2027-01-01.",
+            "fields": {
+                "input": "Input",
+                "cache_read": "Cache lesen",
+                "cache_write": "Cache schreiben",
+                "output": "Output",
+                "reasoning": "Reasoning",
+                "image_input": "Bild ein",
+                "image_output": "Bild aus",
+                "audio_second": "Audio / s",
+                "search_unit": "Sucheinheit"
+            }
+        },
+        "deleteAccount": {
+            "title": "Konto löschen",
+            "description": "Ihr Konto und alle zugehörigen Ressourcen löschen",
+            "warningTitle": "Warnung",
+            "warningDescription": "Bitte gehen Sie vorsichtig vor, dies kann nicht rückgängig gemacht werden.",
+            "confirmTitle": "Möchten Sie Ihr Konto wirklich löschen?",
+            "confirmDescription": "Wenn Ihr Konto gelöscht ist, werden auch alle zugehörigen Ressourcen und Daten endgültig gelöscht. Geben Sie Ihr Passwort ein, um zu bestätigen, dass Sie Ihr Konto endgültig löschen möchten."
+        },
+        "twoFactor": {
+            "title": "Zwei-Faktor-Authentifizierung",
+            "description": "Einstellungen der Zwei-Faktor-Authentifizierung verwalten",
+            "enabledDescription": "Bei der Anmeldung werden Sie nach einer sicheren, zufälligen PIN gefragt, die Sie in der TOTP-fähigen App auf Ihrem Telefon abrufen.",
+            "disabledDescription": "Wenn Sie die Zwei-Faktor-Authentifizierung aktivieren, werden Sie bei der Anmeldung nach einer sicheren PIN gefragt. Diese PIN rufen Sie in einer TOTP-fähigen App auf Ihrem Telefon ab.",
+            "enable": "2FA aktivieren",
+            "disable": "2FA deaktivieren",
+            "continueSetup": "Einrichtung fortsetzen",
+            "recoveryCodes": {
+                "title": "2FA-Wiederherstellungscodes",
+                "description": "Mit Wiederherstellungscodes erhalten Sie wieder Zugriff, wenn Sie Ihr 2FA-Gerät verlieren. Bewahren Sie sie in einem sicheren Passwortmanager auf.",
+                "view": "Wiederherstellungscodes anzeigen",
+                "hide": "Wiederherstellungscodes ausblenden",
+                "regenerate": "Codes neu erzeugen",
+                "listLabel": "Wiederherstellungscodes",
+                "loading": "Wiederherstellungscodes werden geladen",
+                "regenerateHint": "Jeder Wiederherstellungscode kann einmal für den Zugriff auf Ihr Konto verwendet werden und wird danach entfernt. Wenn Sie weitere benötigen, klicken Sie oben auf <bold>Codes neu erzeugen</bold>."
+            },
+            "setup": {
+                "manualEntry": "oder geben Sie den Code manuell ein",
+                "enabledTitle": "Zwei-Faktor-Authentifizierung aktiviert",
+                "enabledDescription": "Die Zwei-Faktor-Authentifizierung ist jetzt aktiviert. Scannen Sie den QR-Code oder geben Sie den Einrichtungsschlüssel in Ihrer Authenticator-App ein.",
+                "verifyTitle": "Authentifizierungscode bestätigen",
+                "verifyDescription": "Geben Sie den 6-stelligen Code aus Ihrer Authenticator-App ein",
+                "enableTitle": "Zwei-Faktor-Authentifizierung aktivieren",
+                "enableDescription": "Um die Zwei-Faktor-Authentifizierung zu aktivieren, scannen Sie den QR-Code oder geben Sie den Einrichtungsschlüssel in Ihrer Authenticator-App ein"
+            }
+        },
+        "apiKeys": {
+            "description": "Persönliche Schlüssel für KI-Clients wie Claude Code oder Cursor. Ein Schlüssel handelt als Sie: Er sieht nur, was Sie in Excubia sehen, und funktioniert nicht mehr, sobald Sie ihn widerrufen oder Ihr Konto deaktiviert wird.",
+            "create": "API-Schlüssel erstellen",
+            "createTitle": "API-Schlüssel erstellen",
+            "createDescription": "Benennen Sie den Schlüssel nach dem Client, der ihn nutzt, wählen Sie, was er darf, und optional, wann er abläuft.",
+            "noGrantableScopes": "Für einen MCP-Schlüssel braucht Ihr Konto die Berechtigung zur KI-Nutzung, zum Beispiel über die Rolle Admin oder Super Admin.",
+            "empty": {
+                "title": "Noch keine API-Schlüssel",
+                "description": "Erstellen Sie einen Schlüssel, um einen KI-Client mit Excubia zu verbinden."
+            },
+            "resources": {
+                "mcp": {
+                    "label": "KI-Clients (MCP-Server)",
+                    "description": "Lesen: Projekte, Berichte, Befunde, Exceptions, Runtime und Zeitpläne. Schreiben schließt Lesen ein und erlaubt Änderungen am Exception-Status, an Zuweisungen, verworfenen Findings, stummgeschalteten Alerts und Wartungsfenstern."
+                }
+            }
+        },
+        "preferences": {
+            "title": "Einstellungen für Listen",
+            "description": "Wie Listen für Sie aussehen und reagieren, in diesem Browser.",
+            "compactTables": "Kompakte Tabellen",
+            "compactTablesDescription": "Dichtere Tabellenzeilen, damit mehr auf den Bildschirm passt.",
+            "singleKeyShortcuts": "Einzeltasten-Kürzel",
+            "singleKeyShortcutsDescription": "Tastenkürzel ohne Zusatztasten, etwa j / k in Listen. Schalten Sie sie aus, wenn sie Spracheingabe oder andere assistive Technik stören."
+        }
+    },
+    "activityLog": {
+        "title": "Aktivitätsprotokoll",
+        "description": "Schreibgeschützter Audit-Trail für Modelländerungen und Authentifizierungsereignisse.",
+        "searchPlaceholder": "Beschreibung oder Subjekt suchen…",
+        "allUsers": "Alle Benutzer",
+        "allActions": "Alle Aktionen",
+        "allLogs": "Alle Protokolle",
+        "filterByAction": "Nach Aktion filtern",
+        "filterByLog": "Nach Protokollname filtern",
+        "dateFrom": "Von Datum",
+        "dateTo": "Bis Datum",
+        "empty": "Keine Aktivität für die gewählten Filter.",
+        "system": "System",
+        "noChanges": "Keine Feldänderungen erfasst.",
+        "expand": "Änderungen aufklappen",
+        "collapse": "Änderungen einklappen",
+        "logName": "Protokollname",
+        "columns": {
+            "date": "Datum",
+            "user": "Benutzer",
+            "action": "Aktion",
+            "description": "Beschreibung",
+            "subject": "Subjekt"
+        },
+        "events": {
+            "created": "Erstellt",
+            "updated": "Aktualisiert",
+            "deleted": "Gelöscht",
+            "restored": "Wiederhergestellt",
+            "login": "Anmeldung",
+            "logout": "Abmeldung",
+            "failed": "Fehlgeschlagene Anmeldung",
+            "ai_prompt": "KI-Prompt",
+            "ai_response": "KI-Antwort",
+            "ai_tool": "KI-Tool",
+            "ai_mutation": "KI-Mutation",
+            "settings_updated": "Einstellungen aktualisiert",
+            "chat_message": "Chat-Nachricht",
+            "chat_message_deleted": "Chat-Nachricht gelöscht",
+            "permissions_synced": "Berechtigungen synchronisiert",
+            "roles_synced": "Rollen synchronisiert",
+            "groups_synced": "Gruppen synchronisiert",
+            "members_synced": "Mitglieder synchronisiert",
+            "token_rotated": "Push-Token erneuert",
+            "webhook_secret_created": "Geheimnis des Alert-Webhooks erstellt",
+            "webhook_secret_rotated": "Geheimnis des Alert-Webhooks rotiert",
+            "token_revoked": "Push-Token widerrufen",
+            "rotated": "API-Schlüssel rotiert",
+            "revoked": "API-Schlüssel widerrufen",
+            "api_key_first_used": "API-Schlüssel erstmals verwendet",
+            "collection_permissions_synced": "Collection-Berechtigungen synchronisiert",
+            "file_permissions_synced": "Datei-Berechtigungen synchronisiert",
+            "status_changed": "Status geändert",
+            "assigned": "Zugewiesen",
+            "unassigned": "Zuweisung entfernt",
+            "projects_synced": "Projekte synchronisiert",
+            "ai_tool_approval": "KI-Tool-Freigabe",
+            "alert_muted": "Alarm stummgeschaltet",
+            "alert_unmuted": "Alarm wieder aktiv",
+            "maintenance_window_created": "Wartungsfenster hinzugefügt",
+            "maintenance_window_deleted": "Wartungsfenster entfernt",
+            "finding_dismissed": "Befund ausgeblendet",
+            "finding_restored": "Befund wiederhergestellt",
+            "project_groups_synced": "Projektgruppen synchronisiert"
+        },
+        "logs": {
+            "default": "Anwendung",
+            "auth": "Authentifizierung",
+            "ai": "KI",
+            "chat": "Chat",
+            "settings": "Einstellungen"
+        },
+        "ipAddress": "IP"
+    },
+    "confirmDestructive": {
+        "typeToConfirm": "Tippe „{{name}}“ zur Bestätigung"
+    },
+    "users": {
+        "confirm": {
+            "deleteTitle": "Benutzer „{{name}}“ löschen?",
+            "deleteDescription": "Das Konto wird entfernt. Deaktiviere es stattdessen, um es zu behalten."
+        },
+        "title": "Benutzer",
+        "newUser": "Neuer Benutzer",
+        "searchPlaceholder": "Benutzer suchen…",
+        "sortBy": "Sortieren nach",
+        "columns": {
+            "created": "Erstellt",
+            "updated": "Aktualisiert",
+            "name": "Name",
+            "email": "E-Mail",
+            "roles": "Rollen",
+            "groups": "Gruppen",
+            "status": "Status",
+            "actions": "Aktionen"
+        },
+        "ssoBadge": "SSO",
+        "actions": {
+            "sendResetEmail": "Reset-E-Mail senden"
+        },
+        "status": {
+            "active": "Aktiv",
+            "inactive": "Inaktiv"
+        },
+        "form": {
+            "editTitle": "Benutzer bearbeiten",
+            "editDescription": "Profil, Status und direkte Rollen aktualisieren. Lassen Sie das Passwort leer, um es beizubehalten.",
+            "createDescription": "Legen Sie einen Benutzer an und weisen Sie direkte Rollen zu. Die E-Mail-Adresse gilt als bestätigt. Verwenden Sie Gruppen, wenn viele Benutzer dieselben Rollen teilen.",
+            "requiredHint": "Mit * markierte Felder sind Pflichtfelder.",
+            "firstNameRequired": "Vorname *",
+            "emailRequired": "E-Mail *",
+            "emailHint": "Verwenden Sie eine gültige E-Mail-Adresse, zum Beispiel",
+            "username": "Benutzername",
+            "newPasswordOptional": "Neues Passwort (optional)",
+            "passwordRequired": "Passwort *",
+            "rolesLocked": "Sie können Ihre eigenen Rollen nicht ändern.",
+            "timezone": "Zeitzone"
+        }
+    },
+    "groups": {
+        "confirm": {
+            "deleteTitle": "Gruppe „{{name}}“ löschen?",
+            "deleteDescription": "Mitglieder verlieren die Rollen dieser Gruppe. Dies kann nicht rückgängig gemacht werden."
+        },
+        "title": "Gruppen",
+        "newGroup": "Neue Gruppe",
+        "searchPlaceholder": "Gruppen suchen…",
+        "sortBy": "Sortieren nach",
+        "columns": {
+            "name": "Name",
+            "roles": "Rollen",
+            "members": "Mitglieder",
+            "actions": "Aktionen"
+        },
+        "empty": "Noch keine Gruppen.",
+        "projectScope": {
+            "label": "Projektbereich",
+            "hint": "Mitglieder sehen auch die Projekte dieser Projektgruppen, auch die nur für Admins. Ihre Rollen bestimmen weiterhin, was sie dort tun dürfen.",
+            "adminsOnly": "Nur Admins ändern, welche Projekte eine Gruppe sieht."
+        },
+        "form": {
+            "editTitle": "Gruppe bearbeiten",
+            "description": "Mitglieder erben die hier gewählten Rollen. Verwenden Sie für große Mitgliederzahlen Gruppen, statt Rollen Benutzer für Benutzer zuzuweisen.",
+            "rolesHint": "Mitglieder erben die Berechtigungen dieser Rollen.",
+            "rolesLocked": "Sie können die Rollen einer Gruppe, der Sie angehören, nicht ändern.",
+            "users": "Benutzer"
+        }
+    },
+    "projectGroups": {
+        "title": "Projektgruppen",
+        "newGroup": "Neue Projektgruppe",
+        "editGroup": "Projektgruppe bearbeiten",
+        "formDescription": "Gruppiere Projekte nach Kunde, Team, Produktlinie oder Umgebung. Ein Projekt kann in mehreren Gruppen sein.",
+        "searchPlaceholder": "Projektgruppen suchen…",
+        "sortBy": "Sortieren nach",
+        "name": "Name",
+        "description": "Beschreibung",
+        "projects": "Projekte",
+        "projectsPlaceholder": "Projekte auswählen…",
+        "projectsHint": "Es werden nur Projekte angezeigt, die du sehen kannst.",
+        "create": "Erstellen",
+        "save": "Speichern",
+        "cancel": "Abbrechen",
+        "columns": {
+            "name": "Name",
+            "projects": "Projekte",
+            "actions": "Aktionen"
+        },
+        "empty": "Noch keine Projektgruppen.",
+        "confirm": {
+            "deleteTitle": "Projektgruppe „{{name}}“ löschen?",
+            "deleteDescription": "Die Projekte bleiben; Dashboard- und Alarmfilter auf diese Gruppe erfassen sie nicht mehr. Dies kann nicht rückgängig gemacht werden."
+        }
+    },
+    "projects": {
+        "title": "Projekte",
+        "pinHint": "Hefte ein Projekt mit dem Stern an, um es in der Seitenleiste zu behalten.",
+        "newProject": "Neues Projekt",
+        "editProject": "Projekt bearbeiten",
+        "create": "Erstellen",
+        "formDescription": "Ein Projekt sendet seine Berichte mit excubia push an diese App, authentifiziert durch sein Push-Token.",
+        "searchPlaceholder": "Projekte suchen…",
+        "status": "Status",
+        "lastReport": "Letzter Bericht",
+        "actions": "Aktionen",
+        "enabled": "Aktiv",
+        "disabled": "Deaktiviert",
+        "noToken": "Kein Token",
+        "never": "Nie",
+        "enabledHint": "Pushes von einem deaktivierten Projekt werden abgelehnt.",
+        "slugHint": "Slug: {{slug}} (ändert sich nicht).",
+        "token": {
+            "title": "Push-Token für „{{name}}“",
+            "description": "Kopiere das Token jetzt: Es wird nur einmal angezeigt. Füge diese Zeilen in die .env des Projekts ein und plane den Push.",
+            "environment": ".env",
+            "schedule": "routes/console.php",
+            "copy": "Kopieren",
+            "copied": "Kopiert",
+            "done": "Fertig",
+            "rotate": "Neues Push-Token",
+            "revoke": "Push-Token widerrufen"
+        },
+        "confirm": {
+            "deleteTitle": "Projekt „{{name}}“ löschen?",
+            "deleteDescription": "Sein Push-Token funktioniert nicht mehr. Das kann nicht rückgängig gemacht werden.",
+            "deleteConfirm": "Löschen",
+            "rotateTitle": "Neues Push-Token für „{{name}}“?",
+            "rotateDescription": "Das aktuelle Token funktioniert sofort nicht mehr. Trage das neue in die .env des Projekts ein.",
+            "rotateConfirm": "Neues Token erstellen",
+            "revokeTitle": "Push-Token von „{{name}}“ widerrufen?",
+            "revokeDescription": "Pushes von diesem Projekt werden abgelehnt, bis du ein neues Token erstellst.",
+            "revokeConfirm": "Widerrufen"
+        },
+        "system": "System",
+        "visibility": {
+            "label": "Sichtbarkeit",
+            "everyone": "Alle mit Projektzugriff",
+            "admins": "Nur Admins",
+            "hint": "Admins und Super-Admins sehen immer alle Projekte; ein Admin-Projekt sehen auch die Benutzergruppen, die Zugriff auf eine seiner Projektgruppen haben."
+        },
+        "columns": {
+            "project": "Projekt",
+            "health": "Zustand",
+            "openFindings": "Offene Befunde",
+            "failedChecks": "Fehlgeschlagene Prüfungen"
+        },
+        "checksRatio": "{{failed}} / {{total}}",
+        "failedChecksLabel": "{{failed}} von {{total}} Prüfungen fehlgeschlagen",
+        "stale": "Veraltet",
+        "logo": {
+            "label": "Logo",
+            "choose": "Datei auswählen",
+            "change": "Datei ändern",
+            "remove": "Logo entfernen",
+            "hint": "PNG, JPEG, WebP oder SVG, bis 256 KB. Ohne Logo zeigt das Projekt seine Initialen."
+        }
+    },
+    "dashboard": {
+        "noAccess": "Du hast keinen Zugriff auf Projekte. Bitte einen Administrator um die Berechtigung projects.view.",
+        "emptyTitle": "Noch keine Projekte",
+        "emptyDescription": "Registriere ein Projekt und hinterlege sein Push-Token im Projekt, um den ersten Bericht zu senden.",
+        "lastReport": "Letzter Bericht {{date}}",
+        "noReports": "Noch keine Berichte",
+        "stale": "Veraltet",
+        "liveHealthFailing_one": "{{count}} fehlgeschlagen",
+        "liveHealthFailing_other": "{{count}} fehlgeschlagen",
+        "liveHealthStale": "Server stumm",
+        "trend": {
+            "title": "Befunde im Zeitverlauf",
+            "description": "Der letzte Bericht jedes Projekts an jedem der letzten {{count}} Tage, nach Schweregrad.",
+            "label": "Gestapeltes Balkendiagramm der täglichen Befunde nach Schweregrad der letzten {{count}} Tage; heute {{total}} Befunde.",
+            "sinceFirstReport_one": "Seit dem ersten Bericht vor {{count}} Tag.",
+            "sinceFirstReport_other": "Seit dem ersten Bericht vor {{count}} Tagen.",
+            "historyBuilding": "Der Verlauf entsteht, sobald Berichte eintreffen."
+        },
+        "scope": {
+            "project": "Projekt",
+            "allProjects": "Alle Projekte ({{count}})",
+            "openProject": "Projekt öffnen",
+            "group": "Projektgruppe",
+            "allGroups": "Alle Gruppen"
+        },
+        "period": {
+            "label": "Zeitraum",
+            "days": "{{count}} T",
+            "previous": "ggü. den vorherigen {{count}} Tagen"
+        },
+        "kpi": {
+            "findings": "Offene Befunde",
+            "atRisk": "Gefährdete Projekte",
+            "atRiskDescription": "Schwerster Befund kritisch oder hoch",
+            "endOfSupport": "Supportende",
+            "endOfSupportDescription": "Laufzeiten beendet oder endend innerhalb von 180 Tagen",
+            "stale": "Ohne Bericht",
+            "findingsContext": "Letzter Bericht jedes Projekts",
+            "staleHeadline": "Von {{total}} Projekten",
+            "staleContext": "Kein Bericht innerhalb der eingestellten Schwelle"
+        },
+        "topIssues": {
+            "emptyMineTitle": "Dir ist nichts zugewiesen",
+            "emptyMineDescription": "Kein Befund der neuesten Berichte ist dir zugewiesen.",
+            "title": "Wichtigste Befunde",
+            "description": "{{shown}} von {{total}} Befunden, projektübergreifend gruppiert, die schwersten zuerst.",
+            "issue": "Befund",
+            "projects": "Projekte",
+            "emptyTitle": "Keine offenen Befunde",
+            "emptyDescription": "Die letzten Berichte haben keine Befunde mit Warnung oder Fehler."
+        },
+        "endOfSupport": {
+            "title": "Supportende",
+            "description": "PHP, Laravel und Node beendet oder endend innerhalb eines Jahres.",
+            "emptyTitle": "Nichts endet bald",
+            "emptyDescription": "Keine Laufzeit erreicht das Ende des Sicherheitssupports innerhalb eines Jahres."
+        },
+        "configuration": {
+            "title": "Konfiguration",
+            "description": "Debug-Modus, Caches, Migrationen, fehlgeschlagene Jobs, Scheduler und Wartungsmodus.",
+            "emptyTitle": "Konfiguration in Ordnung",
+            "emptyDescription": "Keine Konfigurationsprüfung warnt oder schlägt fehl, oder die Projekte nutzen einen Core vor 1.0."
+        },
+        "projects": {
+            "title": "Projekte",
+            "description": "Die schwersten zuerst."
+        },
+        "telemetry": {
+            "requests": "Anfragen",
+            "errors": "{{count}} Serverfehler ({{rate}} %)",
+            "openExceptions": "Offene Exceptions",
+            "newExceptions": "{{count}} neu im Zeitraum",
+            "topExceptions": "Neueste offene Exceptions",
+            "noOpenExceptions": "Keine offenen Exceptions.",
+            "openExceptionsContext": "Nach Fingerprint gruppiert"
+        },
+        "assigned": {
+            "title": "Dir zugewiesen",
+            "description": "Offene Ausnahmegruppen und Befunde, um die du dich kümmerst.",
+            "exceptions_one": "{{count}} Ausnahme",
+            "exceptions_other": "{{count}} Ausnahmen",
+            "findings_one": "{{count}} Befund",
+            "findings_other": "{{count}} Befunde"
+        }
+    },
+    "report": {
+        "noIssues": "Keine Probleme",
+        "empty": "Noch kein Bericht empfangen. Führe php artisan excubia:push im Projekt aus.",
+        "checks": "Prüfungen",
+        "upgradePlan": "Upgrade-Plan",
+        "noUpgradeSteps": "Nichts zu aktualisieren.",
+        "history": "Frühere Berichte",
+        "receivedAt": "Empfangen",
+        "worstSeverity": "Höchster Schweregrad",
+        "findings": "Befunde",
+        "severityLabel": "Schweregrad",
+        "subject": "Betreff",
+        "message": "Meldung",
+        "fixHint": "Behebung",
+        "evidence": "Details",
+        "severity": {
+            "critical": "Kritisch",
+            "high": "Hoch",
+            "medium": "Mittel",
+            "low": "Niedrig",
+            "info": "Info"
+        },
+        "status": {
+            "pass": "Bestanden",
+            "warn": "Warnung",
+            "fail": "Fehler",
+            "skipped": "Übersprungen"
+        },
+        "refresh": "Jetzt aktualisieren",
+        "systemEmpty": "Excubia prüft sich jeden Tag selbst. Nutze „Jetzt aktualisieren“ für den ersten Bericht.",
+        "views": {
+            "label": "Projektansichten",
+            "overview": "Übersicht",
+            "findings": "Befunde",
+            "plan": "Upgrade-Plan",
+            "history": "Verlauf",
+            "runtime": "Laufzeit",
+            "exceptions": "Exceptions",
+            "schedule": "Zeitplan",
+            "alerts": "Alarme",
+            "licenses": "Lizenzen",
+            "ai": "KI"
+        },
+        "viewGroups": {
+            "overview": "Übersicht",
+            "issues": "Probleme",
+            "health": "Zustand",
+            "dependencies": "Abhängigkeiten",
+            "alerts": "Alarme",
+            "history": "Verlauf"
+        },
+        "support": {
+            "supported": "Unterstützt",
+            "ending": "Endet bald",
+            "ended": "Beendet",
+            "unknown": "Unbekannt"
+        },
+        "runtime": {
+            "title": "Laufzeiten",
+            "description": "Versionen und Sicherheitssupport aus dem letzten Bericht.",
+            "unavailable": "Dieser Bericht enthält keine Laufzeitdetails. Aktualisiere qiick/excubia-core im Projekt auf 1.0.",
+            "name": "Laufzeit",
+            "version": "Version",
+            "securityUntil": "Sicherheit bis",
+            "status": "Status",
+            "notUsed": "Nicht verwendet",
+            "php": "PHP",
+            "laravel": "Laravel",
+            "node": "Node"
+        },
+        "findingsDescription": "Befunde mit Warnung oder Fehler, nach Schweregrad.",
+        "lastReport": "Letzter Bericht",
+        "generatedAt": "Erstellt am {{date}}",
+        "coreVersion": "Erstellt mit excubia-core {{version}}",
+        "coreVersionShort": "Core",
+        "checksDescription": "Alle Prüfungen des letzten Berichts und ihr Status.",
+        "check": "Prüfung",
+        "searchFindings": "Befunde suchen…",
+        "allSeverities": "Alle Schweregrade",
+        "allChecks": "Alle Prüfungen",
+        "noMatchingFindings": "Keine passenden Befunde",
+        "noMatchingFindingsDescription": "Andere Suche versuchen oder Filter zurücksetzen.",
+        "noIssuesDescription": "Der letzte Bericht hat keine Befunde mit Warnung oder Fehler.",
+        "installed": "Installiert",
+        "fixedIn": "Behoben in",
+        "planDescription": "Die empfohlene Reihenfolge der Upgrades, das Dringendste zuerst.",
+        "plan": {
+            "packageCount_one": "{{count}} Paket",
+            "packageCount_other": "{{count}} Pakete",
+            "kind": {
+                "composer-advisory": "Composer-Advisory beheben",
+                "npm-advisory": "npm-Advisory beheben",
+                "php-eol": "PHP aktualisieren",
+                "next-major-blocked": "Pakete blockieren die nächste Laravel-Major",
+                "next-major-blockedWithMajor": "Pakete blockieren Laravel {{major}}",
+                "laravel-eol": "Laravel aktualisieren",
+                "laravel-eolWithMajor": "Auf Laravel {{major}} aktualisieren",
+                "composer-abandoned": "Aufgegebenes Paket ersetzen",
+                "composer-stale": "Veraltete Pakete prüfen",
+                "composer-patch": "Composer-Pakete auf den neuesten Patch aktualisieren",
+                "npm-patch": "npm-Pakete auf den neuesten Patch aktualisieren",
+                "license-review": "Abhängigkeitslizenzen prüfen",
+                "unknown": "Upgrade-Schritt"
+            }
+        },
+        "trend": {
+            "title": "Befunde im Zeitverlauf",
+            "description": "Befunde mit Warnung oder Fehler je Bericht, nach Schweregrad.",
+            "label": "Gestapeltes Balkendiagramm der Befunde nach Schweregrad über {{count}} Berichte; der letzte hat {{total}} Befunde."
+        },
+        "overview": {
+            "findings": "Offene Befunde",
+            "lastReport": "Letzter Bericht {{time}}",
+            "environment": "Umgebung {{environment}}",
+            "checks": "Bestandene Prüfungen",
+            "allChecksPass": "Alle Prüfungen bestanden",
+            "checkCount": {
+                "fail_one": "{{count}} fehlgeschlagen",
+                "fail_other": "{{count}} fehlgeschlagen",
+                "warn_one": "{{count}} Warnung",
+                "warn_other": "{{count}} Warnungen",
+                "skipped_one": "{{count}} übersprungen",
+                "skipped_other": "{{count}} übersprungen"
+            },
+            "runtimes": "Unterstützte Laufzeiten",
+            "runtimesUnavailable": "Keine Laufzeitdetails in diesem Bericht",
+            "allRuntimesSupported": "Alle mit Sicherheitssupport",
+            "runtimeStatus": "{{runtime}}: {{status}}",
+            "nextEnd": "Nächstes Ende: {{runtime}} am {{date}}",
+            "events_one": "{{count}} Ereignis",
+            "events_other": "{{count}} Ereignisse",
+            "lastSeen": "Zuletzt gesehen {{time}}",
+            "requests_one": "Anfragen, letzte Stunde",
+            "requests_other": "Anfragen, letzte {{count}} Stunden",
+            "averageMs": "Durchschnitt {{ms}} ms",
+            "systemProject": "Systemprojekt",
+            "systemProjectHint": "Excubia überwacht sich selbst. Es berichtet täglich von allein und kann nicht gelöscht werden.",
+            "attention": {
+                "title": "Handlungsbedarf",
+                "description": "{{shown}} von {{total}} offenen Problemen: zuerst Befunde mit fehlschlagender Infrastruktur, dann nach Schweregrad; danach offene Ausnahmen.",
+                "allFindings": "Alle Befunde",
+                "exception": "Exception",
+                "emptyTitle": "Kein Handlungsbedarf"
+            },
+            "release": "Release",
+            "lastDeploy": "Deployt {{time}}",
+            "noDeploy": "Noch keine Deploy-Markierung",
+            "deployCount_one": "{{count}} Deploy im Verlauf",
+            "deployCount_other": "{{count}} Deploys im Verlauf",
+            "stale": {
+                "title": "Dieser Bericht ist veraltet",
+                "description": "Der letzte Bericht kam {{time}}: Alle Zahlen auf dieser Seite stammen von damals.",
+                "descriptionPush": "Der letzte Bericht kam {{time}}: Alle Zahlen auf dieser Seite stammen von damals. Prüfe, ob der Scheduler des Projekts excubia:push ausführt."
+            },
+            "allChecks": "Alle Prüfungen",
+            "checksFailingOnly": "Nur nicht bestandene",
+            "checksFailingDescription": "Die Prüfungen des letzten Berichts mit Warnung oder Fehler.",
+            "allChecksPassCount_one": "Die {{count}} Prüfung ist bestanden.",
+            "allChecksPassCount_other": "Alle {{count}} Prüfungen sind bestanden."
+        },
+        "release": "Release",
+        "deploy": "Deploy",
+        "liveHealth": {
+            "title": "Live-Zustand",
+            "description": "Die minütlichen Zustandsproben der letzten Stunde, je Prüfung und Server. Aktualisiert sich jede Minute.",
+            "servers": "Server",
+            "lastSample": "Letzte Probe",
+            "serverStatus": "{{server}}: {{status}}",
+            "serverStale": "{{server}}: keine Probe"
+        },
+        "findingGroup": {
+            "title_one": "{{count}} Befund",
+            "title_other": "{{count}} Befunde",
+            "blockers_one": "{{count}} Paket blockiert Laravel {{major}}",
+            "blockers_other": "{{count}} Pakete blockieren Laravel {{major}}",
+            "show_one": "Eintrag anzeigen",
+            "show_other": "Alle {{count}} anzeigen",
+            "upgradePlan": "Upgrade-Plan in Fleet"
+        }
+    },
+    "assistant": {
+        "title": "Assistent",
+        "newConversation": "Neuer Chat",
+        "conversations": "Unterhaltungen",
+        "emptyTitle": "Frag nach deinen Projekten",
+        "emptyDescription": "Er liest die gespeicherten Berichte: listet Projekte, sucht Findings, zeigt den letzten Bericht und den Verlauf eines Projekts, vergleicht zwei Berichte und schlägt einen Upgrade-Plan vor. Er kann auch Exceptions lösen oder zuweisen, Findings verwerfen und Alerts stummschalten, jedes Mal nach deiner Freigabe.",
+        "placeholder": "Stelle eine Frage… (Enter zum Senden, Umschalt+Enter für eine neue Zeile)",
+        "send": "Senden",
+        "you": "Du",
+        "thinking": "Denke nach…",
+        "failed": "Keine Antwort: Der Assistent ist fehlgeschlagen.",
+        "disclaimer": "Die Antworten stammen aus den gespeicherten Berichten und können unvollständig sein. Prüfe wichtige auf der Projektseite.",
+        "examples": {
+            "critical": "Welche Projekte haben Befunde mit hohem oder kritischem Schweregrad?",
+            "package": "Welche Projekte verwenden guzzlehttp/guzzle?",
+            "upgradeFirst": "Welches Projekt sollte ich zuerst aktualisieren, und warum?",
+            "lastWeek": "Was hat sich seit letzter Woche verschlechtert?"
+        },
+        "searchConversations": "Unterhaltungen suchen…",
+        "noConversations": "Noch keine Unterhaltungen.",
+        "today": "Heute",
+        "yesterday": "Gestern",
+        "twoDaysAgo": "Vor 2 Tagen",
+        "thisWeek": "Diese Woche",
+        "aWeekAgo": "Vor einer Woche",
+        "thisMonth": "Diesen Monat",
+        "older": "Älter",
+        "panelDescription": "Schnelle Assistenten-Schublade. Öffnen Sie die Vollseite für den Verlauf.",
+        "openFullPage": "Ganze Seite öffnen",
+        "openPanel": "Im Seitenbereich öffnen",
+        "unreachable": "Der Assistent ist nicht erreichbar. Prüfe die Einstellungen des KI-Anbieters.",
+        "deleteSelected": "Ausgewählte Chats löschen",
+        "selectConversation": "{{title}} auswählen",
+        "deleteTitle": "Ausgewählte Chats löschen?",
+        "deleteDescription_one": "Du löschst {{count}} Chat. Das kann nicht rückgängig gemacht werden.",
+        "deleteDescription_other": "Du löschst {{count}} Chats. Das kann nicht rückgängig gemacht werden.",
+        "approval": {
+            "question_one": "Diese Änderung freigeben?",
+            "question_other": "Diese {{count}} Änderungen freigeben?",
+            "always": "In diesem Chat für diese Tools nicht mehr fragen",
+            "awaiting": "Wartet auf deine Freigabe.",
+            "tools": {
+                "update-exception-status": "Status von Exceptions ändern",
+                "assign-items": "Exceptions oder Findings zuweisen",
+                "dismiss-finding": "Ein Finding verwerfen",
+                "restore-finding": "Ein Finding wiederherstellen",
+                "mute-alert": "Alerts stummschalten oder ein Wartungsfenster öffnen",
+                "unmute-alert": "Alerts wieder aktivieren oder ein Wartungsfenster schließen",
+                "refresh-report": "Den Systembericht aktualisieren"
+            }
+        }
+    },
+    "permissions": {
+        "description": "Berechtigungen sind in PermissionEnum definiert und werden mit der Datenbank synchronisiert. Weise sie auf der Bearbeitungsseite einer Rolle zu.",
+        "sync": "Aus Enum synchronisieren",
+        "empty": "Keine Berechtigungen in der Datenbank. Synchronisierung ausführen.",
+        "columns": {
+            "name": "Name",
+            "roles": "Rollen",
+            "guard": "Guard"
+        }
+    },
+    "jobs": {
+        "pendingCount": "Wartend in der Queue: {{count}}",
+        "pendingTitle": "Wartend (Auszug)",
+        "pendingEmpty": "Keine wartenden Jobs.",
+        "failedTitle": "Fehlgeschlagene Jobs",
+        "failedEmpty": "Keine fehlgeschlagenen Jobs.",
+        "retry": "Erneut versuchen",
+        "delete": "Löschen",
+        "footnote": "Diese Seite überwacht nur die Laravel-Queue-Tabellen (jobs und failed_jobs).",
+        "columns": {
+            "id": "ID",
+            "job": "Job",
+            "queue": "Queue",
+            "attempts": "Versuche",
+            "failedAt": "Fehlgeschlagen am",
+            "exception": "Exception",
+            "actions": "Aktionen"
+        }
+    },
+    "system": {
+        "description": "Zustand dieser Excubia-Installation. Jeder Punkt verlinkt auf seinen Lösungshinweis.",
+        "fixHint": "So beheben: {{item}}",
+        "never": "Nie",
+        "status": {
+            "ok": "OK",
+            "warning": "Warnung",
+            "error": "Fehler",
+            "unknown": "Unbekannt"
+        },
+        "columns": {
+            "project": "Projekt",
+            "count": "Anzahl"
+        },
+        "scheduler": {
+            "title": "Scheduler",
+            "lastRun": "Letzter Heartbeat: {{time}}"
+        },
+        "queue": {
+            "title": "Queue-Worker",
+            "connection": "Verbindung",
+            "lastRun": "Letzter Heartbeat",
+            "pending": "Wartende Jobs",
+            "failed": "Fehlgeschlagene Jobs"
+        },
+        "pushes": {
+            "title": "Letzter Push pro Projekt",
+            "description": "Berichte sind nach {{hours}} Stunden veraltet, Runtime nach 15 Minuten.",
+            "reports": "Berichte",
+            "runtime": "Runtime",
+            "exceptions": "Exceptions",
+            "stale": "Veraltet",
+            "empty": "Keine aktiven Projekte."
+        },
+        "rejections": {
+            "title": "Abgelehnte Pushes (24 h)",
+            "endpoint": "Endpunkt",
+            "status": "Status",
+            "reason": "Grund",
+            "empty": "Keine abgelehnten Pushes in den letzten 24 Stunden."
+        },
+        "skippedRuntime": {
+            "title": "Übersprungene unbekannte Runtime-Typen",
+            "empty": "Keine Runtime-Einträge übersprungen.",
+            "row_one": "{{project}}: {{count}} Eintrag übersprungen",
+            "row_other": "{{project}}: {{count}} Einträge übersprungen"
+        },
+        "alertFailures": {
+            "title": "Fehlgeschlagene Alarmzustellungen (24 h)",
+            "empty": "Keine fehlgeschlagenen Alarmzustellungen in den letzten 24 Stunden.",
+            "total_one": "{{count}} fehlgeschlagener Alarm",
+            "total_other": "{{count}} fehlgeschlagene Alarme",
+            "event": "Ereignis",
+            "channels": "Fehlgeschlagene Kanäle",
+            "at": "Zeit"
+        },
+        "rollups": {
+            "title": "Stündliche Runtime-Rollups",
+            "pending": "Runtime aus der Zeit vor den stündlichen Rollups fehlt in den Dashboard-Summen: einmal das Backfill ausführen.",
+            "done": "Die stündlichen Rollups decken die gespeicherte Runtime ab."
+        },
+        "selfMonitoring": {
+            "title": "Selbstüberwachung",
+            "off": "Die Selbstüberwachung ist aus (EXCUBIA_SELF_MONITORING=false).",
+            "default": "Das Systemprojekt erfasst jeden Runtime-Typ, den das installierte excubia-core unterstützt. Wähle sie mit EXCUBIA_SELF_MONITORING_TYPES.",
+            "environment": "Das Systemprojekt erfasst die Runtime-Typen aus EXCUBIA_SELF_MONITORING_TYPES.",
+            "enabledTypes": "An",
+            "disabledTypes": "Aus",
+            "sampled": "{{type}} ({{percent}} % Stichprobe)",
+            "unknown": "Unbekannte Namen in EXCUBIA_SELF_MONITORING_TYPES: {{names}}"
+        },
+        "exampleAdmin": {
+            "title": "Beispiel-Admin-Konto",
+            "defaultPassword": "Der Beispiel-Super-Admin superadmin@example.com existiert mit dem Passwort \"password\": jeder kann sich anmelden. Lösche ihn oder ändere sofort E-Mail und Passwort.",
+            "exists": "Der Beispiel-Super-Admin superadmin@example.com existiert: ändere seine E-Mail oder lösche ihn.",
+            "none": "Kein Beispiel-Admin-Konto."
+        },
+        "version": {
+            "title": "Version und Kompatibilität",
+            "app": "Excubia App",
+            "core": "excubia-core in der App",
+            "accepts": "Akzeptiert excubia-core",
+            "protocol": "Protokollversionen"
+        }
+    },
+    "fix": {
+        "actions": "Fix",
+        "copied": "In die Zwischenablage kopiert",
+        "copyFailed": "Kopieren in die Zwischenablage fehlgeschlagen",
+        "copyCommand": "Befehl kopieren: {{command}}",
+        "copyPrompt": "Prompt für deinen KI-Assistenten kopieren",
+        "copyPromptForSelected": "Prompt kopieren ({{count}})",
+        "select": "{{subject}} auswählen"
+    },
+    "runtime": {
+        "emptyTitle": "Noch keine Laufzeitdaten",
+        "emptyDescription": "Aktiviere das Laufzeit-Monitoring in der excubia.json des Projekts; excubia:push-runtime sendet dann jede Minute Aggregate pro Minute.",
+        "guide": "Leitfaden zum Laufzeit-Monitoring",
+        "requests": "Anfragen",
+        "errors": "Serverfehler (5xx)",
+        "errorRate": "{{rate}} % der Anfragen",
+        "averageResponse": "Mittlere Antwortzeit",
+        "slowestResponse": "Langsamste Antwort",
+        "allRoutes": "Alle Routen",
+        "successful": "Erfolgreich",
+        "serverErrors": "5xx",
+        "routes": "Routen",
+        "outgoingHttp": "Ausgehendes HTTP",
+        "slowQueries": "Langsame Abfragen",
+        "jobs": "Jobs",
+        "scheduledTasks": "Geplante Aufgaben",
+        "noData": "Keine Daten in diesem Zeitraum.",
+        "name": "Name",
+        "count": "Anzahl",
+        "average": "Mittel",
+        "max": "Max",
+        "outcome": {
+            "processed": "Verarbeitet",
+            "failed": "Fehlgeschlagen",
+            "finished": "Beendet",
+            "skipped": "Übersprungen"
+        },
+        "sampled": "~ geschätzt aus Stichproben",
+        "enableHint": "Zum Erfassen in excubia.json einschalten:",
+        "skipped_one": "{{count}} Runtime-Eintrag eines Typs, den diese Excubia-Version nicht kennt, wurde übersprungen. Aktualisiere Excubia, um ihn zu sehen.",
+        "skipped_other": "{{count}} Runtime-Einträge von Typen, die diese Excubia-Version nicht kennt, wurden übersprungen. Aktualisiere Excubia, um sie zu sehen.",
+        "duplicateQueries": "N+1-Abfragen",
+        "duplicateQueriesDescription": "Abfrageformen, die sich innerhalb einer Anfrage oder eines Jobs wiederholen.",
+        "origin": {
+            "request": "Anfrage",
+            "job": "Job"
+        },
+        "occurrences": "Vorkommen",
+        "averageRepeats": "Ø Wiederholungen",
+        "maxRepeats": "Max. Wiederholungen",
+        "queueWait": "Wartezeit in der Queue",
+        "queueWaitDescription": "Zeit vom Push bis zum ersten Versuch, pro Queue.",
+        "commands": "Artisan-Befehle",
+        "failed": "Fehlgeschlagen",
+        "requestMemory": "Speicher der Anfragen",
+        "jobMemory": "Speicher der Jobs",
+        "averageMemory": "Ø Spitze",
+        "peakMemory": "Max. Spitze",
+        "cache": "Cache",
+        "cacheDescription": "{{rate}} % Trefferquote: {{hits}} Treffer, {{misses}} Fehltreffer.",
+        "hitRate": "Trefferquote",
+        "hits": "Treffer",
+        "misses": "Fehltreffer",
+        "writes": "Schreibvorgänge",
+        "deletes": "Löschungen",
+        "mail": "Mail",
+        "notifications": "Benachrichtigungen",
+        "sent": "Gesendet",
+        "logLevels": "Logs",
+        "logLevelsDescription": "Log-Einträge pro Level und Kanal; das Diagramm zeigt Einträge ab Level error {{bucket}}.",
+        "errorLogs": "Einträge ab Level error",
+        "logChartLabel": "Balkendiagramm der Log-Einträge ab Level error {{bucket}}: {{count}} {{during}}.",
+        "level": "Level",
+        "channel": "Kanal",
+        "unknownChannel": "unbekannt",
+        "deprecations": "Deprecations",
+        "deprecationsDescription": "PHP-Deprecations pro Quelle und PHP-Version, zur Planung von Upgrades.",
+        "servers": "Server",
+        "serversDescription": "Letzte Messung jedes Servers, auf dem der Scheduler läuft.",
+        "server": "Server",
+        "load": "Last 1 / 5 / 15",
+        "memory": "Speicher",
+        "disk": "Festplatte",
+        "lastSample": "Letzte Messung",
+        "container": "Container",
+        "cpuLimit_one": "Limit {{count}} CPU",
+        "cpuLimit_other": "Limit {{count}} CPUs",
+        "cpuCores_one": "{{count}} Kern",
+        "cpuCores_other": "{{count}} Kerne",
+        "deploy": "Deploy",
+        "deployMarkersHint": "Gestrichelte Linien markieren Deploys.",
+        "deploysLabel_one": "{{count}} Deploy: {{releases}}.",
+        "deploysLabel_other": "{{count}} Deploys: {{releases}}.",
+        "requestsOverTimeDescription": "Anfragen nach Status: 1/2/3xx, 4xx und 5xx {{bucket}} {{during}}.",
+        "requestsOverTime": "Anfragen im Zeitverlauf",
+        "octane": "Octane-Worker",
+        "octaneDescription": "Pro Server und Worker-Typ. Der Speicher wird nach jeder Anfrage gelesen; ein Anstieg über {{threshold}} MB seit der ersten Anfrage eines Workers kann ein Leck sein.",
+        "octaneMaxRequests": "max_requests: {{count}}.",
+        "octaneMaxRequestsUnset": "max_requests ist nicht gesetzt.",
+        "possibleLeak": "Mögliches Leck",
+        "tasksTicks": "Tasks / Ticks",
+        "workerStartsStops": "Starts / Stopps",
+        "workerErrors": "Worker-Fehler",
+        "memoryGrowth": "Max. Anstieg",
+        "requestsAtStop": "Anfragen beim Stopp (Ø / max)",
+        "reverb": "Reverb",
+        "reverbDescription": "Pro Server und Reverb-App. Spitze der Verbindungen sind die meisten Verbindungen mit einem abonnierten Kanal in einer Minute; Kanäle sind öffentlich / privat / Presence.",
+        "reverbReachable": "Der Reverb-Server antwortete im letzten Bericht in {{latency}} ms.",
+        "reverbUnreachable": "Der Reverb-Server antwortete im letzten Bericht nicht.",
+        "messagesInOut": "Nachrichten ein / aus",
+        "connectionsOpened": "Geöffnet",
+        "connectionsRejected": "Abgelehnt",
+        "connectionsPruned": "Wegen Timeout getrennt",
+        "reverbErrors": "Fehler",
+        "channelsCreated": "Kanäle erstellt",
+        "channelsRemoved": "Kanäle entfernt",
+        "peakConnections": "Max. Verbindungen",
+        "billing": "Billing-Webhooks",
+        "billingDescription": "Laravel-Cashier-Webhooks pro Anbieter und Ereignistyp. Fehlgeschlagene endeten mit einem Serverfehler (5xx), der Anbieter wiederholt sie; Ereignistypen ohne Cashier-Handler sind weder verarbeitet noch fehlgeschlagen. Nur der Ereignistyp kommt an: nie Beträge, Kunden oder andere Payload-Daten.",
+        "billingTotals": "Zahlungssignale in diesem Zeitraum",
+        "received": "Empfangen",
+        "handled": "Verarbeitet",
+        "failedRate": "Fehlgeschlagen (Quote)",
+        "paymentFailed": "Fehlgeschlagene Zahlungen",
+        "paymentActionRequired": "Zahlungen mit nötiger Aktion",
+        "subscriptionCanceled": "Gekündigte Abonnements",
+        "auth": "Authentifizierung",
+        "authDescription": "Laravel-Logins pro Auth-Guard: erfolgreiche und fehlgeschlagene Logins mit der Fehlerquote, Sperren durch den Login-Rate-Limiter und Anfragen, die ein Sanctum-Personal-Access-Token authentifiziert hat. Passport-Token-Anfragen werden nicht gezählt. Nie Benutzer, E-Mails, Zugangsdaten, Tokens oder IP-Adressen.",
+        "logins": "Logins",
+        "lockouts": "Sperren",
+        "tokenAuthentications": "Token-Authentifizierungen",
+        "scout": "Suche (Scout)",
+        "scoutDescription": "Laravel Scout pro Modell, Engine und Operation: Index- und Entfernungsjobs in der Queue mit Fehlschlägen, den synchronisierten Datensätzen und ihrer Dauer, und die gestarteten Suchen (ohne Dauer). Indexaktualisierungen mit ausgeschaltetem scout.queue (Scouts Standard) laufen inline und werden nicht erfasst. Nie Suchanfragen, Datensatz-IDs oder Datensatzinhalte.",
+        "scoutRecords": "Datensätze",
+        "pennant": "Feature-Flags (Pennant)",
+        "pennantDescription": "Laravel-Pennant-Prüfungen pro Feature: aktive und inaktive Ergebnisse mit dem aktiven Anteil (Rollout-Fortschritt), erste Auflösungen pro Scope und Prüfungen eines nicht definierten Features (ein entferntes Flag, das noch geprüft wird, oder ein Tippfehler). Namen mit anderen Zeichen als Buchstaben, Ziffern und _ . : - \\ kommen als kurzer Hash. Nie der Scope (Benutzer, Team) oder der Wert.",
+        "pennantStaleRule_one": "Veraltete Flags: am letzten Tag immer mit demselben Wert geprüft, Kandidaten zum Entfernen.",
+        "pennantStaleRule_other": "Veraltete Flags: an jedem der letzten {{count}} Tage immer mit demselben Wert geprüft, Kandidaten zum Entfernen.",
+        "pennantStaleRetention": "Die Einstellung verlangt {{setting}} Tage, Runtime-Daten werden aber nur {{window}} Tage aufbewahrt, daher werden Flags über {{window}} Tage beurteilt.",
+        "pennantStaleFlags": "Veraltete Feature-Flags",
+        "pennantNoStaleFlags": "Keine veralteten Flags",
+        "pennantAlwaysActive": "immer an",
+        "pennantAlwaysInactive": "immer aus",
+        "pennantUndefinedFeatures": "Nicht definierte Features, die noch geprüft werden",
+        "pennantUndefinedChecks_one": "nicht definiert, {{count}} Prüfung",
+        "pennantUndefinedChecks_other": "nicht definiert, {{count}} Prüfungen",
+        "pennantHashed": "Hash",
+        "pennantHashedHint": "Die ersten 12 Hex-Zeichen des sha256 des Namens: excubia-core hasht Namen mit anderen Zeichen.",
+        "pennantChecks": "Prüfungen",
+        "pennantActiveInactive": "Aktiv / inaktiv",
+        "pennantActiveShare": "Aktiver Anteil",
+        "pennantResolved": "Auflösungen",
+        "pennantUnknown": "Nicht definiert",
+        "statusOk": "1/2/3xx",
+        "statusClientErrors": "4xx",
+        "statusServerErrors": "5xx",
+        "total": "Gesamt",
+        "duration": "Dauer",
+        "statusChartLabel": "Gestapeltes Balkendiagramm der Anfragen {{bucket}}: {{count}} Anfragen {{during}}, {{ok}} 1/2/3xx, {{clientErrors}} 4xx und {{serverErrors}} 5xx.",
+        "durationSummary": "Durchschnitt und p95 pro Intervall. Im Zeitraum: Durchschnitt {{average}}, p95 {{p95}}, langsamste {{max}}.",
+        "durationChartLabel": "Liniendiagramm der durchschnittlichen und p95-Anfragedauer {{bucket}} {{during}}: Durchschnitt {{average}}, p95 {{p95}}, langsamste {{max}}."
+    },
+    "exceptions": {
+        "actions": "Aktionen",
+        "emptyTitle": "Keine Exceptions",
+        "emptyDescription": "Aktiviere die Exception-Erfassung in der excubia.json des Projekts, um sie hier zu gruppieren, maskiert bevor sie das Projekt verlassen.",
+        "guide": "Leitfaden zur Exception-Erfassung",
+        "search": "Exceptions suchen…",
+        "statusFilter": "Status",
+        "status": {
+            "open": "Offen",
+            "resolved": "Gelöst",
+            "ignored": "Ignoriert",
+            "all": "Alle"
+        },
+        "noMatchTitle": "Keine passenden Exceptions",
+        "noMatchDescription": "Andere Suche oder anderen Status versuchen.",
+        "exception": "Exception",
+        "context": "Wo",
+        "environment": "Umgebung",
+        "count": "Anzahl",
+        "lastSeen": "Zuletzt",
+        "statusLabel": "Status",
+        "kind": {
+            "request": "Anfrage",
+            "job": "Job",
+            "command": "Befehl",
+            "unknown": "Unbekannt"
+        },
+        "summary": "{{count}} Vorkommen in {{environment}}, zuerst {{first}}, zuletzt {{last}}",
+        "message": "Nachricht (maskiert)",
+        "causedBy": "Verursacht durch",
+        "stack": "Stack",
+        "internal": "[intern]",
+        "stackHint": "Innerster zuerst; Projektcode hervorgehoben. Pfade sind relativ, Argumente werden nie gesendet.",
+        "resolve": "Lösen",
+        "ignore": "Ignorieren",
+        "reopen": "Wieder öffnen",
+        "firstRelease": "Zuerst gesehen in Release",
+        "lastRelease": "Zuletzt gesehen in Release",
+        "regressedIn": "Regression in {{release}}",
+        "occurrences": "Vorkommen",
+        "occurrencesDescription": "Vorkommen {{bucket}} {{during}}, gezählt beim letzten Vorkommen jedes Pushs.",
+        "inRange": "Im Zeitraum",
+        "emptyRangeDescription": "Keine Exception-Gruppe wurde {{during}} gesehen. Wähle einen längeren Zeitraum für ältere Gruppen.",
+        "occurrencesChartLabel": "Balkendiagramm der Vorkommen {{bucket}}: {{count}} {{during}}.",
+        "emptyRangeTitle": "Keine Exceptions in diesem Zeitraum",
+        "views": {
+            "unresolved": "Ungelöst",
+            "mine": "Mir zugewiesen",
+            "new": "Neu in 24 Std."
+        },
+        "assignToMe": "Mir zuweisen",
+        "selectAll": "Alle Ausnahmen auswählen",
+        "selectRow": "{{name}} auswählen"
+    },
+    "schedule": {
+        "description": "Die geplanten Aufgaben des letzten Berichts, jeweils mit letztem Lauf, nächster Fälligkeit und Status. Jede Minute mit den Läufen aus dem Runtime-Monitoring abgeglichen.",
+        "emptyTitle": "Keine geplanten Aufgaben",
+        "emptyDescription": "Sende mit php artisan excubia:push den Zeitplan und aktiviere das Runtime-Monitoring, um jede Aufgabe mit ihren Läufen abzugleichen.",
+        "guide": "Anleitung zu geplanten Aufgaben",
+        "task": "Aufgabe",
+        "lastRun": "Letzter Lauf",
+        "nextDue": "Nächste Fälligkeit",
+        "statusLabel": "Status",
+        "lowConfidence": "Geringe Sicherheit: Läufe sind gesampelt oder die Umgebung ist unbekannt",
+        "schedulerDownTitle": "Der Scheduler steht",
+        "schedulerDownDescription": "excubia:heartbeat lief seit {{time}} nicht, daher läuft keine Aufgabe.",
+        "outcome": {
+            "finished": "Beendet",
+            "failed": "Fehlgeschlagen",
+            "skipped": "Übersprungen"
+        },
+        "status": {
+            "pending": "Ausstehend",
+            "on_time": "Pünktlich",
+            "late": "Verspätet",
+            "missed": "Verpasst",
+            "failed": "Fehlgeschlagen",
+            "skipped": "Übersprungen",
+            "scheduler_down": "Scheduler steht",
+            "not_expected": "Andere Umgebung",
+            "paused": "Wartung",
+            "unknown": "Keine Laufdaten"
+        },
+        "runsOverTime": "Ausführungen im Zeitverlauf",
+        "runsOverTimeDescription": "Ausführungen aller geplanten Tasks pro Ergebnis {{bucket}} {{during}}.",
+        "runsSummary": "{{finished}} beendet · {{failed}} fehlgeschlagen · {{skipped}} übersprungen",
+        "runsChartLabel": "Gestapeltes Balkendiagramm der Task-Ausführungen {{bucket}}: {{finished}} beendet, {{failed}} fehlgeschlagen, {{skipped}} übersprungen {{during}}.",
+        "runs": "Ausführungen"
+    },
+    "ai": {
+        "fabDescription": "Schnelle Assistenten-Schublade. Öffnen Sie die Vollseite für den Verlauf.",
+        "fabTitle": "Neuer Chat",
+        "openFullPage": "Ganze Seite öffnen",
+        "emptyTitle": "Noch keine KI-Nutzung",
+        "emptyDescription": "Projekte mit laravel/ai und excubia-core 1.0.0-beta.4 oder neuer senden ihre KI-Aufrufe, wenn runtime.ai.enabled (und runtime.aiTools.enabled für Tool-Aufrufe) in excubia.json aktiv ist.",
+        "privacy": "Excubia erhält nie Prompts, Anweisungen, Anhänge, Antworten, Reasoning, Tool-Argumente oder -Ergebnisse: nur Anzahlen, Token-Nutzung, Dauern und Namen von Agents, Tools, Anbietern und Modellen.",
+        "spend": "Geschätzte Kosten",
+        "estimate": "Schätzung aus der Preistabelle",
+        "calls": "Aufrufe",
+        "errors": "Fehler",
+        "failures": "Fehlschläge",
+        "errorRate": "{{rate}}% fehlgeschlagen",
+        "failovers": "Failover",
+        "failoversHint": "Fehlgeschlagene Versuche, die zum nächsten Anbieter wechselten",
+        "p95": "p95-Latenz",
+        "allCalls": "Alle Aufrufe",
+        "slowest": "Langsamster",
+        "spendOverTime": "Kosten im Zeitverlauf",
+        "spendOverTimeDescription": "Geschätzte Kosten {{bucket}} {{during}}.",
+        "chartLabel": "Balkendiagramm: geschätzte KI-Kosten {{bucket}} {{during}}, insgesamt {{cost}}.",
+        "month": "Dieser Monat",
+        "monthDescription": "Geschätzte Kosten seit dem 1. (UTC) gegenüber dem Monatsbudget, das bei 80 % und 100 % alarmiert.",
+        "noBudget": "Kein Budget",
+        "ofBudget": "von {{budget}}",
+        "budgetUsed": "{{percent}}% des Budgets verbraucht",
+        "budget": "Monatsbudget (USD)",
+        "budgetHint": "Leer schaltet die Budget-Alarme aus.",
+        "tokens": "Tokens",
+        "tokensDescription": "Input ohne den gecachten Teil, Cache-Lese- und Schreibzugriffe, Output und Reasoning.",
+        "inputTokens": "Input",
+        "cachedTokens": "Gecacht",
+        "cacheReadTokens": "Cache lesen",
+        "cacheWriteTokens": "Cache schreiben",
+        "outputTokens": "Output",
+        "reasoningTokens": "Reasoning",
+        "cost": "Kosten",
+        "noPrice": "Kein Preis",
+        "unpricedHint": "Einige Modelle haben keinen Preis, ihre Kosten sind nicht mitgezählt.",
+        "byModel": "Nach Modell",
+        "byProvider": "Nach Anbieter",
+        "byAgent": "Nach Agent",
+        "pricesNote": "Geschätzt mit der Preistabelle vom {{date}}.",
+        "pricesLink": "KI-Preise bearbeiten",
+        "tools": "Tool-Aufrufe",
+        "toolsDescription": "Aufrufe pro Agent-Tool und ihre Fehlschläge, im Tool-Handler gemessen.",
+        "operation": {
+            "agent": "Agent",
+            "image": "Bilder",
+            "embeddings": "Embeddings",
+            "transcription": "Transkription",
+            "reranking": "Reranking",
+            "audio": "Sprachausgabe",
+            "classification": "Klassifizierung"
+        },
+        "approval": {
+            "approve": "Freigeben",
+            "reject": "Ablehnen"
+        }
+    },
+    "files": {
+        "card": {
+            "select": "{{name}} auswählen"
+        },
+        "loadMore": "Mehr laden",
+        "loading": "Laden…",
+        "tags": {
+            "moreTags": "{{count}} weitere Tags"
+        }
+    },
+    "realtime": {
+        "connected": "Realtime verbunden",
+        "connecting": "Verbinde…",
+        "disabled": "Realtime aus",
+        "offline": "Realtime offline"
+    },
+    "alerts": {
+        "description": "Die Alarme dieses Projekts: was gesendet wurde, was fehlschlug und was unterdrückt wurde. Regel oder Problem stummschalten oder Wartungsfenster planen.",
+        "maintenanceModeTitle": "Alarme pausiert",
+        "maintenanceModeDescription": "Laut dem letzten Bericht ist die Anwendung im Wartungsmodus. Alarme laufen mit dem nächsten Bericht nach php artisan up weiter.",
+        "windowsTitle": "Wartungsfenster",
+        "windowsDescription": "Während eines aktiven Fensters werden Alarme unterdrückt.",
+        "addWindow": "Fenster hinzufügen",
+        "removeWindow": "Fenster {{name}} entfernen",
+        "noWindows": "Keine Wartungsfenster.",
+        "windowActive": "Aktiv",
+        "windowFormDescription": "Ein einmaliger Zeitraum oder einer, der sich jede Woche wiederholt. Zeiten gelten in der Zeitzone.",
+        "mutesTitle": "Stummgeschaltet",
+        "mutesDescription": "Regeln und Probleme, die im Verlauf unten stummgeschaltet wurden.",
+        "noMutes": "Nichts ist stummgeschaltet.",
+        "wholeRule": "Ganze Regel",
+        "forever": "dauerhaft",
+        "until": "bis {{time}}",
+        "unmute": "Wieder aktivieren",
+        "historyTitle": "Alarmverlauf",
+        "historyDescription": "Die letzten 100 Alarme.",
+        "noHistory": "Noch keine Alarme.",
+        "time": "Zeit",
+        "alert": "Alarm",
+        "statusLabel": "Status",
+        "actions": "Aktionen",
+        "muteMenu": "Stummschalten",
+        "status": {
+            "queued": "In Warteschlange",
+            "sent": "Gesendet",
+            "failed": "Zustellung fehlgeschlagen",
+            "suppressed": "Unterdrückt",
+            "skipped": "Kein Kanal"
+        },
+        "reason": {
+            "muted": "Stummgeschaltet",
+            "maintenance_window": "Wartungsfenster",
+            "maintenance_mode": "Wartungsmodus",
+            "duplicate": "Duplikat",
+            "throttled": "Gedrosselt"
+        },
+        "channel": {
+            "webhook": "Webhook",
+            "slack": "Slack",
+            "telegram": "Telegram",
+            "email": "E-Mail",
+            "app": "In der App"
+        },
+        "delivery": {
+            "queued": "wartend",
+            "sent": "gesendet",
+            "failed": "fehlgeschlagen"
+        },
+        "mute": {
+            "rule": "Diese Regel stummschalten",
+            "issue": "Dieses Problem stummschalten"
+        },
+        "duration": {
+            "1h": "Für 1 Stunde",
+            "24h": "Für 24 Stunden",
+            "7d": "Für 7 Tage",
+            "forever": "Dauerhaft"
+        },
+        "recurrence": "Wiederholung",
+        "once": "Einmalig",
+        "weekly": "Wöchentlich",
+        "startsAt": "Beginn",
+        "endsAt": "Ende",
+        "weekdaysLabel": "Tage",
+        "startTime": "Startzeit",
+        "durationMinutes": "Dauer (Minuten)",
+        "timezone": "Zeitzone",
+        "minutes_one": "{{count}} Minute",
+        "minutes_other": "{{count}} Minuten",
+        "weekdays": {
+            "1": "Mo",
+            "2": "Di",
+            "3": "Mi",
+            "4": "Do",
+            "5": "Fr",
+            "6": "Sa",
+            "7": "So"
+        },
+        "eventLabels": {
+            "finding": {
+                "new": "Neuer Befund",
+                "resolved": "Befund behoben"
+            },
+            "infrastructure": {
+                "failed": "Infrastruktur fehlerhaft"
+            },
+            "health": {
+                "failed": "Health-Check fehlgeschlagen",
+                "recovered": "Health-Check wiederhergestellt",
+                "stale": "Server-Messwerte fehlen"
+            },
+            "project": {
+                "worsened": "Projekt verschlechtert",
+                "recovered": "Projekt verbessert",
+                "stale": "Projekt ohne Bericht",
+                "reporting_again": "Projekt berichtet wieder",
+                "token_changed": "Push-Token geändert",
+                "created": "Projekt erstellt",
+                "deleted": "Projekt gelöscht",
+                "disabled": "Projekt deaktiviert"
+            },
+            "report": {
+                "checks_skipped": "Prüfungen übersprungen"
+            },
+            "push": {
+                "rejected": "Push abgelehnt"
+            },
+            "schedule": {
+                "missed": "Geplante Aufgabe verpasst",
+                "failed": "Geplante Aufgabe fehlgeschlagen",
+                "scheduler_down": "Scheduler ausgefallen"
+            },
+            "runtime": {
+                "cache_hit_ratio_low": "Niedrige Cache-Trefferquote",
+                "delivery_failed": "Zustellung fehlgeschlagen",
+                "log_spike": "Log-Spitze"
+            },
+            "ai": {
+                "budget_warning": "KI-Budget-Warnung",
+                "budget_exceeded": "KI-Budget überschritten",
+                "spend_spike": "KI-Ausgabenspitze",
+                "error_rate": "KI-Fehlerrate"
+            },
+            "billing": {
+                "webhook_failures": "Fehlerhafte Abrechnungs-Webhooks",
+                "payment_failed": "Zahlung fehlgeschlagen"
+            },
+            "auth": {
+                "failed_login_spike": "Spitze fehlgeschlagener Anmeldungen"
+            },
+            "scout": {
+                "index_failures": "Suchindex-Fehler"
+            },
+            "eol": {
+                "approaching": "Supportende naht",
+                "reached": "Supportende erreicht"
+            },
+            "ping": "Testalarm"
+        }
+    },
+    "timeRange": {
+        "label": "Zeitraum",
+        "option": {
+            "1h": "1 Std.",
+            "6h": "6 Std.",
+            "24h": "24 Std.",
+            "7d": "7 T.",
+            "14d": "14 T."
+        },
+        "last": {
+            "1h": "Letzte Stunde",
+            "6h": "Letzte 6 Stunden",
+            "24h": "Letzte 24 Stunden",
+            "7d": "Letzte 7 Tage",
+            "14d": "Letzte 14 Tage"
+        },
+        "during": {
+            "1h": "in der letzten Stunde",
+            "6h": "in den letzten 6 Stunden",
+            "24h": "in den letzten 24 Stunden",
+            "7d": "in den letzten 7 Tagen",
+            "14d": "in den letzten 14 Tagen"
+        },
+        "bucket": {
+            "1h": "pro Minute",
+            "6h": "pro 10 Minuten",
+            "24h": "pro Stunde",
+            "7d": "pro 6 Stunden",
+            "14d": "pro Tag"
+        },
+        "custom": {
+            "label": "Eigener Zeitraum",
+            "placeholder": "Eigener Zeitraum",
+            "clear": "Löschen",
+            "during": "im Zeitraum {{span}}"
+        },
+        "bucketSeconds": {
+            "60": "pro Minute",
+            "600": "pro 10 Minuten",
+            "3600": "pro Stunde",
+            "21600": "pro 6 Stunden",
+            "86400": "pro Tag"
+        }
+    },
+    "checks": {
+        "category": {
+            "infrastructure": "Infrastruktur",
+            "configuration": "Konfiguration",
+            "dependencies": "Abhängigkeiten",
+            "other": "Weitere Prüfungen"
+        },
+        "categoryLabel": "Gruppe",
+        "allCategories": "Alle Gruppen",
+        "docs": "So funktioniert diese Prüfung",
+        "unknownDescription": "Eine Prüfung aus einem neueren excubia-core. Meldung und Details werden wie gesendet angezeigt.",
+        "php-eol": {
+            "label": "PHP-Lebensende",
+            "description": "Ob die PHP-Version noch Sicherheits- und Fehlerkorrekturen erhält (endoflife.date)."
+        },
+        "laravel-eol": {
+            "label": "Laravel-Lebensende",
+            "description": "Ob die Laravel-Hauptversion noch Sicherheits- und Fehlerkorrekturen erhält."
+        },
+        "node-eol": {
+            "label": "Node-Lebensende",
+            "description": "Ob die angegebene Node-Version noch gepflegt wird."
+        },
+        "composer-advisories": {
+            "label": "Bekannte Schwachstellen (Composer)",
+            "description": "Sicherheitshinweise auf Packagist, die ein gesperrtes Composer-Paket betreffen."
+        },
+        "npm-advisories": {
+            "label": "Bekannte Schwachstellen (npm)",
+            "description": "Schwachstellen auf OSV.dev, die ein Paket der JavaScript-Lockdatei betreffen."
+        },
+        "composer-abandoned": {
+            "label": "Aufgegebene Pakete",
+            "description": "Composer-Pakete, die ihre Maintainer auf Packagist als aufgegeben markiert haben."
+        },
+        "composer-stale": {
+            "label": "Veraltete Pakete",
+            "description": "Composer-Pakete mit archiviertem Repository oder lange ohne Release."
+        },
+        "laravel-next-blocker": {
+            "label": "Blocker für die nächste Hauptversion",
+            "description": "Direkte Abhängigkeiten, deren neueste Version die nächste Laravel-Hauptversion noch nicht erlaubt."
+        },
+        "laravel-debug-mode": {
+            "label": "Debug-Modus",
+            "description": "app.debug ist außerhalb von local und testing aktiv, Fehler zeigen also Interna."
+        },
+        "laravel-production-caches": {
+            "label": "Produktions-Caches",
+            "description": "Die Config-, Routen- und Event-Caches, die die Produktion beim Deploy erstellen sollte."
+        },
+        "laravel-pending-migrations": {
+            "label": "Ausstehende Migrationen",
+            "description": "Migrationen, die noch nicht auf der Datenbank gelaufen sind."
+        },
+        "laravel-failed-jobs": {
+            "label": "Fehlgeschlagene Jobs",
+            "description": "Jobs im Speicher fehlgeschlagener Jobs und wie lange der älteste dort liegt."
+        },
+        "laravel-scheduler-heartbeat": {
+            "label": "Scheduler-Heartbeat",
+            "description": "Ob der Scheduler excubia:heartbeat in den letzten Minuten ausgeführt hat."
+        },
+        "laravel-maintenance-mode": {
+            "label": "Wartungsmodus",
+            "description": "Ob die App im Wartungsmodus ist (php artisan down)."
+        },
+        "laravel-app-key": {
+            "label": "Anwendungsschlüssel",
+            "description": "Ob app.key gesetzt ist: ohne ihn funktionieren Verschlüsselung und Sitzungen nicht."
+        },
+        "laravel-session-security": {
+            "label": "Sicherheit des Sitzungscookies",
+            "description": "Secure- und HTTP-only-Flags des Sitzungscookies in der Produktion."
+        },
+        "laravel-cors-wildcard": {
+            "label": "CORS-Platzhalter-Origin",
+            "description": "Ein erlaubter Origin *, der zusammen mit Credentials fehlschlägt."
+        },
+        "laravel-production-drivers": {
+            "label": "Produktionstreiber",
+            "description": "Queue-, Cache-, Session- und Mail-Treiber für die lokale Arbeit, in der Produktion verwendet."
+        },
+        "laravel-log-level": {
+            "label": "Log-Level",
+            "description": "Ob der Standard-Logkanal in der Produktion Debug-Einträge schreibt."
+        },
+        "laravel-dev-packages": {
+            "label": "Entwicklungspakete",
+            "description": "Entwicklungswerkzeuge in require und in der Produktion aktiv."
+        },
+        "dependency-licenses": {
+            "label": "Lizenzen der Abhängigkeiten",
+            "description": "Lizenzen aus den Lockdateien: verboten, starkes Copyleft, fehlend oder unbekannt."
+        },
+        "laravel-database": {
+            "label": "Datenbank",
+            "description": "Ob jede geprüfte Datenbankverbindung antwortet."
+        },
+        "laravel-cache": {
+            "label": "Cache",
+            "description": "Ob der Standard-Cache-Store einen Schlüssel schreiben, lesen und löschen kann."
+        },
+        "laravel-storage": {
+            "label": "Beschreibbarer Speicher",
+            "description": "Ob storage und bootstrap/cache beschreibbar sind."
+        },
+        "laravel-disk-space": {
+            "label": "Speicherplatz",
+            "description": "Wie voll die Festplatte mit storage/ ist."
+        },
+        "laravel-queue-backlog": {
+            "label": "Queue-Rückstau",
+            "description": "Wartende Jobs pro Queue und wie lange der älteste wartet."
+        },
+        "php-platform-requirements": {
+            "label": "Plattformanforderungen",
+            "description": "PHP-Version und Erweiterungen, die die gesperrten Pakete verlangen, wie composer check-platform-reqs."
+        },
+        "env-example-sync": {
+            "label": ".env.example-Abgleich",
+            "description": "Schlüssel, die die Config liest und .env.example nicht enthält, sowie ungenutzte Schlüssel. Nur Namen."
+        },
+        "composer-outdated": {
+            "label": "Veraltete Pakete",
+            "description": "Direkte Composer-Abhängigkeiten mit neuerem Patch-, Minor- oder Major-Release."
+        },
+        "laravel-queue-workers": {
+            "label": "Queue-Worker",
+            "description": "Ob Horizon oder ein Queue-Worker für die Queues mit wartenden Jobs läuft."
+        },
+        "npm-outdated": {
+            "label": "Veraltete Pakete (npm)",
+            "description": "Direkte npm-Abhängigkeiten mit neuerem Patch-, Minor- oder Major-Release."
+        },
+        "laravel-backups": {
+            "label": "Backups",
+            "description": "Alter, Größe und Anzahl der spatie/laravel-backup-Backups pro Ziel."
+        },
+        "laravel-database-connections": {
+            "label": "Datenbankverbindungen",
+            "description": "Offene Verbindungen auf dem Standard-Datenbankserver."
+        },
+        "laravel-database-size": {
+            "label": "Datenbankgröße",
+            "description": "Größe der Standarddatenbank und ihrer größten Tabellen."
+        },
+        "laravel-redis-memory": {
+            "label": "Redis-Speicher",
+            "description": "Belegter Speicher gegenüber maxmemory und die Eviction-Policy pro Redis-Verbindung."
+        },
+        "php-opcache": {
+            "label": "OPcache",
+            "description": "OPcache des Web-PHP: aktiviert, Trefferquote, Speicher und Zeitstempelprüfung."
+        },
+        "php-production-ini": {
+            "label": "Produktions-php.ini",
+            "description": "display_errors, expose_php und log_errors des Web-PHP in der Produktion."
+        },
+        "laravel-octane-config": {
+            "label": "Octane-Konfiguration",
+            "description": "Octane-Server und, in Produktion, ob max_requests die Worker neu startet, bevor sich Lecks aufbauen."
+        },
+        "laravel-reverb": {
+            "label": "Reverb-Server",
+            "description": "Ob der Reverb-Server der Broadcast-Verbindung innerhalb von 2 s eine TCP-Verbindung annimmt, und wie schnell."
+        },
+        "laravel-cashier": {
+            "label": "Laravel Cashier",
+            "description": "Pro Cashier-Paket (Stripe, Paddle): das Webhook-Secret, Testschlüssel in Produktion und die Route zum Webhook-Controller."
+        },
+        "laravel-api-tokens": {
+            "label": "API-Tokens",
+            "description": "Token-Konfiguration von Laravel Sanctum und Passport: Tokens ohne Ablauf oder ungenutzt, Stateful-Domains, Passport-Schlüssel und ihre Dateirechte sowie Token-Laufzeiten."
+        }
+    },
+    "details": {
+        "title": "Details",
+        "yes": "Ja",
+        "no": "Nein",
+        "megabytes": "{{value}} MB",
+        "percent": "{{value}} %",
+        "minutes_one": "{{count}} Minute",
+        "minutes_other": "{{count}} Minuten",
+        "hours_one": "{{count}} Stunde",
+        "hours_other": "{{count}} Stunden",
+        "package": "Paket",
+        "lockedVersion": "Installiert",
+        "affectedVersions": "Betroffene Versionen",
+        "fixedVersions": "Behoben in",
+        "lockfile": "Lockdatei",
+        "cycle": "Zyklus",
+        "securitySupportEndsOn": "Sicherheitssupport bis",
+        "activeSupportEndsOn": "Aktiver Support bis",
+        "replacement": "Ersatz",
+        "targetMajor": "Ziel-Hauptversion",
+        "count": "Anzahl",
+        "oldestAgeHours": "Ältester",
+        "minutesSinceLastRun": "Seit dem letzten Lauf",
+        "licenses": "Lizenzen",
+        "ecosystem": "Ökosystem",
+        "hasCredentials": "Mit Credentials",
+        "component": "Komponente",
+        "driver": "Treiber",
+        "connection": "Verbindung",
+        "store": "Store",
+        "directory": "Verzeichnis",
+        "usedPercent": "Belegt",
+        "queue": "Queue",
+        "pendingCount": "Wartende Jobs",
+        "oldestAgeMinutes": "Ältester wartet",
+        "requirement": "Anforderung",
+        "requiredBy": "Benötigt von",
+        "checkedPhpVersion": "Geprüftes PHP",
+        "isStandaloneCli": "Eigenständige CLI",
+        "key": "Schlüssel",
+        "configFiles": "Config-Dateien",
+        "keys": "Schlüssel",
+        "latestPatch": "Neuester Patch",
+        "latestMinor": "Neueste Minor",
+        "latestMajor": "Neueste Major",
+        "isMajorBehind": "Major zurück",
+        "minutesSinceLastSeen": "Letzter Worker gesehen",
+        "status": "Status",
+        "processes": "Prozesse",
+        "supervisors": "Supervisoren",
+        "disk": "Disk",
+        "ageHours": "Alter des neuesten Backups",
+        "sizeMb": "Größe",
+        "connectionCount": "Offene Verbindungen",
+        "largestTables": "Größte Tabellen",
+        "usedMb": "Belegter Speicher",
+        "maxMb": "Maximaler Speicher",
+        "policy": "Eviction-Policy",
+        "sapi": "PHP-SAPI",
+        "ageMinutes": "Alter des Snapshots",
+        "isOpcacheEnabled": "OPcache aktiv",
+        "hitRate": "Trefferquote",
+        "memoryUsedPercent": "Belegter Speicher",
+        "cachedScripts": "Gecachte Skripte",
+        "isValidateTimestampsEnabled": "Prüft Zeitstempel",
+        "directive": "Direktive",
+        "isEnabled": "Aktiv"
+    },
+    "health": {
+        "notChecked": "Nicht geprüft",
+        "withinLimits": "Im Rahmen",
+        "infrastructure": {
+            "title": "Infrastruktur",
+            "description": "Dienste, die die App braucht, aus dem letzten Bericht.",
+            "disk": "Festplatte",
+            "databaseSize": "Datenbankgröße",
+            "connections": "Datenbankverbindungen",
+            "queueBacklog": "Queue-Rückstau",
+            "backlogValue_one": "{{count}} wartender Job in {{queues}} Queue(s), der älteste wartet {{minutes}} Min.",
+            "backlogValue_other": "{{count}} wartende Jobs in {{queues}} Queue(s), der älteste wartet {{minutes}} Min.",
+            "redis": "Redis-Speicher",
+            "redisValue": "{{connection}}: {{used}} von {{max}} MB",
+            "backups": "Backups",
+            "backupValue": "{{disk}}: neuestes {{age}} alt, {{count}} Backups",
+            "databaseValue": "{{size}} · {{connection}}",
+            "largestTables": "Größte Tabellen",
+            "showLargestTables_one": "Größte Tabelle anzeigen",
+            "showLargestTables_other": "{{count}} größte Tabellen anzeigen",
+            "connectionsValue_one": "{{count}} offene Verbindung",
+            "connectionsValue_other": "{{count}} offene Verbindungen",
+            "showRedis_one": "{{count}} Redis-Verbindung anzeigen",
+            "showRedis_other": "{{count}} Redis-Verbindungen anzeigen",
+            "showBackups_one": "{{count}} Backup-Datenträger anzeigen",
+            "showBackups_other": "{{count}} Backup-Datenträger anzeigen",
+            "notConfigured": "Nicht konfiguriert: {{checks}}",
+            "notConfiguredDocs": "So aktivieren Sie sie"
+        },
+        "dependencies": {
+            "title": "Abhängigkeiten",
+            "description": "Veraltete direkte Abhängigkeiten und das Lizenzinventar.",
+            "allLicenses": "Alle Lizenzen",
+            "outdated": "Veraltet",
+            "patch": "Patch",
+            "minor": "Minor",
+            "major": "Major"
+        },
+        "ecosystem": {
+            "composer": "Composer",
+            "npm": "npm"
+        }
+    },
+    "licenses": {
+        "unavailable": "Kein Lizenzinventar: die Prüfung dependency-licenses lief nicht (excubia-core 1.0.0-beta.2 oder neuer).",
+        "emptyTitle": "Kein Lizenzinventar",
+        "packages_one": "{{count}} Paket geprüft",
+        "packages_other": "{{count}} Pakete geprüft",
+        "kindCount": {
+            "denied_one": "{{count}} verboten",
+            "denied_other": "{{count}} verboten",
+            "copyleft_one": "{{count}} Copyleft",
+            "copyleft_other": "{{count}} Copyleft",
+            "unknown_one": "{{count}} unbekannt",
+            "unknown_other": "{{count}} unbekannt"
+        },
+        "kinds": {
+            "denied": "Verboten",
+            "copyleft": "Starkes Copyleft",
+            "unknown": "Unbekannt"
+        },
+        "kind": "Art",
+        "license": "Lizenz",
+        "total": "Gesamt",
+        "none": "Keine angegeben",
+        "flaggedTitle": "Zu prüfende Pakete",
+        "flaggedDescription": "Zuerst verbotene Lizenzen, dann starkes Copyleft, dann fehlende oder unbekannte.",
+        "noneFlagged": "Kein Paket nutzt eine verbotene, stark Copyleft- oder unbekannte Lizenz.",
+        "noneFlaggedTitle": "Lizenzen in Ordnung",
+        "inventoryTitle": "Inventar",
+        "fleetTitle": "Zu prüfende Lizenzen",
+        "fleetDescription": "Verbotene, stark Copyleft- und unbekannte Lizenzen in den letzten Berichten, mit den Projekten, die sie nutzen."
+    },
+    "fleet": {
+        "title": "Flotte",
+        "project": "Projekt",
+        "status": "Status",
+        "views": {
+            "label": "Flottenansichten",
+            "readiness": "Upgrade-Bereitschaft",
+            "advisories": "Advisory-Betroffenheit",
+            "eol": "EOL-Kalender"
+        },
+        "empty": {
+            "title": "Noch keine Projekte",
+            "description": "Registriere ein Projekt und sende seinen ersten Bericht, um es hier zu sehen."
+        },
+        "readiness": {
+            "description": "Aus den offenen Blockern der nächsten Major-Version jedes Projekts: Ein Projekt kann wechseln, wenn keine direkte Abhängigkeit die nächste Laravel-Major-Version blockiert. Ein ausgeblendeter Blocker blockiert nicht.",
+            "target": "Laravel {{major}}",
+            "canMove": "{{ready}} von {{total}} Projekten können heute auf Laravel {{major}} wechseln",
+            "unknownDescription": "Kein Bericht, Laravel nicht gesperrt oder die Blocker-Prüfung lief nicht.",
+            "blockers": "Blockierende Pakete",
+            "preReleaseOnly": "Nur Vorabversion",
+            "uncheckedPackages_one": "{{count}} privates Paket nicht geprüft",
+            "uncheckedPackages_other": "{{count}} private Pakete nicht geprüft",
+            "planLink_one": "Upgrade-Plan ({{count}} Schritt)",
+            "planLink_other": "Upgrade-Plan ({{count}} Schritte)",
+            "status": {
+                "ready": "Bereit für Laravel {{major}}",
+                "blocked": "Blockiert für Laravel {{major}}",
+                "unknown": "Unbekannt"
+            },
+            "projectsTitle": "Projekte",
+            "blockersSummary_one": "{{count}} Paket · {{first}}",
+            "blockersSummary_other": "{{count}} Pakete · {{first}} +{{others}}",
+            "showBlockers_one": "Paket anzeigen, das das Upgrade blockiert",
+            "showBlockers_other": "{{count}} Pakete anzeigen, die das Upgrade blockieren",
+            "dismissedBlockers_one": "{{count}} ausgeblendet",
+            "dismissedBlockers_other": "{{count}} ausgeblendet",
+            "dismissedBlockersTitle": "Ausgeblendete Blocker",
+            "showDismissedBlockers_one": "Ausgeblendeten Blocker anzeigen",
+            "showDismissedBlockers_other": "{{count}} ausgeblendete Blocker anzeigen"
+        },
+        "advisories": {
+            "description": "Pakete mit bekannten Advisories, aufgegebene oder veraltete Pakete und die Projekte, die sie sperren, aus den offenen Befunden jedes Projekts. Ausgeblendete Befunde stehen separat.",
+            "search": "Paket oder Advisory-ID",
+            "kindLabel": "Nach Art filtern",
+            "allKinds": "Alle Arten",
+            "kind": {
+                "advisory": "Advisory",
+                "abandoned": "Aufgegeben",
+                "stale": "Veraltet"
+            },
+            "ecosystem": {
+                "composer": "Composer",
+                "npm": "npm"
+            },
+            "package": "Paket",
+            "advisory": "Advisory",
+            "projects": "Projekte: gesperrt → behoben",
+            "replacement": "Ersetzen durch {{package}}",
+            "emptyTitle": "Keine betroffenen Pakete",
+            "emptyDescription": "Kein neuester Bericht enthält ein bekanntes Advisory, ein aufgegebenes oder veraltetes Paket.",
+            "noMatchTitle": "Keine passenden Pakete",
+            "noMatchDescription": "Versuche einen anderen Paketnamen oder eine andere Advisory-ID.",
+            "dismissedTitle": "Ausgeblendete Befunde",
+            "dismissedDescription": "Offene Befunde, die ein Benutzer ausgeblendet hat, mit Grund und letztem gültigen Tag."
+        },
+        "eol": {
+            "description": "Supportzeiträume von PHP, Laravel und Node aller Projekte, das nächste Ende zuerst.",
+            "active": "Aktiver Support",
+            "security": "Sicherheitssupport",
+            "today": "Heute",
+            "activeUntil": "Aktiv bis",
+            "timeline": "Zeitachse",
+            "emptyTitle": "Keine Supportdaten",
+            "emptyDescription": "Noch kein neuester Bericht enthält Supportdaten für PHP, Laravel oder Node."
+        }
+    },
+    "findings": {
+        "actions": "Aktionen",
+        "statusFilter": "Befundstatus",
+        "status": {
+            "open": "Offen",
+            "dismissed": "Ausgeblendet",
+            "resolved": "Behoben",
+            "all": "Alle"
+        },
+        "firstSeen": "Zuerst gesehen",
+        "lastSeen": "Zuletzt gesehen",
+        "fixedOn": "Behoben im Bericht vom {{date}}",
+        "reopened_one": "{{count}}-mal wieder aufgetreten",
+        "reopened_other": "{{count}}-mal wieder aufgetreten",
+        "notInLatest": "Seine Prüfung lief im letzten Bericht nicht",
+        "lifecycle": "Lebenszyklus",
+        "history": "Verlauf",
+        "event": {
+            "opened": "Zuerst gesehen",
+            "resolved": "Behoben",
+            "reopened": "Wieder aufgetreten",
+            "dismissed": "Ausgeblendet",
+            "undismissed": "Ausblendung aufgehoben",
+            "assigned": "Zugewiesen",
+            "unassigned": "Zuweisung entfernt"
+        },
+        "inRelease": "in {{release}}",
+        "byUser": "von {{name}}",
+        "untilDate": "bis {{date}}",
+        "dismissedUntil": "Ausgeblendet bis {{date}}",
+        "dismissedForGood": "Ohne Enddatum ausgeblendet",
+        "dismiss": "Ausblenden",
+        "dismissTitle": "Diesen Befund ausblenden",
+        "dismissDescription": "Ein ausgeblendeter Befund löst keine Benachrichtigungen aus und zählt weder zum höchsten Schweregrad noch zur Wochenübersicht. Er wird mit den Berichten trotzdem behoben und kann wieder auftreten.",
+        "reason": "Grund",
+        "reasonPlaceholder": "Warum dieser Befund keine Korrektur braucht",
+        "until": "Ausgeblendet bis (optional)",
+        "untilHint": "Der letzte Tag, an dem die Ausblendung gilt. Leer lassen, um ihn dauerhaft auszublenden.",
+        "confirmDismiss": "Befund ausblenden",
+        "cancel": "Abbrechen",
+        "undismiss": "Ausblendung aufheben",
+        "ignoreRule": "Ignore-Regel für excubia.json",
+        "ignoreRuleHint": "Füge sie der excubia.json des Projekts hinzu, um den Befund aus dem Bericht selbst herauszunehmen.",
+        "noResolved": "Noch keine behobenen Befunde",
+        "noResolvedDescription": "Befunde erscheinen hier, sobald ein späterer Bericht ihre Prüfung ohne sie ausführt.",
+        "toUser": "an {{name}}",
+        "views": {
+            "open": "Offen",
+            "mine": "Mir zugewiesen",
+            "new": "Neu in 24 Std."
+        },
+        "assignToMe": "Mir zuweisen"
+    },
+    "picker": {
+        "clearSelection": "Auswahl aufheben",
+        "loading": "Wird geladen…",
+        "noResults": "Keine Ergebnisse.",
+        "placeholder": "Auswählen…",
+        "search": "Suchen…"
+    },
+    "dateRangePicker": {
+        "startTime": "Startzeit",
+        "endTime": "Endzeit",
+        "apply": "Anwenden"
+    },
+    "charts": {
+        "view": "Ansehen",
+        "viewRoutes": "Routen ansehen",
+        "viewModels": "Modelle ansehen",
+        "viewTasks": "Tasks ansehen"
+    },
+    "application": {
+        "title": "Anwendung",
+        "exceptions": "Exceptions",
+        "exceptionsDescription": "{{formattedCount}} Vorkommen {{during}}, {{bucket}}.",
+        "occurrences": "Vorkommen",
+        "topExceptions": "Am häufigsten",
+        "viewExceptions": "Exceptions ansehen",
+        "exceptionsChartLabel": "Balkendiagramm der Exception-Vorkommen {{bucket}}: {{count}} {{during}}.",
+        "routes": "Routen",
+        "routesDescription": "Die langsamsten Routen nach p95 und die Routen mit den meisten Serverfehlern {{during}}.",
+        "slowestRoutes": "Am langsamsten (p95)",
+        "failingRoutes": "Meiste 5xx",
+        "noFailingRoutes": "Keine Serverfehler in diesem Zeitraum.",
+        "jobs": "Jobs",
+        "jobsDescription": "{{processed}} verarbeitet und {{failed}} fehlgeschlagen {{during}}, {{bucket}}.",
+        "processed": "Verarbeitet",
+        "failed": "Fehlgeschlagen",
+        "viewJobs": "Jobs ansehen",
+        "jobsChartLabel": "Gestapeltes Balkendiagramm der Jobs {{bucket}}: {{processed}} verarbeitet und {{failed}} fehlgeschlagen {{during}}.",
+        "offTitle": "Runtime-Monitoring ist aus",
+        "offDescription": "Schalte es in der excubia.json des Projekts ein, um hier Exceptions, Routen und Jobs zu sehen.",
+        "notCollected": "Nicht erfasst: {{types}}."
+    },
+    "assignee": {
+        "assignToMe": "{{item}} mir zuweisen",
+        "assignTo": "{{item}} zuweisen…",
+        "label": "Zuständig",
+        "none": "Nicht zugewiesen",
+        "hint": "Wer sich darum kümmert. Nur Benutzer, die dieses Projekt sehen, sind aufgeführt.",
+        "mine": "Mir zugewiesen",
+        "column": "Zuständig"
+    },
+    "errorBoundary": {
+        "title": "Etwas ist schiefgelaufen",
+        "description": "In der Oberfläche ist ein unerwarteter Fehler aufgetreten. Laden Sie die Seite neu.",
+        "retry": "Erneut versuchen",
+        "reload": "Seite neu laden"
+    },
+    "shortcuts": {
+        "description": "Auf dieser Seite aktive Tastenkürzel.",
+        "groupGeneral": "Allgemein",
+        "groupList": "Liste",
+        "groupNavigation": "Navigation",
+        "showHelp": "Tastenkürzel anzeigen",
+        "singleKeyOff": "Einzeltasten-Kürzel sind in deinen Einstellungen deaktiviert; Kürzel mit ⌘ / Strg funktionieren weiterhin.",
+        "title": "Tastenkürzel"
+    },
+    "commandPalette": {
+        "description": "Seiten, Datensätze und Aktionen suchen.",
+        "empty": "Keine Ergebnisse.",
+        "open": "Befehlspalette öffnen",
+        "placeholder": "Suchen oder springen zu…",
+        "recent": "Zuletzt geöffnet",
+        "searchFailed": "Suche fehlgeschlagen. Nur lokale Ergebnisse werden angezeigt.",
+        "searching": "Suche läuft…",
+        "title": "Befehlspalette",
+        "trigger": "Suchen"
+    },
+    "palette": {
+        "groups": {
+            "navigation": "Navigation",
+            "actions": "Aktionen",
+            "projects": "Projekte",
+            "projectGroups": "Projektgruppen",
+            "users": "Benutzer",
+            "groups": "Gruppen",
+            "exceptions": "Ausnahmen"
+        },
+        "actions": {
+            "assistantPanel": "Assistenten-Bereich öffnen",
+            "darkMode": "Zum dunklen Design wechseln",
+            "lightMode": "Zum hellen Design wechseln"
+        }
+    },
+    "viewTabs": {
+        "severity": {
+            "critical": "Hat kritische Probleme",
+            "warning": "Hat Warnungen"
+        }
+    },
+    "sidebarEntities": {
+        "filter": "Navigation filtern",
+        "filterPlaceholder": "Filtern…",
+        "needsAttention": "Braucht Aufmerksamkeit",
+        "pin": "{{name}} anheften",
+        "pinHint": "Hefte ein Projekt mit dem Stern an, um es hier zu behalten.",
+        "pinned": "Angeheftet",
+        "status": {
+            "good": "Gesund",
+            "warning": "Hat Warnungen",
+            "critical": "Hat kritische Probleme"
+        },
+        "unpin": "{{name}} lösen",
+        "viewAll": "Alle anzeigen"
+    },
+    "inbox": {
+        "detailDescription": "Details und Aktionen des Eintrags.",
+        "nextStep": "Was zu tun ist",
+        "openFullPage": "Ganze Seite öffnen",
+        "savedViews": "Gespeicherte Ansichten"
+    },
+    "listShortcuts": {
+        "next": "Nächste Zeile",
+        "previous": "Vorherige Zeile",
+        "open": "Zeile öffnen",
+        "select": "Zeile auswählen"
+    },
+    "notifications": {
+        "title": "Benachrichtigungen",
+        "description": "Neuigkeiten für Sie, die neuesten zuerst.",
+        "loading": "Laden…",
+        "empty": "Noch keine Benachrichtigungen.",
+        "loadFailed": "Die Benachrichtigungen konnten nicht geladen werden. Versuchen Sie es später erneut.",
+        "updateFailed": "Die Benachrichtigung konnte nicht aktualisiert werden.",
+        "untitled": "Benachrichtigung",
+        "markAllRead": "Alle als gelesen markieren",
+        "markRead": "Als gelesen markieren",
+        "markUnread": "Als ungelesen markieren",
+        "alert": {
+            "single": "{{event}} in {{project}}",
+            "newFindings_one": "{{count}} neues Problem in {{project}}",
+            "newFindings_other": "{{count}} neue Probleme in {{project}}",
+            "grouped_one": "{{count}} Alarm in {{project}}",
+            "grouped_other": "{{count}} Alarme in {{project}}"
+        }
+    },
+    "timeline": {
+        "itemCount_one": "{{count}} Eintrag",
+        "itemCount_other": "{{count}} Einträge",
+        "showLess": "Weniger anzeigen",
+        "showMore": "{{count}} weitere anzeigen",
+        "status": {
+            "done": "Erledigt",
+            "current": "In Arbeit",
+            "pending": "Offen",
+            "warning": "Erfordert Aufmerksamkeit",
+            "blocked": "Blockiert"
+        },
+        "valueChange": "von {{from}} auf {{to}}"
+    },
+    "apiKeys": {
+        "form": {
+            "requiredHint": "Mit * markierte Felder sind Pflichtfelder.",
+            "name": "Name",
+            "nameDescription": "Geben Sie an, was den Schlüssel verwendet, damit er sich beim Rotieren oder Widerrufen finden lässt.",
+            "restrictions": "Einschränkungen",
+            "restrictionsDescription": "Optional. Lassen Sie ein Feld leer, um nichts zu begrenzen.",
+            "expiresAt": "Läuft ab",
+            "expiresAtDescription": "Der Schlüssel funktioniert ab diesem Zeitpunkt nicht mehr (Browser-Zeitzone). Sie werden vorher benachrichtigt.",
+            "ipAllowlist": "Erlaubte IP-Adressen",
+            "ipAllowlistDescription": "Adressen oder CIDR-Bereiche, durch Kommas getrennt. Anfragen von anderen Adressen werden abgelehnt.",
+            "ipAllowlistPlaceholder": "203.0.113.4, 10.0.0.0/8",
+            "rateLimit": "Anfragen pro Minute",
+            "rateLimitDescription": "Anfragen über diesem Limit werden bis zum Ende der Minute mit 429 abgelehnt."
+        },
+        "scopes": {
+            "legend": "Berechtigungen",
+            "description": "Was der Schlüssel mit jeder Ressource tun darf. Schreiben schließt Lesen ein.",
+            "none": "Kein Zugriff",
+            "unavailable": "Mit Ihrem Konto können Sie keinen Zugriff auf diese Ressource gewähren.",
+            "unavailableLevel": "Die gewählte Zugriffsstufe ist nicht verfügbar. Wählen Sie eine andere Stufe.",
+            "read": "Lesen",
+            "write": "Schreiben"
+        },
+        "secret": {
+            "createdTitle": "Schlüssel für „{{name}}“ kopieren",
+            "rotatedTitle": "Neues Geheimnis für „{{name}}“ kopieren",
+            "description": "Der Schlüssel wird nur dieses eine Mal angezeigt. Er wird nicht gespeichert und kann nicht erneut angezeigt werden: Legen Sie ihn jetzt in Ihrem Passwort- oder Secret-Manager ab.",
+            "previousSecretValidUntil": "Das bisherige Geheimnis bleibt bis {{date}} gültig.",
+            "label": "API-Schlüssel",
+            "copy": "Schlüssel kopieren",
+            "copied": "Schlüssel in die Zwischenablage kopiert",
+            "copyFailed": "Der Schlüssel konnte nicht kopiert werden. Er ist markiert: Kopieren Sie ihn mit der Tastatur.",
+            "announcement": "API-Schlüssel für {{name}} erstellt. Er wird nur einmal angezeigt.",
+            "acknowledge": "Ich habe den Schlüssel sicher gespeichert",
+            "done": "Fertig"
+        },
+        "list": {
+            "name": "Name",
+            "key": "Schlüssel",
+            "permissions": "Berechtigungen",
+            "lastUsed": "Zuletzt verwendet",
+            "expires": "Läuft ab",
+            "status": "Status",
+            "actions": "Aktionen",
+            "never": "Nie",
+            "neverUsed": "Nie verwendet",
+            "noPermissions": "Keine Berechtigungen",
+            "rotate": "{{name}} rotieren",
+            "revoke": "{{name}} widerrufen"
+        },
+        "status": {
+            "active": "Aktiv",
+            "expired": "Abgelaufen",
+            "revoked": "Widerrufen"
+        },
+        "revoke": {
+            "title": "„{{name}}“ widerrufen?",
+            "description": "Ab sofort wird jede Anfrage mit diesem Schlüssel abgelehnt. Der Schlüssel bleibt in der Liste und im Aktivitätsprotokoll; er kann nicht wieder verwendet werden.",
+            "confirm": "Widerrufen"
+        }
+    },
+    "secretOnce": {
+        "description": "Das Geheimnis wird nur dieses eine Mal angezeigt. Es wird nicht im Klartext gespeichert und kann nicht erneut angezeigt werden: Legen Sie es jetzt in Ihrem Passwort- oder Secret-Manager ab.",
+        "label": "Geheimnis",
+        "copy": "Geheimnis kopieren",
+        "copied": "Geheimnis in die Zwischenablage kopiert",
+        "copyFailed": "Das Geheimnis konnte nicht kopiert werden. Es ist markiert: Kopieren Sie es mit der Tastatur.",
+        "acknowledge": "Ich habe das Geheimnis sicher gespeichert",
+        "done": "Fertig"
+    },
+    "errors": {
+        "403": {
+            "title": "Zugriff verweigert",
+            "description": "Sie haben keine Berechtigung, diese Seite zu öffnen."
+        },
+        "404": {
+            "title": "Seite nicht gefunden",
+            "description": "Diese Seite existiert nicht oder ist nicht mehr verfügbar."
+        },
+        "500": {
+            "title": "Etwas ist schiefgelaufen",
+            "description": "Der Server konnte die Anfrage nicht abschließen. Versuchen Sie es gleich noch einmal."
+        },
+        "503": {
+            "title": "Bald wieder da",
+            "description": "Excubia wird gewartet oder ein benötigter Dienst ist nicht erreichbar. Versuchen Sie es in ein paar Minuten noch einmal."
+        },
+        "backToDashboard": "Zurück zum Dashboard",
+        "signIn": "Anmelden",
+        "tryAgain": "Erneut versuchen"
+    },
+    "datePicker": {
+        "boundsError": "Der verfügbare Datumsbereich ist falsch konfiguriert.",
+        "chooseDate": "Datum für {{label}} auswählen",
+        "clear": "Leeren",
+        "close": "Schließen",
+        "deviceTimeZone": "Gerätezeit",
+        "empty": "{{label}}: kein Wert.",
+        "format": "Gib ein Datum in diesem Format ein: {{example}}.",
+        "formatError": "Gib einen gültigen Wert in diesem Format ein: {{example}}. Verwende eine vierstellige Jahreszahl.",
+        "maximumError": "Gib einen Wert bis einschließlich {{max}} ein.",
+        "minimumError": "Gib einen Wert ab {{min}} ein.",
+        "nextMonth": "Zum nächsten Monat",
+        "previousMonth": "Zum vorherigen Monat",
+        "required": "Gib einen Wert ein.",
+        "selected": "{{label}}: {{value}}.",
+        "timeZoneError": "Die Zeitzone ist ungültig.",
+        "today": "Heute, {{date}}",
+        "zonedFormat": "Format: {{example}} ({{timeZone}})."
+    },
+    "rolePicker": {
+        "legend": "Rollen",
+        "description": "Die Berechtigungen aller ausgewählten Rollen gelten gemeinsam.",
+        "superAdminHint": "Alle Berechtigungen. Kann nicht mit anderen Rollen kombiniert werden."
+    }
+}

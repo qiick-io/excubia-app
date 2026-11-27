@@ -1,0 +1,93 @@
+<?php
+
+declare(strict_types=1);
+
+use App\Enums\RoleEnum;
+use App\Models\ExceptionGroup;
+use App\Models\User;
+use Database\Seeders\PermissionSeeder;
+
+require_once __DIR__.'/BrowserSeedHelpers.php';
+
+/**
+ * The Exceptions tab as an inbox (#276): saved views with counts, `?exception=` opening a
+ * group's drawer, and a bulk resolve of the selected rows, in light and dark.
+ */
+beforeEach(function (): void {
+    $this->seed(PermissionSeeder::class);
+});
+
+it('opens a group from its link and resolves the selection in bulk', function (string $scheme) {
+    $this->actingAs(User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value));
+    $project = seededA11yProject();
+    $group = ExceptionGroup::query()->where('project_id', $project->id)->firstOrFail();
+
+    $path = route('projects.view', [$project->slug, 'exceptions', 'exception' => $group->id], false);
+    $page = ($scheme === 'dark' ? visit($path)->inDarkMode() : visit($path)->inLightMode())
+        ->assertPresent('nav[aria-label="Saved views"] a[aria-current="page"]:has-text("Unresolved")')
+        ->assertSee('Stack')
+        ->assertNoJavaScriptErrors();
+
+    // Close the drawer, then select the row and resolve it from the selection bar.
+    $page->keys('[role="dialog"]', 'Escape')
+        ->wait(0.5)
+        ->click('[aria-label="Select '.$group->class.'"]')
+        ->assertSee('1 selected')
+        ->click('[data-test="bulk-resolved"]')
+        ->wait(1)
+        ->assertNoJavaScriptErrors();
+
+    expect($group->fresh()->status->value)->toBe('resolved');
+})->with(['light', 'dark']);
+
+it('opens an exception from the keyboard: Tab reaches the row and Enter opens it', function (string $scheme) {
+    $this->actingAs(User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value));
+    $project = seededA11yProject();
+    $group = ExceptionGroup::query()->where('project_id', $project->id)->firstOrFail();
+
+    // #424: the row was mouse-only. From the last header control, Tab lands on the first row.
+    $path = route('projects.view', [$project->slug, 'exceptions'], false);
+    $page = $scheme === 'dark' ? visit($path)->inDarkMode() : visit($path)->inLightMode();
+    $page->script("() => [...document.querySelectorAll('thead button, thead [role=\"checkbox\"]')].at(-1).focus()");
+    $page->keys('thead :focus', 'Tab');
+
+    expect($page->script("() => document.activeElement?.matches('tbody tr:first-child')"))->toBeTrue();
+
+    $page->keys('tbody tr:first-child', 'Enter')
+        ->assertVisible('[role="dialog"]')
+        ->assertSeeIn('[role="dialog"]', $group->class)
+        ->assertNoJavaScriptErrors();
+})->with(['light', 'dark']);
+
+it('moves focus with j and k, so Enter opens the row they point at', function () {
+    $this->actingAs(User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value));
+    $project = seededA11yProject();
+
+    $page = visit(route('projects.view', [$project->slug, 'exceptions'], false))
+        ->keys('#main-content', 'j');
+
+    expect($page->script("() => document.activeElement?.matches('tbody tr[data-active=\"true\"]')"))->toBeTrue();
+});
+
+it('closes the exception and finding drawers with a visible button on a phone', function () {
+    $this->actingAs(User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value));
+    $project = seededA11yProject();
+    $group = ExceptionGroup::query()->where('project_id', $project->id)->firstOrFail();
+
+    // #454: full-screen drawers on a phone had no close control.
+    visit(route('projects.view', [$project->slug, 'exceptions', 'exception' => $group->id], false))
+        ->resize(390, 844)
+        ->assertVisible('[role="dialog"] [data-test="drawer-close"]')
+        ->click('[role="dialog"] [data-test="drawer-close"]')
+        ->wait(1)
+        ->assertNotPresent('[role="dialog"]')
+        ->assertNoJavaScriptErrors();
+
+    $page = visit(route('projects.view', [$project->slug, 'findings'], false))->resize(390, 844);
+    $page->click('tbody tr:first-child td:nth-child(3) button')
+        ->assertVisible('[role="dialog"] [data-test="drawer-close"]')
+        ->click('[role="dialog"] [data-test="drawer-close"]')
+        ->wait(1)
+        ->assertNotPresent('[role="dialog"]')
+        ->assertNoJavaScriptErrors();
+});

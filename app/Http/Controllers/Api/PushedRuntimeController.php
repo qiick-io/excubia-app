@@ -1,0 +1,37 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Http\Controllers\Api;
+
+use App\Actions\StorePushedRuntimeAction;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\StorePushedRuntimeRequest;
+use App\Models\Project;
+use App\Traits\AnswersPushedBatchTrait;
+use Illuminate\Http\JsonResponse;
+
+/**
+ * `POST /api/runtime`: receives the runtime aggregates pushed by `excubia:push-runtime`
+ * (qiick/excubia-core). Answers 201 for a new batch and 200 for a repeated `batchId`, both with
+ * the app's capabilities and the number of entries of the batch it skips.
+ */
+class PushedRuntimeController extends Controller
+{
+    use AnswersPushedBatchTrait;
+
+    public function store(StorePushedRuntimeRequest $request, StorePushedRuntimeAction $storeRuntime): JsonResponse
+    {
+        /** @var Project $project authorized by the request */
+        $project = $request->project();
+
+        /** @var list<array<string, mixed>> $aggregates */
+        $aggregates = $request->json('runtime.aggregates');
+
+        $release = $request->json('runtime.release');
+        $environment = $request->json('runtime.environment');
+        $isNew = $storeRuntime->execute($project, $request->string('batchId')->toString(), $aggregates, is_string($release) ? $release : null, is_string($environment) ? $environment : null);
+
+        return $this->pushedBatchResponse($isNew, $storeRuntime->skippedCount($aggregates));
+    }
+}

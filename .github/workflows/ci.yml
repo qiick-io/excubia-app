@@ -1,0 +1,571 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+
+permissions:
+  contents: read
+
+concurrency:
+  # The event is part of the group: a push run and a pull-request run on the same SHA are
+  # different evidence and must never cancel each other (externa-core#805).
+  group: ci-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  # A `main` or `develop` run is the release evidence: let it finish.
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/develop' }}
+
+# Gate policy (CI diet, as externa-core#381 / #438):
+# - Required check NAMES never change and every required job still runs on every pull request.
+#   When the heavy work is skipped the job reports success from a stub step: a required check
+#   that is never queued stays pending forever and the pull request can never be merged, so
+#   workflow-level `paths:` is never used here.
+# - push → main/develop, pull_request → main, workflow_dispatch: everything runs (full mode).
+#   `changes` is skipped on those events, so the classification costs nothing there and the
+#   gates below default to full.
+# - pull_request → develop with code: Pest on PHP 8.4; the PHP 8.5, MySQL and PostgreSQL legs
+#   stub. The full matrix still runs on the merge to develop, before any release.
+# - pull_request → develop touching a migration, the database config or a toolchain/stack file:
+#   full mode, so a migration always meets MySQL and PostgreSQL before it reaches develop.
+# - pull_request → develop with docs only: every heavy job stubs.
+jobs:
+  changes:
+    # Only a pull request to `develop` is ever reduced. On every other event this job is
+    # skipped, `needs.changes.outputs.mode` is empty and the gates below read that as full.
+    if: github.event_name == 'pull_request' && github.base_ref == 'develop'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      mode: ${{ steps.mode.outputs.mode }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Detect change mode
+        id: mode
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+
+          FILES=$(git diff --name-only "$BASE_SHA...$HEAD_SHA")
+
+          # docs = top-level *.md, docs/, the .github templates and the readme assets.
+          # A nested *.md (resources/.../SKILL.md) is code.
+          CODE=0
+          while IFS= read -r f; do
+            case "$f" in
+              docs/*|.github/ISSUE_TEMPLATE/*|.github/pull_request_template.md|.github/assets/*) ;;
+              */*) CODE=1; break ;;
+              *.md) ;;
+              *) CODE=1; break ;;
+            esac
+          done <<< "$FILES"
+
+          if [ "$CODE" -eq 0 ]; then
+            MODE=docs
+          else
+            MODE=lite
+          fi
+
+          # A migration, the database config or a toolchain/stack change must see the whole
+          # matrix before it is merged, not after.
+          while IFS= read -r f; do
+            case "$f" in
+              composer.json|composer.lock|package.json|package-lock.json|.nvmrc|phpunit.xml|vite.config.ts|tsconfig.json|config/database.php|database/migrations/*|.github/workflows/ci.yml)
+                MODE=full
+                echo "Full-mode trigger ($f)."
+                break
+                ;;
+            esac
+          done <<< "$FILES"
+
+          echo "mode=$MODE" >> "$GITHUB_OUTPUT"
+          echo "CI mode=$MODE"
+
+  tests:
+    name: PHP ${{ matrix.php }}
+    needs: changes
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        php:
+          - '8.4'
+          - '8.5'
+    steps:
+      - name: Require the change classification to have succeeded
+        if: needs.changes.result == 'failure' || needs.changes.result == 'cancelled'
+        run: |
+          echo "::error::changes=${{ needs.changes.result }} - failing this required check instead of reporting a skipped (= passing) gate."
+          exit 1
+
+      - name: Resolve whether to run the suite
+        id: gate
+        env:
+          MODE: ${{ needs.changes.outputs.mode }}
+          PHP: ${{ matrix.php }}
+        run: |
+          RUN=true
+          if [ "$MODE" = 'docs' ]; then RUN=false; fi
+          if [ "$MODE" = 'lite' ] && [ "$PHP" != '8.4' ]; then RUN=false; fi
+          echo "run=$RUN" >> "$GITHUB_OUTPUT"
+          echo "mode=${MODE:-full} php=$PHP run=$RUN"
+
+      - name: Stub success (the CI gate skipped the heavy work)
+        if: steps.gate.outputs.run != 'true'
+        run: echo "Stub success for the required check PHP ${{ matrix.php }} - mode=${{ needs.changes.outputs.mode }}."
+
+      - name: Checkout
+        if: steps.gate.outputs.run == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup PHP
+        if: steps.gate.outputs.run == 'true'
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: pdo_sqlite, sqlite3
+          coverage: none
+          tools: composer:v2
+
+      - name: Setup Node
+        if: steps.gate.outputs.run == 'true'
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Composer cache directory
+        if: steps.gate.outputs.run == 'true'
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Composer packages
+        if: steps.gate.outputs.run == 'true'
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ runner.os }}-php${{ matrix.php }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-php${{ matrix.php }}-
+
+      - name: Install Composer dependencies
+        if: steps.gate.outputs.run == 'true'
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Install npm dependencies
+        if: steps.gate.outputs.run == 'true'
+        run: npm ci
+
+      - name: Prepare environment
+        if: steps.gate.outputs.run == 'true'
+        run: |
+          cp .env.example .env
+          php artisan key:generate --ansi
+
+      # Before Pest and the type check: the tests need the Vite manifest, and the build generates
+      # the Wayfinder route helpers that `npm run types` reads.
+      - name: Build
+        if: steps.gate.outputs.run == 'true'
+        run: npm run build
+
+      - name: Pint
+        if: steps.gate.outputs.run == 'true'
+        run: vendor/bin/pint --test
+
+      - name: Pest
+        if: steps.gate.outputs.run == 'true'
+        run: php artisan test
+
+      - name: Lint
+        if: steps.gate.outputs.run == 'true'
+        run: npm run lint
+
+      - name: Types
+        if: steps.gate.outputs.run == 'true'
+        run: npm run types
+
+      # Upgrade-plan view-model tests (#333); Node from .nvmrc (26) supports --experimental-strip-types.
+      - name: Frontend unit tests
+        if: steps.gate.outputs.run == 'true'
+        run: npm test
+
+      - name: Dead code (knip)
+        if: steps.gate.outputs.run == 'true'
+        run: npm run knip
+
+      - name: Hard-coded UI strings (ratchet)
+        if: steps.gate.outputs.run == 'true'
+        run: npm run lint:i18n
+
+      # The qiick ratcheted rules (#258) in Oxlint: restricted imports, navigator.clipboard,
+      # id-length. The type-aware boolean prefix rule waits for typescript-eslint on TypeScript 7.
+      - name: qiick standards rules (ratchet)
+        if: steps.gate.outputs.run == 'true'
+        run: npm run lint:standards
+
+      # Chrome's legacy-scan, ratcheted against legacy-scan-baseline.json. A step in this
+      # job and not a job of its own: GitHub bills per job, rounded up to the whole minute.
+      - name: Legacy web platform patterns (ratchet)
+        if: steps.gate.outputs.run == 'true'
+        run: npm run lint:legacy
+
+  # The full suite on the other supported databases (#136); the `tests` job covers SQLite.
+  databases:
+    name: ${{ matrix.name }}
+    needs: changes
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: MySQL
+            image: mysql:8.0
+            connection: mysql
+            port: 3306
+            health: mysqladmin ping -h 127.0.0.1
+          - name: PostgreSQL
+            image: postgres:17
+            connection: pgsql
+            port: 5432
+            health: pg_isready -U excubia
+    services:
+      database:
+        image: ${{ matrix.image }}
+        env:
+          MYSQL_DATABASE: excubia
+          MYSQL_USER: excubia
+          MYSQL_PASSWORD: excubia
+          MYSQL_ROOT_PASSWORD: excubia
+          POSTGRES_DB: excubia
+          POSTGRES_USER: excubia
+          POSTGRES_PASSWORD: excubia
+        ports:
+          - ${{ matrix.port }}:${{ matrix.port }}
+        options: >-
+          --health-cmd "${{ matrix.health }}"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      DB_CONNECTION: ${{ matrix.connection }}
+      DB_HOST: 127.0.0.1
+      DB_PORT: ${{ matrix.port }}
+      DB_DATABASE: excubia
+      DB_USERNAME: excubia
+      DB_PASSWORD: excubia
+    steps:
+      - name: Require the change classification to have succeeded
+        if: needs.changes.result == 'failure' || needs.changes.result == 'cancelled'
+        run: |
+          echo "::error::changes=${{ needs.changes.result }} - failing this required check instead of reporting a skipped (= passing) gate."
+          exit 1
+
+      # Only full mode runs the other databases. A migration, the database config or a
+      # toolchain change puts a pull request into full mode (see `changes`), so a schema
+      # change never reaches develop without having met MySQL and PostgreSQL.
+      - name: Resolve whether to run the suite
+        id: gate
+        env:
+          MODE: ${{ needs.changes.outputs.mode }}
+        run: |
+          RUN=true
+          if [ "$MODE" = 'lite' ] || [ "$MODE" = 'docs' ]; then RUN=false; fi
+          echo "run=$RUN" >> "$GITHUB_OUTPUT"
+          echo "mode=${MODE:-full} run=$RUN"
+
+      - name: Stub success (the CI gate skipped the heavy work)
+        if: steps.gate.outputs.run != 'true'
+        run: echo "Stub success for the required check ${{ matrix.name }} - mode=${{ needs.changes.outputs.mode }}."
+
+      - name: Checkout
+        if: steps.gate.outputs.run == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup PHP
+        if: steps.gate.outputs.run == 'true'
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php-version: '8.4'
+          extensions: pdo_mysql, pdo_pgsql
+          coverage: none
+          tools: composer:v2
+
+      - name: Setup Node
+        if: steps.gate.outputs.run == 'true'
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Composer cache directory
+        if: steps.gate.outputs.run == 'true'
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Composer packages
+        if: steps.gate.outputs.run == 'true'
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ runner.os }}-php8.4-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-php8.4-
+
+      - name: Install Composer dependencies
+        if: steps.gate.outputs.run == 'true'
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Install npm dependencies
+        if: steps.gate.outputs.run == 'true'
+        run: npm ci
+
+      - name: Prepare environment
+        if: steps.gate.outputs.run == 'true'
+        run: |
+          cp .env.example .env
+          php artisan key:generate --ansi
+
+      # The tests need the Vite manifest.
+      - name: Build
+        if: steps.gate.outputs.run == 'true'
+        run: npm run build
+
+      # The DB_* job variables override the SQLite defaults of phpunit.xml.
+      - name: Pest
+        if: steps.gate.outputs.run == 'true'
+        run: php artisan test
+
+  contract:
+    name: Core contract (${{ matrix.core }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        core:
+          - '^1.0@beta'
+          - 'dev-develop'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php-version: '8.4'
+          extensions: pdo_sqlite, sqlite3
+          coverage: none
+          tools: composer:v2
+
+      - name: Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Composer packages
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-contract-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-contract-${{ runner.os }}-
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      # Serves this app, installs qiick/excubia-core in a throwaway Laravel app and pushes to it.
+      - name: End-to-end contract test
+        run: scripts/e2e/core-contract.sh '${{ matrix.core }}'
+
+  # Install and upgrade as an operator does it (qiick standards, as externa-core):
+  # create-project from this checkout, `excubia:install -n`, the health probes, `excubia:upgrade`,
+  # and, once a release tag exists, an upgrade from the previous release.
+  install-upgrade:
+    name: Install and upgrade
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The release tags, for the upgrade from the previous release.
+          fetch-depth: 0
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php-version: '8.4'
+          extensions: pdo_sqlite, sqlite3
+          coverage: none
+          tools: composer:v2
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+
+      - name: Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Composer packages
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-install-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-install-${{ runner.os }}-
+
+      - name: Install and upgrade smoke test
+        run: scripts/e2e/install-upgrade.sh
+
+  # Axe smoke (#112), as in externa-core: pull requests to `develop` run only the smoke test ("lite");
+  # pushes and pull requests to `main` run every browser test. Not part of `php artisan test`.
+  accessibility:
+    name: Accessibility
+    needs: changes
+    if: always()
+    # ponytail: pinned to 24.04 while ubuntu-latest (26.04) runners cannot resolve
+    # security.ubuntu.com for the Playwright system packages (2026-11-11); back to
+    # ubuntu-latest once its mirrors answer again.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Require the change classification to have succeeded
+        if: needs.changes.result == 'failure' || needs.changes.result == 'cancelled'
+        run: |
+          echo "::error::changes=${{ needs.changes.result }} - failing this required check instead of reporting a skipped (= passing) gate."
+          exit 1
+
+      # A docs-only pull request cannot change a rendered page: no Playwright, no build.
+      - name: Resolve whether to run the browser tests
+        id: gate
+        env:
+          MODE: ${{ needs.changes.outputs.mode }}
+        run: |
+          RUN=true
+          if [ "$MODE" = 'docs' ]; then RUN=false; fi
+          echo "run=$RUN" >> "$GITHUB_OUTPUT"
+          echo "mode=${MODE:-full} run=$RUN"
+
+      - name: Stub success (the CI gate skipped the heavy work)
+        if: steps.gate.outputs.run != 'true'
+        run: echo "Stub success for the required check Accessibility - mode=${{ needs.changes.outputs.mode }}."
+
+      - name: Checkout
+        if: steps.gate.outputs.run == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup PHP
+        if: steps.gate.outputs.run == 'true'
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php-version: '8.4'
+          extensions: pdo_sqlite, sqlite3, sockets
+          coverage: none
+          tools: composer:v2
+
+      - name: Setup Node
+        if: steps.gate.outputs.run == 'true'
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Composer cache directory
+        if: steps.gate.outputs.run == 'true'
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Composer packages
+        if: steps.gate.outputs.run == 'true'
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ runner.os }}-php8.4-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-php8.4-
+
+      - name: Install Composer dependencies
+        if: steps.gate.outputs.run == 'true'
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Install npm dependencies
+        if: steps.gate.outputs.run == 'true'
+        run: npm ci
+
+      - name: Playwright version
+        if: steps.gate.outputs.run == 'true'
+        id: playwright
+        run: echo "version=$(node -p "require('playwright/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        if: steps.gate.outputs.run == 'true'
+        id: playwright-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}-chromium
+
+      - name: Install Playwright Chromium
+        if: steps.gate.outputs.run == 'true' && steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+
+      - name: Install Playwright system dependencies
+        if: steps.gate.outputs.run == 'true' && steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+
+      - name: Prepare environment
+        if: steps.gate.outputs.run == 'true'
+        run: |
+          cp .env.example .env
+          php artisan key:generate --ansi
+
+      - name: Build
+        if: steps.gate.outputs.run == 'true'
+        run: npm run build
+
+      - name: Axe smoke and API keys (PR → develop)
+        if: steps.gate.outputs.run == 'true' && github.event_name == 'pull_request' && github.base_ref == 'develop'
+        run: vendor/bin/pest tests/Browser/A11ySmokeBrowserTest.php tests/Browser/ApiKeysBrowserTest.php
+
+      - name: Browser tests
+        if: steps.gate.outputs.run == 'true' && (github.event_name != 'pull_request' || github.base_ref != 'develop')
+        run: vendor/bin/pest tests/Browser
+
+  # Theme tokens and the WCAG 2.2 AA contrast of the installed theme, from app-ui at the pinned
+  # ref (#258). The browser tests stay in the Accessibility job above (full suite on main).
+  # Pinned to the app-ui v0.14.0 commit (8385724), not the moving tag tip.
+  ui-quality:
+    uses: qiick-io/app-ui/.github/workflows/ui-quality.yml@8385724ee3d747f2e7aa985b1355b7e6aa48231b
+
+  # Forward-only migrations (#193): a migration on `main`, on the latest `v*` tag or in the
+  # freeze baseline `database/migrations/.frozen` is never modified, renamed or deleted.
+  migrations-frozen:
+    uses: qiick-io/app-ui/.github/workflows/migrations-frozen.yml@8385724ee3d747f2e7aa985b1355b7e6aa48231b
+
+  # PHPStan at level 8 (the level never drops, the baseline only shrinks) and Pest with
+  # line coverage that never falls below `coverage-floor.txt` (app-ui v0.6.0, #259).
+  php-quality:
+    uses: qiick-io/app-ui/.github/workflows/php-quality.yml@8385724ee3d747f2e7aa985b1355b7e6aa48231b
+
+  # Fleet conformance C1-C37 on PostgreSQL and MySQL (app-ui v0.14.0, pinned to the v0.14.0
+  # commit). The suite is in the `conformance` group, excluded from `tests`' default Pest run;
+  # C5/C11/C15 need the real servers, so all 37 checks run here.
+  conformance:
+    uses: qiick-io/app-ui/.github/workflows/conformance.yml@8385724ee3d747f2e7aa985b1355b7e6aa48231b
+
+  # The @qiick UI registry copies and the qiick standards pack (agent files,
+  # architecture test, kebab-case file names) must match app-ui.
+  app-ui-drift:
+    uses: qiick-io/app-ui/.github/workflows/drift-check.yml@8385724ee3d747f2e7aa985b1355b7e6aa48231b
+    with:
+      standards: true

@@ -1,0 +1,8 @@
+{
+    "preset": "laravel",
+    "notPath": [
+        "tests/Conformance/ConformanceSuiteTest.php",
+        "tests/Conformance/catalog.php",
+        "tests/Conformance/Support/"
+    ]
+}

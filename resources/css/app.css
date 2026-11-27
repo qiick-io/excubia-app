@@ -1,0 +1,45 @@
+@import 'tailwindcss';
+
+@import 'tw-animate-css';
+@import '@fontsource-variable/geist';
+@import '@fontsource-variable/geist-mono';
+@import './qiick-theme.css';
+@import './qiick-theme-blue.css';
+
+@source '../views';
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+
+/*
+ * The one severity scale (#204), shared by the stacked severity charts and the severity badges
+ * (`SEVERITY_SCALE` in components/reports/severity-badge.tsx): critical, high and medium carry
+ * the status tokens of their badge (destructive, warning, info), low and info stay neutral, low
+ * the stronger grey. Every slot is at least 3:1 against the card in light (white) and dark
+ * (ink-900), and the status tokens follow the high-contrast theme.
+ */
+:root {
+    --severity-critical: var(--destructive);
+    --severity-high: var(--warning);
+    --severity-medium: var(--info);
+    --severity-low: var(--muted-foreground);
+    --severity-info: var(--color-ink-400);
+}
+
+.dark {
+    --severity-info: var(--color-ink-500);
+}
+
+/*
+ * Requests chart (1/2/3xx, 4xx, 5xx; #251): 5xx take the critical severity colour, 4xx the high
+ * (warning) one, successes a blue that stays apart from both in light and dark. The duration
+ * chart (#246) draws the average in that blue and p95 in a chart token apart from it.
+ */
+:root {
+    --runtime-chart-ok: var(--color-blue-600);
+    --runtime-chart-client-error: var(--severity-high);
+    --runtime-chart-error: var(--severity-critical);
+    --runtime-chart-p95: var(--chart-3);
+}
+
+.dark {
+    --runtime-chart-ok: var(--color-blue-500);
+}

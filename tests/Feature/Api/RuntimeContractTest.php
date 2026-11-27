@@ -1,0 +1,494 @@
+<?php
+
+declare(strict_types=1);
+
+use App\Actions\RotateProjectTokenAction;
+use App\Actions\StoreRuntimeRollupsAction;
+use App\Enums\RuntimeTypeEnum;
+use App\Http\Requests\StorePushedRuntimeRequest;
+use App\Models\Project;
+use App\Models\RuntimeAggregate;
+use App\Models\RuntimeHourlyRollup;
+use App\Models\ScheduledTaskRun;
+use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Support\Facades\Date;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
+
+/**
+ * Contract of `POST /api/runtime` with excubia-core (#111): one entry of every core runtime type,
+ * with every optional field, is checked against core's `docs/runtime-schema.json` and must be
+ * stored; a type the app does not know is skipped and counted, never rejected, and neither is a
+ * value core may add to an enumerated field (#169).
+ *
+ * `tests/Fixtures/core/runtime-schema.json` is a copy of excubia-core `develop` at
+ * b6d8be8106bb1848332538d2434b06286ded2f49 (2026-11-08, core #226: the `pennant` type). Refresh it when core adds a type or a value.
+ * The app has no JSON Schema validator, so coreSchemaErrors() (tests/Pest.php) checks the keywords
+ * the runtime schema uses (required, additionalProperties, const, enum, type, pattern, min/max, lengths).
+ */
+beforeEach(function () {
+    Http::preventStrayRequests();
+    Date::setTestNow('2026-11-06 12:00:00');
+});
+
+/**
+ * @return array<string, mixed>
+ */
+function coreRuntimeSchema(): array
+{
+    return json_decode((string) file_get_contents(base_path('tests/Fixtures/core/runtime-schema.json')), true, flags: JSON_THROW_ON_ERROR);
+}
+
+/**
+ * One entry per core type, every optional field included.
+ *
+ * @return array<string, array<string, mixed>>
+ */
+function coreRuntimeAggregates(): array
+{
+    $base = ['bucket' => '2026-11-06T11:58:00Z', 'sampleRate' => 1, 'count' => 4, 'errorCount' => 1];
+    $timed = ['totalMs' => 400.5, 'maxMs' => 250.25, 'histogram' => [0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0]];
+    $quiet = ['errorCount' => 0];
+
+    return [
+        'request' => ['type' => 'request', ...$base, 'route' => 'projects.show', 'method' => 'GET', 'statusClass' => '5xx', ...$timed],
+        'slowQuery' => ['type' => 'slowQuery', ...$base, ...$quiet, 'sql' => 'select * from users where id = ?', 'connection' => 'pgsql', ...$timed],
+        'job' => ['type' => 'job', ...$base, 'job' => 'App\\Jobs\\SendReport', 'queue' => '', 'connection' => 'redis', 'outcome' => 'failed', ...$timed],
+        'scheduledTask' => ['type' => 'scheduledTask', ...$base, 'task' => 'artisan excubia:push', 'taskId' => str_repeat('ab', 32), 'outcome' => 'finished', ...$timed],
+        'outgoingHttp' => ['type' => 'outgoingHttp', ...$base, 'host' => 'api.github.com', 'statusClass' => '2xx', ...$timed],
+        'requestMemory' => ['type' => 'requestMemory', ...$base, ...$quiet, 'route' => 'unnamed', 'method' => 'POST', 'totalMb' => 120.5, 'maxMb' => 48.125],
+        'jobMemory' => ['type' => 'jobMemory', ...$base, ...$quiet, 'job' => 'App\\Jobs\\SendReport', 'queue' => 'default', 'totalMb' => 80, 'maxMb' => 30.5],
+        'queueWait' => ['type' => 'queueWait', ...$base, ...$quiet, 'job' => 'App\\Jobs\\SendReport', 'queue' => 'default', ...$timed],
+        'cache' => ['type' => 'cache', ...$base, ...$quiet, 'store' => 'redis', 'keyPrefix' => '[masked]', 'hits' => 2, 'misses' => 1, 'writes' => 1, 'deletes' => 0],
+        'mail' => ['type' => 'mail', ...$base, 'mailable' => 'unknown', 'mailer' => 'smtp'],
+        'notification' => ['type' => 'notification', ...$base, 'notification' => 'App\\Notifications\\InvoicePaid', 'channel' => 'mail'],
+        'logLevel' => ['type' => 'logLevel', ...$base, ...$quiet, 'level' => 'warning', 'channel' => 'stack'],
+        'deprecation' => ['type' => 'deprecation', ...$base, ...$quiet, 'source' => 'vendor/laravel/framework', 'message' => 'Implicitly marking parameter $x as nullable is deprecated', 'phpVersion' => '8.4'],
+        'duplicateQuery' => ['type' => 'duplicateQuery', ...$base, ...$quiet, 'origin' => 'request', 'name' => 'projects.index', 'sql' => 'select * from reports where project_id IN (…)', 'connection' => 'sqlite', 'totalRepeats' => 40, 'maxRepeats' => 15],
+        'server' => ['type' => 'server', ...$base, ...$quiet, 'count' => 1, 'server' => 'a1b2c3d4e5f6', 'loadAverage1' => 0.52, 'loadAverage5' => 0.4, 'loadAverage15' => 0.3, 'cpuCores' => 8, 'cpuLimit' => 1.5, 'memoryUsedMb' => 900, 'memoryTotalMb' => 2048, 'diskUsedGb' => 20.5, 'diskTotalGb' => 80, 'isContainer' => true],
+        'command' => ['type' => 'command', ...$base, 'command' => 'migrate', 'exitCodeClass' => 'other', ...$timed],
+        'health' => ['type' => 'health', ...$base, 'count' => 1, 'server' => 'web-1', 'checkId' => 'laravel-database', 'status' => 'fail', 'severity' => 'critical', 'findingCount' => 1, 'fingerprints' => [str_repeat('c', 64)]],
+        'ai' => [
+            'type' => 'ai', ...$base, 'operation' => 'agent', 'agent' => 'App\\Ai\\SupportAgent', 'provider' => 'anthropic', 'model' => 'claude-sonnet-4-5-20250929',
+            'failoverCount' => 1, ...$timed, 'inputTokens' => 12000, 'outputTokens' => 800, 'cacheReadInputTokens' => 9000, 'cacheWriteInputTokens' => 1000,
+            'reasoningTokens' => null, 'imageInputTokens' => null, 'imageOutputTokens' => null, 'audioSeconds' => null, 'searchUnits' => null,
+        ],
+        'aiTool' => ['type' => 'aiTool', ...$base, 'agent' => 'App\\Ai\\SupportAgent', 'tool' => 'App\\Ai\\Tools\\LookupOrderTool', ...$timed],
+        'octane' => [
+            'type' => 'octane', ...$base, 'server' => 'web-1', 'octaneServer' => 'swoole', 'workerType' => 'http', 'count' => 312, 'workerStarts' => 2, 'workerStops' => 2,
+            'requests' => 305, 'tasks' => 0, 'ticks' => 0, 'totalRequestsAtStop' => 1000, 'maxRequestsAtStop' => 500, 'maxMb' => 48.211, 'maxGrowthMb' => 12.004,
+        ],
+        'reverb' => [
+            'type' => 'reverb', ...$base, 'server' => 'ws-1', 'appId' => 'my-app', 'count' => 120, 'errorCount' => 1, 'connectionsOpened' => 10, 'connectionsRejected' => 1,
+            'connectionsPruned' => 2, 'maxConnections' => 8, 'messagesReceived' => 40, 'messagesSent' => 60, 'publicChannelsCreated' => 3, 'privateChannelsCreated' => 2,
+            'presenceChannelsCreated' => 1, 'publicChannelsRemoved' => 1, 'privateChannelsRemoved' => 0, 'presenceChannelsRemoved' => 0,
+        ],
+        'billingWebhook' => [
+            'type' => 'billingWebhook', ...$base, 'provider' => 'stripe', 'eventType' => 'invoice.payment_failed', ...$timed,
+            'handledCount' => 3, 'paymentFailedCount' => 4, 'paymentActionRequiredCount' => 0, 'subscriptionCanceledCount' => 0,
+        ],
+        'auth' => [
+            'type' => 'auth', ...$base, 'guard' => 'web', 'count' => 12, 'errorCount' => 3, 'loginCount' => 7, 'lockoutCount' => 1, 'tokenAuthenticationCount' => 1,
+        ],
+        // An index job; a `search` entry has no duration (see the Scout search test).
+        'scout' => [
+            'type' => 'scout', ...$base, 'model' => 'App\\Models\\Post', 'engine' => 'meilisearch', 'operation' => 'index', 'modelCount' => 250, ...$timed,
+        ],
+        // `count` is the sum of the four counters; `errorCount` is always 0.
+        'pennant' => [
+            'type' => 'pennant', ...$base, ...$quiet, 'feature' => 'App\\Features\\NewCheckout', 'activeCount' => 2, 'inactiveCount' => 1, 'resolvedCount' => 1, 'unknownCount' => 0,
+        ],
+    ];
+}
+
+/**
+ * @param  list<array<string, mixed>>  $aggregates
+ * @return array<string, mixed>
+ */
+function coreRuntimeEnvelope(array $aggregates, ?string $release = 'v1.4.0+build.7'): array
+{
+    $runtime = ['bucketSeconds' => 60, 'aggregates' => $aggregates];
+
+    if ($release !== null) {
+        $runtime = ['release' => $release, ...$runtime];
+    }
+
+    return ['protocolVersion' => 1, 'type' => 'runtime', 'batchId' => (string) Str::uuid(), 'sentAt' => '2026-11-06T11:59:00Z', 'runtime' => $runtime];
+}
+
+/**
+ * @return array{0: Project, 1: array<string, string>}
+ */
+function contractProject(): array
+{
+    $project = Project::factory()->create();
+
+    return [$project, ['Authorization' => 'Bearer '.app(RotateProjectTokenAction::class)->execute($project)]];
+}
+
+it('knows every runtime type of the vendored core schema', function () {
+    $schemaTypes = array_map(fn (array $entry): string => substr($entry['$ref'], strlen('#/$defs/')), coreRuntimeSchema()['properties']['aggregates']['items']['oneOf']);
+
+    expect(RuntimeTypeEnum::values())->toEqualCanonicalizing($schemaTypes)
+        ->and(array_keys(coreRuntimeAggregates()))->toEqualCanonicalizing($schemaTypes)
+        ->and(coreRuntimeSchema()['$defs']['histogram']['minItems'])->toBe(RuntimeTypeEnum::HISTOGRAM_LENGTH);
+});
+
+it('builds test payloads that match the core runtime schema', function (string $type) {
+    $schema = coreRuntimeSchema();
+    $aggregate = coreRuntimeAggregates()[$type];
+
+    expect(coreSchemaErrors($aggregate, $schema['$defs'][$type], $schema))->toBe([])
+        ->and(coreSchemaErrors(coreRuntimeEnvelope([$aggregate])['runtime'], $schema, $schema))->toBe([]);
+
+    // The checker catches what core would never send.
+    expect(coreSchemaErrors([...$aggregate, 'bucket' => '2026-11-06T11:58:30Z'], $schema['$defs'][$type], $schema))->not->toBe([])
+        ->and(coreSchemaErrors(array_diff_key($aggregate, ['count' => true]), $schema['$defs'][$type], $schema))->not->toBe([]);
+})->with(RuntimeTypeEnum::values());
+
+it('stores an entry of every core type with its dimensions, metrics and optional fields', function () {
+    [$project, $headers] = contractProject();
+
+    $this->postJson(route('api.runtime.store'), coreRuntimeEnvelope(array_values(coreRuntimeAggregates())), $headers)
+        ->assertCreated()
+        ->assertJson(['status' => 'stored']);
+
+    $rows = $project->runtimeAggregates()->get()->keyBy(fn (RuntimeAggregate $row): string => $row->type->value);
+
+    expect($rows->keys()->all())->toEqualCanonicalizing(RuntimeTypeEnum::values())
+        ->and($rows->every(fn (RuntimeAggregate $row): bool => $row->release === 'v1.4.0+build.7'))->toBeTrue()
+        ->and($project->fresh()?->skipped_runtime_aggregates)->toBe(0);
+
+    foreach (RuntimeTypeEnum::cases() as $type) {
+        $sent = coreRuntimeAggregates()[$type->value];
+        $row = $rows[$type->value];
+
+        expect($row->dimensions)->toEqual(array_map('strval', array_intersect_key($sent, array_flip([...$type->dimensions(), ...$type->optionalDimensions()]))))
+            ->and($row->count)->toBe($sent['count'])
+            ->and($row->error_count)->toBe($sent['errorCount'])
+            ->and($row->total_ms)->toBe($type->isTimed() ? (float) $sent['totalMs'] : null)
+            ->and($row->max_ms)->toBe($type->isTimed() ? (float) $sent['maxMs'] : null)
+            ->and($row->histogram)->toBe($type->isTimed() ? $sent['histogram'] : null)
+            ->and($row->metrics)->toEqual($type->metrics() === [] ? null : array_intersect_key($sent, $type->metrics()));
+    }
+
+    expect($rows['scheduledTask']->dimensions['taskId'])->toBe(str_repeat('ab', 32))
+        ->and($rows['logLevel']->dimensions['channel'])->toBe('stack')
+        ->and($rows['server']->metrics)->toMatchArray(['cpuLimit' => 1.5, 'isContainer' => true])
+        ->and($rows['job']->dimensions['queue'])->toBe('');
+});
+
+it('merges entries of the same series across batches by each metric rule', function () {
+    [$project, $headers] = contractProject();
+    $aggregates = coreRuntimeAggregates();
+    $second = [
+        [...$aggregates['request'], 'count' => 2, 'errorCount' => 0, 'totalMs' => 100, 'maxMs' => 900, 'histogram' => [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]],
+        [...$aggregates['requestMemory'], 'count' => 1, 'totalMb' => 10, 'maxMb' => 90.5],
+        [...$aggregates['cache'], 'count' => 3, 'hits' => 3, 'misses' => 0, 'writes' => 0, 'deletes' => 0],
+        [...$aggregates['duplicateQuery'], 'count' => 1, 'totalRepeats' => 6, 'maxRepeats' => 6],
+        [...$aggregates['server'], 'loadAverage1' => 1.25, 'loadAverage5' => null, 'cpuLimit' => null, 'memoryUsedMb' => null, 'isContainer' => false],
+        array_diff_key([...$aggregates['queueWait'], 'count' => 1, 'totalMs' => 10, 'maxMs' => 10], ['histogram' => true]),
+        array_diff_key($aggregates['logLevel'], ['channel' => true]),
+        [...$aggregates['octane'], 'count' => 50, 'errorCount' => 2, 'workerStarts' => 1, 'workerStops' => 1, 'requests' => 40, 'tasks' => 3, 'ticks' => 6, 'totalRequestsAtStop' => 480, 'maxRequestsAtStop' => 480, 'maxMb' => 60.5, 'maxGrowthMb' => 2.25],
+        [...$aggregates['reverb'], 'count' => 30, 'errorCount' => 0, 'connectionsOpened' => 4, 'connectionsRejected' => 0, 'connectionsPruned' => 1, 'maxConnections' => 12, 'messagesReceived' => 5, 'messagesSent' => 9, 'publicChannelsCreated' => 1, 'privateChannelsRemoved' => 2],
+        [...$aggregates['billingWebhook'], 'count' => 2, 'errorCount' => 0, 'handledCount' => 2, 'paymentFailedCount' => 2, 'paymentActionRequiredCount' => 1, 'subscriptionCanceledCount' => 1],
+        [...$aggregates['auth'], 'count' => 5, 'errorCount' => 4, 'loginCount' => 1, 'lockoutCount' => 0, 'tokenAuthenticationCount' => 0],
+        [...$aggregates['scout'], 'count' => 2, 'errorCount' => 0, 'modelCount' => 50, 'totalMs' => 99.5, 'maxMs' => 60],
+        [...$aggregates['pennant'], 'count' => 3, 'activeCount' => 0, 'inactiveCount' => 1, 'resolvedCount' => 0, 'unknownCount' => 2],
+    ];
+
+    $this->postJson(route('api.runtime.store'), coreRuntimeEnvelope(array_values($aggregates)), $headers)->assertCreated();
+    $this->postJson(route('api.runtime.store'), coreRuntimeEnvelope($second), $headers)->assertCreated();
+
+    $row = fn (string $type): RuntimeAggregate => $project->runtimeAggregates()->where('type', $type)->sole();
+
+    expect([$row('request')->count, $row('request')->error_count, $row('request')->total_ms, $row('request')->max_ms])->toBe([6, 1, 500.5, 900.0])
+        ->and($row('request')->histogram)->toBe([1, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1])
+        ->and($row('requestMemory')->metrics)->toEqual(['totalMb' => 130.5, 'maxMb' => 90.5])
+        ->and($row('cache')->metrics)->toEqual(['hits' => 5, 'misses' => 1, 'writes' => 1, 'deletes' => 0])
+        ->and($row('cache')->count)->toBe(7)
+        ->and($row('duplicateQuery')->metrics)->toEqual(['totalRepeats' => 46, 'maxRepeats' => 15])
+        ->and($row('server')->metrics)->toEqual([
+            'loadAverage1' => 1.25, 'loadAverage5' => 0.4, 'loadAverage15' => 0.3, 'cpuCores' => 8, 'cpuLimit' => 1.5,
+            'memoryUsedMb' => 900, 'memoryTotalMb' => 2048, 'diskUsedGb' => 20.5, 'diskTotalGb' => 80, 'isContainer' => true,
+        ])
+        ->and($row('server')->count)->toBe(2)
+        ->and($row('queueWait')->histogram)->toBeNull()
+        ->and($row('queueWait')->total_ms)->toBe(410.5)
+        ->and([$row('octane')->count, $row('octane')->error_count])->toBe([362, 3])
+        ->and($row('octane')->metrics)->toEqual([
+            'workerStarts' => 3, 'workerStops' => 3, 'requests' => 345, 'tasks' => 3, 'ticks' => 6,
+            'totalRequestsAtStop' => 1480, 'maxRequestsAtStop' => 500, 'maxMb' => 60.5, 'maxGrowthMb' => 12.004,
+        ])
+        ->and([$row('reverb')->count, $row('reverb')->error_count])->toBe([150, 1])
+        ->and($row('reverb')->metrics)->toEqual([
+            'connectionsOpened' => 14, 'connectionsRejected' => 1, 'connectionsPruned' => 3, 'messagesReceived' => 45, 'messagesSent' => 69,
+            'publicChannelsCreated' => 4, 'privateChannelsCreated' => 4, 'presenceChannelsCreated' => 2,
+            'publicChannelsRemoved' => 2, 'privateChannelsRemoved' => 2, 'presenceChannelsRemoved' => 0, 'maxConnections' => 12,
+        ])
+        ->and([$row('billingWebhook')->count, $row('billingWebhook')->error_count])->toBe([6, 1])
+        ->and($row('billingWebhook')->metrics)->toEqual([
+            'handledCount' => 5, 'paymentFailedCount' => 6, 'paymentActionRequiredCount' => 1, 'subscriptionCanceledCount' => 1,
+        ])
+        ->and([$row('auth')->count, $row('auth')->error_count])->toBe([17, 7])
+        ->and($row('auth')->metrics)->toEqual(['loginCount' => 8, 'lockoutCount' => 1, 'tokenAuthenticationCount' => 1])
+        ->and([$row('scout')->count, $row('scout')->error_count, $row('scout')->total_ms, $row('scout')->max_ms])->toBe([6, 1, 500.0, 250.25])
+        ->and($row('scout')->metrics)->toEqual(['modelCount' => 300])
+        ->and($row('scout')->histogram)->toBe([0, 0, 2, 0, 2, 2, 2, 0, 0, 0, 0, 0])
+        ->and([$row('pennant')->count, $row('pennant')->error_count, $row('pennant')->total_ms, $row('pennant')->histogram])->toBe([7, 0, null, null])
+        ->and($row('pennant')->metrics)->toEqual(['activeCount' => 2, 'inactiveCount' => 2, 'resolvedCount' => 1, 'unknownCount' => 2]);
+
+    // A log entry without channel is its own series, never merged with one that has it.
+    expect($project->runtimeAggregates()->where('type', 'logLevel')->count())->toBe(2);
+});
+
+it('keeps gauges null when every entry is null and reads a missing isContainer as false', function () {
+    [$project, $headers] = contractProject();
+    $server = array_diff_key([...coreRuntimeAggregates()['server'], 'cpuCores' => null, 'memoryUsedMb' => null, 'memoryTotalMb' => null], ['cpuLimit' => true, 'isContainer' => true]);
+
+    $this->postJson(route('api.runtime.store'), coreRuntimeEnvelope([$server]), $headers)->assertCreated();
+    $this->postJson(route('api.runtime.store'), coreRuntimeEnvelope([$server]), $headers)->assertCreated();
+
+    expect($project->runtimeAggregates()->sole()->metrics)->toMatchArray(['cpuCores' => null, 'cpuLimit' => null, 'memoryUsedMb' => null, 'isContainer' => false, 'loadAverage1' => 0.52]);
+});
+
+it('keeps releases apart and stores entries without a release as before', function () {
+    [$project, $headers] = contractProject();
+    $request = coreRuntimeAggregates()['request'];
+
+    $this->postJson(route('api.runtime.store'), coreRuntimeEnvelope([$request], 'v1'), $headers)->assertCreated();
+    $this->postJson(route('api.runtime.store'), coreRuntimeEnvelope([$request], 'v2'), $headers)->assertCreated();
+    $this->postJson(route('api.runtime.store'), coreRuntimeEnvelope([$request], null), $headers)->assertCreated();
+    $this->postJson(route('api.runtime.store'), coreRuntimeEnvelope([$request], null), $headers)->assertCreated();
+
+    expect($project->runtimeAggregates()->orderBy('id')->get()->map(fn (RuntimeAggregate $row): array => [$row->release, $row->count])->all())
+        ->toBe([['v1', 4], ['v2', 4], [null, 8]]);
+});
+
+it('skips and counts entries of an unknown type and stores the rest of the batch', function () {
+    [$project, $headers] = contractProject();
+    $unknown = ['type' => 'gpu', 'bucket' => '2026-11-06T11:58:00Z', 'sampleRate' => 1, 'device' => 'cuda0', 'count' => 1, 'errorCount' => 0, 'utilisation' => 0.9];
+    $envelope = coreRuntimeEnvelope([coreRuntimeAggregates()['request'], $unknown, [...$unknown, 'type' => 'futureType', 'whatever' => ['nested' => true]]]);
+
+    $this->postJson(route('api.runtime.store'), $envelope, $headers)->assertCreated()->assertJson(['status' => 'stored']);
+    $this->postJson(route('api.runtime.store'), $envelope, $headers)->assertOk()->assertJson(['status' => 'duplicate']);
+
+    expect($project->runtimeAggregates()->pluck('type')->map->value->all())->toBe(['request'])
+        ->and($project->fresh()?->skipped_runtime_aggregates)->toBe(2);
+});
+
+it('still rejects a known type that breaks its own contract', function (string $type, string $field, mixed $value) {
+    [$project, $headers] = contractProject();
+
+    $this->postJson(route('api.runtime.store'), coreRuntimeEnvelope([[...coreRuntimeAggregates()[$type], $field => $value]]), $headers)
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors("runtime.aggregates.0.{$field}");
+
+    expect(RuntimeAggregate::query()->count())->toBe(0);
+})->with([
+    'cache without hits' => ['cache', 'hits', null],
+    'memory below zero' => ['requestMemory', 'maxMb', -1],
+    'repeats below the threshold' => ['duplicateQuery', 'maxRepeats', 1],
+    'short histogram' => ['queueWait', 'histogram', [1, 2, 1]],
+    'server gauge as text' => ['server', 'loadAverage1', 'high'],
+    'container flag as text' => ['server', 'isContainer', 'maybe'],
+    'AI tokens as text' => ['ai', 'inputTokens', 'many'],
+    'AI without failovers' => ['ai', 'failoverCount', null],
+    'AI tool without a tool' => ['aiTool', 'tool', null],
+    'Octane without requests' => ['octane', 'requests', null],
+    'Octane growth below zero' => ['octane', 'maxGrowthMb', -0.5],
+    'Reverb without messages sent' => ['reverb', 'messagesSent', null],
+    'Reverb connections below zero' => ['reverb', 'maxConnections', -1],
+    'billing webhook without handled count' => ['billingWebhook', 'handledCount', null],
+    'billing payment signal below zero' => ['billingWebhook', 'paymentFailedCount', -1],
+    'auth without logins' => ['auth', 'loginCount', null],
+    'auth lockouts below zero' => ['auth', 'lockoutCount', -1],
+    'auth without a guard' => ['auth', 'guard', null],
+    'Scout without records' => ['scout', 'modelCount', null],
+    'Scout records below zero' => ['scout', 'modelCount', -1],
+    'Scout without a model' => ['scout', 'model', null],
+    'Scout duration as text' => ['scout', 'totalMs', 'slow'],
+    'Pennant without active checks' => ['pennant', 'activeCount', null],
+    'Pennant undefined checks below zero' => ['pennant', 'unknownCount', -1],
+    'Pennant without a feature' => ['pennant', 'feature', null],
+]);
+
+it('stores a Scout search entry without durations and keeps it apart from the index jobs (#184)', function () {
+    [$project, $headers] = contractProject();
+    $schema = coreRuntimeSchema();
+    $index = coreRuntimeAggregates()['scout'];
+    $search = [...array_diff_key($index, ['totalMs' => true, 'maxMs' => true, 'histogram' => true]), 'operation' => 'search', 'count' => 9, 'errorCount' => 0, 'modelCount' => 0];
+
+    // coreSchemaErrors() skips `if` / `then` / `else`: a search carries no duration, the other operations carry both.
+    expect(coreSchemaErrors($search, $schema['$defs']['scout'], $schema))->toBe([])
+        ->and($schema['$defs']['scout']['if'])->toBe(['properties' => ['operation' => ['const' => 'search']]])
+        ->and($schema['$defs']['scout']['then'])->toBe(['not' => ['anyOf' => [['required' => ['totalMs']], ['required' => ['maxMs']], ['required' => ['histogram']]]]])
+        ->and(coreSchemaErrors($index, $schema['$defs']['scout']['else'], $schema))->toBe([])
+        ->and(coreSchemaErrors($search, $schema['$defs']['scout']['else'], $schema))->not->toBe([]);
+
+    $this->postJson(route('api.runtime.store'), coreRuntimeEnvelope([$search, $index]), $headers)->assertCreated();
+    $this->postJson(route('api.runtime.store'), coreRuntimeEnvelope([$search]), $headers)->assertCreated();
+
+    $searchRow = $project->runtimeAggregates()->get()->sole(fn (RuntimeAggregate $row): bool => $row->dimensions['operation'] === 'search');
+
+    expect($project->runtimeAggregates()->count())->toBe(2)
+        ->and([$searchRow->count, $searchRow->error_count, $searchRow->total_ms, $searchRow->max_ms, $searchRow->histogram])->toBe([18, 0, null, null, null])
+        ->and($searchRow->metrics)->toEqual(['modelCount' => 0])
+        ->and(RuntimeHourlyRollup::query()->where('type', 'scout')->sum('count'))->toEqual(22);
+});
+
+it('stores a classification entry of the Laravel AI SDK (core #212)', function () {
+    [$project, $headers] = contractProject();
+    $schema = coreRuntimeSchema();
+    $classification = [...array_diff_key(coreRuntimeAggregates()['ai'], ['agent' => true]), 'operation' => 'classification', 'provider' => 'openai', 'model' => 'gpt-5-mini'];
+
+    expect(coreSchemaErrors($classification, $schema['$defs']['ai'], $schema))->toBe([]);
+
+    $this->postJson(route('api.runtime.store'), coreRuntimeEnvelope([$classification]), $headers)->assertCreated();
+
+    // MySQL's JSON column reorders keys: compare them, not their order.
+    expect($project->runtimeAggregates()->sole()->dimensions)->toEqualCanonicalizing(['operation' => 'classification', 'provider' => 'openai', 'model' => 'gpt-5-mini'])
+        ->toHaveKeys(['operation', 'provider', 'model'])->toHaveCount(3);
+});
+
+it('stores a value core may add to an enumerated dimension instead of rejecting the batch', function (string $type, string $dimension) {
+    [$project, $headers] = contractProject();
+    $future = [...coreRuntimeAggregates()[$type], $dimension => 'futureValue'];
+
+    $this->postJson(route('api.runtime.store'), coreRuntimeEnvelope([$future, coreRuntimeAggregates()['mail']]), $headers)
+        ->assertCreated()
+        ->assertJson(['status' => 'stored']);
+
+    expect($project->runtimeAggregates()->where('type', $type)->sole()->dimensions[$dimension])->toBe('futureValue')
+        ->and($project->runtimeAggregates()->where('type', 'mail')->exists())->toBeTrue()
+        ->and($project->fresh()?->skipped_runtime_aggregates)->toBe(0);
+})->with([
+    'request status class' => ['request', 'statusClass'],
+    'outgoing HTTP status class' => ['outgoingHttp', 'statusClass'],
+    'job outcome' => ['job', 'outcome'],
+    'scheduled task outcome' => ['scheduledTask', 'outcome'],
+    'log level' => ['logLevel', 'level'],
+    'duplicate query origin' => ['duplicateQuery', 'origin'],
+    'command exit code class' => ['command', 'exitCodeClass'],
+    'AI operation' => ['ai', 'operation'],
+    'Octane server' => ['octane', 'octaneServer'],
+    'Octane worker type' => ['octane', 'workerType'],
+    'Reverb app id' => ['reverb', 'appId'],
+    'billing provider' => ['billingWebhook', 'provider'],
+    'billing event type' => ['billingWebhook', 'eventType'],
+    'auth guard' => ['auth', 'guard'],
+    'Scout engine' => ['scout', 'engine'],
+    'Scout operation' => ['scout', 'operation'],
+    // Any feature name is stored, a hashed one included (#189).
+    'Pennant feature' => ['pennant', 'feature'],
+]);
+
+it('keeps a scheduled task outcome it does not know out of the schedule monitoring', function () {
+    [$project, $headers] = contractProject();
+
+    $this->postJson(route('api.runtime.store'), coreRuntimeEnvelope([[...coreRuntimeAggregates()['scheduledTask'], 'outcome' => 'futureValue'], coreRuntimeAggregates()['scheduledTask']]), $headers)
+        ->assertCreated();
+
+    expect(ScheduledTaskRun::query()->pluck('outcome')->all())->toBe(['finished'])
+        ->and($project->runtimeAggregates()->count())->toBe(2);
+});
+
+it('skips and counts health samples with a status or severity it does not know', function (string $metric) {
+    [$project, $headers] = contractProject();
+
+    $this->postJson(route('api.runtime.store'), coreRuntimeEnvelope([[...coreRuntimeAggregates()['health'], $metric => 'futureValue'], coreRuntimeAggregates()['mail']]), $headers)
+        ->assertCreated();
+
+    expect($project->runtimeAggregates()->pluck('type')->map->value->all())->toBe(['mail'])
+        ->and($project->fresh()?->skipped_runtime_aggregates)->toBe(1);
+})->with(['status', 'severity']);
+
+it('rejects a bad list element or entry with the same error key when the valid ones skip the wildcard rules (#195)', function (array $entry, string $error) {
+    [, $headers] = contractProject();
+
+    $this->postJson(route('api.runtime.store'), coreRuntimeEnvelope([coreRuntimeAggregates()['request'], $entry]), $headers)
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors($error)
+        ->assertJsonMissingValidationErrors('runtime.aggregates.0.histogram.0');
+
+    expect(RuntimeAggregate::query()->count())->toBe(0);
+})->with([
+    'histogram bucket below zero' => [[...coreRuntimeAggregates()['job'], 'histogram' => [0, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0]], 'runtime.aggregates.1.histogram.3'],
+    'histogram bucket as text' => [[...coreRuntimeAggregates()['job'], 'histogram' => [0, 'x', 0, 1, 0, 0, 0, 0, 0, 0, 0, 0]], 'runtime.aggregates.1.histogram.1'],
+    'histogram with keys' => [[...coreRuntimeAggregates()['job'], 'histogram' => ['a' => -1]], 'runtime.aggregates.1.histogram.a'],
+    'health fingerprint not hex' => [[...coreRuntimeAggregates()['health'], 'fingerprints' => [str_repeat('c', 64), 'nope']], 'runtime.aggregates.1.fingerprints.1'],
+    'entry that is no object' => [['request'], 'runtime.aggregates.1.type'],
+    'entry without a type' => [array_diff_key(coreRuntimeAggregates()['request'], ['type' => true]), 'runtime.aggregates.1.type'],
+    'entry with an empty type' => [[...coreRuntimeAggregates()['request'], 'type' => ''], 'runtime.aggregates.1.type'],
+]);
+
+it('validates a valid batch without wildcard rules, which expand over the whole body (#195)', function () {
+    $request = (new StorePushedRuntimeRequest)->merge(coreRuntimeEnvelope(array_values(coreRuntimeAggregates())));
+
+    expect(array_filter(array_keys($request->rules()), fn (string $field): bool => str_contains($field, '*')))->toBe([]);
+});
+
+it('merges entries of the same series within one batch as across batches (#195)', function () {
+    [$project, $headers] = contractProject();
+    $aggregates = coreRuntimeAggregates();
+    $again = [
+        [...$aggregates['request'], 'count' => 2, 'errorCount' => 0, 'totalMs' => 100, 'maxMs' => 900, 'histogram' => [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]],
+        [...$aggregates['server'], 'loadAverage1' => 1.25, 'loadAverage5' => null, 'isContainer' => false],
+        array_diff_key([...$aggregates['queueWait'], 'count' => 1, 'totalMs' => 10, 'maxMs' => 10], ['histogram' => true]),
+    ];
+
+    $this->postJson(route('api.runtime.store'), coreRuntimeEnvelope([...array_values($aggregates), ...$again]), $headers)->assertCreated();
+    $this->postJson(route('api.runtime.store'), coreRuntimeEnvelope([$aggregates['request']]), $headers)->assertCreated();
+
+    $row = fn (string $type): RuntimeAggregate => $project->runtimeAggregates()->where('type', $type)->sole();
+
+    expect([$row('request')->count, $row('request')->error_count, $row('request')->total_ms, $row('request')->max_ms])->toBe([10, 2, 901.0, 900.0])
+        ->and($row('request')->histogram)->toBe([1, 0, 2, 0, 2, 2, 2, 0, 0, 0, 0, 1])
+        ->and($row('server')->count)->toBe(2)
+        ->and($row('server')->metrics)->toMatchArray(['loadAverage1' => 1.25, 'loadAverage5' => 0.4, 'isContainer' => true])
+        ->and([$row('queueWait')->total_ms, $row('queueWait')->histogram])->toBe([410.5, null])
+        ->and(RuntimeHourlyRollup::query()->where('type', 'request')->sole()->count)->toBe(10);
+});
+
+it('stores a runtime batch with the same number of queries whatever its size (#195)', function () {
+    [, $headers] = contractProject();
+    $queries = function (int $series) use ($headers): int {
+        $aggregates = array_map(fn (int $index): array => [...coreRuntimeAggregates()['request'], 'route' => "route-{$index}", 'bucket' => '2026-11-06T11:'.(10 + $series % 50).':00Z'], range(1, $series));
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+        $this->postJson(route('api.runtime.store'), coreRuntimeEnvelope($aggregates), $headers)->assertCreated();
+
+        return count(DB::getQueryLog());
+    };
+
+    expect($queries(10))->toBe($queries(40));
+});
+
+it('runs a batch again when a concurrent batch created one of its series first, and still answers a repeat as a duplicate (#195)', function () {
+    [$project, $headers] = contractProject();
+
+    // The first try loses the race for a new series row, as two concurrent batches of one project can.
+    app()->instance(StoreRuntimeRollupsAction::class, new class extends StoreRuntimeRollupsAction
+    {
+        private bool $hasFailed = false;
+
+        public function execute(iterable $minutes): void
+        {
+            if (! $this->hasFailed) {
+                $this->hasFailed = true;
+
+                throw new UniqueConstraintViolationException('sqlite', 'insert into "runtime_aggregates"', [], new PDOException('UNIQUE constraint failed'));
+            }
+
+            parent::execute($minutes);
+        }
+    });
+    $envelope = coreRuntimeEnvelope([coreRuntimeAggregates()['request']]);
+
+    $this->postJson(route('api.runtime.store'), $envelope, $headers)->assertCreated();
+    $this->postJson(route('api.runtime.store'), $envelope, $headers)->assertOk()->assertJson(['status' => 'duplicate']);
+
+    expect($project->runtimeAggregates()->sole()->count)->toBe(4)
+        ->and(RuntimeHourlyRollup::query()->sole()->count)->toBe(4);
+});

@@ -1,0 +1,109 @@
+{
+    "$comment": "qiick standards pack: https://github.com/qiick-io/app-ui/tree/v0.14.0/standards. Sync: node <app-ui>/scripts/sync-standards.mjs --target .",
+    "ref": "v0.14.0",
+    "uiPreset": "Genziana",
+    "php": true,
+    "frontendRoots": ["resources/js"],
+    "oxlint": true,
+    "app": true,
+    "conformance": {
+        "userModel": "App\\Models\\User",
+        "publicIdColumn": "public_id",
+        "apiPrefix": "api",
+        "usesSpatieTeams": false,
+        "hasOrganisations": false,
+        "hasUserGroups": true,
+        "hasPrincipals": true,
+        "hasApiKeys": true,
+        "hasSettings": true,
+        "hasUserIdentities": true,
+        "usesLaravelAccess": true
+    },
+    "divergences": {
+        "C3": {
+            "reason": "Runner gap in v0.13.0-v0.14.0: C3 inserts its fixture user as a raw row with only public_id, email, locale, timezone and is_active, so Excubia's NOT NULL first_name (no default) refuses it on PostgreSQL and MySQL before the case-sensitivity assertion runs. Upstream: the runner should create the user through the product's model factory or a hook. The schema itself is checked by laravel-oidc's own tests.",
+            "decision": "knowledge/decisions/2026-11-19-fleet-core-schema",
+            "review_by": "2026-12-20"
+        },
+        "C17": {
+            "reason": "Tracked security work, not hidden: erasure releases unique email/username, anonymises personal columns, deletes SSO identities, passkeys and assistant chats, and deactivates the row. Only anonymising identifying payload in existing activity rows remains (#381); the hook scans both activity columns on the app's own created/updated rows so a stale divergence is caught.",
+            "decision": "knowledge/decisions/2026-11-20-core-hardening",
+            "review_by": "2026-12-20"
+        },
+        "C20": {
+            "reason": "One backed error-code enum with a stable JSON error shape for /api/* and /mcp is not implemented yet. Product tests already pin the safe behaviours (no stack trace with APP_DEBUG=false, JSON without Accept); tracked in #390, not hidden.",
+            "decision": "knowledge/decisions/2026-11-20-core-hardening",
+            "review_by": "2026-12-20"
+        },
+        "C21": {
+            "reason": "Accept-Language negotiation does not set Content-Language on responses yet. Tracked in #386, not hidden.",
+            "decision": "knowledge/decisions/2026-11-20-core-hardening",
+            "review_by": "2026-12-20"
+        },
+        "C24": {
+            "reason": "X-Request-Id response header and log propagation are not implemented yet. Tracked in #388, not hidden.",
+            "decision": "knowledge/decisions/2026-11-20-core-hardening",
+            "review_by": "2026-12-20"
+        },
+        "C25": {
+            "reason": "HTTP-level Idempotency-Key replay on retryable creates is not implemented yet: ingest already de-duplicates by batchId (201 for a new batch, 200 for a repeat), but that is payload identity, not a replayed request with the same key and body. Tracked in #383, not hidden.",
+            "decision": "knowledge/decisions/2026-11-20-core-hardening",
+            "review_by": "2026-12-20"
+        },
+        "C26": {
+            "reason": "No OpenAPI 3.1 document covering the named /api routes (reports, runtime, exceptions) exists yet. Tracked in #378, not hidden.",
+            "decision": "knowledge/decisions/2026-11-20-core-hardening",
+            "review_by": "2026-12-20"
+        },
+        "C31": {
+            "reason": "Tracked security work, not hidden: API resources still expose internal bigint ids instead of public UUIDs (#379).",
+            "decision": "knowledge/decisions/2026-11-20-core-hardening",
+            "review_by": "2026-12-20"
+        },
+        "C71": {
+            "reason": "Runner/package mismatch: C71's assertSpatiePermissionGateBeforeIsInactive() calls Gate::forUser() with an anonymous Authorizable that is not Authenticatable, and qiick/laravel-access 0.1.0-beta.2's GateBefore::__invoke(?Authenticatable $user) throws a TypeError before any assertion. The config checks and both proved hooks (assertRoleDetachClearsResolver, assertApiActorDeniedSuperAdmin) pass on their own; reported upstream.",
+            "decision": "knowledge/decisions/2026-11-20-core-hardening",
+            "review_by": "2026-12-20"
+        }
+    },
+    "requiredItems": [
+        "api-key-form",
+        "api-key-list-row",
+        "api-key-scope-picker",
+        "api-key-scopes",
+        "api-key-secret-dialog",
+        "record-id"
+    ],
+    "patterns": [
+        "command-palette",
+        "grouped-tabs:sub-menu",
+        "inbox-list:side-panel",
+        "keyboard-shortcuts",
+        "sidebar-entities",
+        "table-cell-details",
+        "table-density",
+        "timeline"
+    ],
+    "access": {
+        "direct_checks": [
+            {
+                "site": "App\\Services\\EffectivePermissionResolverService::hasPermission",
+                "reason": "The product's one resolver entry point the policies call: it forwards to the package resolver, with the owner ceiling under an API actor.",
+                "decision": "docs/adoption-plan.md",
+                "review_by": "2027-03-01"
+            },
+            {
+                "site": "App\\Services\\EffectivePermissionResolverService::isWithinOwnerCeiling",
+                "reason": "The API-key owner ceiling (design §6, decision 2026-11-26): assigned permissions, or the PermissionEnum cases for a super-admin, read fresh.",
+                "decision": "docs/adoption-plan.md",
+                "review_by": "2027-03-01"
+            },
+            {
+                "site": "App\\Enums\\ApiKeyScopeEnum::isHeldBy",
+                "reason": "Which scopes a key may carry and keep: checked at issuance, rotation and on every request, before any policy subject exists.",
+                "decision": "docs/adoption-plan.md",
+                "review_by": "2027-03-01"
+            }
+        ]
+    }
+}

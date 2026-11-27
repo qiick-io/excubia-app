@@ -1,0 +1,54 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Enums;
+
+/**
+ * Built-in roles. The names match every qiick app so that Signaculum SSO can map them later.
+ */
+enum RoleEnum: string
+{
+    case SuperAdmin = 'super-admin';
+    case Admin = 'admin';
+    case Reader = 'reader';
+
+    /**
+     * @return list<string>
+     */
+    public static function values(): array
+    {
+        return array_column(self::cases(), 'value');
+    }
+
+    /**
+     * The role's name for people, in the current locale (#430); custom roles show their own name.
+     */
+    public static function labelFor(string $roleName): string
+    {
+        return match (self::tryFrom($roleName)) {
+            self::SuperAdmin => __('Super Admin'),
+            self::Admin => __('Admin'),
+            self::Reader => __('Reader'),
+            null => $roleName,
+        };
+    }
+
+    /**
+     * Default permissions of the role. Super-admin also passes every check through `Gate::before`.
+     * Admin gets everything except the system-level ones (roles, permissions, queue jobs, system health, settings).
+     *
+     * @return list<PermissionEnum>
+     */
+    public function defaultPermissions(): array
+    {
+        return match ($this) {
+            self::SuperAdmin => PermissionEnum::cases(),
+            self::Admin => array_values(array_filter(
+                PermissionEnum::cases(),
+                fn (PermissionEnum $permission): bool => ! in_array($permission->resource(), ['roles', 'permissions', 'jobs', 'system', 'project-settings'], true),
+            )),
+            self::Reader => [PermissionEnum::CanShowProjects],
+        };
+    }
+}

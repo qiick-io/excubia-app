@@ -1,0 +1,292 @@
+import { Link, usePage } from '@inertiajs/react';
+import { Bug } from 'lucide-react';
+import type { PropsWithChildren } from 'react';
+import { useTranslation } from 'react-i18next';
+import Heading from '@/components/heading';
+import { Separator } from '@/components/ui/separator';
+import {
+    SidebarGroup,
+    SidebarGroupLabel,
+    SidebarMenu,
+    SidebarMenuButton,
+    SidebarMenuItem,
+} from '@/components/ui/sidebar';
+import { PermissionEnum } from '@/enums/permission-enum';
+import apiKeysRoutes from '@/routes/api-keys';
+import aiSettings from '@/routes/ai-settings';
+import integrationsRoutes from '@/routes/project/integrations';
+import { useCan } from '@/hooks/use-can';
+import { useCurrentUrl } from '@/hooks/use-current-url';
+import { cn, toUrl } from '@/lib/utils';
+import { edit as editAppearance } from '@/routes/appearance';
+import { edit as editSidebar } from '@/routes/appearance/sidebar';
+import jobs from '@/routes/jobs';
+import { edit as editPerformance } from '@/routes/performance';
+import permissions from '@/routes/permissions';
+import { edit } from '@/routes/profile';
+import { edit as editProject } from '@/routes/project';
+import { edit as editLocalization } from '@/routes/project/localization';
+import { edit as editProjectSecurity } from '@/routes/project/security';
+import roles from '@/routes/roles';
+import { edit as editSecurity } from '@/routes/security';
+import systemRoutes from '@/routes/system';
+import type { NavItem } from '@/types';
+
+const DEFAULT_REPORT_BUG_URL =
+    'https://github.com/qiick-io/excubia-app/issues/new?template=bug_report.yml';
+
+type SettingsLayoutProps = PropsWithChildren<{
+    /** Wider content pane for tables / matrices (Access pages). */
+    wide?: boolean;
+}>;
+
+/**
+ * Settings section layout with sidebar nav (client-only to avoid SSR mismatch).
+ */
+export default function SettingsLayout({
+    children,
+    wide = false,
+}: SettingsLayoutProps) {
+    const { t } = useTranslation();
+    const { isCurrentUrl, isCurrentOrParentUrl } = useCurrentUrl();
+    const { can } = useCan();
+    const { projectSettings } = usePage().props;
+
+    const accountNavItems: NavItem[] = [
+        {
+            title: t('settings.layout.profile'),
+            href: edit(),
+            icon: null,
+        },
+        {
+            title: t('settings.layout.security'),
+            href: editSecurity(),
+            icon: null,
+        },
+        // Personal API keys (#315): every user manages their own.
+        {
+            title: t('settings.layout.apiKeys'),
+            href: apiKeysRoutes.index.url(),
+            icon: null,
+        },
+    ];
+
+    // Integrations needs `can-manage-alerts` (#22), the other project pages `can-manage-project-settings`.
+    const integrationsNavItem: NavItem[] = can(PermissionEnum.CanManageAlerts)
+        ? [
+              {
+                  title: t('settings.layout.integrations'),
+                  href: integrationsRoutes.edit.url(),
+                  icon: null,
+              },
+          ]
+        : [];
+
+    const projectNavItems: NavItem[] = can(
+        PermissionEnum.CanManageProjectSettings,
+    )
+        ? [
+              {
+                  title: t('settings.layout.general'),
+                  href: editProject(),
+                  icon: null,
+              },
+              {
+                  title: t('settings.layout.localization'),
+                  href: editLocalization(),
+                  icon: null,
+              },
+              {
+                  title: t('settings.layout.authSecurity'),
+                  href: editProjectSecurity(),
+                  icon: null,
+              },
+              ...integrationsNavItem,
+              {
+                  title: t('settings.layout.appearance'),
+                  href: editAppearance(),
+                  icon: null,
+              },
+              {
+                  title: t('settings.layout.sidebar'),
+                  href: editSidebar(),
+                  icon: null,
+              },
+              {
+                  title: t('settings.layout.performance'),
+                  href: editPerformance(),
+                  icon: null,
+              },
+          ]
+        : integrationsNavItem;
+
+    const accessNavItems: NavItem[] = [
+        ...(can(PermissionEnum.CanShowRoles)
+            ? [
+                  {
+                      title: t('settings.layout.roles'),
+                      href: roles.index.url(),
+                      icon: null,
+                  },
+              ]
+            : []),
+        ...(can(PermissionEnum.CanShowPermissions)
+            ? [
+                  {
+                      title: t('settings.layout.permissions'),
+                      href: permissions.index.url(),
+                      icon: null,
+                  },
+              ]
+            : []),
+        ...(can(PermissionEnum.CanShowJobs)
+            ? [
+                  {
+                      title: t('settings.layout.jobs'),
+                      href: jobs.index.url(),
+                      icon: null,
+                  },
+              ]
+            : []),
+        ...(can(PermissionEnum.CanShowSystem)
+            ? [
+                  {
+                      title: t('settings.layout.system'),
+                      href: systemRoutes.index.url(),
+                      icon: null,
+                  },
+              ]
+            : []),
+    ];
+
+    // AI group, as externa-core's: one entry, Settings → AI (#331). Its page holds the assistant
+    // tools (`can-manage-project-settings`) and the AI prices section (`can-manage-alerts`), whose
+    // price table (#129) is a sub-page, so the entry stays active there.
+    const aiNavItems: NavItem[] =
+        can(PermissionEnum.CanManageProjectSettings) ||
+        can(PermissionEnum.CanManageAlerts)
+            ? [
+                  {
+                      title: t('settings.layout.general'),
+                      href: aiSettings.edit.url(),
+                      icon: null,
+                      isActive: isCurrentOrParentUrl(aiSettings.edit.url()),
+                  },
+              ]
+            : [];
+
+    const reportBugUrl =
+        projectSettings.reportBugUrl?.trim() || DEFAULT_REPORT_BUG_URL;
+
+    if (typeof window === 'undefined') {
+        return null;
+    }
+
+    const renderNavGroup = (label: string, items: NavItem[]) => (
+        <SidebarGroup key={label} className="p-0">
+            <SidebarGroupLabel>{label}</SidebarGroupLabel>
+            <SidebarMenu>
+                {items.map((item, index) => (
+                    <SidebarMenuItem key={`${toUrl(item.href)}-${index}`}>
+                        <SidebarMenuButton
+                            asChild
+                            size="sm"
+                            isActive={item.isActive ?? isCurrentUrl(item.href)}
+                        >
+                            <Link href={item.href}>
+                                {item.icon && <item.icon />}
+                                <span>{item.title}</span>
+                            </Link>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                ))}
+            </SidebarMenu>
+        </SidebarGroup>
+    );
+
+    return (
+        // App shell is h-svh + overflow-hidden. On `lg` only the content pane scrolls; below `lg`
+        // the nav stacks above the content, so the whole column scrolls (a `min-h-0 flex-1` pane
+        // under a tall nav would shrink to 0 px, #209).
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-6 lg:overflow-hidden">
+            <Heading
+                title={t('settings.layout.title')}
+                description={t('settings.layout.description')}
+            />
+
+            <div className="flex flex-col lg:min-h-0 lg:flex-1 lg:flex-row lg:space-x-12">
+                <aside className="w-full max-w-xl shrink-0 lg:w-48">
+                    <nav
+                        className="flex flex-col gap-2"
+                        aria-label={t('settings.layout.navAria')}
+                    >
+                        {renderNavGroup(
+                            t('settings.layout.sectionAccount'),
+                            accountNavItems,
+                        )}
+
+                        {projectNavItems.length > 0
+                            ? renderNavGroup(
+                                  t('settings.layout.sectionProject'),
+                                  projectNavItems,
+                              )
+                            : null}
+
+                        {accessNavItems.length > 0
+                            ? renderNavGroup(
+                                  t('settings.layout.sectionAccess'),
+                                  accessNavItems,
+                              )
+                            : null}
+
+                        {aiNavItems.length > 0
+                            ? renderNavGroup(
+                                  t('settings.layout.sectionAi'),
+                                  aiNavItems,
+                              )
+                            : null}
+
+                        <SidebarGroup className="p-0">
+                            <SidebarMenu>
+                                <SidebarMenuItem>
+                                    <SidebarMenuButton asChild size="sm">
+                                        <a
+                                            href={reportBugUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                        >
+                                            <Bug />
+                                            <span>
+                                                {t('settings.layout.reportBug')}
+                                            </span>
+                                        </a>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
+                            </SidebarMenu>
+                        </SidebarGroup>
+                    </nav>
+                </aside>
+
+                <Separator className="my-6 shrink-0 lg:hidden" />
+
+                {/* Scroll pane on `lg`: sticky Save bars pin to this box, not the viewport. */}
+                <div
+                    data-test="settings-content"
+                    className={cn(
+                        'lg:min-h-0 lg:flex-1 lg:overflow-y-auto',
+                        wide ? 'md:max-w-4xl' : 'md:max-w-2xl',
+                    )}
+                >
+                    <section
+                        className={cn(
+                            'space-y-12 pb-6',
+                            wide ? 'max-w-4xl' : 'max-w-xl',
+                        )}
+                    >
+                        {children}
+                    </section>
+                </div>
+            </div>
+        </div>
+    );
+}

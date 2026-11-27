@@ -1,0 +1,24 @@
+{
+    "$schema": "https://ui.shadcn.com/schema.json",
+    "style": "new-york",
+    "rsc": false,
+    "tsx": true,
+    "tailwind": {
+        "config": "",
+        "css": "resources/css/app.css",
+        "baseColor": "neutral",
+        "cssVariables": true,
+        "prefix": ""
+    },
+    "aliases": {
+        "components": "@/components",
+        "utils": "@/lib/utils",
+        "ui": "@/components/ui",
+        "lib": "@/lib",
+        "hooks": "@/hooks"
+    },
+    "iconLibrary": "lucide",
+    "registries": {
+        "@qiick": "https://raw.githubusercontent.com/qiick-io/app-ui/e3502388695e85baf1ed88f6065e8a792b4b4967/public/r/{name}.json"
+    }
+}

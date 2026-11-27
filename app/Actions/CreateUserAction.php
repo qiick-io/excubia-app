@@ -1,0 +1,38 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Actions;
+
+use App\Models\User;
+
+/**
+ * Creates a dashboard user with the given roles. The email counts as verified because an
+ * administrator (UI or CLI) created the account.
+ * The creation and the roles are logged with the acting user as causer.
+ */
+class CreateUserAction
+{
+    public function __construct(private SyncUserRolesAction $syncRoles) {}
+
+    /**
+     * @param  list<string>  $roles
+     */
+    public function execute(string $firstName, ?string $lastName, string $email, ?string $username, string $password, array $roles, bool $isActive = true, string $timezone = 'UTC'): User
+    {
+        $user = (new User)->forceFill([
+            'first_name' => $firstName,
+            'last_name' => $lastName,
+            'username' => $username,
+            'email' => $email,
+            'password' => $password,
+            'timezone' => $timezone,
+            'is_active' => $isActive,
+            'email_verified_at' => now(),
+        ]);
+        $user->save();
+        $this->syncRoles->execute($user, $roles);
+
+        return $user;
+    }
+}

@@ -1,0 +1,396 @@
+import { Clock, RefreshCw } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { ApplicationSection } from '@/components/reports/application-section';
+import type { FindingFix } from '@/components/reports/fix-actions';
+import {
+    DependenciesCard,
+    InfrastructureCard,
+} from '@/components/reports/health-cards';
+import { shortRelease } from '@/components/reports/release-label';
+import {
+    RUNTIMES,
+    runtimeLabel,
+    supportStatus,
+} from '@/components/reports/runtime-support';
+import {
+    SEVERITIES,
+    severitySummary,
+} from '@/components/reports/severity-badge';
+import { StatCard, trendOf } from '@/components/stat-card';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import type {
+    ExceptionGroupRow,
+    ExceptionsOverview,
+    HealthReportSummary,
+    IssueRow,
+    LiveHealthCheck,
+    ProjectRow,
+    ReportHealth,
+    RuntimeSummary,
+} from '@/types';
+import type { AttentionItem } from '@/components/projects/overview/needs-attention-card';
+import { NeedsAttentionCard } from '@/components/projects/overview/needs-attention-card';
+import { RuntimesCard } from '@/components/projects/overview/runtimes-card';
+import { ChecksCard } from '@/components/projects/overview/checks-card';
+import { LiveHealthCard } from '@/components/projects/overview/live-health-card';
+import { relativeTime, findingKey, groupFindings } from '@/lib/report-format';
+
+/**
+ * Rows of each kind the "Needs attention" card shows; the tabs hold the rest. Findings that
+ * share a check and a message count as one row (#291).
+ */
+const ATTENTION_FINDINGS = 8;
+const ATTENTION_EXCEPTIONS = 3;
+
+/**
+ * Problems first: a warning when the report is stale (#292), since every number below is as old
+ * as the report; a row of stat cards (shadcn `dashboard-01`, as the dashboard) for findings,
+ * checks, runtimes and, when the project pushes them, exceptions and requests; then what needs
+ * attention, worst first, with its fix; then the infrastructure, dependencies and runtimes
+ * next to the checks that did not pass; then the application's routes, jobs and exceptions.
+ */
+export function OverviewView({
+    project,
+    latest,
+    previous,
+    deploys,
+    issues,
+    health,
+    liveHealth,
+    fixes,
+    runtime,
+    exceptions,
+    exceptionsOverview,
+    onRefresh,
+}: {
+    project: ProjectRow;
+    latest: HealthReportSummary;
+    previous: HealthReportSummary | null;
+    /** Reports sent with `excubia push --deploy`, newest first (#106). */
+    deploys: HealthReportSummary[];
+    issues: IssueRow[];
+    health: ReportHealth | null;
+    liveHealth: LiveHealthCheck[];
+    fixes: Record<string, FindingFix>;
+    runtime: RuntimeSummary | null;
+    exceptions: ExceptionGroupRow[];
+    exceptionsOverview: ExceptionsOverview | null;
+    /** Runs the checks again; null when the user cannot (only the system project refreshes). */
+    onRefresh: (() => void) | null;
+}) {
+    const { t, i18n } = useTranslation();
+
+    // Already problems-first: failing infrastructure, then by severity (#109).
+    const findings = issues;
+    const openExceptions = exceptions.filter(
+        (group) => group.status === 'open',
+    );
+    const findingGroups = groupFindings(findings);
+    const items: AttentionItem[] = [
+        ...findingGroups
+            .slice(0, ATTENTION_FINDINGS)
+            .map(([finding, ...others]): AttentionItem =>
+                others.length === 0
+                    ? {
+                          kind: 'finding',
+                          key: findingKey(finding),
+                          finding,
+                          fix: fixes[findingKey(finding)] ?? null,
+                      }
+                    : {
+                          kind: 'group',
+                          key: `group-${findingKey(finding)}`,
+                          findings: [finding, ...others],
+                      },
+            ),
+        ...openExceptions
+            .slice(0, ATTENTION_EXCEPTIONS)
+            .map((group): AttentionItem => ({
+                kind: 'exception',
+                key: `exception-${group.id}`,
+                group,
+            })),
+    ];
+
+    const total = SEVERITIES.reduce(
+        (sum, severity) => sum + latest.counts[severity],
+        0,
+    );
+    const previousTotal = previous
+        ? SEVERITIES.reduce(
+              (sum, severity) => sum + previous.counts[severity],
+              0,
+          )
+        : null;
+    const checksTotal =
+        latest.checks.pass +
+        latest.checks.warn +
+        latest.checks.fail +
+        latest.checks.skipped;
+    const checksSummary = (['fail', 'warn', 'skipped'] as const)
+        .filter((status) => latest.checks[status] > 0)
+        .map((status) =>
+            t(`report.overview.checkCount.${status}`, {
+                count: latest.checks[status],
+            }),
+        );
+
+    const usedRuntimes = RUNTIMES.flatMap((name) => {
+        const version = latest.runtime?.[name] ?? null;
+
+        return version === null ? [] : [{ name, version }];
+    });
+    const supportedRuntimes = usedRuntimes.filter(
+        (item) =>
+            supportStatus(item.version.security_support_ends_on) ===
+            'supported',
+    );
+    const notSupported = usedRuntimes.find(
+        (item) =>
+            supportStatus(item.version.security_support_ends_on) !==
+            'supported',
+    );
+    const nextEnd = usedRuntimes
+        .filter((item) => item.version.security_support_ends_on)
+        .sort((first, second) =>
+            String(first.version.security_support_ends_on).localeCompare(
+                String(second.version.security_support_ends_on),
+            ),
+        )[0];
+
+    const errorRate =
+        runtime && runtime.requests.count > 0
+            ? (runtime.requests.errors / runtime.requests.count) * 100
+            : 0;
+    const lastDeploy = deploys[0] ?? null;
+    const currentRelease = latest.release ?? lastDeploy?.release ?? null;
+    const hasRelease = currentRelease !== null || lastDeploy !== null;
+    const cardCount =
+        3 +
+        (exceptions.length > 0 ? 1 : 0) +
+        (runtime !== null ? 1 : 0) +
+        (hasRelease ? 1 : 0);
+    const lastSeen = openExceptions[0]?.last_seen_at ?? null;
+    const reportAge = relativeTime(latest.received_at, i18n.language);
+
+    return (
+        <div className="flex flex-col gap-4">
+            {project.is_stale ? (
+                <Alert variant="warning">
+                    <Clock />
+                    <AlertTitle>{t('report.overview.stale.title')}</AlertTitle>
+                    <AlertDescription>
+                        <p>
+                            {t(
+                                onRefresh === null
+                                    ? 'report.overview.stale.descriptionPush'
+                                    : 'report.overview.stale.description',
+                                { time: reportAge },
+                            )}
+                        </p>
+                        {onRefresh !== null ? (
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="mt-1"
+                                onClick={onRefresh}
+                            >
+                                <RefreshCw className="size-3.5" />
+                                {t('report.refresh')}
+                            </Button>
+                        ) : null}
+                    </AlertDescription>
+                </Alert>
+            ) : null}
+            <section
+                className={cn(
+                    'grid grid-cols-1 gap-4 sm:grid-cols-2',
+                    STAT_GRID[cardCount],
+                )}
+            >
+                <StatCard
+                    label={t('report.overview.findings')}
+                    value={total.toLocaleString()}
+                    trend={trendOf(total, previousTotal)}
+                    headline={severitySummary(latest.counts, t)}
+                    context={[
+                        t('report.overview.lastReport', { time: reportAge }),
+                        project.environment === null
+                            ? null
+                            : t('report.overview.environment', {
+                                  environment: project.environment,
+                              }),
+                    ]
+                        .filter(Boolean)
+                        .join(' · ')}
+                />
+                <StatCard
+                    label={t('report.overview.checks')}
+                    value={`${latest.checks.pass}/${checksTotal}`}
+                    headline={
+                        checksSummary.length === 0
+                            ? t('report.overview.allChecksPass')
+                            : checksSummary.join(' · ')
+                    }
+                    context={
+                        latest.excubia_version
+                            ? t('report.coreVersion', {
+                                  version: latest.excubia_version,
+                              })
+                            : undefined
+                    }
+                />
+                <StatCard
+                    label={t('report.overview.runtimes')}
+                    value={
+                        latest.runtime === null
+                            ? '—'
+                            : `${supportedRuntimes.length}/${usedRuntimes.length}`
+                    }
+                    headline={
+                        latest.runtime === null
+                            ? t('report.overview.runtimesUnavailable')
+                            : notSupported
+                              ? t('report.overview.runtimeStatus', {
+                                    runtime: runtimeLabel(
+                                        notSupported.name,
+                                        notSupported.version,
+                                        t,
+                                    ),
+                                    status: t(
+                                        `report.support.${supportStatus(notSupported.version.security_support_ends_on)}`,
+                                    ).toLowerCase(),
+                                })
+                              : t('report.overview.allRuntimesSupported')
+                    }
+                    context={
+                        nextEnd
+                            ? t('report.overview.nextEnd', {
+                                  runtime: runtimeLabel(
+                                      nextEnd.name,
+                                      nextEnd.version,
+                                      t,
+                                  ),
+                                  date: nextEnd.version
+                                      .security_support_ends_on,
+                              })
+                            : undefined
+                    }
+                />
+                {exceptions.length > 0 ? (
+                    <StatCard
+                        label={t('dashboard.telemetry.openExceptions')}
+                        value={openExceptions.length.toLocaleString()}
+                        headline={t('report.overview.events', {
+                            count: openExceptions.reduce(
+                                (sum, group) => sum + group.count,
+                                0,
+                            ),
+                        })}
+                        context={
+                            lastSeen
+                                ? t('report.overview.lastSeen', {
+                                      time: relativeTime(
+                                          lastSeen,
+                                          i18n.language,
+                                      ),
+                                  })
+                                : t('dashboard.telemetry.noOpenExceptions')
+                        }
+                    />
+                ) : null}
+                {runtime !== null ? (
+                    <StatCard
+                        label={t('report.overview.requests', {
+                            count: runtime.hours,
+                        })}
+                        value={runtime.requests.count.toLocaleString()}
+                        headline={t('dashboard.telemetry.errors', {
+                            count: runtime.requests.errors,
+                            rate: errorRate.toFixed(errorRate < 1 ? 2 : 1),
+                        })}
+                        context={
+                            runtime.requests.averageMs !== null
+                                ? t('report.overview.averageMs', {
+                                      ms: runtime.requests.averageMs,
+                                  })
+                                : undefined
+                        }
+                    />
+                ) : null}
+                {hasRelease ? (
+                    <StatCard
+                        label={t('report.overview.release')}
+                        value={
+                            currentRelease === null
+                                ? '—'
+                                : shortRelease(currentRelease)
+                        }
+                        headline={
+                            lastDeploy?.deployed_at
+                                ? t('report.overview.lastDeploy', {
+                                      time: relativeTime(
+                                          lastDeploy.deployed_at,
+                                          i18n.language,
+                                      ),
+                                  })
+                                : t('report.overview.noDeploy')
+                        }
+                        context={
+                            deploys.length > 0
+                                ? t('report.overview.deployCount', {
+                                      count: deploys.length,
+                                  })
+                                : undefined
+                        }
+                    />
+                ) : null}
+            </section>
+
+            {liveHealth.length > 0 ? (
+                <LiveHealthCard checks={liveHealth} />
+            ) : null}
+
+            <NeedsAttentionCard
+                slug={project.slug}
+                items={items}
+                total={findingGroups.length + openExceptions.length}
+            />
+
+            {/*
+             * The short cards stack in one column next to the checks (#329). Both columns are as
+             * tall as their content, with no inner scroll and no stretched card (#335). Without a
+             * report's health data there are no checks, and the runtimes card takes the whole row.
+             */}
+            {health !== null ? (
+                <section className="grid grid-cols-1 items-start gap-4 xl:grid-cols-12">
+                    <div className="flex flex-col gap-4 xl:col-span-5">
+                        <InfrastructureCard health={health} />
+                        <DependenciesCard slug={project.slug} health={health} />
+                        <RuntimesCard latest={latest} />
+                    </div>
+                    <ChecksCard health={health} className="xl:col-span-7" />
+                </section>
+            ) : (
+                <RuntimesCard latest={latest} />
+            )}
+
+            <ApplicationSection
+                slug={project.slug}
+                runtime={runtime}
+                exceptions={exceptionsOverview}
+            />
+        </div>
+    );
+}
+
+/** Static classes, so Tailwind sees them: one column per stat card on wide screens. */
+const STAT_GRID: Record<number, string> = {
+    3: 'xl:grid-cols-3',
+    4: 'xl:grid-cols-4',
+    5: 'xl:grid-cols-5',
+    6: 'xl:grid-cols-3',
+};
