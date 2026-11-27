@@ -35,6 +35,11 @@ import { relativeTime, findingKey, groupFindings } from '@/lib/report-format';
 const ATTENTION_FINDINGS = 8;
 const ATTENTION_EXCEPTIONS = 3;
 
+export type OverviewDeploys = {
+    count: number;
+    latest: Pick<HealthReportSummary, 'release' | 'deployed_at'> | null;
+};
+
 /**
  * Problems first: a warning when the report is stale (#292), since every number below is as old
  * as the report; the Board KPIs for findings,
@@ -60,7 +65,7 @@ export function OverviewView({
     latest: HealthReportSummary;
     kpiHistory: DashboardHistory;
     /** Reports sent with `excubia push --deploy`, newest first (#106). */
-    deploys: HealthReportSummary[];
+    deploys: OverviewDeploys;
     issues: IssueRow[];
     health: ReportHealth | null;
     liveHealth: LiveHealthCheck[];
@@ -105,7 +110,7 @@ export function OverviewView({
             })),
     ];
 
-    const lastDeploy = deploys[0] ?? null;
+    const lastDeploy = deploys.latest;
     const currentRelease = latest.release ?? lastDeploy?.release ?? null;
     const reportAge = relativeTime(latest.received_at, i18n.language);
 
@@ -177,9 +182,9 @@ export function OverviewView({
                               ),
                           })
                         : t('report.overview.noDeploy')}
-                    {deploys.length > 0 &&
+                    {deploys.count > 0 &&
                         t('report.overview.deployCount', {
-                            count: deploys.length,
+                            count: deploys.count,
                         })}
                 </p>
             ) : null}

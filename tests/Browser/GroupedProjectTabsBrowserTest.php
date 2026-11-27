@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Enums\RoleEnum;
 use App\Models\User;
 use Database\Seeders\PermissionSeeder;
+use Illuminate\Support\Str;
 
 require_once __DIR__.'/BrowserSeedHelpers.php';
 
@@ -38,4 +39,26 @@ it('opens a view from its group menu and keeps the group active', function (stri
     expect($activeTab)->toContain('Issues')
         ->and(preg_match('/Issues: Exceptions\s*(\d*)/', $activeTab, $match))->toBe(1)
         ->and((int) $match[1])->toBe($openExceptions);
+})->with(['light', 'dark']);
+
+it('pages through the report history in the project tab', function (string $scheme) {
+    $this->actingAs(User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value));
+    $project = seededA11yProject();
+
+    foreach (range(1, 21) as $number) {
+        $project->healthReports()->create([
+            'batch_id' => (string) Str::uuid(),
+            'received_at' => now()->addMinutes($number),
+            'generated_at' => now(),
+            'report' => ['excubiaVersion' => 'history-fixture-'.$number, 'checks' => []],
+        ]);
+    }
+
+    $path = route('projects.view', [$project->slug, 'history'], false);
+    ($scheme === 'dark' ? visit($path)->inDarkMode() : visit($path)->inLightMode())
+        ->assertSee('history-fixture-21')
+        ->click('button[aria-label="Go to page 2"]')
+        ->assertSee('history-fixture-1')
+        ->assertDontSee('history-fixture-21')
+        ->assertNoJavaScriptErrors();
 })->with(['light', 'dark']);

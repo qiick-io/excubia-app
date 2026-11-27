@@ -39,6 +39,18 @@ use Illuminate\Support\Carbon;
 #[Fillable(['batch_id', 'received_at', 'generated_at', 'release', 'deployed_at', 'worst_severity', 'critical_count', 'high_count', 'medium_count', 'low_count', 'info_count', 'worst_check_status', 'checks_count', 'failed_checks_count', 'report'])]
 class HealthReport extends Model
 {
+    /** @return array{critical: int, high: int, medium: int, low: int, info: int} */
+    public function severityCounts(): array
+    {
+        return [
+            'critical' => $this->critical_count,
+            'high' => $this->high_count,
+            'medium' => $this->medium_count,
+            'low' => $this->low_count,
+            'info' => $this->info_count,
+        ];
+    }
+
     /**
      * Reports sent by `excubia push --deploy`, the project's deploys.
      *

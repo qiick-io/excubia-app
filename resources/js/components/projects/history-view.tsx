@@ -13,17 +13,36 @@ import { SeverityStackedBarChart } from '@/components/reports/severity-chart';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { HealthReportSummary } from '@/types';
+import type { Paginated } from '@/types/admin';
 import { useDateFormat } from '@/lib/date-format';
 
+export type HistoryReport = Pick<
+    HealthReportSummary,
+    | 'id'
+    | 'received_at'
+    | 'release'
+    | 'deployed_at'
+    | 'worst_severity'
+    | 'counts'
+    | 'excubia_version'
+>;
+
+export type HistoryChartPoint = Pick<HistoryReport, 'received_at' | 'counts'>;
+
 /**
- * History tab of the project page: the findings per severity of every stored report as a
- * chart (oldest first) and the table of the reports.
+ * The latest reports form a bounded chart while the table can page through all stored reports.
  */
-export function HistoryView({ reports }: { reports: HealthReportSummary[] }) {
+export function HistoryView({
+    reports,
+    chart,
+}: {
+    reports: Paginated<HistoryReport>;
+    chart: HistoryChartPoint[];
+}) {
     const { t } = useTranslation();
     const dates = useDateFormat();
 
-    if (reports.length === 0) {
+    if (reports.total === 0) {
         return (
             <PageEmptyState
                 icon={History}
@@ -34,7 +53,7 @@ export function HistoryView({ reports }: { reports: HealthReportSummary[] }) {
     }
 
     // Oldest first, so the chart reads left to right in time.
-    const chartData = [...reports].reverse().map((summary) => ({
+    const chartData = [...chart].reverse().map((summary) => ({
         label: dates.format(summary.received_at, {
             day: 'numeric',
             month: 'short',
@@ -44,11 +63,11 @@ export function HistoryView({ reports }: { reports: HealthReportSummary[] }) {
         ...summary.counts,
     }));
     const latestTotal = SEVERITIES.reduce(
-        (total, severity) => total + reports[0].counts[severity],
+        (total, severity) => total + (chart[0]?.counts[severity] ?? 0),
         0,
     );
 
-    const reportColumns: ColumnDef<HealthReportSummary>[] = [
+    const reportColumns: ColumnDef<HistoryReport>[] = [
         {
             id: 'receivedAt',
             header: t('report.receivedAt'),
@@ -136,7 +155,7 @@ export function HistoryView({ reports }: { reports: HealthReportSummary[] }) {
                     <SeverityStackedBarChart
                         data={chartData}
                         label={t('report.trend.label', {
-                            count: reports.length,
+                            count: chart.length,
                             total: latestTotal,
                         })}
                     />
@@ -144,7 +163,8 @@ export function HistoryView({ reports }: { reports: HealthReportSummary[] }) {
             </Card>
             <DataTable
                 columns={reportColumns}
-                data={reports}
+                data={reports.data}
+                pagination={reports}
                 getRowId={(summary) => String(summary.id)}
             />
         </div>

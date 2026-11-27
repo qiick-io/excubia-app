@@ -180,9 +180,9 @@ it('marks the deploys of the runtime window and shows releases on reports and ex
         ->assertInertia(fn (Assert $page) => $page
             ->where('runtime.deploys', [['release' => 'v1.0.0', 'deployedAt' => '2026-11-05T11:20:00Z', 'bucket' => '2026-11-05T11:00:00Z']])
             ->where('runtime.requests.timeline', fn ($timeline): bool => collect($timeline)->contains('at', '2026-11-05T11:00:00Z'))
-            ->where('reports.0.release', 'v1.0.0')
-            ->where('reports.0.deployed_at', null)
-            ->where('reports.1.deployed_at', '2026-11-05T11:20:00+00:00')
+            ->where('overviewDeploys.count', 2)
+            ->where('overviewDeploys.latest.release', 'v1.0.0')
+            ->where('overviewDeploys.latest.deployed_at', '2026-11-05T11:20:00+00:00')
             ->where('exceptions.0.first_release', 'v0.9.0')
             ->where('exceptions.0.last_release', 'v1.0.0')
             ->where('exceptions.0.regressed_release', 'v1.0.0'));
