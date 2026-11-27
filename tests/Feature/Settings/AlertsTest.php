@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -523,4 +524,20 @@ it('names the assignee as the subject of a webhook delivery, and erasing them ca
     expect($delivery->status)->toBe(DeliveryStatus::Cancelled)
         ->and($delivery->subject_public_id)->toBeNull()
         ->and($delivery->getRawOriginal('payload'))->toBeNull();
+});
+
+it('leaves the name and id of an assignee who was erased in between out of a new delivery', function () {
+    configureAlertChannels(['webhook_url' => 'https://93.184.216.34/excubia']);
+    User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value);
+    $assignee = User::factory()->create();
+    $name = $assignee->name;
+    // The report read the assignee before the erasure; it stores its alert after.
+    app(DeleteUserAction::class)->execute($assignee);
+
+    app(AlertWebhookService::class)->send(['id' => (string) Str::uuid(), 'event' => 'finding.new', 'data' => (object) ['assignee' => $name, 'subject' => 'vendor/package']], $assignee->public_id);
+    $delivery = WebhookDelivery::query()->sole();
+
+    expect($delivery->subject_public_id)->toBeNull()
+        ->and(Crypt::decryptString((string) $delivery->getRawOriginal('payload')))->not->toContain($name)
+        ->and(Crypt::decryptString((string) $delivery->getRawOriginal('payload')))->toContain('vendor/package');
 });
