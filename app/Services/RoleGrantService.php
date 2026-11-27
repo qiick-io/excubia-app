@@ -103,6 +103,7 @@ class RoleGrantService
             return $query->get();
         }
 
+        // The same container can handle multiple HTTP requests in tests and long-lived processes.
         if ($request !== $this->catalogueRequest) {
             $this->catalogueRequest = $request;
             $this->catalogue = null;
