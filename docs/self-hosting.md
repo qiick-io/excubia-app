@@ -85,6 +85,24 @@ curl -sS -D - -o /dev/null "https://$excubia_host/health/live"
 
 Expect `400` with no `Location` header for each cleartext machine request, `308` with an HTTPS location for the browser login request, and `200` for the HTTPS health request when the app is live. Check that the origin port is reachable from the proxy and inaccessible from outside its private network.
 
+#### Verify the edge TLS cipher policy
+
+`docker/Caddyfile.edge` enables TLS 1.3 and TLS 1.2. TLS 1.3 uses the AES-GCM and ChaCha20-Poly1305 suites supplied by Go. TLS 1.2 supports clients that cannot use TLS 1.3 and permits the six ECDHE suites with AES-GCM or ChaCha20-Poly1305 in the TLSRef Intermediate profile. The client and server negotiate within that strong set. Keep the same policy on another public TLS terminator and review it when upgrading the proxy. [TLSRef server-side policy](https://docs.tlsref.org/server-side-tls#intermediate-compatibility-recommended), [Caddy TLS configuration](https://caddyserver.com/docs/caddyfile/directives/tls).
+
+With `excubia_host` set to the expected DNS name, check the certificate and the negotiated protocol and cipher. Both forced TLS versions must report a successful connection with an approved cipher, and the CBC-only offer must fail its handshake.
+
+```sh
+for protocol in -tls1_3 -tls1_2; do
+    openssl s_client -connect "$excubia_host:443" -servername "$excubia_host" \
+        -verify_hostname "$excubia_host" -verify_return_error -brief "$protocol" </dev/null
+done
+openssl s_client -connect "$excubia_host:443" -servername "$excubia_host" \
+    -verify_hostname "$excubia_host" -verify_return_error -brief -tls1_2 \
+    -cipher 'ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES128-SHA:@SECLEVEL=0' </dev/null
+```
+
+Use `-CAfile` with the deployment's trusted CA bundle for a staging edge with a private certificate authority. Record only public certificate details and negotiated settings in the [deployment certificate inventory](cryptographic-inventory.md#deployment-certificates).
+
 ### Image without compose
 
 ```bash

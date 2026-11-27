@@ -6,7 +6,7 @@ The scope covers the browser UI, push API, personal keys, MCP, optional OIDC and
 
 | Met | Partial | Not applicable | Gap |
 | --- | ------- | -------------- | --- |
-| 54  | 137     | 49             | 13  |
+| 55  | 137     | 49             | 12  |
 
 **Met** has evidence for the complete requirement. **Partial** identifies an implemented control and the remaining scope. **Not applicable** records why the feature or architecture is outside scope. Each **Gap** links to a remediation issue. Report sensitive security findings through [the security policy](../SECURITY.md).
 
@@ -258,7 +258,7 @@ For inherited evidence, the owner column names the Composer package and the evid
 | Requirement   | Status         | Evidence                                                                                                                                                                                                       | Owner package            |
 | ------------- | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
 | v5.0.0-12.1.1 | Partial        | `docs/self-hosting.md` requires an HTTPS reverse proxy. Verify effective supported protocol versions on the reference deployment.                                                                              |                          |
-| v5.0.0-12.1.2 | Gap            | `docs/self-hosting.md` delegates TLS to the proxy. Establish and verify a supported cipher policy at the deployment edge. [#529](https://github.com/qiick-io/excubia-app/issues/529)                           |                          |
+| v5.0.0-12.1.2 | Met            | `docker/Caddyfile.edge` restricts TLS 1.2 to ECDHE AEAD suites and uses Go's TLS 1.3 suite set. [Deployment checks](self-hosting.md#verify-the-edge-tls-cipher-policy) verify negotiation and CBC rejection.   |                          |
 | v5.0.0-12.1.3 | Not applicable | `docs/SECURITY-MODEL.md` describes sessions, OIDC and bearer authentication. No product operation uses mTLS identity.                                                                                          |                          |
 | v5.0.0-12.2.1 | Partial        | `docs/self-hosting.md` requires external HTTPS and describes the push client's behaviour. Verify cleartext handling at the operator proxy. See [locked package test][core-pushcommandtest].                    | `qiick/excubia-core`     |
 | v5.0.0-12.2.2 | Partial        | `docs/self-hosting.md` specifies a public HTTPS URL. Confirm certificate trust in the deployment.                                                                                                              |                          |
