@@ -59,6 +59,7 @@ it('runs the qiick package checks', function () {
         ->expectsOutputToContain('Running access:check')
         ->expectsOutputToContain('Running api-keys:check')
         ->expectsOutputToContain('Running outbound:check')
+        ->expectsOutputToContain('Running http-basics:check')
         ->assertSuccessful();
 });
 

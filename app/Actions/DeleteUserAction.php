@@ -34,6 +34,7 @@ class DeleteUserAction
         private PrincipalDirectory $principals,
         private OidcEraser $oidcEraser,
         private OutboundEraser $outboundEraser,
+        private HttpBasicsEraser $httpBasicsEraser,
     ) {}
 
     /**
@@ -91,6 +92,9 @@ class DeleteUserAction
             // finding) is cancelled and every delivery about them loses its body; the person is
             // unlinked from the endpoints and redeliveries they triggered.
             $this->outboundEraser->erase((string) $user->getKey(), $publicId, OutboundEraser::DELETE, [$principal->id]);
+            // qiick/laravel-http-basics: idempotency records of the person (none while Excubia keeps
+            // them in the cache store, where they expire with their TTL).
+            $this->httpBasicsEraser->erase((string) $user->getKey(), $publicId, HttpBasicsEraser::DELETE, [$principal->id]);
 
             $conversationIds = DB::table('agent_conversations')
                 ->where('participant_type', $user->getMorphClass())
