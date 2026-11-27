@@ -10,6 +10,8 @@ use App\Models\User;
 use App\Services\AlertDispatcherService;
 use Database\Seeders\PermissionSeeder;
 
+require_once __DIR__.'/BrowserSeedHelpers.php';
+
 /**
  * In-app alerts (#296): the bell in the sidebar footer, right above the user menu (#344), shows the
  * unread count, opens the drawer on the right, and a notification leads to the finding and is
@@ -18,6 +20,29 @@ use Database\Seeders\PermissionSeeder;
 beforeEach(function (): void {
     $this->seed(PermissionSeeder::class);
 });
+
+it('exposes list semantics only for populated notifications in every theme', function (string $mode) {
+    $admin = User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value);
+    $this->actingAs($admin);
+    $path = route('dashboard', absolute: false);
+
+    visitA11y($path, $mode)
+        ->click('[data-test="notifications-bell"]')
+        ->assertSee('No notifications yet.')
+        ->assertNotPresent('[role="dialog"] [role="list"]')
+        ->assertNoAccessibilityIssues(1);
+
+    $project = Project::factory()->create(['name' => 'Billing API']);
+    app(AlertDispatcherService::class)->dispatch(AlertEventEnum::FindingNew, $project, 'Dependency update available', [
+        'checkId' => 'composer-audit', 'subject' => 'laravel/framework', 'advisoryId' => 'CVE-2026-0001',
+    ], SeverityEnum::High, 'composer-audit|laravel/framework|CVE-2026-0001');
+
+    visitA11y($path, $mode)
+        ->click('[data-test="notifications-bell"]')
+        ->assertSee('Dependency update available')
+        ->assertPresent('[role="dialog"] [role="list"] > [role="listitem"]')
+        ->assertNoAccessibilityIssues(1);
+})->with(['light', 'dark', 'high-contrast']);
 
 it('opens the bell, follows a notification to the finding and marks it read', function (string $scheme) {
     $admin = User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value);
