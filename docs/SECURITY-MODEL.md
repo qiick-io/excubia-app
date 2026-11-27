@@ -102,6 +102,12 @@ Weak, Medium and Strong require at least 8, 12 and 15 characters respectively. T
 
 The Strong policy checks new passwords with a padded HTTPS range request to `api.pwnedpasswords.com`. Excubia sends the first five hexadecimal characters of a SHA-1 digest and checks the returned suffixes locally. `PwnedPasswordVerifierService` disables redirects and sets a three-second connection and request timeout. An unavailable provider produces a warning with the HTTP status when available and allows the password if local checks pass. [Have I Been Pwned API documentation](https://haveibeenpwned.com/API/v3#PwnedPasswords).
 
+#### Concurrent browser sessions
+
+Excubia sets no per-account limit on concurrent browser sessions. Signing in from another browser opens an independent session and leaves existing sessions active. Each session has its own inactivity timer, which defaults to 120 minutes via `SESSION_LIFETIME` in `config/session.php`.
+
+Verify the policy by signing in to the same account from two separate browser profiles. Open the dashboard in both, sign out of the first, then reload the dashboard in the second. The first profile returns to sign-in and the second still opens the dashboard. `ConcurrentSessionsBrowserTest` exercises this with the default database session driver.
+
 ### 6. Alerts, digest and outbound requests
 
 - **Settings** (Settings → Integrations, `can-manage-project-settings`): the webhook signing secret, the Slack incoming-webhook URL and the Telegram bot token are encrypted with `APP_KEY`, never sent to the browser (`has_*` flags only) and logged only as "a secret was updated". The webhook URL and the Telegram chat id are not secrets and are shown.
