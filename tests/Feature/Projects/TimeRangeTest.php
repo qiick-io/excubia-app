@@ -385,7 +385,7 @@ it('gives the overview its Application data over the range (#250)', function () 
             ->has('exceptionsOverview.top', 2)
             ->where('exceptionsOverview.top.0.range_count', 3)
             ->missing('exceptionsOverview.top.0.timeline')
-            ->where('runtime.jobTimeline.24', ['at' => '2026-11-05T12:00:00Z', 'processed' => 12, 'failed' => 2]));
+            ->where('overviewRuntime.jobTimeline.24', ['at' => '2026-11-05T12:00:00Z', 'processed' => 12, 'failed' => 2]));
 
     // The tabs do not compute it.
     $this->get(route('projects.view', ['shop', 'runtime']))

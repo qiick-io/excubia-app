@@ -1,5 +1,6 @@
 import type { FindingFix } from '@/components/reports/fix-actions';
 import type { FlaggedLicense, RuntimeName, Severity } from '@/types';
+import type { RuntimeSummary } from '@/types/projects';
 
 /**
  * Props of the dashboard page (`pages/dashboard.tsx`) and its cards in `components/dashboard/`:
@@ -115,3 +116,8 @@ export type AssignedRow = {
     exceptions: number;
     findings: number;
 };
+/** Runtime data read by the project's Overview cards. */
+export type RuntimeOverview = Pick<
+    RuntimeSummary,
+    'range' | 'hours' | 'isSampled' | 'jobTimeline'
+> & { requests: Omit<RuntimeSummary['requests'], 'timeline'> };

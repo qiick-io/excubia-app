@@ -37,12 +37,6 @@ class AssistantQueryService
      */
     private const EXCEPTION_GROUP_FIELDS = ['id', 'class', 'message', 'environment', 'context', 'count', 'range_count', 'first_seen_at', 'last_seen_at', 'first_release', 'last_release', 'regressed_release', 'status', 'resolved_at'];
 
-    /**
-     * The tables of the Runtime tab a tool returns. Charts stay out (too large), and so do the
-     * deprecations (source file paths), servers (host names) and deploys.
-     */
-    private const RUNTIME_FIELDS = ['range', 'isSampled', 'requests', 'slowQueries', 'jobs', 'queueWait', 'scheduledTasks', 'outgoingHttp', 'commands', 'cache', 'mail', 'notifications'];
-
     /** The fields of a scheduled task a tool returns, as the Schedule tab shows them. */
     private const SCHEDULED_TASK_FIELDS = ['task', 'expression', 'timezone', 'environments', 'is_heartbeat', 'status', 'is_low_confidence', 'last_due_at', 'next_due_at', 'last_run_at', 'last_outcome', 'status_changed_at', 'evaluated_at', 'runs'];
 
@@ -268,8 +262,7 @@ class AssistantQueryService
     }
 
     /**
-     * The runtime tables of a project over the range (#234), with only RUNTIME_FIELDS and the
-     * request totals without their chart. `runtime` is null when the project never sent any.
+     * The assistant's runtime tables (#234), without charts or private diagnostics.
      *
      * @return array<string, mixed>|null null when the project does not exist
      */
@@ -281,14 +274,9 @@ class AssistantQueryService
             return null;
         }
 
-        $summary = $this->runtime->summary($project, TimeRangeData::fromPreset($range, Date::now()->toImmutable()));
-
         return [
             'project' => $this->projectSummary($project),
-            'runtime' => $summary === null ? null : [
-                ...Arr::only($summary, self::RUNTIME_FIELDS),
-                'requests' => Arr::except((array) $summary['requests'], ['timeline']),
-            ],
+            'runtime' => $this->runtime->assistantSummary($project, TimeRangeData::fromPreset($range, Date::now()->toImmutable())),
         ];
     }
 

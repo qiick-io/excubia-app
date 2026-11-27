@@ -19,6 +19,7 @@ use App\Models\Project;
 use App\Models\User;
 use App\Services\SettingsRepositoryService;
 use Database\Seeders\PermissionSeeder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 
@@ -89,6 +90,35 @@ function mcpToolResult(TestResponse $response): array
 {
     return json_decode((string) $response->json('result.content.0.text'), true);
 }
+
+it('reads the runtime summary tables without querying chart buckets', function () {
+    $project = Project::factory()->create();
+    $project->runtimeAggregates()->create([
+        'type' => 'request',
+        'bucket' => now()->subHour()->startOfMinute(),
+        'dimension_key' => hash('sha256', 'checkout'),
+        'dimensions' => ['route' => 'checkout', 'method' => 'POST', 'statusClass' => '2xx'],
+        'sample_rate' => 1,
+        'count' => 12,
+        'error_count' => 0,
+    ]);
+    $plainKey = mcpKey(mcpUser());
+    $runtimeQueries = 0;
+    DB::listen(function ($query) use (&$runtimeQueries): void {
+        if (str_contains($query->sql, 'runtime_aggregates')) {
+            $runtimeQueries++;
+        }
+    });
+
+    $result = mcpToolResult(mcpCall($plainKey, 'tools/call', [
+        'name' => 'get-runtime-summary',
+        'arguments' => ['project' => $project->slug, 'range' => '14d'],
+    ], 'get-runtime-summary')->assertOk());
+
+    expect($result['runtime']['requests'])->toHaveKey('count', 12)->not->toHaveKey('timeline')
+        ->and($result['runtime'])->not->toHaveKey('jobTimeline')
+        ->and($runtimeQueries)->toBeLessThanOrEqual(4);
+});
 
 it('answers 404 while EXCUBIA_MCP_ENABLED is off, before looking at the key', function () {
     config(['excubia.mcp_enabled' => false]);

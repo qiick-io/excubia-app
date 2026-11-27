@@ -17,12 +17,11 @@ import type {
     LiveHealthCheck,
     ProjectRow,
     ReportHealth,
-    RuntimeSummary,
 } from '@/types';
 import type { AttentionItem } from '@/components/projects/overview/needs-attention-card';
 import { NeedsAttentionCard } from '@/components/projects/overview/needs-attention-card';
 import { OverviewBoard } from '@/components/projects/overview/overview-board';
-import type { DashboardHistory } from '@/types/dashboard';
+import type { DashboardHistory, RuntimeOverview } from '@/types/dashboard';
 import { RuntimesCard } from '@/components/projects/overview/runtimes-card';
 import { ChecksCard } from '@/components/projects/overview/checks-card';
 import { LiveHealthCard } from '@/components/projects/overview/live-health-card';
@@ -70,7 +69,7 @@ export function OverviewView({
     health: ReportHealth | null;
     liveHealth: LiveHealthCheck[];
     fixes: Record<string, FindingFix>;
-    runtime: RuntimeSummary | null;
+    runtime: RuntimeOverview | null;
     exceptions: ExceptionGroupRow[];
     exceptionsOverview: ExceptionsOverview | null;
     /** Runs the checks again; null when the user cannot (only the system project refreshes). */

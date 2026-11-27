@@ -21,12 +21,8 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
-import type {
-    ExceptionsOverview,
-    RuntimeRow,
-    RuntimeSummary,
-    TimeRange,
-} from '@/types';
+import type { ExceptionsOverview, RuntimeRow, TimeRange } from '@/types';
+import type { RuntimeOverview } from '@/types/dashboard';
 
 /** Rows in each list of the section. */
 const LIST_LENGTH = 5;
@@ -141,7 +137,7 @@ export function ApplicationSection({
     exceptions,
 }: {
     slug: string;
-    runtime: RuntimeSummary | null;
+    runtime: RuntimeOverview | null;
     exceptions: ExceptionsOverview | null;
 }) {
     const { t, i18n } = useTranslation();
