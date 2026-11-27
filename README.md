@@ -8,6 +8,10 @@
 
 # Excubia App
 
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/qiick-io/excubia-app/badge)](https://scorecard.dev/viewer/?uri=github.com/qiick-io/excubia-app)
+
+PHPStan at `max` runs as an advisory check for PHP alongside the existing PHP quality gate. CodeQL covers GitHub Actions and JavaScript/TypeScript.
+
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
 **Excubia App** is the open-source (MIT), self-hosted Laravel dashboard of [Excubia](https://github.com/qiick-io/excubia-core), part of the [qiick](https://qiick.io) suite. It keeps the health of all your Laravel projects in one place: PHP / Laravel / Node end of life, known vulnerabilities, abandoned, outdated and stale packages, licenses, next-major blockers and the suggested upgrade order, plus opt-in runtime monitoring, exceptions, scheduled tasks and alerts.
