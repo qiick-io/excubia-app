@@ -6,7 +6,7 @@ The scope covers the browser UI, push API, personal keys, MCP, optional OIDC and
 
 | Met | Partial | Not applicable | Gap |
 | --- | ------- | -------------- | --- |
-| 57  | 137     | 49             | 10  |
+| 58  | 137     | 49             | 9   |
 
 **Met** has evidence for the complete requirement. **Partial** identifies an implemented control and the remaining scope. **Not applicable** records why the feature or architecture is outside scope. Each **Gap** links to a remediation issue. Report sensitive security findings through [the security policy](../SECURITY.md).
 
@@ -265,7 +265,7 @@ For inherited evidence, the owner column names the Composer package and the evid
 | v5.0.0-12.3.1 | Partial        | `docs/self-hosting.md` covers HTTPS and supported service layouts. Verify internal transport policy for DB, mail, queue and optional AI.                                                                       |                          |
 | v5.0.0-12.3.2 | Partial        | `tests/Feature/Settings/WebhookUrlGuardPinTest.php` covers pinned outbound requests. Verify certificate checks for all other TLS clients. See [locked package test][outbound-pinnedhttpclienttest].            | `qiick/laravel-outbound` |
 | v5.0.0-12.3.3 | Partial        | `docs/self-hosting.md` describes a private optional AI endpoint and the reverse proxy. Document and verify encryption between deployed internal HTTP services.                                                 |                          |
-| v5.0.0-12.3.4 | Gap            | `docs/self-hosting.md` describes internal service deployment. Document certificate trust policy and verify it on a TLS-enabled internal deployment. [#530](https://github.com/qiick-io/excubia-app/issues/530) |                          |
+| v5.0.0-12.3.4 | Met            | [Internal certificate trust](self-hosting.md#trust-private-certificates-between-services) defines dedicated CA pools and expected names. The Caddy probe verifies valid, wrong-authority and wrong-name cases. |                          |
 
 ## V13 Configuration
 
