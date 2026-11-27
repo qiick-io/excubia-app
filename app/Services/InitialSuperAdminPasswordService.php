@@ -11,7 +11,8 @@ use Illuminate\Validation\Rules\Password;
 /**
  * The one password gate for the initial super admin, shared by `db:seed` and `excubia:create-user`.
  *
- * Local and testing keep the convenience password from .env, including the `password` example.
+ * Local and testing keep the convenience password from .env at the minimum length, including
+ * the `password` example.
  * Everywhere else a known credential must never bootstrap an install: the password has to be set,
  * differ from `password` regardless of case and satisfy the configured Password::defaults().
  * The reasons are plain messages so both surfaces report exactly why a password was refused.
@@ -29,19 +30,17 @@ class InitialSuperAdminPasswordService
             return ['The password is not set'];
         }
 
-        if (in_array($environment, CreateSuperAdminSeeder::ENVIRONMENTS, true)) {
-            return [];
-        }
-
+        $isDevelopment = in_array($environment, CreateSuperAdminSeeder::ENVIRONMENTS, true);
         $reasons = [];
 
-        if (strcasecmp($password, 'password') === 0) {
+        if (! $isDevelopment && strcasecmp($password, 'password') === 0) {
             $reasons[] = 'The password must not be the known default "password"';
         }
 
+        $passwordRule = $isDevelopment ? Password::min(SettingsRepositoryService::MINIMUM_PASSWORD_LENGTH) : Password::defaults();
         $validator = Validator::make(
             ['password' => $password],
-            ['password' => ['required', 'string', Password::defaults()]],
+            ['password' => ['required', 'string', $passwordRule]],
         );
 
         if ($validator->fails()) {

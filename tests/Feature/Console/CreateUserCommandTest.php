@@ -61,7 +61,7 @@ it('refuses a context word from excubia:create-user on a server', function () {
         '--last-name' => 'Lovelace',
         '--email' => 'ada@example.com',
     ])
-        ->expectsQuestion('Password', 'Excubia2026!')
+        ->expectsQuestion('Password', 'Excubia2026!owl')
         ->expectsChoice('Role', 'super-admin', ['admin', 'reader', 'super-admin'])
         ->expectsOutputToContain(__('validation.password.context_specific'))
         ->assertFailed();

@@ -196,9 +196,9 @@ it('saves the authentication and security settings and the app uses them', funct
         ->and($settings->loginMaxAttempts())->toBe(3)
         ->and($settings->isTwoFactorRequired())->toBeFalse();
 
-    expect(validator(['password' => 'juniper'], ['password' => Password::default()])->fails())->toBeTrue()
-        ->and(validator(['password' => 'sumacfir'], ['password' => Password::default()])->passes())->toBeTrue()
-        ->and(validator(['password' => 'Mixed1Case'], ['password' => Password::default()])->passes())->toBeTrue();
+    expect(validator(['password' => 'quietforest'], ['password' => Password::default()])->fails())->toBeTrue()
+        ->and(validator(['password' => 'quietforests'], ['password' => Password::default()])->passes())->toBeTrue()
+        ->and(validator(['password' => 'Mixed123Case'], ['password' => Password::default()])->passes())->toBeTrue();
 });
 
 it('validates the authentication and security settings', function () {

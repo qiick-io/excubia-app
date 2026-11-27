@@ -294,15 +294,15 @@
             "passwordPolicies": {
                 "weak": {
                     "label": "Debole",
-                    "description": "Minimo 6 caratteri."
+                    "description": "Minimo 8 caratteri."
                 },
                 "medium": {
                     "label": "Media",
-                    "description": "Minimo 8 caratteri."
+                    "description": "Minimo 12 caratteri."
                 },
                 "strong": {
                     "label": "Forte",
-                    "description": "Minimo 12 caratteri. Le password vengono confrontate con quelle presenti nelle violazioni di dati note."
+                    "description": "Minimo 15 caratteri. Le password vengono confrontate con quelle presenti nelle violazioni di dati note."
                 }
             },
             "loginMaxAttempts": "Tentativi di login massimi al minuto",
