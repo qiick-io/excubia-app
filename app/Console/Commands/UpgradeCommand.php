@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use App\Services\SystemHealthService;
+use App\Services\Upgrade\ConfigFingerprintService;
 use App\Services\Upgrade\UpgradeGitService;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Process\ProcessResult;
+use Illuminate\Support\Facades\Process;
 use Symfony\Component\Console\Attribute\AsCommand;
 
 /**
@@ -79,6 +81,14 @@ class UpgradeCommand extends Command
             return self::FAILURE;
         }
 
+        // Before anything reads the database or the packages' settings, and after the code is
+        // final (a --sync-upstream merge changes the configuration files).
+        if ($this->isConfigurationCachedByPreviousRelease()) {
+            return $this->rerunWithoutStaleConfiguration();
+        }
+
+        $wasConfigurationCached = $this->laravel->configurationIsCached();
+
         $this->warn('excubia:upgrade does not run composer or npm.');
         $this->line('After code is on the target release:');
         $this->line('  composer install --no-dev --optimize-autoloader');
@@ -105,14 +115,6 @@ class UpgradeCommand extends Command
             }
         }
 
-        // A config cached by the previous release would make the checks pass on stale values
-        // (`composer install`, which every upgrade path runs first, removes that cache).
-        if ($this->laravel->configurationIsCached()) {
-            $this->error('The configuration is cached by the previous release: run `php artisan config:clear` (or `composer install`), then excubia:upgrade again.');
-
-            return self::FAILURE;
-        }
-
         foreach (self::PACKAGE_CHECKS as $packageCheck) {
             $this->info("Running {$packageCheck}…");
             $code = $this->call($packageCheck);
@@ -125,12 +127,61 @@ class UpgradeCommand extends Command
 
         $this->info('Clearing caches…');
         $this->call('optimize:clear');
+
+        // A deploy that served cached config, routes and views (Laravel Cloud's build step, a
+        // Forge script) keeps doing so, now built from this release.
+        if ($wasConfigurationCached) {
+            $this->info('Caching the configuration, routes, events and views again…');
+            $this->call('optimize');
+        }
+
         // Workers keep the old code in memory until they restart.
         $this->call('queue:restart');
 
         $this->newLine();
         $this->info('Automated subset done. Smoke: sign in, open the dashboard and one project.');
         $this->line('Full checklist: docs/self-hosting.md#upgrades');
+
+        return self::SUCCESS;
+    }
+
+    /**
+     * Whether the configuration this process booted with was cached by a previous release: its
+     * fingerprint differs from this release's files. A cache this release's build step wrote
+     * (Laravel Cloud, Docker) matches and is kept.
+     */
+    private function isConfigurationCachedByPreviousRelease(): bool
+    {
+        return $this->laravel->configurationIsCached()
+            && config('excubia.config_fingerprint') !== ConfigFingerprintService::current();
+    }
+
+    /**
+     * Clears the stale cache and runs the rest of the upgrade in a new process, which boots from
+     * this release's files with every package's defaults (an in-process reload would miss
+     * them), then caches again. Never fails the deploy for the cache itself.
+     */
+    private function rerunWithoutStaleConfiguration(): int
+    {
+        $this->warn('The configuration was cached by a previous release: clearing it and running the upgrade on this release\'s configuration.');
+        $this->callSilently('config:clear');
+
+        $command = [PHP_BINARY, 'artisan', 'excubia:upgrade', '--no-interaction'];
+
+        foreach (['force', 'no-migrate', 'no-permissions'] as $option) {
+            if ($this->option($option)) {
+                $command[] = '--'.$option;
+            }
+        }
+
+        $result = Process::path(base_path())->forever()->run($command, fn (string $type, string $output) => $this->output->write($output));
+
+        if (! $result->successful()) {
+            return self::FAILURE;
+        }
+
+        $this->info('Caching the configuration, routes, events and views again…');
+        $this->call('optimize');
 
         return self::SUCCESS;
     }
