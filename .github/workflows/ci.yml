@@ -57,7 +57,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          FILES=$(git diff --name-only "$BASE_SHA...$HEAD_SHA")
+          FILES=$(git diff --name-only --no-renames "$BASE_SHA...$HEAD_SHA")
 
           # docs = top-level *.md, docs/, the .github templates and the readme assets.
           # A nested *.md (resources/.../SKILL.md) is code.
@@ -94,7 +94,7 @@ jobs:
           BROWSER=false
           while IFS= read -r f; do
             case "$f" in
-              resources/js/*|resources/css/*|resources/views/*|tests/Browser/*|components.json|app-ui.overrides.json)
+              resources/js/*|resources/css/*|resources/views/*|tests/Browser/*|tests/Pest.php|components.json|app-ui.overrides.json|package.json|package-lock.json|vite.config.ts)
                 BROWSER=true
                 echo "Full browser suite trigger ($f)."
                 break
@@ -443,8 +443,9 @@ jobs:
       - name: Install and upgrade smoke test
         run: scripts/e2e/install-upgrade.sh
 
-  # Axe smoke (#112), as in externa-core: pull requests to `develop` run only the smoke test ("lite");
-  # pushes and pull requests to `main` run every browser test. Not part of `php artisan test`.
+  # Axe smoke (#112), as in externa-core: pull requests to `develop` that change the UI (the
+  # `browser` output of `changes`), pushes and pull requests to `main` run every browser test;
+  # other pull requests to `develop` run only the smoke test. Not part of `php artisan test`.
   accessibility:
     name: Accessibility
     needs: changes
