@@ -2560,5 +2560,24 @@
         "backToDashboard": "Back to dashboard",
         "signIn": "Sign in",
         "tryAgain": "Try again"
+    },
+    "datePicker": {
+        "boundsError": "The available dates are configured incorrectly.",
+        "chooseDate": "Choose date for {{label}}",
+        "clear": "Clear",
+        "close": "Close",
+        "deviceTimeZone": "device time",
+        "empty": "{{label}}: no value.",
+        "format": "Enter a date in this format: {{example}}.",
+        "formatError": "Enter a valid value in this format: {{example}}. Use a four-digit year.",
+        "maximumError": "Enter a value on or before {{max}}.",
+        "minimumError": "Enter a value on or after {{min}}.",
+        "nextMonth": "Go to the next month",
+        "previousMonth": "Go to the previous month",
+        "required": "Enter a value.",
+        "selected": "{{label}}: {{value}}.",
+        "timeZoneError": "The time zone is invalid.",
+        "today": "Today, {{date}}",
+        "zonedFormat": "Format: {{example}} ({{timeZone}})."
     }
 }

@@ -2560,5 +2560,24 @@
         "backToDashboard": "Zurück zum Dashboard",
         "signIn": "Anmelden",
         "tryAgain": "Erneut versuchen"
+    },
+    "datePicker": {
+        "boundsError": "Der verfügbare Datumsbereich ist falsch konfiguriert.",
+        "chooseDate": "Datum für {{label}} auswählen",
+        "clear": "Leeren",
+        "close": "Schließen",
+        "deviceTimeZone": "Gerätezeit",
+        "empty": "{{label}}: kein Wert.",
+        "format": "Gib ein Datum in diesem Format ein: {{example}}.",
+        "formatError": "Gib einen gültigen Wert in diesem Format ein: {{example}}. Verwende eine vierstellige Jahreszahl.",
+        "maximumError": "Gib einen Wert bis einschließlich {{max}} ein.",
+        "minimumError": "Gib einen Wert ab {{min}} ein.",
+        "nextMonth": "Zum nächsten Monat",
+        "previousMonth": "Zum vorherigen Monat",
+        "required": "Gib einen Wert ein.",
+        "selected": "{{label}}: {{value}}.",
+        "timeZoneError": "Die Zeitzone ist ungültig.",
+        "today": "Heute, {{date}}",
+        "zonedFormat": "Format: {{example}} ({{timeZone}})."
     }
 }

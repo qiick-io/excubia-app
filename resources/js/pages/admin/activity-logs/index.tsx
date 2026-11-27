@@ -14,7 +14,6 @@ import {
 } from '@/components/layout/page-header';
 import { PageLayout } from '@/components/layout/page-layout';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
 import { NativeSelect } from '@/components/ui/native-select';
 import { useDebouncedServerSearch } from '@/hooks/use-debounced-server-search';
 import AppLayout from '@/layouts/app-layout';
@@ -31,6 +30,7 @@ import type {
     Paginated,
 } from '@/types';
 import { useDateFormat } from '@/lib/date-format';
+import { DatePicker } from '@/components/admin/date-picker';
 
 type Filters = {
     search?: string;
@@ -339,32 +339,25 @@ export default function AdminActivityLogsIndex({
                                 </option>
                             ))}
                         </NativeSelect>
-                        <Input
-                            type="date"
-                            value={dateFrom}
-                            onChange={(changeEvent) => {
-                                setDateFrom(changeEvent.target.value);
-                                visit({
-                                    date_from:
-                                        changeEvent.target.value || undefined,
-                                });
+                        <DatePicker
+                            label={t('activityLog.dateFrom')}
+                            isLabelHidden
+                            value={dateFrom || null}
+                            max={dateTo || undefined}
+                            onChange={(value) => {
+                                setDateFrom(value ?? '');
+                                visit({ date_from: value ?? undefined });
                             }}
-                            className="h-9 w-auto shrink-0"
-                            title={dateFrom || undefined}
-                            aria-label={t('activityLog.dateFrom')}
                         />
-                        <Input
-                            type="date"
-                            value={dateTo}
-                            onChange={(changeEvent) => {
-                                setDateTo(changeEvent.target.value);
-                                visit({
-                                    date_to:
-                                        changeEvent.target.value || undefined,
-                                });
+                        <DatePicker
+                            label={t('activityLog.dateTo')}
+                            isLabelHidden
+                            value={dateTo || null}
+                            min={dateFrom || undefined}
+                            onChange={(value) => {
+                                setDateTo(value ?? '');
+                                visit({ date_to: value ?? undefined });
                             }}
-                            className="h-9 w-auto shrink-0"
-                            aria-label={t('activityLog.dateTo')}
                         />
                     </>
                 }

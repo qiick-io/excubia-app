@@ -16,8 +16,8 @@ import {
     FieldGroup,
     FieldLabel,
 } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { DatePicker } from '@/components/admin/date-picker';
 import { useClipboard } from '@/hooks/use-clipboard';
 import projectsRoutes from '@/routes/projects';
 import type { FindingLifecycle, IssueRow } from '@/types';
@@ -194,6 +194,12 @@ export function FindingLifecycleSection({
                         noValidate
                         onSubmit={(event) => {
                             event.preventDefault();
+
+                            // The date picker reports an invalid typed date here (app-ui date-picker).
+                            if (!event.currentTarget.checkValidity()) {
+                                return;
+                            }
+
                             form.patch(url, {
                                 preserveScroll: true,
                                 preserveState: true,
@@ -236,35 +242,20 @@ export function FindingLifecycleSection({
                                 />
                                 <FieldError>{form.errors.reason}</FieldError>
                             </Field>
-                            <Field
-                                data-invalid={
-                                    form.errors.until ? true : undefined
-                                }
-                            >
-                                <FieldLabel htmlFor="finding_dismiss_until">
-                                    {t('findings.until')}
-                                </FieldLabel>
-                                <Input
-                                    id="finding_dismiss_until"
-                                    type="date"
+                            <div className="grid gap-2">
+                                <DatePicker
+                                    label={t('findings.until')}
+                                    value={form.data.until || null}
+                                    onChange={(value) =>
+                                        form.setData('until', value ?? '')
+                                    }
                                     min={today()}
-                                    value={form.data.until}
-                                    onChange={(event) =>
-                                        form.setData(
-                                            'until',
-                                            event.target.value,
-                                        )
-                                    }
-                                    aria-invalid={
-                                        form.errors.until ? true : undefined
-                                    }
-                                    aria-describedby="finding_dismiss_until_hint"
+                                    error={form.errors.until}
                                 />
-                                <FieldDescription id="finding_dismiss_until_hint">
+                                <FieldDescription>
                                     {t('findings.untilHint')}
                                 </FieldDescription>
-                                <FieldError>{form.errors.until}</FieldError>
-                            </Field>
+                            </div>
                         </FieldGroup>
                         <div className="flex flex-wrap justify-end gap-2">
                             <Button

@@ -2560,5 +2560,24 @@
         "backToDashboard": "Torna alla dashboard",
         "signIn": "Accedi",
         "tryAgain": "Riprova"
+    },
+    "datePicker": {
+        "boundsError": "L’intervallo di date disponibile è configurato in modo errato.",
+        "chooseDate": "Scegli la data per {{label}}",
+        "clear": "Cancella",
+        "close": "Chiudi",
+        "deviceTimeZone": "ora del dispositivo",
+        "empty": "{{label}}: nessun valore.",
+        "format": "Inserisci una data in questo formato: {{example}}.",
+        "formatError": "Inserisci un valore valido in questo formato: {{example}}. Usa un anno di quattro cifre.",
+        "maximumError": "Inserisci un valore uguale o precedente a {{max}}.",
+        "minimumError": "Inserisci un valore uguale o successivo a {{min}}.",
+        "nextMonth": "Vai al mese successivo",
+        "previousMonth": "Vai al mese precedente",
+        "required": "Inserisci un valore.",
+        "selected": "{{label}}: {{value}}.",
+        "timeZoneError": "Il fuso orario non è valido.",
+        "today": "Oggi, {{date}}",
+        "zonedFormat": "Formato: {{example}} ({{timeZone}})."
     }
 }

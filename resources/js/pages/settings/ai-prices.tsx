@@ -21,6 +21,7 @@ import aiPricesRoutes from '@/routes/ai-prices';
 import aiSettings from '@/routes/ai-settings';
 import type { BreadcrumbItem } from '@/types';
 import { edit as editProfile } from '@/routes/profile';
+import { DatePicker } from '@/components/admin/date-picker';
 
 /** The price fields of a row, as AiPriceService::PRICE_FIELDS. */
 const PRICE_FIELDS = [
@@ -135,6 +136,12 @@ export default function AiPricesSettings({
                     noValidate
                     onSubmit={(event) => {
                         event.preventDefault();
+
+                        // The date pickers report an invalid typed date here.
+                        if (!event.currentTarget.checkValidity()) {
+                            return;
+                        }
+
                         form.put(aiPricesRoutes.update.url(), {
                             preserveScroll: true,
                         });
@@ -295,17 +302,8 @@ export default function AiPricesSettings({
                                                 </TableCell>
                                             ))}
                                             <TableCell className="min-w-36 align-top">
-                                                <Input
-                                                    type="date"
-                                                    value={row.effective_from}
-                                                    onChange={(event) =>
-                                                        setCell(
-                                                            index,
-                                                            'effective_from',
-                                                            event.target.value,
-                                                        )
-                                                    }
-                                                    aria-label={t(
+                                                <DatePicker
+                                                    label={t(
                                                         'settings.aiPrices.effectiveFromOf',
                                                         {
                                                             model:
@@ -313,12 +311,22 @@ export default function AiPricesSettings({
                                                                 index + 1,
                                                         },
                                                     )}
-                                                    aria-invalid={
+                                                    isLabelHidden
+                                                    value={
+                                                        row.effective_from ||
+                                                        null
+                                                    }
+                                                    onChange={(value) =>
+                                                        setCell(
+                                                            index,
+                                                            'effective_from',
+                                                            value ?? '',
+                                                        )
+                                                    }
+                                                    error={
                                                         errors[
                                                             `prices.${index}.effective_from`
                                                         ]
-                                                            ? true
-                                                            : undefined
                                                     }
                                                 />
                                             </TableCell>
