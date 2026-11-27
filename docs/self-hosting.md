@@ -160,6 +160,7 @@ The app runs scheduled tasks:
 - `excubia:system-report` checks this install and stores the report on the system project (daily);
 - `excubia:system-telemetry` stores this install's own runtime and exceptions on the system project (every minute);
 - `excubia:prune-reports` keeps the newest reports of each project (30 by default, in **Settings → Project**);
+- `excubia:resume-erasures` finishes user erasures that stopped after the person was locked out (hourly; `--dry-run` lists them; see [docs/privacy.md](./privacy.md#erasure));
 - `excubia:evaluate-schedules` flags late, missed and failed scheduled tasks of the projects (every minute);
 - `excubia:downsample-runtime` folds the runtime minutes older than 48 hours into hourly rows (`EXCUBIA_RUNTIME_MINUTE_HOURS`, hourly; after an upgrade its first run folds the whole backlog);
 - `excubia:prune-telemetry` keeps 14 days of runtime aggregates, their hourly rollups and scheduled-task runs, and exception groups seen in the last 90 days (`EXCUBIA_RUNTIME_RETENTION_DAYS`, `EXCUBIA_EXCEPTIONS_RETENTION_DAYS`), the alert history for the longer of the two, and the pushed batch ids for 14 days;

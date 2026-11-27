@@ -53,6 +53,9 @@ class ErasureOrchestratorService
 
     private const ERASED_TEXT = '[erased]';
 
+    /** Attribute names whose values are personal wherever an activity payload holds them, old values included. */
+    private const PERSONAL_ATTRIBUTES = ['first_name', 'last_name', 'name', 'email', 'username', 'last_login_ip'];
+
     public function __construct(
         private PrincipalDirectory $principals,
         private ApiKeysEraser $apiKeysEraser,
@@ -78,6 +81,8 @@ class ErasureOrchestratorService
             return $openRequest;
         }
 
+        // Every column, whatever the caller loaded (the profile page loads a partial user).
+        $user = User::query()->whereKey($user->getKey())->firstOrFail();
         $principal = $this->principals->forMember($user, null);
         /** @var array<string, int> $apiKeyIdsByPublicId */
         $apiKeyIdsByPublicId = $user->apiKeys()->pluck('id', 'uuid')->all();
@@ -198,8 +203,11 @@ class ErasureOrchestratorService
             ->orWhere(fn ($causerQuery) => $causerQuery->where('causer_type', $morphClass)->where('causer_id', $userId)));
 
         foreach ($activities->cursor() as $activity) {
-            $properties = $this->scrub($activity->properties?->toArray() ?? [], $identifiers);
-            $attributeChanges = $this->scrub($activity->attribute_changes?->toArray() ?? [], $identifiers);
+            // Only the user's own model events hold their attributes; a row they caused about a
+            // project keeps the project's `name`.
+            $isAboutUser = $activity->subject_type === $morphClass && (string) $activity->subject_id === $userId;
+            $properties = $this->scrub($activity->properties?->toArray() ?? [], $identifiers, $isAboutUser);
+            $attributeChanges = $this->scrub($activity->attribute_changes?->toArray() ?? [], $identifiers, $isAboutUser);
 
             if ($properties !== ($activity->properties?->toArray() ?? []) || $attributeChanges !== ($activity->attribute_changes?->toArray() ?? [])) {
                 // Query builder: saving the activity model would log nothing, but stays explicit.
@@ -215,17 +223,21 @@ class ErasureOrchestratorService
     }
 
     /**
-     * Every string that holds an identifier becomes `[erased]`, at any depth.
+     * Every string that holds an identifier becomes `[erased]`, at any depth, and so does every
+     * value of a personal attribute of the user's own model events (an old name the snapshot no
+     * longer knows).
      *
      * @param  array<array-key, mixed>  $payload
      * @param  list<string>  $identifiers
      * @return array<array-key, mixed>
      */
-    private function scrub(array $payload, array $identifiers): array
+    private function scrub(array $payload, array $identifiers, bool $isAboutUser): array
     {
         foreach ($payload as $key => $value) {
             if (is_array($value)) {
-                $payload[$key] = $this->scrub($value, $identifiers);
+                $payload[$key] = $this->scrub($value, $identifiers, $isAboutUser);
+            } elseif ($isAboutUser && in_array($key, self::PERSONAL_ATTRIBUTES, true) && $value !== null && $value !== self::ERASED_TEXT) {
+                $payload[$key] = self::ERASED_TEXT;
             } elseif (is_string($value) && $identifiers !== [] && Str::contains($value, $identifiers, ignoreCase: true)) {
                 $payload[$key] = self::ERASED_TEXT;
             }
@@ -246,9 +258,8 @@ class ErasureOrchestratorService
             return 0;
         }
 
-        $principal = $this->principals->forMember($user, null);
-        $this->principals->markErased($principal);
-        Principal::query()->whereKey($principal->id)->update(['name' => 'Deleted principal '.$userPublicId]);
+        // Erased since step 0: forMember() refuses an erased principal, so read it directly.
+        Principal::query()->where('type', 'user')->where('user_id', $user->id)->update(['name' => 'Deleted principal '.$userPublicId]);
 
         // Quiet: erasing the row must not create a new activity entry with the old values.
         $user->forceFill([
