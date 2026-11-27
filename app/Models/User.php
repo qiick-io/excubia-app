@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Notifications\ResetPasswordNotification;
 use App\Traits\LogsApplicationActivityTrait;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -222,5 +223,15 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
             'alert_email_filters' => 'array',
             'two_factor_confirmed_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Queued (#472), so an existing address does not answer slower than an unknown one.
+     *
+     * @param  string  $token
+     */
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new ResetPasswordNotification($token));
     }
 }

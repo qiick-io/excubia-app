@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Actions\Fortify\ResetUserPassword;
+use App\Http\Responses\PasswordResetFailedResponse;
 use App\Http\Responses\PasswordResetLinkResponse;
 use App\Models\User;
 use App\Services\SettingsRepositoryService;
@@ -17,6 +18,7 @@ use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Laravel\Fortify\Contracts\FailedPasswordResetLinkRequestResponse;
+use Laravel\Fortify\Contracts\FailedPasswordResetResponse;
 use Laravel\Fortify\Contracts\SuccessfulPasswordResetLinkRequestResponse;
 use Laravel\Fortify\Features;
 use Laravel\Fortify\Fortify;
@@ -34,6 +36,7 @@ class FortifyServiceProvider extends ServiceProvider
         // The same answer for every address (#472); Fortify passes a `status` we ignore.
         $this->app->bind(FailedPasswordResetLinkRequestResponse::class, fn (): PasswordResetLinkResponse => new PasswordResetLinkResponse);
         $this->app->bind(SuccessfulPasswordResetLinkRequestResponse::class, fn (): PasswordResetLinkResponse => new PasswordResetLinkResponse);
+        $this->app->bind(FailedPasswordResetResponse::class, fn (): PasswordResetFailedResponse => new PasswordResetFailedResponse);
     }
 
     /**

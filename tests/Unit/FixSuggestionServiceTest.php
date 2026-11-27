@@ -69,3 +69,10 @@ it('never builds a command from a package or version that starts with a dash', f
         ->and(fixFor(['checkId' => 'npm-advisories', 'details' => ['package' => '-g', 'fixedVersions' => ['1.0.0']]])['command'])->toBeNull()
         ->and(fixFor(['checkId' => 'npm-advisories', 'details' => ['package' => 'left-pad', 'fixedVersions' => ['--registry=https://evil.example']]])['command'])->toBe('npm update left-pad');
 });
+
+it('builds npm installs only for exact versions, never Git or path specs', function () {
+    expect(fixFor(['checkId' => 'npm-advisories', 'details' => ['package' => 'left-pad', 'fixedVersions' => ['git+https://evil.example/x.git']]])['command'])->toBe('npm update left-pad')
+        ->and(fixFor(['checkId' => 'npm-advisories', 'details' => ['package' => 'left-pad', 'fixedVersions' => ['file:../x']]])['command'])->toBe('npm update left-pad')
+        ->and(fixFor(['checkId' => 'npm-advisories', 'details' => ['package' => 'left-pad', 'fixedVersions' => ['1.3.0']]])['command'])->toBe('npm install left-pad@1.3.0')
+        ->and(fixFor(['checkId' => 'composer-advisories', 'details' => ['package' => 'monolog']])['command'])->toBeNull();
+});

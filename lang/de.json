@@ -62,5 +62,6 @@
     "The end must be in the future: this window would silence nothing.": "Das Ende muss in der Zukunft liegen: Dieses Fenster würde nichts stummschalten.",
     "This time does not exist in the chosen timezone (the clocks skip it).": "Diese Uhrzeit gibt es in der gewählten Zeitzone nicht (die Uhr überspringt sie).",
     "The end must be after the start.": "Das Ende muss nach dem Beginn liegen.",
-    "If an account exists for this address, we have emailed a password reset link.": "Wenn ein Konto mit dieser Adresse existiert, haben wir Ihnen einen Link zum Zurücksetzen des Passworts gesendet."
+    "If an account exists for this address, we have emailed a password reset link.": "Wenn ein Konto mit dieser Adresse existiert, haben wir Ihnen einen Link zum Zurücksetzen des Passworts gesendet.",
+    "Too many attempts. Please wait a minute and try again.": "Zu viele Versuche. Bitte warten Sie eine Minute und versuchen Sie es erneut."
 }
