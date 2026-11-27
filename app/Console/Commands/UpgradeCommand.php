@@ -105,6 +105,14 @@ class UpgradeCommand extends Command
             }
         }
 
+        // A config cached by the previous release would make the checks pass on stale values
+        // (`composer install`, which every upgrade path runs first, removes that cache).
+        if ($this->laravel->configurationIsCached()) {
+            $this->error('The configuration is cached by the previous release: run `php artisan config:clear` (or `composer install`), then excubia:upgrade again.');
+
+            return self::FAILURE;
+        }
+
         foreach (self::PACKAGE_CHECKS as $packageCheck) {
             $this->info("Running {$packageCheck}…");
             $code = $this->call($packageCheck);
