@@ -11,6 +11,7 @@ use App\Enums\AlertEventEnum;
 use App\Enums\SeverityEnum;
 use App\Enums\ThemePresetEnum;
 use App\Models\Setting;
+use App\Rules\ContextSpecificPasswordRule;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Crypt;
@@ -397,11 +398,15 @@ class SettingsRepositoryService
      */
     public function passwordRule(): Password
     {
-        return match ($this->passwordPolicy()) {
+        $passwordRule = match ($this->passwordPolicy()) {
             'weak' => Password::min(6),
             'medium' => Password::min(8)->mixedCase()->numbers(),
             default => Password::min(12)->mixedCase()->letters()->numbers()->symbols()->uncompromised(),
         };
+
+        $deploymentTerms = [$this->appName(), ...explode(',', (string) config('excubia.password_denylist'))];
+
+        return $passwordRule->rules([new ContextSpecificPasswordRule($deploymentTerms)]);
     }
 
     public function loginMaxAttempts(): int

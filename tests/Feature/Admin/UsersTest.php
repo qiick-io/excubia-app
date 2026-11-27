@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Notifications\ResetPasswordNotification;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Inertia\Testing\AssertableInertia as Assert;
 use Spatie\Permission\Models\Role;
@@ -60,6 +61,22 @@ it('lists users for an admin', function () {
             ->has('timezones')
             ->where('timezones', timezone_identifiers_list())
             ->where('roles', fn ($roles) => collect($roles)->pluck('name')->all() === [RoleEnum::Admin->value, RoleEnum::Reader->value]));
+});
+
+it('rejects context words when an admin creates or updates an account password', function () {
+    $admin = managedUser(RoleEnum::Admin);
+    $reader = managedUser();
+
+    $this->actingAs($admin)->postJson(route('users.store'), userPayload(['password' => '!Admin123']))
+        ->assertUnprocessable()
+        ->assertJsonPath('errors.password.0', __('validation.password.context_specific'));
+
+    $this->putJson(route('users.update', $reader), userPayload(['email' => $reader->email, 'password' => 'Admin@2026']))
+        ->assertUnprocessable()
+        ->assertJsonPath('errors.password.0', __('validation.password.context_specific'));
+
+    expect(User::query()->count())->toBe(2)
+        ->and(Hash::check('password', $reader->refresh()->password))->toBeTrue();
 });
 
 it('reads the role catalogue once while rendering the user row policies', function () {
