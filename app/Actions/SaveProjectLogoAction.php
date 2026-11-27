@@ -16,11 +16,10 @@ use RuntimeException;
 
 /**
  * Sets, replaces or removes a project's logo (#287). The file is stored on the files disk
- * (disk()) under a random name (the name doubles as the cache-busting version of its URL); the file it
- * replaces is deleted. Raster images are re-encoded as a transparent square PNG, which also
- * drops metadata and anything appended to the image; SVGs are sanitised (SvgSanitizerService)
- * and kept as vectors, drawn square by the avatar. Without a logo the project shows its
- * initials avatar.
+ * (disk()) under a random name, and the file it replaces is deleted. Raster images are
+ * re-encoded as a transparent square PNG, which drops metadata and anything appended to the
+ * image. SvgSanitizerService sanitises vector uploads, which the avatar draws square.
+ * The avatar shows the project's initials when no logo is uploaded.
  */
 final class SaveProjectLogoAction
 {
