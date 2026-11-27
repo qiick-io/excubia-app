@@ -129,7 +129,6 @@ class HealthStatusService
      * projects with samples in the window: the worst check status, the number of checks and of
      * failing checks, and whether a server is stale.
      *
-     *
      * @param  iterable<Project>  $projects
      * @return array<string, array{status: string, checks: int, failingChecks: int, hasStaleServers: bool}>
      */

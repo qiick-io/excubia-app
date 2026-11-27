@@ -148,7 +148,7 @@ class DashboardOverviewService
             ->limit(1)
             ->select('id');
         $baselineIds = Project::query()
-            ->whereKey($projects->pluck('id')->all())
+            ->whereIntegerInRaw('projects.id', $projects->pluck('id')->all())
             ->selectSub($latestReportId, 'id');
 
         return HealthReport::query()->whereIn('id', $baselineIds)->get();
