@@ -123,7 +123,7 @@ it('stores the client secret encrypted and never shares it', function () {
             ->where('oidcBackchannelLogoutUrl', url('/auth/oidc/backchannel-logout')));
 });
 
-it('sends the browser to the IdP with PKCE S256, the settings client id and a fresh authentication request', function () {
+it('sends the browser to the IdP with PKCE S256, the settings client id and the absolute session lifetime', function () {
     Http::preventStrayRequests();
     FakeIdentityProvider::fake();
     enableOidc();
@@ -136,10 +136,24 @@ it('sends the browser to the IdP with PKCE S256, the settings client id and a fr
         ->and($query['redirect_uri'] ?? null)->toBe(url('/auth/oidc/callback'))
         ->and($query['scope'] ?? null)->toBe('openid profile email')
         ->and($query['code_challenge_method'] ?? null)->toBe('S256')
-        ->and($query['max_age'] ?? null)->toBe('0');
+        ->and($query['max_age'] ?? null)->toBe('86400');
 });
 
-it('refuses an SSO login with a stale authentication time', function () {
+it('accepts a previous IdP authentication within the allowed clock leeway', function () {
+    $identityProvider = FakeIdentityProvider::fake();
+    enableOidc();
+    $user = User::factory()->create();
+    linkIdentity($user, 'sub-recent');
+
+    signInThroughSso($this, $identityProvider, [
+        'sub' => 'sub-recent',
+        'auth_time' => Date::now()->subDay()->subSeconds(30)->getTimestamp(),
+    ])->assertRedirect('/dashboard');
+
+    $this->assertAuthenticatedAs($user);
+});
+
+it('refuses SSO if the requested authentication time is stale or missing', function (?int $authenticationAge) {
     $identityProvider = FakeIdentityProvider::fake();
     enableOidc();
     $user = User::factory()->create();
@@ -147,11 +161,11 @@ it('refuses an SSO login with a stale authentication time', function () {
 
     signInThroughSso($this, $identityProvider, [
         'sub' => 'sub-stale',
-        'auth_time' => Date::now()->subHour()->getTimestamp(),
+        'auth_time' => $authenticationAge === null ? null : Date::now()->subSeconds($authenticationAge)->getTimestamp(),
     ])->assertRedirect(route('login'));
 
     $this->assertGuest();
-});
+})->with(['stale' => [86461], 'missing' => [null]]);
 
 it('signs in through an IdP on a private network only with OIDC_ALLOW_PRIVATE_HOSTS', function (bool $isPrivateHostAllowed) {
     $identityProvider = FakeIdentityProvider::fake();

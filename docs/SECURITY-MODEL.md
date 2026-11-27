@@ -112,7 +112,7 @@ Verify the policy by signing in to the same account from two separate browser pr
 
 `config/session.php` caps each browser session at 24 hours from sign-in. The cap limits how long a continuous dashboard session can be used and follows the overall reauthentication interval recommended for AAL2. The configurable inactivity timeout measures time between requests. [NIST SP 800-63B reauthentication](https://pages.nist.gov/800-63-4/sp800-63b/aal/#reauthentication-1).
 
-`EnforceAbsoluteSessionLifetimeMiddleware` invalidates the session at the cap, including during continued activity. A remember cookie can restore a session until the original deadline. For a new SSO sign-in, Excubia requests `max_age=0` and the OIDC package checks the signed `auth_time`. Browser sessions and remember cookies issued before this control require a fresh sign-in on their next use.
+`EnforceAbsoluteSessionLifetimeMiddleware` invalidates the session at the cap, including during continued activity. A user who selects Remember me can resume after the inactivity timeout until the original deadline. For SSO sign-ins, Excubia requests `max_age` equal to the absolute lifetime in seconds. The OIDC package validates the signed `auth_time` with 60 seconds of clock leeway, so a recent IdP session can support silent sign-in. The package requires `auth_time` when the authorization request asked for a maximum age. Browser sessions and remember cookies issued before this control require a fresh sign-in on their next use.
 
 ### 6. Alerts, digest and outbound requests
 
