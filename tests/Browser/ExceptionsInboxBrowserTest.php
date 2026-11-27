@@ -17,6 +17,54 @@ beforeEach(function (): void {
     $this->seed(PermissionSeeder::class);
 });
 
+it('keeps the latest inbox filters when a visit outlasts the search debounce', function (string $scenario) {
+    $this->actingAs(User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value));
+    $project = seededA11yProject();
+    $resolved = $project->exceptionGroups()->firstOrFail()->replicate();
+    $resolved->forceFill(['fingerprint' => hash('sha256', 'slow-inbox-fixture'), 'status' => 'resolved', 'class' => 'SettledOrder'])->save();
+
+    $query = $scenario === 'clear' ? ['status' => 'resolved', 'search' => 'no-match'] : [];
+    $page = visit(route('projects.view', [$project->slug, 'exceptions', ...$query], false));
+
+    // Hold the response past the debounce and let a superseding visit cancel it.
+    $page->script(<<<'JS'
+        () => {
+            window.XMLHttpRequest = class extends XMLHttpRequest {
+                responseTimer;
+
+                send(body) {
+                    const onLoad = this.onload;
+                    this.onload = (event) => {
+                        this.responseTimer = window.setTimeout(() => onLoad?.call(this, event), 800);
+                    };
+                    super.send(body);
+                }
+
+                abort() {
+                    window.clearTimeout(this.responseTimer);
+                    super.abort();
+                }
+            };
+        }
+        JS);
+
+    if ($scenario === 'clear') {
+        $page->click('Clear filters')
+            ->assertVisible('tbody tr:has-text("SettledOrder")')
+            ->assertQueryStringHas('status', 'all')
+            ->assertQueryStringMissing('search');
+    } else {
+        $page->click('button:has-text("Resolved")')
+            ->fill('input[aria-label="Search exceptions…"]', 'SettledOrder')
+            ->wait(1.5)
+            ->assertVisible('tbody tr:has-text("SettledOrder")')
+            ->assertQueryStringHas('status', 'resolved')
+            ->assertQueryStringHas('search', 'SettledOrder');
+    }
+
+    $page->assertNoJavaScriptErrors();
+})->with(['clear', 'toggle']);
+
 it('opens a group from its link and resolves the selection in bulk', function (string $scheme) {
     $this->actingAs(User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value));
     $project = seededA11yProject();
@@ -38,6 +86,26 @@ it('opens a group from its link and resolves the selection in bulk', function (s
         ->assertNoJavaScriptErrors();
 
     expect($group->fresh()->status->value)->toBe('resolved');
+})->with(['light', 'dark']);
+
+it('changes the inbox status on the server and opens a linked group outside it', function (string $scheme) {
+    $this->actingAs(User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value));
+    $project = seededA11yProject();
+    $linkedGroup = $project->exceptionGroups()->firstOrFail();
+    $resolved = $linkedGroup->replicate();
+    $resolved->forceFill(['fingerprint' => hash('sha256', 'resolved-fixture'), 'status' => 'resolved', 'class' => 'SettledOrder'])->save();
+
+    $path = route('projects.view', [$project->slug, 'exceptions'], false);
+    ($scheme === 'dark' ? visit($path)->inDarkMode() : visit($path)->inLightMode())
+        ->assertDontSee('SettledOrder')
+        ->click('button:has-text("Resolved")')
+        ->assertSee('SettledOrder')
+        ->assertNoJavaScriptErrors();
+
+    $linkedPath = route('projects.view', [$project->slug, 'exceptions', 'status' => 'resolved', 'exception' => $linkedGroup->id], false);
+    ($scheme === 'dark' ? visit($linkedPath)->inDarkMode() : visit($linkedPath)->inLightMode())
+        ->assertSee('Stack')
+        ->assertNoJavaScriptErrors();
 })->with(['light', 'dark']);
 
 it('opens an exception from the keyboard: Tab reaches the row and Enter opens it', function (string $scheme) {

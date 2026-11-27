@@ -189,19 +189,19 @@ it('counts the occurrences of each exception group per minute and charts them ov
 
     $this->get(route('projects.view', ['shop', 'exceptions', 'range' => '1h']))
         ->assertInertia(fn (Assert $page) => $page
-            ->has('exceptions', 1)
-            ->where('exceptions.0.count', 9)
-            ->where('exceptions.0.range_count', 5)
-            ->has('exceptions.0.timeline', 61)
-            ->where('exceptions.0.timeline.40', ['at' => '2026-11-05T12:10:00Z', 'count' => 5]));
+            ->has('exceptionInbox.groups.data', 1)
+            ->where('exceptionInbox.groups.data.0.count', 9)
+            ->where('exceptionInbox.groups.data.0.range_count', 5)
+            ->has('exceptionInbox.groups.data.0.timeline', 61)
+            ->where('exceptionInbox.groups.data.0.timeline.40', ['at' => '2026-11-05T12:10:00Z', 'count' => 5]));
 
     $this->get(route('projects.view', ['shop', 'exceptions', 'range' => '14d']))
         ->assertInertia(fn (Assert $page) => $page
-            ->has('exceptions', 2)
-            ->where('exceptions.0.range_count', 9)
-            ->where('exceptions.0.timeline.13.count', 4)
-            ->where('exceptions.0.timeline.14.count', 5)
-            ->where('exceptions.1.range_count', 1));
+            ->has('exceptionInbox.groups.data', 2)
+            ->where('exceptionInbox.groups.data.0.range_count', 9)
+            ->where('exceptionInbox.groups.data.0.timeline.13.count', 4)
+            ->where('exceptionInbox.groups.data.0.timeline.14.count', 5)
+            ->where('exceptionInbox.groups.data.1.range_count', 1));
 
     // The overview keeps every group, without the range fields.
     $this->get(route('projects.show', 'shop'))
@@ -252,12 +252,57 @@ it('prunes exception occurrences past the exceptions retention', function () {
 
 it('tells an exceptions tab without groups in the range from a project without exceptions', function () {
     $this->get(route('projects.view', ['shop', 'exceptions']))
-        ->assertInertia(fn (Assert $page) => $page->has('exceptions', 0)->where('hasExceptions', false));
+        ->assertInertia(fn (Assert $page) => $page->where('exceptionInbox.counts.all', 0)->where('hasExceptions', false));
 
     app(StorePushedExceptionsAction::class)->execute($this->project, (string) Str::uuid(), [rangeExceptionGroup('a', 1, '2026-11-01T00:00:00Z')]);
 
     $this->get(route('projects.view', ['shop', 'exceptions', 'range' => '24h']))
-        ->assertInertia(fn (Assert $page) => $page->has('exceptions', 0)->where('hasExceptions', true));
+        ->assertInertia(fn (Assert $page) => $page->where('exceptionInbox.counts.all', 0)->where('hasExceptions', true));
+});
+
+it('filters before paginating the exception inbox and loads a linked group outside the filter', function () {
+    $project = $this->project;
+    $createGroup = fn (string $name, string $status): ExceptionGroup => $project->exceptionGroups()->create([
+        'fingerprint' => hash('sha256', $name),
+        'environment' => 'production',
+        'class' => 'RuntimeException',
+        'message' => $name,
+        'frames' => [],
+        'previous' => [],
+        'context_kind' => 'request',
+        'context_name' => 'checkout',
+        'count' => 1,
+        'status' => $status,
+        'first_seen_at' => '2026-11-05 12:00:00',
+        'last_seen_at' => '2026-11-05 12:00:00',
+    ]);
+    $resolved = $createGroup('Settled order 100%', 'resolved');
+    $ignored = $createGroup('Muted order', 'ignored');
+    $open = collect(range(1, 105))->map(fn (int $number): ExceptionGroup => $createGroup("Open order {$number}", 'open'));
+
+    $this->get(route('projects.view', ['shop', 'exceptions', 'page' => 2, 'per_page' => 100, 'exception' => $ignored->id]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('exceptionInbox.counts.all', 107)
+            ->where('exceptionInbox.counts.open', 105)
+            ->where('exceptionInbox.groups.total', 105)
+            ->has('exceptionInbox.groups.data', 5)
+            ->where('exceptionInbox.groups.data.0.id', $open[4]->id)
+            ->where('linkedException.id', $ignored->id));
+
+    $this->get(route('projects.view', ['shop', 'exceptions', 'status' => 'resolved', 'search' => 'ORDER 100%']))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('exceptionInbox.groups.total', 1)
+            ->where('exceptionInbox.groups.data.0.id', $resolved->id));
+
+    $this->get(route('projects.view', ['shop', 'exceptions', 'status' => 'ignored']))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('exceptionInbox.groups.total', 1)
+            ->where('exceptionInbox.groups.data.0.id', $ignored->id));
+
+    $other = Project::factory()->create();
+    $ignored->forceFill(['project_id' => $other->id])->save();
+    $this->get(route('projects.view', ['shop', 'exceptions', 'exception' => $ignored->id]))
+        ->assertInertia(fn (Assert $page) => $page->where('linkedException', null));
 });
 
 it('reads a custom range from the URL with its window and bucket (#247)', function () {

@@ -11,6 +11,7 @@ use App\Data\TimeRangeData;
 use App\Enums\ExceptionStatusEnum;
 use App\Enums\PermissionEnum;
 use App\Enums\TimeRangeEnum;
+use App\Http\Requests\ExceptionInboxQueryRequest;
 use App\Http\Requests\ListQueryRequest;
 use App\Http\Requests\UpdateExceptionStatusRequest;
 use App\Http\Requests\UpdateFindingDismissalRequest;
@@ -74,6 +75,8 @@ class ProjectReportController extends Controller
         }
 
         $historyPerPage = $view === 'history' ? app(ListQueryRequest::class)->perPage() : ListQueryRequest::DEFAULT_PER_PAGE;
+        $exceptionUserId = (int) $request->user()?->getAuthIdentifier();
+        $exceptionFilters = $view === 'exceptions' ? app(ExceptionInboxQueryRequest::class)->filtersFor($exceptionUserId) : null;
 
         // Loaded by the first prop that needs it, so the poll does not read the report.
         $report = fn (): ?HealthReport => $project->loadMissing('latestReport')->latestReport;
@@ -154,7 +157,11 @@ class ProjectReportController extends Controller
             'runtime' => fn (): ?array => $view === 'ai' ? null : $runtime->summary($project, $range),
             // AI usage and estimated cost (#129), only on its tab.
             'ai' => fn (): ?array => $view === 'ai' ? app(AiUsageService::class)->summary($project, $range) : null,
-            'exceptions' => fn (): array => $telemetry->exceptions($project, $view === 'exceptions' ? $range : null),
+            'exceptions' => fn (): array => $view === null ? $telemetry->exceptions($project) : [],
+            ...($exceptionFilters !== null ? [
+                'exceptionInbox' => fn (): array => $telemetry->exceptionInbox($project, $range, $exceptionFilters, $exceptionUserId, $now),
+                'linkedException' => fn (): ?array => $telemetry->linkedException($project, $range, $request->integer('exception')),
+            ] : []),
             // Exceptions of the overview's Application section (#250).
             'exceptionsOverview' => fn (): ?array => $view === null ? $telemetry->exceptionsOverview($project, $range) : null,
             // Tells "none in this range" from "none yet" on the Exceptions tab.

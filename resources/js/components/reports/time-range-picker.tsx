@@ -37,8 +37,20 @@ function visitRange(
     query: { range?: string; from?: string; to?: string },
     scrollToId?: string,
 ): void {
+    const filters =
+        view === 'exceptions'
+            ? new URLSearchParams(window.location.search)
+            : new URLSearchParams();
+
+    for (const key of ['range', 'from', 'to', 'page']) {
+        filters.delete(key);
+    }
+
     router.get(
-        projectsRoutes.view.url({ project: slug, view }, { query }),
+        projectsRoutes.view.url(
+            { project: slug, view },
+            { query: { ...Object.fromEntries(filters), ...query } },
+        ),
         {},
         {
             preserveScroll: true,

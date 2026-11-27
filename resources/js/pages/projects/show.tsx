@@ -7,7 +7,10 @@ import { PageLayout } from '@/components/layout/page-layout';
 import { AiUsageView } from '@/components/reports/ai-usage-view';
 import { AlertsView } from '@/components/reports/alerts-view';
 import type { AssigneeOption } from '@/components/reports/assignee-select';
-import { ExceptionsView } from '@/components/reports/exceptions-view';
+import {
+    ExceptionsView,
+    type ExceptionInbox,
+} from '@/components/reports/exceptions-view';
 import type { FindingFix } from '@/components/reports/fix-actions';
 import { LicensesView } from '@/components/reports/licenses-view';
 import { RuntimeView } from '@/components/reports/runtime-view';
@@ -81,6 +84,8 @@ export default function ProjectShow({
     runtime = null,
     ai = null,
     exceptions = [],
+    exceptionInbox,
+    linkedException = null,
     exceptionsOverview = null,
     hasExceptions = false,
     schedule = [],
@@ -107,6 +112,8 @@ export default function ProjectShow({
     /** AI usage and estimated cost (#129), on the AI tab only. */
     ai?: AiUsageSummary | null;
     exceptions?: ExceptionGroupRow[];
+    exceptionInbox?: ExceptionInbox;
+    linkedException?: ExceptionGroupRow | null;
     /** Exceptions of the overview's Application section (#250). */
     exceptionsOverview?: ExceptionsOverview | null;
     hasExceptions?: boolean;
@@ -212,11 +219,12 @@ export default function ProjectShow({
                     alerts={alerts}
                     canManage={canManageAlerts}
                 />
-            ) : view === 'exceptions' ? (
+            ) : view === 'exceptions' && exceptionInbox !== undefined ? (
                 <ExceptionsView
                     projectId={project.id}
                     slug={project.slug}
-                    groups={exceptions}
+                    inbox={exceptionInbox}
+                    linkedException={linkedException}
                     hasExceptions={hasExceptions}
                     kpiHistory={kpiHistory.exceptions}
                     range={range}

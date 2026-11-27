@@ -9,7 +9,16 @@ import { locationPageUrl } from '@/lib/admin-query-params';
 const NEW_WINDOW_MILLISECONDS = 24 * 60 * 60 * 1000;
 
 /** The query keys an inbox list owns; a saved view replaces all of them. */
-const INBOX_FILTER_KEYS = ['status', 'assigned', 'new', 'exception', 'finding'];
+const INBOX_FILTER_KEYS = [
+    'status',
+    'assigned',
+    'new',
+    'exception',
+    'finding',
+    'search',
+    'assignee',
+    'page',
+];
 
 /** Whether an item first seen at `firstSeenAt` falls in the "New in 24h" window. */
 export function isFirstSeenWithinLastDay(firstSeenAt: string): boolean {
