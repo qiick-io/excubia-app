@@ -18,11 +18,13 @@ return new class extends Migration
             $table->id();
             $table->uuid('public_id')->unique();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->string('user_agent', 512)->nullable();
+            $table->string('ip_address', 45)->nullable();
+            $table->string('user_agent_summary', 128)->nullable();
             $table->boolean('is_remembered')->default(false);
             $table->timestamp('authenticated_at');
             $table->timestamp('last_activity_at');
             $table->dateTime('expires_at')->index();
+            $table->timestamp('revoked_at')->nullable()->index();
 
             $table->index(['user_id', 'expires_at']);
         });
