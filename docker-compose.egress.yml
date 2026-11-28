@@ -1,0 +1,26 @@
+# Optional egress profile for the single-host deployment with a private Docker origin.
+x-private-origin: &private-origin
+    networks:
+        - private
+    # Docker resolves attached service names. External DNS has no upstream resolver.
+    dns:
+        - 127.0.0.1
+
+services:
+    app:
+        <<: *private-origin
+        ports: !reset []
+
+    queue:
+        <<: *private-origin
+
+    scheduler:
+        <<: *private-origin
+
+networks:
+    private:
+        driver: bridge
+        internal: true
+        enable_ipv6: false
+        driver_opts:
+            com.docker.network.bridge.gateway_mode_ipv4: isolated
