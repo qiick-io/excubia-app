@@ -57,6 +57,19 @@ it('shows the activity log to a custom role with activity.view', function () {
         ->assertOk();
 });
 
+it('keeps package attribution out of the expanded-row meta so empty logs show no field changes', function () {
+    $admin = activityActor();
+    activity()->causedBy($admin)->log('Browser check');
+
+    $this->actingAs($admin)->get(route('activity-logs.index'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('admin/activity-logs/index')
+            ->where('activityLogs.data.0.description', 'Browser check')
+            ->where('activityLogs.data.0.changes', [])
+            ->where('activityLogs.data.0.properties.meta', []));
+});
+
 it('shares the activity sidebar module and its permission with allowed users only', function () {
     $this->actingAs(activityActor(RoleEnum::Admin))->get(route('dashboard'))
         ->assertInertia(fn (Assert $page) => $page
