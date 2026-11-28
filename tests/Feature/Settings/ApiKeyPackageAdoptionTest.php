@@ -369,6 +369,36 @@ it('rethrows first-use audit failures without QueryException bindings that hold 
     }
 });
 
+it('rethrows usage stamp UPDATE failures without QueryException bindings that hold the request IP', function () {
+    $apiKey = ApiKey::factory()->create();
+    $requestIp = '203.0.113.88';
+
+    DB::connection()->beforeExecuting(function (string $query, array $bindings) use ($requestIp): void {
+        if (str_contains($query, 'api_keys') && str_contains(strtolower($query), 'update')) {
+            throw new QueryException(
+                DB::connection()->getName(),
+                $query,
+                array_values([...$bindings, $requestIp]),
+                new RuntimeException('api_keys update refused'),
+            );
+        }
+    });
+
+    try {
+        app(ApiKeyRepository::class)->recordUsage(
+            $apiKey,
+            $requestIp,
+            null,
+            now()->toDateTimeImmutable(),
+        );
+        expect(false)->toBeTrue('expected RuntimeException');
+    } catch (RuntimeException $exception) {
+        expect($exception->getMessage())->toBe('Failed to record API key usage.')
+            ->and($exception->getPrevious())->toBeNull()
+            ->and($exception->getMessage())->not->toContain($requestIp);
+    }
+});
+
 it('logs a first use once even when two requests both saw the key unused', function () {
     $apiKey = ApiKey::factory()->create();
     $repository = app(ApiKeyRepository::class);

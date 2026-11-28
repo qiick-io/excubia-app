@@ -123,10 +123,9 @@ if (cd "$WORK/next" && php artisan excubia:upgrade --force) > "$WORK/path-b-upgr
     cat "$WORK/path-b-upgrade.log"
     assert_installed "$WORK/next"
     serve_and_probe "$WORK/next"
-elif grep -Eiq '(activity_log|settings(_write_locks)?).*(already exists)|already exists.*(activity_log|settings)' "$WORK/path-b-upgrade.log" \
-    || grep -Eiq 'SQLSTATE\[42S01\].*(activity_log|settings)' "$WORK/path-b-upgrade.log"; then
-    # Only the documented pre-1.0 reshape collisions count as the beta reset signal;
-    # any other "already exists" must fail the smoke (Codex P2 on #564).
+elif grep -Eiq '(table |relation )?["'\''`]?(activity_log|settings|settings_write_locks)["'\''`]? already exists' "$WORK/path-b-upgrade.log" \
+    || grep -Eiq 'SQLSTATE\[42S01\].*["'\''`]?(activity_log|settings|settings_write_locks)["'\''`]?' "$WORK/path-b-upgrade.log"; then
+    # Exact table names only (not tenant_settings / activity_log_archive look-alikes).
     step "Path B stopped at a reshaped create_ migration (needs DB reset)"
     cat "$WORK/path-b-upgrade.log"
     step "Reset path: empty database on the new tree"

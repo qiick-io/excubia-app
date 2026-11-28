@@ -8,11 +8,13 @@ use App\Actions\RecordApiKeyUseAction;
 use App\Models\ApiKey;
 use DateTimeImmutable;
 use Illuminate\Database\Query\Builder;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Qiick\ApiKeys\Contracts\ApiKeyRecord;
 use Qiick\ApiKeys\Contracts\ApiKeyRepository;
 use Qiick\ApiKeys\CredentialKind;
 use Qiick\ApiKeys\ExpiryNoticeClaimSql;
+use RuntimeException;
 use Throwable;
 
 /**
@@ -65,21 +67,27 @@ class ApiKeyRepositoryService implements ApiKeyRepository
             'last_used_user_agent' => $userAgent === null ? null : mb_substr($userAgent, 0, 512),
         ];
 
-        DB::transaction(function () use ($record, $stamp): void {
-            // Never on a revoked key: a request authorised before an erasure revoked (and
-            // anonymised) the key must not write its IP and user agent back.
-            $isFirstUse = ApiKey::query()->whereKey($record->id())->whereNull('revoked_at')->whereNull('last_used_at')->toBase()->update($stamp) === 1;
+        try {
+            DB::transaction(function () use ($record, $stamp): void {
+                // Never on a revoked key: a request authorised before an erasure revoked (and
+                // anonymised) the key must not write its IP and user agent back.
+                $isFirstUse = ApiKey::query()->whereKey($record->id())->whereNull('revoked_at')->whereNull('last_used_at')->toBase()->update($stamp) === 1;
 
-            if (! $isFirstUse) {
-                ApiKey::query()->whereKey($record->id())->whereNull('revoked_at')->toBase()->update($stamp);
+                if (! $isFirstUse) {
+                    ApiKey::query()->whereKey($record->id())->whereNull('revoked_at')->toBase()->update($stamp);
 
-                return;
-            }
+                    return;
+                }
 
-            if ($record instanceof ApiKey) {
-                $this->recordApiKeyUse->execute($record);
-            }
-        });
+                if ($record instanceof ApiKey) {
+                    $this->recordApiKeyUse->execute($record);
+                }
+            });
+        } catch (QueryException) {
+            // The UPDATE binds last_used_ip; the package authenticator reports the failure.
+            // Never let those bindings reach application logs (Codex P1 on #564).
+            throw new RuntimeException('Failed to record API key usage.');
+        }
     }
 
     /**
