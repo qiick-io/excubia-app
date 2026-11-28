@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Actions\RotateProjectTokenAction;
 use App\Models\Project;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Testing\TestResponse;
@@ -50,9 +51,9 @@ function ingestContractEnvelope(string $endpoint, string $batchId = '6f1c2b8e-4d
 /**
  * Sends a raw body, so invalid JSON can be sent too.
  */
-function ingestContractPost(string $endpoint, ?string $token, string $body): TestResponse
+function ingestContractPost(string $endpoint, ?string $token, string $body, string $contentType = 'application/json'): TestResponse
 {
-    $server = ['CONTENT_TYPE' => 'application/json', 'HTTP_ACCEPT' => 'application/json'];
+    $server = ['CONTENT_TYPE' => $contentType, 'HTTP_ACCEPT' => 'application/json'];
 
     if ($token !== null) {
         $server['HTTP_AUTHORIZATION'] = 'Bearer '.$token;
@@ -122,6 +123,66 @@ function ingestContractAnswers(string $endpoint): array
 
 it('answers every documented case of the endpoint as frozen in the snapshot', function (string $endpoint) {
     expect(ingestContractAnswers($endpoint))->toBe(ingestContractSnapshot()['endpoints'][$endpoint]);
+})->with(['reports', 'runtime', 'exceptions']);
+
+it('requires the ingest batch id in the JSON body', function (string $endpoint) {
+    $token = app(RotateProjectTokenAction::class)->execute(Project::factory()->create());
+    $envelope = ingestContractEnvelope($endpoint);
+    $query = http_build_query(['batchId' => $envelope['batchId']]);
+    unset($envelope['batchId']);
+
+    ingestContractPost($endpoint.'?'.$query, $token, json_encode($envelope, JSON_THROW_ON_ERROR))
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('batchId');
+})->with(['reports', 'runtime', 'exceptions']);
+
+it('rejects form fields and JSON bytes sent as plain text', function (string $endpoint) {
+    $token = app(RotateProjectTokenAction::class)->execute(Project::factory()->create());
+    $envelope = ingestContractEnvelope($endpoint);
+
+    $this->post('/api/'.$endpoint, $envelope, [
+        'Accept' => 'application/json',
+        'Authorization' => 'Bearer '.$token,
+        'Content-Type' => 'application/x-www-form-urlencoded',
+    ])->assertUnprocessable()->assertJsonValidationErrors(['batchId', 'sentAt']);
+
+    ingestContractPost($endpoint, $token, json_encode($envelope, JSON_THROW_ON_ERROR), 'text/plain')
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['batchId', 'sentAt']);
+})->with(['reports', 'runtime', 'exceptions']);
+
+it('stores the validated JSON values when the query contains conflicting fields', function (string $endpoint) {
+    $project = Project::factory()->create();
+    $token = app(RotateProjectTokenAction::class)->execute($project);
+    $envelope = ingestContractEnvelope($endpoint);
+    $body = json_encode($envelope, JSON_THROW_ON_ERROR);
+    $queryBatchId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+    $query = http_build_query(['batchId' => $queryBatchId, 'sentAt' => '2026-11-06T08:00:00Z', 'protocolVersion' => 2]);
+
+    ingestContractPost($endpoint.'?'.$query, $token, $body)->assertCreated();
+
+    if ($endpoint === 'reports') {
+        $report = $project->healthReports()->sole();
+
+        expect($report->batch_id)->toBe($envelope['batchId'])
+            ->and($report->generated_at->equalTo(Date::parse($envelope['sentAt'])))->toBeTrue();
+    }
+
+    ingestContractPost($endpoint, $token, $body)->assertOk()->assertJsonPath('status', 'duplicate');
+    ingestContractPost($endpoint, $token, json_encode(ingestContractEnvelope($endpoint, $queryBatchId), JSON_THROW_ON_ERROR))
+        ->assertCreated();
+})->with(['reports', 'runtime', 'exceptions']);
+
+it('uses the same decoded JSON member for validation and batch idempotency', function (string $endpoint) {
+    $token = app(RotateProjectTokenAction::class)->execute(Project::factory()->create());
+    $earlierBatchId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+    $envelope = json_encode(ingestContractEnvelope($endpoint), JSON_THROW_ON_ERROR);
+    $repeatedMemberBody = '{"batchId":"'.$earlierBatchId.'",'.substr($envelope, 1);
+
+    ingestContractPost($endpoint, $token, $repeatedMemberBody)->assertCreated();
+    ingestContractPost($endpoint, $token, $envelope)->assertOk()->assertJsonPath('status', 'duplicate');
+    ingestContractPost($endpoint, $token, json_encode(ingestContractEnvelope($endpoint, $earlierBatchId), JSON_THROW_ON_ERROR))
+        ->assertCreated();
 })->with(['reports', 'runtime', 'exceptions']);
 
 it('freezes exactly the routes of routes/api.php, each documented in docs/API.md', function () {

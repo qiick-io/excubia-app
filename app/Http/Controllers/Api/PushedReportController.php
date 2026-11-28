@@ -24,11 +24,12 @@ class PushedReportController extends Controller
 
         /** @var array<string, mixed> $report */
         $report = $request->json('report');
+        $envelope = $request->envelope();
 
         $healthReport = $storeReport->execute(
             $project,
-            $request->string('batchId')->toString(),
-            Date::parse($request->string('sentAt')->toString()),
+            $envelope['batchId'],
+            Date::parse($envelope['sentAt']),
             $report,
         );
 
