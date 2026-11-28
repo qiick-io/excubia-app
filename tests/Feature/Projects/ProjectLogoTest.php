@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use App\Actions\SaveProjectLogoAction;
+use App\Contracts\FileScannerContract;
+use App\Enums\FileScanResultEnum;
 use App\Enums\ProjectVisibilityEnum;
 use App\Enums\RoleEnum;
 use App\Models\Project;
@@ -45,6 +47,8 @@ function updateProjectLogo(User $actor, Project $project, array $payload): TestR
 }
 
 it('creates a project with a logo stored as a transparent square PNG', function () {
+    expect(app()->bound(FileScannerContract::class))->toBeFalse();
+
     $this->actingAs(logoActor())
         ->post(route('projects.store'), ['name' => 'Shop', 'logo' => UploadedFile::fake()->image('logo.jpg', 300, 150)])
         ->assertRedirect(route('projects.index'));
@@ -57,6 +61,44 @@ it('creates a project with a logo stored as a transparent square PNG', function 
         ->and($size[0] ?? null)->toBe(SaveProjectLogoAction::SIZE)
         ->and($size[1] ?? null)->toBe(SaveProjectLogoAction::SIZE)
         ->and($size['mime'] ?? null)->toBe('image/png');
+});
+
+it('requires a clean scan before creating a project with a logo', function (FileScanResultEnum $verdict, ?string $error) {
+    $logo = UploadedFile::fake()->image('logo.png');
+    $this->mock(FileScannerContract::class)->shouldReceive('scan')->once()->with($logo)->andReturn($verdict);
+
+    $response = $this->actingAs(logoActor())
+        ->post(route('projects.store'), ['name' => 'Scanned Project', 'logo' => $logo])
+        ->assertRedirect();
+
+    if ($error === null) {
+        $response->assertSessionHasNoErrors();
+        $project = Project::query()->where('slug', 'scanned-project')->sole();
+        Storage::disk(SaveProjectLogoAction::DEFAULT_DISK)->assertExists((string) $project->logo_path);
+
+        return;
+    }
+
+    $response->assertSessionHasErrors(['logo' => __($error)]);
+    $this->assertDatabaseMissing('projects', ['slug' => 'scanned-project']);
+    expect(Storage::disk(SaveProjectLogoAction::DEFAULT_DISK)->allFiles())->toBeEmpty();
+})->with([
+    'clean' => [FileScanResultEnum::Clean, null],
+    'infected' => [FileScanResultEnum::Infected, 'validation.upload_malware_detected'],
+    'unavailable' => [FileScanResultEnum::Unavailable, 'validation.upload_scan_unavailable'],
+]);
+
+it('preserves the previous project logo when the replacement fails scanning', function () {
+    $admin = logoActor();
+    $project = Project::factory()->create();
+    updateProjectLogo($admin, $project, ['logo' => UploadedFile::fake()->image('original.png')])->assertSessionHasNoErrors();
+    $originalPath = (string) $project->refresh()->logo_path;
+
+    $this->mock(FileScannerContract::class)->shouldReceive('scan')->once()->andReturn(FileScanResultEnum::Infected);
+    updateProjectLogo($admin, $project, ['logo' => svgLogo()])->assertSessionHasErrors('logo');
+
+    expect($project->refresh()->logo_path)->toBe($originalPath)
+        ->and(Storage::disk(SaveProjectLogoAction::DEFAULT_DISK)->allFiles())->toBe([$originalPath]);
 });
 
 it('replaces a logo and deletes the old file', function () {

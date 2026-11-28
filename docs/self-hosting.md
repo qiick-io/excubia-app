@@ -60,9 +60,94 @@ Any other setting of `.env.example` (another database, `EXCUBIA_AI_ENABLED`, ret
 
 **Uploaded files.** Project logos and the branding files (Settings → Appearance: logo, dark logo, favicon) are stored on `storage/app/public/project-logos/` and `storage/app/private/branding/` by default. Where the filesystem is rebuilt on every deploy (Laravel Cloud, some container platforms), set `EXCUBIA_FILES_DISK` to a bucket disk, for example `s3` with the `AWS_*` keys (`AWS_ENDPOINT` for R2 or MinIO), and install its driver: `composer require league/flysystem-aws-s3-v3`. Both kinds of files then go to that disk under the same relative paths (`project-logos/…`, `branding/…`). The app streams them through its own routes, so the bucket can stay private. To move an existing install, copy those two directories to the bucket before you set the variable.
 
+### Upload malware scanning
+
+`EXCUBIA_UPLOAD_SCANNER` defaults to `off`. Image uploads still use MIME and size validation, and project logo SVGs are sanitized. Enable the ASVS malware-scanning control for your installation by running `clamd` with current signatures and setting the following before you redeploy or rebuild the configuration cache.
+
+```dotenv
+EXCUBIA_UPLOAD_SCANNER=clamav
+EXCUBIA_CLAMAV_ENDPOINT=unix:///run/clamav/clamd.ctl
+```
+
+Give the PHP process access to the Unix socket. For a daemon on the same trusted private network, set `EXCUBIA_CLAMAV_ENDPOINT=tcp://clamav:3310` instead. Restrict TCP access to the app. ClamAV's TCP protocol has no authentication or encryption. Configure `StreamMaxLength`, `MaxFileSize` and `MaxScanSize` to support uploads up to 1 MiB and keep the daemon's signatures current. [ClamAV daemon documentation](https://docs.clamav.net/manual/Usage/Scanning.html#clamd).
+
+The app sends image bytes to `clamd` after MIME and size validation. Uploads require a clean reply before any project or branding changes are saved. A detection blocks the upload and logs `upload.malware_detected`. A timeout, connection failure or invalid reply also blocks the upload and logs `Upload malware scanner unavailable.` A `StreamMaxLength` below 1 MiB can produce the same unavailable error for otherwise valid uploads. Both warnings omit file names and contents. Verify the deployment with a clean image upload, then make the scanner unavailable in staging and check that the upload fails and the warning appears. Restart the scanner to restore uploads.
+
 ### HTTPS
 
+See [HTTP framing at the proxy boundary](http-framing.md) for verification of each protocol hop when choosing or upgrading the edge proxy.
+
 Put a TLS reverse proxy (Caddy, Traefik, nginx) in front of port 8080, set `APP_URL` to the public `https://` URL and `TRUSTED_PROXIES` to the address of the proxy (`*` when only the proxy can reach the container). Without `TRUSTED_PROXIES`, the app ignores the forwarded headers: it would build `http://` links and see the proxy's IP for every visitor, which also breaks the login rate limit. The app sends `X-Frame-Options`, `nosniff`, `Referrer-Policy` and `Permissions-Policy` itself; in production with an `https://` `APP_URL` the app also sends `Strict-Transport-Security` (one year) by default on requests it sees as https, which behind a proxy needs `TRUSTED_PROXIES` (Laravel Cloud's load balancer is trusted automatically); set `HTTP_BASICS_HSTS_MAX_AGE=0` if your proxy sends its own, or another number of seconds (it was `EXCUBIA_HSTS_MAX_AGE` before 1.0). `excubia:upgrade` warns when `APP_URL` is https and no proxy is trusted.
+
+#### Reject cleartext machine requests at the edge
+
+The [reference Caddy edge configuration](../docker/Caddyfile.edge) redirects cleartext `GET` and `HEAD` requests for browser pages to HTTPS. Cleartext requests to `/api`, `/mcp`, health endpoints and the OIDC back-channel logout endpoint receive a `400` at the edge. HTTPS requests continue to the application's private origin address.
+
+Set `EXCUBIA_HOST` to the public DNS name and `EXCUBIA_UPSTREAM` to the private origin address. For a proxy on the Docker host, publish `127.0.0.1:${EXCUBIA_PORT:-8080}:8080` in Compose and point the proxy at that local port. For a proxy on the same private Docker network, remove the origin's published host port and point the proxy at `app:8080`. On a managed platform or a different proxy, configure the same rejection at the first public listener ahead of any protocol redirect. Use HTTPS URLs for API clients, push jobs, MCP and public health monitoring. Internal readiness probes can reach the private origin directly.
+
+After applying the edge configuration in a deployment you operate, set `excubia_host` to its public DNS name and verify the first response to each request. These probes use empty requests without credentials.
+
+```sh
+for endpoint in /api/reports /api/runtime /api/exceptions /mcp /auth/oidc/backchannel-logout; do
+    curl -sS -D - -o /dev/null -X POST "http://$excubia_host$endpoint"
+done
+for endpoint in /health/live /health/ready /up; do
+    curl -sS -D - -o /dev/null "http://$excubia_host$endpoint"
+done
+curl -sS -D - -o /dev/null "http://$excubia_host/login"
+curl -sS -D - -o /dev/null "https://$excubia_host/health/live"
+```
+
+Expect `400` with no `Location` header for each cleartext machine request, `308` with an HTTPS location for the browser login request, and `200` for the HTTPS health request when the app is live. Check that the origin port is reachable from the proxy and inaccessible from outside its private network.
+
+#### Verify the edge TLS cipher policy
+
+`docker/Caddyfile.edge` enables TLS 1.3 and TLS 1.2. TLS 1.3 uses the AES-GCM and ChaCha20-Poly1305 suites supplied by Go. TLS 1.2 supports clients that cannot use TLS 1.3 and permits the six ECDHE suites with AES-GCM or ChaCha20-Poly1305 in the TLSRef Intermediate profile. The client and server negotiate within that strong set. Keep the same policy on another public TLS terminator and review it when upgrading the proxy. [TLSRef server-side policy](https://docs.tlsref.org/server-side-tls#intermediate-compatibility-recommended), [Caddy TLS configuration](https://caddyserver.com/docs/caddyfile/directives/tls).
+
+With `excubia_host` set to the expected DNS name, check the certificate and the negotiated protocol and cipher. Both forced TLS versions must report a successful connection with an approved cipher, and the CBC-only offer must fail its handshake.
+
+```sh
+for protocol in -tls1_3 -tls1_2; do
+    openssl s_client -connect "$excubia_host:443" -servername "$excubia_host" \
+        -verify_hostname "$excubia_host" -verify_return_error -brief "$protocol" </dev/null
+done
+openssl s_client -connect "$excubia_host:443" -servername "$excubia_host" \
+    -verify_hostname "$excubia_host" -verify_return_error -brief -tls1_2 \
+    -cipher 'ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES128-SHA:@SECLEVEL=0' </dev/null
+```
+
+Use `-CAfile` with the deployment's trusted CA bundle for a staging edge with a private certificate authority. Record only public certificate details and negotiated settings in the [deployment certificate inventory](cryptographic-inventory.md#deployment-certificates).
+
+#### Trust private certificates between services
+
+Give each TLS client only the authority bundle required for its internal services, or the specific self-signed leaf approved for that connection. Mount the public trust material read-only in the client environment. Keep the private keys with the service that presents each certificate. Set the expected DNS name to a certificate SAN, including when the client connects by address. Keep certificate, rotation and expiry records in the [deployment inventory](cryptographic-inventory.md#deployment-certificates).
+
+For a Caddy deployment with a TLS-enabled private origin, replace the HTTPS site's `reverse_proxy` directive with this transport. Substitute the origin address, its certificate name and the path to the dedicated PEM bundle in the proxy environment.
+
+```caddyfile
+reverse_proxy https://10.0.0.10:8443 {
+    transport http {
+        tls_trust_pool file /run/secrets/excubia-origin-ca.pem
+        tls_server_name origin.example.internal
+    }
+}
+```
+
+Configure each other TLS client at its connection boundary. For PostgreSQL, set `DB_SSLMODE=verify-full`, use the certificate hostname as `DB_HOST`, and set `PGSSLROOTCERT` in the web, queue and scheduler process environment to the approved CA file. For MySQL or MariaDB, point `MYSQL_ATTR_SSL_CA` at the approved CA and require secure server transport. For Redis, apply the trusted CA and peer and name verification to the TLS connection context of every configured Redis connection. For mail or internal HTTPS integrations, use the endpoint's TLS scheme and explicitly configure the client trust bundle for that service. [PostgreSQL client certificate verification](https://www.postgresql.org/docs/current/libpq-ssl.html), [Caddy upstream TLS trust](https://caddyserver.com/docs/caddyfile/directives/reverse_proxy#the-http-transport).
+
+In a dedicated staging stack, request `GET /health/live` over the trusted public edge and expect `200` from the private origin. Switch the proxy's upstream trust bundle to an unrelated staging CA and repeat, then restore the bundle and test an incorrect expected name. Both negative cases must fail (`502` at the edge and certificate verification details in the proxy log). Restore the proper CA and name and check for `200` again. Repeat the valid, wrong-authority and wrong-name checks through the actual client of each enabled internal TLS service before production deployment. Record only certificate metadata and outcomes as evidence.
+
+#### Disable HTTP TRACE
+
+`docker/Caddyfile.edge` denies HTTPS `TRACE` with `403` before proxying. The cleartext edge policy rejects `TRACE` with `400`. Apply equivalent method denial on any other public proxy and keep the private origin accessible only from approved clients.
+
+In a staging deployment, set `excubia_host` to the edge hostname and verify that `TRACE` receives an empty `403` response over both HTTP versions. A regular health request still reaches the origin and returns `200` when healthy.
+
+```sh
+curl --http1.1 -sS -i -X TRACE -H 'X-Trace-Check: excubia-edge-test' "https://$excubia_host/login"
+curl --http2 -sS -i -X TRACE -H 'X-Trace-Check: excubia-edge-test' "https://$excubia_host/login"
+curl -sS -i "https://$excubia_host/health/live"
+```
 
 ### Image without compose
 
@@ -238,7 +323,7 @@ The delivery id is only in the `webhook-id` header (not in the body). `data` hol
 
 Headers: `webhook-id` (the delivery UUID), `webhook-timestamp` (Unix seconds) and `webhook-signature` (`v1,<base64>`, space-separated when rotating secrets). The signed content is `<webhook-id>.<webhook-timestamp>.<raw body>` with the `whsec_` secret. Verify on the raw body, reject skewed timestamps and deduplicate by `webhook-id`. There are no legacy `X-Excubia-*` headers. The test event is `ping`, with `project: null` inside `data`.
 
-**Secret rotation:** Settings → Integrations holds a single `whsec_…` secret. Generating a new one overwrites the old; deliveries sign with that one secret only (no dual-signature cutover window). Multi-secret rotation for receivers arrives with the `webhook_endpoint_secrets` table in `qiick/laravel-outbound` 1.0 — until then, schedule a short overlap on the receiver if you rotate.
+Rotate the `whsec_…` secret in Settings → Integrations. The previous and new keys both sign during the grace period, which defaults to 24 hours. Update the receiver to the new secret before the overlap ends. [Secrets runbook](runbooks/secrets.md#runtime-credentials).
 
 ## Sizing
 

@@ -20,10 +20,12 @@ upgrade from the version before (see [docs/self-hosting.md](docs/self-hosting.md
 
 ### Fixed
 
+- **`excubia:upgrade` on a cached configuration**: a configuration cached by this release's build step (Laravel Cloud, Docker) is kept, and one cached by the previous release, recognised by a fingerprint of the configuration files and `composer.lock`, is cleared and the upgrade runs again in a fresh process; the configuration, routes, events and views are cached again at the end. The upgrade no longer stops on a cached configuration.
 - **Overlays without a trigger** (#456): the assistant panel has a visible close button on a phone; the assistant panel, the two-factor setup dialog and the push token dialog return focus to what opened them, or to the page, when they close.
 
 ### Security
 
+- **Browser sessions expire after 24 hours** (#523). On deployment, everyone with an existing browser session is signed out once and must sign in again. Remember me can restore a session until its original deadline. SSO can reuse a recent identity-provider sign-in within the same maximum authentication age.
 - **Project text is marked as data for AI agents** (#476): copied fix prompts put the project's text in a fenced block labelled as reported data (no more "Excubia's hint"), and every MCP tool result starts with a notice that its strings are data, not instructions.
 - **Super-admin stands alone through groups too** (#474): a group cannot carry super-admin with other roles, a user with other roles cannot join a super-admin group, and a super-admin group's member cannot get other direct roles.
 - **Forgot password reveals nothing** (#472): a known, an unknown and a throttled address get the same answer, and the form allows 5 requests a minute per IP.

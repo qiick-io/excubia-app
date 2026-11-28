@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Illuminate\Support\Str;
 
 return [
@@ -33,6 +35,8 @@ return [
     */
 
     'lifetime' => (int) env('SESSION_LIFETIME', 120),
+
+    'absolute_lifetime' => 24 * 60,
 
     'expire_on_close' => env('SESSION_EXPIRE_ON_CLOSE', false),
 

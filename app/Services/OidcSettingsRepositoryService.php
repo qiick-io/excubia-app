@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\Config;
 use Qiick\Oidc\Contracts\ProviderConfigurationRepositoryContract;
 use Qiick\Oidc\Data\ProviderConfigurationData;
 use Qiick\Oidc\Exceptions\OidcNotConfiguredException;
@@ -47,6 +48,7 @@ class OidcSettingsRepositoryService implements ProviderConfigurationRepositoryCo
             redirectUri: route('oidc.callback'),
             scopes: ['openid', 'profile', 'email'],
             postLogoutRedirectUri: route('login'),
+            maxAge: Config::integer('session.absolute_lifetime') * 60,
         );
     }
 }
