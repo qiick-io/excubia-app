@@ -42,7 +42,7 @@ class AlertDispatcherService
     /**
      * The messages held back by grouped(), per channel.
      *
-     * @var array<string, non-empty-list<array{payload: array<string, mixed>, summary: string}>>|null
+     * @var array<string, non-empty-list<array{payload: array<string, mixed>, summary: string, subjects: array<string, string>}>>|null
      */
     private ?array $group = null;
 
@@ -83,7 +83,22 @@ class AlertDispatcherService
 
         // One transaction, also for a caller without its own (the scheduled stale and EOL
         // checks): the history row commits only with the webhook delivery stored for it.
-        DB::transaction(function () use ($payload, $project, $event, $severity, $subject, $summary, $reason, $channels, $fingerprints, $subjectPublicId): void {
+        // The named person and the name as written into the texts, so a message still queued when
+        // they are erased goes out without it (DeliverAlertJob).
+        $assigneeName = $data['assignee'] ?? null;
+        $subjects = $subjectPublicId !== null && is_string($assigneeName) ? [$subjectPublicId => $assigneeName] : [];
+
+        DB::transaction(function () use ($payload, $project, $event, $severity, $subject, $summary, $reason, $channels, $fingerprints, $subjectPublicId, $subjects): void {
+            // The named person under a shared lock, before anything is stored: an erasure locks
+            // the row for update first, so either it waits for this alert to commit (and then
+            // finds it by subject id), or this sees the person erased and stores no name.
+            if ($subjectPublicId !== null && ! User::query()->where('public_id', $subjectPublicId)->where('is_active', true)->sharedLock()->exists()) {
+                $summary = str_replace(array_values($subjects), '[erased]', $summary);
+                $payload['data'] = (object) array_diff_key((array) $payload['data'], ['assignee' => true]);
+                $subjectPublicId = null;
+                $subjects = [];
+            }
+
             AlertLog::query()->create([
                 'uuid' => $payload['id'],
                 'project_id' => $project->id,
@@ -103,13 +118,15 @@ class AlertDispatcherService
             ]);
 
             foreach ($channels as $channel) {
+                $alert = ['payload' => $payload, 'summary' => $summary, 'subjects' => $subjects];
+
                 if ($this->group !== null && $channel !== DeliverAlertJob::WEBHOOK) {
-                    $this->group[$channel][] = ['payload' => $payload, 'summary' => $summary];
+                    $this->group[$channel][] = $alert;
 
                     continue;
                 }
 
-                $this->queue($channel, [['payload' => $payload, 'summary' => $summary]], $subjectPublicId);
+                $this->queue($channel, [$alert], $subjectPublicId);
             }
         });
     }
@@ -147,7 +164,7 @@ class AlertDispatcherService
     /**
      * Ends grouping and returns the messages it held back.
      *
-     * @return array<string, non-empty-list<array{payload: array<string, mixed>, summary: string}>>
+     * @return array<string, non-empty-list<array{payload: array<string, mixed>, summary: string, subjects: array<string, string>}>>
      */
     private function takeGroup(): array
     {
@@ -162,7 +179,7 @@ class AlertDispatcherService
      * listed worst first, under the worst one's payload, and the job records the outcome on
      * every alert's history row.
      *
-     * @param  non-empty-list<array{payload: array<string, mixed>, summary: string}>  $alerts
+     * @param  non-empty-list<array{payload: array<string, mixed>, summary: string, subjects: array<string, string>}>  $alerts
      * @param  string|null  $subjectPublicId  the person a single webhook alert names
      */
     private function queue(string $channel, array $alerts, ?string $subjectPublicId = null): void
@@ -181,7 +198,7 @@ class AlertDispatcherService
             ['payload' => $payload, 'summary' => $summary] = $alerts[0];
             $body = $isPerUser ? $summary : $this->line($payload, $summary, true).PHP_EOL.$payload['url'];
 
-            DeliverAlertJob::dispatch($channel, $payload, $body)->afterCommit();
+            DeliverAlertJob::dispatch($channel, $payload, $body, [], $alerts[0]['subjects'])->afterCommit();
 
             return;
         }
@@ -208,7 +225,7 @@ class AlertDispatcherService
             ]);
         }
 
-        DeliverAlertJob::dispatch($channel, $lead, $text, $items)->afterCommit();
+        DeliverAlertJob::dispatch($channel, $lead, $text, $items, array_merge(...array_column($alerts, 'subjects')))->afterCommit();
     }
 
     /**

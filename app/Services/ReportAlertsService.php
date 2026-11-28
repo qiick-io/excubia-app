@@ -11,6 +11,7 @@ use App\Enums\SeverityEnum;
 use App\Models\HealthReport;
 use App\Models\Project;
 use App\Models\User;
+use Illuminate\Support\Str;
 
 /**
  * The alerts a new report raises (#22), from what it changed in the finding lifecycle (#18):
@@ -32,6 +33,9 @@ use App\Models\User;
  */
 class ReportAlertsService
 {
+    /** Length of `alert_logs.summary`: a finding summary with its assignee fits it whole. */
+    public const SUMMARY_LENGTH = 500;
+
     /** Finding alerts per report and kind, so a big upgrade does not flood the channels. */
     public const FINDINGS_LIMIT = 20;
 
@@ -136,7 +140,19 @@ class ReportAlertsService
         $summary = trim(($finding['subject'] ?? '').': '.($finding['message'] ?? ''), ': ');
         $assignee = $this->assigneeOf($finding, $assignees);
 
-        return $assignee === null ? $summary : "{$summary} (assigned to {$assignee->name})";
+        return $assignee === null ? $summary : self::withAssignee($summary, $assignee->name, self::SUMMARY_LENGTH);
+    }
+
+    /**
+     * `<summary> (assigned to <name>)` within `$limit` characters: the summary is cut, never the
+     * name, so the stored and notified texts always end with the whole name, which the erasure
+     * finds and replaces (#381).
+     */
+    public static function withAssignee(string $summary, string $name, int $limit): string
+    {
+        $suffix = ' (assigned to '.$name.')';
+
+        return Str::limit($summary, max(0, $limit - mb_strlen($suffix) - 3)).$suffix;
     }
 
     /**

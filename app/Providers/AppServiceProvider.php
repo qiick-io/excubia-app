@@ -19,10 +19,12 @@ use App\Policies\SystemHealthPolicy;
 use App\Services\AccessResponderService;
 use App\Services\ActiveUsersService;
 use App\Services\ApiKeyAuthorizerService;
+use App\Services\ApiKeyErasureRepositoryService;
 use App\Services\ApiKeyExpiryRecipientService;
 use App\Services\ApiKeyRepositoryService;
 use App\Services\ClamAvFileScannerService;
 use App\Services\EnvironmentMaintenanceModeService;
+use App\Services\ErasureOrchestratorService;
 use App\Services\JobMonitorQueryService;
 use App\Services\LocalePreferencesService;
 use App\Services\OidcBreakGlassPolicyService;
@@ -62,6 +64,7 @@ use Qiick\Access\Contracts\RoleCatalog;
 use Qiick\Access\Contracts\TwoFactorPolicy;
 use Qiick\Access\Contracts\TwoFactorResponder;
 use Qiick\ApiKeys\ApiKeyAuthenticator;
+use Qiick\ApiKeys\Contracts\ApiKeyErasureRepositoryContract;
 use Qiick\ApiKeys\Contracts\ApiKeyRepository;
 use Qiick\ApiKeys\Contracts\AttemptLimiter;
 use Qiick\ApiKeys\Contracts\Clock;
@@ -173,6 +176,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(KeyAuthorizer::class, ApiKeyAuthorizerService::class);
         $this->app->bind(ScopeVocabulary::class, ApiKeyAuthorizerService::class);
         $this->app->bind(ExpiryRecipientResolver::class, ApiKeyExpiryRecipientService::class);
+        // Used only by the user erasure (ErasureOrchestratorService), never by authentication.
+        $this->app->bind(ApiKeyErasureRepositoryContract::class, ApiKeyErasureRepositoryService::class);
 
         $this->app->bind(ApiKeyAuthenticator::class, fn (Application $app): ApiKeyAuthenticator => new ApiKeyAuthenticator(
             codec: $app->make(TokenCodec::class),
@@ -353,7 +358,8 @@ class AppServiceProvider extends ServiceProvider
         });
 
         Event::listen(Logout::class, function (Logout $event): void {
-            if (! $event->user instanceof User) {
+            // A self-deleted account logs out after its erasure: no new row with its IP.
+            if (! $event->user instanceof User || app(ErasureOrchestratorService::class)->isBeingErased($event->user)) {
                 return;
             }
 

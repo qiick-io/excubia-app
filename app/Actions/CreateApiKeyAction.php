@@ -9,6 +9,9 @@ use App\Enums\ActivityEventEnum;
 use App\Enums\ApiKeyScopeEnum;
 use App\Models\ApiKey;
 use App\Models\User;
+use App\Services\ErasureOrchestratorService;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Facades\DB;
 use Qiick\ApiKeys\Contracts\Clock;
 use Qiick\ApiKeys\Contracts\LifetimePolicy;
 use Qiick\ApiKeys\LifetimeAssertion;
@@ -24,12 +27,14 @@ final class CreateApiKeyAction
         private readonly TokenCodec $tokenCodec,
         private readonly LifetimePolicy $lifetimePolicy,
         private readonly Clock $clock,
+        private readonly ErasureOrchestratorService $erasure,
     ) {}
 
     /**
      * @return string the plain token, shown once to the caller
      *
      * @throws \InvalidArgumentException when the expiry breaks `api-keys.max_lifetime_days`
+     * @throws AuthorizationException when the owner's erasure began after the request was authorised
      */
     public function execute(User $owner, ApiKeyData $apiKeyData, ?User $creator = null): string
     {
@@ -41,31 +46,36 @@ final class CreateApiKeyAction
             ApiKeyScopeEnum::normalize($apiKeyData->scopes),
         );
 
-        $apiKey = new ApiKey([
-            'name' => $apiKeyData->name,
-            'scopes' => $scopes,
-            'ip_allowlist' => $apiKeyData->ipAllowlist,
-            'rate_limit_per_minute' => $apiKeyData->rateLimitPerMinute,
-            'expires_at' => $apiKeyData->expiresAt,
-        ]);
-        $ownerPrincipal = $owner->principal
-            ?? $owner->principal()->firstOrFail();
+        DB::transaction(function () use ($owner, $creator, $apiKeyData, $token, $scopes): void {
+            // A key is never issued after the owner's erasure began (it would outlive the case).
+            $this->erasure->lockLiveUser($owner);
 
-        $apiKey->forceFill([
-            'owner_id' => $owner->id,
-            'owner_principal_id' => $ownerPrincipal->getKey(),
-            'created_by' => $creator->id,
-            'key_prefix' => $token->keyPrefix,
-            'key_hash' => $token->keyHash,
-            'token_version' => $token->tokenVersion,
-        ])->saveQuietly();
+            $apiKey = new ApiKey([
+                'name' => $apiKeyData->name,
+                'scopes' => $scopes,
+                'ip_allowlist' => $apiKeyData->ipAllowlist,
+                'rate_limit_per_minute' => $apiKeyData->rateLimitPerMinute,
+                'expires_at' => $apiKeyData->expiresAt,
+            ]);
+            $ownerPrincipal = $owner->principal
+                ?? $owner->principal()->firstOrFail();
 
-        activity('api-keys')
-            ->causedBy($creator)
-            ->performedOn($apiKey)
-            ->event(ActivityEventEnum::Created->value)
-            ->withProperties(['name' => $apiKey->name, 'scopes' => $scopes, 'key_prefix' => $apiKey->key_prefix])
-            ->log('API key created');
+            $apiKey->forceFill([
+                'owner_id' => $owner->id,
+                'owner_principal_id' => $ownerPrincipal->getKey(),
+                'created_by' => $creator->id,
+                'key_prefix' => $token->keyPrefix,
+                'key_hash' => $token->keyHash,
+                'token_version' => $token->tokenVersion,
+            ])->saveQuietly();
+
+            activity('api-keys')
+                ->causedBy($creator)
+                ->performedOn($apiKey)
+                ->event(ActivityEventEnum::Created->value)
+                ->withProperties(['name' => $apiKey->name, 'scopes' => $scopes, 'key_prefix' => $apiKey->key_prefix])
+                ->log('API key created');
+        });
 
         return $token->plainText;
     }

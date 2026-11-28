@@ -12,6 +12,7 @@ use App\Services\AlertWebhookService;
 use App\Services\SettingsRepositoryService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Qiick\Outbound\Http\HttpRequestOptions;
 use Qiick\Outbound\Http\OutboundHttpException;
@@ -60,12 +61,14 @@ class DeliverAlertJob implements ShouldQueue
     /**
      * @param  array<string, mixed>  $payload  see AlertDispatcherService
      * @param  list<array{id: string, event: string, severity: string, summary: string}>  $alerts  every alert of a grouped message, worst first; empty for one alert
+     * @param  array<string, string>  $subjects  the people the texts name (an assignee): public id => the name as written
      */
     public function __construct(
         public readonly string $channel,
-        public readonly array $payload,
-        public readonly string $text = '',
-        public readonly array $alerts = [],
+        public array $payload,
+        public string $text = '',
+        public array $alerts = [],
+        public readonly array $subjects = [],
     ) {}
 
     /**
@@ -83,6 +86,25 @@ class DeliverAlertJob implements ShouldQueue
         SettingsRepositoryService $settings,
         PinnedHttpClient $http,
     ): void {
+        if ($this->subjects === []) {
+            $this->deliver($settings, $http);
+
+            return;
+        }
+
+        // The named people stay share-locked until the message is sent or stored: an erasure
+        // locks their row for update first, so it waits for this send, or this sees them erased.
+        DB::transaction(function () use ($settings, $http): void {
+            $this->redactErasedSubjects();
+            $this->deliver($settings, $http);
+        });
+    }
+
+    /**
+     * @throws RuntimeException when the endpoint does not answer 2xx (the job is retried)
+     */
+    private function deliver(SettingsRepositoryService $settings, PinnedHttpClient $http): void
+    {
         $userId = self::emailUserId($this->channel);
 
         if ($userId !== null) {
@@ -124,6 +146,36 @@ class DeliverAlertJob implements ShouldQueue
         } catch (UnsafeUrl $exception) {
             $this->record($settings, false, 'Refused: '.$exception->reason());
         }
+    }
+
+    /**
+     * A person erased (or deactivated) after this message was queued, or while it waited for a
+     * retry, is no longer named: their name becomes `[erased]` in every text it sends (#381).
+     */
+    private function redactErasedSubjects(): void
+    {
+        if ($this->subjects === []) {
+            return;
+        }
+
+        $liveSubjectIds = User::query()->whereIn('public_id', array_keys($this->subjects))->where('is_active', true)->sharedLock()->pluck('public_id')->all();
+        $erasedNames = array_values(array_diff_key($this->subjects, array_flip($liveSubjectIds)));
+
+        if ($erasedNames === []) {
+            return;
+        }
+
+        $redact = function (mixed $value) use (&$redact, $erasedNames): mixed {
+            return match (true) {
+                is_string($value) => str_replace($erasedNames, '[erased]', $value),
+                is_array($value) => array_map($redact, $value),
+                is_object($value) => (object) array_map($redact, (array) $value),
+                default => $value,
+            };
+        };
+        $this->text = $redact($this->text);
+        $this->payload = $redact($this->payload);
+        $this->alerts = $redact($this->alerts);
     }
 
     /**
