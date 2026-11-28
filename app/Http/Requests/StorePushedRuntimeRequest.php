@@ -5,9 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests;
 
 use App\Enums\RuntimeTypeEnum;
-use App\Models\Project;
 use Illuminate\Contracts\Validation\ValidationRule;
-use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 /**
@@ -21,7 +19,7 @@ use Illuminate\Validation\Rule;
  * skips and counts the entry when the app cannot read it. The token was checked by
  * AuthenticateProjectTokenMiddleware.
  */
-class StorePushedRuntimeRequest extends FormRequest
+class StorePushedRuntimeRequest extends IngestRequest
 {
     /** The largest counter one aggregate may report (#473): a billion per minute and type. */
     public const int MAX_COUNTER = 1_000_000_000;
@@ -114,11 +112,6 @@ class StorePushedRuntimeRequest extends FormRequest
         'unknownCount' => ['required', 'integer', 'min:0'],
     ];
 
-    public function authorize(): bool
-    {
-        return $this->project() instanceof Project;
-    }
-
     /**
      * The envelope, then one rule set per aggregate of a known type.
      *
@@ -137,13 +130,15 @@ class StorePushedRuntimeRequest extends FormRequest
             'runtime.aggregates' => ['present', 'list'],
         ];
 
+        $aggregates = data_get($this->validationData(), 'runtime.aggregates');
+
         // Wildcards only when some entry needs them (see aggregateRules()).
-        if (! self::isListOf($this->input('runtime.aggregates'), fn (mixed $aggregate): bool => is_array($aggregate) && is_string($aggregate['type'] ?? null) && trim($aggregate['type']) !== '')) {
+        if (! self::isListOf($aggregates, fn (mixed $aggregate): bool => is_array($aggregate) && is_string($aggregate['type'] ?? null) && trim($aggregate['type']) !== '')) {
             $rules['runtime.aggregates.*'] = ['array'];
             $rules['runtime.aggregates.*.type'] = ['required', 'string'];
         }
 
-        foreach ((array) $this->input('runtime.aggregates', []) as $index => $aggregate) {
+        foreach ((array) $aggregates as $index => $aggregate) {
             $type = is_array($aggregate) && is_string($aggregate['type'] ?? null) ? RuntimeTypeEnum::tryFrom($aggregate['type']) : null;
 
             if ($type === null) {
@@ -166,13 +161,6 @@ class StorePushedRuntimeRequest extends FormRequest
         return [
             'protocolVersion.in' => 'Unsupported protocolVersion. This Excubia app accepts: '.implode(', ', StorePushedReportRequest::PROTOCOL_VERSIONS).'. Update qiick/excubia-core or the app.',
         ];
-    }
-
-    public function project(): ?Project
-    {
-        $project = $this->attributes->get('project');
-
-        return $project instanceof Project ? $project : null;
     }
 
     /**

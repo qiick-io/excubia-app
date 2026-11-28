@@ -5,10 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Requests;
 
 use App\Enums\SeverityEnum;
-use App\Models\Project;
 use App\Traits\BuildsPerIndexRulesTrait;
 use Illuminate\Contracts\Validation\ValidationRule;
-use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 /**
@@ -16,18 +14,13 @@ use Illuminate\Validation\Rule;
  * the report inside it (`docs/report-schema.json`, schema version 1). Unknown keys are allowed,
  * so additive core changes keep working. The token was checked by AuthenticateProjectTokenMiddleware.
  */
-class StorePushedReportRequest extends FormRequest
+class StorePushedReportRequest extends IngestRequest
 {
     use BuildsPerIndexRulesTrait;
 
     public const PROTOCOL_VERSIONS = [1];
 
     private const STATUSES = ['pass', 'warn', 'fail', 'skipped'];
-
-    public function authorize(): bool
-    {
-        return $this->project() instanceof Project;
-    }
 
     /**
      * The check rules are built per index of the pushed checks (BuildsPerIndexRulesTrait, #238).
@@ -93,12 +86,5 @@ class StorePushedReportRequest extends FormRequest
             'protocolVersion.in' => 'Unsupported protocolVersion. This Excubia app accepts: '.implode(', ', self::PROTOCOL_VERSIONS).'. Update qiick/excubia-core or the app.',
             'report.schemaVersion.in' => 'Unsupported report schemaVersion. This Excubia app accepts: 1.',
         ];
-    }
-
-    public function project(): ?Project
-    {
-        $project = $this->attributes->get('project');
-
-        return $project instanceof Project ? $project : null;
     }
 }

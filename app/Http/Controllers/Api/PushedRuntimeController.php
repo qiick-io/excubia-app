@@ -30,7 +30,7 @@ class PushedRuntimeController extends Controller
 
         $release = $request->json('runtime.release');
         $environment = $request->json('runtime.environment');
-        $isNew = $storeRuntime->execute($project, $request->string('batchId')->toString(), $aggregates, is_string($release) ? $release : null, is_string($environment) ? $environment : null);
+        $isNew = $storeRuntime->execute($project, $request->envelope()['batchId'], $aggregates, is_string($release) ? $release : null, is_string($environment) ? $environment : null);
 
         return $this->pushedBatchResponse($isNew, $storeRuntime->skippedCount($aggregates));
     }

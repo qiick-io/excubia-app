@@ -37,10 +37,11 @@ trait BuildsPerIndexRulesTrait
      */
     private function perIndexRules(array $rules): array
     {
+        $payload = $this->validationData();
         $expanded = [];
 
         foreach ($rules as $key => $fieldRules) {
-            foreach (self::perIndexKeys(explode('.', $key), $this->all(), '') as $expandedKey) {
+            foreach (self::perIndexKeys(explode('.', $key), $payload, '') as $expandedKey) {
                 $expanded[$expandedKey] = $fieldRules;
 
                 if (str_contains($key, '*') && ! str_contains($expandedKey, '*')) {
