@@ -30,6 +30,11 @@ updates:
     groups:
       npm-minor-patch:
         update-types: ["minor", "patch"]
+    # React Table 9 replaces the table API (createCoreRowModel, ReactTable,
+    # ColumnMeta and Row generics); the shared data table needs a dedicated migration.
+    ignore:
+      - dependency-name: "@tanstack/react-table"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: "docker"
     directory: "/"
     target-branch: "develop"
