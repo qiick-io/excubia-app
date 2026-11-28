@@ -34,9 +34,9 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
+use Qiick\Outbound\Contracts\HostResolver;
 use Qiick\Outbound\Models\WebhookDelivery;
 use Qiick\Outbound\Models\WebhookEndpoint;
-use Qiick\Outbound\Ssrf\RemoteUrlGuard;
 use Spatie\Permission\Models\Role;
 
 /**
@@ -243,7 +243,7 @@ it('records each channel delivery on the alert history', function () {
     app(AlertDispatcherService::class)->dispatch(AlertEventEnum::ProjectStale, $project, 'no report');
     // The first delivery is accepted; the second answers 410 Gone, which ends it at once.
     $responses = [204, 410];
-    bindPinnedAlertClient(app(RemoteUrlGuard::class), static function () use (&$responses) {
+    bindPinnedAlertClient(app(HostResolver::class), static function () use (&$responses) {
         return Http::response('', array_shift($responses) ?? 500);
     });
     app()->call([new SendAlertWebhooksJob, 'handle']);
@@ -649,10 +649,10 @@ it('marks the webhook failed for alerts whose body the daily prune expires, even
         'created_at' => $isPastDeliveryRetention ? Date::now()->subDays(100) : null,
     ]));
     $prune = collect(app(Schedule::class)->events())
-        ->first(fn ($event): bool => str_contains((string) $event->command, 'outbound:webhooks:prune'));
+        ->first(fn ($event): bool => str_contains((string) $event->command, 'outbound:prune-deliveries'));
 
     $prune->callBeforeCallbacks(app());
-    $this->artisan('outbound:webhooks:prune')->assertSuccessful();
+    $this->artisan('outbound:prune-deliveries')->assertSuccessful();
     $prune->callAfterCallbacks(app());
 
     expect(AlertLog::query()->sole()->deliveries)->toBe(['webhook' => AlertLog::FAILED]);
@@ -667,7 +667,7 @@ it('marks the webhook failed for an alert whose delivery a direct prune run alre
     DB::table('webhook_deliveries')->update(['payload_expires_at' => Date::now()->subMinute(), 'created_at' => Date::now()->subDays(100)]);
 
     // Run by hand, without the scheduler's callbacks: the prune exhausts and deletes the row.
-    $this->artisan('outbound:webhooks:prune')->assertSuccessful();
+    $this->artisan('outbound:prune-deliveries')->assertSuccessful();
 
     expect(WebhookDelivery::query()->count())->toBe(0);
 

@@ -55,10 +55,12 @@ Schedule::command('excubia:send-digests')->weeklyOn(1, '08:00');
 
 // Alert webhook (qiick/laravel-outbound): the first attempt is queued when the alert is stored;
 // this run sends retries once a minute (no sub-minute task, so a scale-to-zero host can sleep).
-Schedule::command('outbound:webhooks:work')->everyMinute()->withoutOverlapping()->onOneServer();
+Schedule::command('outbound:work-deliveries')->everyMinute()->withoutOverlapping()->onOneServer();
 // Clears delivery bodies after 30 days and settled delivery rows after 90 (package defaults);
 // then alerts whose delivery the prune gave up on, or already deleted, stop reading `queued`.
-Schedule::command('outbound:webhooks:prune')->daily()->onOneServer()
+// Excubia schedules it itself for that callback, so the package's own schedule is off
+// (config/outbound.php `webhooks.schedule`).
+Schedule::command('outbound:prune-deliveries')->daily()->onOneServer()
     ->after(fn () => app(ReconcileAlertWebhookHistoryAction::class)->execute());
 
 // SSO back-channel logouts (qiick/laravel-oidc): drop stored logout revocations once they expire

@@ -211,5 +211,6 @@ it('names the assignee in the alerts of a finding', function () {
     $method = new ReflectionMethod(ReportAlertsService::class, 'assigneesByFingerprint');
     $assignees = $method->invoke(app(ReportAlertsService::class), $project, [['fingerprint' => $finding->fingerprint], ['fingerprint' => 'other']]);
 
-    expect($assignees)->toBe([$finding->fingerprint => 'Grace Tester']);
+    expect(array_map(fn (User $assignee): string => $assignee->name, $assignees))->toBe([$finding->fingerprint => 'Grace Tester'])
+        ->and($assignees[$finding->fingerprint]->public_id)->toBe($reader->public_id);
 });

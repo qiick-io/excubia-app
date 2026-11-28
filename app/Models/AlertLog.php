@@ -23,6 +23,7 @@ use Illuminate\Support\Carbon;
  * @property string $event
  * @property string $severity
  * @property string|null $subject
+ * @property string|null $subject_public_id the person the alert names (an assignee)
  * @property string $summary
  * @property string $status
  * @property string|null $reason
@@ -30,7 +31,7 @@ use Illuminate\Support\Carbon;
  * @property array<string, string> $deliveries
  * @property Carbon $created_at
  */
-#[Fillable(['uuid', 'project_id', 'event', 'severity', 'subject', 'summary', 'status', 'reason', 'fingerprints', 'deliveries'])]
+#[Fillable(['uuid', 'project_id', 'event', 'severity', 'subject', 'summary', 'subject_public_id', 'status', 'reason', 'fingerprints', 'deliveries'])]
 class AlertLog extends Model
 {
     public const QUEUED = 'queued';

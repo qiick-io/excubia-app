@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Actions\RecordAlertDeliveryAction;
 use App\Jobs\DeliverAlertJob;
 use App\Jobs\SendAlertWebhooksJob;
+use App\Models\User;
 use DateTimeImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -63,12 +64,22 @@ class AlertWebhookService
      * surrounding transaction commits.
      *
      * @param  array<string, mixed>  $payload  see AlertDispatcherService
+     * @param  string|null  $subjectPublicId  the public id of the person the alert names (an
+     *                                        assignee): OutboundEraser cancels the delivery and
+     *                                        drops its body when that person is erased
      *
      * @side-effect Writes webhook_deliveries rows (or marks the alert's webhook failed without an
      * endpoint); queues SendAlertWebhooksJob after the commit.
      */
-    public function send(array $payload): void
+    public function send(array $payload, ?string $subjectPublicId = null): void
     {
+        if ($subjectPublicId !== null && ! $this->isActiveSubject($subjectPublicId)) {
+            // The person was erased (or deactivated) after the alert named them: neither their
+            // name nor their id goes out.
+            $payload['data'] = (object) array_diff_key((array) ($payload['data'] ?? []), ['assignee' => true]);
+            $subjectPublicId = null;
+        }
+
         $data = $payload;
         unset($data['id'], $data['event']);
 
@@ -81,7 +92,7 @@ class AlertWebhookService
 
         // Stored with the alert, in the caller's transaction: a rollback drops both, and once the
         // alert is committed its delivery is too, for the schedule to send if the job never runs.
-        if ($this->coordinator->dispatch($message)->isEmpty()) {
+        if ($this->coordinator->dispatch($message, subjectPublicId: $subjectPublicId)->isEmpty()) {
             // The endpoint was cleared or disabled since the alert chose its channels: nothing
             // will send it, so the history says so instead of waiting forever.
             $this->recordDelivery->execute($message->id, DeliverAlertJob::WEBHOOK, false);
@@ -90,5 +101,16 @@ class AlertWebhookService
         }
 
         DB::afterCommit(fn () => SendAlertWebhooksJob::dispatch());
+    }
+
+    /**
+     * Whether the person an alert names may still appear in it. A shared lock on their row, in the
+     * alert's transaction: an erasure locks the row for update before it locks the person out, so
+     * either it waits for this delivery to commit (and its outbound step then cancels it), or this
+     * reads the person as inactive.
+     */
+    private function isActiveSubject(string $subjectPublicId): bool
+    {
+        return User::query()->where('public_id', $subjectPublicId)->where('is_active', true)->sharedLock()->exists();
     }
 }

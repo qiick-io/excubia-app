@@ -9,6 +9,7 @@ use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Qiick\Outbound\Contracts\HostResolver;
+use Qiick\Outbound\Http\OutboundHttpStackData;
 use Qiick\Outbound\Models\WebhookDeliveryAttempt;
 use Qiick\Outbound\Ssrf\RemoteUrlGuard;
 use Qiick\Outbound\Ssrf\UnsafeUrl;
@@ -41,21 +42,18 @@ function pinHostResolver(array $addresses = ['93.184.216.34']): HostResolver
 
 function pinGuard(array $addresses = ['93.184.216.34']): RemoteUrlGuard
 {
-    return new RemoteUrlGuard(pinHostResolver($addresses), httpsOnly: true);
+    return OutboundHttpStackData::make(pinHostResolver($addresses), httpsOnly: true)->guard;
 }
 
-function pinGuardThatMustNotResolve(): RemoteUrlGuard
+function pinResolverThatMustNotResolve(): HostResolver
 {
-    return new RemoteUrlGuard(
-        new class implements HostResolver
+    return new class implements HostResolver
+    {
+        public function resolve(string $host): array
         {
-            public function resolve(string $host): array
-            {
-                throw new RuntimeException("Guard resolved an address literal as a name: {$host}");
-            }
-        },
-        httpsOnly: true,
-    );
+            throw new RuntimeException("Guard resolved an address literal as a name: {$host}");
+        }
+    };
 }
 
 /**
@@ -151,11 +149,11 @@ it('refuses every spelling of the ipv4 metadata address', function (string $url)
 })->with('metadata ipv4 spellings');
 
 it('reads an ipv4 spelling as the address it is, and never looks it up as a name', function (string $url): void {
-    expect(pinGuardReason(pinGuardThatMustNotResolve(), $url))->not->toBeNull();
+    expect(pinGuardReason(OutboundHttpStackData::make(pinResolverThatMustNotResolve(), httpsOnly: true)->guard, $url))->not->toBeNull();
 })->with('metadata ipv4 spellings');
 
 it('refuses an ipv4 address that is not written in dotted decimal', function (string $url): void {
-    expect(pinGuardReason(pinGuardThatMustNotResolve(), $url))->toBe('URL is invalid.');
+    expect(pinGuardReason(OutboundHttpStackData::make(pinResolverThatMustNotResolve(), httpsOnly: true)->guard, $url))->toBe('URL is invalid.');
 })->with('non canonical ipv4 spellings');
 
 it('refuses a hostname that resolves to the metadata address', function (): void {
@@ -238,7 +236,7 @@ it('still treats a name that only looks numeric as a name', function (string $ho
 ]);
 
 it('refuses a hostname with empty labels as an invalid URL, without resolving DNS', function (string $host): void {
-    expect(pinGuardReason(pinGuardThatMustNotResolve(), "https://{$host}/hook"))->toBe('URL is invalid.');
+    expect(pinGuardReason(OutboundHttpStackData::make(pinResolverThatMustNotResolve(), httpsOnly: true)->guard, "https://{$host}/hook"))->toBe('URL is invalid.');
 })->with([
     '1..2',
     '.example.com',
@@ -257,10 +255,8 @@ it('resolves once per delivery and sends the request to the address it checked',
             return $this->lookups === 1 ? ['93.184.216.34'] : ['169.254.169.254'];
         }
     };
-    $guard = new RemoteUrlGuard($resolver, httpsOnly: true);
-
     $sentOptions = null;
-    bindPinnedAlertClient($guard, function (Request $request, array $options) use (&$sentOptions): PromiseInterface {
+    bindPinnedAlertClient($resolver, function (Request $request, array $options) use (&$sentOptions): PromiseInterface {
         $sentOptions = $options;
 
         return Http::response('', 204);
@@ -274,7 +270,7 @@ it('resolves once per delivery and sends the request to the address it checked',
     expect($resolver->lookups)->toBe(1)
         ->and($sentOptions['curl'] ?? null)->toBe([CURLOPT_CONNECT_TO => ['::93.184.216.34:443']]);
 
-    bindPinnedAlertClient($guard, static fn (): PromiseInterface => Http::response('', 204));
+    bindPinnedAlertClient($resolver, static fn (): PromiseInterface => Http::response('', 204));
 
     app(AlertWebhookService::class)->send(['id' => (string) Str::uuid(), 'event' => 'ping']);
     app()->call([new SendAlertWebhooksJob, 'handle']);
@@ -285,7 +281,7 @@ it('resolves once per delivery and sends the request to the address it checked',
 
 it('pins a literal address in the url too, since curl reads more spellings than the guard', function (): void {
     $sentOptions = null;
-    bindPinnedAlertClient(pinGuardThatMustNotResolve(), function (Request $request, array $options) use (&$sentOptions): PromiseInterface {
+    bindPinnedAlertClient(pinResolverThatMustNotResolve(), function (Request $request, array $options) use (&$sentOptions): PromiseInterface {
         $sentOptions = $options;
 
         return Http::response('', 204);

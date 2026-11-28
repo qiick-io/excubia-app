@@ -258,8 +258,9 @@ retries, `Retry-After`, auto-disable, redelivery and body retention.
 `webhook_endpoint_secrets`, `webhook_subscriptions`, `webhook_deliveries`,
 `webhook_delivery_attempts`). No Excubia migration changes; no scope column (one instance scope).
 
-**Config**: `routes/console.php` schedules `outbound:webhooks:work` (`everyMinute()`, on one server) and
-`outbound:webhooks:prune` (`daily()`); `OUTBOUND_WEBHOOK_TIMEOUT_SECONDS` (15 s) is shorter than
+**Config**: `routes/console.php` schedules `outbound:work-deliveries` (`everyMinute()`, on one server) and
+`outbound:prune-deliveries` (`daily()`, the package's own schedule off so the history reconciliation
+runs after it; the `outbound:webhooks:*` names end with beta.4); `OUTBOUND_WEBHOOK_TIMEOUT_SECONDS` (15 s) is shorter than
 the scheduler's own timeout; `User` already uses `Notifiable` (auto-disable email to `created_by`).
 Seeders never `create()` secrets directly (`SecretRotator`).
 
@@ -485,7 +486,7 @@ For the maintainer, after the group's last merge is deployed:
        system project without HTTP; it appears on the dashboard (through the bypass).
     2. Settings → Integrations → send a test event to each channel, then deliver it with
        `php artisan queue:work --force --stop-when-empty` (`--force` runs in maintenance mode)
-       and `php artisan outbound:webhooks:work`. Test events have no alert history row: the check
+       and `php artisan outbound:work-deliveries`. Test events have no alert history row: the check
        is the receiver. Slack and Telegram show the test message; the webhook receiver gets a
        `ping` it verifies with the new signing secret, and the webhook card in Settings →
        Integrations shows the last success.
@@ -496,6 +497,24 @@ For the maintainer, after the group's last merge is deployed:
    watched app its new `EXCUBIA_APP_TOKEN` and run `php artisan excubia:push` there: its first
    report on the new database closes the cutover. The push API accepts only the project tokens
    the maintainer has just issued.
+
+### Outbound 0.2.0-beta.4 reset (#547)
+
+`qiick/laravel-outbound` 0.2.0-beta.4 edits its own `webhook_deliveries` and
+`webhook_delivery_attempts` create migrations, so it runs only on a database created by it. Use the
+checklist above, in this order, with no step skipped:
+
+1. Close the app (maintenance variable), stop the queue workers and the scheduler.
+2. Snapshot the old database and attach a new empty one (steps 3 and 4 above).
+3. Merge and deploy #547 only now: beta.4 never starts on the old schema.
+4. Verify the new shape before reopening: `php artisan db:table webhook_deliveries` lists
+   `subject_public_id` and `claimed_triggered_by`, and `php artisan db:table webhook_delivery_attempts`
+   has no `response_excerpt` (`outbound:check` checks the tables, not their columns). Then
+   `php artisan outbound:check`, and a test event delivered with `php artisan outbound:work-deliveries`.
+5. Reopen as in step 9 above.
+
+There is no claim cutover: Excubia verifies no inbound webhooks, so it has no webhook-id claims,
+and the new database starts with no beta delivery rows or cache records.
 
 ## Open questions
 

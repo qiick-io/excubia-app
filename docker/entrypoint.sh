@@ -39,6 +39,7 @@ if [ "${EXCUBIA_RUN_MIGRATIONS:-true}" != "false" ]; then
     # cached and the migrated schema: a broken config or schema stops the container before it serves.
     php artisan access:check --no-interaction
     php artisan api-keys:check --no-interaction
+    php artisan outbound:check --no-interaction
     php artisan http-basics:check --no-interaction
 fi
 

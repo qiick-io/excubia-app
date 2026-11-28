@@ -31,6 +31,8 @@ it('refuses production without --force', function () {
 
 it('runs on production with --force', function () {
     $this->app['env'] = 'production';
+    // Production uses a shared cache; outbound:check refuses the array store outside tests.
+    config(['cache.default' => 'database']);
 
     $this->artisan(UpgradeCommand::class, [
         '--force' => true,
@@ -57,6 +59,7 @@ it('runs the qiick package checks', function () {
     $this->artisan(UpgradeCommand::class, ['--force' => true, '--no-migrate' => true, '--no-permissions' => true])
         ->expectsOutputToContain('Running access:check')
         ->expectsOutputToContain('Running api-keys:check')
+        ->expectsOutputToContain('Running outbound:check')
         ->expectsOutputToContain('Running http-basics:check')
         ->assertSuccessful();
 });

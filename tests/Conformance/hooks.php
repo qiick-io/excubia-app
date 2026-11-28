@@ -60,6 +60,7 @@ use Qiick\Access\Laravel\AccessContext;
 use Qiick\Access\Principals\DeactivationReason;
 use Qiick\Access\Principals\PrincipalDirectory;
 use Qiick\Outbound\Contracts\HostResolver;
+use Qiick\Outbound\Http\OutboundHttpStackData;
 use Qiick\Outbound\Models\WebhookDeliveryAttempt;
 use Qiick\Outbound\Ssrf\RemoteUrlGuard;
 use Qiick\Outbound\Ssrf\UnsafeUrl;
@@ -391,17 +392,14 @@ return [
 
         $request = null;
         $body = null;
-        $guard = new RemoteUrlGuard(
-            new class implements HostResolver
+        $resolver = new class implements HostResolver
+        {
+            public function resolve(string $host): array
             {
-                public function resolve(string $host): array
-                {
-                    return ['93.184.216.34'];
-                }
-            },
-            httpsOnly: true,
-        );
-        bindPinnedAlertClient($guard, static function (ClientRequest $clientRequest) use (&$request, &$body) {
+                return ['93.184.216.34'];
+            }
+        };
+        bindPinnedAlertClient($resolver, static function (ClientRequest $clientRequest) use (&$request, &$body) {
             $request = $clientRequest;
             $body = json_decode($clientRequest->body(), true, 512, JSON_THROW_ON_ERROR);
 
@@ -428,7 +426,7 @@ return [
             }
         };
 
-        $guard = new RemoteUrlGuard(
+        $guard = OutboundHttpStackData::make(
             new class implements HostResolver
             {
                 public function resolve(string $host): array
@@ -437,7 +435,7 @@ return [
                 }
             },
             httpsOnly: true,
-        );
+        )->guard;
 
         expect($guardReason($guard, 'https://169.254.169.254/latest/meta-data/'))->toBe('Host is not allowed.')
             ->and($guardReason($guard, 'https://2852039166/latest/meta-data/'))->toBe('Host is not allowed.');
@@ -460,10 +458,8 @@ return [
                 return ['93.184.216.34'];
             }
         };
-        $pinnedGuard = new RemoteUrlGuard($resolver, httpsOnly: true);
-
         $sentOptions = null;
-        bindPinnedAlertClient($pinnedGuard, static function (ClientRequest $_request, array $options) use (&$sentOptions) {
+        bindPinnedAlertClient($resolver, static function (ClientRequest $_request, array $options) use (&$sentOptions) {
             $sentOptions = $options;
 
             return Http::response('', 204);
@@ -476,19 +472,16 @@ return [
             ->and($sentOptions['curl'] ?? null)->toBe([CURLOPT_CONNECT_TO => ['::93.184.216.34:443']]);
 
         foreach (['10.0.0.8' => 'Host resolves to a disallowed address.', '169.254.169.254' => 'Host resolves to a disallowed address.'] as $address => $reason) {
-            $blockedGuard = new RemoteUrlGuard(
-                new class($address) implements HostResolver
-                {
-                    public function __construct(private readonly string $address) {}
+            $blockedResolver = new class($address) implements HostResolver
+            {
+                public function __construct(private readonly string $address) {}
 
-                    public function resolve(string $host): array
-                    {
-                        return [$this->address];
-                    }
-                },
-                httpsOnly: true,
-            );
-            bindPinnedAlertClient($blockedGuard, static fn () => Http::response('', 204));
+                public function resolve(string $host): array
+                {
+                    return [$this->address];
+                }
+            };
+            bindPinnedAlertClient($blockedResolver, static fn () => Http::response('', 204));
             $sendAlertWebhook();
 
             $attempt = WebhookDeliveryAttempt::query()->latest('id')->firstOrFail();
