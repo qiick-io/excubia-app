@@ -33,7 +33,6 @@ type GeneralProjectSettings = Pick<
     | 'reports_kept_per_project'
     | 'runtime_retention_days'
     | 'exceptions_retention_days'
-    | 'activity_retention_days'
 >;
 
 type NumberField = {
@@ -42,8 +41,7 @@ type NumberField = {
         | 'pennant_stale_after_days'
         | 'reports_kept_per_project'
         | 'runtime_retention_days'
-        | 'exceptions_retention_days'
-        | 'activity_retention_days';
+        | 'exceptions_retention_days';
     labelKey: string;
     hintKey: string;
     max: number;
@@ -89,12 +87,6 @@ const RETENTION_FIELDS: NumberField[] = [
         hintKey: 'settings.project.exceptionsRetentionDaysHint',
         max: 3650,
     },
-    {
-        field: 'activity_retention_days',
-        labelKey: 'settings.project.activityRetentionDays',
-        hintKey: 'settings.project.activityRetentionDaysHint',
-        max: 3650,
-    },
 ];
 
 /** URL fields of the Reporting section (externa-core). */
@@ -117,7 +109,6 @@ function buildFormState(project: GeneralProjectSettings) {
         reports_kept_per_project: project.reports_kept_per_project,
         runtime_retention_days: project.runtime_retention_days,
         exceptions_retention_days: project.exceptions_retention_days,
-        activity_retention_days: project.activity_retention_days,
     };
 }
 

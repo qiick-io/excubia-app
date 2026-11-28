@@ -19,7 +19,7 @@ class ActivityLogResource extends JsonResource
 {
     /**
      * @return array{
-     *     id: int,
+     *     public_id: string,
      *     event: string|null,
      *     description: string,
      *     log_name: string|null,
@@ -37,7 +37,8 @@ class ActivityLogResource extends JsonResource
         $properties = $activity->properties?->toArray() ?? [];
 
         return [
-            'id' => $activity->id,
+            // F8: never the internal bigint; the package hides `id` for the same reason.
+            'public_id' => $activity->public_id,
             'event' => $activity->event,
             'description' => $activity->description,
             'log_name' => $activity->log_name,
@@ -56,8 +57,17 @@ class ActivityLogResource extends JsonResource
             'properties' => [
                 'ip' => $properties['ip'] ?? null,
                 'user_agent' => $properties['user_agent'] ?? null,
-                // Manual activity() events store their payload here, not in attribute_changes.
-                'meta' => collect($properties)->except(['ip', 'user_agent'])->all(),
+                // Product payload only. qiick/laravel-audit always writes the reserved
+                // attribution keys (design §3.1); they are not "field changes" meta.
+                'meta' => collect($properties)->except([
+                    'ip',
+                    'user_agent',
+                    'actor_kind',
+                    'api_key_id',
+                    'api_key_prefix',
+                    'api_key_created_by',
+                    'oauth_client_id',
+                ])->all(),
             ],
         ];
     }

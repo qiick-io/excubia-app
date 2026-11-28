@@ -127,12 +127,11 @@ function integrationChannels(array $overrides = []): array
 }
 
 it('saves only validated values from the integrations settings and drops the rule rows saved before #166', function () {
-    // What settings() saved before #166: its rule keys with the rule arrays as values.
-    app(SettingsRepositoryService::class)->setMany([
-        'channels.slack.minimum_severity' => ['required', 'in:"info","low"'],
-        'event_severities' => ['nullable', 'array'],
-        'event_severities.*' => [[]],
-    ]);
+    // What settings() saved before #166: its rule keys with the rule arrays as values. The
+    // package refuses undeclared keys, so the old rows are written as they were stored then.
+    foreach (['channels.slack.minimum_severity' => ['required', 'in:"info","low"'], 'event_severities' => ['nullable', 'array'], 'event_severities.*' => [[]]] as $key => $value) {
+        Setting::query()->create(['scope' => 'instance', 'scope_id' => '', 'group' => 'app', 'key' => $key, 'value' => $value]);
+    }
 
     $this->actingAs(alertsManager())->put(route('project.integrations.update'), [
         'webhook_url' => 'https://hooks.example.com/excubia',
@@ -218,6 +217,26 @@ it('saves the integrations settings, keeps secrets write-only and validates them
 
     $this->actingAs(User::factory()->create()->assignRole(RoleEnum::Reader->value))
         ->get(route('project.integrations.edit'))->assertForbidden();
+});
+
+it('does not flash integration secrets into the session on validation failure', function () {
+    $manager = alertsManager();
+    $slackSecret = 'https://hooks.slack.com/services/T/B/FLASH-ME-'.Str::random(8);
+    $telegramSecret = '999001:FLASH-'.Str::random(12);
+    $webhookSecret = 'https://hooks.example.com/flash-'.Str::random(8);
+
+    $this->actingAs($manager)->put(route('project.integrations.update'), [
+        'webhook_url' => $webhookSecret,
+        'notifier_slack_webhook_url' => $slackSecret,
+        'notifier_telegram_bot_token' => $telegramSecret,
+        ...integrationChannels(['slack' => ['minimum_severity' => 'loud']]),
+    ])->assertSessionHasErrors();
+
+    $sessionPayload = json_encode(session()->all()) ?: '';
+
+    expect($sessionPayload)->not->toContain($slackSecret)
+        ->and($sessionPayload)->not->toContain($telegramSecret)
+        ->and($sessionPayload)->not->toContain($webhookSecret);
 });
 
 it('generates the webhook signing secret, shows it once and rotates it with a grace period', function () {

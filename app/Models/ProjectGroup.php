@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Traits\LogsApplicationActivityTrait;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Carbon;
+use Qiick\Audit\Concerns\LogsActivity;
 
 /**
  * Named group of projects (#252), generic on purpose: a client, a team, a product line or an
@@ -24,7 +24,7 @@ use Illuminate\Support\Carbon;
 #[Fillable(['name', 'description'])]
 class ProjectGroup extends Model
 {
-    use LogsApplicationActivityTrait;
+    use LogsActivity;
 
     /**
      * @return BelongsToMany<Project, $this>

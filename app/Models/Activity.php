@@ -4,26 +4,11 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Builder;
-use Spatie\Activitylog\Models\Activity as SpatieActivity;
+use Qiick\Audit\Models\Activity as AuditActivity;
 
 /**
- * Spatie activity row with an optional organisation perimeter (fleet baseline).
- *
- * Excubia has no organisations yet: `organisation_id` stays null.
- *
- * @property string|null $organisation_id
+ * Excubia's activity row: qiick/laravel-audit's model (`public_id`, string morph ids, the
+ * organisation perimeter, write-once rows, attribution and erasure), kept under Excubia's name so
+ * its policy (ActivityPolicy) and the activity log page keep pointing at one class.
  */
-class Activity extends SpatieActivity
-{
-    /**
-     * Restrict the query to one organisation.
-     *
-     * @param  Builder<static>  $query
-     * @return Builder<static>
-     */
-    public function scopeForOrganisation(Builder $query, string $organisationId): Builder
-    {
-        return $query->where('organisation_id', $organisationId);
-    }
-}
+class Activity extends AuditActivity {}

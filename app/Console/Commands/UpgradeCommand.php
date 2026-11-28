@@ -9,7 +9,9 @@ use App\Services\Upgrade\ConfigFingerprintService;
 use App\Services\Upgrade\UpgradeGitService;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Process\ProcessResult;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Process;
+use Illuminate\Support\Facades\Schema;
 use Symfony\Component\Console\Attribute\AsCommand;
 
 /**
@@ -31,7 +33,7 @@ class UpgradeCommand extends Command
      * validates its config and schema and exits non-zero on a broken deploy. The Docker
      * entrypoint runs the same list.
      */
-    public const PACKAGE_CHECKS = ['access:check', 'api-keys:check', 'outbound:check', 'http-basics:check'];
+    public const PACKAGE_CHECKS = ['access:check', 'api-keys:check', 'outbound:check', 'http-basics:check', 'audit:check', 'settings:check'];
 
     protected $signature = 'excubia:upgrade
         {--force : Allow production APP_ENV and/or a dirty git working tree}
@@ -96,6 +98,15 @@ class UpgradeCommand extends Command
         $this->newLine();
 
         if (! $this->option('no-migrate')) {
+            if ($this->hasLegacySettingsData()) {
+                $this->error('This release adopts qiick/laravel-settings and reshapes the settings table (pre-1.0).');
+                $this->error('A database that still has the old settings rows cannot be upgraded in place.');
+                $this->line('Back up, note the settings you will re-enter, and start on a fresh empty database.');
+                $this->line('See CHANGELOG.md and docs/self-hosting.md (Upgrades, before 1.0.0).');
+
+                return self::FAILURE;
+            }
+
             $this->info('Running migrate --force…');
             $code = $this->call('migrate', ['--force' => true]);
             if ($code !== self::SUCCESS) {
@@ -430,6 +441,19 @@ class UpgradeCommand extends Command
         }
 
         return $this->input->hasParameterOption('--sync-upstream', true);
+    }
+
+    /**
+     * Pre-adoption `settings` (no `encryption` column) with at least one row: migrate would
+     * collide, and there is no in-place converter before 1.0 — operators must start empty.
+     */
+    private function hasLegacySettingsData(): bool
+    {
+        if (! Schema::hasTable('settings') || Schema::hasColumn('settings', 'encryption')) {
+            return false;
+        }
+
+        return DB::table('settings')->exists();
     }
 
     private function isGitRepo(): bool

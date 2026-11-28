@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "bfbacb4de22e20e832d1b9c0de6f57de",
+    "content-hash": "3bde416fad42ef3090de58e6e8c432db",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -443,8 +443,7 @@
                 "issues": "https://github.com/doctrine/deprecations/issues",
                 "source": "https://github.com/doctrine/deprecations/tree/1.2.0"
             },
-            "time": "2026-11-11T10:04:49+00:00",
-            "published-time": "2026-11-11T10:12:24+00:00"
+            "time": "2026-11-11T10:04:49+00:00"
         },
         {
             "name": "doctrine/inflector",
@@ -609,8 +608,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-10-01T06:59:29+00:00",
-            "published-time": "2026-10-01T07:01:28+00:00"
+            "time": "2026-10-01T06:59:29+00:00"
         },
         {
             "name": "dragonmantank/cron-expression",
@@ -741,8 +739,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-11-22T16:52:20+00:00",
-            "published-time": "2026-11-22T22:05:57+00:00"
+            "time": "2026-11-22T16:52:20+00:00"
         },
         {
             "name": "firebase/php-jwt",
@@ -816,8 +813,7 @@
                 "issues": "https://github.com/googleapis/php-jwt/issues",
                 "source": "https://github.com/googleapis/php-jwt/tree/v7.2.2"
             },
-            "time": "2026-11-17T00:25:19+00:00",
-            "published-time": "2026-11-17T19:16:00+00:00"
+            "time": "2026-11-17T00:25:19+00:00"
         },
         {
             "name": "fruitcake/php-cors",
@@ -1077,8 +1073,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-11-22T16:48:13+00:00",
-            "published-time": "2026-11-22T16:50:37+00:00"
+            "time": "2026-11-22T16:48:13+00:00"
         },
         {
             "name": "guzzlehttp/promises",
@@ -1162,8 +1157,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-11-21T03:48:02+00:00",
-            "published-time": "2026-11-21T03:48:27+00:00"
+            "time": "2026-11-21T03:48:02+00:00"
         },
         {
             "name": "guzzlehttp/psr7",
@@ -1284,8 +1278,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-11-22T00:00:35+00:00",
-            "published-time": "2026-11-22T00:01:04+00:00"
+            "time": "2026-11-22T00:00:35+00:00"
         },
         {
             "name": "guzzlehttp/uri-template",
@@ -3413,8 +3406,7 @@
                 "issues": "https://github.com/paragonie/constant_time_encoding/issues",
                 "source": "https://github.com/paragonie/constant_time_encoding"
             },
-            "time": "2026-11-18T13:55:22+00:00",
-            "published-time": "2026-11-18T13:55:46+00:00"
+            "time": "2026-11-18T13:55:22+00:00"
         },
         {
             "name": "paragonie/random_compat",
@@ -3464,8 +3456,7 @@
                 "issues": "https://github.com/paragonie/random_compat/issues",
                 "source": "https://github.com/paragonie/random_compat"
             },
-            "time": "2020-10-15T08:29:30+00:00",
-            "published-time": "2020-10-15T08:34:16+00:00"
+            "time": "2020-10-15T08:29:30+00:00"
         },
         {
             "name": "phpdocumentor/reflection-common",
@@ -3831,8 +3822,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-11-20T07:39:42+00:00",
-            "published-time": "2026-11-20T07:45:20+00:00"
+            "time": "2026-11-20T07:39:42+00:00"
         },
         {
             "name": "phpstan/phpdoc-parser",
@@ -4044,8 +4034,7 @@
                 "issues": "https://github.com/php-fig/container/issues",
                 "source": "https://github.com/php-fig/container/tree/2.0.2"
             },
-            "time": "2021-11-05T16:47:00+00:00",
-            "published-time": "2021-11-05T16:53:27+00:00"
+            "time": "2021-11-05T16:47:00+00:00"
         },
         {
             "name": "psr/event-dispatcher",
@@ -4095,8 +4084,7 @@
                 "issues": "https://github.com/php-fig/event-dispatcher/issues",
                 "source": "https://github.com/php-fig/event-dispatcher/tree/1.0.0"
             },
-            "time": "2019-01-08T18:20:26+00:00",
-            "published-time": "2019-03-25T15:31:44+00:00"
+            "time": "2019-01-08T18:20:26+00:00"
         },
         {
             "name": "psr/http-client",
@@ -4148,8 +4136,7 @@
             "support": {
                 "source": "https://github.com/php-fig/http-client"
             },
-            "time": "2023-09-23T14:17:50+00:00",
-            "published-time": "2023-09-23T14:18:12+00:00"
+            "time": "2023-09-23T14:17:50+00:00"
         },
         {
             "name": "psr/http-factory",
@@ -4204,8 +4191,7 @@
             "support": {
                 "source": "https://github.com/php-fig/http-factory"
             },
-            "time": "2024-04-15T12:06:14+00:00",
-            "published-time": "2024-05-10T07:32:19+00:00"
+            "time": "2024-04-15T12:06:14+00:00"
         },
         {
             "name": "psr/http-message",
@@ -4258,8 +4244,7 @@
             "support": {
                 "source": "https://github.com/php-fig/http-message/tree/2.0"
             },
-            "time": "2023-04-04T09:54:51+00:00",
-            "published-time": "2023-04-04T09:55:35+00:00"
+            "time": "2023-04-04T09:54:51+00:00"
         },
         {
             "name": "psr/log",
@@ -4309,8 +4294,7 @@
             "support": {
                 "source": "https://github.com/php-fig/log/tree/3.0.2"
             },
-            "time": "2024-09-11T13:17:53+00:00",
-            "published-time": "2024-09-11T13:21:14+00:00"
+            "time": "2024-09-11T13:17:53+00:00"
         },
         {
             "name": "psr/simple-cache",
@@ -4590,8 +4574,7 @@
                 "issues": "https://github.com/qiick-io/laravel-access/issues",
                 "source": "https://github.com/qiick-io/laravel-access"
             },
-            "time": "2026-11-27T13:57:00+00:00",
-            "published-time": "2026-11-27T13:57:12+00:00"
+            "time": "2026-11-27T13:57:00+00:00"
         },
         {
             "name": "qiick/laravel-api-keys",
@@ -4661,8 +4644,81 @@
                 "issues": "https://github.com/qiick-io/laravel-api-keys/issues",
                 "source": "https://github.com/qiick-io/laravel-api-keys"
             },
-            "time": "2026-11-27T14:25:30+00:00",
-            "published-time": "2026-11-27T14:25:41+00:00"
+            "time": "2026-11-27T14:25:30+00:00"
+        },
+        {
+            "name": "qiick/laravel-audit",
+            "version": "dev-chore/release-v0.1.0-beta.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/qiick-io/laravel-audit.git",
+                "reference": "cd9ffe21d63d59258f8796b20e9a974f2dc650d4"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/qiick-io/laravel-audit/zipball/cd9ffe21d63d59258f8796b20e9a974f2dc650d4",
+                "reference": "cd9ffe21d63d59258f8796b20e9a974f2dc650d4",
+                "shasum": ""
+            },
+            "require": {
+                "illuminate/console": "^12.0 || ^13.0",
+                "illuminate/contracts": "^12.0 || ^13.0",
+                "illuminate/database": "^12.0 || ^13.0",
+                "illuminate/http": "^12.0 || ^13.0",
+                "illuminate/support": "^12.0 || ^13.0",
+                "php": "^8.4",
+                "spatie/laravel-activitylog": "^5.1.3"
+            },
+            "require-dev": {
+                "larastan/larastan": "^3.3",
+                "laravel/pint": "^1.30",
+                "nunomaduro/collision": "^8.5",
+                "orchestra/testbench": "^10.0 || ^11.0",
+                "pestphp/pest": "^4.0",
+                "pestphp/pest-plugin-mutate": "^4.0",
+                "phpstan/phpstan": "^2.1"
+            },
+            "suggest": {
+                "qiick/laravel-access": "Fills actor_kind from its ActorContext (design §4)."
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Qiick\\Audit\\Laravel\\AuditServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Qiick\\Audit\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Qiick",
+                    "homepage": "https://qiick.io"
+                }
+            ],
+            "description": "Shared audit log for qiick Laravel products: the activity_log table, a secret-safe logging trait, server-side attribution, GDPR anonymisation and two-floor retention.",
+            "homepage": "https://github.com/qiick-io/laravel-audit",
+            "keywords": [
+                "Audit",
+                "activity-log",
+                "gdpr",
+                "laravel",
+                "qiick",
+                "security"
+            ],
+            "support": {
+                "issues": "https://github.com/qiick-io/laravel-audit/issues",
+                "source": "https://github.com/qiick-io/laravel-audit"
+            },
+            "time": "2026-11-28T08:48:17+00:00"
         },
         {
             "name": "qiick/laravel-http-basics",
@@ -4740,8 +4796,7 @@
                 "issues": "https://github.com/qiick-io/laravel-http-basics/issues",
                 "source": "https://github.com/qiick-io/laravel-http-basics"
             },
-            "time": "2026-11-27T12:23:01+00:00",
-            "published-time": "2026-11-27T12:23:13+00:00"
+            "time": "2026-11-27T12:23:01+00:00"
         },
         {
             "name": "qiick/laravel-oidc",
@@ -4815,8 +4870,7 @@
                 "issues": "https://github.com/qiick-io/laravel-oidc/issues",
                 "source": "https://github.com/qiick-io/laravel-oidc"
             },
-            "time": "2026-11-26T14:45:31+00:00",
-            "published-time": "2026-11-26T14:47:31+00:00"
+            "time": "2026-11-26T14:45:31+00:00"
         },
         {
             "name": "qiick/laravel-outbound",
@@ -4890,8 +4944,75 @@
                 "issues": "https://github.com/qiick-io/laravel-outbound/issues",
                 "source": "https://github.com/qiick-io/laravel-outbound"
             },
-            "time": "2026-11-27T15:02:05+00:00",
-            "published-time": "2026-11-27T15:04:47+00:00"
+            "time": "2026-11-27T15:02:05+00:00"
+        },
+        {
+            "name": "qiick/laravel-settings",
+            "version": "dev-chore/release-v0.1.0-beta.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/qiick-io/laravel-settings.git",
+                "reference": "5c63f6a4312423a2b6eec5273f34b82338cf4ddf"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/qiick-io/laravel-settings/zipball/5c63f6a4312423a2b6eec5273f34b82338cf4ddf",
+                "reference": "5c63f6a4312423a2b6eec5273f34b82338cf4ddf",
+                "shasum": ""
+            },
+            "require": {
+                "illuminate/console": "^12.0 || ^13.0",
+                "illuminate/contracts": "^12.0 || ^13.0",
+                "illuminate/database": "^12.0 || ^13.0",
+                "illuminate/encryption": "^12.0 || ^13.0",
+                "illuminate/support": "^12.0 || ^13.0",
+                "php": "^8.3"
+            },
+            "require-dev": {
+                "larastan/larastan": "^3.3",
+                "laravel/pint": "^1.30",
+                "nunomaduro/collision": "^8.5",
+                "orchestra/testbench": "^10.0 || ^11.0",
+                "pestphp/pest": "^4.0",
+                "pestphp/pest-plugin-mutate": "^4.0",
+                "phpstan/phpstan": "^2.1"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Qiick\\Settings\\Laravel\\SettingsServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Qiick\\Settings\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Qiick",
+                    "homepage": "https://qiick.io"
+                }
+            ],
+            "description": "Scoped, typed settings and encrypted secrets for qiick Laravel products.",
+            "homepage": "https://github.com/qiick-io/laravel-settings",
+            "keywords": [
+                "Settings",
+                "laravel",
+                "qiick",
+                "secrets"
+            ],
+            "support": {
+                "issues": "https://github.com/qiick-io/laravel-settings/issues",
+                "source": "https://github.com/qiick-io/laravel-settings"
+            },
+            "time": "2026-11-28T08:28:44+00:00"
         },
         {
             "name": "ramsey/collection",
@@ -5785,8 +5906,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-09-16T14:15:10+00:00",
-            "published-time": "2026-11-04T11:25:34+00:00"
+            "time": "2026-09-16T14:15:10+00:00"
         },
         {
             "name": "symfony/error-handler",
@@ -5867,8 +5987,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-10-25T14:40:25+00:00",
-            "published-time": "2026-10-28T18:24:13+00:00"
+            "time": "2026-10-25T14:40:25+00:00"
         },
         {
             "name": "symfony/event-dispatcher",
@@ -5954,8 +6073,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-08-21T17:47:34+00:00",
-            "published-time": "2026-08-22T13:46:58+00:00"
+            "time": "2026-08-21T17:47:34+00:00"
         },
         {
             "name": "symfony/event-dispatcher-contracts",
@@ -6035,8 +6153,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-09-16T14:15:10+00:00",
-            "published-time": "2026-11-04T11:25:36+00:00"
+            "time": "2026-09-16T14:15:10+00:00"
         },
         {
             "name": "symfony/finder",
@@ -6202,8 +6319,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-11-25T07:24:17+00:00",
-            "published-time": "2026-11-25T09:28:49+00:00"
+            "time": "2026-11-25T07:24:17+00:00"
         },
         {
             "name": "symfony/http-client-contracts",
@@ -6285,8 +6401,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-10-04T15:04:25+00:00",
-            "published-time": "2026-11-04T11:25:37+00:00"
+            "time": "2026-10-04T15:04:25+00:00"
         },
         {
             "name": "symfony/http-foundation",
@@ -6367,8 +6482,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-11-24T18:01:43+00:00",
-            "published-time": "2026-11-25T09:30:44+00:00"
+            "time": "2026-11-24T18:01:43+00:00"
         },
         {
             "name": "symfony/http-kernel",
@@ -6478,8 +6592,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-11-25T09:27:11+00:00",
-            "published-time": "2026-11-25T09:29:59+00:00"
+            "time": "2026-11-25T09:27:11+00:00"
         },
         {
             "name": "symfony/mailer",
@@ -6559,8 +6672,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-11-24T18:01:43+00:00",
-            "published-time": "2026-11-25T09:30:34+00:00"
+            "time": "2026-11-24T18:01:43+00:00"
         },
         {
             "name": "symfony/mime",
@@ -6646,8 +6758,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-11-24T16:43:41+00:00",
-            "published-time": "2026-11-25T09:29:14+00:00"
+            "time": "2026-11-24T16:43:41+00:00"
         },
         {
             "name": "symfony/polyfill-ctype",
@@ -6730,8 +6841,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-04-10T16:19:22+00:00",
-            "published-time": "2026-04-26T14:44:50+00:00"
+            "time": "2026-04-10T16:19:22+00:00"
         },
         {
             "name": "symfony/polyfill-intl-grapheme",
@@ -6900,8 +7010,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-09-23T14:40:04+00:00",
-            "published-time": "2026-09-30T10:23:39+00:00"
+            "time": "2026-09-23T14:40:04+00:00"
         },
         {
             "name": "symfony/polyfill-intl-normalizer",
@@ -6986,8 +7095,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-09-23T22:02:09+00:00",
-            "published-time": "2026-09-30T10:23:47+00:00"
+            "time": "2026-09-23T22:02:09+00:00"
         },
         {
             "name": "symfony/polyfill-mbstring",
@@ -7072,8 +7180,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-10-28T09:35:49+00:00",
-            "published-time": "2026-10-28T10:07:45+00:00"
+            "time": "2026-10-28T09:35:49+00:00"
         },
         {
             "name": "symfony/polyfill-php80",
@@ -7157,8 +7264,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-09-25T15:50:05+00:00",
-            "published-time": "2026-09-30T10:23:35+00:00"
+            "time": "2026-09-25T15:50:05+00:00"
         },
         {
             "name": "symfony/polyfill-php81",
@@ -7318,8 +7424,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-09-25T15:50:05+00:00",
-            "published-time": "2026-09-30T10:23:32+00:00"
+            "time": "2026-09-25T15:50:05+00:00"
         },
         {
             "name": "symfony/polyfill-php84",
@@ -7399,8 +7504,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-09-23T22:01:09+00:00",
-            "published-time": "2026-09-30T10:23:33+00:00"
+            "time": "2026-09-23T22:01:09+00:00"
         },
         {
             "name": "symfony/polyfill-php85",
@@ -7480,8 +7584,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-10-30T15:20:09+00:00",
-            "published-time": "2026-11-15T14:20:22+00:00"
+            "time": "2026-10-30T15:20:09+00:00"
         },
         {
             "name": "symfony/polyfill-php86",
@@ -8039,8 +8142,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-11-24T18:01:43+00:00",
-            "published-time": "2026-11-25T09:30:48+00:00"
+            "time": "2026-11-24T18:01:43+00:00"
         },
         {
             "name": "symfony/serializer",
@@ -8139,8 +8241,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-11-24T18:01:43+00:00",
-            "published-time": "2026-11-25T09:30:34+00:00"
+            "time": "2026-11-24T18:01:43+00:00"
         },
         {
             "name": "symfony/service-contracts",
@@ -8227,8 +8328,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-10-20T17:38:25+00:00",
-            "published-time": "2026-11-04T11:25:33+00:00"
+            "time": "2026-10-20T17:38:25+00:00"
         },
         {
             "name": "symfony/string",
@@ -8740,8 +8840,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-11-12T10:29:11+00:00",
-            "published-time": "2026-11-25T09:30:09+00:00"
+            "time": "2026-11-12T10:29:11+00:00"
         },
         {
             "name": "symfony/yaml",
@@ -14330,21 +14429,36 @@
             "time": "2026-02-17T17:25:14+00:00"
         }
     ],
-    "aliases": [],
+    "aliases": [
+        {
+            "package": "qiick/laravel-audit",
+            "version": "dev-chore/release-v0.1.0-beta.2",
+            "alias": "0.1.0-beta.2",
+            "alias_normalized": "0.1.0.0-beta2"
+        },
+        {
+            "package": "qiick/laravel-settings",
+            "version": "dev-chore/release-v0.1.0-beta.2",
+            "alias": "0.1.0-beta.2",
+            "alias_normalized": "0.1.0.0-beta2"
+        }
+    ],
     "minimum-stability": "stable",
     "stability-flags": {
         "qiick/excubia-core": 10,
         "qiick/laravel-access": 10,
         "qiick/laravel-api-keys": 10,
+        "qiick/laravel-audit": 20,
         "qiick/laravel-http-basics": 10,
         "qiick/laravel-oidc": 10,
-        "qiick/laravel-outbound": 10
+        "qiick/laravel-outbound": 10,
+        "qiick/laravel-settings": 20
     },
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
         "php": "^8.4"
     },
-    "platform-dev": {},
-    "plugin-api-version": "2.11.0"
+    "platform-dev": [],
+    "plugin-api-version": "2.2.0"
 }

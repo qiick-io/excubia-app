@@ -36,6 +36,7 @@ use App\Services\SelfMonitoringService;
 use App\Services\SettingsRepositoryService;
 use App\Services\SystemHealthService;
 use App\Services\TwoFactorRequirementService;
+use App\Settings\ExcubiaSettingsSchema;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Login;
@@ -88,8 +89,8 @@ use Qiick\Oidc\Services\UserLinkingService;
 use Qiick\Outbound\Events\WebhookDeliveredEvent;
 use Qiick\Outbound\Events\WebhookDeliveryFailedEvent;
 use Qiick\Outbound\Models\WebhookDelivery;
+use Qiick\Settings\SettingsSchema;
 use RuntimeException;
-use Spatie\Activitylog\Facades\Activity;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
@@ -100,7 +101,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->singleton(SettingsRepositoryService::class);
+        // Scoped, not a singleton: it reads through qiick/laravel-settings, whose memo lives for
+        // one request or job, so a queue worker never keeps a stale value.
+        $this->app->scoped(SettingsRepositoryService::class);
+        $this->app->tag([ExcubiaSettingsSchema::class], SettingsSchema::class);
         $this->app->extend(
             UncompromisedVerifier::class,
             fn (): PwnedPasswordVerifierService => $this->app->make(PwnedPasswordVerifierService::class),
@@ -237,7 +241,6 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureDefaults();
         $this->configureAuthorization();
-        $this->configureActivityLogging();
         $this->registerAuthActivityListeners();
         $this->registerAlertWebhookListeners();
         $this->configureApiKeyGuard();
@@ -306,19 +309,6 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(JobMonitorQueryService::class, JobPolicy::class);
         Gate::policy(SystemHealthService::class, SystemHealthPolicy::class);
 
-    }
-
-    /**
-     * Every activity also records the request IP and user agent.
-     */
-    protected function configureActivityLogging(): void
-    {
-        Activity::beforeLogging(function (ActivityModel $activity): void {
-            $activity->properties = ($activity->properties ?? collect())->merge([
-                'ip' => request()->ip(),
-                'user_agent' => request()->userAgent(),
-            ]);
-        });
     }
 
     /**

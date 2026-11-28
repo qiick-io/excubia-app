@@ -9,7 +9,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
 /**
- * One scoped application setting. Read and write it through SettingsRepositoryService.
+ * The policy subject of the settings pages (SettingPolicy), on qiick/laravel-settings' `settings`
+ * table. Read and write settings through SettingsRepositoryService, never through this model.
  *
  * @property int $id
  * @property string $scope
@@ -17,10 +18,13 @@ use Illuminate\Support\Carbon;
  * @property string $group
  * @property string $key
  * @property mixed $value
+ * @property string|null $encryption package column (`app` when the value is encrypted)
+ * @property int $revision optimistic concurrency counter from qiick/laravel-settings
+ * @property array<string, mixed>|null $metadata
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['scope', 'scope_id', 'group', 'key', 'value'])]
+#[Fillable(['scope', 'scope_id', 'group', 'key', 'value', 'encryption', 'revision', 'metadata'])]
 class Setting extends Model
 {
     /**
@@ -30,6 +34,8 @@ class Setting extends Model
     {
         return [
             'value' => 'json',
+            'revision' => 'integer',
+            'metadata' => 'array',
         ];
     }
 }

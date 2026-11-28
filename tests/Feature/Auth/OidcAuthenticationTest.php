@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Passkeys\Passkeys;
@@ -510,6 +511,27 @@ it('validates the SSO settings', function () {
             'oidc_only' => 'maybe',
         ])
         ->assertSessionHasErrors(['oidc_issuer', 'oidc_client_id', 'oidc_client_secret', 'oidc_jit_provisioning', 'oidc_auto_link', 'oidc_only']);
+});
+
+it('does not flash the OIDC client secret into the session on validation failure', function () {
+    $clientSecret = 'oidc-secret-must-not-flash-'.Str::random(16);
+
+    $this->actingAs(User::factory()->create()->assignRole(RoleEnum::SuperAdmin->value))
+        ->put(route('project.security.update'), [
+            'password_policy' => 'weak',
+            'login_max_attempts' => 5,
+            'two_factor_required' => false,
+            'oidc_enabled' => true,
+            'oidc_issuer' => 'not a url',
+            'oidc_client_id' => 'client',
+            'oidc_client_secret' => $clientSecret,
+            'oidc_jit_provisioning' => false,
+            'oidc_auto_link' => false,
+            'oidc_only' => false,
+        ])
+        ->assertSessionHasErrors(['oidc_issuer']);
+
+    expect(json_encode(session()->all()))->not->toContain($clientSecret);
 });
 
 it('shows SSO-linked users in the user list', function () {
