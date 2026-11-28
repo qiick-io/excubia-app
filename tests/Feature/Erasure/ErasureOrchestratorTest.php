@@ -298,6 +298,19 @@ it('writes the completion entry without a causer or request data, and no logout 
         ->and(Activity::query()->where('event', 'logout')->where('causer_id', $user->id)->exists())->toBeFalse();
 });
 
+it('does not leave a deleted activity row with the request IP after self-erasure', function () {
+    $user = erasableUser();
+    $requestIp = '203.0.113.50';
+
+    $this->withServerVariables(['REMOTE_ADDR' => $requestIp])
+        ->actingAs($user)
+        ->delete(route('profile.destroy'), ['password' => 'password'])
+        ->assertRedirect('/');
+
+    expect(Activity::query()->where('event', 'deleted')->count())->toBe(0)
+        ->and(DB::table('activity_log')->where('properties', 'like', '%'.$requestIp.'%')->count())->toBe(0);
+});
+
 it('redacts a person erased while their alert waited in the queue', function () {
     $user = erasableUser();
     $reader = User::factory()->create();

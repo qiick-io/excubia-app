@@ -498,7 +498,9 @@ class ErasureOrchestratorService
             'has_alert_emails' => false,
             'has_weekly_digest' => false,
         ])->saveQuietly();
-        $user->delete();
+        // Quiet: SoftDeletes would otherwise log `deleted` with the request IP after
+        // the audit step, leaving a fresh personal row with anonymised_at null.
+        $user->deleteQuietly();
 
         return 1;
     }

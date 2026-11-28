@@ -7,6 +7,8 @@ namespace App\Actions;
 use App\Enums\ActivityEventEnum;
 use App\Models\ApiKey;
 use Qiick\Audit\AuditContext;
+use RuntimeException;
+use Throwable;
 
 /**
  * Logs the first use of a personal API key (#315, #351) in the `auth` log, attributed to the key
@@ -25,6 +27,11 @@ final class RecordApiKeyUseAction
 
         try {
             $this->log($apiKey);
+        } catch (Throwable) {
+            // A failed INSERT's QueryException bindings include the request IP from the
+            // activity row. The package authenticator reports the exception; never let those
+            // bindings reach application logs.
+            throw new RuntimeException('Failed to record API key first use in the activity log.');
         } finally {
             config(['activitylog.buffer.enabled' => $isBuffered]);
         }

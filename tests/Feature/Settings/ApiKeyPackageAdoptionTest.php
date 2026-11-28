@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Actions\CreateApiKeyAction;
+use App\Actions\RecordApiKeyUseAction;
 use App\Actions\RevokeApiKeyAction;
 use App\Actions\RotateApiKeyAction;
 use App\Data\ApiKeyData;
@@ -342,6 +343,30 @@ it('keeps the first use unstamped when its audit entry cannot be written, so the
 
     expect($apiKey->fresh()->last_used_at)->not->toBeNull()
         ->and($firstUse->properties['api_key_id'])->toBe($apiKey->uuid);
+});
+
+it('rethrows first-use audit failures without QueryException bindings that hold the request IP', function () {
+    $apiKey = ApiKey::factory()->create();
+    $requestIp = '203.0.113.77';
+
+    Activity::creating(function () use ($requestIp): void {
+        throw new QueryException(
+            DB::connection()->getName(),
+            'insert into "activity_log" ("properties") values (?)',
+            [$requestIp],
+            new RuntimeException('activity_log insert refused'),
+        );
+    });
+
+    try {
+        app(RecordApiKeyUseAction::class)->execute($apiKey);
+        expect(false)->toBeTrue('expected RuntimeException');
+    } catch (RuntimeException $exception) {
+        expect($exception->getMessage())->toBe('Failed to record API key first use in the activity log.')
+            ->and($exception->getPrevious())->toBeNull()
+            ->and($exception->getMessage())->not->toContain($requestIp)
+            ->and((string) $exception)->not->toContain($requestIp);
+    }
 });
 
 it('logs a first use once even when two requests both saw the key unused', function () {
