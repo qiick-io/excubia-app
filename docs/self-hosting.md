@@ -149,6 +149,23 @@ curl --http2 -sS -i -X TRACE -H 'X-Trace-Check: excubia-edge-test' "https://$exc
 curl -sS -i "https://$excubia_host/health/live"
 ```
 
+#### Restrict application egress
+
+Use the [restricted-egress Compose overlay](../docker-compose.egress.yml) for a deployment with local SQLite, log mail and a private web origin. It attaches `app`, `queue` and `scheduler` only to an internal IPv4 bridge with an isolated gateway, clears the origin port publication, and uses Docker DNS for private service names with no external resolver. The private network's membership is the reference egress allowlist. [Docker internal networks](https://docs.docker.com/reference/compose-file/networks/#internal), [Docker bridge gateway modes](https://docs.docker.com/engine/network/port-publishing/#gateway-modes).
+
+Set `APP_URL` to the public HTTPS URL. Use the overlay alongside `docker-compose.yml` with Docker Engine and Compose that support the isolated gateway mode and `!reset` syntax.
+
+```sh
+docker compose -p excubia -f docker-compose.yml -f docker-compose.egress.yml up -d
+docker network connect excubia_private excubia-edge
+```
+
+Here `excubia-edge` is the operator's existing public Caddy container. Set its upstream to `app:8080` and set Excubia's `TRUSTED_PROXIES` to the proxy address on the isolated network. Keep the proxy's public listener on its public network and attach only approved service containers to `excubia_private`.
+
+When enabling an integration, record each approved source, destination, port and purpose. Use a private service endpoint or a dedicated egress gateway that permits only the approved destinations and DNS resolution from this network. Apply the same default-deny policy in the host firewall or platform network policy when running outside Docker. Cloud AI, external mail and storage, remote OIDC and webhooks, password breach lookup and external self-checks need explicit egress when enabled. An optional TCP ClamAV daemon also needs an approved private route.
+
+In a staging stack, use `docker compose config` with both files to confirm that the three services use only `private` and the origin has no published port. From each service, an HTTP probe to `app:8080/health/live` must return `200`, and a probe to a known working fixture outside `excubia_private` must fail by IP. Probe every additional approved destination after changing the allowlist, and test an unapproved destination through any added egress gateway.
+
 ### Image without compose
 
 ```bash
