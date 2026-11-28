@@ -6,6 +6,7 @@ namespace App\Http\Requests\Settings;
 
 use App\Enums\ThemePresetEnum;
 use App\Http\Requests\Settings\Concerns\AuthorizesProjectSettingsTrait;
+use App\Rules\ScannedUploadRule;
 use App\Services\SettingsRepositoryService;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -14,7 +15,7 @@ use Illuminate\Validation\Rule;
 
 /**
  * Validates the project Appearance page: theme preset, optional custom brand colours and the
- * default light/dark/system theme. Logo and favicon uploads from externa-core are not ported.
+ * default light/dark/system theme, plus the optional branding logos and favicon.
  */
 class UpdateAppearanceSettingsRequest extends FormRequest
 {
@@ -25,14 +26,16 @@ class UpdateAppearanceSettingsRequest extends FormRequest
      */
     public function rules(): array
     {
+        $imageRules = ['bail', 'nullable', 'file', 'mimes:png,jpg,jpeg,webp,svg', 'max:1024', new ScannedUploadRule];
+
         return [
             'theme_preset' => ['required', 'string', Rule::in(ThemePresetEnum::values())],
             'project_color' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'project_color_dark' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'default_appearance' => ['required', 'string', Rule::in(SettingsRepositoryService::APPEARANCES)],
-            'project_logo' => ['nullable', 'file', 'mimes:png,jpg,jpeg,webp,svg', 'max:1024'],
-            'project_logo_dark' => ['nullable', 'file', 'mimes:png,jpg,jpeg,webp,svg', 'max:1024'],
-            'public_favicon' => ['nullable', 'file', 'mimes:ico,png,svg', 'max:512'],
+            'project_logo' => $imageRules,
+            'project_logo_dark' => $imageRules,
+            'public_favicon' => ['bail', 'nullable', 'file', 'mimes:ico,png,svg', 'max:512', new ScannedUploadRule],
             'remove_files' => ['array'],
             'remove_files.*' => ['string', Rule::in(SettingsRepositoryService::BRANDING_ASSETS)],
         ];

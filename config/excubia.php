@@ -2,7 +2,13 @@
 
 declare(strict_types=1);
 
+use App\Services\Upgrade\ConfigFingerprintService;
+
 return [
+
+    // The release this configuration was loaded (and so cached) from: excubia:upgrade compares
+    // it with the files on disk to find a cache left by a previous release.
+    'config_fingerprint' => ConfigFingerprintService::current(),
 
     /*
     |--------------------------------------------------------------------------
@@ -19,6 +25,11 @@ return [
 
     // Comma-separated identifiers already known to users, such as the organisation and public project slugs.
     'password_denylist' => (string) env('EXCUBIA_PASSWORD_DENYLIST', ''),
+
+    // Optional upload scanning. With clamd enabled, uploads require a clean verdict.
+    'upload_scanner' => env('EXCUBIA_UPLOAD_SCANNER', 'off'),
+
+    'clamav_endpoint' => env('EXCUBIA_CLAMAV_ENDPOINT', 'unix:///run/clamav/clamd.ctl'),
 
     /*
     |--------------------------------------------------------------------------
