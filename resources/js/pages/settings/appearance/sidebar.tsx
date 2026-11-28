@@ -1,11 +1,12 @@
 import { Form, Head } from '@inertiajs/react';
-import { GripVertical, Lock } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { ArrowDown, ArrowUp, GripVertical, Lock } from 'lucide-react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import AppearanceSidebarSettingsController from '@/actions/App/Http/Controllers/Settings/AppearanceSidebarSettingsController';
 import Heading from '@/components/heading';
 import { SettingsFormActions } from '@/components/settings-form-actions';
+import { Button } from '@/components/ui/button';
 import { Field, FieldError, FieldLabel } from '@/components/ui/field';
 import { Switch } from '@/components/ui/switch';
 import AppLayout from '@/layouts/app-layout';
@@ -67,14 +68,21 @@ function ModuleRowContent({
     );
 }
 
+/** A sortable module also exposes single-pointer controls for the same order. */
 function ModuleRow({
     module,
     label,
     onToggle,
+    canMoveUp,
+    canMoveDown,
+    onMove,
 }: {
     module: SidebarModuleSetting;
     label: string;
     onToggle: (enabled: boolean) => void;
+    canMoveUp: boolean;
+    canMoveDown: boolean;
+    onMove: (offset: -1 | 1, button: HTMLButtonElement) => void;
 }) {
     const { t } = useTranslation();
 
@@ -97,6 +105,44 @@ function ModuleRow({
                     </button>
                 }
             />
+            <div className="flex shrink-0 gap-1">
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label={t('settings.project.moveModuleUp', {
+                        module: label,
+                    })}
+                    aria-disabled={!canMoveUp}
+                    aria-controls="sidebar-module-order-status"
+                    className="aria-disabled:cursor-default aria-disabled:opacity-50"
+                    onClick={(event) => {
+                        if (canMoveUp) {
+                            onMove(-1, event.currentTarget);
+                        }
+                    }}
+                >
+                    <ArrowUp aria-hidden="true" />
+                </Button>
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label={t('settings.project.moveModuleDown', {
+                        module: label,
+                    })}
+                    aria-disabled={!canMoveDown}
+                    aria-controls="sidebar-module-order-status"
+                    className="aria-disabled:cursor-default aria-disabled:opacity-50"
+                    onClick={(event) => {
+                        if (canMoveDown) {
+                            onMove(1, event.currentTarget);
+                        }
+                    }}
+                >
+                    <ArrowDown aria-hidden="true" />
+                </Button>
+            </div>
         </div>
     );
 }
@@ -109,8 +155,10 @@ export default function AppearanceSidebarSettingsPage({ project }: Props) {
     const [form, setForm] = useState<{
         sidebar_modules: SidebarModuleSetting[];
     }>(() => ({ sidebar_modules: project.sidebar_modules }));
+    const [movedModuleId, setMovedModuleId] = useState<string | null>(null);
 
     const sortableModulesRef = useRef<HTMLDivElement>(null);
+    const moveButtonRef = useRef<HTMLButtonElement>(null);
     const formRef = useRef(form);
     const setFormRef = useRef(setForm);
 
@@ -138,6 +186,14 @@ export default function AppearanceSidebarSettingsPage({ project }: Props) {
     const sortableModuleKey = sortableModules
         .map((module) => module.id)
         .join('\0');
+    const movedModulePosition =
+        sortableModules.findIndex((module) => module.id === movedModuleId) + 1;
+
+    useLayoutEffect(() => {
+        // Moving a keyed row can detach it briefly. Restore focus to the same button.
+        moveButtonRef.current?.focus();
+        moveButtonRef.current = null;
+    }, [sortableModuleKey]);
 
     useEffect(() => {
         const el = sortableModulesRef.current;
@@ -148,7 +204,7 @@ export default function AppearanceSidebarSettingsPage({ project }: Props) {
 
         const sortable = createSortableList(el, {
             handle: '.drag-handle',
-            onEnd: () => {
+            onEnd: (event) => {
                 const order = sortable.toArray();
                 const prev = formRef.current.sidebar_modules.map(
                     (module) => module.id,
@@ -180,11 +236,36 @@ export default function AppearanceSidebarSettingsPage({ project }: Props) {
                         sidebar_modules: reordered,
                     };
                 });
+                setMovedModuleId(event.item.dataset.id ?? null);
             },
         });
 
         return () => sortable.destroy();
     }, [sortableModuleKey]);
+
+    const moveModule = (
+        moduleId: string,
+        offset: -1 | 1,
+        button: HTMLButtonElement,
+    ): void => {
+        const modules = [...sortableModules];
+        const position = modules.findIndex((module) => module.id === moduleId);
+        const destination = position + offset;
+
+        if (position < 0 || destination < 0 || destination >= modules.length) {
+            return;
+        }
+
+        if (button === document.activeElement) {
+            moveButtonRef.current = button;
+        }
+
+        const [module] = modules.splice(position, 1);
+        modules.splice(destination, 0, module);
+
+        setForm((current) => ({ ...current, sidebar_modules: modules }));
+        setMovedModuleId(moduleId);
+    };
 
     const toggleModule = (moduleId: string, enabled: boolean): void => {
         setForm((current) => ({
@@ -234,23 +315,63 @@ export default function AppearanceSidebarSettingsPage({ project }: Props) {
                                             ref={sortableModulesRef}
                                             className="space-y-2"
                                         >
-                                            {sortableModules.map((module) => (
-                                                <ModuleRow
-                                                    key={module.id}
-                                                    module={module}
-                                                    label={moduleLabel(
-                                                        module.id,
-                                                    )}
-                                                    onToggle={(enabled) =>
-                                                        toggleModule(
+                                            {sortableModules.map(
+                                                (module, position) => (
+                                                    <ModuleRow
+                                                        key={module.id}
+                                                        module={module}
+                                                        label={moduleLabel(
                                                             module.id,
-                                                            enabled,
-                                                        )
-                                                    }
-                                                />
-                                            ))}
+                                                        )}
+                                                        canMoveUp={position > 0}
+                                                        canMoveDown={
+                                                            position <
+                                                            sortableModules.length -
+                                                                1
+                                                        }
+                                                        onMove={(
+                                                            offset,
+                                                            button,
+                                                        ) =>
+                                                            moveModule(
+                                                                module.id,
+                                                                offset,
+                                                                button,
+                                                            )
+                                                        }
+                                                        onToggle={(enabled) =>
+                                                            toggleModule(
+                                                                module.id,
+                                                                enabled,
+                                                            )
+                                                        }
+                                                    />
+                                                ),
+                                            )}
                                         </div>
                                     </div>
+                                    <p
+                                        id="sidebar-module-order-status"
+                                        role="status"
+                                        aria-live="polite"
+                                        aria-atomic="true"
+                                        className="sr-only"
+                                    >
+                                        {movedModuleId !== null &&
+                                        movedModulePosition > 0
+                                            ? t(
+                                                  'settings.project.moduleMoved',
+                                                  {
+                                                      module: moduleLabel(
+                                                          movedModuleId,
+                                                      ),
+                                                      position:
+                                                          movedModulePosition,
+                                                      total: sortableModules.length,
+                                                  },
+                                              )
+                                            : null}
+                                    </p>
                                     <FieldError id="sidebar-modules-error">
                                         {errors.sidebar_modules}
                                     </FieldError>
