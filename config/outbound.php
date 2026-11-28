@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 /*
  * Excubia's overrides of the qiick/laravel-outbound defaults (vendor/qiick/laravel-outbound/config/outbound.php,
- * which documents every key). Keys left out here keep the package value: Laravel merges package
- * config only at the top level, so a copied section would hide every key a new release adds.
+ * which documents every key). Keys left out here keep the package value: since 0.2.0-beta.4 the
+ * package fills every nested key this file leaves out, so only the overrides live here.
  */
 return [
 
@@ -33,6 +33,16 @@ return [
             FILTER_VALIDATE_BOOLEAN,
             FILTER_NULL_ON_FAILURE,
         ) === true,
+
+    ],
+
+    'webhooks' => [
+
+        /*
+         * Off: routes/console.php schedules `outbound:prune-deliveries` itself, so the alert
+         * history reconciliation runs after every prune.
+         */
+        'schedule' => false,
 
     ],
 

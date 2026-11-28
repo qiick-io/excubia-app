@@ -10,7 +10,7 @@ use Qiick\Outbound\Delivery\WebhookDeliveryCoordinator;
 
 /**
  * Sends the due alert webhook deliveries right after an alert is stored, so the first attempt
- * does not wait for the per-minute `outbound:webhooks:work` run. The package leases each
+ * does not wait for the per-minute `outbound:work-deliveries` run. The package leases each
  * delivery before its send, so this job and the scheduled run never send one twice.
  */
 class SendAlertWebhooksJob implements ShouldQueue
