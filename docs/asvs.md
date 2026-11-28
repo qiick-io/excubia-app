@@ -6,7 +6,7 @@ The scope covers the browser UI, push API, personal keys, MCP, optional OIDC and
 
 | Met | Partial | Not applicable | Gap |
 | --- | ------- | -------------- | --- |
-| 59  | 137     | 49             | 8   |
+| 60  | 137     | 49             | 7   |
 
 **Met** has evidence for the complete requirement. **Partial** identifies an implemented control and the remaining scope. **Not applicable** records why the feature or architecture is outside scope. Each **Gap** links to a remediation issue. Report sensitive security findings through [the security policy](../SECURITY.md).
 
@@ -276,7 +276,7 @@ For inherited evidence, the owner column names the Composer package and the evid
 | v5.0.0-13.2.2 | Partial | `Dockerfile` runs the application as an unprivileged user and `config/database.php` permits dedicated credentials. Verify deployed privileges across dependencies.                                       |                          |
 | v5.0.0-13.2.3 | Partial | `tests/Feature/Security/SeededAdminTest.php` proves the installer rejects a known initial login. Verify that backend service credentials follow the same policy.                                         |                          |
 | v5.0.0-13.2.4 | Partial | `tests/Feature/Settings/WebhookUrlGuardPinTest.php` covers restrictions for webhook traffic. Verify allowlisting of the other external paths. See [locked package test][outbound-remoteurlguardpintest]. | `qiick/laravel-outbound` |
-| v5.0.0-13.2.5 | Gap     | `docs/self-hosting.md` describes supported topologies. Define and verify the reference deployment's app-server egress allowlist. [#531](https://github.com/qiick-io/excubia-app/issues/531)              |                          |
+| v5.0.0-13.2.5 | Met     | `docker-compose.egress.yml` limits origin services to an isolated network. [Egress probes](self-hosting.md#restrict-application-egress) verify private service access and outside denial.                |                          |
 | v5.0.0-13.3.1 | Partial | `docs/self-hosting.md` describes operator-provided secrets and protected key storage. Review reference deployment secret-management integration and lifecycle.                                           |                          |
 | v5.0.0-13.3.2 | Partial | `Dockerfile` and `docs/self-hosting.md` describe filesystem ownership and key permissions. Review privileges in each supported secret store.                                                             |                          |
 | v5.0.0-13.4.1 | Partial | `Dockerfile` defines the runtime image and web root. Verify VCS metadata exclusion and accessibility on both image and manual deployments.                                                               |                          |
