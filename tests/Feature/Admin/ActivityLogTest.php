@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Models\UserGroup;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
 
 /**
@@ -67,7 +68,10 @@ it('keeps package attribution out of the expanded-row meta so empty logs show no
             ->component('admin/activity-logs/index')
             ->where('activityLogs.data.0.description', 'Browser check')
             ->where('activityLogs.data.0.changes', [])
-            ->where('activityLogs.data.0.properties.meta', []));
+            ->where('activityLogs.data.0.properties.meta', [])
+            // F8: the row key is public_id, never the internal bigint.
+            ->where('activityLogs.data.0.public_id', fn ($publicId) => is_string($publicId) && Str::isUuid($publicId))
+            ->where('activityLogs.data.0', fn ($row) => ! array_key_exists('id', collect($row)->all())));
 });
 
 it('shares the activity sidebar module and its permission with allowed users only', function () {

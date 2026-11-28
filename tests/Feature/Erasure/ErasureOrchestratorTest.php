@@ -97,6 +97,43 @@ it('runs the qiick/laravel-audit eraser as its own step', function () {
         ->and(json_encode(Activity::query()->where('subject_id', $project->id)->where('subject_type', $project->getMorphClass())->value('attribute_changes')))->toContain('Shop');
 });
 
+it('keeps the project name when the person only acted through their API key on another subject', function () {
+    $user = erasableUser();
+    $apiKey = ApiKey::query()->sole();
+    $otherCauser = User::factory()->create();
+    $project = Project::factory()->create(['name' => 'Shop']);
+
+    Activity::query()->create([
+        'public_id' => (string) Str::uuid7(),
+        'log_name' => 'default',
+        'description' => 'Project updated',
+        'event' => 'updated',
+        'subject_type' => $project->getMorphClass(),
+        'subject_id' => (string) $project->id,
+        'causer_type' => $otherCauser->getMorphClass(),
+        'causer_id' => (string) $otherCauser->id,
+        'properties' => [
+            'api_key_id' => $apiKey->uuid,
+            'ip' => '203.0.113.9',
+        ],
+        'attribute_changes' => [
+            'attributes' => ['name' => 'Shop'],
+            'old' => ['name' => 'Store'],
+        ],
+    ]);
+
+    app(DeleteUserAction::class)->execute($user);
+
+    $credentialLinked = Activity::query()->where('description', 'Project updated')->sole();
+    $attributeChanges = json_encode($credentialLinked->attribute_changes);
+
+    expect($credentialLinked->anonymised_at)->not->toBeNull()
+        ->and($attributeChanges)->toContain('Shop')
+        ->and($attributeChanges)->toContain('Store')
+        ->and($attributeChanges)->not->toContain('"name":"erased"')
+        ->and(json_encode($credentialLinked->properties))->not->toContain('203.0.113.9');
+});
+
 it('leaves a failed step for excubia:resume-erasures, which finishes the case', function () {
     $user = erasableUser();
     // The OIDC eraser's table refuses every statement: its step fails; the next run succeeds.

@@ -364,7 +364,7 @@ export default function AdminActivityLogsIndex({
                 <DataTable
                     columns={columns}
                     data={activityLogs.data ?? []}
-                    getRowId={(row) => String(row.id)}
+                    getRowId={(row) => row.public_id}
                     pagination={activityLogs}
                     renderExpandedRow={(row) => (
                         <div className="space-y-3 py-2">

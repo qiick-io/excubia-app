@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "81dfd2f7c0fef29ff27b07bed6cd11db",
+    "content-hash": "251577c220eb4ca19a678d68f091960c",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -4652,12 +4652,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/qiick-io/laravel-audit.git",
-                "reference": "c5b0d087826b08febc55328e909b8641ed0a40a1"
+                "reference": "3e7b0d73b4be99581852c7df7d5146c9f4c65b70"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/qiick-io/laravel-audit/zipball/c5b0d087826b08febc55328e909b8641ed0a40a1",
-                "reference": "c5b0d087826b08febc55328e909b8641ed0a40a1",
+                "url": "https://api.github.com/repos/qiick-io/laravel-audit/zipball/3e7b0d73b4be99581852c7df7d5146c9f4c65b70",
+                "reference": "3e7b0d73b4be99581852c7df7d5146c9f4c65b70",
                 "shasum": ""
             },
             "require": {
@@ -4718,7 +4718,7 @@
                 "issues": "https://github.com/qiick-io/laravel-audit/issues",
                 "source": "https://github.com/qiick-io/laravel-audit"
             },
-            "time": "2026-11-27T19:42:15+00:00"
+            "time": "2026-11-28T08:40:22+00:00"
         },
         {
             "name": "qiick/laravel-http-basics",
