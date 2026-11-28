@@ -290,6 +290,7 @@
             "sidebarDescription": "Module neu anordnen und auswählen. Gesperrte Einträge bleiben immer aktiv.",
             "moveModuleUp": "{{module}} nach oben verschieben",
             "moveModuleDown": "{{module}} nach unten verschieben",
+            "moduleMoved": "{{module}} wurde auf Position {{position}} von {{total}} verschoben.",
             "securityTitle": "Sicherheit",
             "securityDescription": "Passwortstärke, Login-Limits und Zwei-Faktor-Richtlinie",
             "passwordPolicy": "Passwortsicherheit",

@@ -290,6 +290,7 @@
             "sidebarDescription": "Reorder modules and choose which appear in the sidebar. Locked items always stay enabled.",
             "moveModuleUp": "Move {{module}} up",
             "moveModuleDown": "Move {{module}} down",
+            "moduleMoved": "{{module}} moved to position {{position}} of {{total}}.",
             "securityTitle": "Security",
             "securityDescription": "Password strength, login limits, and two-factor policy",
             "passwordPolicy": "Password security",

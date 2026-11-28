@@ -114,6 +114,7 @@ function ModuleRow({
                         module: label,
                     })}
                     aria-disabled={!canMoveUp}
+                    aria-controls="sidebar-module-order-status"
                     className="aria-disabled:cursor-default aria-disabled:opacity-50"
                     onClick={(event) => {
                         if (canMoveUp) {
@@ -131,6 +132,7 @@ function ModuleRow({
                         module: label,
                     })}
                     aria-disabled={!canMoveDown}
+                    aria-controls="sidebar-module-order-status"
                     className="aria-disabled:cursor-default aria-disabled:opacity-50"
                     onClick={(event) => {
                         if (canMoveDown) {
@@ -153,6 +155,7 @@ export default function AppearanceSidebarSettingsPage({ project }: Props) {
     const [form, setForm] = useState<{
         sidebar_modules: SidebarModuleSetting[];
     }>(() => ({ sidebar_modules: project.sidebar_modules }));
+    const [movedModuleId, setMovedModuleId] = useState<string | null>(null);
 
     const sortableModulesRef = useRef<HTMLDivElement>(null);
     const moveButtonRef = useRef<HTMLButtonElement>(null);
@@ -183,6 +186,8 @@ export default function AppearanceSidebarSettingsPage({ project }: Props) {
     const sortableModuleKey = sortableModules
         .map((module) => module.id)
         .join('\0');
+    const movedModulePosition =
+        sortableModules.findIndex((module) => module.id === movedModuleId) + 1;
 
     useLayoutEffect(() => {
         // Moving a keyed row can detach it briefly. Restore focus to the same button.
@@ -199,7 +204,7 @@ export default function AppearanceSidebarSettingsPage({ project }: Props) {
 
         const sortable = createSortableList(el, {
             handle: '.drag-handle',
-            onEnd: () => {
+            onEnd: (event) => {
                 const order = sortable.toArray();
                 const prev = formRef.current.sidebar_modules.map(
                     (module) => module.id,
@@ -231,6 +236,7 @@ export default function AppearanceSidebarSettingsPage({ project }: Props) {
                         sidebar_modules: reordered,
                     };
                 });
+                setMovedModuleId(event.item.dataset.id ?? null);
             },
         });
 
@@ -242,30 +248,23 @@ export default function AppearanceSidebarSettingsPage({ project }: Props) {
         offset: -1 | 1,
         button: HTMLButtonElement,
     ): void => {
+        const modules = [...sortableModules];
+        const position = modules.findIndex((module) => module.id === moduleId);
+        const destination = position + offset;
+
+        if (position < 0 || destination < 0 || destination >= modules.length) {
+            return;
+        }
+
         if (button === document.activeElement) {
             moveButtonRef.current = button;
         }
 
-        setForm((current) => {
-            const modules = [...current.sidebar_modules];
-            const position = modules.findIndex(
-                (module) => module.id === moduleId,
-            );
-            const destination = position + offset;
+        const [module] = modules.splice(position, 1);
+        modules.splice(destination, 0, module);
 
-            if (
-                position < 0 ||
-                destination < 0 ||
-                destination >= modules.length
-            ) {
-                return current;
-            }
-
-            const [module] = modules.splice(position, 1);
-            modules.splice(destination, 0, module);
-
-            return { ...current, sidebar_modules: modules };
-        });
+        setForm((current) => ({ ...current, sidebar_modules: modules }));
+        setMovedModuleId(moduleId);
     };
 
     const toggleModule = (moduleId: string, enabled: boolean): void => {
@@ -351,6 +350,28 @@ export default function AppearanceSidebarSettingsPage({ project }: Props) {
                                             )}
                                         </div>
                                     </div>
+                                    <p
+                                        id="sidebar-module-order-status"
+                                        role="status"
+                                        aria-live="polite"
+                                        aria-atomic="true"
+                                        className="sr-only"
+                                    >
+                                        {movedModuleId !== null &&
+                                        movedModulePosition > 0
+                                            ? t(
+                                                  'settings.project.moduleMoved',
+                                                  {
+                                                      module: moduleLabel(
+                                                          movedModuleId,
+                                                      ),
+                                                      position:
+                                                          movedModulePosition,
+                                                      total: sortableModules.length,
+                                                  },
+                                              )
+                                            : null}
+                                    </p>
                                     <FieldError id="sidebar-modules-error">
                                         {errors.sidebar_modules}
                                     </FieldError>
