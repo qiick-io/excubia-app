@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "251577c220eb4ca19a678d68f091960c",
+    "content-hash": "97847f3f6cd4ff153d64f1b42f04664b",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -4652,12 +4652,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/qiick-io/laravel-audit.git",
-                "reference": "3e7b0d73b4be99581852c7df7d5146c9f4c65b70"
+                "reference": "cd9ffe21d63d59258f8796b20e9a974f2dc650d4"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/qiick-io/laravel-audit/zipball/3e7b0d73b4be99581852c7df7d5146c9f4c65b70",
-                "reference": "3e7b0d73b4be99581852c7df7d5146c9f4c65b70",
+                "url": "https://api.github.com/repos/qiick-io/laravel-audit/zipball/cd9ffe21d63d59258f8796b20e9a974f2dc650d4",
+                "reference": "cd9ffe21d63d59258f8796b20e9a974f2dc650d4",
                 "shasum": ""
             },
             "require": {
