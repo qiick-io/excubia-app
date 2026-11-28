@@ -73,7 +73,17 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Never flashed back as old input on a validation error (the session is not encrypted).
-        $exceptions->dontFlash(['current_password', 'password', 'password_confirmation', 'setup_token']);
+        $exceptions->dontFlash([
+            'current_password',
+            'password',
+            'password_confirmation',
+            'setup_token',
+            // Settings secrets (OIDC, Slack, Telegram) and the alert webhook URL.
+            'oidc_client_secret',
+            'notifier_slack_webhook_url',
+            'notifier_telegram_bot_token',
+            'webhook_url',
+        ]);
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->is('mcp') || $request->expectsJson(),
         );

@@ -372,8 +372,11 @@ in one process is seen by a worker.
 **Risks**: about 60 keys and 42 files use the repository; the secrets (OIDC client secret, Slack
 URL, Telegram token) must survive the reset.
 
-**Reset:** yes (`settings` shape). Use `settings:export` before and `settings:import` after,
-under the same `APP_KEY`.
+**Reset:** yes (`settings` shape). **Requires a fresh database (pre-1.0)** — there is no
+in-place converter from the previous Excubia `settings` rows. Note the values to re-enter
+(SSO, Slack, Telegram, alert webhook). `excubia:upgrade` refuses when it finds the old
+table with data. After a clean install, `settings:export` / `settings:import` work for
+later backups under the same `APP_KEY`.
 
 ---
 
@@ -382,7 +385,7 @@ under the same `APP_KEY`.
 | Group    | Packages                           | Reset                                       | Why together                                                                                                                                           |
 | -------- | ---------------------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **A**    | api-keys 0.3, access, outbound 0.2 | one new database after all three are merged | api-keys and access both reshape `api_keys` and `principals` (owner restrict, re-dated migration); outbound moves the webhook secret out of `settings` |
-| **B**    | audit, settings                    | one new database after both are merged      | both replace a product table that every page writes to; one settings export / import covers both                                                       |
+| **B**    | audit, settings                    | one new database after both are merged      | both replace a product table; pre-1.0, no in-place settings converter — re-enter secrets after the reset                                                |
 | no reset | http-basics, oidc beta.7           | none                                        | http-basics adds one table; oidc beta.7 runs on the old index until the next reset                                                                     |
 
 Merge order of group A: #410 (access, which already contains #408, api-keys), then #412
@@ -404,7 +407,10 @@ the OIDC client secret, Slack URL, Telegram token and alert settings after the r
 the `settings` rows from the snapshot into the new database under the same `APP_KEY`: the
 encrypted values decrypt again). With the outbound adoption the alert webhook URL and signing
 secret leave `settings` for the package's webhook tables, so they are set again in
-Settings → Integrations in every case (step 6 of the checklist). Group B uses `settings:export` / `settings:import`.
+Settings → Integrations in every case (step 6 of the checklist). Group B also needs a fresh
+database: re-enter SSO, Slack, Telegram and the alert webhook after the reset (no converter
+from the old `settings` shape). Once on the package schema, `settings:export` / `settings:import`
+cover later backups.
 
 ### Group A reset checklist
 

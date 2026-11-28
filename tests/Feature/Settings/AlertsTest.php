@@ -219,6 +219,26 @@ it('saves the integrations settings, keeps secrets write-only and validates them
         ->get(route('project.integrations.edit'))->assertForbidden();
 });
 
+it('does not flash integration secrets into the session on validation failure', function () {
+    $manager = alertsManager();
+    $slackSecret = 'https://hooks.slack.com/services/T/B/FLASH-ME-'.Str::random(8);
+    $telegramSecret = '999001:FLASH-'.Str::random(12);
+    $webhookSecret = 'https://hooks.example.com/flash-'.Str::random(8);
+
+    $this->actingAs($manager)->put(route('project.integrations.update'), [
+        'webhook_url' => $webhookSecret,
+        'notifier_slack_webhook_url' => $slackSecret,
+        'notifier_telegram_bot_token' => $telegramSecret,
+        ...integrationChannels(['slack' => ['minimum_severity' => 'loud']]),
+    ])->assertSessionHasErrors();
+
+    $sessionPayload = json_encode(session()->all()) ?: '';
+
+    expect($sessionPayload)->not->toContain($slackSecret)
+        ->and($sessionPayload)->not->toContain($telegramSecret)
+        ->and($sessionPayload)->not->toContain($webhookSecret);
+});
+
 it('generates the webhook signing secret, shows it once and rotates it with a grace period', function () {
     $manager = alertsManager();
     $this->actingAs($manager)->post(route('project.integrations.webhook-secret'))

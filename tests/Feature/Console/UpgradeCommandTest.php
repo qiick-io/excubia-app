@@ -11,10 +11,13 @@ use App\Services\Upgrade\ConfigFingerprintService;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Contracts\Process\ProcessResult;
 use Illuminate\Process\PendingProcess;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Process;
+use Illuminate\Support\Facades\Schema;
 use Spatie\Permission\Models\Permission;
 
 it('registers excubia:upgrade', function () {
@@ -500,3 +503,31 @@ function gitArgs(PendingProcess $process): array
 
     return array_values(array_slice($command, 1));
 }
+
+it('refuses to migrate when the pre-adoption settings table still has rows', function () {
+    Schema::dropIfExists('settings_write_locks');
+    Schema::dropIfExists('settings');
+    Schema::create('settings', function (Blueprint $table): void {
+        $table->id();
+        $table->string('scope', 32);
+        $table->string('scope_id', 36);
+        $table->string('group', 64);
+        $table->string('key', 191);
+        $table->json('value')->nullable();
+        $table->timestamps();
+    });
+    DB::table('settings')->insert([
+        'scope' => 'instance',
+        'scope_id' => '',
+        'group' => 'app',
+        'key' => 'oidc_enabled',
+        'value' => json_encode(true),
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    $this->artisan(UpgradeCommand::class, ['--force' => true, '--no-permissions' => true])
+        ->expectsOutputToContain('reshapes the settings table')
+        ->expectsOutputToContain('fresh empty database')
+        ->assertFailed();
+});
