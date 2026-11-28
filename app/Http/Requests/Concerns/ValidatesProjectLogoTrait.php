@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Concerns;
 
+use App\Rules\ScannedUploadRule;
 use App\Services\SvgSanitizerService;
 use Closure;
 use Illuminate\Http\UploadedFile;
@@ -24,10 +25,12 @@ trait ValidatesProjectLogoTrait
     {
         return [
             'logo' => [
+                'bail',
                 'nullable',
                 'file',
                 'mimes:png,jpg,jpeg,webp,svg',
                 'max:'.self::LOGO_MAX_KILOBYTES,
+                new ScannedUploadRule,
                 function (string $attribute, mixed $value, Closure $fail): void {
                     if ($value instanceof UploadedFile
                         && $value->extension() === 'svg'

@@ -7,6 +7,7 @@ use App\Enums\PermissionEnum;
 use App\Enums\RoleEnum;
 use App\Models\Project;
 use App\Models\User;
+use App\Services\Upgrade\ConfigFingerprintService;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Contracts\Process\ProcessResult;
 use Illuminate\Process\PendingProcess;
@@ -77,13 +78,76 @@ it('warns when an https site trusts no proxy, so HSTS would never be sent', func
         ->assertSuccessful();
 });
 
-it('refuses to run the package checks on a configuration cached by the previous release', function () {
-    // As when the process booted from bootstrap/cache/config.php.
+/**
+ * As when the process booted from bootstrap/cache/config.php, with `optimize` stubbed so the test
+ * never writes the real caches. Returns the recorded `optimize` runs.
+ */
+function bootedFromCachedConfiguration(string $cachedFingerprint): ArrayObject
+{
     app()->instance('config_loaded_from_cache', true);
+    config(['excubia.config_fingerprint' => $cachedFingerprint]);
+    $optimizeRuns = new ArrayObject;
+    Artisan::command('optimize', fn () => $optimizeRuns->append('optimize'));
+
+    return $optimizeRuns;
+}
+
+it('keeps a configuration this release cached, and caches again at the end', function () {
+    $optimizeRuns = bootedFromCachedConfiguration(ConfigFingerprintService::current());
 
     $this->artisan(UpgradeCommand::class, ['--force' => true, '--no-migrate' => true, '--no-permissions' => true])
-        ->expectsOutputToContain('The configuration is cached')
-        ->assertFailed();
+        ->doesntExpectOutputToContain('cached by a previous release')
+        ->expectsOutputToContain('Running access:check')
+        ->assertSuccessful();
+
+    expect($optimizeRuns->getArrayCopy())->toBe(['optimize']);
+});
+
+it('clears a configuration a previous release cached and runs the upgrade again on this release\'s', function () {
+    $optimizeRuns = bootedFromCachedConfiguration('fingerprint-of-the-previous-release');
+    $commands = new ArrayObject;
+    Process::preventStrayProcesses();
+    Process::fake(function (PendingProcess $process) use ($commands) {
+        $commands->append(implode(' ', array_slice((array) $process->command, 1)));
+
+        return Process::result('Automated subset done.');
+    });
+
+    $this->artisan(UpgradeCommand::class, ['--force' => true, '--no-permissions' => true])
+        ->expectsOutputToContain('cached by a previous release')
+        ->assertSuccessful();
+
+    // A new process boots from the files with every package's defaults, then the caches return.
+    $artisanCommands = array_values(array_filter($commands->getArrayCopy(), fn (string $command): bool => str_starts_with($command, 'artisan ')));
+
+    expect($artisanCommands)->toBe(['artisan excubia:upgrade --no-interaction --force --no-permissions'])
+        ->and($optimizeRuns->getArrayCopy())->toBe(['optimize']);
+});
+
+it('reports a failed rerun as a failed upgrade, and caches nothing', function () {
+    $optimizeRuns = bootedFromCachedConfiguration('fingerprint-of-the-previous-release');
+    Process::preventStrayProcesses();
+    Process::fake(fn () => Process::result('access:check failed', exitCode: 1));
+
+    $this->artisan(UpgradeCommand::class, ['--force' => true])->assertFailed();
+
+    expect($optimizeRuns->getArrayCopy())->toBe([]);
+});
+
+it('neither clears nor caches a configuration that was never cached', function () {
+    $optimizeRuns = new ArrayObject;
+    Artisan::command('optimize', fn () => $optimizeRuns->append('optimize'));
+
+    $this->artisan(UpgradeCommand::class, ['--force' => true, '--no-migrate' => true, '--no-permissions' => true])
+        ->doesntExpectOutputToContain('cached by a previous release')
+        ->assertSuccessful();
+
+    expect($optimizeRuns->getArrayCopy())->toBe([]);
+});
+
+it('fingerprints the configuration sources by content', function () {
+    expect(ConfigFingerprintService::current())->toBe(ConfigFingerprintService::current())
+        ->and(config('excubia.config_fingerprint'))->toBe(ConfigFingerprintService::current());
 });
 
 it('stops when a qiick package check fails', function () {

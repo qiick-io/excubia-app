@@ -11,6 +11,7 @@ use Database\Seeders\PermissionSeeder;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Testing\TestResponse;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -122,7 +123,7 @@ it('stores the client secret encrypted and never shares it', function () {
             ->where('oidcBackchannelLogoutUrl', url('/auth/oidc/backchannel-logout')));
 });
 
-it('sends the browser to the IdP with PKCE S256 and the settings client id', function () {
+it('sends the browser to the IdP with PKCE S256, the settings client id and the absolute session lifetime', function () {
     Http::preventStrayRequests();
     FakeIdentityProvider::fake();
     enableOidc();
@@ -134,8 +135,37 @@ it('sends the browser to the IdP with PKCE S256 and the settings client id', fun
         ->and($query['client_id'] ?? null)->toBe('laravel-app')
         ->and($query['redirect_uri'] ?? null)->toBe(url('/auth/oidc/callback'))
         ->and($query['scope'] ?? null)->toBe('openid profile email')
-        ->and($query['code_challenge_method'] ?? null)->toBe('S256');
+        ->and($query['code_challenge_method'] ?? null)->toBe('S256')
+        ->and($query['max_age'] ?? null)->toBe('86400');
 });
+
+it('accepts a previous IdP authentication within the allowed clock leeway', function () {
+    $identityProvider = FakeIdentityProvider::fake();
+    enableOidc();
+    $user = User::factory()->create();
+    linkIdentity($user, 'sub-recent');
+
+    signInThroughSso($this, $identityProvider, [
+        'sub' => 'sub-recent',
+        'auth_time' => Date::now()->subDay()->subSeconds(30)->getTimestamp(),
+    ])->assertRedirect('/dashboard');
+
+    $this->assertAuthenticatedAs($user);
+});
+
+it('refuses SSO if the requested authentication time is stale or missing', function (?int $authenticationAge) {
+    $identityProvider = FakeIdentityProvider::fake();
+    enableOidc();
+    $user = User::factory()->create();
+    linkIdentity($user, 'sub-stale');
+
+    signInThroughSso($this, $identityProvider, [
+        'sub' => 'sub-stale',
+        'auth_time' => $authenticationAge === null ? null : Date::now()->subSeconds($authenticationAge)->getTimestamp(),
+    ])->assertRedirect(route('login'));
+
+    $this->assertGuest();
+})->with(['stale' => [86461], 'missing' => [null]]);
 
 it('signs in through an IdP on a private network only with OIDC_ALLOW_PRIVATE_HOSTS', function (bool $isPrivateHostAllowed) {
     $identityProvider = FakeIdentityProvider::fake();

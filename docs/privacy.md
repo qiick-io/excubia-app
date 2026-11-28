@@ -35,6 +35,10 @@ When the Strong policy checks a new password, the server sends a padded HTTPS ra
 
 The lookup is transient. If the provider is unavailable, the application log records a generic warning and the HTTP status when available.
 
+## Uploaded images
+
+If the operator [enables upload scanning](self-hosting.md#upload-malware-scanning), Excubia streams the bytes of new project logos and branding images to the configured ClamAV daemon before saving them. It sends only the image bytes and the scanner protocol framing. It logs generic warnings for detections and unavailable scans. The operator controls the daemon and its network access.
+
 ## Export
 
 An admin reads a person's account in Users and their activity in the activity log (filter by
