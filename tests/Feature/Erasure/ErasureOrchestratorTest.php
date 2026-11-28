@@ -84,6 +84,25 @@ it('erases a user in every step and closes the case without the person', functio
 
 it('leaves a failed step for excubia:resume-erasures, which finishes the case', function () {
     $user = erasableUser();
+    $otherUser = User::factory()->create();
+    $activityAt = now('UTC');
+    $session = [
+        'public_id' => (string) Str::uuid7(),
+        'user_id' => $user->id,
+        'ip_address' => '2001:db8::1',
+        'user_agent_summary' => 'Firefox on Linux',
+        'authenticated_at' => $activityAt,
+        'last_activity_at' => $activityAt,
+        'expires_at' => $activityAt->copy()->addDay(),
+        'revoked_at' => null,
+    ];
+    $otherSession = array_replace($session, ['public_id' => (string) Str::uuid7(), 'user_id' => $otherUser->id]);
+    DB::table('browser_sessions')->insert([
+        $session,
+        array_replace($session, ['public_id' => (string) Str::uuid7(), 'revoked_at' => $activityAt]),
+        $otherSession,
+    ]);
+
     // The OIDC eraser's table refuses every statement: its step fails; the next run succeeds.
     $isOidcStoreDown = new ArrayObject(['down' => true]);
     failUserIdentitiesWhile($isOidcStoreDown);
@@ -97,6 +116,8 @@ it('leaves a failed step for excubia:resume-erasures, which finishes the case', 
         ->and($erasureRequest->steps['api-keys']['status'])->toBe('done')
         ->and($user->fresh()->is_active)->toBeFalse()
         ->and($user->fresh()->email)->toBe('erase-me@example.test');
+    $this->assertDatabaseMissing('browser_sessions', ['user_id' => $user->id]);
+    $this->assertDatabaseHas('browser_sessions', ['public_id' => $otherSession['public_id'], 'ip_address' => '2001:db8::1']);
 
     $isOidcStoreDown['down'] = false;
 

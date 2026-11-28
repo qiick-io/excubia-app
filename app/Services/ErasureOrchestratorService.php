@@ -117,6 +117,7 @@ class ErasureOrchestratorService
         // From here on no login path accepts the user, and no key of their principal works.
         $user->forceFill(['is_active' => false, 'password' => Str::random(64), 'remember_token' => null])->saveQuietly();
         DB::table('sessions')->where('user_id', $user->id)->delete();
+        DB::table('browser_sessions')->where('user_id', $user->id)->delete();
         $this->principals->markErased($principal);
 
         return $erasureRequest;
