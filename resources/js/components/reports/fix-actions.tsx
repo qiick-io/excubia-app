@@ -57,7 +57,7 @@ export function FixActions({ fix }: { fix: FindingFix | undefined }) {
     }
 
     return (
-        <div className="inline-flex items-center justify-end gap-1">
+        <>
             {fix.command ? (
                 <HeaderIconButton
                     type="button"
@@ -77,6 +77,6 @@ export function FixActions({ fix }: { fix: FindingFix | undefined }) {
             >
                 <Sparkles className="size-3.5" />
             </HeaderIconButton>
-        </div>
+        </>
     );
 }

@@ -766,3 +766,66 @@ html.reduce-motion [data-slot='table-container'],
 html.reduce-motion [data-slot='table-panel-scroll'] {
     transition: none;
 }
+
+/*
+ * Pinned table columns (core list pattern, docs/list-page.md). `DataTable`
+ * marks the cells of pinned columns with `data-pinned` and an inline sticky
+ * offset; here they get an opaque background (with the row's hover and
+ * selected tint layered on top, so rows still read as one line) and, on the
+ * column next to the scrolling part, a border and a soft shadow only while
+ * content is hidden under it. A pinned side drops its scroll-cue fade: the
+ * shadow is the cue there, and the fade would cover the pinned cells.
+ */
+[data-pinned] {
+    position: sticky;
+    z-index: 1;
+    background-color: var(--background);
+    background-image: linear-gradient(
+        var(--pinned-tint, transparent),
+        var(--pinned-tint, transparent)
+    );
+}
+
+tr:hover > [data-pinned],
+tr:has([aria-expanded='true']) > [data-pinned] {
+    --pinned-tint: color-mix(in oklab, var(--muted) 50%, transparent);
+}
+
+tr[data-state='selected'] > [data-pinned] {
+    --pinned-tint: var(--muted);
+}
+
+[data-scroll-cue-left]:has([data-pinned='left']) {
+    --scroll-cue-left: 0px;
+}
+
+[data-scroll-cue-right]:has([data-pinned='right']) {
+    --scroll-cue-right: 0px;
+}
+
+[data-scroll-cue-left] [data-pinned='left'][data-pinned-edge] {
+    box-shadow:
+        inset -1px 0 0 var(--border),
+        6px 0 8px -6px color-mix(in oklab, var(--foreground) 25%, transparent);
+}
+
+[data-scroll-cue-right] [data-pinned='right'][data-pinned-edge] {
+    box-shadow:
+        inset 1px 0 0 var(--border),
+        -6px 0 8px -6px color-mix(in oklab, var(--foreground) 25%, transparent);
+}
+
+/* Header cells keep the TablePanel's bottom rule under the edge shadow. */
+[data-scroll-cue-left] thead [data-pinned='left'][data-pinned-edge] {
+    box-shadow:
+        inset 0 -1px 0 var(--border),
+        inset -1px 0 0 var(--border),
+        6px 0 8px -6px color-mix(in oklab, var(--foreground) 25%, transparent);
+}
+
+[data-scroll-cue-right] thead [data-pinned='right'][data-pinned-edge] {
+    box-shadow:
+        inset 0 -1px 0 var(--border),
+        inset 1px 0 0 var(--border),
+        -6px 0 8px -6px color-mix(in oklab, var(--foreground) 25%, transparent);
+}

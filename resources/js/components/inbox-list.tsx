@@ -18,6 +18,7 @@ import {
     SheetTitle,
 } from '@/components/ui/sheet';
 import { Skeleton } from '@/components/ui/skeleton';
+import { toggleVariants } from '@/components/ui/toggle';
 
 /**
  * Inbox list (optional pattern `inbox-list`, docs/optional/inbox-list.md).
@@ -60,28 +61,27 @@ export function InboxSavedViews({
                 {views.map((view) => {
                     const isActive = view.id === activeViewId;
 
+                    // The segmented control's own look (outline `ToggleGroup`), so the
+                    // selected view reads the same as every other selected segment.
                     return (
-                        <Button
+                        <Link
                             key={view.id}
-                            asChild
-                            variant={isActive ? 'secondary' : 'outline'}
+                            href={view.href}
+                            preserveScroll
+                            aria-current={isActive ? 'page' : undefined}
+                            data-state={isActive ? 'on' : 'off'}
+                            className={toggleVariants({ variant: 'outline' })}
                         >
-                            <Link
-                                href={view.href}
-                                preserveScroll
-                                aria-current={isActive ? 'page' : undefined}
-                            >
-                                {view.label}
-                                {view.count !== undefined ? (
-                                    <Badge
-                                        variant="outline"
-                                        className="h-5 px-1.5 tabular-nums"
-                                    >
-                                        {view.count}
-                                    </Badge>
-                                ) : null}
-                            </Link>
-                        </Button>
+                            {view.label}
+                            {view.count !== undefined ? (
+                                <Badge
+                                    variant="outline"
+                                    className="h-5 px-1.5 tabular-nums"
+                                >
+                                    {view.count}
+                                </Badge>
+                            ) : null}
+                        </Link>
                     );
                 })}
             </ButtonGroup>

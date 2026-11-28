@@ -4,7 +4,9 @@ import {
     useReactTable,
 } from '@tanstack/react-table';
 import type {
+    Column,
     ColumnDef,
+    ColumnPinningState,
     OnChangeFn,
     RowData,
     RowSelectionState,
@@ -13,6 +15,7 @@ import type {
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { Fragment, useId, useRef } from 'react';
 import type {
+    CSSProperties,
     FocusEvent,
     HTMLAttributes,
     KeyboardEvent,
@@ -82,8 +85,47 @@ export type DataTableProps<TData> = {
     renderExpandedRow?: (row: TData) => ReactNode;
     /** Shown in the table body when `data` is empty. */
     emptyState?: ReactNode;
+    /**
+     * Columns that stay in view while a wide table scrolls sideways, by column id
+     * (`{ left: ['select', 'name'], right: ['actions'] }`). Left offsets add up the `size` of
+     * the pinned columns before each one, so every left-pinned column but the last needs a
+     * fixed width equal to its `size` (the select and expand columns set both).
+     */
+    columnPinning?: ColumnPinningState;
     className?: string;
 };
+
+/**
+ * Sticky-cell props of a pinned column (docs/list-page.md, "Pinned columns"): native
+ * `position: sticky` with the offset TanStack computes, plus the `data-pinned` attributes
+ * the theme styles (opaque background, row tints, edge shadow while scrolled). Cells keep
+ * their place in the DOM, so reading and tab order are unchanged.
+ */
+function pinnedCellProps<TData>(column: Column<TData, unknown>): {
+    style?: CSSProperties;
+    'data-pinned'?: 'left' | 'right';
+    'data-pinned-edge'?: '';
+} {
+    const side = column.getIsPinned();
+
+    if (side === false) {
+        return {};
+    }
+
+    const isEdge =
+        side === 'left'
+            ? column.getIsLastColumn('left')
+            : column.getIsFirstColumn('right');
+
+    return {
+        style:
+            side === 'left'
+                ? { left: column.getStart('left') }
+                : { right: column.getAfter('right') },
+        'data-pinned': side,
+        'data-pinned-edge': isEdge ? '' : undefined,
+    };
+}
 
 /**
  * Server-driven data table: the shadcn data-table pattern on TanStack Table,
@@ -110,6 +152,7 @@ export function DataTable<TData>({
     getRowProps,
     renderExpandedRow,
     emptyState,
+    columnPinning,
     className,
 }: DataTableProps<TData>) {
     const { t } = useTranslation();
@@ -153,6 +196,7 @@ export function DataTable<TData>({
         state: {
             sorting,
             rowSelection: rowSelection ?? {},
+            columnPinning: columnPinning ?? {},
         },
         onSortingChange: handleSortingChange,
         onRowSelectionChange,
@@ -186,6 +230,7 @@ export function DataTable<TData>({
                                         header.column.columnDef.meta
                                             ?.headerClassName
                                     }
+                                    {...pinnedCellProps(header.column)}
                                 >
                                     {header.isPlaceholder
                                         ? null
@@ -291,6 +336,7 @@ export function DataTable<TData>({
                                                 : rowProps?.['aria-describedby']
                                         }
                                         className={cn(
+                                            'group/row',
                                             openRow &&
                                                 'cursor-pointer focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring',
                                             rowProps?.className,
@@ -332,6 +378,9 @@ export function DataTable<TData>({
                                                                   event.stopPropagation()
                                                             : undefined
                                                     }
+                                                    {...pinnedCellProps(
+                                                        cell.column,
+                                                    )}
                                                 >
                                                     {flexRender(
                                                         cell.column.columnDef
@@ -406,6 +455,8 @@ export function dataTableSelectColumn<TData>({
 }): ColumnDef<TData, unknown> {
     return {
         id: 'select',
+        // 40px: the 24px hit area plus the cell padding; `size` matches it for column pinning.
+        size: 40,
         meta: { headerClassName: 'w-10', isRowClickIgnored: true },
         header: ({ table }) => (
             <Checkbox
@@ -449,6 +500,7 @@ export function dataTableExpandColumn<TData>({
 }): ColumnDef<TData, unknown> {
     return {
         id: 'expand',
+        size: 32,
         meta: { headerClassName: 'w-8', isRowClickIgnored: true },
         header: () => null,
         cell: ({ row }) => {
@@ -473,4 +525,39 @@ export function dataTableExpandColumn<TData>({
             );
         },
     };
+}
+
+/**
+ * Row actions in the last column (docs/list-page.md, "Row actions"): ghost icon-only
+ * `HeaderIconButton`s at `size="icon-sm"` (24px, WCAG 2.5.8), each with a tooltip and an
+ * `aria-label`. They show on row hover and while anything in the row has focus or an open
+ * menu, and always on touch screens and in selected rows. Hidden only by opacity, so they
+ * stay in the tab order and the accessibility tree.
+ *
+ * Needs the `group/row` class on the row, which `DataTable` sets; a hand-built table adds
+ * it to its `TableRow`.
+ *
+ * @param props.label - Accessible name of the group: the column name ("Actions").
+ */
+export function DataTableRowActions({
+    label,
+    children,
+    className,
+}: {
+    label: string;
+    children: ReactNode;
+    className?: string;
+}) {
+    return (
+        <div
+            role="group"
+            aria-label={label}
+            className={cn(
+                'ml-auto flex w-fit items-center justify-end gap-0.5 opacity-0 transition-opacity group-focus-within/row:opacity-100 group-hover/row:opacity-100 group-data-[state=selected]/row:opacity-100 has-data-[state=open]:opacity-100 motion-reduce:transition-none pointer-coarse:opacity-100',
+                className,
+            )}
+        >
+            {children}
+        </div>
+    );
 }

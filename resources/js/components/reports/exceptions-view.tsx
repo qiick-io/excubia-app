@@ -14,6 +14,7 @@ import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
     DataTable,
+    DataTableRowActions,
     dataTableSelectColumn,
 } from '@/components/admin/data-table';
 import { DataTableToolbar } from '@/components/admin/data-table-toolbar';
@@ -102,12 +103,12 @@ const STATUS_VARIANTS = {
 
 /**
  * Exceptions of a project grouped into issues (#26), as an admin list (app-ui
- * `docs/list-page.md`): search on the left, status and time range (#113) segmented controls on
- * the right, a table of the groups seen in the range, and a detail drawer with the assignee
- * (#254), the occurrences over the range, the stack and the actions (resolve, ignore, reopen,
- * copy a fix prompt). "Assigned to me" narrows the list to the groups the user is on; the
- * assignee column (avatar or "Unassigned") sorts, its facet filters, and each row can be assigned
- * from its actions (#332).
+ * `docs/list-page.md`): search on the left, status as the always-visible trailing filter, and
+ * assignee / assigned-to-me / time range (#113) behind the collapsible Filters control when the
+ * row does not fit. The table pins the exception column (and select) left and actions right. A
+ * detail drawer shows the assignee (#254), occurrences over the range, the stack and the actions
+ * (resolve, ignore, reopen, copy a fix prompt). "Assigned to me" narrows the list; the assignee
+ * column sorts and facets, and each row can be assigned from its actions (#332).
  */
 export function ExceptionsView({
     projectId,
@@ -392,7 +393,9 @@ export function ExceptionsView({
         {
             id: 'exception',
             header: t('exceptions.exception'),
-            meta: { cellClassName: 'max-w-[32rem]' },
+            meta: {
+                cellClassName: 'max-w-[50vw] sm:max-w-[32rem]',
+            },
             cell: ({ row }) => {
                 const group = row.original;
 
@@ -524,15 +527,19 @@ export function ExceptionsView({
                           isRowClickIgnored: true,
                       },
                       cell: ({ row }) => (
-                          <AssigneeRowActions
-                              url={projectsRoutes.exceptions.assignee.url({
-                                  project: projectId,
-                                  exceptionGroup: row.original.id,
-                              })}
-                              itemLabel={row.original.class}
-                              assignee={row.original.assignee}
-                              options={assignees}
-                          />
+                          <DataTableRowActions
+                              label={t('exceptions.actions')}
+                          >
+                              <AssigneeRowActions
+                                  url={projectsRoutes.exceptions.assignee.url({
+                                      project: projectId,
+                                      exceptionGroup: row.original.id,
+                                  })}
+                                  itemLabel={row.original.class}
+                                  assignee={row.original.assignee}
+                                  options={assignees}
+                              />
+                          </DataTableRowActions>
                       ),
                   } satisfies ColumnDef<ExceptionGroupRow>,
               ]
@@ -565,45 +572,60 @@ export function ExceptionsView({
                         selectedCount={selectedIds.length}
                         onClearSelection={() => setRowSelection({})}
                         bulkActions={bulkActions}
+                        trailing={
+                            <ToggleGroup
+                                type="single"
+                                variant="outline"
+                                value={status}
+                                onValueChange={(value) => {
+                                    if (value) {
+                                        setStatus(value as StatusFilter);
+                                    }
+                                }}
+                                aria-label={t('exceptions.statusFilter')}
+                            >
+                                {(
+                                    [
+                                        'open',
+                                        'resolved',
+                                        'ignored',
+                                        'all',
+                                    ] as const
+                                ).map((item) => (
+                                    <ToggleGroupItem
+                                        key={item}
+                                        value={item}
+                                        className="px-2.5"
+                                    >
+                                        {t(`exceptions.status.${item}`)}
+                                    </ToggleGroupItem>
+                                ))}
+                            </ToggleGroup>
+                        }
+                        collapsibleFilters={
+                            <>
+                                <AssignedToMeToggle
+                                    isPressed={isMine}
+                                    onPressedChange={setIsMine}
+                                />
+                                <AssigneeFacetFilter
+                                    options={assignees}
+                                    rowAssignees={groups.map(
+                                        (group) => group.assignee,
+                                    )}
+                                    selectedValues={assigneeFilter}
+                                    onSelectedValuesChange={setAssigneeFilter}
+                                />
+                                {picker}
+                            </>
+                        }
+                        collapsibleFilterCount={
+                            Number(isMine) +
+                            Number(assigneeFilter.length > 0) +
+                            Number(isNewOnly) +
+                            Number(range !== '24h')
+                        }
                     />
-                }
-                filtersRight={
-                    <div className="flex flex-wrap items-center gap-1.5">
-                        <ToggleGroup
-                            type="single"
-                            variant="outline"
-                            value={status}
-                            onValueChange={(value) => {
-                                if (value) {
-                                    setStatus(value as StatusFilter);
-                                }
-                            }}
-                            aria-label={t('exceptions.statusFilter')}
-                        >
-                            {(
-                                ['open', 'resolved', 'ignored', 'all'] as const
-                            ).map((item) => (
-                                <ToggleGroupItem
-                                    key={item}
-                                    value={item}
-                                    className="px-2.5"
-                                >
-                                    {t(`exceptions.status.${item}`)}
-                                </ToggleGroupItem>
-                            ))}
-                        </ToggleGroup>
-                        <AssignedToMeToggle
-                            isPressed={isMine}
-                            onPressedChange={setIsMine}
-                        />
-                        <AssigneeFacetFilter
-                            options={assignees}
-                            rowAssignees={groups.map((group) => group.assignee)}
-                            selectedValues={assigneeFilter}
-                            onSelectedValuesChange={setAssigneeFilter}
-                        />
-                        {picker}
-                    </div>
                 }
             >
                 {filtered.length === 0 ? (
@@ -641,6 +663,12 @@ export function ExceptionsView({
                         onSortChange={setSort}
                         rowSelection={canManage ? rowSelection : undefined}
                         onRowSelectionChange={setRowSelection}
+                        columnPinning={{
+                            left: canManage
+                                ? ['select', 'exception']
+                                : ['exception'],
+                            right: canManage ? ['actions'] : [],
+                        }}
                         onRowClick={(group) => {
                             setSelectedId(group.id);
                             deepLink.syncEdit(group.id);

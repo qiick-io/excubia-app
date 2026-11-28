@@ -2582,5 +2582,10 @@
         "legend": "Rollen",
         "description": "Die Berechtigungen aller ausgewählten Rollen gelten gemeinsam.",
         "superAdminHint": "Alle Berechtigungen. Kann nicht mit anderen Rollen kombiniert werden."
+    },
+    "dataTable": {
+        "filters": "Filter",
+        "activeFilters_one": "{{count}} aktiver Filter",
+        "activeFilters_other": "{{count}} aktive Filter"
     }
 }

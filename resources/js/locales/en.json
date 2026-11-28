@@ -2582,5 +2582,10 @@
         "legend": "Roles",
         "description": "Permissions from every selected role add up.",
         "superAdminHint": "Every permission. Cannot be combined with other roles."
+    },
+    "dataTable": {
+        "filters": "Filters",
+        "activeFilters_one": "{{count}} active filter",
+        "activeFilters_other": "{{count}} active filters"
     }
 }

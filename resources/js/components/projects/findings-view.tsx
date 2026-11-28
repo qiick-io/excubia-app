@@ -11,6 +11,7 @@ import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
     DataTable,
+    DataTableRowActions,
     dataTableSelectColumn,
 } from '@/components/admin/data-table';
 import { PageEmptyState } from '@/components/admin/page-empty-state';
@@ -310,7 +311,9 @@ export function FindingsView({
         {
             id: 'subject',
             header: t('report.subject'),
-            meta: { cellClassName: 'max-w-[16rem]' },
+            meta: {
+                cellClassName: 'max-w-[50vw] sm:max-w-[16rem]',
+            },
             cell: ({ row: tableRow }) => {
                 const row = tableRow.original;
 
@@ -450,7 +453,7 @@ export function FindingsView({
                 const row = tableRow.original;
 
                 return (
-                    <div className="inline-flex items-center justify-end gap-1">
+                    <DataTableRowActions label={t('findings.actions')}>
                         {canDismiss ? (
                             <AssigneeRowActions
                                 url={projectsRoutes.findings.assignee.url({
@@ -465,7 +468,7 @@ export function FindingsView({
                             />
                         ) : null}
                         <FixActions fix={fixes[findingKey(row)]} />
-                    </div>
+                    </DataTableRowActions>
                 );
             },
         },
@@ -529,11 +532,7 @@ export function FindingsView({
                                 </Button>
                             </>
                         }
-                    />
-                }
-                filtersRight={
-                    selected.length > 0 ? null : (
-                        <div className="flex flex-wrap items-center gap-1.5">
+                        trailing={
                             <ToggleGroup
                                 type="single"
                                 variant="outline"
@@ -562,87 +561,110 @@ export function FindingsView({
                                     </ToggleGroupItem>
                                 ))}
                             </ToggleGroup>
-                            <AssignedToMeToggle
-                                isPressed={isMine}
-                                onPressedChange={setIsMine}
-                            />
-                            <Select
-                                value={severity}
-                                onValueChange={(value) =>
-                                    setSeverity(value as Severity | 'all')
-                                }
-                            >
-                                <SelectTrigger
-                                    aria-label={t('report.severityLabel')}
-                                    className="w-[8.5rem]"
+                        }
+                        collapsibleFilters={
+                            <>
+                                <AssignedToMeToggle
+                                    isPressed={isMine}
+                                    onPressedChange={setIsMine}
+                                />
+                                <Select
+                                    value={severity}
+                                    onValueChange={(value) =>
+                                        setSeverity(value as Severity | 'all')
+                                    }
                                 >
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent align="end">
-                                    <SelectItem value="all">
-                                        {t('report.allSeverities')}
-                                    </SelectItem>
-                                    {SEVERITIES.map((item) => (
-                                        <SelectItem key={item} value={item}>
-                                            {t(`report.severity.${item}`)}
+                                    <SelectTrigger
+                                        aria-label={t('report.severityLabel')}
+                                        className="w-[8.5rem]"
+                                    >
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent align="end">
+                                        <SelectItem value="all">
+                                            {t('report.allSeverities')}
                                         </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <AssigneeFacetFilter
-                                options={assignees}
-                                rowAssignees={rows.map(
-                                    (row) => row.lifecycle.assignee,
-                                )}
-                                selectedValues={assigneeFilter}
-                                onSelectedValuesChange={setAssigneeFilter}
-                            />
-                            <Select
-                                value={category}
-                                onValueChange={(value) =>
-                                    setCategory(value as CheckCategory | 'all')
-                                }
-                            >
-                                <SelectTrigger
-                                    aria-label={t('checks.categoryLabel')}
-                                    className="w-[10rem]"
+                                        {SEVERITIES.map((item) => (
+                                            <SelectItem
+                                                key={item}
+                                                value={item}
+                                            >
+                                                {t(`report.severity.${item}`)}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <AssigneeFacetFilter
+                                    options={assignees}
+                                    rowAssignees={rows.map(
+                                        (row) => row.lifecycle.assignee,
+                                    )}
+                                    selectedValues={assigneeFilter}
+                                    onSelectedValuesChange={setAssigneeFilter}
+                                />
+                                <Select
+                                    value={category}
+                                    onValueChange={(value) =>
+                                        setCategory(
+                                            value as CheckCategory | 'all',
+                                        )
+                                    }
                                 >
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent align="end">
-                                    <SelectItem value="all">
-                                        {t('checks.allCategories')}
-                                    </SelectItem>
-                                    {categories.map((item) => (
-                                        <SelectItem key={item} value={item}>
-                                            {t(`checks.category.${item}`)}
+                                    <SelectTrigger
+                                        aria-label={t('checks.categoryLabel')}
+                                        className="w-[10rem]"
+                                    >
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent align="end">
+                                        <SelectItem value="all">
+                                            {t('checks.allCategories')}
                                         </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <Select value={checkId} onValueChange={setCheckId}>
-                                <SelectTrigger
-                                    aria-label={t('report.check')}
-                                    className="w-[12rem]"
+                                        {categories.map((item) => (
+                                            <SelectItem
+                                                key={item}
+                                                value={item}
+                                            >
+                                                {t(`checks.category.${item}`)}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <Select
+                                    value={checkId}
+                                    onValueChange={setCheckId}
                                 >
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent align="end">
-                                    <SelectItem value="all">
-                                        {t('report.allChecks')}
-                                    </SelectItem>
-                                    {checks.map((check) => (
-                                        <SelectItem
-                                            key={check.id}
-                                            value={check.id}
-                                        >
-                                            {check.name}
+                                    <SelectTrigger
+                                        aria-label={t('report.check')}
+                                        className="w-[12rem]"
+                                    >
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent align="end">
+                                        <SelectItem value="all">
+                                            {t('report.allChecks')}
                                         </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    )
+                                        {checks.map((check) => (
+                                            <SelectItem
+                                                key={check.id}
+                                                value={check.id}
+                                            >
+                                                {check.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </>
+                        }
+                        collapsibleFilterCount={
+                            Number(isMine) +
+                            Number(isNewOnly) +
+                            Number(assigneeFilter.length > 0) +
+                            Number(severity !== 'all') +
+                            Number(category !== 'all') +
+                            Number(checkId !== 'all')
+                        }
+                    />
                 }
             >
                 {filtered.length === 0 ? (
@@ -692,6 +714,10 @@ export function FindingsView({
                         getRowId={findingKey}
                         sort={sort}
                         onSortChange={setSort}
+                        columnPinning={{
+                            left: ['select', 'subject'],
+                            right: ['actions'],
+                        }}
                         getRowProps={listShortcuts.getActiveRowProps}
                         rowSelection={Object.fromEntries(
                             selected.map((key) => [key, true]),

@@ -2,8 +2,7 @@ import type { ColumnDef } from '@tanstack/react-table';
 import { Head, router } from '@inertiajs/react';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { DataTable } from '@/components/admin/data-table';
-import { ButtonGroup } from '@/components/ui/button-group';
+import { DataTable, DataTableRowActions } from '@/components/admin/data-table';
 import { TruncatedText } from '@/components/admin/truncated-text';
 import { PageLayout } from '@/components/layout/page-layout';
 import { Button } from '@/components/ui/button';
@@ -131,10 +130,7 @@ export default function JobsIndex({
                 isRowClickIgnored: true,
             },
             cell: ({ row }) => (
-                <ButtonGroup
-                    aria-label={t('jobs.columns.actions')}
-                    className="ml-auto"
-                >
+                <DataTableRowActions label={t('jobs.columns.actions')}>
                     <Button
                         type="button"
                         size="sm"
@@ -158,7 +154,7 @@ export default function JobsIndex({
                     >
                         {t('jobs.delete')}
                     </Button>
-                </ButtonGroup>
+                </DataTableRowActions>
             ),
         },
     ];

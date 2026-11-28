@@ -2,10 +2,10 @@ import type { ColumnDef } from '@tanstack/react-table';
 import { RotateCw, Trash2 } from 'lucide-react';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { DataTableRowActions } from '@/components/admin/data-table';
 import { HeaderIconButton } from '@/components/admin/header-icon-button';
 import { ConfirmDestructiveDialog } from '@/components/confirm-destructive-dialog';
 import { Badge } from '@/components/ui/badge';
-import { ButtonGroup } from '@/components/ui/button-group';
 import {
     Tooltip,
     TooltipContent,
@@ -55,7 +55,7 @@ export type ApiKeyRowActionsProps = {
 };
 
 /**
- * The row actions of the list pattern: outline 24px icon buttons, Revoke last in the
+ * The row actions of the list pattern: ghost 24px icon buttons, Revoke last in the
  * destructive colour. Only an active key rotates; a revoked key has nothing left to do.
  */
 export function ApiKeyRowActions({
@@ -71,10 +71,9 @@ export function ApiKeyRowActions({
     }
 
     return (
-        <ButtonGroup aria-label={t('apiKeys.list.actions')} className="ml-auto">
+        <DataTableRowActions label={t('apiKeys.list.actions')}>
             {onRotate && status === 'active' ? (
                 <HeaderIconButton
-                    variant="outline"
                     size="icon-sm"
                     label={t('apiKeys.list.rotate', { name: keyName })}
                     data-test="api-key-rotate"
@@ -84,7 +83,6 @@ export function ApiKeyRowActions({
                 </HeaderIconButton>
             ) : null}
             <HeaderIconButton
-                variant="outline"
                 size="icon-sm"
                 className="text-destructive hover:text-destructive"
                 label={t('apiKeys.list.revoke', { name: keyName })}
@@ -93,7 +91,7 @@ export function ApiKeyRowActions({
             >
                 <Trash2 className="size-3.5" />
             </HeaderIconButton>
-        </ButtonGroup>
+        </DataTableRowActions>
     );
 }
 

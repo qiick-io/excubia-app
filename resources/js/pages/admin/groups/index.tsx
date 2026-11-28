@@ -3,10 +3,9 @@ import { Head, router } from '@inertiajs/react';
 import { ArrowDownAZ, ArrowUpAZ, Plus, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { DataTable } from '@/components/admin/data-table';
+import { DataTable, DataTableRowActions } from '@/components/admin/data-table';
 import type { DataTableSort } from '@/components/admin/data-table';
 import { DataTableColumnHeader } from '@/components/admin/data-table-column-header';
-import { ButtonGroup } from '@/components/ui/button-group';
 import { DataTableToolbar } from '@/components/admin/data-table-toolbar';
 import { GroupFormDrawer } from '@/components/admin/group-form-drawer';
 import { HeaderIconButton } from '@/components/admin/header-icon-button';
@@ -249,13 +248,9 @@ export default function AdminGroupsIndex({
             },
             cell: ({ row }) =>
                 row.original.can_update ? (
-                    <ButtonGroup
-                        aria-label={t('groups.columns.actions')}
-                        className="ml-auto"
-                    >
+                    <DataTableRowActions label={t('groups.columns.actions')}>
                         <HeaderIconButton
                             type="button"
-                            variant="outline"
                             size="icon-sm"
                             className="text-destructive hover:text-destructive"
                             label={t('common.delete')}
@@ -263,7 +258,7 @@ export default function AdminGroupsIndex({
                         >
                             <Trash2 className="size-3.5" />
                         </HeaderIconButton>
-                    </ButtonGroup>
+                    </DataTableRowActions>
                 ) : null,
         },
     ];
@@ -359,6 +354,10 @@ export default function AdminGroupsIndex({
                         sort={{ id: sort, direction }}
                         onSortChange={changeSort}
                         pagination={groups}
+                        columnPinning={{
+                            left: ['name'],
+                            right: ['actions'],
+                        }}
                         onRowClick={openEdit}
                         getRowProps={(group) => ({
                             className: group.can_update
@@ -367,8 +366,7 @@ export default function AdminGroupsIndex({
                         })}
                         emptyState={
                             <span className="text-muted-foreground">
-                                {t('groups.empty')}
-                            </span>
+                                {t('groups.empty')}                            </span>
                         }
                     />
                 </PageLayout>

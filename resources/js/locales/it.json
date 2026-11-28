@@ -2582,5 +2582,10 @@
         "legend": "Ruoli",
         "description": "I permessi di tutti i ruoli selezionati si sommano.",
         "superAdminHint": "Tutti i permessi. Non si può combinare con altri ruoli."
+    },
+    "dataTable": {
+        "filters": "Filtri",
+        "activeFilters_one": "{{count}} filtro attivo",
+        "activeFilters_other": "{{count}} filtri attivi"
     }
 }

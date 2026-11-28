@@ -9,7 +9,6 @@ import { DataTableFacetedFilter } from '@/components/admin/data-table-faceted-fi
 import { HeaderIconButton } from '@/components/admin/header-icon-button';
 import { TruncatedText } from '@/components/admin/truncated-text';
 import { UserAvatar } from '@/components/admin/user-avatar';
-import { ButtonGroup } from '@/components/ui/button-group';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -356,11 +355,10 @@ export function AssigneeRowActions({
         options.some((option) => option.id === currentUserId);
 
     return (
-        <ButtonGroup aria-label={t('assignee.column')} className="ml-auto">
+        <>
             {canAssignToMe ? (
                 <HeaderIconButton
                     type="button"
-                    variant="outline"
                     size="icon-sm"
                     label={t('assignee.assignToMe', { item: itemLabel })}
                     disabled={assignee?.id === currentUserId}
@@ -374,7 +372,6 @@ export function AssigneeRowActions({
                 <DropdownMenuTrigger asChild>
                     <HeaderIconButton
                         type="button"
-                        variant="outline"
                         size="icon-sm"
                         label={t('assignee.assignTo', { item: itemLabel })}
                         data-test="row-assign"
@@ -417,6 +414,6 @@ export function AssigneeRowActions({
                     </DropdownMenuRadioGroup>
                 </DropdownMenuContent>
             </DropdownMenu>
-        </ButtonGroup>
+        </>
     );
 }

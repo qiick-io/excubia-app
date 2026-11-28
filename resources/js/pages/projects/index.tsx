@@ -11,11 +11,10 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { DataTable } from '@/components/admin/data-table';
+import { DataTable, DataTableRowActions } from '@/components/admin/data-table';
 import type { DataTableSort } from '@/components/admin/data-table';
 import { DataTableColumnHeader } from '@/components/admin/data-table-column-header';
 import { ProjectPinButton } from '@/components/project-pin-button';
-import { ButtonGroup } from '@/components/ui/button-group';
 import { DataTableToolbar } from '@/components/admin/data-table-toolbar';
 import { HeaderIconButton } from '@/components/admin/header-icon-button';
 import { NameSlugCell } from '@/components/admin/name-slug-cell';
@@ -375,17 +374,13 @@ export default function ProjectsIndex({
                 const project = row.original;
 
                 return (
-                    <ButtonGroup
-                        aria-label={t('projects.actions')}
-                        className="ml-auto"
-                    >
+                    <DataTableRowActions label={t('projects.actions')}>
                         {/* Everyone may pin a project they see (#273). */}
                         <ProjectPinButton project={project} />
                         {canEdit ? (
                             <HeaderIconButton
                                 type="button"
-                                variant="outline"
-                                size="icon-sm"
+                                                                size="icon-sm"
                                 label={t('projects.editProject')}
                                 onClick={() => openDrawer(project)}
                             >
@@ -395,8 +390,7 @@ export default function ProjectsIndex({
                         {canEdit && !project.is_system ? (
                             <HeaderIconButton
                                 type="button"
-                                variant="outline"
-                                size="icon-sm"
+                                                                size="icon-sm"
                                 label={t('projects.token.rotate')}
                                 onClick={() =>
                                     setPending({
@@ -413,8 +407,7 @@ export default function ProjectsIndex({
                         project.has_push_token ? (
                             <HeaderIconButton
                                 type="button"
-                                variant="outline"
-                                size="icon-sm"
+                                                                size="icon-sm"
                                 label={t('projects.token.revoke')}
                                 onClick={() =>
                                     setPending({
@@ -429,8 +422,7 @@ export default function ProjectsIndex({
                         {canDelete && !project.is_system ? (
                             <HeaderIconButton
                                 type="button"
-                                variant="outline"
-                                size="icon-sm"
+                                                                size="icon-sm"
                                 className="text-destructive hover:text-destructive"
                                 label={t('common.delete')}
                                 onClick={() =>
@@ -443,7 +435,7 @@ export default function ProjectsIndex({
                                 <Trash2 className="size-3.5" />
                             </HeaderIconButton>
                         ) : null}
-                    </ButtonGroup>
+                    </DataTableRowActions>
                 );
             },
         } satisfies ColumnDef<ProjectRow>,
@@ -533,6 +525,10 @@ export default function ProjectsIndex({
                             sort={{ id: sort, direction }}
                             onSortChange={changeSort}
                             pagination={projects}
+                            columnPinning={{
+                                left: ['name'],
+                                right: ['actions'],
+                            }}
                             onRowClick={(project) =>
                                 router.visit(
                                     projectsRoutes.show.url(project.slug),

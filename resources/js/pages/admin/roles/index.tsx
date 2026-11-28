@@ -3,9 +3,8 @@ import { Head, Link, router } from '@inertiajs/react';
 import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { DataTable } from '@/components/admin/data-table';
+import { DataTable, DataTableRowActions } from '@/components/admin/data-table';
 import { Badge } from '@/components/ui/badge';
-import { ButtonGroup } from '@/components/ui/button-group';
 import { HeaderIconButton } from '@/components/admin/header-icon-button';
 import { ConfirmDestructiveDialog } from '@/components/confirm-destructive-dialog';
 import { PageLayout } from '@/components/layout/page-layout';
@@ -90,12 +89,8 @@ export default function AdminRolesIndex({
                 isRowClickIgnored: true,
             },
             cell: ({ row }) => (
-                <ButtonGroup
-                    aria-label={t('roles.columns.actions')}
-                    className="ml-auto"
-                >
+                <DataTableRowActions label={t('roles.columns.actions')}>
                     <HeaderIconButton
-                        variant="outline"
                         size="icon-sm"
                         label={t('roles.actions.edit')}
                         asChild
@@ -107,7 +102,6 @@ export default function AdminRolesIndex({
                     {row.original.can_edit ? (
                         <HeaderIconButton
                             type="button"
-                            variant="outline"
                             size="icon-sm"
                             className="text-destructive hover:text-destructive"
                             label={t('roles.actions.delete')}
@@ -116,7 +110,7 @@ export default function AdminRolesIndex({
                             <Trash2 className="size-3.5" />
                         </HeaderIconButton>
                     ) : null}
-                </ButtonGroup>
+                </DataTableRowActions>
             ),
         },
     ];
@@ -144,6 +138,10 @@ export default function AdminRolesIndex({
                         data={rows}
                         getRowId={(role) => String(role.id)}
                         pagination={roles}
+                        columnPinning={{
+                            left: ['name'],
+                            right: ['actions'],
+                        }}
                         onRowClick={(role) =>
                             router.visit(rolesRoutes.edit.url(role.id))
                         }

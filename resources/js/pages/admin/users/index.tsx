@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { DataTable } from '@/components/admin/data-table';
+import { DataTable, DataTableRowActions } from '@/components/admin/data-table';
 import type { DataTableSort } from '@/components/admin/data-table';
 import { DataTableColumnHeader } from '@/components/admin/data-table-column-header';
 import { DataTableToolbar } from '@/components/admin/data-table-toolbar';
@@ -25,7 +25,6 @@ import { EmptyStatus } from '@/components/empty-status';
 import { PageLayout } from '@/components/layout/page-layout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ButtonGroup } from '@/components/ui/button-group';
 import { Drawer } from '@/components/ui/drawer';
 import {
     Select,
@@ -319,14 +318,10 @@ export default function AdminUsersIndex({
                 isRowClickIgnored: true,
             },
             cell: ({ row }) => (
-                <ButtonGroup
-                    aria-label={t('users.columns.actions')}
-                    className="ml-auto"
-                >
+                <DataTableRowActions label={t('users.columns.actions')}>
                     {row.original.can_update ? (
                         <HeaderIconButton
                             type="button"
-                            variant="outline"
                             size="icon-sm"
                             label={t('users.actions.sendResetEmail')}
                             onClick={() => sendPasswordReset(row.original)}
@@ -337,7 +332,6 @@ export default function AdminUsersIndex({
                     {row.original.can_delete ? (
                         <HeaderIconButton
                             type="button"
-                            variant="outline"
                             size="icon-sm"
                             className="text-destructive hover:text-destructive"
                             label={t('common.delete')}
@@ -346,7 +340,7 @@ export default function AdminUsersIndex({
                             <Trash2 className="size-3.5" />
                         </HeaderIconButton>
                     ) : null}
-                </ButtonGroup>
+                </DataTableRowActions>
             ),
         },
     ];
@@ -484,6 +478,10 @@ export default function AdminUsersIndex({
                             sort={{ id: sort, direction }}
                             onSortChange={changeSort}
                             pagination={users}
+                            columnPinning={{
+                                left: ['name'],
+                                right: ['actions'],
+                            }}
                             onRowClick={openEdit}
                             getRowProps={(user) => ({
                                 className: user.can_update
