@@ -36,7 +36,7 @@ it('keeps secrets out of all() and forEdit(), and surfaces has_ flags instead', 
 
 it('refuses an undeclared settings key', function () {
     expect(fn () => app(Settings::class)->set(['not_a_declared_key' => 'x']))
-        ->toThrow(\InvalidArgumentException::class);
+        ->toThrow(InvalidArgumentException::class);
 });
 
 it('passes settings:check after adoption', function () {
