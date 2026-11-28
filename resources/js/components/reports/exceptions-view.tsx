@@ -1,5 +1,5 @@
-import type { ColumnDef } from '@tanstack/react-table';
-import { router } from '@inertiajs/react';
+import type { ColumnDef } from "@tanstack/react-table";
+import { router } from "@inertiajs/react";
 import {
     Bug,
     CheckCheck,
@@ -8,29 +8,29 @@ import {
     SearchX,
     Sparkles,
     UserCheck,
-} from 'lucide-react';
-import type { RowSelectionState } from '@tanstack/react-table';
-import { useMemo, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+} from "lucide-react";
+import type { RowSelectionState } from "@tanstack/react-table";
+import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
     DataTable,
     DataTableRowActions,
     dataTableSelectColumn,
-} from '@/components/admin/data-table';
-import { DataTableToolbar } from '@/components/admin/data-table-toolbar';
-import { PageEmptyState } from '@/components/admin/page-empty-state';
-import { EmptyStatus } from '@/components/empty-status';
-import { InboxSavedViews } from '@/components/inbox-list';
-import type { InboxSavedView } from '@/components/inbox-list';
-import { PageLayout } from '@/components/layout/page-layout';
-import { useDrawerDeepLink } from '@/hooks/use-drawer-deep-link';
-import { useListShortcuts } from '@/hooks/use-list-shortcuts';
+} from "@/components/admin/data-table";
+import { DataTableToolbar } from "@/components/admin/data-table-toolbar";
+import { PageEmptyState } from "@/components/admin/page-empty-state";
+import { EmptyStatus } from "@/components/empty-status";
+import { InboxSavedViews } from "@/components/inbox-list";
+import type { InboxSavedView } from "@/components/inbox-list";
+import { PageLayout } from "@/components/layout/page-layout";
+import { useDrawerDeepLink } from "@/hooks/use-drawer-deep-link";
+import { useListShortcuts } from "@/hooks/use-list-shortcuts";
 import {
     getQueryParam,
     locationPageUrl,
     patchLocationQuery,
-} from '@/lib/admin-query-params';
-import { isFirstSeenWithinLastDay, savedViewHref } from '@/lib/inbox-views';
+} from "@/lib/admin-query-params";
+import { isFirstSeenWithinLastDay, savedViewHref } from "@/lib/inbox-views";
 import {
     AssignedToMeToggle,
     AssigneeFacetFilter,
@@ -45,19 +45,19 @@ import {
     useAssigneeSort,
     useCurrentUserId,
     type AssigneeOption,
-} from '@/components/reports/assignee-select';
-import { useCopyWithToast } from '@/components/reports/fix-actions';
-import { ReleaseLabel, shortRelease } from '@/components/reports/release-label';
-import { StackedBarChart } from '@/components/reports/severity-chart';
-import type { ChartZoomHandler } from '@/components/reports/severity-chart';
+} from "@/components/reports/assignee-select";
+import { useCopyWithToast } from "@/components/reports/fix-actions";
+import { ReleaseLabel, shortRelease } from "@/components/reports/release-label";
+import { StackedBarChart } from "@/components/reports/severity-chart";
+import type { ChartZoomHandler } from "@/components/reports/severity-chart";
 import {
     useRangeTexts,
     useZoomToRange,
     deployMarkers,
     TimeRangePicker,
-} from '@/components/reports/time-range-picker';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+} from "@/components/reports/time-range-picker";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
     Drawer,
     DrawerBody,
@@ -66,39 +66,39 @@ import {
     DrawerFooter,
     DrawerHeader,
     DrawerTitle,
-} from '@/components/ui/drawer';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { cn } from '@/lib/utils';
-import projectsRoutes from '@/routes/projects';
-import type { ExceptionGroupRow, RuntimeDeploy, TimeRange } from '@/types';
-import { useDateFormat } from '@/lib/date-format';
-import { DrawerCloseButton } from '@/components/drawer-close-button';
+} from "@/components/ui/drawer";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { cn } from "@/lib/utils";
+import projectsRoutes from "@/routes/projects";
+import type { ExceptionGroupRow, RuntimeDeploy, TimeRange } from "@/types";
+import { useDateFormat } from "@/lib/date-format";
+import { DrawerCloseButton } from "@/components/drawer-close-button";
 
 const EXCEPTIONS_GUIDE_URL =
-    'https://github.com/qiick-io/excubia-core/blob/main/docs/guides/exception-capture.md';
+    "https://github.com/qiick-io/excubia-core/blob/main/docs/guides/exception-capture.md";
 
-type StatusFilter = ExceptionGroupRow['status'] | 'all';
+type StatusFilter = ExceptionGroupRow["status"] | "all";
 
 const STATUS_FILTERS: readonly StatusFilter[] = [
-    'open',
-    'resolved',
-    'ignored',
-    'all',
+    "open",
+    "resolved",
+    "ignored",
+    "all",
 ];
 
 /** The status filter from `?status=`, open by default. */
 function statusFromUrl(): StatusFilter {
-    const value = getQueryParam(locationPageUrl(), 'status');
+    const value = getQueryParam(locationPageUrl(), "status");
 
     return STATUS_FILTERS.includes(value as StatusFilter)
         ? (value as StatusFilter)
-        : 'open';
+        : "open";
 }
 
 const STATUS_VARIANTS = {
-    open: 'destructive',
-    resolved: 'success',
-    ignored: 'muted',
+    open: "destructive",
+    resolved: "success",
+    ignored: "muted",
 } as const;
 
 /**
@@ -134,15 +134,15 @@ export function ExceptionsView({
     const { t } = useTranslation();
     const dates = useDateFormat();
     const rangeTexts = useRangeTexts(range);
-    const zoom = useZoomToRange(slug, 'exceptions');
-    const [search, setSearch] = useState('');
+    const zoom = useZoomToRange(slug, "exceptions");
+    const [search, setSearch] = useState("");
     const [status, setStatusFilter] = useState<StatusFilter>(statusFromUrl);
     const currentUserId = useCurrentUserId();
     const [isMine, setIsMineFilter] = useState(isAssignedToMeLinked);
     const [assigneeFilter, setAssigneeFilter] = useAssigneeFilter();
     const [sort, setSort] = useAssigneeSort();
     const [isNewOnly, setIsNewOnly] = useState(
-        () => getQueryParam(locationPageUrl(), 'new') === '24h',
+        () => getQueryParam(locationPageUrl(), "new") === "24h",
     );
     const [selectedId, setSelectedId] = useState<number | null>(null);
     const selected = groups.find((group) => group.id === selectedId) ?? null;
@@ -152,18 +152,18 @@ export function ExceptionsView({
         .map(Number);
     // `?exception=<id>` opens a group's drawer, so the palette and links can point at one.
     const deepLink = useDrawerDeepLink({
-        editParam: 'exception',
+        editParam: "exception",
         onEdit: (id) => setSelectedId(Number(id)),
     });
 
     // The filters live in the URL, so a saved view is a link and a view can be shared.
     const setStatus = (value: StatusFilter): void => {
         setStatusFilter(value);
-        patchLocationQuery({ status: value === 'open' ? null : value });
+        patchLocationQuery({ status: value === "open" ? null : value });
     };
     const setIsMine = (value: boolean): void => {
         setIsMineFilter(value);
-        patchLocationQuery({ assigned: value ? 'me' : null });
+        patchLocationQuery({ assigned: value ? "me" : null });
     };
     const clearNewOnly = (): void => {
         setIsNewOnly(false);
@@ -174,11 +174,11 @@ export function ExceptionsView({
         const needle = search.trim().toLowerCase();
         const matching = groups.filter(
             (group) =>
-                (status === 'all' || group.status === status) &&
+                (status === "all" || group.status === status) &&
                 (!isMine || group.assignee?.id === currentUserId) &&
                 matchesAssigneeFilter(group.assignee, assigneeFilter) &&
                 (!isNewOnly || isFirstSeenWithinLastDay(group.first_seen_at)) &&
-                (needle === '' ||
+                (needle === "" ||
                     `${group.class} ${group.message} ${group.context.name}`
                         .toLowerCase()
                         .includes(needle)),
@@ -213,8 +213,8 @@ export function ExceptionsView({
                   }))
             : undefined,
         primaryAction: {
-            keys: 'e',
-            description: t('exceptions.resolve'),
+            keys: "e",
+            description: t("exceptions.resolve"),
             isEnabled: canManage,
             handler: (group) =>
                 router.patch(
@@ -222,13 +222,13 @@ export function ExceptionsView({
                         project: projectId,
                         exceptionGroup: group.id,
                     }),
-                    { status: 'resolved' },
+                    { status: "resolved" },
                     { preserveScroll: true, preserveState: true },
                 ),
         },
         secondaryAction: {
-            keys: 'a',
-            description: t('exceptions.assignToMe'),
+            keys: "a",
+            description: t("exceptions.assignToMe"),
             isEnabled:
                 canManage &&
                 currentUserId !== null &&
@@ -254,18 +254,18 @@ export function ExceptionsView({
                 {hasExceptions ? (
                     <PageEmptyState
                         icon={SearchX}
-                        title={t('exceptions.emptyRangeTitle')}
-                        description={t('exceptions.emptyRangeDescription', {
+                        title={t("exceptions.emptyRangeTitle")}
+                        description={t("exceptions.emptyRangeDescription", {
                             during: rangeTexts.during,
                         })}
                     />
                 ) : (
                     <PageEmptyState
                         icon={Bug}
-                        title={t('exceptions.emptyTitle')}
-                        description={t('exceptions.emptyDescription')}
+                        title={t("exceptions.emptyTitle")}
+                        description={t("exceptions.emptyDescription")}
                         docsHref={EXCEPTIONS_GUIDE_URL}
-                        docsLabel={t('exceptions.guide')}
+                        docsLabel={t("exceptions.guide")}
                     />
                 )}
             </PageLayout>
@@ -273,49 +273,49 @@ export function ExceptionsView({
     }
 
     const hasActiveFilters =
-        search.trim() !== '' ||
-        status !== 'open' ||
+        search.trim() !== "" ||
+        status !== "open" ||
         isMine ||
         isNewOnly ||
         assigneeFilter.length > 0;
 
-    const openGroups = groups.filter((group) => group.status === 'open');
+    const openGroups = groups.filter((group) => group.status === "open");
     const savedViews: InboxSavedView[] = [
         {
-            id: 'unresolved',
-            label: t('exceptions.views.unresolved'),
+            id: "unresolved",
+            label: t("exceptions.views.unresolved"),
             href: savedViewHref({}),
             count: openGroups.length,
         },
         {
-            id: 'mine',
-            label: t('exceptions.views.mine'),
-            href: savedViewHref({ assigned: 'me' }),
+            id: "mine",
+            label: t("exceptions.views.mine"),
+            href: savedViewHref({ assigned: "me" }),
             count: openGroups.filter(
                 (group) => group.assignee?.id === currentUserId,
             ).length,
         },
         {
-            id: 'new',
-            label: t('exceptions.views.new'),
-            href: savedViewHref({ new: '24h' }),
+            id: "new",
+            label: t("exceptions.views.new"),
+            href: savedViewHref({ new: "24h" }),
             count: openGroups.filter((group) =>
                 isFirstSeenWithinLastDay(group.first_seen_at),
             ).length,
         },
     ];
     const activeSavedViewId =
-        status !== 'open' || search.trim() !== '' || assigneeFilter.length > 0
+        status !== "open" || search.trim() !== "" || assigneeFilter.length > 0
             ? undefined
             : isMine && !isNewOnly
-              ? 'mine'
+              ? "mine"
               : isNewOnly && !isMine
-                ? 'new'
+                ? "new"
                 : !isMine && !isNewOnly
-                  ? 'unresolved'
+                  ? "unresolved"
                   : undefined;
 
-    const changeStatus = (nextStatus: ExceptionGroupRow['status']): void => {
+    const changeStatus = (nextStatus: ExceptionGroupRow["status"]): void => {
         router.patch(
             projectsRoutes.exceptions.bulk.status.url(projectId),
             { ids: selectedIds, status: nextStatus },
@@ -342,29 +342,29 @@ export function ExceptionsView({
             <Button
                 type="button"
                 variant="outline"
-                onClick={() => changeStatus('resolved')}
+                onClick={() => changeStatus("resolved")}
                 data-test="bulk-resolved"
             >
                 <CheckCheck className="size-4" aria-hidden="true" />
-                {t('exceptions.resolve')}
+                {t("exceptions.resolve")}
             </Button>
             <Button
                 type="button"
                 variant="outline"
-                onClick={() => changeStatus('ignored')}
+                onClick={() => changeStatus("ignored")}
                 data-test="bulk-ignored"
             >
                 <EyeOff className="size-4" aria-hidden="true" />
-                {t('exceptions.ignore')}
+                {t("exceptions.ignore")}
             </Button>
             <Button
                 type="button"
                 variant="outline"
-                onClick={() => changeStatus('open')}
+                onClick={() => changeStatus("open")}
                 data-test="bulk-open"
             >
                 <RotateCcw className="size-4" aria-hidden="true" />
-                {t('exceptions.reopen')}
+                {t("exceptions.reopen")}
             </Button>
             {currentUserId !== null &&
             assignees.some((option) => option.id === currentUserId) ? (
@@ -374,7 +374,7 @@ export function ExceptionsView({
                     onClick={() => assignSelection(currentUserId)}
                 >
                     <UserCheck className="size-4" aria-hidden="true" />
-                    {t('exceptions.assignToMe')}
+                    {t("exceptions.assignToMe")}
                 </Button>
             ) : null}
         </>
@@ -384,17 +384,17 @@ export function ExceptionsView({
         ...(canManage
             ? [
                   dataTableSelectColumn<ExceptionGroupRow>({
-                      selectAllLabel: t('exceptions.selectAll'),
+                      selectAllLabel: t("exceptions.selectAll"),
                       getRowLabel: (group) =>
-                          t('exceptions.selectRow', { name: group.class }),
+                          t("exceptions.selectRow", { name: group.class }),
                   }),
               ]
             : []),
         {
-            id: 'exception',
-            header: t('exceptions.exception'),
+            id: "exception",
+            header: t("exceptions.exception"),
             meta: {
-                cellClassName: 'max-w-[50vw] sm:max-w-[32rem]',
+                cellClassName: "max-w-[32rem]",
             },
             cell: ({ row }) => {
                 const group = row.original;
@@ -412,9 +412,9 @@ export function ExceptionsView({
             },
         },
         {
-            id: 'context',
-            header: t('exceptions.context'),
-            meta: { cellClassName: 'max-w-[14rem]' },
+            id: "context",
+            header: t("exceptions.context"),
+            meta: { cellClassName: "max-w-[14rem]" },
             cell: ({ row }) => {
                 const group = row.original;
 
@@ -431,8 +431,8 @@ export function ExceptionsView({
             },
         },
         {
-            id: 'environment',
-            header: t('exceptions.environment'),
+            id: "environment",
+            header: t("exceptions.environment"),
             cell: ({ row }) => {
                 const group = row.original;
 
@@ -444,11 +444,11 @@ export function ExceptionsView({
             },
         },
         {
-            id: 'inRange',
-            header: t('exceptions.inRange'),
+            id: "inRange",
+            header: t("exceptions.inRange"),
             meta: {
-                headerClassName: 'text-right',
-                cellClassName: 'text-right tabular-nums',
+                headerClassName: "text-right",
+                cellClassName: "text-right tabular-nums",
             },
             cell: ({ row }) => {
                 const group = row.original;
@@ -457,11 +457,11 @@ export function ExceptionsView({
             },
         },
         {
-            id: 'count',
-            header: t('exceptions.count'),
+            id: "count",
+            header: t("exceptions.count"),
             meta: {
-                headerClassName: 'text-right',
-                cellClassName: 'text-right tabular-nums',
+                headerClassName: "text-right",
+                cellClassName: "text-right tabular-nums",
             },
             cell: ({ row }) => {
                 const group = row.original;
@@ -470,16 +470,16 @@ export function ExceptionsView({
             },
         },
         assigneeColumn<ExceptionGroupRow>(
-            t('assignee.column'),
+            t("assignee.column"),
             (group) => group.assignee,
         ),
         {
-            id: 'lastSeen',
-            header: t('exceptions.lastSeen'),
+            id: "lastSeen",
+            header: t("exceptions.lastSeen"),
             meta: {
-                headerClassName: 'text-right',
+                headerClassName: "text-right",
                 cellClassName:
-                    'text-right text-xs text-muted-foreground tabular-nums',
+                    "text-right text-xs text-muted-foreground tabular-nums",
             },
             cell: ({ row }) => {
                 const group = row.original;
@@ -488,8 +488,8 @@ export function ExceptionsView({
             },
         },
         {
-            id: 'statusLabel',
-            header: t('exceptions.statusLabel'),
+            id: "statusLabel",
+            header: t("exceptions.statusLabel"),
             cell: ({ row }) => {
                 const group = row.original;
 
@@ -504,7 +504,7 @@ export function ExceptionsView({
                                     variant="warning"
                                     title={group.regressed_release}
                                 >
-                                    {t('exceptions.regressedIn', {
+                                    {t("exceptions.regressedIn", {
                                         release: shortRelease(
                                             group.regressed_release,
                                         ),
@@ -519,17 +519,16 @@ export function ExceptionsView({
         ...(canManage
             ? [
                   {
-                      id: 'actions',
-                      header: t('exceptions.actions'),
+                      size: 72,
+                      id: "actions",
+                      header: t("exceptions.actions"),
                       meta: {
-                          headerClassName: 'w-[1%] text-right',
-                          cellClassName: 'text-right',
+                          headerClassName: "w-[1%] text-right",
+                          cellClassName: "text-right",
                           isRowClickIgnored: true,
                       },
                       cell: ({ row }) => (
-                          <DataTableRowActions
-                              label={t('exceptions.actions')}
-                          >
+                          <DataTableRowActions label={t("exceptions.actions")}>
                               <AssigneeRowActions
                                   url={projectsRoutes.exceptions.assignee.url({
                                       project: projectId,
@@ -568,7 +567,7 @@ export function ExceptionsView({
                     <DataTableToolbar
                         search={search}
                         onSearchChange={setSearch}
-                        searchPlaceholder={t('exceptions.search')}
+                        searchPlaceholder={t("exceptions.search")}
                         selectedCount={selectedIds.length}
                         onClearSelection={() => setRowSelection({})}
                         bulkActions={bulkActions}
@@ -582,14 +581,14 @@ export function ExceptionsView({
                                         setStatus(value as StatusFilter);
                                     }
                                 }}
-                                aria-label={t('exceptions.statusFilter')}
+                                aria-label={t("exceptions.statusFilter")}
                             >
                                 {(
                                     [
-                                        'open',
-                                        'resolved',
-                                        'ignored',
-                                        'all',
+                                        "open",
+                                        "resolved",
+                                        "ignored",
+                                        "all",
                                     ] as const
                                 ).map((item) => (
                                     <ToggleGroupItem
@@ -623,7 +622,7 @@ export function ExceptionsView({
                             Number(isMine) +
                             Number(assigneeFilter.length > 0) +
                             Number(isNewOnly) +
-                            Number(range !== '24h')
+                            Number(range !== "24h")
                         }
                     />
                 }
@@ -633,23 +632,23 @@ export function ExceptionsView({
                         icon={SearchX}
                         title={
                             <EmptyStatus>
-                                {t('exceptions.noMatchTitle')}
+                                {t("exceptions.noMatchTitle")}
                             </EmptyStatus>
                         }
-                        description={t('exceptions.noMatchDescription')}
+                        description={t("exceptions.noMatchDescription")}
                         action={
                             hasActiveFilters ? (
                                 <Button
                                     type="button"
                                     onClick={() => {
-                                        setSearch('');
+                                        setSearch("");
                                         setIsMine(false);
                                         setAssigneeFilter([]);
                                         clearNewOnly();
-                                        setStatus('all');
+                                        setStatus("all");
                                     }}
                                 >
-                                    {t('common.clearFilters')}
+                                    {t("common.clearFilters")}
                                 </Button>
                             ) : undefined
                         }
@@ -665,9 +664,9 @@ export function ExceptionsView({
                         onRowSelectionChange={setRowSelection}
                         columnPinning={{
                             left: canManage
-                                ? ['select', 'exception']
-                                : ['exception'],
-                            right: canManage ? ['actions'] : [],
+                                ? ["select", "exception"]
+                                : ["exception"],
+                            right: canManage ? ["actions"] : [],
                         }}
                         onRowClick={(group) => {
                             setSelectedId(group.id);
@@ -680,7 +679,7 @@ export function ExceptionsView({
                             return {
                                 ...activeRowProps,
                                 className: cn(
-                                    'cursor-pointer',
+                                    "cursor-pointer",
                                     activeRowProps.className,
                                 ),
                             };
@@ -731,7 +730,7 @@ function ExceptionDrawer({
     const phrases = { bucket: rangeTexts.bucket, during: rangeTexts.during };
     const copyWithToast = useCopyWithToast();
 
-    const setStatus = (status: ExceptionGroupRow['status']): void => {
+    const setStatus = (status: ExceptionGroupRow["status"]): void => {
         router.patch(
             projectsRoutes.exceptions.update.url({
                 project: projectId,
@@ -749,7 +748,7 @@ function ExceptionDrawer({
                     {group.class}
                 </DrawerTitle>
                 <DrawerDescription>
-                    {t('exceptions.summary', {
+                    {t("exceptions.summary", {
                         count: group.count,
                         environment: group.environment,
                         first: dates.dateTime(group.first_seen_at),
@@ -770,10 +769,10 @@ function ExceptionDrawer({
                 />
                 <section className="flex flex-col gap-1">
                     <h3 className="text-sm font-medium">
-                        {t('exceptions.occurrences')}
+                        {t("exceptions.occurrences")}
                     </h3>
                     <p className="text-xs text-muted-foreground">
-                        {t('exceptions.occurrencesDescription', phrases)}
+                        {t("exceptions.occurrencesDescription", phrases)}
                     </p>
                     <div className="h-40">
                         <StackedBarChart
@@ -785,16 +784,16 @@ function ExceptionDrawer({
                             onZoom={onZoom}
                             markers={deployMarkers(
                                 deploys,
-                                t('runtime.deploy'),
+                                t("runtime.deploy"),
                             )}
                             series={[
                                 {
-                                    key: 'count',
-                                    label: t('exceptions.occurrences'),
-                                    color: 'var(--runtime-chart-error)',
+                                    key: "count",
+                                    label: t("exceptions.occurrences"),
+                                    color: "var(--runtime-chart-error)",
                                 },
                             ]}
-                            label={t('exceptions.occurrencesChartLabel', {
+                            label={t("exceptions.occurrencesChartLabel", {
                                 count: group.range_count ?? 0,
                                 ...phrases,
                             })}
@@ -803,32 +802,32 @@ function ExceptionDrawer({
                 </section>
                 <section className="flex flex-col gap-1">
                     <h3 className="text-sm font-medium">
-                        {t('exceptions.message')}
+                        {t("exceptions.message")}
                     </h3>
                     <p className="rounded-md bg-muted p-3 font-mono text-xs break-words whitespace-pre-wrap">
-                        {group.message || '—'}
+                        {group.message || "—"}
                     </p>
                 </section>
                 <section className="flex flex-wrap gap-x-6 gap-y-1 text-sm">
                     <span>
                         <span className="text-muted-foreground">
                             {t(`exceptions.kind.${group.context.kind}`)}:
-                        </span>{' '}
+                        </span>{" "}
                         {group.context.name}
                     </span>
                     {group.first_release !== null ? (
                         <span>
                             <span className="text-muted-foreground">
-                                {t('exceptions.firstRelease')}:
-                            </span>{' '}
+                                {t("exceptions.firstRelease")}:
+                            </span>{" "}
                             <ReleaseLabel release={group.first_release} />
                         </span>
                     ) : null}
                     {group.last_release !== null ? (
                         <span>
                             <span className="text-muted-foreground">
-                                {t('exceptions.lastRelease')}:
-                            </span>{' '}
+                                {t("exceptions.lastRelease")}:
+                            </span>{" "}
                             <ReleaseLabel release={group.last_release} />
                         </span>
                     ) : null}
@@ -837,7 +836,7 @@ function ExceptionDrawer({
                             variant="warning"
                             title={group.regressed_release}
                         >
-                            {t('exceptions.regressedIn', {
+                            {t("exceptions.regressedIn", {
                                 release: shortRelease(group.regressed_release),
                             })}
                         </Badge>
@@ -845,34 +844,34 @@ function ExceptionDrawer({
                     {group.previous.length > 0 ? (
                         <span>
                             <span className="text-muted-foreground">
-                                {t('exceptions.causedBy')}:
-                            </span>{' '}
+                                {t("exceptions.causedBy")}:
+                            </span>{" "}
                             <span className="font-mono text-xs">
-                                {group.previous.join(' ← ')}
+                                {group.previous.join(" ← ")}
                             </span>
                         </span>
                     ) : null}
                 </section>
                 <section className="flex flex-col gap-1">
                     <h3 className="text-sm font-medium">
-                        {t('exceptions.stack')}
+                        {t("exceptions.stack")}
                     </h3>
                     <ol className="divide-y rounded-md border">
                         {group.frames.map((frame, index) => (
                             <li
                                 key={index}
                                 className={cn(
-                                    'px-3 py-1.5 font-mono text-xs break-all',
+                                    "px-3 py-1.5 font-mono text-xs break-all",
                                     frame.inApp
-                                        ? 'bg-accent/40 text-foreground'
-                                        : 'text-muted-foreground',
+                                        ? "bg-accent/40 text-foreground"
+                                        : "text-muted-foreground",
                                 )}
                             >
                                 <div>
-                                    {frame.file ?? t('exceptions.internal')}
+                                    {frame.file ?? t("exceptions.internal")}
                                     {frame.line !== null
                                         ? `:${frame.line}`
-                                        : ''}
+                                        : ""}
                                 </div>
                                 {frame.function ? (
                                     <div className="opacity-80">
@@ -883,7 +882,7 @@ function ExceptionDrawer({
                         ))}
                     </ol>
                     <p className="text-xs text-muted-foreground">
-                        {t('exceptions.stackHint')}
+                        {t("exceptions.stackHint")}
                     </p>
                 </section>
             </DrawerBody>
@@ -895,29 +894,29 @@ function ExceptionDrawer({
                     onClick={() => void copyWithToast(group.fix.prompt)}
                 >
                     <Sparkles className="size-4" />
-                    {t('fix.copyPrompt')}
+                    {t("fix.copyPrompt")}
                 </Button>
-                {canManage && group.status !== 'ignored' ? (
+                {canManage && group.status !== "ignored" ? (
                     <Button
                         type="button"
                         variant="outline"
-                        onClick={() => setStatus('ignored')}
+                        onClick={() => setStatus("ignored")}
                     >
-                        {t('exceptions.ignore')}
+                        {t("exceptions.ignore")}
                     </Button>
                 ) : null}
-                {canManage && group.status !== 'open' ? (
+                {canManage && group.status !== "open" ? (
                     <Button
                         type="button"
                         variant="outline"
-                        onClick={() => setStatus('open')}
+                        onClick={() => setStatus("open")}
                     >
-                        {t('exceptions.reopen')}
+                        {t("exceptions.reopen")}
                     </Button>
                 ) : null}
-                {canManage && group.status !== 'resolved' ? (
-                    <Button type="button" onClick={() => setStatus('resolved')}>
-                        {t('exceptions.resolve')}
+                {canManage && group.status !== "resolved" ? (
+                    <Button type="button" onClick={() => setStatus("resolved")}>
+                        {t("exceptions.resolve")}
                     </Button>
                 ) : null}
             </DrawerFooter>

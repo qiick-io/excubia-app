@@ -1,5 +1,5 @@
-import type { ColumnDef } from '@tanstack/react-table';
-import { Head, Link, router, usePage } from '@inertiajs/react';
+import type { ColumnDef } from "@tanstack/react-table";
+import { Head, Link, router, usePage } from "@inertiajs/react";
 import {
     FolderKanban,
     KeyRound,
@@ -8,58 +8,58 @@ import {
     SearchX,
     ShieldOff,
     Trash2,
-} from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { DataTable, DataTableRowActions } from '@/components/admin/data-table';
-import type { DataTableSort } from '@/components/admin/data-table';
-import { DataTableColumnHeader } from '@/components/admin/data-table-column-header';
-import { ProjectPinButton } from '@/components/project-pin-button';
-import { DataTableToolbar } from '@/components/admin/data-table-toolbar';
-import { HeaderIconButton } from '@/components/admin/header-icon-button';
-import { NameSlugCell } from '@/components/admin/name-slug-cell';
-import { PageEmptyState } from '@/components/admin/page-empty-state';
-import { ConfirmDestructiveDialog } from '@/components/confirm-destructive-dialog';
-import { EmptyStatus } from '@/components/empty-status';
-import { PageLayout } from '@/components/layout/page-layout';
-import { ProjectAvatar } from '@/components/projects/project-avatar';
-import { ProjectFormDrawer } from '@/components/projects/project-form-drawer';
-import { PushTokenDialog } from '@/components/projects/push-token-dialog';
-import { CHECK_STATUS_VARIANTS } from '@/components/reports/check-details';
-import { SeverityCounts } from '@/components/reports/severity-badge';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Drawer } from '@/components/ui/drawer';
+} from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { DataTable, DataTableRowActions } from "@/components/admin/data-table";
+import type { DataTableSort } from "@/components/admin/data-table";
+import { DataTableColumnHeader } from "@/components/admin/data-table-column-header";
+import { ProjectPinButton } from "@/components/project-pin-button";
+import { DataTableToolbar } from "@/components/admin/data-table-toolbar";
+import { HeaderIconButton } from "@/components/admin/header-icon-button";
+import { NameSlugCell } from "@/components/admin/name-slug-cell";
+import { PageEmptyState } from "@/components/admin/page-empty-state";
+import { ConfirmDestructiveDialog } from "@/components/confirm-destructive-dialog";
+import { EmptyStatus } from "@/components/empty-status";
+import { PageLayout } from "@/components/layout/page-layout";
+import { ProjectAvatar } from "@/components/projects/project-avatar";
+import { ProjectFormDrawer } from "@/components/projects/project-form-drawer";
+import { PushTokenDialog } from "@/components/projects/push-token-dialog";
+import { CHECK_STATUS_VARIANTS } from "@/components/reports/check-details";
+import { SeverityCounts } from "@/components/reports/severity-badge";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Drawer } from "@/components/ui/drawer";
 import {
     Tooltip,
     TooltipContent,
     TooltipTrigger,
-} from '@/components/ui/tooltip';
-import { PermissionEnum } from '@/enums/permission-enum';
-import { useCan } from '@/hooks/use-can';
-import { useDebouncedServerSearch } from '@/hooks/use-debounced-server-search';
-import AppLayout from '@/layouts/app-layout';
-import { listPerPageQuery } from '@/lib/list-per-page';
-import { normalizePaginated } from '@/lib/pagination';
-import type { LaravelPaginated } from '@/lib/pagination';
-import { relativeTime } from '@/lib/report-format';
-import { toast } from '@/lib/toast';
-import { cn } from '@/lib/utils';
-import projectsRoutes from '@/routes/projects';
-import type { BreadcrumbItem, Paginated, ProjectRow } from '@/types';
-import { useDateFormat } from '@/lib/date-format';
+} from "@/components/ui/tooltip";
+import { PermissionEnum } from "@/enums/permission-enum";
+import { useCan } from "@/hooks/use-can";
+import { useDebouncedServerSearch } from "@/hooks/use-debounced-server-search";
+import AppLayout from "@/layouts/app-layout";
+import { listPerPageQuery } from "@/lib/list-per-page";
+import { normalizePaginated } from "@/lib/pagination";
+import type { LaravelPaginated } from "@/lib/pagination";
+import { relativeTime } from "@/lib/report-format";
+import { toast } from "@/lib/toast";
+import { cn } from "@/lib/utils";
+import projectsRoutes from "@/routes/projects";
+import type { BreadcrumbItem, Paginated, ProjectRow } from "@/types";
+import { useDateFormat } from "@/lib/date-format";
 
 /** Server sort fields of `ProjectListService::SORTABLE_COLUMNS` shown as column headers. */
 const PROJECT_SORT_FIELDS = [
-    'name',
-    'health',
-    'open_findings',
-    'last_report_at',
+    "name",
+    "health",
+    "open_findings",
+    "last_report_at",
 ] as const;
 
 type ProjectSortField = (typeof PROJECT_SORT_FIELDS)[number];
 
-type SortDirection = 'asc' | 'desc';
+type SortDirection = "asc" | "desc";
 
 type Filters = {
     search?: string;
@@ -72,7 +72,7 @@ function isProjectSortField(value: string): value is ProjectSortField {
 }
 
 type PendingAction = {
-    kind: 'delete' | 'rotate' | 'revoke';
+    kind: "delete" | "rotate" | "revoke";
     project: ProjectRow;
 };
 
@@ -98,12 +98,12 @@ export default function ProjectsIndex({
     const canCreate = can(PermissionEnum.CanCreateProjects);
     const canEdit = can(PermissionEnum.CanEditProjects);
     const canDelete = can(PermissionEnum.CanDeleteProjects);
-    const [search, setSearch] = useState(filters.search ?? '');
+    const [search, setSearch] = useState(filters.search ?? "");
     const sort: ProjectSortField =
         filters.sort !== undefined && isProjectSortField(filters.sort)
             ? filters.sort
-            : 'name';
-    const direction: SortDirection = filters.direction ?? 'asc';
+            : "name";
+    const direction: SortDirection = filters.direction ?? "asc";
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [editing, setEditing] = useState<ProjectRow | null>(null);
     const [pending, setPending] = useState<PendingAction | null>(null);
@@ -111,13 +111,13 @@ export default function ProjectsIndex({
 
     const breadcrumbs: BreadcrumbItem[] = useMemo(
         () => [
-            { title: t('projects.title'), href: projectsRoutes.index.url() },
+            { title: t("projects.title"), href: projectsRoutes.index.url() },
         ],
         [t],
     );
 
     useEffect(() => {
-        setSearch(filters.search ?? '');
+        setSearch(filters.search ?? "");
     }, [filters.search]);
 
     const visit = useCallback(
@@ -158,7 +158,7 @@ export default function ProjectsIndex({
         }
     };
 
-    useDebouncedServerSearch(search, filters.search ?? '', onDebouncedSearch);
+    useDebouncedServerSearch(search, filters.search ?? "", onDebouncedSearch);
 
     const openDrawer = (project: ProjectRow | null): void => {
         if (project ? !canEdit : !canCreate) {
@@ -191,12 +191,12 @@ export default function ProjectsIndex({
 
         setConfirming(true);
 
-        if (pending.kind === 'delete') {
+        if (pending.kind === "delete") {
             router.delete(
                 projectsRoutes.destroy.url(pending.project.id),
                 options,
             );
-        } else if (pending.kind === 'rotate') {
+        } else if (pending.kind === "rotate") {
             router.post(
                 projectsRoutes.token.rotate.url(pending.project.id),
                 {},
@@ -210,7 +210,7 @@ export default function ProjectsIndex({
         }
     };
 
-    const hasActiveFilters = search.trim() !== '';
+    const hasActiveFilters = search.trim() !== "";
     const isListEmpty = projects.data.length === 0;
     const hideListChrome = isListEmpty && !hasActiveFilters;
     // How to pin, once, while nothing is pinned (#294): the empty Pinned block in the sidebar
@@ -221,15 +221,15 @@ export default function ProjectsIndex({
 
     const columns: ColumnDef<ProjectRow>[] = [
         {
-            accessorKey: 'name',
+            accessorKey: "name",
             enableSorting: true,
             header: ({ column }) => (
                 <DataTableColumnHeader
                     column={column}
-                    title={t('projects.columns.project')}
+                    title={t("projects.columns.project")}
                 />
             ),
-            meta: { cellClassName: 'max-w-[16rem]' },
+            meta: { cellClassName: "max-w-[16rem]" },
             cell: ({ row }) => {
                 const project = row.original;
 
@@ -258,12 +258,12 @@ export default function ProjectsIndex({
             },
         },
         {
-            accessorKey: 'health',
+            accessorKey: "health",
             enableSorting: true,
             header: ({ column }) => (
                 <DataTableColumnHeader
                     column={column}
-                    title={t('projects.columns.health')}
+                    title={t("projects.columns.health")}
                 />
             ),
             cell: ({ row }) =>
@@ -276,12 +276,12 @@ export default function ProjectsIndex({
                 ),
         },
         {
-            accessorKey: 'open_findings',
+            accessorKey: "open_findings",
             enableSorting: true,
             header: ({ column }) => (
                 <DataTableColumnHeader
                     column={column}
-                    title={t('projects.columns.openFindings')}
+                    title={t("projects.columns.openFindings")}
                 />
             ),
             cell: ({ row }) => {
@@ -296,22 +296,22 @@ export default function ProjectsIndex({
             },
         },
         {
-            id: 'failed_checks',
-            header: t('projects.columns.failedChecks'),
+            id: "failed_checks",
+            header: t("projects.columns.failedChecks"),
             cell: ({ row }) => {
                 const checks = row.original.checks;
 
                 return checks ? (
                     <span
                         className={cn(
-                            'text-sm tabular-nums',
+                            "text-sm tabular-nums",
                             checks.failed > 0
-                                ? 'font-medium text-destructive'
-                                : 'text-muted-foreground',
+                                ? "font-medium text-destructive"
+                                : "text-muted-foreground",
                         )}
-                        aria-label={t('projects.failedChecksLabel', checks)}
+                        aria-label={t("projects.failedChecksLabel", checks)}
                     >
-                        {t('projects.checksRatio', checks)}
+                        {t("projects.checksRatio", checks)}
                     </span>
                 ) : (
                     <span className="text-sm text-muted-foreground">—</span>
@@ -319,12 +319,12 @@ export default function ProjectsIndex({
             },
         },
         {
-            accessorKey: 'last_report_at',
+            accessorKey: "last_report_at",
             enableSorting: true,
             header: ({ column }) => (
                 <DataTableColumnHeader
                     column={column}
-                    title={t('projects.lastReport')}
+                    title={t("projects.lastReport")}
                 />
             ),
             cell: ({ row }) => {
@@ -352,36 +352,37 @@ export default function ProjectsIndex({
                             </Tooltip>
                         ) : (
                             <span className="text-sm text-muted-foreground">
-                                {t('projects.never')}
+                                {t("projects.never")}
                             </span>
                         )}
                         {project.is_stale ? (
-                            <Badge variant="muted">{t('projects.stale')}</Badge>
+                            <Badge variant="muted">{t("projects.stale")}</Badge>
                         ) : null}
                     </div>
                 );
             },
         },
         {
-            id: 'actions',
-            header: t('projects.actions'),
+            size: 72,
+            id: "actions",
+            header: t("projects.actions"),
             meta: {
-                headerClassName: 'w-[1%] text-right',
-                cellClassName: 'text-right',
+                headerClassName: "w-[1%] text-right",
+                cellClassName: "text-right",
                 isRowClickIgnored: true,
             },
             cell: ({ row }) => {
                 const project = row.original;
 
                 return (
-                    <DataTableRowActions label={t('projects.actions')}>
+                    <DataTableRowActions label={t("projects.actions")}>
                         {/* Everyone may pin a project they see (#273). */}
                         <ProjectPinButton project={project} />
                         {canEdit ? (
                             <HeaderIconButton
                                 type="button"
-                                                                size="icon-sm"
-                                label={t('projects.editProject')}
+                                size="icon-sm"
+                                label={t("projects.editProject")}
                                 onClick={() => openDrawer(project)}
                             >
                                 <Pencil className="size-3.5" />
@@ -390,11 +391,11 @@ export default function ProjectsIndex({
                         {canEdit && !project.is_system ? (
                             <HeaderIconButton
                                 type="button"
-                                                                size="icon-sm"
-                                label={t('projects.token.rotate')}
+                                size="icon-sm"
+                                label={t("projects.token.rotate")}
                                 onClick={() =>
                                     setPending({
-                                        kind: 'rotate',
+                                        kind: "rotate",
                                         project,
                                     })
                                 }
@@ -407,11 +408,11 @@ export default function ProjectsIndex({
                         project.has_push_token ? (
                             <HeaderIconButton
                                 type="button"
-                                                                size="icon-sm"
-                                label={t('projects.token.revoke')}
+                                size="icon-sm"
+                                label={t("projects.token.revoke")}
                                 onClick={() =>
                                     setPending({
-                                        kind: 'revoke',
+                                        kind: "revoke",
                                         project,
                                     })
                                 }
@@ -422,12 +423,12 @@ export default function ProjectsIndex({
                         {canDelete && !project.is_system ? (
                             <HeaderIconButton
                                 type="button"
-                                                                size="icon-sm"
+                                size="icon-sm"
                                 className="text-destructive hover:text-destructive"
-                                label={t('common.delete')}
+                                label={t("common.delete")}
                                 onClick={() =>
                                     setPending({
-                                        kind: 'delete',
+                                        kind: "delete",
                                         project,
                                     })
                                 }
@@ -448,12 +449,12 @@ export default function ProjectsIndex({
                 canCreate ? (
                     <Button type="button" onClick={() => openDrawer(null)}>
                         <Plus className="mr-1 size-4" />
-                        {t('projects.newProject')}
+                        {t("projects.newProject")}
                     </Button>
                 ) : undefined
             }
         >
-            <Head title={t('projects.title')} />
+            <Head title={t("projects.title")} />
 
             <Drawer
                 direction="right"
@@ -464,7 +465,7 @@ export default function ProjectsIndex({
             >
                 <PageLayout
                     description={
-                        shouldShowPinHint ? t('projects.pinHint') : undefined
+                        shouldShowPinHint ? t("projects.pinHint") : undefined
                     }
                     filters={
                         hideListChrome ? undefined : (
@@ -472,7 +473,7 @@ export default function ProjectsIndex({
                                 search={search}
                                 onSearchChange={setSearch}
                                 searchPlaceholder={t(
-                                    'projects.searchPlaceholder',
+                                    "projects.searchPlaceholder",
                                 )}
                             />
                         )
@@ -484,27 +485,27 @@ export default function ProjectsIndex({
                             title={
                                 <EmptyStatus>
                                     {hasActiveFilters
-                                        ? t('emptyState.projects.filteredTitle')
-                                        : t('emptyState.projects.title')}
+                                        ? t("emptyState.projects.filteredTitle")
+                                        : t("emptyState.projects.title")}
                                 </EmptyStatus>
                             }
                             description={
                                 hasActiveFilters
                                     ? t(
-                                          'emptyState.projects.filteredDescription',
+                                          "emptyState.projects.filteredDescription",
                                       )
-                                    : t('emptyState.projects.description')
+                                    : t("emptyState.projects.description")
                             }
                             action={
                                 hasActiveFilters ? (
                                     <Button
                                         type="button"
                                         onClick={() => {
-                                            setSearch('');
-                                            visit({ search: '' });
+                                            setSearch("");
+                                            visit({ search: "" });
                                         }}
                                     >
-                                        {t('common.clearFilters')}
+                                        {t("common.clearFilters")}
                                     </Button>
                                 ) : canCreate ? (
                                     <Button
@@ -512,7 +513,7 @@ export default function ProjectsIndex({
                                         onClick={() => openDrawer(null)}
                                     >
                                         <Plus className="size-4" />
-                                        {t('emptyState.projects.cta')}
+                                        {t("emptyState.projects.cta")}
                                     </Button>
                                 ) : undefined
                             }
@@ -526,8 +527,8 @@ export default function ProjectsIndex({
                             onSortChange={changeSort}
                             pagination={projects}
                             columnPinning={{
-                                left: ['name'],
-                                right: ['actions'],
+                                left: ["name"],
+                                right: ["actions"],
                             }}
                             onRowClick={(project) =>
                                 router.visit(
@@ -535,7 +536,7 @@ export default function ProjectsIndex({
                                 )
                             }
                             getRowProps={() => ({
-                                className: 'cursor-pointer',
+                                className: "cursor-pointer",
                             })}
                         />
                     )}
@@ -558,14 +559,14 @@ export default function ProjectsIndex({
                         setPending(null);
                     }
                 }}
-                title={t(`projects.confirm.${pending?.kind ?? 'delete'}Title`, {
-                    name: pending?.project.name ?? '',
+                title={t(`projects.confirm.${pending?.kind ?? "delete"}Title`, {
+                    name: pending?.project.name ?? "",
                 })}
                 description={t(
-                    `projects.confirm.${pending?.kind ?? 'delete'}Description`,
+                    `projects.confirm.${pending?.kind ?? "delete"}Description`,
                 )}
                 confirmLabel={t(
-                    `projects.confirm.${pending?.kind ?? 'delete'}Confirm`,
+                    `projects.confirm.${pending?.kind ?? "delete"}Confirm`,
                 )}
                 confirming={confirming}
                 onConfirm={confirmPending}
@@ -587,18 +588,18 @@ function ProjectStateBadges({ project }: { project: ProjectRow }) {
     return (
         <>
             {project.is_enabled ? null : (
-                <Badge variant="muted">{t('projects.disabled')}</Badge>
+                <Badge variant="muted">{t("projects.disabled")}</Badge>
             )}
             {project.is_system ? (
-                <Badge variant="info">{t('projects.system')}</Badge>
+                <Badge variant="info">{t("projects.system")}</Badge>
             ) : null}
-            {project.visibility === 'admins' ? (
+            {project.visibility === "admins" ? (
                 <Badge variant="outline">
-                    {t('projects.visibility.admins')}
+                    {t("projects.visibility.admins")}
                 </Badge>
             ) : null}
             {project.has_push_token || project.is_system ? null : (
-                <Badge variant="warning">{t('projects.noToken')}</Badge>
+                <Badge variant="warning">{t("projects.noToken")}</Badge>
             )}
         </>
     );

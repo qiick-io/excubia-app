@@ -100,8 +100,16 @@ export type DataTableProps<TData> = {
  * `position: sticky` with the offset TanStack computes, plus the `data-pinned` attributes
  * the theme styles (opaque background, row tints, edge shadow while scrolled). Cells keep
  * their place in the DOM, so reading and tab order are unchanged.
+ *
+ * Every left-pinned column but the last renders at exactly its `size` (so the next column's
+ * `left` offset matches the painted width). The last left-pinned column (the primary) is
+ * capped with `min(32rem, 50vw - rightPinnedWidth)` so it never covers the right-pinned
+ * actions on a phone; `rightPinnedWidth` is the sum of the right-pinned columns' `size`.
  */
-function pinnedCellProps<TData>(column: Column<TData, unknown>): {
+function pinnedCellProps<TData>(
+    column: Column<TData, unknown>,
+    rightPinnedWidth: number,
+): {
     style?: CSSProperties;
     'data-pinned'?: 'left' | 'right';
     'data-pinned-edge'?: '';
@@ -116,12 +124,31 @@ function pinnedCellProps<TData>(column: Column<TData, unknown>): {
         side === 'left'
             ? column.getIsLastColumn('left')
             : column.getIsFirstColumn('right');
+    const size = column.getSize();
+    const style: CSSProperties =
+        side === 'left'
+            ? { left: column.getStart('left') }
+            : { right: column.getAfter('right') };
+
+    if (side === 'left' && !isEdge) {
+        style.width = size;
+        style.minWidth = size;
+        style.maxWidth = size;
+    }
+
+    if (side === 'left' && isEdge) {
+        // Leave room for the right-pinned actions; 50vw alone overlaps them on a phone.
+        style.maxWidth = `min(32rem, max(0px, calc(50vw - ${rightPinnedWidth}px)))`;
+    }
+
+    if (side === 'right' && !isEdge) {
+        style.width = size;
+        style.minWidth = size;
+        style.maxWidth = size;
+    }
 
     return {
-        style:
-            side === 'left'
-                ? { left: column.getStart('left') }
-                : { right: column.getAfter('right') },
+        style,
         'data-pinned': side,
         'data-pinned-edge': isEdge ? '' : undefined,
     };
@@ -202,6 +229,10 @@ export function DataTable<TData>({
         onRowSelectionChange,
     });
 
+    const rightPinnedWidth = table
+        .getRightLeafColumns()
+        .reduce((total, pinnedColumn) => total + pinnedColumn.getSize(), 0);
+
     return (
         <TablePanel
             className={className}
@@ -230,7 +261,10 @@ export function DataTable<TData>({
                                         header.column.columnDef.meta
                                             ?.headerClassName
                                     }
-                                    {...pinnedCellProps(header.column)}
+                                    {...pinnedCellProps(
+                                        header.column,
+                                        rightPinnedWidth,
+                                    )}
                                 >
                                     {header.isPlaceholder
                                         ? null
@@ -380,6 +414,7 @@ export function DataTable<TData>({
                                                     }
                                                     {...pinnedCellProps(
                                                         cell.column,
+                                                        rightPinnedWidth,
                                                     )}
                                                 >
                                                     {flexRender(
@@ -455,9 +490,14 @@ export function dataTableSelectColumn<TData>({
 }): ColumnDef<TData, unknown> {
     return {
         id: 'select',
-        // 40px: the 24px hit area plus the cell padding; `size` matches it for column pinning.
+        // 40px: the 24px hit area plus the cell padding; `size` matches it for column pinning,
+        // and pinned cells render at exactly this width (see {@link pinnedCellProps}).
         size: 40,
-        meta: { headerClassName: 'w-10', isRowClickIgnored: true },
+        meta: {
+            headerClassName: 'w-10',
+            cellClassName: 'w-10',
+            isRowClickIgnored: true,
+        },
         header: ({ table }) => (
             <Checkbox
                 checked={

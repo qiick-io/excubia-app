@@ -310,6 +310,7 @@ export default function AdminUsersIndex({
                 ),
         },
         {
+            size: 72,
             id: 'actions',
             header: t('users.columns.actions'),
             meta: {

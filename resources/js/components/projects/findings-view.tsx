@@ -1,28 +1,28 @@
-import type { ColumnDef } from '@tanstack/react-table';
-import { router } from '@inertiajs/react';
+import type { ColumnDef } from "@tanstack/react-table";
+import { router } from "@inertiajs/react";
 import {
     ExternalLink,
     ListChecks,
     SearchX,
     Sparkles,
     UserCheck,
-} from 'lucide-react';
-import { useMemo, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+} from "lucide-react";
+import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
     DataTable,
     DataTableRowActions,
     dataTableSelectColumn,
-} from '@/components/admin/data-table';
-import { PageEmptyState } from '@/components/admin/page-empty-state';
-import { EmptyStatus } from '@/components/empty-status';
-import { DataTableToolbar } from '@/components/admin/data-table-toolbar';
-import { PageLayout } from '@/components/layout/page-layout';
+} from "@/components/admin/data-table";
+import { PageEmptyState } from "@/components/admin/page-empty-state";
+import { EmptyStatus } from "@/components/empty-status";
+import { DataTableToolbar } from "@/components/admin/data-table-toolbar";
+import { PageLayout } from "@/components/layout/page-layout";
 import {
     CHECK_CATEGORIES,
     checkLabel,
     FindingDrawer,
-} from '@/components/reports/check-details';
+} from "@/components/reports/check-details";
 import {
     AssignedToMeToggle,
     AssigneeFacetFilter,
@@ -36,57 +36,57 @@ import {
     useAssigneeSort,
     useCurrentUserId,
     type AssigneeOption,
-} from '@/components/reports/assignee-select';
-import { LifecycleBadges } from '@/components/reports/finding-lifecycle';
-import type { FindingFix } from '@/components/reports/fix-actions';
+} from "@/components/reports/assignee-select";
+import { LifecycleBadges } from "@/components/reports/finding-lifecycle";
+import type { FindingFix } from "@/components/reports/fix-actions";
 import {
     combinedPrompt,
     FixActions,
     useCopyWithToast,
-} from '@/components/reports/fix-actions';
-import { SEVERITIES, SeverityBadge } from '@/components/reports/severity-badge';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Drawer } from '@/components/ui/drawer';
+} from "@/components/reports/fix-actions";
+import { SEVERITIES, SeverityBadge } from "@/components/reports/severity-badge";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Drawer } from "@/components/ui/drawer";
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from '@/components/ui/select';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { InboxSavedViews } from '@/components/inbox-list';
-import type { InboxSavedView } from '@/components/inbox-list';
-import { useDrawerDeepLink } from '@/hooks/use-drawer-deep-link';
-import { useListShortcuts } from '@/hooks/use-list-shortcuts';
+} from "@/components/ui/select";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { InboxSavedViews } from "@/components/inbox-list";
+import type { InboxSavedView } from "@/components/inbox-list";
+import { useDrawerDeepLink } from "@/hooks/use-drawer-deep-link";
+import { useListShortcuts } from "@/hooks/use-list-shortcuts";
 import {
     getQueryParam,
     locationPageUrl,
     patchLocationQuery,
-} from '@/lib/admin-query-params';
-import { isFirstSeenWithinLastDay, savedViewHref } from '@/lib/inbox-views';
-import projectsRoutes from '@/routes/projects';
-import type { CheckCategory, IssueRow, LifecycleRow, Severity } from '@/types';
-import { relativeTime, findingKey } from '@/lib/report-format';
-import { useDateFormat } from '@/lib/date-format';
+} from "@/lib/admin-query-params";
+import { isFirstSeenWithinLastDay, savedViewHref } from "@/lib/inbox-views";
+import projectsRoutes from "@/routes/projects";
+import type { CheckCategory, IssueRow, LifecycleRow, Severity } from "@/types";
+import { relativeTime, findingKey } from "@/lib/report-format";
+import { useDateFormat } from "@/lib/date-format";
 
-type FindingStatusFilter = LifecycleRow['lifecycle']['status'] | 'all';
+type FindingStatusFilter = LifecycleRow["lifecycle"]["status"] | "all";
 
 const FINDING_STATUS_FILTERS: readonly FindingStatusFilter[] = [
-    'open',
-    'dismissed',
-    'resolved',
-    'all',
+    "open",
+    "dismissed",
+    "resolved",
+    "all",
 ];
 
 /** The Findings tab's status filter from `?status=` (#276), open by default. */
 function findingStatusFromUrl(): FindingStatusFilter {
-    const value = getQueryParam(locationPageUrl(), 'status');
+    const value = getQueryParam(locationPageUrl(), "status");
 
     return FINDING_STATUS_FILTERS.includes(value as FindingStatusFilter)
         ? (value as FindingStatusFilter)
-        : 'open';
+        : "open";
 }
 
 /**
@@ -122,27 +122,27 @@ export function FindingsView({
     const [assigneeFilter, setAssigneeFilter] = useAssigneeFilter();
     const [sort, setSort] = useAssigneeSort();
     const [isNewOnly, setIsNewOnly] = useState(
-        () => getQueryParam(locationPageUrl(), 'new') === '24h',
+        () => getQueryParam(locationPageUrl(), "new") === "24h",
     );
     // The filters live in the URL (#276), so a saved view is a link and a view can be shared.
     const setStatus = (value: FindingStatusFilter): void => {
         setStatusFilter(value);
-        patchLocationQuery({ status: value === 'open' ? null : value });
+        patchLocationQuery({ status: value === "open" ? null : value });
     };
     const setIsMine = (value: boolean): void => {
         setIsMineFilter(value);
-        patchLocationQuery({ assigned: value ? 'me' : null });
+        patchLocationQuery({ assigned: value ? "me" : null });
     };
     const copyWithToast = useCopyWithToast();
     const [selected, setSelected] = useState<string[]>([]);
-    const [search, setSearch] = useState('');
-    const [severity, setSeverity] = useState<Severity | 'all'>('all');
-    const [category, setCategory] = useState<CheckCategory | 'all'>('all');
-    const [checkId, setCheckId] = useState('all');
+    const [search, setSearch] = useState("");
+    const [severity, setSeverity] = useState<Severity | "all">("all");
+    const [category, setCategory] = useState<CheckCategory | "all">("all");
+    const [checkId, setCheckId] = useState("all");
     const [openKey, setOpenKey] = useState<string | null>(null);
     const openFinding = rows.find((row) => findingKey(row) === openKey) ?? null;
     const { syncEdit, syncClosed } = useDrawerDeepLink({
-        editParam: 'finding',
+        editParam: "finding",
         onEdit: setOpenKey,
     });
 
@@ -165,16 +165,16 @@ export function FindingsView({
     const needle = search.trim().toLowerCase();
     const matching = rows.filter(
         (row) =>
-            (status === 'all' || row.lifecycle.status === status) &&
+            (status === "all" || row.lifecycle.status === status) &&
             (!isMine || row.lifecycle.assignee?.id === currentUserId) &&
             matchesAssigneeFilter(row.lifecycle.assignee, assigneeFilter) &&
             (!isNewOnly ||
                 isFirstSeenWithinLastDay(row.lifecycle.firstSeenAt)) &&
-            (severity === 'all' || row.severity === severity) &&
-            (category === 'all' || row.category === category) &&
-            (checkId === 'all' || row.checkId === checkId) &&
-            (needle === '' ||
-                `${row.subject} ${row.message} ${row.advisoryId ?? ''}`
+            (severity === "all" || row.severity === severity) &&
+            (category === "all" || row.category === category) &&
+            (checkId === "all" || row.checkId === checkId) &&
+            (needle === "" ||
+                `${row.subject} ${row.message} ${row.advisoryId ?? ""}`
                     .toLowerCase()
                     .includes(needle)),
     );
@@ -184,55 +184,55 @@ export function FindingsView({
         (row) => row.lifecycle.assignee,
     );
     const hasActiveFilters =
-        needle !== '' ||
-        (status !== 'open' && status !== 'resolved') ||
+        needle !== "" ||
+        (status !== "open" && status !== "resolved") ||
         isMine ||
         assigneeFilter.length > 0 ||
         isNewOnly ||
-        severity !== 'all' ||
-        category !== 'all' ||
-        checkId !== 'all';
+        severity !== "all" ||
+        category !== "all" ||
+        checkId !== "all";
 
-    const openRows = rows.filter((row) => row.lifecycle.status === 'open');
+    const openRows = rows.filter((row) => row.lifecycle.status === "open");
     const savedViews: InboxSavedView[] = [
         {
-            id: 'open',
-            label: t('findings.views.open'),
+            id: "open",
+            label: t("findings.views.open"),
             href: savedViewHref({}),
             count: openRows.length,
         },
         {
-            id: 'mine',
-            label: t('findings.views.mine'),
-            href: savedViewHref({ assigned: 'me' }),
+            id: "mine",
+            label: t("findings.views.mine"),
+            href: savedViewHref({ assigned: "me" }),
             count: openRows.filter(
                 (row) => row.lifecycle.assignee?.id === currentUserId,
             ).length,
         },
         {
-            id: 'new',
-            label: t('findings.views.new'),
-            href: savedViewHref({ new: '24h' }),
+            id: "new",
+            label: t("findings.views.new"),
+            href: savedViewHref({ new: "24h" }),
             count: openRows.filter((row) =>
                 isFirstSeenWithinLastDay(row.lifecycle.firstSeenAt),
             ).length,
         },
     ];
     const hasOtherFilters =
-        status !== 'open' ||
-        needle !== '' ||
+        status !== "open" ||
+        needle !== "" ||
         assigneeFilter.length > 0 ||
-        severity !== 'all' ||
-        category !== 'all' ||
-        checkId !== 'all';
+        severity !== "all" ||
+        category !== "all" ||
+        checkId !== "all";
     const activeSavedViewId = hasOtherFilters
         ? undefined
         : isMine && !isNewOnly
-          ? 'mine'
+          ? "mine"
           : isNewOnly && !isMine
-            ? 'new'
+            ? "new"
             : !isMine && !isNewOnly
-              ? 'open'
+              ? "open"
               : undefined;
     // Keyboard triage (#277): j / k, Enter, x, a assign to me.
     const listShortcuts = useListShortcuts({
@@ -252,8 +252,8 @@ export function FindingsView({
             );
         },
         secondaryAction: {
-            keys: 'a',
-            description: t('findings.assignToMe'),
+            keys: "a",
+            description: t("findings.assignToMe"),
             isEnabled:
                 canDismiss &&
                 currentUserId !== null &&
@@ -292,12 +292,12 @@ export function FindingsView({
 
     const findingColumns: ColumnDef<LifecycleRow>[] = [
         dataTableSelectColumn<LifecycleRow>({
-            selectAllLabel: t('a11y.selectAll'),
-            getRowLabel: (row) => t('fix.select', { subject: row.subject }),
+            selectAllLabel: t("a11y.selectAll"),
+            getRowLabel: (row) => t("fix.select", { subject: row.subject }),
         }),
         {
-            id: 'severityLabel',
-            header: t('report.severityLabel'),
+            id: "severityLabel",
+            header: t("report.severityLabel"),
             cell: ({ row: tableRow }) => {
                 const row = tableRow.original;
 
@@ -309,10 +309,10 @@ export function FindingsView({
             },
         },
         {
-            id: 'subject',
-            header: t('report.subject'),
+            id: "subject",
+            header: t("report.subject"),
             meta: {
-                cellClassName: 'max-w-[50vw] sm:max-w-[16rem]',
+                cellClassName: "max-w-[16rem]",
             },
             cell: ({ row: tableRow }) => {
                 const row = tableRow.original;
@@ -321,13 +321,14 @@ export function FindingsView({
                     <>
                         <button
                             type="button"
+                            data-test="finding-subject"
                             className="block max-w-full truncate text-left font-medium underline-offset-4 hover:underline"
                             onClick={() => {
                                 setOpenKey(findingKey(row));
                                 syncEdit(findingKey(row));
                             }}
                         >
-                            {detailText(row, 'package') ?? row.subject}
+                            {detailText(row, "package") ?? row.subject}
                         </button>
                         <div className="truncate text-xs text-muted-foreground">
                             {checkLabel(t, row.checkId, row.checkName)}
@@ -337,29 +338,29 @@ export function FindingsView({
             },
         },
         {
-            id: 'installed',
-            header: t('report.installed'),
-            meta: { cellClassName: 'font-mono text-xs' },
+            id: "installed",
+            header: t("report.installed"),
+            meta: { cellClassName: "font-mono text-xs" },
             cell: ({ row: tableRow }) => {
                 const row = tableRow.original;
 
-                return <>{detailText(row, 'lockedVersion') ?? '—'}</>;
+                return <>{detailText(row, "lockedVersion") ?? "—"}</>;
             },
         },
         {
-            id: 'fixedIn',
-            header: t('report.fixedIn'),
-            meta: { cellClassName: 'font-mono text-xs whitespace-normal' },
+            id: "fixedIn",
+            header: t("report.fixedIn"),
+            meta: { cellClassName: "font-mono text-xs whitespace-normal" },
             cell: ({ row: tableRow }) => {
                 const row = tableRow.original;
 
-                return <>{detailList(row, 'fixedVersions') ?? '—'}</>;
+                return <>{detailList(row, "fixedVersions") ?? "—"}</>;
             },
         },
         {
-            id: 'message',
-            header: t('report.message'),
-            meta: { cellClassName: 'min-w-[16rem] whitespace-normal' },
+            id: "message",
+            header: t("report.message"),
+            meta: { cellClassName: "min-w-[16rem] whitespace-normal" },
             cell: ({ row: tableRow }) => {
                 const row = tableRow.original;
 
@@ -373,7 +374,7 @@ export function FindingsView({
                                 rel="noreferrer noopener"
                                 className="ml-1 inline-flex items-center gap-0.5 text-primary underline underline-offset-4"
                             >
-                                {t('report.evidence')}
+                                {t("report.evidence")}
                                 <ExternalLink className="size-3" aria-hidden />
                             </a>
                         ) : null}
@@ -382,11 +383,11 @@ export function FindingsView({
             },
         },
         {
-            id: 'fixHint',
-            header: t('report.fixHint'),
+            id: "fixHint",
+            header: t("report.fixHint"),
             meta: {
                 cellClassName:
-                    'min-w-[14rem] font-mono text-xs whitespace-normal',
+                    "min-w-[14rem] font-mono text-xs whitespace-normal",
             },
             cell: ({ row: tableRow }) => {
                 const row = tableRow.original;
@@ -395,13 +396,13 @@ export function FindingsView({
             },
         },
         assigneeColumn<LifecycleRow>(
-            t('assignee.column'),
+            t("assignee.column"),
             (row) => row.lifecycle.assignee,
         ),
         {
-            id: 'firstSeen',
-            header: t('findings.firstSeen'),
-            meta: { cellClassName: 'min-w-[10rem] whitespace-normal' },
+            id: "firstSeen",
+            header: t("findings.firstSeen"),
+            meta: { cellClassName: "min-w-[10rem] whitespace-normal" },
             cell: ({ row: tableRow }) => {
                 const row = tableRow.original;
 
@@ -420,7 +421,7 @@ export function FindingsView({
                         <div className="mt-1 flex flex-wrap gap-1">
                             {row.lifecycle.resolvedAt !== null ? (
                                 <Badge variant="success">
-                                    {t('findings.fixedOn', {
+                                    {t("findings.fixedOn", {
                                         date: dates.dateTime(
                                             row.lifecycle.resolvedAt,
                                         ),
@@ -429,12 +430,12 @@ export function FindingsView({
                             ) : null}
                             <LifecycleBadges lifecycle={row.lifecycle} />
                         </div>
-                        {row.lifecycle.status !== 'resolved' &&
+                        {row.lifecycle.status !== "resolved" &&
                         latestReceivedAt !== null &&
                         Date.parse(row.lifecycle.lastSeenAt) <
                             Date.parse(latestReceivedAt) ? (
                             <div className="mt-1 text-xs text-muted-foreground">
-                                {t('findings.notInLatest')}
+                                {t("findings.notInLatest")}
                             </div>
                         ) : null}
                     </>
@@ -442,18 +443,19 @@ export function FindingsView({
             },
         },
         {
-            id: 'actions',
-            header: t('findings.actions'),
+            size: 72,
+            id: "actions",
+            header: t("findings.actions"),
             meta: {
-                headerClassName: 'w-[1%] text-right',
-                cellClassName: 'text-right',
+                headerClassName: "w-[1%] text-right",
+                cellClassName: "text-right",
                 isRowClickIgnored: true,
             },
             cell: ({ row: tableRow }) => {
                 const row = tableRow.original;
 
                 return (
-                    <DataTableRowActions label={t('findings.actions')}>
+                    <DataTableRowActions label={t("findings.actions")}>
                         {canDismiss ? (
                             <AssigneeRowActions
                                 url={projectsRoutes.findings.assignee.url({
@@ -461,7 +463,7 @@ export function FindingsView({
                                     finding: row.lifecycle.id,
                                 })}
                                 itemLabel={
-                                    detailText(row, 'package') ?? row.subject
+                                    detailText(row, "package") ?? row.subject
                                 }
                                 assignee={row.lifecycle.assignee}
                                 options={assignees}
@@ -496,7 +498,7 @@ export function FindingsView({
                     <DataTableToolbar
                         search={search}
                         onSearchChange={setSearch}
-                        searchPlaceholder={t('report.searchFindings')}
+                        searchPlaceholder={t("report.searchFindings")}
                         selectedCount={selected.length}
                         onClearSelection={() => setSelected([])}
                         bulkActions={
@@ -512,7 +514,7 @@ export function FindingsView({
                                             className="size-4"
                                             aria-hidden="true"
                                         />
-                                        {t('findings.assignToMe')}
+                                        {t("findings.assignToMe")}
                                     </Button>
                                 ) : null}
                                 <Button
@@ -526,7 +528,7 @@ export function FindingsView({
                                     }
                                 >
                                     <Sparkles className="size-4" />
-                                    {t('fix.copyPromptForSelected', {
+                                    {t("fix.copyPromptForSelected", {
                                         count: selectedFixes.length,
                                     })}
                                 </Button>
@@ -542,14 +544,14 @@ export function FindingsView({
                                         setStatus(value as FindingStatusFilter);
                                     }
                                 }}
-                                aria-label={t('findings.statusFilter')}
+                                aria-label={t("findings.statusFilter")}
                             >
                                 {(
                                     [
-                                        'open',
-                                        'dismissed',
-                                        'resolved',
-                                        'all',
+                                        "open",
+                                        "dismissed",
+                                        "resolved",
+                                        "all",
                                     ] as const
                                 ).map((item) => (
                                     <ToggleGroupItem
@@ -571,24 +573,21 @@ export function FindingsView({
                                 <Select
                                     value={severity}
                                     onValueChange={(value) =>
-                                        setSeverity(value as Severity | 'all')
+                                        setSeverity(value as Severity | "all")
                                     }
                                 >
                                     <SelectTrigger
-                                        aria-label={t('report.severityLabel')}
+                                        aria-label={t("report.severityLabel")}
                                         className="w-[8.5rem]"
                                     >
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent align="end">
                                         <SelectItem value="all">
-                                            {t('report.allSeverities')}
+                                            {t("report.allSeverities")}
                                         </SelectItem>
                                         {SEVERITIES.map((item) => (
-                                            <SelectItem
-                                                key={item}
-                                                value={item}
-                                            >
+                                            <SelectItem key={item} value={item}>
                                                 {t(`report.severity.${item}`)}
                                             </SelectItem>
                                         ))}
@@ -606,25 +605,22 @@ export function FindingsView({
                                     value={category}
                                     onValueChange={(value) =>
                                         setCategory(
-                                            value as CheckCategory | 'all',
+                                            value as CheckCategory | "all",
                                         )
                                     }
                                 >
                                     <SelectTrigger
-                                        aria-label={t('checks.categoryLabel')}
+                                        aria-label={t("checks.categoryLabel")}
                                         className="w-[10rem]"
                                     >
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent align="end">
                                         <SelectItem value="all">
-                                            {t('checks.allCategories')}
+                                            {t("checks.allCategories")}
                                         </SelectItem>
                                         {categories.map((item) => (
-                                            <SelectItem
-                                                key={item}
-                                                value={item}
-                                            >
+                                            <SelectItem key={item} value={item}>
                                                 {t(`checks.category.${item}`)}
                                             </SelectItem>
                                         ))}
@@ -635,14 +631,14 @@ export function FindingsView({
                                     onValueChange={setCheckId}
                                 >
                                     <SelectTrigger
-                                        aria-label={t('report.check')}
+                                        aria-label={t("report.check")}
                                         className="w-[12rem]"
                                     >
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent align="end">
                                         <SelectItem value="all">
-                                            {t('report.allChecks')}
+                                            {t("report.allChecks")}
                                         </SelectItem>
                                         {checks.map((check) => (
                                             <SelectItem
@@ -660,9 +656,9 @@ export function FindingsView({
                             Number(isMine) +
                             Number(isNewOnly) +
                             Number(assigneeFilter.length > 0) +
-                            Number(severity !== 'all') +
-                            Number(category !== 'all') +
-                            Number(checkId !== 'all')
+                            Number(severity !== "all") +
+                            Number(category !== "all") +
+                            Number(checkId !== "all")
                         }
                     />
                 }
@@ -673,36 +669,36 @@ export function FindingsView({
                         title={
                             <EmptyStatus>
                                 {hasActiveFilters
-                                    ? t('report.noMatchingFindings')
-                                    : status === 'resolved'
-                                      ? t('findings.noResolved')
-                                      : t('report.noIssues')}
+                                    ? t("report.noMatchingFindings")
+                                    : status === "resolved"
+                                      ? t("findings.noResolved")
+                                      : t("report.noIssues")}
                             </EmptyStatus>
                         }
                         description={
                             hasActiveFilters
-                                ? t('report.noMatchingFindingsDescription')
-                                : status === 'resolved'
-                                  ? t('findings.noResolvedDescription')
-                                  : t('report.noIssuesDescription')
+                                ? t("report.noMatchingFindingsDescription")
+                                : status === "resolved"
+                                  ? t("findings.noResolvedDescription")
+                                  : t("report.noIssuesDescription")
                         }
                         action={
                             hasActiveFilters ? (
                                 <Button
                                     type="button"
                                     onClick={() => {
-                                        setSearch('');
+                                        setSearch("");
                                         setIsMine(false);
                                         setAssigneeFilter([]);
                                         setIsNewOnly(false);
                                         patchLocationQuery({ new: null });
-                                        setStatus('open');
-                                        setSeverity('all');
-                                        setCategory('all');
-                                        setCheckId('all');
+                                        setStatus("open");
+                                        setSeverity("all");
+                                        setCategory("all");
+                                        setCheckId("all");
                                     }}
                                 >
-                                    {t('common.clearFilters')}
+                                    {t("common.clearFilters")}
                                 </Button>
                             ) : undefined
                         }
@@ -715,8 +711,8 @@ export function FindingsView({
                         sort={sort}
                         onSortChange={setSort}
                         columnPinning={{
-                            left: ['select', 'subject'],
-                            right: ['actions'],
+                            left: ["select", "subject"],
+                            right: ["actions"],
                         }}
                         getRowProps={listShortcuts.getActiveRowProps}
                         rowSelection={Object.fromEntries(
@@ -727,7 +723,7 @@ export function FindingsView({
                                 selected.map((key) => [key, true]),
                             );
                             const next =
-                                typeof updater === 'function'
+                                typeof updater === "function"
                                     ? updater(current)
                                     : updater;
                             setSelected(
@@ -754,13 +750,13 @@ export function FindingsView({
 function detailText(row: IssueRow, key: string): string | null {
     const value = row.details?.[key];
 
-    return typeof value === 'string' && value !== '' ? value : null;
+    return typeof value === "string" && value !== "" ? value : null;
 }
 
 function detailList(row: IssueRow, key: string): string | null {
     const value = row.details?.[key];
 
     return Array.isArray(value) && value.length > 0
-        ? value.filter((item) => typeof item === 'string').join(', ')
+        ? value.filter((item) => typeof item === "string").join(", ")
         : null;
 }

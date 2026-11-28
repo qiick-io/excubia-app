@@ -1,46 +1,46 @@
-import type { ColumnDef } from '@tanstack/react-table';
-import { Head, router } from '@inertiajs/react';
-import { ArrowDownAZ, ArrowUpAZ, Plus, Trash2 } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { DataTable, DataTableRowActions } from '@/components/admin/data-table';
-import type { DataTableSort } from '@/components/admin/data-table';
-import { DataTableColumnHeader } from '@/components/admin/data-table-column-header';
-import { DataTableToolbar } from '@/components/admin/data-table-toolbar';
-import { ProjectGroupFormDrawer } from '@/components/admin/project-group-form-drawer';
-import { HeaderIconButton } from '@/components/admin/header-icon-button';
-import { NameSlugCell } from '@/components/admin/name-slug-cell';
-import { ConfirmDestructiveDialog } from '@/components/confirm-destructive-dialog';
-import { PageLayout } from '@/components/layout/page-layout';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Drawer } from '@/components/ui/drawer';
+import type { ColumnDef } from "@tanstack/react-table";
+import { Head, router } from "@inertiajs/react";
+import { ArrowDownAZ, ArrowUpAZ, Plus, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { DataTable, DataTableRowActions } from "@/components/admin/data-table";
+import type { DataTableSort } from "@/components/admin/data-table";
+import { DataTableColumnHeader } from "@/components/admin/data-table-column-header";
+import { DataTableToolbar } from "@/components/admin/data-table-toolbar";
+import { ProjectGroupFormDrawer } from "@/components/admin/project-group-form-drawer";
+import { HeaderIconButton } from "@/components/admin/header-icon-button";
+import { NameSlugCell } from "@/components/admin/name-slug-cell";
+import { ConfirmDestructiveDialog } from "@/components/confirm-destructive-dialog";
+import { PageLayout } from "@/components/layout/page-layout";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Drawer } from "@/components/ui/drawer";
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from '@/components/ui/select';
-import { PermissionEnum } from '@/enums/permission-enum';
-import { useCan } from '@/hooks/use-can';
-import { useDebouncedServerSearch } from '@/hooks/use-debounced-server-search';
-import { useDrawerDeepLink } from '@/hooks/use-drawer-deep-link';
-import AppLayout from '@/layouts/app-layout';
-import { listPerPageQuery } from '@/lib/list-per-page';
-import { normalizePaginated } from '@/lib/pagination';
-import type { LaravelPaginated } from '@/lib/pagination';
-import { toast } from '@/lib/toast';
-import projectGroupsRoutes from '@/routes/project-groups';
-import type { AdminProjectGroupRow, BreadcrumbItem, Paginated } from '@/types';
+} from "@/components/ui/select";
+import { PermissionEnum } from "@/enums/permission-enum";
+import { useCan } from "@/hooks/use-can";
+import { useDebouncedServerSearch } from "@/hooks/use-debounced-server-search";
+import { useDrawerDeepLink } from "@/hooks/use-drawer-deep-link";
+import AppLayout from "@/layouts/app-layout";
+import { listPerPageQuery } from "@/lib/list-per-page";
+import { normalizePaginated } from "@/lib/pagination";
+import type { LaravelPaginated } from "@/lib/pagination";
+import { toast } from "@/lib/toast";
+import projectGroupsRoutes from "@/routes/project-groups";
+import type { AdminProjectGroupRow, BreadcrumbItem, Paginated } from "@/types";
 
-type GroupSortField = 'name' | 'created_at' | 'updated_at';
-type GroupSortDirection = 'asc' | 'desc';
+type GroupSortField = "name" | "created_at" | "updated_at";
+type GroupSortDirection = "asc" | "desc";
 
 const GROUP_SORT_FIELDS: GroupSortField[] = [
-    'name',
-    'created_at',
-    'updated_at',
+    "name",
+    "created_at",
+    "updated_at",
 ];
 
 function isGroupSortField(value: string): value is GroupSortField {
@@ -70,15 +70,15 @@ export default function AdminProjectGroupsIndex({
     const { t } = useTranslation();
 
     const groupSortFields: { value: GroupSortField; label: string }[] = [
-        { value: 'name', label: t('common.name') },
-        { value: 'created_at', label: t('common.created') },
-        { value: 'updated_at', label: t('common.updated') },
+        { value: "name", label: t("common.name") },
+        { value: "created_at", label: t("common.created") },
+        { value: "updated_at", label: t("common.updated") },
     ];
     const { can } = useCan();
-    const [search, setSearch] = useState(filters.search ?? '');
-    const [sort, setSort] = useState<GroupSortField>(filters.sort ?? 'name');
+    const [search, setSearch] = useState(filters.search ?? "");
+    const [sort, setSort] = useState<GroupSortField>(filters.sort ?? "name");
     const [direction, setDirection] = useState<GroupSortDirection>(
-        filters.direction ?? 'asc',
+        filters.direction ?? "asc",
     );
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [editing, setEditing] = useState<AdminProjectGroupRow | null>(null);
@@ -112,7 +112,7 @@ export default function AdminProjectGroupsIndex({
     const breadcrumbs: BreadcrumbItem[] = useMemo(
         () => [
             {
-                title: t('projectGroups.title'),
+                title: t("projectGroups.title"),
                 href: projectGroupsRoutes.index.url(),
             },
         ],
@@ -143,9 +143,9 @@ export default function AdminProjectGroupsIndex({
     );
 
     useEffect(() => {
-        setSearch(filters.search ?? '');
-        setSort(filters.sort ?? 'name');
-        setDirection(filters.direction ?? 'asc');
+        setSearch(filters.search ?? "");
+        setSort(filters.sort ?? "name");
+        setDirection(filters.direction ?? "asc");
     }, [filters.search, filters.sort, filters.direction]);
 
     const onDebouncedSearch = useCallback(
@@ -155,7 +155,7 @@ export default function AdminProjectGroupsIndex({
         [visit],
     );
 
-    useDebouncedServerSearch(search, filters.search ?? '', onDebouncedSearch);
+    useDebouncedServerSearch(search, filters.search ?? "", onDebouncedSearch);
 
     const openCreate = (): void => {
         setEditing(null);
@@ -197,13 +197,13 @@ export default function AdminProjectGroupsIndex({
 
     const columns: ColumnDef<AdminProjectGroupRow>[] = [
         {
-            accessorKey: 'name',
+            accessorKey: "name",
             enableSorting: true,
-            meta: { cellClassName: 'max-w-[16rem]' },
+            meta: { cellClassName: "max-w-[16rem]" },
             header: ({ column }) => (
                 <DataTableColumnHeader
                     column={column}
-                    title={t('projectGroups.columns.name')}
+                    title={t("projectGroups.columns.name")}
                 />
             ),
             cell: ({ row }) => (
@@ -214,8 +214,8 @@ export default function AdminProjectGroupsIndex({
             ),
         },
         {
-            id: 'projects',
-            header: t('projectGroups.columns.projects'),
+            id: "projects",
+            header: t("projectGroups.columns.projects"),
             cell: ({ row }) => (
                 <div className="flex flex-wrap gap-1">
                     {row.original.projects.map((project) => (
@@ -227,21 +227,24 @@ export default function AdminProjectGroupsIndex({
             ),
         },
         {
-            id: 'actions',
-            header: t('projectGroups.columns.actions'),
+            size: 72,
+            id: "actions",
+            header: t("projectGroups.columns.actions"),
             meta: {
-                headerClassName: 'w-[1%] text-right',
-                cellClassName: 'text-right',
+                headerClassName: "w-[1%] text-right",
+                cellClassName: "text-right",
                 isRowClickIgnored: true,
             },
             cell: ({ row }) =>
                 row.original.can_delete ? (
-                    <DataTableRowActions label={t('projectGroups.columns.actions')}>
+                    <DataTableRowActions
+                        label={t("projectGroups.columns.actions")}
+                    >
                         <HeaderIconButton
                             type="button"
                             size="icon-sm"
                             className="text-destructive hover:text-destructive"
-                            label={t('common.delete')}
+                            label={t("common.delete")}
                             onClick={() => setPendingDeleteGroup(row.original)}
                         >
                             <Trash2 className="size-3.5" />
@@ -258,12 +261,12 @@ export default function AdminProjectGroupsIndex({
                 can(PermissionEnum.CanCreateProjectGroups) ? (
                     <Button type="button" onClick={openCreate}>
                         <Plus className="mr-1 size-4" />
-                        {t('projectGroups.newGroup')}
+                        {t("projectGroups.newGroup")}
                     </Button>
                 ) : undefined
             }
         >
-            <Head title={t('projectGroups.title')} />
+            <Head title={t("projectGroups.title")} />
 
             <Drawer
                 direction="right"
@@ -276,7 +279,7 @@ export default function AdminProjectGroupsIndex({
                             search={search}
                             onSearchChange={setSearch}
                             searchPlaceholder={t(
-                                'projectGroups.searchPlaceholder',
+                                "projectGroups.searchPlaceholder",
                             )}
                         />
                     }
@@ -286,9 +289,9 @@ export default function AdminProjectGroupsIndex({
                                 value={sort}
                                 onValueChange={(value) => {
                                     if (
-                                        value === 'name' ||
-                                        value === 'created_at' ||
-                                        value === 'updated_at'
+                                        value === "name" ||
+                                        value === "created_at" ||
+                                        value === "updated_at"
                                     ) {
                                         setSort(value);
                                         visit({ sort: value });
@@ -296,7 +299,7 @@ export default function AdminProjectGroupsIndex({
                                 }}
                             >
                                 <SelectTrigger
-                                    aria-label={t('projectGroups.sortBy')}
+                                    aria-label={t("projectGroups.sortBy")}
                                     className="w-[7.5rem]"
                                 >
                                     <SelectValue />
@@ -317,18 +320,18 @@ export default function AdminProjectGroupsIndex({
                                 variant="outline"
                                 size="icon"
                                 aria-label={
-                                    direction === 'asc'
-                                        ? t('common.sortAscending')
-                                        : t('common.sortDescending')
+                                    direction === "asc"
+                                        ? t("common.sortAscending")
+                                        : t("common.sortDescending")
                                 }
                                 onClick={() => {
                                     const nextDirection =
-                                        direction === 'asc' ? 'desc' : 'asc';
+                                        direction === "asc" ? "desc" : "asc";
                                     setDirection(nextDirection);
                                     visit({ direction: nextDirection });
                                 }}
                             >
-                                {direction === 'asc' ? (
+                                {direction === "asc" ? (
                                     <ArrowUpAZ className="size-4" />
                                 ) : (
                                     <ArrowDownAZ className="size-4" />
@@ -345,18 +348,18 @@ export default function AdminProjectGroupsIndex({
                         onSortChange={changeSort}
                         pagination={groups}
                         columnPinning={{
-                            left: ['name'],
-                            right: ['actions'],
+                            left: ["name"],
+                            right: ["actions"],
                         }}
                         onRowClick={openEdit}
                         getRowProps={(group) => ({
                             className: group.can_update
-                                ? 'cursor-pointer'
+                                ? "cursor-pointer"
                                 : undefined,
                         })}
                         emptyState={
                             <span className="text-muted-foreground">
-                                {t('projectGroups.empty')}
+                                {t("projectGroups.empty")}
                             </span>
                         }
                     />
@@ -386,10 +389,10 @@ export default function AdminProjectGroupsIndex({
                         setPendingDeleteGroup(null);
                     }
                 }}
-                title={t('projectGroups.confirm.deleteTitle', {
-                    name: pendingDeleteGroup?.name ?? '',
+                title={t("projectGroups.confirm.deleteTitle", {
+                    name: pendingDeleteGroup?.name ?? "",
                 })}
-                description={t('projectGroups.confirm.deleteDescription')}
+                description={t("projectGroups.confirm.deleteDescription")}
                 confirming={deleting}
                 onConfirm={() => {
                     if (pendingDeleteGroup === null) {

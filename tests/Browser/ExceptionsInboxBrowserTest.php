@@ -84,7 +84,8 @@ it('closes the exception and finding drawers with a visible button on a phone', 
         ->assertNoJavaScriptErrors();
 
     $page = visit(route('projects.view', [$project->slug, 'findings'], false))->resize(390, 844);
-    $page->click('tbody tr:first-child td:nth-child(3) button')
+    // Pinning can change visual cell order; open via the stable subject control.
+    $page->click('[data-test="finding-subject"]')
         ->assertVisible('[role="dialog"] [data-test="drawer-close"]')
         ->click('[role="dialog"] [data-test="drawer-close"]')
         ->wait(1)

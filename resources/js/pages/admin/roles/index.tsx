@@ -81,6 +81,7 @@ export default function AdminRolesIndex({
             cell: ({ row }) => row.original.permissions_count ?? '—',
         },
         {
+            size: 72,
             id: 'actions',
             header: t('roles.columns.actions'),
             meta: {
