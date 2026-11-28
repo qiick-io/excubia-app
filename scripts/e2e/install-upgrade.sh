@@ -123,7 +123,9 @@ if (cd "$WORK/next" && php artisan excubia:upgrade --force) > "$WORK/path-b-upgr
     cat "$WORK/path-b-upgrade.log"
     assert_installed "$WORK/next"
     serve_and_probe "$WORK/next"
-elif grep -q 'already exists' "$WORK/path-b-upgrade.log"; then
+elif grep -Eiq '(table |relation )?["'\''`]?(activity_log|settings|settings_write_locks)["'\''`]? already exists' "$WORK/path-b-upgrade.log" \
+    || grep -Eiq 'SQLSTATE\[42S01\].*["'\''`]?(activity_log|settings|settings_write_locks)["'\''`]?' "$WORK/path-b-upgrade.log"; then
+    # Exact table names only (not tenant_settings / activity_log_archive look-alikes).
     step "Path B stopped at a reshaped create_ migration (needs DB reset)"
     cat "$WORK/path-b-upgrade.log"
     step "Reset path: empty database on the new tree"

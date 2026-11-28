@@ -132,7 +132,7 @@ type AdminActivityLogSubject = {
 
 /** One activity log entry (`ActivityLogResource`). */
 export type AdminActivityLogRow = {
-    id: number;
+    public_id: string;
     event: string | null;
     description: string;
     log_name: string | null;

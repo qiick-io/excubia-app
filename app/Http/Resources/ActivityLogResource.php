@@ -19,7 +19,7 @@ class ActivityLogResource extends JsonResource
 {
     /**
      * @return array{
-     *     id: int,
+     *     public_id: string,
      *     event: string|null,
      *     description: string,
      *     log_name: string|null,
@@ -37,7 +37,8 @@ class ActivityLogResource extends JsonResource
         $properties = $activity->properties?->toArray() ?? [];
 
         return [
-            'id' => $activity->id,
+            // F8: never the internal bigint; the package hides `id` for the same reason.
+            'public_id' => $activity->public_id,
             'event' => $activity->event,
             'description' => $activity->description,
             'log_name' => $activity->log_name,
