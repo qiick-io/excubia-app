@@ -29,7 +29,7 @@ class PushedExceptionsController extends Controller
         $groups = $request->json('exceptions.groups');
 
         $release = $request->json('exceptions.release');
-        $isNew = $storeExceptions->execute($project, $request->string('batchId')->toString(), $groups, is_string($release) ? $release : null);
+        $isNew = $storeExceptions->execute($project, $request->envelope()['batchId'], $groups, is_string($release) ? $release : null);
 
         return $this->pushedBatchResponse($isNew);
     }

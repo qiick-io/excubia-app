@@ -23,6 +23,18 @@ abstract class IngestRequest extends FormRequest
         return $this->isJson() ? $this->json()->all() : [];
     }
 
+    /** @return array{batchId: string, sentAt: string} */
+    public function envelope(): array
+    {
+        /** @var array{batchId: string, sentAt: float|int|string} $validated */
+        $validated = $this->validated();
+
+        return [
+            'batchId' => $validated['batchId'],
+            'sentAt' => (string) $validated['sentAt'],
+        ];
+    }
+
     public function project(): ?Project
     {
         $project = $this->attributes->get('project');
