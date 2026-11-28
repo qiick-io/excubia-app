@@ -89,7 +89,6 @@ use Qiick\Outbound\Events\WebhookDeliveredEvent;
 use Qiick\Outbound\Events\WebhookDeliveryFailedEvent;
 use Qiick\Outbound\Models\WebhookDelivery;
 use RuntimeException;
-use Spatie\Activitylog\Facades\Activity;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
@@ -237,7 +236,6 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureDefaults();
         $this->configureAuthorization();
-        $this->configureActivityLogging();
         $this->registerAuthActivityListeners();
         $this->registerAlertWebhookListeners();
         $this->configureApiKeyGuard();
@@ -306,19 +304,6 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(JobMonitorQueryService::class, JobPolicy::class);
         Gate::policy(SystemHealthService::class, SystemHealthPolicy::class);
 
-    }
-
-    /**
-     * Every activity also records the request IP and user agent.
-     */
-    protected function configureActivityLogging(): void
-    {
-        Activity::beforeLogging(function (ActivityModel $activity): void {
-            $activity->properties = ($activity->properties ?? collect())->merge([
-                'ip' => request()->ip(),
-                'user_agent' => request()->userAgent(),
-            ]);
-        });
     }
 
     /**

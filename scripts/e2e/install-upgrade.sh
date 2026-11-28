@@ -10,7 +10,9 @@
 # 3. The app answers /health/ready, /health/live and /setup.
 # 4. `php artisan excubia:upgrade --force` runs on the installed tree.
 # 5. When a release tag exists, the previous release is installed from GitHub, the new tree
-#    takes over its .env and database (Path B of docs/self-hosting.md) and is upgraded.
+#    takes over its .env and database (Path B of docs/self-hosting.md) and is upgraded. A
+#    pre-1.0 reshape of a create_ migration stops Path B with "table already exists"; the
+#    script then proves the documented empty-database reset instead.
 #
 # Usage: scripts/e2e/install-upgrade.sh   (from the repository root; needs PHP, Composer, Node)
 
@@ -112,8 +114,28 @@ create_project "$WORK/next"
 cp "$WORK/previous/.env" "$WORK/next/.env"
 cp "$WORK/previous/database/database.sqlite" "$WORK/next/database/database.sqlite"
 sed -i.bak "s#^DB_DATABASE=.*#DB_DATABASE=$WORK/next/database/database.sqlite#" "$WORK/next/.env"
-(cd "$WORK/next" && npm ci --no-audit --no-fund && npm run build && php artisan excubia:upgrade --force)
-assert_installed "$WORK/next"
-serve_and_probe "$WORK/next"
+(cd "$WORK/next" && npm ci --no-audit --no-fund && npm run build)
+
+# Pre-1.0 betas may reshape a create_ migration (docs/self-hosting.md): Path B then
+# stops with "table already exists". That is the documented signal to start on an
+# empty database; prove the reset path instead of claiming a silent upgrade.
+if (cd "$WORK/next" && php artisan excubia:upgrade --force) > "$WORK/path-b-upgrade.log" 2>&1; then
+    cat "$WORK/path-b-upgrade.log"
+    assert_installed "$WORK/next"
+    serve_and_probe "$WORK/next"
+elif grep -Eiq '(table |relation )?["'\''`]?(activity_log|settings|settings_write_locks)["'\''`]? already exists' "$WORK/path-b-upgrade.log" \
+    || grep -Eiq 'SQLSTATE\[42S01\].*["'\''`]?(activity_log|settings|settings_write_locks)["'\''`]?' "$WORK/path-b-upgrade.log"; then
+    # Exact table names only (not tenant_settings / activity_log_archive look-alikes).
+    step "Path B stopped at a reshaped create_ migration (needs DB reset)"
+    cat "$WORK/path-b-upgrade.log"
+    step "Reset path: empty database on the new tree"
+    rm -f "$WORK/next/database/database.sqlite"
+    (cd "$WORK/next" && php artisan excubia:install -n --force --no-npm --url="http://127.0.0.1:$PORT")
+    assert_installed "$WORK/next"
+    serve_and_probe "$WORK/next"
+else
+    cat "$WORK/path-b-upgrade.log"
+    fail "upgrade from $PREVIOUS failed"
+fi
 
 step "Install and upgrade smoke passed"
