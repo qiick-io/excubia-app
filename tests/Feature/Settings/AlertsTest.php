@@ -127,12 +127,11 @@ function integrationChannels(array $overrides = []): array
 }
 
 it('saves only validated values from the integrations settings and drops the rule rows saved before #166', function () {
-    // What settings() saved before #166: its rule keys with the rule arrays as values.
-    app(SettingsRepositoryService::class)->setMany([
-        'channels.slack.minimum_severity' => ['required', 'in:"info","low"'],
-        'event_severities' => ['nullable', 'array'],
-        'event_severities.*' => [[]],
-    ]);
+    // What settings() saved before #166: its rule keys with the rule arrays as values. The
+    // package refuses undeclared keys, so the old rows are written as they were stored then.
+    foreach (['channels.slack.minimum_severity' => ['required', 'in:"info","low"'], 'event_severities' => ['nullable', 'array'], 'event_severities.*' => [[]]] as $key => $value) {
+        Setting::query()->create(['scope' => 'instance', 'scope_id' => '', 'group' => 'app', 'key' => $key, 'value' => $value]);
+    }
 
     $this->actingAs(alertsManager())->put(route('project.integrations.update'), [
         'webhook_url' => 'https://hooks.example.com/excubia',

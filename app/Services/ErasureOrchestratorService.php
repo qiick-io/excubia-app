@@ -21,6 +21,7 @@ use Qiick\Audit\Erasure\AuditEraser;
 use Qiick\HttpBasics\Erasure\HttpBasicsEraser;
 use Qiick\Oidc\Erasure\OidcEraser;
 use Qiick\Outbound\Erasure\OutboundEraser;
+use Qiick\Settings\Erasure\SettingsEraser;
 use Throwable;
 
 /**
@@ -37,12 +38,14 @@ use Throwable;
  * 5. audit: AuditEraser, `anonymise` (qiick/laravel-audit): the rows the person, their principal
  *    or their keys caused or are about keep their evidence, with personal keys, request data,
  *    identifiers, emails and phone numbers replaced by the constant tombstone;
- * 6. product: assistant chats, passkeys, reset tokens, notifications, and what only Excubia
+ * 6. settings: SettingsEraser, `delete` (qiick/laravel-settings): every user-scoped settings row
+ *    for the person (Excubia's product settings are instance-scoped today; the step stays ready);
+ * 7. product: assistant chats, passkeys, reset tokens, notifications, and what only Excubia
  *    knows in the activity log: old values of the user's own model events (`last_login_ip`
  *    included), failed logins under their email or username, and the alerts that name them;
- * 7. access: the user row becomes an anonymised, soft-deleted tombstone, the principal stays
+ * 8. access: the user row becomes an anonymised, soft-deleted tombstone, the principal stays
  *    erased with an anonymised name;
- * 8. close: one `erasure_completed` activity entry (case id and counts), then `completed` with
+ * 9. close: one `erasure_completed` activity entry (case id and counts), then `completed` with
  *    the snapshot and the user link dropped, in one transaction.
  *
  * Deviation from the standard's step 5 (documented in docs/privacy.md): the user row is kept as
@@ -56,7 +59,7 @@ class ErasureOrchestratorService
 {
     public const MODE = ApiKeysEraser::ANONYMISE;
 
-    public const STEPS = ['api-keys', 'oidc', 'outbound', 'http-basics', 'audit', 'product', 'access'];
+    public const STEPS = ['api-keys', 'oidc', 'outbound', 'http-basics', 'audit', 'settings', 'product', 'access'];
 
     private const ERASED_TEXT = '[erased]';
 
@@ -73,6 +76,7 @@ class ErasureOrchestratorService
         private OutboundEraser $outboundEraser,
         private HttpBasicsEraser $httpBasicsEraser,
         private AuditEraser $auditEraser,
+        private SettingsEraser $settingsEraser,
     ) {}
 
     /**
@@ -316,6 +320,7 @@ class ErasureOrchestratorService
             'outbound' => $this->outboundEraser->erase($userId, $userPublicId, OutboundEraser::DELETE, $publicIds)->changed(),
             'http-basics' => $this->httpBasicsEraser->erase($userId, $userPublicId, HttpBasicsEraser::DELETE, $publicIds)->changed(),
             'audit' => $this->auditEraser->erase($userId, $userPublicId, AuditEraser::ANONYMISE, $publicIds, $identifiers)->changed(),
+            'settings' => $this->settingsEraser->erase($userId, $userPublicId, SettingsEraser::DELETE, $publicIds, $identifiers)->changed(),
             'product' => DB::transaction(fn (): int => $this->eraseProductData($userId, $userPublicId, $subject['email'] ?? null, $identifiers)),
             'access' => DB::transaction(fn (): int => $this->tombstoneUser($userId, $userPublicId)),
             default => throw new LogicException("Unknown erasure step [{$step}]."),

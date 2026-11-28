@@ -12,27 +12,23 @@ use App\Enums\SeverityEnum;
 use App\Enums\ThemePresetEnum;
 use App\Models\Setting;
 use App\Rules\ContextSpecificPasswordRule;
-use Illuminate\Contracts\Encryption\DecryptException;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\Crypt;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rules\Password;
+use Qiick\Settings\Settings;
+use Qiick\Settings\UndecryptableSetting;
 
 /**
- * Application settings stored in the `settings` table, merged over defaults, with typed getters
- * for the code that uses them (login, password rule, 2FA requirement, report history, SSO,
- * UI locale, default appearance, sidebar modules).
+ * Excubia's settings over qiick/laravel-settings, with typed getters for the code that uses them
+ * (login, password rule, 2FA requirement, report history, SSO, UI locale, default appearance,
+ * sidebar modules, alerts).
  *
- * Storage is scoped (fleet / externa-core shape): every Excubia setting lives at
- * scope=`instance`, scope_id=`''` (empty string, never NULL — PostgreSQL/MySQL unique indexes
- * treat NULLs as distinct; signaculum-core #205), group=`app`. Public method signatures stay
- * flat-keyed so callers do not change.
+ * Every key is declared by App\Settings\ExcubiaSettingsSchema from TYPES and defaults(), at
+ * scope `instance`, group `app`. Public method signatures stay flat-keyed so callers do not change.
+ * The package memoises reads per request or job and forgets them after a write commits, so a queue
+ * worker sees a change made by the web process.
  *
- * Secrets (SECRET_KEYS: the OIDC client secret, the Slack incoming-
- * webhook URL, which is a bearer secret, and the Telegram bot token) are stored encrypted and
- * left out of forEdit().
- *
- * Registered as a singleton; values are read once per instance and reloaded after a write.
+ * Secrets (SECRET_KEYS: the OIDC client secret, the Slack incoming-webhook URL, which is a bearer
+ * secret, and the Telegram bot token) are encrypted by the package, absent from all(), and replaced
+ * by `has_<key>` flags in forEdit().
  */
 class SettingsRepositoryService
 {
@@ -80,8 +76,79 @@ class SettingsRepositoryService
         'favicon' => 'public_favicon',
     ];
 
-    /** @var array<string, mixed>|null */
-    private ?array $values = null;
+    /**
+     * The declared type of every key (ExcubiaSettingsSchema). Values written through setMany()
+     * are coerced to it, so a numeric string from a form is stored as an integer.
+     */
+    public const TYPES = [
+        'app_name' => 'string',
+        'description' => 'string',
+        'url' => 'string',
+        'report_issue_url' => 'string',
+        'report_bug_url' => 'string',
+        'report_error_url' => 'string',
+        'default_language' => 'string',
+        'default_appearance' => 'string',
+        'theme_preset' => 'string',
+        'project_color' => 'string',
+        'project_color_dark' => 'string',
+        'project_logo' => 'string',
+        'project_logo_dark' => 'string',
+        'public_favicon' => 'string',
+        'sidebar_modules' => 'json',
+        'password_policy' => 'string',
+        'login_max_attempts' => 'int',
+        'two_factor_required' => 'bool',
+        'reports_kept_per_project' => 'int',
+        'stale_after_hours' => 'int',
+        'pennant_stale_after_days' => 'int',
+        'runtime_retention_days' => 'int',
+        'exceptions_retention_days' => 'int',
+        'oidc_enabled' => 'bool',
+        'oidc_issuer' => 'string',
+        'oidc_client_id' => 'string',
+        'oidc_client_secret' => 'string',
+        'oidc_button_label' => 'string',
+        'oidc_jit_provisioning' => 'bool',
+        'oidc_auto_link' => 'bool',
+        'oidc_only' => 'bool',
+        'ai_disabled_tools' => 'json',
+        'ai_enabled_tools' => 'json',
+        'notifier_slack_webhook_url' => 'string',
+        'notifier_telegram_bot_token' => 'string',
+        'notifier_telegram_chat_id' => 'string',
+        'alert_channels' => 'json',
+        'alert_event_severities' => 'json',
+        'alert_cache_hit_ratio_below' => 'int',
+        'alert_delivery_failures_enabled' => 'bool',
+        'alert_log_spike_per_hour' => 'int',
+        'alert_ai_spend_spike_percent' => 'int',
+        'alert_ai_error_rate_above' => 'int',
+        'alert_billing_webhook_failures_per_hour' => 'int',
+        'alert_billing_payment_failed_enabled' => 'bool',
+        'alert_auth_failed_logins_per_hour' => 'int',
+        'alert_scout_index_failures_per_hour' => 'int',
+        'ai_prices' => 'json',
+        'ai_prices_updated_on' => 'string',
+    ];
+
+    public function __construct(private Settings $settings) {}
+
+    /**
+     * A value in the declared type: null stays null (the default applies), numeric strings become
+     * numbers, scalars become strings. A value that cannot be coerced is returned as it is, and
+     * the package refuses it.
+     */
+    public static function coerce(string $type, mixed $value): mixed
+    {
+        return match (true) {
+            $value === null => null,
+            $type === 'int' && is_numeric($value) => (int) $value,
+            $type === 'bool' && is_scalar($value) => (bool) $value,
+            $type === 'string' && is_scalar($value) => (string) $value,
+            default => $value,
+        };
+    }
 
     /**
      * Defaults for every key. Names match qiick-io/externa-core where the setting exists there.
@@ -162,10 +229,7 @@ class SettingsRepositoryService
      */
     public function all(): array
     {
-        return $this->values ??= array_merge(
-            $this->defaults(),
-            $this->instanceAppQuery()->pluck('value', 'key')->all(),
-        );
+        return $this->settings->all(self::GROUP_APP);
     }
 
     /**
@@ -175,14 +239,7 @@ class SettingsRepositoryService
      */
     public function forEdit(): array
     {
-        $values = $this->all();
-
-        foreach (self::SECRET_KEYS as $key) {
-            $values['has_'.$key] = is_string($values[$key]) && $values[$key] !== '';
-            unset($values[$key]);
-        }
-
-        return $values;
+        return $this->settings->forEdit(self::GROUP_APP);
     }
 
     /**
@@ -218,13 +275,7 @@ class SettingsRepositoryService
     public function save(array $values): void
     {
         foreach (self::SECRET_KEYS as $key) {
-            if (! array_key_exists($key, $values)) {
-                continue;
-            }
-
-            if (is_string($values[$key]) && $values[$key] !== '') {
-                $values[$key] = Crypt::encryptString($values[$key]);
-            } else {
+            if (array_key_exists($key, $values) && (! is_string($values[$key]) || $values[$key] === '')) {
                 unset($values[$key]);
             }
         }
@@ -233,38 +284,44 @@ class SettingsRepositoryService
     }
 
     /**
-     * Saves the given keys in one transaction.
+     * Saves the given keys in one transaction, each coerced to its declared type.
      *
      * @param  array<string, mixed>  $values
+     *
+     * @throws \InvalidArgumentException for an undeclared key or a value of the wrong type
      */
     public function setMany(array $values): void
     {
-        DB::transaction(function () use ($values): void {
-            foreach ($values as $key => $value) {
-                Setting::query()->updateOrCreate(
-                    [
-                        'scope' => self::SCOPE_INSTANCE,
-                        'scope_id' => self::SCOPE_ID_INSTANCE,
-                        'group' => self::GROUP_APP,
-                        'key' => $key,
-                    ],
-                    ['value' => $value],
-                );
-            }
-        });
+        foreach ($values as $key => $value) {
+            $values[$key] = self::coerce(self::TYPES[$key] ?? 'string', $value);
+        }
 
-        $this->values = null;
+        $this->settings->set($values);
     }
 
     /**
-     * Deletes the given keys; their defaults apply again.
+     * Clears the given keys; their defaults apply again.
      *
      * @param  list<string>  $keys
      */
     public function forget(array $keys): void
     {
-        $this->instanceAppQuery()->whereIn('key', $keys)->delete();
-        $this->values = null;
+        $undeclaredKeys = array_values(array_diff($keys, array_keys(self::TYPES)));
+
+        foreach (array_diff($keys, $undeclaredKeys) as $key) {
+            $this->settings->forget($key);
+        }
+
+        // ponytail: rows no schema declares (the rule rows saved before #166) cannot go through
+        // the package, which refuses undeclared keys; they are deleted directly. Drop at 1.0.0.
+        if ($undeclaredKeys !== []) {
+            Setting::query()
+                ->where('scope', self::SCOPE_INSTANCE)
+                ->where('scope_id', self::SCOPE_ID_INSTANCE)
+                ->where('group', self::GROUP_APP)
+                ->whereIn('key', $undeclaredKeys)
+                ->delete();
+        }
     }
 
     public function appName(): string
@@ -517,12 +574,7 @@ class SettingsRepositoryService
 
     public function slackWebhookUrl(): ?string
     {
-        // ponytail: installs from before #51 saved the URL in plain text; it is still used until
-        // the next save encrypts it. Drop the fallback at 1.0.0.
-        $legacy = $this->string('notifier_slack_webhook_url');
-
-        return $this->secret('notifier_slack_webhook_url')
-            ?? ($legacy !== null && str_starts_with($legacy, 'https://hooks.slack.com/') ? $legacy : null);
+        return $this->secret('notifier_slack_webhook_url');
     }
 
     public function telegramBotToken(): ?string
@@ -633,19 +685,13 @@ class SettingsRepositoryService
      */
     private function secret(string $key): ?string
     {
-        $stored = $this->string($key);
-
-        if ($stored === null) {
-            return null;
-        }
-
         try {
-            $plain = Crypt::decryptString($stored);
-        } catch (DecryptException) {
+            $plain = $this->settings->secret($key)?->reveal();
+        } catch (UndecryptableSetting) {
             return null;
         }
 
-        return $plain !== '' ? $plain : null;
+        return is_string($plain) && $plain !== '' ? $plain : null;
     }
 
     /**
@@ -657,19 +703,6 @@ class SettingsRepositoryService
             && $this->oidcIssuer() !== null
             && $this->oidcClientId() !== null
             && $this->oidcClientSecret() !== null;
-    }
-
-    /**
-     * Instance-scope rows in the `app` group (fleet flat-key storage).
-     *
-     * @return Builder<Setting>
-     */
-    private function instanceAppQuery(): Builder
-    {
-        return Setting::query()
-            ->where('scope', self::SCOPE_INSTANCE)
-            ->where('scope_id', self::SCOPE_ID_INSTANCE)
-            ->where('group', self::GROUP_APP);
     }
 
     /**

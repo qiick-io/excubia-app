@@ -36,6 +36,7 @@ use App\Services\SelfMonitoringService;
 use App\Services\SettingsRepositoryService;
 use App\Services\SystemHealthService;
 use App\Services\TwoFactorRequirementService;
+use App\Settings\ExcubiaSettingsSchema;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Login;
@@ -88,6 +89,7 @@ use Qiick\Oidc\Services\UserLinkingService;
 use Qiick\Outbound\Events\WebhookDeliveredEvent;
 use Qiick\Outbound\Events\WebhookDeliveryFailedEvent;
 use Qiick\Outbound\Models\WebhookDelivery;
+use Qiick\Settings\SettingsSchema;
 use RuntimeException;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -99,7 +101,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->singleton(SettingsRepositoryService::class);
+        // Scoped, not a singleton: it reads through qiick/laravel-settings, whose memo lives for
+        // one request or job, so a queue worker never keeps a stale value.
+        $this->app->scoped(SettingsRepositoryService::class);
+        $this->app->tag([ExcubiaSettingsSchema::class], SettingsSchema::class);
         $this->app->extend(
             UncompromisedVerifier::class,
             fn (): PwnedPasswordVerifierService => $this->app->make(PwnedPasswordVerifierService::class),

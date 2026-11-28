@@ -28,6 +28,7 @@
         "qiick/laravel-http-basics": "^1.0.0-beta.1",
         "qiick/laravel-oidc": "^1.0@beta",
         "qiick/laravel-outbound": "^0.2.0-beta.4",
+        "qiick/laravel-settings": "dev-chore/release-v0.1.0-beta.2#5c63f6a4312423a2b6eec5273f34b82338cf4ddf as 0.1.0-beta.2",
         "spatie/laravel-activitylog": "^5.1.3",
         "spatie/laravel-permission": "^8.3"
     },

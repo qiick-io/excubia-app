@@ -64,15 +64,17 @@ qiick fleet erasure standard (`.qiick/standards/erasure.md`, `ErasureOrchestrato
    IP and user agent, their identifiers, email addresses and phone numbers become the constant
    tombstone `erased`. In a row they only caused about another subject (a project they renamed)
    the subject's attributes stay, except where they hold the person's identifiers.
-6. Excubia's own data: assistant chats, passkeys, their reset token and notifications deleted;
+6. Settings (`SettingsEraser`, `delete`, qiick/laravel-settings): every user-scoped settings row
+   for the person. Excubia's product settings are instance-scoped today; the step stays ready.
+7. Excubia's own data: assistant chats, passkeys, their reset token and notifications deleted;
    `[erased]` replaces what only Excubia knows in the activity log (old values of their own model
    events, `last_login_ip` included, and failed logins under their email or username), and the
    alerts that name them, found by their public id (history, other users' notifications; a
    queued message redacts the name when it runs, on any queue; failed alert jobs are deleted).
-7. Access: the user row becomes an anonymised, soft-deleted tombstone (`deleted+<public id>@…`,
+8. Access: the user row becomes an anonymised, soft-deleted tombstone (`deleted+<public id>@…`,
    `deleted_<public id>`, every personal column cleared, locale and timezone reset); the principal stays erased with an
    anonymised name.
-8. Close: one `erasure_completed` audit entry (case id and counts, no personal data), then the
+9. Close: one `erasure_completed` audit entry (case id and counts, no personal data), then the
    case is `completed` and its snapshot and user link are dropped.
 
 Only one executor advances a case: a claim with a 15-minute lease, and every step runs in the

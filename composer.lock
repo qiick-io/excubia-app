@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "81dfd2f7c0fef29ff27b07bed6cd11db",
+    "content-hash": "b92110a002005b61018b16275dffe25c",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -4945,6 +4945,75 @@
                 "source": "https://github.com/qiick-io/laravel-outbound"
             },
             "time": "2026-11-27T15:02:05+00:00"
+        },
+        {
+            "name": "qiick/laravel-settings",
+            "version": "dev-chore/release-v0.1.0-beta.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/qiick-io/laravel-settings.git",
+                "reference": "5c63f6a4312423a2b6eec5273f34b82338cf4ddf"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/qiick-io/laravel-settings/zipball/5c63f6a4312423a2b6eec5273f34b82338cf4ddf",
+                "reference": "5c63f6a4312423a2b6eec5273f34b82338cf4ddf",
+                "shasum": ""
+            },
+            "require": {
+                "illuminate/console": "^12.0 || ^13.0",
+                "illuminate/contracts": "^12.0 || ^13.0",
+                "illuminate/database": "^12.0 || ^13.0",
+                "illuminate/encryption": "^12.0 || ^13.0",
+                "illuminate/support": "^12.0 || ^13.0",
+                "php": "^8.3"
+            },
+            "require-dev": {
+                "larastan/larastan": "^3.3",
+                "laravel/pint": "^1.30",
+                "nunomaduro/collision": "^8.5",
+                "orchestra/testbench": "^10.0 || ^11.0",
+                "pestphp/pest": "^4.0",
+                "pestphp/pest-plugin-mutate": "^4.0",
+                "phpstan/phpstan": "^2.1"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Qiick\\Settings\\Laravel\\SettingsServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Qiick\\Settings\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Qiick",
+                    "homepage": "https://qiick.io"
+                }
+            ],
+            "description": "Scoped, typed settings and encrypted secrets for qiick Laravel products.",
+            "homepage": "https://github.com/qiick-io/laravel-settings",
+            "keywords": [
+                "Settings",
+                "laravel",
+                "qiick",
+                "secrets"
+            ],
+            "support": {
+                "issues": "https://github.com/qiick-io/laravel-settings/issues",
+                "source": "https://github.com/qiick-io/laravel-settings"
+            },
+            "time": "2026-11-27T19:43:35+00:00",
+            "published-time": "2026-11-27T19:43:40+00:00"
         },
         {
             "name": "ramsey/collection",
@@ -14367,6 +14436,12 @@
             "version": "dev-chore/release-v0.1.0-beta.2",
             "alias": "0.1.0-beta.2",
             "alias_normalized": "0.1.0.0-beta2"
+        },
+        {
+            "package": "qiick/laravel-settings",
+            "version": "dev-chore/release-v0.1.0-beta.2",
+            "alias": "0.1.0-beta.2",
+            "alias_normalized": "0.1.0.0-beta2"
         }
     ],
     "minimum-stability": "stable",
@@ -14377,7 +14452,8 @@
         "qiick/laravel-audit": 20,
         "qiick/laravel-http-basics": 10,
         "qiick/laravel-oidc": 10,
-        "qiick/laravel-outbound": 10
+        "qiick/laravel-outbound": 10,
+        "qiick/laravel-settings": 20
     },
     "prefer-stable": true,
     "prefer-lowest": false,

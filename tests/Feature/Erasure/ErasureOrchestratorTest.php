@@ -97,6 +97,15 @@ it('runs the qiick/laravel-audit eraser as its own step', function () {
         ->and(json_encode(Activity::query()->where('subject_id', $project->id)->where('subject_type', $project->getMorphClass())->value('attribute_changes')))->toContain('Shop');
 });
 
+it('runs the qiick/laravel-settings eraser as its own step', function () {
+    $user = erasableUser();
+
+    app(DeleteUserAction::class)->execute($user);
+
+    expect(array_keys(ErasureRequest::query()->sole()->steps))->toContain('settings')
+        ->and(ErasureRequest::query()->sole()->steps['settings']['status'])->toBe('done');
+});
+
 it('leaves a failed step for excubia:resume-erasures, which finishes the case', function () {
     $user = erasableUser();
     // The OIDC eraser's table refuses every statement: its step fails; the next run succeeds.
