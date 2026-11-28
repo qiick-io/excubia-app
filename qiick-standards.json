@@ -25,11 +25,6 @@
             "decision": "knowledge/decisions/2026-11-19-fleet-core-schema",
             "review_by": "2026-12-20"
         },
-        "C17": {
-            "reason": "Tracked security work, not hidden: erasure releases unique email/username, anonymises personal columns, deletes SSO identities, passkeys and assistant chats, and deactivates the row. Only anonymising identifying payload in existing activity rows remains (#381); the hook scans both activity columns on the app's own created/updated rows so a stale divergence is caught.",
-            "decision": "knowledge/decisions/2026-11-20-core-hardening",
-            "review_by": "2026-12-20"
-        },
         "C20": {
             "reason": "One backed error-code enum with a stable JSON error shape for /api/* and /mcp is not implemented yet. Product tests already pin the safe behaviours (no stack trace with APP_DEBUG=false, JSON without Accept); tracked in #390, not hidden.",
             "decision": "knowledge/decisions/2026-11-20-core-hardening",

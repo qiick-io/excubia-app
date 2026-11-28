@@ -729,6 +729,7 @@
             "rotated": "API key rotated",
             "revoked": "API key revoked",
             "api_key_first_used": "API key first used",
+            "erasure_completed": "User erased",
             "collection_permissions_synced": "Collection permissions synced",
             "file_permissions_synced": "File permissions synced",
             "status_changed": "Status changed",

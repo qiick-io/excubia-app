@@ -171,6 +171,10 @@ return [
         }
     },
 
+    // C17 through the resumable erasure (ErasureOrchestratorService). Documented exception to the
+    // fleet erasure standard's step 5 (docs/privacy.md): the user stays as an anonymised,
+    // soft-deleted tombstone and the principal is marked erased, instead of AccessEraser +
+    // forceDelete, because audit rows and RESTRICT API key foreign keys point at them.
     'assertErasure' => static function (): void {
         $email = 'erase-me-conformance@example.test';
         $username = 'erase-me-conformance';

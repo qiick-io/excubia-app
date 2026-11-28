@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Actions;
 
 use App\Models\User;
+use App\Services\ErasureOrchestratorService;
 use App\Services\SuperAdminGuardService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Gate;
@@ -25,6 +26,7 @@ class UpdateUserAction
         private SuperAdminGuardService $superAdminGuard,
         private SyncUserRolesAction $syncRoles,
         private PrincipalDirectory $principals,
+        private ErasureOrchestratorService $erasure,
     ) {}
 
     /**
@@ -41,7 +43,16 @@ class UpdateUserAction
      */
     public function execute(?User $actor, User $user, string $firstName, ?string $lastName, string $email, ?string $username, ?string $password, array $roles, bool $isActive, string $timezone = 'UTC'): User
     {
-        $authorize = $actor === null ? null : fn () => Gate::forUser($actor)->authorize('update', $user);
+        $authorize = function () use ($actor, $user): void {
+            // Never reactivate or rewrite an account whose erasure began.
+            if ($this->erasure->isBeingErased($user)) {
+                throw new AuthorizationException;
+            }
+
+            if ($actor !== null) {
+                Gate::forUser($actor)->authorize('update', $user);
+            }
+        };
 
         return $this->superAdminGuard->guardRoleWrite($actor, fn (): array => [$user->id], function () use ($user, $firstName, $lastName, $email, $username, $password, $roles, $isActive, $timezone): User {
             $user->forceFill([

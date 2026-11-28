@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Notifications;
 
 use App\Enums\AlertEventEnum;
+use App\Services\ReportAlertsService;
 use App\Services\ReportFindingsService;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Str;
@@ -62,9 +63,27 @@ class AlertNotification extends Notification
             'events' => $this->events(),
             // English fallback; the drawer builds a localised title from the fields above.
             'title' => sprintf('[%s] %s%s', Str::upper((string) $this->alert['severity']), $what, $project === null ? '' : ' · '.$project['name']),
-            'body' => Str::limit($this->alerts === [] ? $this->summary : $this->alerts[0]['summary'], self::BODY_LENGTH),
+            'body' => $this->body(),
             'url' => $this->link($project),
         ];
+    }
+
+    /**
+     * The summary cut to BODY_LENGTH, keeping an assignee's whole name at its end (#381): the
+     * erasure replaces the whole name, so it must never be cut in half.
+     */
+    private function body(): string
+    {
+        $summary = $this->alerts === [] ? $this->summary : $this->alerts[0]['summary'];
+        $data = (array) ($this->alert['data'] ?? []);
+        $assignee = $data['assignee'] ?? null;
+        $suffix = is_string($assignee) ? ' (assigned to '.$assignee.')' : null;
+
+        if ($suffix !== null && str_ends_with($summary, $suffix)) {
+            return ReportAlertsService::withAssignee(mb_substr($summary, 0, -mb_strlen($suffix)), $assignee, self::BODY_LENGTH);
+        }
+
+        return Str::limit($summary, self::BODY_LENGTH);
     }
 
     /**

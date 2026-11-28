@@ -23,6 +23,9 @@ Schedule::call(fn () => Artisan::call('activitylog:clean', [
 // Keeps the newest reports of each project (setting "Reports kept per project").
 Schedule::command('excubia:prune-reports')->daily()->withoutOverlapping()->onOneServer();
 
+// User erasures (#381) interrupted or failed after their lock-out: resumed from their snapshot.
+Schedule::command('excubia:resume-erasures')->hourly()->withoutOverlapping()->onOneServer();
+
 // Runtime aggregates and exception groups past their retention (#48, #49), and in-app
 // notifications older than 30 days (#296).
 Schedule::command('excubia:prune-telemetry')->daily()->withoutOverlapping()->onOneServer();
