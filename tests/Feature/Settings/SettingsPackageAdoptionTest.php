@@ -8,7 +8,6 @@ use App\Models\User;
 use App\Services\SettingsRepositoryService;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Support\Facades\Schema;
-use InvalidArgumentException;
 use Qiick\Settings\Settings;
 
 /**
@@ -37,7 +36,7 @@ it('keeps secrets out of all() and forEdit(), and surfaces has_ flags instead', 
 
 it('refuses an undeclared settings key', function () {
     expect(fn () => app(Settings::class)->set(['not_a_declared_key' => 'x']))
-        ->toThrow(InvalidArgumentException::class);
+        ->toThrow(\InvalidArgumentException::class);
 });
 
 it('passes settings:check after adoption', function () {
