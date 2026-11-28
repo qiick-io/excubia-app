@@ -19,6 +19,6 @@
     },
     "iconLibrary": "lucide",
     "registries": {
-        "@qiick": "https://raw.githubusercontent.com/qiick-io/app-ui/e3502388695e85baf1ed88f6065e8a792b4b4967/public/r/{name}.json"
+        "@qiick": "https://raw.githubusercontent.com/qiick-io/app-ui/6dcd82abe8ce30a1e38bf9db74d7d58c3edc7203/public/r/{name}.json"
     }
 }

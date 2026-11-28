@@ -11,7 +11,7 @@ upgrade from the version before (see [docs/self-hosting.md](docs/self-hosting.md
 
 ### Changed
 
-- **List pages adopt app-ui #298** (#568): Exceptions and Findings put status in the toolbar's always-visible trailing slot and move the secondary filters behind the measured Filters popover; wide tables pin the primary column left and actions right; row actions are ghost icon-only inside `DataTableRowActions` (hover/focus/touch). Re-pulls `data-table`, `data-table-toolbar`, `inbox-list`, `api-key-list-row` and `theme`, and adds the `dataTable.*` locale keys. The `@qiick` pin updates to the app-ui develop commit that includes #298 once that PR merges.
+- **List pages adopt app-ui #298** (#568): Exceptions and Findings put status in the toolbar's always-visible trailing slot and move the secondary filters behind the measured Filters popover; wide tables pin the primary column left and actions right; row actions are ghost icon-only inside `DataTableRowActions` (hover/focus/touch). Re-pulls `data-table`, `data-table-toolbar`, `inbox-list`, `api-key-list-row` and `theme`, and adds the `dataTable.*` locale keys. The `@qiick` pin is `6dcd82abe8ce30a1e38bf9db74d7d58c3edc7203` (app-ui develop after #299).
 
 ### Fixed
 
